@@ -1,91 +1,81 @@
-# MediaHub - Personal Media Ops Platform
+# WatchNexus - Personal Media Command Center
 
-## Original Problem Statement
-Build a unified self-hosted media platform that replaces multiple applications (Jellyfin, Sonarr, Radarr, qBittorrent, Prowlarr, Bazarr) into one single application. Features include:
-- Media library/streaming interface (like Jellyfin)
-- Catalog management for TV shows, movies, audiobooks, music, music videos, live TV
-- Download manager with torrent support
-- Indexer management for finding content
-- Subtitle automation
-- Streaming service connectors (Netflix, Disney+, Prime Video deep links)
-- Settings to configure real integrations when ready
-- JWT + configurable OAuth authentication
+## Overview
+WatchNexus is a unified self-hosted media platform forked from Jellyfin, rebranded and customized to serve as the foundation for a complete media management solution that replaces multiple applications (Jellyfin, Sonarr, Radarr, qBittorrent, Prowlarr, Bazarr).
 
-## User Personas
-1. **Home Media Enthusiast** - Wants a unified interface to manage local media and streaming services
-2. **Power User** - Needs fine-grained control over indexers, download quality, and organization
-3. **Family User** - Wants Netflix-like browsing experience with simple access
+## Current Status (Feb 3, 2026)
 
-## Core Requirements (Static)
-- Single unified application replacing multiple tools
-- Real TMDB metadata integration for movies/TV
-- Mock download functionality with real integration ready
-- Streaming service deep links
-- JWT authentication with OAuth configuration option
-- Dark cinematic UI/UX
+### Completed
+- ✅ Forked Jellyfin server v10.10.6 (C#/.NET 8)
+- ✅ Forked Jellyfin web client v10.10.6 (TypeScript/React)
+- ✅ Rebranded to "WatchNexus" throughout:
+  - Header logo (purple/pink gradient)
+  - Page titles
+  - Welcome messages
+  - App name in manifests
+  - Assembly info
+- ✅ Server running on port 3000
+- ✅ FFmpeg installed for transcoding
+- ✅ Media directories created at /var/lib/watchnexus/
 
-## What's Been Implemented (MVP - Feb 3, 2026)
+### Architecture
+```
+/app/watchnexus/
+├── server/          # Jellyfin server (C#/.NET 8)
+│   └── Jellyfin.Server/bin/Release/net8.0/
+├── web/             # Web client (TypeScript)
+│   ├── src/         # Source files
+│   └── dist/        # Built web assets
 
-### Backend (FastAPI + MongoDB)
-- ✅ User authentication (register, login, JWT tokens)
-- ✅ TMDB API integration (search, trending, movie/TV details, seasons, genres, discover)
-- ✅ Watchlist CRUD operations
-- ✅ Watch progress tracking
-- ✅ Downloads queue (mocked with realistic simulation)
-- ✅ Settings management
-- ✅ Indexers configuration (mock)
-- ✅ Streaming services configuration
+/var/lib/watchnexus/
+├── config/          # Server configuration
+├── data/            # Database and metadata
+├── log/             # Server logs
+├── cache/           # Transcoding cache
+└── media/           # Media library root
+    ├── movies/
+    ├── tvshows/
+    ├── music/
+    └── audiobooks/
+```
 
-### Frontend (React + Tailwind)
-- ✅ Login/Register pages with glassmorphism design
-- ✅ Dashboard with hero banner, trending content, continue watching
-- ✅ Movies browse page with genre filters and sorting
-- ✅ TV Shows browse page with genre filters and sorting
-- ✅ Media details page with trailer, cast, similar content
-- ✅ Search with multi-type filtering (movies, TV, people)
-- ✅ Downloads page with progress simulation
-- ✅ Settings page (General, Indexers, Download Client, Subtitles, Streaming Services, Auth)
-- ✅ Streaming services page with deep links
-- ✅ Music page (coming soon placeholder)
-- ✅ Audiobooks page (coming soon placeholder)
-- ✅ Live TV page (coming soon placeholder)
-- ✅ Responsive sidebar navigation
-- ✅ Dark cinematic theme with violet accents
+### Tech Stack
+- **Backend**: C# / .NET 8 (Jellyfin server)
+- **Frontend**: TypeScript, React (Jellyfin web)
+- **Database**: SQLite (embedded)
+- **Transcoding**: FFmpeg
+- **Process Manager**: Supervisor
 
-## Prioritized Backlog
+## Next Phase - Feature Integration
 
-### P0 (Critical for Production)
-- [ ] Real torrent download integration (libtorrent/qBittorrent API)
-- [ ] Real indexer integration (Jackett/Prowlarr APIs)
-- [ ] File organization and renaming automation
-- [ ] Local media scanning and library import
+### P0 - Indexer Integration
+- [ ] Build Prowlarr-like indexer management
+- [ ] Integrate with public indexers (1337x, RARBG alternatives, etc.)
+- [ ] Unified search interface
 
-### P1 (High Priority)
-- [ ] Video player with streaming support
-- [ ] Subtitle fetching (OpenSubtitles API)
-- [ ] Google OAuth integration
-- [ ] User profiles and permissions
-- [ ] Notifications for new content
+### P1 - Download Client
+- [ ] Integrate torrent download capability
+- [ ] Automatic file organization
+- [ ] Progress tracking in UI
 
-### P2 (Medium Priority)
-- [ ] Music library with metadata (MusicBrainz)
-- [ ] Audiobook support with bookmarks
-- [ ] Live TV/IPTV integration
-- [ ] Mobile-optimized views
-- [ ] PWA support
+### P2 - Enhanced Features  
+- [ ] Subtitle automation (OpenSubtitles)
+- [ ] Streaming service deep links
+- [ ] TMDB metadata enhancement
 
-### P3 (Nice to Have)
-- [ ] Recommendation engine
-- [ ] Social features (share watchlists)
-- [ ] Hardware transcoding settings
-- [ ] Advanced analytics dashboard
+### P3 - Advanced
+- [ ] Custom authentication (OAuth config)
+- [ ] Multi-user management
+- [ ] Mobile app support
 
-## Tech Stack
-- **Backend**: FastAPI, MongoDB, httpx, PyJWT, bcrypt
-- **Frontend**: React 19, Tailwind CSS, Framer Motion, Shadcn/UI
-- **APIs**: TMDB (implemented), OpenSubtitles (planned)
+## Running WatchNexus
+```bash
+# Server runs via supervisor
+sudo supervisorctl status watchnexus
 
-## Configuration
-- TMDB API Key: Provided by user
-- OAuth: Configurable via settings page
-- Indexers: Configurable via settings (mock in MVP)
+# Access
+http://localhost:3000/web/
+```
+
+## License
+Based on Jellyfin - GPL v2. All modifications must remain open source.
