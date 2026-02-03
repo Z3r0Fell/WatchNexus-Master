@@ -584,17 +584,17 @@ async def scan_media_library(directory: str):
     """Scan a directory for media health issues."""
     return scan_library(directory)
 
-# ==================== JELLYFIN PROXY ====================
-# Proxy requests to the local Jellyfin server
+# ==================== MARMALADE MEDIA SERVER PROXY ====================
+# Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
 
-JELLYFIN_URL = "http://localhost:8096"
+MARMALADE_URL = os.environ.get("MARMALADE_URL", "http://localhost:8096")
 
-@api_router.api_route("/jellyfin/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def jellyfin_proxy(path: str, request: Request):
-    """Proxy all requests to the Jellyfin server"""
-    async with httpx.AsyncClient(timeout=30.0) as client:
+@api_router.api_route("/marmalade/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def marmalade_proxy(path: str, request: Request):
+    """Proxy all requests to the Marmalade media server"""
+    async with httpx.AsyncClient(timeout=30.0) as http_client:
         # Build the target URL
-        url = f"{JELLYFIN_URL}/{path}"
+        url = f"{MARMALADE_URL}/{path}"
         
         # Get query params
         params = dict(request.query_params)
@@ -615,15 +615,15 @@ async def jellyfin_proxy(path: str, request: Request):
         
         try:
             if request.method == "GET":
-                response = await client.get(url, params=params, headers=headers)
+                response = await http_client.get(url, params=params, headers=headers)
             elif request.method == "POST":
-                response = await client.post(url, params=params, headers=headers, json=body if isinstance(body, dict) else None, content=body if isinstance(body, bytes) else None)
+                response = await http_client.post(url, params=params, headers=headers, json=body if isinstance(body, dict) else None, content=body if isinstance(body, bytes) else None)
             elif request.method == "PUT":
-                response = await client.put(url, params=params, headers=headers, json=body if isinstance(body, dict) else None)
+                response = await http_client.put(url, params=params, headers=headers, json=body if isinstance(body, dict) else None)
             elif request.method == "DELETE":
-                response = await client.delete(url, params=params, headers=headers)
+                response = await http_client.delete(url, params=params, headers=headers)
             elif request.method == "PATCH":
-                response = await client.patch(url, params=params, headers=headers, json=body if isinstance(body, dict) else None)
+                response = await http_client.patch(url, params=params, headers=headers, json=body if isinstance(body, dict) else None)
             
             # Return the response
             content_type = response.headers.get('content-type', 'application/json')
@@ -636,11 +636,11 @@ async def jellyfin_proxy(path: str, request: Request):
                 return Response(content=response.content, media_type=content_type)
                 
         except httpx.TimeoutException:
-            raise HTTPException(status_code=504, detail="Jellyfin server timeout")
+            raise HTTPException(status_code=504, detail="Marmalade server timeout")
         except httpx.ConnectError:
-            raise HTTPException(status_code=503, detail="Cannot connect to Jellyfin server")
+            raise HTTPException(status_code=503, detail="Cannot connect to Marmalade server")
         except Exception as e:
-            logger.error(f"Jellyfin proxy error: {e}")
+            logger.error(f"Marmalade proxy error: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== HEALTH CHECK ====================
