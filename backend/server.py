@@ -293,6 +293,34 @@ async def get_trending(media_type: str = "all", time_window: str = "week"):
     
     return data
 
+# IMPORTANT: Static routes must be defined BEFORE parameterized routes
+@api_router.get("/tmdb/movie/now_playing")
+async def get_now_playing(page: int = 1):
+    data = await tmdb_request("/movie/now_playing", {"page": page})
+    if not data:
+        raise HTTPException(status_code=500, detail="Failed to fetch")
+    for item in data.get("results", []):
+        item["poster_url"] = get_image_url(item.get("poster_path"), "w342")
+        item["backdrop_url"] = get_image_url(item.get("backdrop_path"), "w1280")
+    return data
+
+@api_router.get("/tmdb/tv/on_the_air")
+async def get_on_the_air(page: int = 1):
+    data = await tmdb_request("/tv/on_the_air", {"page": page})
+    if not data:
+        raise HTTPException(status_code=500, detail="Failed to fetch")
+    for item in data.get("results", []):
+        item["poster_url"] = get_image_url(item.get("poster_path"), "w342")
+        item["backdrop_url"] = get_image_url(item.get("backdrop_path"), "w1280")
+    return data
+
+@api_router.get("/tmdb/genres/{media_type}")
+async def get_genres(media_type: str):
+    data = await tmdb_request(f"/genre/{media_type}/list")
+    if not data:
+        raise HTTPException(status_code=500, detail="Failed to fetch genres")
+    return data
+
 @api_router.get("/tmdb/movie/{movie_id}")
 async def get_movie_details(movie_id: int):
     data = await tmdb_request(f"/movie/{movie_id}", {
