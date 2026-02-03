@@ -87,6 +87,79 @@ export const SettingsPage = () => {
     }
   };
 
+  // Media Health Checker functions
+  const handleScanLibrary = async () => {
+    if (!healthScanPath.trim()) {
+      toast.error('Please enter a directory path to scan');
+      return;
+    }
+    setScanning(true);
+    setHealthResults([]);
+    try {
+      const res = await mediaHealthApi.scanLibrary(healthScanPath);
+      setHealthResults(res.data || []);
+      const issues = (res.data || []).filter(r => r.status !== 'healthy');
+      if (issues.length > 0) {
+        toast.warning(`Found ${issues.length} file(s) with issues`);
+      } else {
+        toast.success('All files are healthy!');
+      }
+    } catch (error) {
+      console.error('Scan error:', error);
+      toast.error('Failed to scan library');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleCheckSingleFile = async (filePath) => {
+    try {
+      const res = await mediaHealthApi.checkFile(filePath);
+      return res.data;
+    } catch (error) {
+      toast.error('Failed to check file');
+      return null;
+    }
+  };
+
+  const handleRepairFile = async (filePath) => {
+    setRepairing(filePath);
+    try {
+      const res = await mediaHealthApi.repairFile(filePath);
+      if (res.data.success) {
+        toast.success(res.data.message);
+        // Re-scan to update results
+        await handleScanLibrary();
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (error) {
+      toast.error('Failed to repair file');
+    } finally {
+      setRepairing(null);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'healthy': return 'bg-green-500/20 text-green-400';
+      case 'warning': return 'bg-yellow-500/20 text-yellow-400';
+      case 'repairable': return 'bg-orange-500/20 text-orange-400';
+      case 'error': return 'bg-red-500/20 text-red-400';
+      case 'corrupt': return 'bg-red-600/20 text-red-500';
+      default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'healthy': return <CheckCircle className="w-5 h-5" />;
+      case 'warning': return <AlertTriangle className="w-5 h-5" />;
+      case 'repairable': return <Wrench className="w-5 h-5" />;
+      default: return <X className="w-5 h-5" />;
+    }
+  };
+
   return (
     <Layout>
       <div data-testid="settings-page" className="min-h-screen p-8">
