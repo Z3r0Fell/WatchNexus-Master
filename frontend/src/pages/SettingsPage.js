@@ -26,6 +26,12 @@ export const SettingsPage = () => {
   const [indexers, setIndexers] = useState([]);
   const [streamingServices, setStreamingServices] = useState([]);
   const [saving, setSaving] = useState(false);
+  
+  // Media Health Checker state
+  const [healthScanPath, setHealthScanPath] = useState('');
+  const [healthResults, setHealthResults] = useState([]);
+  const [scanning, setScanning] = useState(false);
+  const [repairing, setRepairing] = useState(null);
 
   useEffect(() => {
     fetchData();
