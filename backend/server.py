@@ -768,6 +768,195 @@ async def scan_media_library(directory: str):
     """Scan a directory for media health issues."""
     return scan_library(directory)
 
+# ==================== SCHEDULED SCANS & NOTIFICATIONS ====================
+
+@api_router.get("/media/scheduled-scans")
+async def get_scheduled_scans(user: dict = Depends(require_auth)):
+    """Get all scheduled scans for the user."""
+    scans = await db.scheduled_scans.find({"user_id": user["id"]}, {"_id": 0}).to_list(50)
+    return scans
+
+@api_router.post("/media/scheduled-scans")
+async def create_scheduled_scan(scan: ScheduledScan, user: dict = Depends(require_auth)):
+    """Create a new scheduled scan."""
+    scan_dict = scan.model_dump()
+    scan_dict["user_id"] = user["id"]
+    
+    # Calculate next scan time based on schedule
+    now = datetime.now(timezone.utc)
+    hour, minute = map(int, scan.schedule_time.split(":"))
+    next_scan = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if next_scan <= now:
+        if scan.schedule_type == "daily":
+            next_scan += timedelta(days=1)
+        elif scan.schedule_type == "weekly":
+            next_scan += timedelta(weeks=1)
+        elif scan.schedule_type == "monthly":
+            next_scan += timedelta(days=30)
+    
+    scan_dict["next_scan"] = next_scan.isoformat()
+    
+    await db.scheduled_scans.insert_one(scan_dict)
+    scan_dict.pop("_id", None)
+    return scan_dict
+
+@api_router.put("/media/scheduled-scans/{scan_id}")
+async def update_scheduled_scan(scan_id: str, scan: ScheduledScan, user: dict = Depends(require_auth)):
+    """Update a scheduled scan."""
+    scan_dict = scan.model_dump()
+    scan_dict["user_id"] = user["id"]
+    
+    await db.scheduled_scans.update_one(
+        {"id": scan_id, "user_id": user["id"]},
+        {"$set": scan_dict}
+    )
+    return scan_dict
+
+@api_router.delete("/media/scheduled-scans/{scan_id}")
+async def delete_scheduled_scan(scan_id: str, user: dict = Depends(require_auth)):
+    """Delete a scheduled scan."""
+    result = await db.scheduled_scans.delete_one({"id": scan_id, "user_id": user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Scheduled scan not found")
+    return {"status": "deleted"}
+
+@api_router.post("/media/scheduled-scans/{scan_id}/run")
+async def run_scheduled_scan_now(scan_id: str, user: dict = Depends(require_auth)):
+    """Run a scheduled scan immediately."""
+    scan_doc = await db.scheduled_scans.find_one(
+        {"id": scan_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    if not scan_doc:
+        raise HTTPException(status_code=404, detail="Scheduled scan not found")
+    
+    # Run the scan
+    results = scan_library(scan_doc["directory"])
+    
+    # Calculate stats
+    total = len(results)
+    healthy = sum(1 for r in results if r["status"] == "healthy")
+    warnings = sum(1 for r in results if r["status"] == "warning")
+    errors = sum(1 for r in results if r["status"] in ["error", "corrupt", "repairable"])
+    
+    # Update last scan time
+    now = datetime.now(timezone.utc)
+    await db.scheduled_scans.update_one(
+        {"id": scan_id},
+        {"$set": {"last_scan": now.isoformat()}}
+    )
+    
+    # Create notification if there are issues
+    issues_list = [r for r in results if r["status"] != "healthy"]
+    if issues_list and scan_doc.get("notify_on_issues", True):
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "scan_id": scan_id,
+            "directory": scan_doc["directory"],
+            "total_files": total,
+            "healthy_files": healthy,
+            "warning_files": warnings,
+            "error_files": errors,
+            "issues": issues_list[:10],  # Limit to first 10 issues
+            "created_at": now.isoformat(),
+            "read": False
+        }
+        await db.scan_notifications.insert_one(notification)
+    
+    return {
+        "total_files": total,
+        "healthy_files": healthy,
+        "warning_files": warnings,
+        "error_files": errors,
+        "results": results
+    }
+
+@api_router.get("/media/notifications")
+async def get_notifications(user: dict = Depends(require_auth), unread_only: bool = False):
+    """Get scan notifications for the user."""
+    query = {"user_id": user["id"]}
+    if unread_only:
+        query["read"] = False
+    
+    notifications = await db.scan_notifications.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return notifications
+
+@api_router.put("/media/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user: dict = Depends(require_auth)):
+    """Mark a notification as read."""
+    await db.scan_notifications.update_one(
+        {"id": notification_id, "user_id": user["id"]},
+        {"$set": {"read": True}}
+    )
+    return {"status": "marked as read"}
+
+@api_router.delete("/media/notifications/{notification_id}")
+async def delete_notification(notification_id: str, user: dict = Depends(require_auth)):
+    """Delete a notification."""
+    await db.scan_notifications.delete_one({"id": notification_id, "user_id": user["id"]})
+    return {"status": "deleted"}
+
+# ==================== RE-DOWNLOAD USING INDEXERS ====================
+
+@api_router.post("/media/redownload")
+async def request_redownload(
+    file_path: str,
+    title: str,
+    media_type: str = "movie",
+    tmdb_id: int = None,
+    user: dict = Depends(require_auth)
+):
+    """Request re-download of a corrupted file using indexers."""
+    # Get user's enabled indexers
+    user_indexers = await db.indexers.find(
+        {"user_id": user["id"], "enabled": True},
+        {"_id": 0}
+    ).to_list(50)
+    
+    if not user_indexers:
+        # Use default indexers
+        user_indexers = [i for i in default_indexers if i.get("enabled", False)]
+    
+    if not user_indexers:
+        raise HTTPException(
+            status_code=400, 
+            detail="No indexers configured. Enable indexers in Settings to use re-download."
+        )
+    
+    # Queue a download (using the mock downloads for now)
+    download = DownloadItem(
+        title=f"[Re-download] {title}",
+        media_type=media_type,
+        tmdb_id=tmdb_id,
+        size=0,  # Unknown until search completes
+        status="searching"
+    )
+    
+    # Store the re-download request
+    redownload_request = {
+        "id": download.id,
+        "user_id": user["id"],
+        "original_file": file_path,
+        "title": title,
+        "media_type": media_type,
+        "tmdb_id": tmdb_id,
+        "status": "queued",
+        "indexers_to_search": [i["name"] for i in user_indexers],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.redownload_requests.insert_one(redownload_request)
+    
+    # Add to downloads queue
+    mock_downloads.append(download)
+    
+    return {
+        "status": "queued",
+        "download_id": download.id,
+        "message": f"Re-download queued. Will search {len(user_indexers)} indexer(s) for: {title}",
+        "indexers": [i["name"] for i in user_indexers]
+    }
+
 # ==================== MARMALADE MEDIA SERVER PROXY ====================
 # Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
 
