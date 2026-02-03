@@ -1,81 +1,94 @@
 # WatchNexus - Personal Media Command Center
 
 ## Overview
-WatchNexus is a unified self-hosted media platform forked from Jellyfin, rebranded and customized to serve as the foundation for a complete media management solution that replaces multiple applications (Jellyfin, Sonarr, Radarr, qBittorrent, Prowlarr, Bazarr).
+WatchNexus is a unique media server forked from Jellyfin, completely rebranded with original terminology, custom styling, and animations to create a distinct user experience.
 
-## Current Status (Feb 3, 2026)
+## Completed Customizations (Feb 3, 2026)
 
-### Completed
-- ✅ Forked Jellyfin server v10.10.6 (C#/.NET 8)
-- ✅ Forked Jellyfin web client v10.10.6 (TypeScript/React)
-- ✅ Rebranded to "WatchNexus" throughout:
-  - Header logo (purple/pink gradient)
-  - Page titles
-  - Welcome messages
-  - App name in manifests
-  - Assembly info
-- ✅ Server running on port 3000
-- ✅ FFmpeg installed for transcoding
-- ✅ Media directories created at /var/lib/watchnexus/
+### Visual Rebranding ✅
+- Custom logo (colorful geometric design) applied throughout
+- Orange/coral primary color scheme (#ff6432)
+- Pill-shaped buttons with gradient and glow effects
+- Dark theme with #0a0a0f background
+- Card hover animations with scale and shadow
+- Smooth page transitions
+- Flyout menu animations
+- Loading spinners with cyan accent
 
-### Architecture
+### Unique Terminology ✅
+Rewrote 151+ strings to create unique WatchNexus voice:
+- "Password" → "Secret Code"
+- "Home" → "Home Base"
+- "Library" → "The Vault"
+- "Settings" → "Control Room"
+- "Dashboard" → "Mission Control"
+- "Plugins" → "Extensions"
+- "Movies" → "Cinema"
+- "OK" → "Got It"
+- "Save" → "Save Changes"
+- "Cancel" → "Nevermind"
+- Plus many more...
+
+### Custom CSS Theme ✅
+- `/themes/watchnexus/theme.css` with:
+  - Custom color variables
+  - Page transition animations
+  - Card hover effects with scale/shadow
+  - Drawer slide animations
+  - Button ripple effects
+  - Smooth scrolling
+  - Custom scrollbar styling
+  - Focus states with orange outline
+  - Modal fade-in animations
+
+## Built-in Features (from Jellyfin base)
+- Multi-drive library support (your Movies, TV, Anime, Sentai on separate drives)
+- Network path support (audiobooks on different computer)
+- IPTV/Live TV with guide data
+- Extensions/Plugins system
+- Categories auto-hide when empty
+- User profiles
+- Transcoding via FFmpeg
+- DLNA support
+- Mobile apps compatibility
+
+## Architecture
 ```
 /app/watchnexus/
-├── server/          # Jellyfin server (C#/.NET 8)
-│   └── Jellyfin.Server/bin/Release/net8.0/
-├── web/             # Web client (TypeScript)
-│   ├── src/         # Source files
-│   └── dist/        # Built web assets
+├── server/              # .NET 8 backend
+└── web/                 # TypeScript/React frontend
+    └── src/
+        ├── themes/watchnexus/  # Custom theme
+        └── strings/en-us.json  # Rewritten strings
 
 /var/lib/watchnexus/
-├── config/          # Server configuration
-├── data/            # Database and metadata
-├── log/             # Server logs
-├── cache/           # Transcoding cache
-└── media/           # Media library root
-    ├── movies/
-    ├── tvshows/
-    ├── music/
-    └── audiobooks/
+├── config/
+├── data/
+├── log/
+├── cache/
+└── media/
 ```
 
-### Tech Stack
-- **Backend**: C# / .NET 8 (Jellyfin server)
-- **Frontend**: TypeScript, React (Jellyfin web)
-- **Database**: SQLite (embedded)
-- **Transcoding**: FFmpeg
-- **Process Manager**: Supervisor
+## Still To Do
 
-## Next Phase - Feature Integration
+### Logo Visibility
+- [ ] Make header logo larger and more prominent
+- [ ] Create SVG version for better scaling
 
-### P0 - Indexer Integration
-- [ ] Build Prowlarr-like indexer management
-- [ ] Integrate with public indexers (1337x, RARBG alternatives, etc.)
-- [ ] Unified search interface
+### Remaining Text
+- [ ] Audit and rewrite remaining help text
+- [ ] Create custom "About" page
+- [ ] Remove any "Jellyfin" references in settings
 
-### P1 - Download Client
-- [ ] Integrate torrent download capability
-- [ ] Automatic file organization
-- [ ] Progress tracking in UI
+### Features to Add
+- [ ] Indexer integration (Prowlarr-like)
+- [ ] Download client integration
+- [ ] Streaming service logins (where APIs exist)
+- [ ] Custom "Discover" section for adding content
 
-### P2 - Enhanced Features  
-- [ ] Subtitle automation (OpenSubtitles)
-- [ ] Streaming service deep links
-- [ ] TMDB metadata enhancement
-
-### P3 - Advanced
-- [ ] Custom authentication (OAuth config)
-- [ ] Multi-user management
-- [ ] Mobile app support
-
-## Running WatchNexus
-```bash
-# Server runs via supervisor
-sudo supervisorctl status watchnexus
-
-# Access
-http://localhost:3000/web/
-```
+## Access
+- URL: https://media-pipeline-10.preview.emergentagent.com/web/
+- Complete setup wizard to begin
 
 ## License
-Based on Jellyfin - GPL v2. All modifications must remain open source.
+Based on Jellyfin (GPL v2) - modifications remain open source
