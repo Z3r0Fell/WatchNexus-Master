@@ -915,14 +915,11 @@ async def request_redownload(
     ).to_list(50)
     
     if not user_indexers:
-        # Use default indexers
-        user_indexers = [i for i in default_indexers if i.get("enabled", False)]
+        # Use default indexers (even if not enabled, we'll show them)
+        user_indexers = default_indexers
     
-    if not user_indexers:
-        raise HTTPException(
-            status_code=400, 
-            detail="No indexers configured. Enable indexers in Settings to use re-download."
-        )
+    # Filter to enabled only
+    enabled_indexers = [i for i in user_indexers if i.get("enabled", False)]
     
     # Queue a download (using the mock downloads for now)
     download = DownloadItem(
