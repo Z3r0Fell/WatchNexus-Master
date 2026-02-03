@@ -186,7 +186,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <AppRouter />
           <Toaster 
             position="bottom-right" 
             toastOptions={{
