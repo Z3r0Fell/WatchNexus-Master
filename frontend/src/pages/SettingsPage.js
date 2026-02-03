@@ -95,7 +95,7 @@ export const SettingsPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold">Settings</h1>
-              <p className="text-gray-400">Configure your MediaHub instance</p>
+              <p className="text-gray-400">Configure your WatchNexus instance</p>
             </div>
           </div>
         </motion.div>
@@ -275,7 +275,7 @@ export const SettingsPage = () => {
                     </span>
                   </div>
                   <p className="text-sm text-gray-400">
-                    MediaHub includes a built-in download client. No external software needed.
+                    WatchNexus includes a built-in download client. No external software needed.
                   </p>
                 </div>
 
@@ -384,7 +384,7 @@ export const SettingsPage = () => {
                 Streaming Services
               </h2>
               <p className="text-gray-400">
-                Connect your streaming service accounts to access them from MediaHub.
+                Connect your streaming service accounts to access them from WatchNexus.
               </p>
 
               <div className="grid gap-3">

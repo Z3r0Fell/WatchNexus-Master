@@ -31,7 +31,7 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/"
 
 # Create the main app
-app = FastAPI(title="MediaHub API")
+app = FastAPI(title="WatchNexus API")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 

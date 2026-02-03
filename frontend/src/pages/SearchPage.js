@@ -254,7 +254,7 @@ export const SearchPage = () => {
             <div className="w-24 h-24 rounded-full bg-surface flex items-center justify-center mx-auto mb-6">
               <Search className="w-12 h-12 text-gray-600" />
             </div>
-            <h2 className="text-xl font-bold mb-2">Search MediaHub</h2>
+            <h2 className="text-xl font-bold mb-2">Search WatchNexus</h2>
             <p className="text-gray-400 max-w-md mx-auto">
               Find movies, TV shows, and people. Search by title, actor name, or keywords.
             </p>
