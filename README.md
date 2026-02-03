@@ -30,28 +30,29 @@
 - TMDB integration for movie/TV discovery and metadata
 - User authentication (JWT-based)
 - Watchlist and watch progress tracking
-- Jellyfin server integration (backend proxy ready)
+- **Marmalade** media server integration (backend proxy ready)
 - Mock download queue system
 - Responsive sidebar navigation
+- **Media Health Checker** - Detect corrupted/incomplete video files
 
 #### 🚧 What Needs Work Before Production
 | Component | Status | Work Needed |
 |-----------|--------|-------------|
-| Local Library Browsing | 🟡 Partial | Connect React UI to Jellyfin library endpoints |
-| Video Playback | 🔴 Not Done | Build video player component, connect to Jellyfin streams |
-| User Auth Sync | 🔴 Not Done | Sync WatchNexus users with Jellyfin users |
+| Local Library Browsing | 🟡 Partial | Connect React UI to Marmalade library endpoints |
+| Video Playback | 🔴 Not Done | Build video player component, connect to Marmalade streams |
+| User Auth Sync | 🔴 Not Done | Sync WatchNexus users with Marmalade users |
 | IPTV/Live TV UI | 🔴 Not Done | Build setup wizard and channel browser |
 | Download Client | 🔴 Not Done | Integrate real torrent/usenet client |
 | Indexer Integration | 🔴 Not Done | Build Prowlarr-like search system |
 | Desktop Packaging | 🔴 Not Done | Electron wrapper needed |
 | Installer Creation | 🔴 Not Done | Need to create platform installers |
 
-#### 🔴 Will NOT Work Out-of-Box with Existing Jellyfin
-If you download this code and try to use it with your existing Windows 11 Jellyfin installation:
-- The React UI will work for TMDB discovery
-- BUT: Your local Jellyfin libraries won't appear in the UI yet
-- BUT: Video playback from your libraries isn't implemented
-- BUT: Users aren't synced between systems
+#### 🔴 What You Need to Know
+WatchNexus uses **Marmalade** as its media server core. Marmalade is our custom fork of the Emby/Jellyfin protocol, providing:
+- Media library scanning and organization
+- Video transcoding
+- User profile management
+- Live TV/IPTV support
 
 **Estimated work to production**: 2-4 weeks of development
 
@@ -68,6 +69,7 @@ If you download this code and try to use it with your existing Windows 11 Jellyf
 - **Genre Filtering**: Filter by Action, Comedy, Drama, etc.
 - **Responsive Design**: Works on desktop and mobile
 - **Dark Theme**: Eye-friendly dark interface
+- **Media Health Checker**: Validate video files for corruption
 
 ### Planned
 - **Local Library**: Browse your personal media collection
