@@ -565,6 +565,25 @@ async def add_to_library(item: MediaItem, user: dict = Depends(require_auth)):
     await db.library.insert_one(item_dict)
     return item
 
+# ==================== MEDIA HEALTH CHECKER ====================
+
+from media_health_checker import check_media_health, repair_media_file, scan_library
+
+@api_router.post("/media/health-check")
+async def check_file_health(file_path: str, compute_hash: bool = False):
+    """Check health of a single media file."""
+    return check_media_health(file_path, compute_hash)
+
+@api_router.post("/media/repair")
+async def repair_file(file_path: str, output_path: str = None):
+    """Attempt to repair a media file."""
+    return repair_media_file(file_path, output_path)
+
+@api_router.post("/media/scan-library")
+async def scan_media_library(directory: str):
+    """Scan a directory for media health issues."""
+    return scan_library(directory)
+
 # ==================== JELLYFIN PROXY ====================
 # Proxy requests to the local Jellyfin server
 
