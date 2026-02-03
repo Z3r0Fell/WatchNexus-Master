@@ -154,6 +154,34 @@ class AppSettings(BaseModel):
     oauth_client_id: Optional[str] = None
     oauth_client_secret: Optional[str] = None
 
+class ScheduledScan(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    directory: str
+    schedule_type: str = "daily"  # daily, weekly, monthly
+    schedule_time: str = "03:00"  # HH:MM format
+    enabled: bool = True
+    last_scan: Optional[str] = None
+    next_scan: Optional[str] = None
+    notify_on_issues: bool = True
+    auto_repair: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ScanNotification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    scan_id: str
+    directory: str
+    total_files: int
+    healthy_files: int
+    warning_files: int
+    error_files: int
+    issues: List[Dict] = []
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    read: bool = False
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
