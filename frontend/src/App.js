@@ -16,6 +16,7 @@ import { StreamingPage } from "./pages/StreamingPage";
 import { MusicPage } from "./pages/MusicPage";
 import { AudiobooksPage } from "./pages/AudiobooksPage";
 import { LiveTVPage } from "./pages/LiveTVPage";
+import { LibraryPage } from "./pages/LibraryPage";
 
 import "./App.css";
 
