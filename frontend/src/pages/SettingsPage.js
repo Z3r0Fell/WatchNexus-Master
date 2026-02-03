@@ -182,9 +182,12 @@ export const SettingsPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="bg-surface border border-white/10">
+          <TabsList className="bg-surface border border-white/10 flex-wrap">
             <TabsTrigger value="general" className="data-[state=active]:bg-violet-600">
               General
+            </TabsTrigger>
+            <TabsTrigger value="media-health" className="data-[state=active]:bg-violet-600">
+              Media Health
             </TabsTrigger>
             <TabsTrigger value="indexers" className="data-[state=active]:bg-violet-600">
               Indexers
