@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Pages
 import { Dashboard } from "./pages/Dashboard";
 import { AuthPage } from "./pages/AuthPage";
+import { AuthCallback } from "./pages/AuthCallback";
 import { MoviesPage } from "./pages/MoviesPage";
 import { TVShowsPage } from "./pages/TVShowsPage";
 import { MediaDetails } from "./pages/MediaDetails";
@@ -21,6 +22,12 @@ import "./App.css";
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  // Skip auth check if user data was passed from OAuth callback
+  if (location.state?.user) {
+    return children;
+  }
 
   if (loading) {
     return (
@@ -56,7 +63,16 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-function AppRoutes() {
+// Router wrapper to detect OAuth callback synchronously
+function AppRouter() {
+  const location = useLocation();
+  
+  // CRITICAL: Check URL fragment for session_id synchronously during render
+  // This prevents race conditions by processing OAuth callback BEFORE checking existing auth
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
+  }
+
   return (
     <Routes>
       {/* Public Routes */}
