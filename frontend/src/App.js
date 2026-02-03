@@ -95,15 +95,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/movie/:id"
-        element={
-          <ProtectedRoute>
-            <MediaDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tv/:id"
+        path="/:type/:id"
         element={
           <ProtectedRoute>
             <MediaDetails />
