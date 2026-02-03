@@ -157,7 +157,7 @@ class AppSettings(BaseModel):
 class ScheduledScan(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
+    user_id: Optional[str] = None  # Set by server
     directory: str
     schedule_type: str = "daily"  # daily, weekly, monthly
     schedule_time: str = "03:00"  # HH:MM format
