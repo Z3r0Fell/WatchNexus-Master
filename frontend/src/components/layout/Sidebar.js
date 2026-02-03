@@ -15,13 +15,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
-  Layers
+  Layers,
+  FolderOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 
 const navItems = [
   { icon: Home, label: 'Home', path: '/' },
+  { icon: FolderOpen, label: 'Library', path: '/library' },
   { icon: Film, label: 'Movies', path: '/movies' },
   { icon: Tv, label: 'TV Shows', path: '/tv' },
   { icon: Music, label: 'Music', path: '/music' },
