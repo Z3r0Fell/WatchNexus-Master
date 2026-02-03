@@ -6,51 +6,44 @@ Last Updated: February 2026
 
 ---
 
-## Core Architecture
+## The Preserve Theme 🍊🍇
 
-WatchNexus is a unified media pipeline using:
-- **React Frontend** - Custom glassmorphism UI
-- **FastAPI Backend** - API gateway, auth, business logic
-- **Marmalade Server** - Media server fork (Jellyfin-based)
+WatchNexus uses preserve/jam themed naming:
+- **Marmalade** = Media Server (Jellyfin fork)
+- **Compote** = Indexer Manager (Prowlarr-inspired)
 
 ---
 
 ## Implemented Features
 
+### Core UI
+- [x] React frontend with glassmorphism design
+- [x] Responsive sidebar navigation
+- [x] TMDB discovery (movies, TV, search)
+- [x] Watchlist functionality
+- [x] **Video Player** - Custom HTML5 with controls
+- [x] **Library Page** - Browse local media
+
 ### Authentication
 - [x] JWT-based email/password login
 - [x] User registration
 - [x] Google OAuth (Emergent Auth)
-- [x] Session management with httpOnly cookies
-- [x] Logout endpoint
-
-### Discovery
-- [x] TMDB integration for movies/TV
-- [x] Trending content
-- [x] Search functionality
-- [x] Genre filtering
-- [x] Watchlist
+- [x] Session management
 
 ### Media Health System
 - [x] File health checking (FFprobe)
 - [x] Container/codec validation
-- [x] Keyframe distribution check
-- [x] Audio/video sync detection
-- [x] moov atom positioning check
-- [x] Duration consistency validation
 - [x] File repair (FFmpeg remux, faststart)
 - [x] Scheduled scans (daily/weekly/monthly)
 - [x] Scan notifications
 - [x] Re-download queueing
 
-### Settings
-- [x] General settings
-- [x] Media Health tab
-- [x] Indexers configuration (mocked)
-- [x] Download client config (mocked)
-- [x] Subtitle settings
-- [x] Streaming services
-- [x] Authentication settings
+### Compote - Indexer Manager
+- [x] Torznab/Newznab protocol support
+- [x] Multi-indexer concurrent search
+- [x] Quality/codec parsing
+- [x] Grab/download queueing
+- [x] Default indexer configurations
 
 ---
 
@@ -65,14 +58,14 @@ POST /api/auth/google/session
 POST /api/auth/logout
 ```
 
-### TMDB Proxy
+### Compote
 ```
-GET  /api/tmdb/search
-GET  /api/tmdb/trending/{type}/{window}
-GET  /api/tmdb/movie/{id}
-GET  /api/tmdb/tv/{id}
-GET  /api/tmdb/discover/{type}
-GET  /api/tmdb/genres/{type}
+GET  /api/compote/indexers
+POST /api/compote/indexers
+DELETE /api/compote/indexers/{id}
+POST /api/compote/indexers/{id}/test
+GET  /api/compote/search
+POST /api/compote/grab
 ```
 
 ### Media Health
@@ -80,20 +73,14 @@ GET  /api/tmdb/genres/{type}
 POST /api/media/health-check
 POST /api/media/repair
 POST /api/media/scan-library
-GET  /api/media/scheduled-scans
-POST /api/media/scheduled-scans
-PUT  /api/media/scheduled-scans/{id}
-DELETE /api/media/scheduled-scans/{id}
-POST /api/media/scheduled-scans/{id}/run
-GET  /api/media/notifications
-PUT  /api/media/notifications/{id}/read
-DELETE /api/media/notifications/{id}
+GET/POST/PUT/DELETE /api/media/scheduled-scans
+GET/PUT/DELETE /api/media/notifications
 POST /api/media/redownload
 ```
 
 ### Marmalade Proxy
 ```
-* /api/marmalade/{path} → http://localhost:8096
+* /api/marmalade/{path}
 ```
 
 ---
@@ -105,21 +92,19 @@ POST /api/media/redownload
 ├── frontend/
 │   └── src/
 │       ├── pages/
-│       │   ├── AuthPage.js          # Login/Register + Google OAuth
-│       │   ├── AuthCallback.js      # OAuth callback handler
-│       │   ├── Dashboard.js         # Main dashboard
+│       │   ├── LibraryPage.js       # Local media browser
 │       │   ├── SettingsPage.js      # All settings tabs
 │       │   └── ...
-│       ├── services/
-│       │   ├── api.js               # Backend API client
-│       │   └── marmaladeApi.js      # Media server API
-│       └── context/
-│           └── AuthContext.js       # Auth state
+│       ├── components/
+│       │   └── VideoPlayer.jsx      # Custom video player
+│       └── services/
+│           ├── api.js               # Backend API
+│           └── marmaladeApi.js      # Media server
 │
 ├── backend/
 │   ├── server.py                    # Main FastAPI app
-│   ├── media_health_checker.py      # FFprobe/FFmpeg integration
-│   └── requirements.txt
+│   ├── compote.py                   # Indexer manager
+│   └── media_health_checker.py      # FFprobe validation
 │
 └── watchnexus/
     └── server/                      # Marmalade .NET server
@@ -129,59 +114,31 @@ POST /api/media/redownload
 
 ## What's NOT Done
 
-### Critical (P0)
-- Video playback in React UI
-- Connect UI to Marmalade libraries
-
-### Important (P1)
+### P0 - Critical
+- Connect video player to Marmalade streams
 - Real download client integration
-- Real indexer integration
-- IPTV setup wizard
 
-### Nice to Have (P2)
+### P1 - Important
+- IPTV/Live TV setup wizard
+- Real indexer connectivity testing
+
+### P2 - Future
 - Desktop packaging (Electron)
 - Mobile optimization
-- Installer packages
-
----
-
-## Recent Changes
-
-### February 2026
-- Rebranded Jellyfin → Marmalade
-- Added Google OAuth (Emergent Auth)
-- Implemented scheduled health scans
-- Added scan notifications
-- Added re-download functionality
-- Updated README for GitHub
 
 ---
 
 ## Test Results
 
-- Backend: 45/45 tests passed (100%)
-- Frontend: All UI flows working (100%)
-
-### Test Credentials
-- Email: test@test.com
-- Password: password
-
----
-
-## Known Limitations
-
-1. **Download client is MOCKED** - Queues but doesn't download
-2. **Indexers are MOCKED** - Configuration stored but not used
-3. **Marmalade server** - Requires .NET runtime
-4. **Video playback** - Not yet implemented
+- Backend: All endpoints tested
+- Frontend: UI verified working
+- Test credentials: test@test.com / password
 
 ---
 
 ## Configuration
 
-### Environment Variables
-
-Backend:
+### Environment
 ```env
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
@@ -190,11 +147,15 @@ JWT_SECRET=your_secret
 MARMALADE_URL=http://localhost:8096
 ```
 
-Frontend:
-```env
-REACT_APP_BACKEND_URL=http://localhost:8001
-```
-
 ### OAuth
 - Client ID: 392737972706-krhv8egv3jj8qrpd1ppri6712a16huno.apps.googleusercontent.com
-- Provider: Emergent Auth (auth.emergentagent.com)
+- Provider: Emergent Auth
+
+---
+
+## Known Limitations
+
+1. **Download client is MOCKED** - Queue works, no actual downloads
+2. **Indexers need API keys** - Default configs disabled
+3. **Marmalade requires .NET** - Not running in preview
+4. **Video playback needs Marmalade** - Player ready, server needed
