@@ -59,7 +59,7 @@ export const Sidebar = () => {
                 exit={{ opacity: 0, x: -10 }}
                 className="font-bold text-xl tracking-tight"
               >
-                MediaHub
+                WatchNexus
               </motion.span>
             )}
           </AnimatePresence>

@@ -69,7 +69,7 @@ export const AuthPage = () => {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center">
               <Play className="w-6 h-6 text-white fill-white" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">MediaHub</span>
+            <span className="text-2xl font-bold tracking-tight">WatchNexus</span>
           </div>
 
           {/* Title */}
