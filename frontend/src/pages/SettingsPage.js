@@ -173,6 +173,79 @@ export const SettingsPage = () => {
     }
   };
 
+  const handleRedownload = async (filePath, result) => {
+    setRedownloading(filePath);
+    try {
+      // Extract title from filename
+      const filename = filePath.split('/').pop();
+      const title = filename.replace(/\.[^/.]+$/, '').replace(/[._-]/g, ' ');
+      
+      const res = await mediaHealthApi.requestRedownload(filePath, title, 'movie');
+      toast.success(res.data.message);
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Failed to queue re-download';
+      toast.error(message);
+    } finally {
+      setRedownloading(null);
+    }
+  };
+
+  // Scheduled Scans functions
+  const handleCreateScheduledScan = async () => {
+    if (!newScanForm.directory.trim()) {
+      toast.error('Please enter a directory to scan');
+      return;
+    }
+    try {
+      await mediaHealthApi.createScheduledScan(newScanForm);
+      toast.success('Scheduled scan created');
+      setNewScanForm({
+        directory: '',
+        schedule_type: 'daily',
+        schedule_time: '03:00',
+        notify_on_issues: true,
+        auto_repair: false,
+      });
+      fetchScheduledScans();
+    } catch (error) {
+      toast.error('Failed to create scheduled scan');
+    }
+  };
+
+  const handleDeleteScheduledScan = async (scanId) => {
+    try {
+      await mediaHealthApi.deleteScheduledScan(scanId);
+      toast.success('Scheduled scan deleted');
+      fetchScheduledScans();
+    } catch (error) {
+      toast.error('Failed to delete scheduled scan');
+    }
+  };
+
+  const handleRunScanNow = async (scanId) => {
+    setScanning(true);
+    try {
+      const res = await mediaHealthApi.runScheduledScanNow(scanId);
+      const { total_files, healthy_files, warning_files, error_files } = res.data;
+      toast.success(`Scan complete: ${total_files} files (${healthy_files} healthy, ${warning_files} warnings, ${error_files} errors)`);
+      fetchScheduledScans();
+      fetchNotifications();
+    } catch (error) {
+      toast.error('Failed to run scan');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleMarkNotificationRead = async (notificationId) => {
+    try {
+      await mediaHealthApi.markNotificationRead(notificationId);
+      fetchNotifications();
+    } catch (error) {
+      console.error('Failed to mark notification read');
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'healthy': return 'bg-green-500/20 text-green-400';
