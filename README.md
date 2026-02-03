@@ -21,430 +21,103 @@
 
 ## ⚠️ Production Readiness Status
 
-### Current State: **DEVELOPMENT / ALPHA**
+### Current State: **ALPHA**
 
-**WatchNexus is NOT yet production-ready.** Here's an honest assessment:
+**WatchNexus is in active development.** Here's an honest assessment:
 
 #### ✅ What's Working
-- Beautiful custom React UI with glassmorphism design
-- TMDB integration for movie/TV discovery and metadata
-- User authentication (JWT-based)
-- Watchlist and watch progress tracking
-- **Marmalade** media server integration (backend proxy ready)
-- Mock download queue system
-- Responsive sidebar navigation
-- **Media Health Checker** - Detect corrupted/incomplete video files
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Custom React UI | ✅ Complete | Glassmorphism design, violet theme |
+| TMDB Discovery | ✅ Complete | Trending movies, TV shows, search |
+| User Authentication | ✅ Complete | JWT + Google OAuth |
+| Google OAuth | ✅ Complete | Emergent Auth integration |
+| Watchlist | ✅ Complete | Add/remove items |
+| **Media Health Checker** | ✅ Complete | Detect corrupted/incomplete files |
+| **Scheduled Scans** | ✅ Complete | Daily/weekly/monthly automatic scans |
+| **Scan Notifications** | ✅ Complete | Alerts for issues found |
+| **Re-download** | ✅ Queuing | Queues re-download via indexers |
+| Marmalade API Proxy | ✅ Ready | Proxy to media server |
 
-#### 🚧 What Needs Work Before Production
+#### 🚧 What Needs Work
 | Component | Status | Work Needed |
 |-----------|--------|-------------|
-| Local Library Browsing | 🟡 Partial | Connect React UI to Marmalade library endpoints |
-| Video Playback | 🔴 Not Done | Build video player component, connect to Marmalade streams |
-| User Auth Sync | 🔴 Not Done | Sync WatchNexus users with Marmalade users |
-| IPTV/Live TV UI | 🔴 Not Done | Build setup wizard and channel browser |
-| Download Client | 🔴 Not Done | Integrate real torrent/usenet client |
-| Indexer Integration | 🔴 Not Done | Build Prowlarr-like search system |
+| Video Playback | 🔴 Not Done | Build player, connect to Marmalade streams |
+| Local Library UI | 🟡 Partial | Connect React UI to Marmalade libraries |
+| Download Client | 🟡 Mocked | Integrate real torrent/usenet client |
+| Indexer Search | 🟡 Mocked | Wire up to real indexers |
+| IPTV/Live TV UI | 🔴 Not Done | Build wizard and channel browser |
 | Desktop Packaging | 🔴 Not Done | Electron wrapper needed |
-| Installer Creation | 🔴 Not Done | Need to create platform installers |
-
-#### 🔴 What You Need to Know
-WatchNexus uses **Marmalade** as its media server core. Marmalade is our custom fork of the Emby/Jellyfin protocol, providing:
-- Media library scanning and organization
-- Video transcoding
-- User profile management
-- Live TV/IPTV support
-
-**Estimated work to production**: 2-4 weeks of development
 
 ---
 
 ## 🚀 Features
 
-### Implemented
-- **Modern UI**: Glassmorphism design with violet/purple theme
-- **Hero Banners**: Featured content with backdrop images
-- **Discovery**: Browse trending movies and TV shows via TMDB
-- **Search**: Multi-type search (movies, TV, people)
-- **Watchlist**: Save items to watch later
-- **Genre Filtering**: Filter by Action, Comedy, Drama, etc.
-- **Responsive Design**: Works on desktop and mobile
-- **Dark Theme**: Eye-friendly dark interface
-- **Media Health Checker**: Validate video files for corruption
+### ✅ Implemented
 
-### Planned
-- **Local Library**: Browse your personal media collection
-- **Video Player**: Stream content with transcoding support
-- **Live TV/IPTV**: Watch live channels with EPG
-- **Downloads**: Automated content acquisition
-- **Extensions**: Plugin system for additional features
-- **Multi-user**: Family profiles with parental controls
+#### Core Features
+- **Modern UI** - Glassmorphism design with violet/purple theme
+- **TMDB Discovery** - Browse trending movies and TV shows
+- **Search** - Multi-type search (movies, TV, people)
+- **Watchlist** - Save items to watch later
+- **Genre Filtering** - Filter by Action, Comedy, Drama, etc.
 
----
+#### Authentication
+- **Email/Password** - Traditional JWT-based auth
+- **Google OAuth** - One-click sign-in with Google (via Emergent Auth)
+- **Session Management** - Secure token handling
 
-## 📋 Prerequisites
+#### Media Health System
+- **File Validation** - Check for corrupted, incomplete, or problematic files
+- **Repair Function** - Automatically fix common issues (moov atom, remux)
+- **Scheduled Scans** - Set up automatic daily/weekly/monthly scans
+- **Notifications** - Get alerted when issues are found
+- **Re-download** - Queue replacement downloads for bad files
 
-### Required Software
-- **Node.js** 18+ (for frontend)
-- **Python** 3.10+ (for backend)
-- **MongoDB** 6.0+ (database)
-- **.NET 8 SDK** (for Jellyfin server)
-- **FFmpeg** (for transcoding)
-
-### Optional
-- **Docker** & **Docker Compose** (for containerized deployment)
+### 🔜 Planned
+- **Local Library** - Browse your personal media collection
+- **Video Player** - Stream content with transcoding support
+- **Live TV/IPTV** - Watch live channels with EPG
+- **Downloads** - Automated content acquisition
+- **Multi-user** - Family profiles with parental controls
 
 ---
 
-## 🏃 Quick Start
+## 📦 Quick Start
 
-### Option 1: Docker (Recommended for Testing)
+### Prerequisites
+- Node.js 18+
+- Python 3.10+
+- MongoDB 6+
+- (Optional) .NET 8 SDK for Marmalade server
+
+### Development Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/watchnexus.git
 cd watchnexus
 
-# Create environment file
-cp .env.example .env
-# Edit .env and add your TMDB API key
-
-# Start with Docker Compose
-docker-compose up -d
-
-# Access at http://localhost:3000
-```
-
-### Option 2: Manual Setup
-
-```bash
-# 1. Clone repository
-git clone https://github.com/yourusername/watchnexus.git
-cd watchnexus
-
-# 2. Setup Backend
+# Backend setup
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your settings
 
-# 3. Setup Frontend
-cd ../frontend
-npm install  # or: yarn install
+# Start backend
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload
 
-# 4. Start MongoDB
-# Make sure MongoDB is running on localhost:27017
+# Frontend setup (new terminal)
+cd frontend
+yarn install
+cp .env.example .env
+# Edit .env with your settings
 
-# 5. Start Services
-# Terminal 1 - Backend:
-cd backend && uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-
-# Terminal 2 - Frontend:
-cd frontend && npm start
-
-# Access at http://localhost:3000
+# Start frontend
+yarn start
 ```
-
----
-
-## 🔧 Installation by Platform
-
-### 🐧 Linux (Arch Linux)
-
-```bash
-# Install dependencies
-sudo pacman -S nodejs npm python python-pip mongodb ffmpeg dotnet-sdk-8.0
-
-# Enable and start MongoDB
-sudo systemctl enable --now mongodb
-
-# Clone and setup
-git clone https://github.com/yourusername/watchnexus.git
-cd watchnexus
-
-# Backend
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Frontend
-cd ../frontend
-npm install
-
-# Jellyfin Server (optional - for local media)
-cd ../watchnexus/server
-dotnet restore
-dotnet build --configuration Release
-```
-
-#### Creating an Arch Linux Package (PKGBUILD)
-
-```bash
-# Create PKGBUILD file
-cat > PKGBUILD << 'EOF'
-pkgname=watchnexus
-pkgver=1.0.0
-pkgrel=1
-pkgdesc="Personal Media Command Center"
-arch=('x86_64')
-url="https://github.com/yourusername/watchnexus"
-license=('GPL2')
-depends=('nodejs' 'npm' 'python' 'python-pip' 'mongodb' 'ffmpeg' 'dotnet-runtime-8.0')
-makedepends=('dotnet-sdk-8.0')
-source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('SKIP')
-
-build() {
-    cd "$pkgname-$pkgver"
-    
-    # Build frontend
-    cd frontend
-    npm install
-    npm run build
-    
-    # Build backend (no build needed for Python)
-    
-    # Build Jellyfin server
-    cd ../watchnexus/server
-    dotnet build --configuration Release
-}
-
-package() {
-    cd "$pkgname-$pkgver"
-    
-    # Install to /opt/watchnexus
-    install -dm755 "$pkgdir/opt/watchnexus"
-    cp -r frontend/build "$pkgdir/opt/watchnexus/web"
-    cp -r backend "$pkgdir/opt/watchnexus/backend"
-    cp -r watchnexus/server/Jellyfin.Server/bin/Release/net8.0 "$pkgdir/opt/watchnexus/server"
-    
-    # Install systemd service
-    install -Dm644 watchnexus.service "$pkgdir/usr/lib/systemd/system/watchnexus.service"
-}
-EOF
-
-# Build the package
-makepkg -si
-```
-
-#### Systemd Service File
-
-```ini
-# /etc/systemd/system/watchnexus.service
-[Unit]
-Description=WatchNexus Media Server
-After=network.target mongodb.service
-
-[Service]
-Type=simple
-User=watchnexus
-WorkingDirectory=/opt/watchnexus
-ExecStart=/opt/watchnexus/start.sh
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 🪟 Windows 11
-
-#### Prerequisites
-1. Install [Node.js LTS](https://nodejs.org/)
-2. Install [Python 3.11+](https://python.org/)
-3. Install [MongoDB Community](https://www.mongodb.com/try/download/community)
-4. Install [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-5. Install [FFmpeg](https://ffmpeg.org/download.html) and add to PATH
-
-#### Manual Installation
-
-```powershell
-# Clone repository
-git clone https://github.com/yourusername/watchnexus.git
-cd watchnexus
-
-# Backend setup
-cd backend
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-copy .env.example .env
-# Edit .env with notepad
-
-# Frontend setup
-cd ..\frontend
-npm install
-
-# Start services (use separate terminals)
-# Terminal 1: cd backend && python -m uvicorn server:app --host 0.0.0.0 --port 8001
-# Terminal 2: cd frontend && npm start
-```
-
-#### Creating Windows Installer (Recommended Tools)
-
-1. **Inno Setup** (Free, recommended)
-   ```
-   Download from: https://jrsoftware.org/isinfo.php
-   ```
-
-2. **NSIS** (Nullsoft Scriptable Install System)
-   ```
-   Download from: https://nsis.sourceforge.io/
-   ```
-
-3. **WiX Toolset** (For MSI installers)
-   ```
-   Download from: https://wixtoolset.org/
-   ```
-
-4. **Electron Builder** (If wrapping in Electron)
-   ```bash
-   npm install electron-builder --save-dev
-   ```
-
-#### Sample Inno Setup Script
-
-```iss
-[Setup]
-AppName=WatchNexus
-AppVersion=1.0.0
-DefaultDirName={autopf}\WatchNexus
-DefaultGroupName=WatchNexus
-OutputDir=installer
-OutputBaseFilename=WatchNexus-Setup
-Compression=lzma2
-SolidCompression=yes
-
-[Files]
-Source: "frontend\build\*"; DestDir: "{app}\web"; Flags: recursesubdirs
-Source: "backend\*"; DestDir: "{app}\backend"; Flags: recursesubdirs
-Source: "watchnexus\server\bin\Release\net8.0\*"; DestDir: "{app}\server"; Flags: recursesubdirs
-
-[Icons]
-Name: "{group}\WatchNexus"; Filename: "{app}\WatchNexus.exe"
-Name: "{commondesktop}\WatchNexus"; Filename: "{app}\WatchNexus.exe"
-
-[Run]
-Filename: "{app}\WatchNexus.exe"; Description: "Launch WatchNexus"; Flags: postinstall nowait
-```
-
-### 🍎 macOS
-
-#### Prerequisites
-```bash
-# Install Homebrew if not installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install dependencies
-brew install node python@3.11 mongodb-community ffmpeg dotnet@8
-brew services start mongodb-community
-```
-
-#### Installation
-```bash
-git clone https://github.com/yourusername/watchnexus.git
-cd watchnexus
-
-# Backend
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Frontend
-cd ../frontend
-npm install
-```
-
-#### Creating macOS App Bundle
-
-Use **electron-builder** or **Platypus**:
-
-```bash
-# With Electron
-npm install electron electron-builder --save-dev
-
-# Build
-npm run electron:build
-# Creates .dmg and .app in dist/
-```
-
-### 🐳 Docker
-
-#### Dockerfile (Multi-stage)
-
-```dockerfile
-# Frontend build stage
-FROM node:18-alpine AS frontend-builder
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-# Backend stage
-FROM python:3.11-slim AS backend
-WORKDIR /app
-COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-COPY backend/ ./backend/
-COPY --from=frontend-builder /app/frontend/build ./frontend/build
-
-# Jellyfin server stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS jellyfin-builder
-WORKDIR /app
-COPY watchnexus/server/ ./
-RUN dotnet restore && dotnet build -c Release
-
-# Final stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
-WORKDIR /app
-RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg && rm -rf /var/lib/apt/lists/*
-COPY --from=backend /app ./
-COPY --from=jellyfin-builder /app/bin/Release/net8.0 ./server/
-EXPOSE 3000 8001 8096
-CMD ["./start.sh"]
-```
-
-#### Docker Compose
-
-```yaml
-version: '3.8'
-
-services:
-  watchnexus:
-    build: .
-    ports:
-      - "3000:3000"
-      - "8001:8001"
-      - "8096:8096"
-    volumes:
-      - ./config:/app/config
-      - ./data:/app/data
-      - /path/to/your/media:/media:ro
-    environment:
-      - MONGO_URL=mongodb://mongo:27017
-      - DB_NAME=watchnexus
-      - TMDB_API_KEY=${TMDB_API_KEY}
-    depends_on:
-      - mongo
-
-  mongo:
-    image: mongo:6
-    volumes:
-      - mongo_data:/data/db
-    ports:
-      - "27017:27017"
-
-volumes:
-  mongo_data:
-```
-
----
-
-## 🔧 Configuration
 
 ### Environment Variables
 
@@ -452,9 +125,9 @@ volumes:
 ```env
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
-CORS_ORIGINS=*
-TMDB_API_KEY=your_tmdb_api_key_here
-JWT_SECRET=your_secret_key_change_in_production
+TMDB_API_KEY=your_tmdb_api_key
+JWT_SECRET=your_secret_key
+MARMALADE_URL=http://localhost:8096  # Optional: your media server
 ```
 
 #### Frontend (.env)
@@ -462,207 +135,189 @@ JWT_SECRET=your_secret_key_change_in_production
 REACT_APP_BACKEND_URL=http://localhost:8001
 ```
 
-### Connecting to Existing Media Server
+---
 
-If you already have a Jellyfin/Emby-compatible server running:
+## 🏗️ Architecture
 
-1. Update backend `.env`:
-   ```env
-   MARMALADE_URL=http://localhost:8096  # Your media server address
-   ```
+```
+watchnexus/
+├── frontend/                 # React frontend
+│   ├── src/
+│   │   ├── pages/           # Page components
+│   │   ├── components/      # UI components
+│   │   ├── services/        # API clients
+│   │   │   ├── api.js       # Backend API
+│   │   │   └── marmaladeApi.js  # Media server API
+│   │   └── context/         # Auth context
+│   └── public/              # Static assets
+│
+├── backend/                  # FastAPI backend
+│   ├── server.py            # Main application
+│   ├── media_health_checker.py  # Health validation
+│   └── requirements.txt
+│
+└── watchnexus/              # Marmalade server (optional)
+    └── server/              # .NET media server fork
+```
 
-2. The proxy endpoint `/api/marmalade/*` will forward requests to your media server.
+### Technology Stack
+- **Frontend**: React 18, TailwindCSS, Framer Motion, Shadcn/UI
+- **Backend**: FastAPI, Motor (MongoDB), httpx
+- **Media Server**: Marmalade (Jellyfin fork)
+- **Authentication**: JWT + Google OAuth (Emergent Auth)
 
-**Note**: Full integration requires additional development (see Production Readiness section).
+---
+
+## 🔐 Authentication
+
+### Email/Password
+Standard JWT-based authentication with 7-day token expiry.
+
+### Google OAuth
+WatchNexus integrates with Emergent Auth for seamless Google sign-in:
+
+1. Click "Continue with Google" on the login page
+2. Authenticate with your Google account
+3. Automatically redirected back with session established
+
+**Note**: Google OAuth is configured with Client ID `392737972706-krhv8egv3jj8qrpd1ppri6712a16huno.apps.googleusercontent.com`
+
+---
+
+## 🔧 Media Health Checker
+
+### What It Checks
+- **Container integrity** - Validates file structure
+- **Video/Audio codecs** - Ensures compatibility
+- **Keyframe distribution** - Checks for smooth seeking
+- **Audio/Video sync** - Detects sync issues
+- **moov atom position** - Affects streaming start time
+- **Duration consistency** - Validates stream lengths
+
+### Automated Scans
+Set up scheduled scans in Settings → Media Health:
+- **Daily**: Run every day at specified time
+- **Weekly**: Run once per week
+- **Monthly**: Run once per month
+
+Enable notifications to receive alerts when issues are found.
+
+### Re-download
+When corrupted files are detected:
+1. Click "Re-download" button on the file
+2. WatchNexus will search configured indexers
+3. Queue a replacement download
+
+**Note**: Requires indexers to be configured in Settings → Indexers.
 
 ---
 
 ## 🛠️ Building from Source
 
 ### Frontend Production Build
-
 ```bash
 cd frontend
-npm run build
+yarn build
 # Output in: frontend/build/
 ```
 
-### Backend (No build needed)
-Python runs directly. For production, use:
+### Backend (Production)
 ```bash
 pip install gunicorn
 gunicorn -w 4 -k uvicorn.workers.UvicornWorker server:app
 ```
 
-### Marmalade Server Build
-
+### Marmalade Server
 ```bash
 cd watchnexus/server
 dotnet restore
 dotnet publish -c Release -o ./publish
-# Output in: watchnexus/server/publish/
 ```
 
 ---
 
-## 📦 Installer Creation Tools
+## 🐳 Docker
 
-### Recommended by Platform
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend:8001
 
-| Platform | Tool | Type | Difficulty |
-|----------|------|------|------------|
-| **Windows** | Inno Setup | EXE installer | Easy |
-| **Windows** | WiX Toolset | MSI installer | Medium |
-| **Windows** | NSIS | EXE installer | Medium |
-| **macOS** | electron-builder | DMG/PKG | Easy |
-| **macOS** | Platypus | App bundle | Easy |
-| **macOS** | create-dmg | DMG | Easy |
-| **Linux (Arch)** | makepkg | PKGBUILD | Easy |
-| **Linux (Debian)** | dpkg-deb | DEB | Medium |
-| **Linux (RPM)** | rpmbuild | RPM | Medium |
-| **Linux (Universal)** | AppImage | AppImage | Medium |
-| **Linux (Universal)** | Flatpak | Flatpak | Medium |
-| **Linux (Universal)** | Snap | Snap | Medium |
-| **Cross-platform** | electron-builder | All | Easy |
+  backend:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - DB_NAME=watchnexus
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mongo
 
-### Arch Linux Specific (AUR)
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo_data:/data/db
 
-For distributing on AUR:
-```bash
-# 1. Create PKGBUILD (see above)
-# 2. Generate .SRCINFO
-makepkg --printsrcinfo > .SRCINFO
-
-# 3. Create AUR repository
-git clone ssh://aur@aur.archlinux.org/watchnexus.git
-cd watchnexus
-cp ../PKGBUILD ../watchnexus.install .
-git add PKGBUILD .SRCINFO watchnexus.install
-git commit -m "Initial upload"
-git push
+volumes:
+  mongo_data:
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## 🔍 Troubleshooting
 
-### Common Issues
-
-#### 1. "Cannot connect to MongoDB"
+### "Failed to connect to backend"
 ```bash
-# Check if MongoDB is running
-sudo systemctl status mongodb  # Linux
-brew services list  # macOS
-# Windows: Check Services app
+# Check backend is running
+curl http://localhost:8001/api/health
 
-# Start MongoDB
-sudo systemctl start mongodb  # Linux
-brew services start mongodb-community  # macOS
+# Check MongoDB
+mongosh --eval "db.adminCommand('ping')"
 ```
 
-#### 2. "TMDB API errors"
-- Verify your API key in `.env`
-- Check rate limits (TMDB allows 40 requests/10 seconds)
-- Ensure internet connectivity
-
-#### 3. "Frontend won't start"
+### "TMDB data not loading"
+Verify your TMDB API key in backend `.env`:
 ```bash
-# Clear node modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-
-# Check Node version (need 18+)
-node --version
+curl "https://api.themoviedb.org/3/movie/popular?api_key=YOUR_KEY"
 ```
 
-#### 4. "Backend import errors"
+### "Media health scan fails"
 ```bash
-# Ensure virtual environment is activated
-source venv/bin/activate  # Linux/macOS
-.\venv\Scripts\Activate.ps1  # Windows
+# Ensure FFmpeg/FFprobe is installed
+ffprobe -version
 
-# Reinstall dependencies
-pip install -r requirements.txt
+# Check file permissions
+ls -la /path/to/media/
 ```
 
-#### 5. "Marmalade server won't start"
-```bash
-# Check .NET installation
-dotnet --version  # Should show 8.x
-
-# Check logs
-tail -f /var/log/supervisor/watchnexus-server.out.log
-
-# Ensure FFmpeg is installed
-ffmpeg -version
-```
-
-#### 6. "Port already in use"
-```bash
-# Find process using port
-lsof -i :3000  # Linux/macOS
-netstat -ano | findstr :3000  # Windows
-
-# Kill process
-kill -9 <PID>  # Linux/macOS
-taskkill /PID <PID> /F  # Windows
-```
-
-#### 7. "CORS errors in browser"
-- Check `CORS_ORIGINS` in backend `.env`
-- Ensure frontend is using correct `REACT_APP_BACKEND_URL`
-
-### Getting Help
-
-1. Check existing [GitHub Issues](https://github.com/yourusername/watchnexus/issues)
-2. Create a new issue with:
-   - Operating system and version
-   - Node/Python/.NET versions
-   - Complete error message
-   - Steps to reproduce
-
----
-
-## 📁 Project Structure
-
-```
-watchnexus/
-├── frontend/                 # React frontend
-│   ├── public/              # Static assets
-│   │   ├── watchnexus-logo.svg
-│   │   └── watchnexus-logo.png
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── pages/           # Page components
-│   │   ├── services/        # API services
-│   │   ├── context/         # React context
-│   │   └── App.js           # Main app
-│   └── package.json
-├── backend/                  # FastAPI backend
-│   ├── server.py            # Main server
-│   ├── requirements.txt
-│   └── .env
-├── watchnexus/              # Jellyfin fork
-│   ├── server/              # C# server
-│   └── web/                 # Original web (not used)
-├── docker-compose.yml
-├── Dockerfile
-└── README.md
-```
+### "Google OAuth not working"
+- Ensure the redirect URL is correctly configured
+- Check browser console for CORS errors
+- Verify the OAuth client ID matches
 
 ---
 
 ## 🗺️ Roadmap
 
-### Phase 1 (Current) - Foundation
+### Phase 1 (Complete) ✅
 - [x] Custom React UI
 - [x] TMDB integration
-- [x] User authentication
+- [x] User authentication (JWT + Google OAuth)
 - [x] Marmalade server setup
 - [x] API proxy layer
 - [x] Media Health Checker
+- [x] Scheduled scans & notifications
+- [x] Re-download functionality
 
-### Phase 2 - Local Media
+### Phase 2 - Local Media (Next)
 - [ ] Connect UI to Marmalade libraries
 - [ ] Video player component
 - [ ] Transcoding status display
@@ -675,8 +330,8 @@ watchnexus/
 - [ ] DVR recording
 
 ### Phase 4 - Acquisition
-- [ ] Indexer integration
-- [ ] Download client
+- [ ] Real indexer integration
+- [ ] Real download client integration
 - [ ] Automatic organization
 - [ ] Subtitle fetching
 
@@ -684,26 +339,24 @@ watchnexus/
 - [ ] Desktop apps (Electron)
 - [ ] Mobile optimization
 - [ ] Installer packages
-- [ ] Documentation
 
 ---
 
 ## 📄 License
 
-WatchNexus uses Marmalade, a custom fork based on the Emby/Jellyfin protocol, licensed under the **GNU General Public License v2.0**.
+WatchNexus is licensed under the **GNU General Public License v2.0**.
 
-All modifications and additions are also released under GPL v2.0.
-
-See [LICENSE](LICENSE) for details.
+Marmalade (the media server component) is a fork based on the Emby/Jellyfin protocol.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- [Jellyfin](https://jellyfin.org/) - The open-source media server foundation
+- [Jellyfin](https://jellyfin.org/) - Open-source media server foundation
 - [TMDB](https://www.themoviedb.org/) - Movie and TV metadata
 - [Shadcn/UI](https://ui.shadcn.com/) - Beautiful UI components
 - [Framer Motion](https://www.framer.com/motion/) - Smooth animations
+- [Emergent Auth](https://emergentagent.com/) - OAuth integration
 
 ---
 
