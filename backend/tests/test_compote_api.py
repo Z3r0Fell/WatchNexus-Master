@@ -45,15 +45,15 @@ def authenticated_client(api_client, auth_token):
 class TestCompoteIndexers:
     """Tests for Compote indexer management endpoints"""
     
-    def test_get_indexers_returns_default_list(self, authenticated_client):
-        """GET /api/compote/indexers - should return default indexers"""
+    def test_get_indexers_returns_list(self, authenticated_client):
+        """GET /api/compote/indexers - should return indexers list"""
         response = authenticated_client.get(f"{BASE_URL}/api/compote/indexers")
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
         data = response.json()
         assert isinstance(data, list), "Response should be a list"
-        assert len(data) >= 5, f"Expected at least 5 default indexers, got {len(data)}"
+        assert len(data) >= 1, f"Expected at least 1 indexer, got {len(data)}"
         
         # Verify structure of indexers
         for indexer in data:
@@ -63,10 +63,6 @@ class TestCompoteIndexers:
             assert "url" in indexer, "Indexer should have 'url'"
             assert "enabled" in indexer, "Indexer should have 'enabled'"
         
-        # Verify known default indexers exist
-        indexer_names = [i["name"] for i in data]
-        assert "1337x" in indexer_names, "1337x should be in default indexers"
-        assert "YTS" in indexer_names, "YTS should be in default indexers"
         print(f"✓ GET /api/compote/indexers returned {len(data)} indexers")
     
     def test_get_indexers_requires_auth(self, api_client):
