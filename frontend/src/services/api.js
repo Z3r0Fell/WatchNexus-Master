@@ -91,6 +91,53 @@ export const mediaHealthApi = {
   
   scanLibrary: (directory) =>
     axios.post(`${API}/media/scan-library`, null, { params: { directory } }),
+  
+  // Scheduled scans
+  getScheduledScans: () =>
+    axios.get(`${API}/media/scheduled-scans`),
+  
+  createScheduledScan: (scan) =>
+    axios.post(`${API}/media/scheduled-scans`, scan),
+  
+  updateScheduledScan: (scanId, scan) =>
+    axios.put(`${API}/media/scheduled-scans/${scanId}`, scan),
+  
+  deleteScheduledScan: (scanId) =>
+    axios.delete(`${API}/media/scheduled-scans/${scanId}`),
+  
+  runScheduledScanNow: (scanId) =>
+    axios.post(`${API}/media/scheduled-scans/${scanId}/run`),
+  
+  // Notifications
+  getNotifications: (unreadOnly = false) =>
+    axios.get(`${API}/media/notifications`, { params: { unread_only: unreadOnly } }),
+  
+  markNotificationRead: (notificationId) =>
+    axios.put(`${API}/media/notifications/${notificationId}/read`),
+  
+  deleteNotification: (notificationId) =>
+    axios.delete(`${API}/media/notifications/${notificationId}`),
+  
+  // Re-download
+  requestRedownload: (filePath, title, mediaType = 'movie', tmdbId = null) =>
+    axios.post(`${API}/media/redownload`, null, { 
+      params: { file_path: filePath, title, media_type: mediaType, tmdb_id: tmdbId } 
+    }),
+};
+
+// Google OAuth API calls
+export const authApi = {
+  googleSession: (sessionId) =>
+    axios.post(`${API}/auth/google/session`, null, { 
+      params: { session_id: sessionId },
+      withCredentials: true 
+    }),
+  
+  logout: () =>
+    axios.post(`${API}/auth/logout`, null, { withCredentials: true }),
+  
+  getMe: () =>
+    axios.get(`${API}/auth/me`, { withCredentials: true }),
 };
 
 // Health check
