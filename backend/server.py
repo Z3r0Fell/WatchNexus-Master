@@ -334,6 +334,119 @@ async def login(data: UserLogin):
 async def get_me(user: dict = Depends(require_auth)):
     return UserResponse(**user)
 
+# ==================== GOOGLE OAUTH ROUTES ====================
+# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+
+@api_router.post("/auth/google/session")
+async def google_oauth_session(session_id: str):
+    """Exchange session_id from Google OAuth for a session token"""
+    try:
+        # Call Emergent Auth API to get user data
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(
+                EMERGENT_AUTH_URL,
+                headers={"X-Session-ID": session_id},
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid session ID")
+            
+            oauth_data = response.json()
+            
+            # Extract user info
+            email = oauth_data.get("email")
+            name = oauth_data.get("name", "")
+            picture = oauth_data.get("picture")
+            session_token = oauth_data.get("session_token")
+            
+            if not email or not session_token:
+                raise HTTPException(status_code=400, detail="Invalid OAuth response")
+            
+            # Check if user exists, create if not
+            existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+            
+            if existing_user:
+                user_id = existing_user["id"]
+                # Update user info if needed
+                await db.users.update_one(
+                    {"email": email},
+                    {"$set": {
+                        "avatar": picture,
+                        "username": existing_user.get("username") or name.split()[0] if name else email.split("@")[0]
+                    }}
+                )
+            else:
+                # Create new user
+                user_id = str(uuid.uuid4())
+                user_doc = {
+                    "id": user_id,
+                    "email": email,
+                    "username": name.split()[0] if name else email.split("@")[0],
+                    "password": None,  # OAuth users don't have passwords
+                    "avatar": picture,
+                    "auth_type": "google",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.users.insert_one(user_doc)
+            
+            # Store session
+            session_doc = {
+                "user_id": user_id,
+                "session_token": session_token,
+                "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.user_sessions.update_one(
+                {"user_id": user_id},
+                {"$set": session_doc},
+                upsert=True
+            )
+            
+            # Get full user data
+            user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+            
+            # Create response with session cookie
+            response = JSONResponse(content={
+                "user": {
+                    "id": user["id"],
+                    "email": user["email"],
+                    "username": user["username"],
+                    "avatar": user.get("avatar"),
+                    "created_at": user["created_at"]
+                },
+                "session_token": session_token
+            })
+            
+            # Set httpOnly cookie
+            response.set_cookie(
+                key="session_token",
+                value=session_token,
+                httponly=True,
+                secure=True,
+                samesite="none",
+                max_age=7 * 24 * 60 * 60,  # 7 days
+                path="/"
+            )
+            
+            return response
+            
+    except httpx.RequestError as e:
+        logger.error(f"Google OAuth error: {e}")
+        raise HTTPException(status_code=500, detail="OAuth service unavailable")
+
+@api_router.post("/auth/logout")
+async def logout(request: Request):
+    """Logout user by clearing session"""
+    session_token = request.cookies.get("session_token")
+    
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
+    
+    response = JSONResponse(content={"status": "logged out"})
+    response.delete_cookie(key="session_token", path="/")
+    return response
+
 # ==================== TMDB ROUTES ====================
 
 @api_router.get("/tmdb/search")
