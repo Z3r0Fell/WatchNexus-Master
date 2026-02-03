@@ -927,7 +927,7 @@ async def request_redownload(
         media_type=media_type,
         tmdb_id=tmdb_id,
         size=0,  # Unknown until search completes
-        status="searching"
+        status="searching" if enabled_indexers else "pending_indexers"
     )
     
     # Store the re-download request
@@ -938,8 +938,8 @@ async def request_redownload(
         "title": title,
         "media_type": media_type,
         "tmdb_id": tmdb_id,
-        "status": "queued",
-        "indexers_to_search": [i["name"] for i in user_indexers],
+        "status": "queued" if enabled_indexers else "pending_indexers",
+        "indexers_to_search": [i["name"] for i in enabled_indexers],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.redownload_requests.insert_one(redownload_request)
@@ -947,12 +947,20 @@ async def request_redownload(
     # Add to downloads queue
     mock_downloads.append(download)
     
-    return {
-        "status": "queued",
-        "download_id": download.id,
-        "message": f"Re-download queued. Will search {len(user_indexers)} indexer(s) for: {title}",
-        "indexers": [i["name"] for i in user_indexers]
-    }
+    if enabled_indexers:
+        return {
+            "status": "queued",
+            "download_id": download.id,
+            "message": f"Re-download queued. Will search {len(enabled_indexers)} indexer(s) for: {title}",
+            "indexers": [i["name"] for i in enabled_indexers]
+        }
+    else:
+        return {
+            "status": "pending_indexers",
+            "download_id": download.id,
+            "message": f"Re-download queued for '{title}'. Enable indexers in Settings to start search.",
+            "indexers": []
+        }
 
 # ==================== MARMALADE MEDIA SERVER PROXY ====================
 # Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
