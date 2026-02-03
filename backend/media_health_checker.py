@@ -1,6 +1,7 @@
 """
 WatchNexus Media Health Checker
 Validates and optionally repairs media files to prevent playback issues.
+Works with the Marmalade media server to detect corrupted or incomplete files.
 """
 
 import subprocess
