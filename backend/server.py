@@ -198,18 +198,58 @@ def create_token(user_id: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[dict]:
-    if not credentials:
+async def get_user_from_session_token(session_token: str) -> Optional[dict]:
+    """Get user from session token (Google OAuth)"""
+    if not session_token:
         return None
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
-        user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "password": 0})
+        session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+        if not session:
+            return None
+        
+        # Check expiry with timezone awareness
+        expires_at = session.get("expires_at")
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            return None
+        
+        user = await db.users.find_one({"id": session["user_id"]}, {"_id": 0, "password": 0})
         return user
-    except:
+    except Exception as e:
+        logger.error(f"Session token validation error: {e}")
         return None
 
-async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    user = await get_current_user(credentials)
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> Optional[dict]:
+    """Get current user from JWT token or session cookie"""
+    # First, try session token from cookie
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        user = await get_user_from_session_token(session_token)
+        if user:
+            return user
+    
+    # Fall back to JWT token from Authorization header
+    if credentials:
+        try:
+            payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
+            user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "password": 0})
+            return user
+        except:
+            pass
+    
+    return None
+
+async def require_auth(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> dict:
+    user = await get_current_user(request, credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
