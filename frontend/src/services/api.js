@@ -140,5 +140,35 @@ export const authApi = {
     axios.get(`${API}/auth/me`, { withCredentials: true }),
 };
 
+// Compote - Indexer Manager API calls
+export const compoteApi = {
+  // Indexers
+  getIndexers: () =>
+    axios.get(`${API}/compote/indexers`),
+  
+  addIndexer: (name, type, url, apiKey = '', enabled = true, priority = 50) =>
+    axios.post(`${API}/compote/indexers`, null, { 
+      params: { name, indexer_type: type, url, api_key: apiKey, enabled, priority } 
+    }),
+  
+  removeIndexer: (indexerId) =>
+    axios.delete(`${API}/compote/indexers/${indexerId}`),
+  
+  testIndexer: (indexerId) =>
+    axios.post(`${API}/compote/indexers/${indexerId}/test`),
+  
+  // Search
+  search: (query, mediaType = 'movies', sortBy = 'seeders', limit = 50) =>
+    axios.get(`${API}/compote/search`, { 
+      params: { query, media_type: mediaType, sort_by: sortBy, limit } 
+    }),
+  
+  // Grab/Download
+  grab: (title, downloadUrl = null, magnetUrl = null, size = 0) =>
+    axios.post(`${API}/compote/grab`, null, { 
+      params: { title, download_url: downloadUrl, magnet_url: magnetUrl, size } 
+    }),
+};
+
 // Health check
 export const healthCheck = () => axios.get(`${API}/health`);
