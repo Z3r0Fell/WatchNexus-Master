@@ -658,11 +658,12 @@ watchnexus/
 - [x] Custom React UI
 - [x] TMDB integration
 - [x] User authentication
-- [x] Jellyfin server setup
+- [x] Marmalade server setup
 - [x] API proxy layer
+- [x] Media Health Checker
 
 ### Phase 2 - Local Media
-- [ ] Connect UI to Jellyfin libraries
+- [ ] Connect UI to Marmalade libraries
 - [ ] Video player component
 - [ ] Transcoding status display
 - [ ] Library management UI
@@ -689,7 +690,7 @@ watchnexus/
 
 ## 📄 License
 
-WatchNexus is based on Jellyfin, which is licensed under the **GNU General Public License v2.0**.
+WatchNexus uses Marmalade, a custom fork based on the Emby/Jellyfin protocol, licensed under the **GNU General Public License v2.0**.
 
 All modifications and additions are also released under GPL v2.0.
 
@@ -699,7 +700,7 @@ See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- [Jellyfin](https://jellyfin.org/) - The amazing open-source media server this is built upon
+- [Jellyfin](https://jellyfin.org/) - The open-source media server foundation
 - [TMDB](https://www.themoviedb.org/) - Movie and TV metadata
 - [Shadcn/UI](https://ui.shadcn.com/) - Beautiful UI components
 - [Framer Motion](https://www.framer.com/motion/) - Smooth animations
