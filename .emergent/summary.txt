@@ -1,0 +1,188 @@
+<analysis>**original_problem_statement:**
+The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single application that handles requesting, acquiring, organizing, and watching TV shows and movies.
+
+**Product Requirements:**
+- **Unified Identity:** A single application that incorporates the best features of existing media automation tools.
+- **Modular Design:** Start with a mocked-up version, but with settings to configure live services (indexers, download clients) later.
+- **Rich Metadata:** Use a real service like TMDB for movie/TV show posters and information.
+- **Authentication:** Support both JWT (email/password) and an option to configure Google OAuth.
+- **Broad Catalog Support:** The application should handle TV shows, movies, audiobooks, music, music videos, and live TV.
+- **Streaming Service Integration:** Include connectors or links for popular streaming services like Netflix, Disney+, and Prime Video.
+- **Jellyfin as a Base:** The user decided to fork the Jellyfin project to use its stable media server capabilities as the foundation for WatchNexus.
+- **Custom UI:** Despite forking Jellyfin, the user wants a unique, modern, custom-built React frontend, not the standard Jellyfin web UI. The agent had initially built a custom UI which the user liked and wants to be connected to the Jellyfin backend.
+- **File Integrity:** Implement a system to check for corrupted or incomplete video files.
+- **Branding:** The application must be thoroughly rebranded as WatchNexus, including a custom logo provided by the user, unique terminology (e.g., Secret Code for password), and a distinct visual theme with animations.
+- **Documentation:** A comprehensive  is required, detailing compilation for Windows, Mac, Linux, and Docker, along with a quickstart guide and troubleshooting steps.
+
+**User's preferred language**: English
+
+**what currently exists?**
+The project currently consists of a three-part architecture:
+1.  **Custom React Frontend**: A modern, visually appealing UI built from scratch, featuring a glassmorphism design, violet/purple theme, and custom components. This is the user-approved interface. It's located in .
+2.  **FastAPI Backend**: Originally the main backend, it now serves as a proxy and business logic layer. It handles user authentication (for the custom UI), proxies requests to the TMDB API for discovery, and has newly added proxy endpoints to communicate with the Jellyfin server. It's located in .
+3.  **Jellyfin Server Fork (WatchNexus)**: A forked, rebranded version of the Jellyfin/.NET server running as a separate service. Its purpose is to handle the heavy lifting of media scanning, library management, transcoding, and streaming. It runs on port 8096 internally. It is located in .
+
+The original React UI has been re-instated as the primary interface, and work has begun to connect its functions to the Jellyfin backend via the FastAPI proxy.
+
+**Last working item**:
+- **Last item agent was working:** The agent was beginning to implement a media file health checker. This was in response to the user's request to detect corrupted or incomplete video files. The agent created the initial Python script  and was about to add the corresponding API endpoints to  and update the frontend logo.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** backend testing agent
+- **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+- **Issue 1:** The setup wizard for the forked Jellyfin instance was unstable and kept restarting. While the UI has been switched to the custom React app, the underlying Jellyfin server's stability might still be a concern and could impact library scanning or other background tasks.
+
+**Issues Detail:**
+- **Issue 1: Jellyfin server instability during setup**
+    - **Attempted fixes:** The agent tried to complete the wizard multiple times via screenshot automation, but it often timed out or reset. The agent later changed the port and reconfigured supervisor, but the root cause of the wizard reset was never fully diagnosed.
+    - **Next debug checklist:**
+        - Check the Jellyfin server logs () for errors related to configuration saving or restarts.
+        - Examine the Jellyfin configuration files () to see if they are being written correctly.
+    - **Why fix this issue and what will be achieved with the fix?** Although the wizard is no longer user-facing, an unstable server process can affect core functionalities like media scanning, transcoding, and playback. Ensuring server stability is critical for a production-ready app.
+    - **Status:** NOT STARTED (since the pivot back to custom UI)
+    - **Is recurring issue?** Y
+    - **Should Test backend/both after fix?** backend
+    - **Blocked on other issue:** None
+
+**In progress Task List**:
+- **Task 1: Complete Media Health Checker Integration (P0)**
+    - **Where to resume:**
+        1.  Add new API endpoints to  that utilize the functions in . These endpoints should allow triggering a scan for a specific file or an entire library.
+        2.  Integrate these endpoints into the frontend. Add a Scan for issues button on the media details page or in the library management section.
+        3.  Display the health status (e.g., Healthy, Corrupted, Incomplete) in the UI.
+    - **What will be achieved with this?** It will fulfill the user's request for a system that can verify the integrity of downloaded media files, preventing playback issues.
+    - **Status:** IN PROGRESS
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on something:** None
+
+**Upcoming and Future Tasks**
+**Upcoming Tasks:**
+- **Task 1: Make the Application Production-Ready (P0)**
+  - Integrate the frontend video player with the Jellyfin backend's streaming URLs. Currently, the UI can browse content but cannot play it.
+  - Implement real download client integration (currently mocked). The settings page needs to be wired up to control a real client like qBittorrent.
+  - Implement real indexer integration (e.g., Prowlarr).
+- **Task 2: Finalize Branding and UI/UX (P1)**
+  - Replace all remaining hardcoded Jellyfin text in the source code with WatchNexus or generic terms.
+  - Properly integrate the user-provided . The agent used a PNG version, but the SVG should be used for better quality and scalability.
+  - Make the logo more prominent in the header.
+  - Add the requested UI animations (page transitions, flyout menus, hover effects) using the created  and .
+- **Task 3: Update  (P1)**
+  - Add detailed, platform-specific compilation guides for Windows, Mac, and Arch Linux, including dependencies (, , yarn install v1.22.22
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[4/4] Building fresh packages...
+success Saved lockfile.
+Done in 0.03s., ).
+  - Provide instructions for creating installers (e.g., using  for Windows, creating / for Linux).
+  - Include a Production Readiness section clarifying what works and what doesn't.
+
+**Future Tasks:**
+- **Task 1: Streaming Service Login (P2)**
+  - Implement the UI for logging into streaming services. Since most services lack public APIs for this, this would likely be a tracking feature where users can manually mark what they've watched.
+- **Task 2: Full Multi-Library Support (P2)**
+  - Thoroughly test and ensure the UI correctly handles multiple libraries from different physical/network locations as configured in Jellyfin.
+
+**Completed work in this session**
+- **First Version:** Built a full-stack application from scratch with a React frontend and FastAPI/MongoDB backend.
+- **Jellyfin Fork:** Successfully forked, compiled, and ran the Jellyfin media server.
+- **Rebranding:** Extensively rebranded the Jellyfin fork to WatchNexus, changing the name, color scheme, and logos.
+- **Architectural Pivot:** Switched from the Jellyfin UI to the custom React UI, establishing a new architecture where the custom frontend communicates with the Jellyfin server via a FastAPI proxy.
+- **API Proxy:** Implemented proxy endpoints in the FastAPI backend to route requests to the Jellyfin server API.
+- **UI Restoration:** Successfully restored and connected the user-preferred custom React UI to display data from TMDB and the Jellyfin backend.
+- **Documentation:** Created a  and .
+- **Media Health Checker:** Started development of a media file integrity checker.
+
+**Earlier issues found/mentioned but not fixed**
+- No issues other than the one listed in the All Pending/In progress Issue list.
+
+**Known issue recurrence from previous fork**
+- No previous fork summary was provided.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+- **Frontend:** React,  for API calls,  for animations, TailwindCSS.
+- **Backend (Proxy):** FastAPI (Python),  for async requests to other services (TMDB, Jellyfin).
+- **Backend (Media Server):** Jellyfin (.NET Core), which handles media library management, transcoding, and streaming.
+- **Process Management:**  is used to manage all running processes (FastAPI backend, React dev server, Jellyfin server).
+- **Database:** The initial app used MongoDB for user data. The Jellyfin server uses its own database (typically SQLite by default) for media metadata and user profiles.
+
+**key DB schema**
+- **MongoDB (for FastAPI backend):**
+  - : { ,  }
+  - : { ,  }
+- **Jellyfin (SQLite/internal):** Manages its own complex schema for users, libraries, media items, metadata, and playback state. This is not directly managed by the agent.
+
+**changes in tech stack**
+- The project pivoted from a self-contained FastAPI/MongoDB application to a hybrid system using a forked Jellyfin/.NET server as the core media backend. The FastAPI application now primarily functions as an API gateway/proxy.
+
+**All files of reference**
+- : The core of the proxy backend, contains all API routes.
+- : The new module for validating media files.
+- : The main entry point for the React application, defining routes.
+- : The main landing page of the custom UI.
+- : Defines API calls to the FastAPI proxy.
+- : Intended for Jellyfin-specific API calls.
+- : Contains project overview and setup instructions.
+- : Contains the product requirements document.
+- : Defines how the , , and  processes are managed.
+
+**key api endpoints**
+- , : User authentication for the custom UI.
+- : Proxied TMDB endpoints for fetching media metadata.
+- : Proxied Jellyfin server endpoints (e.g., ).
+- (Upcoming) : Endpoints for the media health checker.
+
+**Critical Info for New Agent**
+- **The Architecture is Key:** The user wants the custom React UI () connected to the Jellyfin server () for media operations. The FastAPI backend () acts as the glue. Do NOT revert to using the Jellyfin web UI. The main goal is to integrate the beautiful custom UI with the powerful Jellyfin backend.
+- **Two Servers Running:** You must manage two separate backend services: the FastAPI proxy () and the Jellyfin fork (). Both are managed by .
+- **Production Readiness is the Goal:** The user's final request is to make this production-ready. This means wiring up actual media playback from the Jellyfin server in the React UI, finishing the settings pages to control real services, and ensuring stability.
+- **Use the SVG Logo:** The user provided an SVG logo. You should prioritize using this over the PNG version for better quality.
+
+**documents and test reports created in this job**
+- 
+- 
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Asks for  with compilation instructions for various platforms, an honest assessment of production readiness, and to use the new logos provided.
+2.  **Agent:** Acknowledges and proceeds to update the logo and create the .
+3.  **Agent:** Creates a comprehensive  and updates the PRD.
+4.  **Agent:** Finishes, providing a summary that the README is complete and the app is not yet production-ready because playback isn't integrated.
+5.  **User:** Asks the agent to investigate and implement a system to check for corrupted video files, a common issue with Jellyfin. After that, they want the agent to make the project production-ready and finish the roadmap.
+6.  **Agent:** Acknowledges the request, analyzes the problem of corrupted files, and plans to build a media health checker.
+7.  **Agent:** Creates the file .
+8.  **Agent:** States the plan to add API endpoints for the health checker and update the frontend logo.
+9.  **User:** (from problem statement) go to blazes and just let you work! - User is self-aware they might be interjecting too much, giving the agent freedom to work.
+10. **User:** (from problem statement) Provides detailed feedback on library structure (multiple hard drives, network locations), IPTV setup, and streaming service logins.
+
+**Project Health Check:**
+- **Broken:**
+    - Media playback: The custom UI can browse content but cannot actually play videos from the Jellyfin server.
+- **Mocked:**
+    - Download client integration.
+    - Indexer/Prowlarr integration.
+    - Subtitle integration (via Bazarr was in the original plan, not yet implemented).
+
+**3rd Party Integrations**
+- **The Movie Database (TMDB):** Actively used for fetching metadata and images for the discovery sections of the UI.
+- **Jellyfin:** A forked version is used as the core media server backend.
+
+**Testing status**
+- **Testing agent used after significant changes:** NO (The agent attempted to, but the test runs were timing out or not producing reports.)
+- **Troubleshoot agent used after agent stuck in loop:** NO
+- **Test files created:** []
+- **Known regressions:** The initial custom UI was temporarily replaced by the Jellyfin UI, which was a regression from the user's perspective but was quickly fixed.
+
+**Credentials to test flow:**
+The agent created a user during the initial setup. Use the following to log into the custom UI:
+- **Username/Email:**  or 
+- **Password:** 
+
+**What agent forgot to execute**
+- The agent has not yet implemented the user-requested animations (page flips, flyouts) despite creating a CSS file for them.
+- The agent used a PNG version of the user's logo, not the provided SVG version, which would be better for quality and scaling.
+- The user asked to finish the 5 roadmap phases, and while the agent is working on a key feature (health checker), the full scope of making the app production-ready (the implicit goal of the phases) is still pending.</analysis>
