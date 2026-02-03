@@ -477,7 +477,7 @@ export const LibraryPage = () => {
                 <Folder className="w-20 h-20 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-400 mb-2">No Libraries Found</h3>
                 <p className="text-gray-500 max-w-md mx-auto">
-                  Your Marmalade server doesn't have any libraries configured yet.
+                  Your Marmalade server does not have any libraries configured yet.
                   Add media folders in the Marmalade settings to get started.
                 </p>
               </div>
