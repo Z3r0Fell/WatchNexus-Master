@@ -269,6 +269,179 @@ export const SettingsPage = () => {
             </motion.div>
           </TabsContent>
 
+          {/* Media Health Checker */}
+          <TabsContent value="media-health">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="glass-card rounded-xl p-6 space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <HardDrive className="w-5 h-5 text-violet-400" />
+                    Media Health Checker
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Scan your media library for corrupted, incomplete, or problematic files
+                  </p>
+                </div>
+              </div>
+
+              {/* Scan Input */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Directory to Scan</label>
+                  <div className="flex gap-3">
+                    <Input
+                      value={healthScanPath}
+                      onChange={(e) => setHealthScanPath(e.target.value)}
+                      placeholder="/media/library or /path/to/movies"
+                      data-testid="health-scan-path-input"
+                      className="bg-white/5 border-white/10 flex-1"
+                    />
+                    <Button
+                      onClick={handleScanLibrary}
+                      disabled={scanning}
+                      data-testid="scan-library-btn"
+                      className="bg-violet-600 hover:bg-violet-700"
+                    >
+                      {scanning ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Scanning...
+                        </>
+                      ) : (
+                        <>
+                          <FileSearch className="w-4 h-4 mr-2" />
+                          Scan Library
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the full path to your media directory. Supports .mp4, .mkv, .avi, .mov, and more.
+                  </p>
+                </div>
+              </div>
+
+              {/* Results */}
+              {healthResults.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Scan Results ({healthResults.length} files)</h3>
+                    <div className="flex gap-2 text-sm">
+                      <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">
+                        {healthResults.filter(r => r.status === 'healthy').length} Healthy
+                      </span>
+                      <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">
+                        {healthResults.filter(r => r.status === 'warning').length} Warnings
+                      </span>
+                      <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">
+                        {healthResults.filter(r => ['error', 'corrupt'].includes(r.status)).length} Errors
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                    {healthResults.map((result, index) => (
+                      <div
+                        key={index}
+                        data-testid={`health-result-${index}`}
+                        className="p-4 rounded-xl bg-surface border border-white/5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getStatusColor(result.status)}`}>
+                              {getStatusIcon(result.status)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate" title={result.file_path}>
+                                {result.file_path.split('/').pop()}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate" title={result.file_path}>
+                                {result.file_path}
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {result.video_codec && (
+                                  <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-xs">
+                                    {result.video_codec}
+                                  </span>
+                                )}
+                                {result.audio_codec && (
+                                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs">
+                                    {result.audio_codec}
+                                  </span>
+                                )}
+                                {result.duration && (
+                                  <span className="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-xs">
+                                    {Math.floor(result.duration / 60)}m {Math.floor(result.duration % 60)}s
+                                  </span>
+                                )}
+                                <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(result.status)}`}>
+                                  {result.status}
+                                </span>
+                              </div>
+                              
+                              {/* Issues and Warnings */}
+                              {(result.issues?.length > 0 || result.warnings?.length > 0) && (
+                                <div className="mt-3 space-y-1">
+                                  {result.issues?.map((issue, i) => (
+                                    <p key={`issue-${i}`} className="text-xs text-red-400 flex items-start gap-1">
+                                      <X className="w-3 h-3 mt-0.5 flex-shrink-0" /> {issue}
+                                    </p>
+                                  ))}
+                                  {result.warnings?.map((warning, i) => (
+                                    <p key={`warning-${i}`} className="text-xs text-yellow-400 flex items-start gap-1">
+                                      <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" /> {warning}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Repair Button */}
+                          {result.repairable && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRepairFile(result.file_path)}
+                              disabled={repairing === result.file_path}
+                              className="bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20 flex-shrink-0"
+                            >
+                              {repairing === result.file_path ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Wrench className="w-4 h-4 mr-1" />
+                                  Repair
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <h4 className="font-medium text-blue-400 mb-2">What does this check?</h4>
+                <ul className="text-sm text-blue-300 space-y-1 list-disc list-inside">
+                  <li>Container integrity and metadata</li>
+                  <li>Video/audio codec compatibility</li>
+                  <li>Keyframe distribution for smooth seeking</li>
+                  <li>Audio/video sync issues</li>
+                  <li>moov atom positioning (affects streaming start)</li>
+                  <li>Duration consistency between streams</li>
+                </ul>
+              </div>
+            </motion.div>
+          </TabsContent>
+
           {/* Indexers */}
           <TabsContent value="indexers">
             <motion.div
