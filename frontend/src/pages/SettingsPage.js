@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { 
   Settings, Server, Download, Subtitles, Shield, 
   Folder, Check, X, Plus, Trash2, ExternalLink, Globe,
-  AlertTriangle, CheckCircle, RefreshCw, FileSearch, Wrench, HardDrive
+  AlertTriangle, CheckCircle, RefreshCw, FileSearch, Wrench, HardDrive,
+  Clock, Bell, Calendar, DownloadCloud
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -32,10 +33,42 @@ export const SettingsPage = () => {
   const [healthResults, setHealthResults] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [repairing, setRepairing] = useState(null);
+  const [redownloading, setRedownloading] = useState(null);
+  
+  // Scheduled scans state
+  const [scheduledScans, setScheduledScans] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [newScanForm, setNewScanForm] = useState({
+    directory: '',
+    schedule_type: 'daily',
+    schedule_time: '03:00',
+    notify_on_issues: true,
+    auto_repair: false,
+  });
 
   useEffect(() => {
     fetchData();
+    fetchScheduledScans();
+    fetchNotifications();
   }, []);
+
+  const fetchScheduledScans = async () => {
+    try {
+      const res = await mediaHealthApi.getScheduledScans();
+      setScheduledScans(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch scheduled scans:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await mediaHealthApi.getNotifications(true);
+      setNotifications(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
