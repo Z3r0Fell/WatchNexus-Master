@@ -1,51 +1,195 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "./components/ui/sonner";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Pages
+import { Dashboard } from "./pages/Dashboard";
+import { AuthPage } from "./pages/AuthPage";
+import { MoviesPage } from "./pages/MoviesPage";
+import { TVShowsPage } from "./pages/TVShowsPage";
+import { MediaDetails } from "./pages/MediaDetails";
+import { SearchPage } from "./pages/SearchPage";
+import { DownloadsPage } from "./pages/DownloadsPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { StreamingPage } from "./pages/StreamingPage";
+import { MusicPage } from "./pages/MusicPage";
+import { AudiobooksPage } from "./pages/AudiobooksPage";
+import { LiveTVPage } from "./pages/LiveTVPage";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+import "./App.css";
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
 
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
+
+// Public Route (redirect to home if logged in)
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <AuthPage />
+          </PublicRoute>
+        }
+      />
+
+      {/* Protected Routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/movies"
+        element={
+          <ProtectedRoute>
+            <MoviesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tv"
+        element={
+          <ProtectedRoute>
+            <TVShowsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/movie/:id"
+        element={
+          <ProtectedRoute>
+            <MediaDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tv/:id"
+        element={
+          <ProtectedRoute>
+            <MediaDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            <SearchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/downloads"
+        element={
+          <ProtectedRoute>
+            <DownloadsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/streaming"
+        element={
+          <ProtectedRoute>
+            <StreamingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/music"
+        element={
+          <ProtectedRoute>
+            <MusicPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audiobooks"
+        element={
+          <ProtectedRoute>
+            <AudiobooksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/live"
+        element={
+          <ProtectedRoute>
+            <LiveTVPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch all - redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        <AuthProvider>
+          <AppRoutes />
+          <Toaster 
+            position="bottom-right" 
+            toastOptions={{
+              style: {
+                background: '#1E1E1E',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#F3F4F6',
+              },
+            }}
+          />
+        </AuthProvider>
       </BrowserRouter>
     </div>
   );
