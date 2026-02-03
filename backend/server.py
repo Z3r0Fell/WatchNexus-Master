@@ -962,6 +962,174 @@ async def request_redownload(
             "indexers": []
         }
 
+# ==================== COMPOTE - INDEXER MANAGER ====================
+# Python-based indexer aggregator (inspired by Prowlarr)
+
+from compote import get_compote, IndexerConfig, DEFAULT_INDEXERS
+
+@api_router.get("/compote/indexers")
+async def compote_list_indexers(user: dict = Depends(require_auth)):
+    """List all configured Compote indexers."""
+    compote = get_compote()
+    indexers = compote.list_indexers()
+    
+    # If no indexers configured, return defaults
+    if not indexers:
+        return DEFAULT_INDEXERS
+    
+    return indexers
+
+@api_router.post("/compote/indexers")
+async def compote_add_indexer(
+    name: str,
+    indexer_type: str,
+    url: str,
+    api_key: str = "",
+    enabled: bool = True,
+    priority: int = 50,
+    user: dict = Depends(require_auth)
+):
+    """Add a new indexer to Compote."""
+    compote = get_compote()
+    
+    # Generate ID from name
+    indexer_id = name.lower().replace(" ", "_")
+    
+    config = IndexerConfig(
+        id=indexer_id,
+        name=name,
+        type=indexer_type,
+        url=url,
+        api_key=api_key,
+        enabled=enabled,
+        priority=priority,
+    )
+    
+    compote.add_indexer(config)
+    
+    # Also save to database for persistence
+    await db.compote_indexers.update_one(
+        {"id": indexer_id, "user_id": user["id"]},
+        {"$set": {
+            "id": indexer_id,
+            "name": name,
+            "type": indexer_type,
+            "url": url,
+            "api_key": api_key,
+            "enabled": enabled,
+            "priority": priority,
+            "user_id": user["id"],
+        }},
+        upsert=True
+    )
+    
+    return {"status": "added", "id": indexer_id, "name": name}
+
+@api_router.delete("/compote/indexers/{indexer_id}")
+async def compote_remove_indexer(indexer_id: str, user: dict = Depends(require_auth)):
+    """Remove an indexer from Compote."""
+    compote = get_compote()
+    compote.remove_indexer(indexer_id)
+    
+    await db.compote_indexers.delete_one({"id": indexer_id, "user_id": user["id"]})
+    
+    return {"status": "removed", "id": indexer_id}
+
+@api_router.post("/compote/indexers/{indexer_id}/test")
+async def compote_test_indexer(indexer_id: str, user: dict = Depends(require_auth)):
+    """Test connectivity to an indexer."""
+    compote = get_compote()
+    result = await compote.test_indexer(indexer_id)
+    return result
+
+@api_router.get("/compote/search")
+async def compote_search(
+    query: str,
+    media_type: str = "movies",
+    sort_by: str = "seeders",
+    limit: int = 50,
+    user: dict = Depends(require_auth)
+):
+    """Search across all enabled indexers."""
+    compote = get_compote()
+    
+    # Load user's indexers from database
+    user_indexers = await db.compote_indexers.find(
+        {"user_id": user["id"], "enabled": True},
+        {"_id": 0}
+    ).to_list(50)
+    
+    # Add to compote if not already added
+    for idx_data in user_indexers:
+        if idx_data["id"] not in compote.indexers:
+            config = IndexerConfig(
+                id=idx_data["id"],
+                name=idx_data["name"],
+                type=idx_data["type"],
+                url=idx_data["url"],
+                api_key=idx_data.get("api_key", ""),
+                enabled=idx_data.get("enabled", True),
+                priority=idx_data.get("priority", 50),
+            )
+            compote.add_indexer(config)
+    
+    # Perform search
+    results = await compote.search(
+        query=query,
+        media_type=media_type,
+        limit_per_indexer=limit,
+        sort_by=sort_by
+    )
+    
+    return {
+        "query": query,
+        "media_type": media_type,
+        "total_results": len(results),
+        "results": results
+    }
+
+@api_router.post("/compote/grab")
+async def compote_grab(
+    title: str,
+    download_url: str = None,
+    magnet_url: str = None,
+    size: int = 0,
+    user: dict = Depends(require_auth)
+):
+    """Grab/download a release from search results."""
+    if not download_url and not magnet_url:
+        raise HTTPException(status_code=400, detail="Either download_url or magnet_url is required")
+    
+    # Create a download entry
+    download = DownloadItem(
+        title=title,
+        media_type="movie",  # Will be determined by category
+        size=size,
+        status="downloading",
+        progress=0,
+    )
+    
+    mock_downloads.append(download)
+    
+    # Store the grab request
+    grab_request = {
+        "id": download.id,
+        "user_id": user["id"],
+        "title": title,
+        "download_url": download_url,
+        "magnet_url": magnet_url,
+        "size": size,
+        "status": "grabbed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.grab_requests.insert_one(grab_request)
+    
+    return {
+        "status": "grabbed",
+        "download_id": download.id,
+        "message": f"Added '{title}' to download queue"
+    }
+
 # ==================== MARMALADE MEDIA SERVER PROXY ====================
 # Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
 
