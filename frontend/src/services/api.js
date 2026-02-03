@@ -81,5 +81,17 @@ export const libraryApi = {
   add: (item) => axios.post(`${API}/library`, item),
 };
 
+// Media Health Checker API calls
+export const mediaHealthApi = {
+  checkFile: (filePath, computeHash = false) =>
+    axios.post(`${API}/media/health-check`, null, { params: { file_path: filePath, compute_hash: computeHash } }),
+  
+  repairFile: (filePath, outputPath = null) =>
+    axios.post(`${API}/media/repair`, null, { params: { file_path: filePath, output_path: outputPath } }),
+  
+  scanLibrary: (directory) =>
+    axios.post(`${API}/media/scan-library`, null, { params: { directory } }),
+};
+
 // Health check
 export const healthCheck = () => axios.get(`${API}/health`);
