@@ -462,16 +462,16 @@ JWT_SECRET=your_secret_key_change_in_production
 REACT_APP_BACKEND_URL=http://localhost:8001
 ```
 
-### Connecting to Existing Jellyfin
+### Connecting to Existing Media Server
 
-If you already have Jellyfin running:
+If you already have a Jellyfin/Emby-compatible server running:
 
 1. Update backend `.env`:
    ```env
-   JELLYFIN_URL=http://localhost:8096  # Your Jellyfin address
+   MARMALADE_URL=http://localhost:8096  # Your media server address
    ```
 
-2. The proxy endpoint `/api/jellyfin/*` will forward requests to your Jellyfin server.
+2. The proxy endpoint `/api/marmalade/*` will forward requests to your media server.
 
 **Note**: Full integration requires additional development (see Production Readiness section).
 
@@ -494,7 +494,7 @@ pip install gunicorn
 gunicorn -w 4 -k uvicorn.workers.UvicornWorker server:app
 ```
 
-### Jellyfin Server Build
+### Marmalade Server Build
 
 ```bash
 cd watchnexus/server
