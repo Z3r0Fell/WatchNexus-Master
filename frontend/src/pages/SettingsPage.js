@@ -526,12 +526,151 @@ export const SettingsPage = () => {
                               )}
                             </Button>
                           )}
+                          
+                          {/* Re-download Button */}
+                          {result.status !== 'healthy' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRedownload(result.file_path, result)}
+                              disabled={redownloading === result.file_path}
+                              data-testid={`redownload-btn-${result.file_path}`}
+                              className="bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20 flex-shrink-0"
+                            >
+                              {redownloading === result.file_path ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <DownloadCloud className="w-4 h-4 mr-1" />
+                                  Re-download
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* Scheduled Scans Section */}
+              <div className="border-t border-white/10 pt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-violet-400" />
+                      Scheduled Scans
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Automatically scan your library on a schedule
+                    </p>
+                  </div>
+                  {notifications.length > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm">
+                      <Bell className="w-4 h-4" />
+                      {notifications.length} unread
+                    </div>
+                  )}
+                </div>
+
+                {/* New Scheduled Scan Form */}
+                <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
+                  <h4 className="font-medium">Add New Scheduled Scan</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      value={newScanForm.directory}
+                      onChange={(e) => setNewScanForm(prev => ({ ...prev, directory: e.target.value }))}
+                      placeholder="/media/movies"
+                      data-testid="scheduled-scan-directory"
+                      className="bg-white/5 border-white/10"
+                    />
+                    <select
+                      value={newScanForm.schedule_type}
+                      onChange={(e) => setNewScanForm(prev => ({ ...prev, schedule_type: e.target.value }))}
+                      className="bg-white/5 border border-white/10 rounded-md px-3 text-white"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                    <Input
+                      type="time"
+                      value={newScanForm.schedule_time}
+                      onChange={(e) => setNewScanForm(prev => ({ ...prev, schedule_time: e.target.value }))}
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 text-sm">
+                      <Switch
+                        checked={newScanForm.notify_on_issues}
+                        onCheckedChange={(checked) => setNewScanForm(prev => ({ ...prev, notify_on_issues: checked }))}
+                      />
+                      Notify on issues
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Switch
+                        checked={newScanForm.auto_repair}
+                        onCheckedChange={(checked) => setNewScanForm(prev => ({ ...prev, auto_repair: checked }))}
+                      />
+                      Auto-repair
+                    </label>
+                  </div>
+                  <Button
+                    onClick={handleCreateScheduledScan}
+                    data-testid="create-scheduled-scan-btn"
+                    className="bg-violet-600 hover:bg-violet-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Scheduled Scan
+                  </Button>
+                </div>
+
+                {/* Existing Scheduled Scans */}
+                {scheduledScans.length > 0 && (
+                  <div className="space-y-2">
+                    {scheduledScans.map((scan) => (
+                      <div
+                        key={scan.id}
+                        className="p-4 rounded-xl bg-surface border border-white/5 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                            <Calendar className="w-5 h-5 text-violet-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{scan.directory}</p>
+                            <p className="text-sm text-gray-400">
+                              {scan.schedule_type} at {scan.schedule_time}
+                              {scan.last_scan && ` • Last: ${new Date(scan.last_scan).toLocaleDateString()}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRunScanNow(scan.id)}
+                            disabled={scanning}
+                            className="text-violet-400 border-violet-500/30"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteScheduledScan(scan.id)}
+                            className="text-red-400 border-red-500/30"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Info Box */}
               <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
