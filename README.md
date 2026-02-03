@@ -585,7 +585,7 @@ source venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 ```
 
-#### 5. "Jellyfin server won't start"
+#### 5. "Marmalade server won't start"
 ```bash
 # Check .NET installation
 dotnet --version  # Should show 8.x
