@@ -31,6 +31,8 @@ TMDB_API_KEY = os.environ.get('TMDB_API_KEY')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'default_secret_change_me')
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/"
+GOOGLE_OAUTH_CLIENT_ID = "392737972706-krhv8egv3jj8qrpd1ppri6712a16huno.apps.googleusercontent.com"
+EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 
 # Create the main app
 app = FastAPI(title="WatchNexus API")
