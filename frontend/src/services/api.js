@@ -170,5 +170,39 @@ export const compoteApi = {
     }),
 };
 
+// qBittorrent API calls
+export const qbittorrentApi = {
+  // Status
+  getStatus: () =>
+    axios.get(`${API}/qbittorrent/status`),
+  
+  // Torrents
+  getTorrents: (filter = 'all', category = '', limit = 50) =>
+    axios.get(`${API}/qbittorrent/torrents`, { params: { filter, category, limit } }),
+  
+  addTorrent: (url = null, magnet = null, savePath = '', category = 'watchnexus') =>
+    axios.post(`${API}/qbittorrent/add`, null, { 
+      params: { url, magnet, save_path: savePath, category } 
+    }),
+  
+  pauseTorrent: (hash) =>
+    axios.post(`${API}/qbittorrent/pause/${hash}`),
+  
+  resumeTorrent: (hash) =>
+    axios.post(`${API}/qbittorrent/resume/${hash}`),
+  
+  deleteTorrent: (hash, deleteFiles = false) =>
+    axios.delete(`${API}/qbittorrent/delete/${hash}`, { params: { delete_files: deleteFiles } }),
+  
+  getFiles: (hash) =>
+    axios.get(`${API}/qbittorrent/files/${hash}`),
+  
+  // Test connection
+  testConnection: (host, port, username, password) =>
+    axios.post(`${API}/qbittorrent/test`, null, { 
+      params: { host, port, username, password } 
+    }),
+};
+
 // Health check
 export const healthCheck = () => axios.get(`${API}/health`);
