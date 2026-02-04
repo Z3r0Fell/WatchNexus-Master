@@ -1096,16 +1096,41 @@ async def compote_grab(
     size: int = 0,
     user: dict = Depends(require_auth)
 ):
-    """Grab/download a release from search results."""
+    """Grab/download a release - sends to qBittorrent if configured."""
     if not download_url and not magnet_url:
         raise HTTPException(status_code=400, detail="Either download_url or magnet_url is required")
     
-    # Create a download entry
+    # Try to add to qBittorrent
+    qbit_success = False
+    qbit_message = ""
+    
+    try:
+        from qbittorrent_client import get_qbittorrent_client
+        qbit = get_qbittorrent_client()
+        
+        # Get settings for save path
+        settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
+        save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
+        
+        if magnet_url:
+            qbit_success = await qbit.add_magnet(magnet_url, save_path=save_path, category="watchnexus")
+        elif download_url:
+            qbit_success = await qbit.add_torrent(urls=[download_url], save_path=save_path, category="watchnexus")
+        
+        if qbit_success:
+            qbit_message = "Added to qBittorrent"
+        else:
+            qbit_message = "qBittorrent: Failed to add"
+    except Exception as e:
+        qbit_message = f"qBittorrent not available: {str(e)}"
+        logger.warning(f"qBittorrent grab failed: {e}")
+    
+    # Always create a download entry for tracking
     download = DownloadItem(
         title=title,
-        media_type="movie",  # Will be determined by category
+        media_type="movie",
         size=size,
-        status="downloading",
+        status="downloading" if qbit_success else "queued",
         progress=0,
     )
     
