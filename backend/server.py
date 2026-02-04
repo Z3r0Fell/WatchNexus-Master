@@ -1145,15 +1145,116 @@ async def compote_grab(
         "magnet_url": magnet_url,
         "size": size,
         "status": "grabbed",
+        "qbit_success": qbit_success,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.grab_requests.insert_one(grab_request)
     
     return {
-        "status": "grabbed",
+        "status": "grabbed" if qbit_success else "queued",
         "download_id": download.id,
-        "message": f"Added '{title}' to download queue"
+        "message": f"Added '{title}' to download queue. {qbit_message}",
+        "qbittorrent": qbit_success
     }
+
+# ==================== QBITTORRENT API ====================
+
+from qbittorrent_client import get_qbittorrent_client
+
+@api_router.get("/qbittorrent/status")
+async def qbittorrent_status(user: dict = Depends(require_auth)):
+    """Get qBittorrent connection status and transfer info."""
+    qbit = get_qbittorrent_client()
+    test_result = await qbit.test_connection()
+    
+    if test_result["success"]:
+        transfer = await qbit.get_transfer_info()
+        test_result["transfer"] = transfer
+    
+    return test_result
+
+@api_router.get("/qbittorrent/torrents")
+async def qbittorrent_torrents(
+    filter: str = "all",
+    category: str = "",
+    limit: int = 50,
+    user: dict = Depends(require_auth)
+):
+    """Get list of torrents from qBittorrent."""
+    qbit = get_qbittorrent_client()
+    torrents = await qbit.get_torrents(filter=filter, category=category, limit=limit)
+    return [t.to_dict() for t in torrents]
+
+@api_router.post("/qbittorrent/add")
+async def qbittorrent_add(
+    url: str = None,
+    magnet: str = None,
+    save_path: str = "",
+    category: str = "watchnexus",
+    user: dict = Depends(require_auth)
+):
+    """Add a torrent to qBittorrent."""
+    if not url and not magnet:
+        raise HTTPException(status_code=400, detail="Either url or magnet is required")
+    
+    qbit = get_qbittorrent_client()
+    
+    if magnet:
+        success = await qbit.add_magnet(magnet, save_path=save_path, category=category)
+    else:
+        success = await qbit.add_torrent(urls=[url], save_path=save_path, category=category)
+    
+    if success:
+        return {"status": "added", "message": "Torrent added to qBittorrent"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to add torrent")
+
+@api_router.post("/qbittorrent/pause/{torrent_hash}")
+async def qbittorrent_pause(torrent_hash: str, user: dict = Depends(require_auth)):
+    """Pause a torrent."""
+    qbit = get_qbittorrent_client()
+    success = await qbit.pause_torrent(torrent_hash)
+    return {"status": "paused" if success else "failed"}
+
+@api_router.post("/qbittorrent/resume/{torrent_hash}")
+async def qbittorrent_resume(torrent_hash: str, user: dict = Depends(require_auth)):
+    """Resume a torrent."""
+    qbit = get_qbittorrent_client()
+    success = await qbit.resume_torrent(torrent_hash)
+    return {"status": "resumed" if success else "failed"}
+
+@api_router.delete("/qbittorrent/delete/{torrent_hash}")
+async def qbittorrent_delete(
+    torrent_hash: str,
+    delete_files: bool = False,
+    user: dict = Depends(require_auth)
+):
+    """Delete a torrent."""
+    qbit = get_qbittorrent_client()
+    success = await qbit.delete_torrent(torrent_hash, delete_files=delete_files)
+    return {"status": "deleted" if success else "failed"}
+
+@api_router.get("/qbittorrent/files/{torrent_hash}")
+async def qbittorrent_files(torrent_hash: str, user: dict = Depends(require_auth)):
+    """Get files in a torrent."""
+    qbit = get_qbittorrent_client()
+    files = await qbit.get_torrent_files(torrent_hash)
+    return files
+
+@api_router.post("/qbittorrent/test")
+async def qbittorrent_test(
+    host: str = "localhost",
+    port: int = 8080,
+    username: str = "admin",
+    password: str = "adminadmin",
+    user: dict = Depends(require_auth)
+):
+    """Test qBittorrent connection with custom credentials."""
+    from qbittorrent_client import QBittorrentClient
+    qbit = QBittorrentClient(host=host, port=port, username=username, password=password)
+    result = await qbit.test_connection()
+    await qbit.close()
+    return result
 
 # ==================== MARMALADE MEDIA SERVER PROXY ====================
 # Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
