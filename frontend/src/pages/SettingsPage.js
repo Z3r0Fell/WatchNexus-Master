@@ -756,52 +756,93 @@ export const SettingsPage = () => {
             >
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <Download className="w-5 h-5 text-violet-400" />
-                Download Client
+                Download Client (qBittorrent)
               </h2>
 
               <div className="grid gap-4">
                 <div className="p-4 rounded-xl bg-surface border border-white/5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                        <Download className="w-5 h-5 text-green-400" />
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                        <Download className="w-5 h-5 text-blue-400" />
                       </div>
                       <div>
-                        <p className="font-medium">Built-in Client</p>
-                        <p className="text-sm text-gray-500">Integrated torrent downloader</p>
+                        <p className="font-medium">qBittorrent</p>
+                        <p className="text-sm text-gray-500">External torrent client via Web API</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm">
-                      Active
+                    <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm">
+                      Recommended
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400">
-                    WatchNexus includes a built-in download client. No external software needed.
-                  </p>
                 </div>
 
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Max Concurrent Downloads</label>
-                  <select className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white">
-                    <option value="3">3 Downloads</option>
-                    <option value="5">5 Downloads</option>
-                    <option value="10">10 Downloads</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Host</label>
+                    <Input
+                      placeholder="localhost"
+                      defaultValue="localhost"
+                      data-testid="qbit-host"
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Port</label>
+                    <Input
+                      type="number"
+                      placeholder="8080"
+                      defaultValue="8080"
+                      data-testid="qbit-port"
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Speed Limit (0 = Unlimited)</label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    className="bg-white/5 border-white/10"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Username</label>
+                    <Input
+                      placeholder="admin"
+                      defaultValue="admin"
+                      data-testid="qbit-username"
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Password</label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      data-testid="qbit-password"
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="border-white/10"
+                    data-testid="qbit-test-btn"
+                  >
+                    Test Connection
+                  </Button>
+                  <Button className="bg-violet-600 hover:bg-violet-700">
+                    Save Settings
+                  </Button>
                 </div>
               </div>
 
-              <Button className="bg-violet-600 hover:bg-violet-700">
-                Save Download Settings
-              </Button>
+              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <h4 className="font-medium text-blue-400 mb-2">Setup Instructions</h4>
+                <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
+                  <li>Install qBittorrent from <a href="https://www.qbittorrent.org" target="_blank" rel="noopener noreferrer" className="underline">qbittorrent.org</a></li>
+                  <li>Enable Web UI in Tools → Options → Web UI</li>
+                  <li>Set username and password</li>
+                  <li>Enter connection details above and test</li>
+                </ol>
+              </div>
             </motion.div>
           </TabsContent>
 
