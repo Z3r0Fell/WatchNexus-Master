@@ -428,88 +428,10 @@ def get_pulp() -> Pulp:
     if _pulp is None:
         _pulp = Pulp()
     return _pulp
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") == "ok":
-                    solution = data.get("solution", {})
-                    cookies = {c["name"]: c["value"] for c in solution.get("cookies", [])}
-                    self.store_cookies(url, cookies)
-                    
-                    return {
-                        "cookies": cookies,
-                        "user_agent": solution.get("userAgent", self.get_user_agent()),
-                    }
-            
-            logger.warning(f"FlareSolverr failed for {url}")
-            return None
-            
-        except Exception as e:
-            logger.debug(f"FlareSolverr not available: {e}")
-            return None
-    
-    async def make_request(
-        self,
-        client: httpx.AsyncClient,
-        url: str,
-        method: str = "GET",
-        **kwargs
-    ) -> Optional[httpx.Response]:
-        """
-        Make a request with Cloudflare bypass support.
-        Automatically handles challenges and retries.
-        """
-        # Prepare headers
-        headers = kwargs.pop("headers", {})
-        headers.setdefault("User-Agent", self.get_user_agent())
-        headers.setdefault("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-        headers.setdefault("Accept-Language", "en-US,en;q=0.5")
-        
-        # Add stored cookies
-        stored_cookies = self.get_stored_cookies(url)
-        if stored_cookies:
-            existing_cookies = kwargs.get("cookies", {})
-            kwargs["cookies"] = {**stored_cookies, **existing_cookies}
-        
-        try:
-            # First attempt
-            response = await client.request(method, url, headers=headers, **kwargs)
-            
-            # Check for Cloudflare challenge
-            if response.status_code == 403 or response.status_code == 503:
-                if "cloudflare" in response.text.lower() or "cf-ray" in response.headers:
-                    logger.info(f"Cloudflare challenge detected for {url}")
-                    
-                    # Try FlareSolverr
-                    solution = await self.solve_challenge(url, client)
-                    if solution:
-                        headers["User-Agent"] = solution["user_agent"]
-                        kwargs["cookies"] = solution["cookies"]
-                        
-                        # Retry with solved cookies
-                        response = await client.request(method, url, headers=headers, **kwargs)
-            
-            # Store any new cookies
-            if response.cookies:
-                self.store_cookies(url, dict(response.cookies))
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Request failed for {url}: {e}")
-            return None
 
 
-# Global bypasser instance
-_cf_bypasser: Optional[CloudflareBypasser] = None
-
-def get_cf_bypasser() -> CloudflareBypasser:
-    """Get or create the Cloudflare bypasser instance."""
-    global _cf_bypasser
-    if _cf_bypasser is None:
-        _cf_bypasser = CloudflareBypasser()
-    return _cf_bypasser
+# ==================== SYRUP - INDEXER AGGREGATOR ====================
+# Built-in indexer aggregation - replaces external aggregators
 
 @dataclass
 class SearchResult:
