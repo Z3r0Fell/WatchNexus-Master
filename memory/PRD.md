@@ -61,6 +61,13 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
   - Compatible with Jellyfin/Emby clients (Infuse, Swiftfin, etc.)
 - **Kickstarter Campaign Document**: `/app/docs/KICKSTARTER-CAMPAIGN.md`
 - **Client App Research**: `/app/docs/CLIENT-APP-RESEARCH.md`
+- **Updated Login Logo**: Replaced play button with proper WatchNexus gradient logo
+- **Users Management Tab**: New Settings > Users tab with full CRUD operations
+  - Create, edit, delete users
+  - Role assignment (admin/user/guest)
+  - Granular permissions (download, delete, manage library, settings access)
+  - Max concurrent streams setting
+  - Server access info panel showing Jellyfin API endpoint
 
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
