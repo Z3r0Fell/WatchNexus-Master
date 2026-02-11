@@ -1,0 +1,120 @@
+{
+  "summary": "Completed testing of WatchNexus IPTV (Relish) and Pulp (Usenet) APIs. All 18 backend tests passed. Frontend VideoPlayer has subtitle menu with Garnish branding. Watch Party page integrates with Marmalade video streaming when media_id is present.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Live TV page",
+        "issues": ["IPTV tab shows 'Coming Soon' placeholder - frontend UI for IPTV management not fully implemented yet, but backend APIs are working"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iptv_pulp.py",
+    "/app/test_reports/pytest/pytest_iptv_pulp.xml"
+  ],
+  "action_items": [
+    "Consider implementing frontend UI for IPTV source management (add M3U sources, view channels) - backend APIs are ready"
+  ],
+  "critical_code_review_comments": [
+    "IPTV (Relish) backend APIs fully implemented: /api/iptv/stats, /api/iptv/sources, /api/iptv/channels, /api/iptv/groups, /api/iptv/parse-m3u, /api/iptv/export",
+    "Pulp (Usenet) backend APIs implemented: /api/pulp/queue, /api/pulp/search, /api/pulp/parse-nzb",
+    "VideoPlayer component has subtitle button with 'Subtitles (Garnish 🌿)' branding at line 582",
+    "Watch Party page connects to Marmalade stream when media_id is present (line 356)",
+    "All IPTV/Pulp endpoints require authentication - properly secured"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iptv_pulp.py"
+  ],
+  "success_rate": {
+    "backend": "100% (18/18 tests passed)",
+    "frontend": "100% (all tested features working)"
+  },
+  "test_credentials": {
+    "email": "test@test.com",
+    "password": "password"
+  },
+  "seed_data_creation": "None - IPTV starts with 0 sources/channels as expected",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "IPTV (Relish) and Pulp (Usenet) backend APIs are fully functional. Frontend Live TV page shows 'Coming Soon' placeholder but backend is ready. VideoPlayer has Garnish subtitle integration. Watch Party connects to Marmalade streams.",
+  "features_tested": {
+    "iptv_relish_apis": {
+      "GET /api/iptv/stats": {
+        "status": "PASS",
+        "details": "Returns statistics with total_sources, total_channels, total_groups, favorites_count, hidden_count, online_count, offline_count, unchecked_count, epg_channels, total_programs"
+      },
+      "GET /api/iptv/sources": {
+        "status": "PASS",
+        "details": "Returns empty list initially (no M3U sources added)"
+      },
+      "POST /api/iptv/sources": {
+        "status": "PASS",
+        "details": "Successfully adds IPTV source with name, url, epg_url"
+      },
+      "DELETE /api/iptv/sources/{id}": {
+        "status": "PASS",
+        "details": "Successfully removes IPTV source"
+      },
+      "GET /api/iptv/channels": {
+        "status": "PASS",
+        "details": "Returns empty list initially, supports filters (favorites_only, search, group)"
+      },
+      "GET /api/iptv/groups": {
+        "status": "PASS",
+        "details": "Returns empty list initially"
+      },
+      "POST /api/iptv/parse-m3u": {
+        "status": "PASS",
+        "details": "Successfully parses M3U content and returns channel list with id, name, stream_url, group"
+      },
+      "GET /api/iptv/export": {
+        "status": "PASS",
+        "details": "Exports channels as M3U file with filename 'watchnexus_iptv.m3u'"
+      }
+    },
+    "pulp_usenet_apis": {
+      "GET /api/pulp/queue": {
+        "status": "PASS",
+        "details": "Returns queue as list of NZB items"
+      },
+      "POST /api/pulp/queue": {
+        "status": "PASS",
+        "details": "Adds NZB to queue, returns id and status"
+      },
+      "POST /api/pulp/search": {
+        "status": "PASS",
+        "details": "Requires indexer_url and api_key parameters"
+      },
+      "POST /api/pulp/parse-nzb": {
+        "status": "PASS",
+        "details": "Parses NZB XML content"
+      }
+    },
+    "auth_required": {
+      "status": "PASS",
+      "details": "All IPTV and Pulp endpoints return 401/403 without authentication"
+    },
+    "video_player_subtitles": {
+      "status": "PASS",
+      "details": "VideoPlayer has subtitle button (data-testid='subtitles-btn') and menu (data-testid='subtitle-menu') with 'Subtitles (Garnish 🌿)' branding"
+    },
+    "watch_party_video": {
+      "status": "PASS",
+      "details": "Watch Party page connects to Marmalade stream URL when party.media_id is present"
+    },
+    "frontend_live_tv": {
+      "status": "PARTIAL",
+      "details": "Live TV page shows 'Coming Soon' with tabs (Channels, Guide, Recordings, IPTV) - backend ready but frontend UI not fully implemented"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "note": "All APIs are real implementations"
+  }
+}
