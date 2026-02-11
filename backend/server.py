@@ -1174,6 +1174,104 @@ async def compote_search(
         "results": results
     }
 
+# ==================== SYRUP - LIVE SCRAPER SEARCH ====================
+from syrup_scrapers import search_all_scrapers, SCRAPERS
+
+@api_router.get("/syrup/scrapers")
+async def syrup_list_scrapers():
+    """List available Syrup scrapers."""
+    return {
+        "scrapers": [
+            {"id": s_id, "name": SCRAPERS[s_id].name}
+            for s_id in SCRAPERS.keys()
+        ]
+    }
+
+@api_router.get("/syrup/search")
+async def syrup_search(
+    query: str,
+    scrapers: str = None,  # Comma-separated scraper IDs
+    limit: int = 50,
+    user: dict = Depends(require_auth)
+):
+    """
+    Search using Syrup's live site scrapers.
+    This performs real-time scraping of torrent sites.
+    """
+    from compote import get_preserve
+    
+    scraper_list = scrapers.split(",") if scrapers else None
+    preserve = get_preserve()
+    
+    try:
+        results = await search_all_scrapers(
+            query=query,
+            scrapers=scraper_list,
+            limit_per_scraper=limit // (len(scraper_list) if scraper_list else 4),
+            preserve_instance=preserve
+        )
+        
+        return {
+            "query": query,
+            "scrapers_used": scraper_list or list(SCRAPERS.keys()),
+            "total_results": len(results),
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Syrup search error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== DIRECT MAGNET SUBMISSION ====================
+
+@api_router.post("/downloads/add-magnet")
+async def add_magnet_direct(
+    magnet: str,
+    name: str = None,
+    sequential: bool = True,
+    user: dict = Depends(require_auth)
+):
+    """
+    Add a magnet link directly to the download engine.
+    This allows users to paste magnet links directly.
+    """
+    if not magnet or not magnet.startswith("magnet:"):
+        raise HTTPException(status_code=400, detail="Invalid magnet link")
+    
+    # Extract name from magnet if not provided
+    if not name:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(magnet)
+        params = urllib.parse.parse_qs(parsed.query)
+        name = params.get('dn', ['Unknown Torrent'])[0]
+        name = urllib.parse.unquote_plus(name)
+    
+    # Get user's download settings
+    settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
+    save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
+    
+    try:
+        engine = get_torrent_engine()
+        torrent_id = await engine.add_magnet(
+            magnet,
+            save_path=save_path,
+            sequential=sequential,
+            category="watchnexus"
+        )
+        
+        if torrent_id:
+            return {
+                "success": True,
+                "message": "Magnet added to download queue",
+                "torrent_id": torrent_id,
+                "name": name,
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to add magnet")
+            
+    except Exception as e:
+        logger.error(f"Failed to add magnet: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/compote/grab")
 async def compote_grab(
     title: str,
