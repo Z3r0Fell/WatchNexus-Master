@@ -1865,6 +1865,527 @@ async def marmalade_stream_file(media_id: str, request: Request):
         headers={'Accept-Ranges': 'bytes'}
     )
 
+# ==================== SUBTITLE SERVICE ====================
+from subtitle_service import get_subtitle_service
+
+@api_router.get("/subtitles/search/tv")
+async def search_tv_subtitles(
+    show_name: str,
+    season: int,
+    episode: int,
+    languages: str = "en",
+    user: dict = Depends(require_auth)
+):
+    """Search for TV show subtitles."""
+    service = get_subtitle_service()
+    lang_list = [l.strip() for l in languages.split(",")]
+    results = await service.search_tv(show_name, season, episode, lang_list)
+    return {"results": results, "count": len(results)}
+
+@api_router.get("/subtitles/search/movie")
+async def search_movie_subtitles(
+    movie_name: str,
+    year: int = None,
+    imdb_id: str = None,
+    languages: str = "en",
+    user: dict = Depends(require_auth)
+):
+    """Search for movie subtitles."""
+    service = get_subtitle_service()
+    lang_list = [l.strip() for l in languages.split(",")]
+    results = await service.search_movie(movie_name, year, imdb_id, lang_list)
+    return {"results": results, "count": len(results)}
+
+@api_router.post("/subtitles/download")
+async def download_subtitle(
+    download_url: str,
+    source: str,
+    media_id: str,
+    user: dict = Depends(require_auth)
+):
+    """Download a subtitle file."""
+    service = get_subtitle_service()
+    
+    # Get media path for save location
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    
+    if media:
+        save_path = os.path.dirname(media.path)
+    else:
+        # Use default subtitle path
+        settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
+        save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
+        save_path = os.path.join(save_path, "subtitles")
+    
+    result = await service.download(download_url, source, save_path)
+    
+    if result:
+        return {"success": True, "path": result}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to download subtitle")
+
+@api_router.get("/subtitles/settings")
+async def get_subtitle_settings(user: dict = Depends(require_auth)):
+    """Get user's subtitle preferences."""
+    settings = await db.subtitle_settings.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not settings:
+        settings = {
+            "preferred_languages": ["en"],
+            "auto_download": True,
+            "hearing_impaired": False,
+            "addic7ed_enabled": True,
+            "opensubtitles_enabled": False,
+        }
+    return settings
+
+@api_router.put("/subtitles/settings")
+async def update_subtitle_settings(
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Update user's subtitle preferences."""
+    body = await request.json()
+    body["user_id"] = user["id"]
+    
+    await db.subtitle_settings.update_one(
+        {"user_id": user["id"]},
+        {"$set": body},
+        upsert=True
+    )
+    
+    # Update service config
+    service = get_subtitle_service()
+    service.configure(body)
+    
+    return {"status": "updated"}
+
+# ==================== STREAMING SERVICE LOGINS ====================
+from cryptography.fernet import Fernet
+import base64
+
+# Generate or load encryption key
+STREAMING_ENCRYPTION_KEY = os.environ.get('STREAMING_ENCRYPTION_KEY', base64.urlsafe_b64encode(os.urandom(32)).decode())
+
+def get_cipher():
+    """Get Fernet cipher for encrypting credentials."""
+    key = STREAMING_ENCRYPTION_KEY.encode() if len(STREAMING_ENCRYPTION_KEY) == 44 else base64.urlsafe_b64encode(STREAMING_ENCRYPTION_KEY.encode()[:32])
+    return Fernet(key if isinstance(key, bytes) else key.encode())
+
+STREAMING_SERVICE_CONFIGS = {
+    "netflix": {
+        "name": "Netflix",
+        "icon": "🎬",
+        "color": "#E50914",
+        "deep_link": "https://www.netflix.com/search?q=",
+        "login_url": "https://www.netflix.com/login",
+    },
+    "disney": {
+        "name": "Disney+",
+        "icon": "🏰",
+        "color": "#113CCF",
+        "deep_link": "https://www.disneyplus.com/search?q=",
+        "login_url": "https://www.disneyplus.com/login",
+    },
+    "prime": {
+        "name": "Amazon Prime Video",
+        "icon": "📦",
+        "color": "#00A8E1",
+        "deep_link": "https://www.amazon.com/s?k=",
+        "login_url": "https://www.amazon.com/gp/sign-in.html",
+    },
+    "crunchyroll": {
+        "name": "Crunchyroll",
+        "icon": "🍥",
+        "color": "#F47521",
+        "deep_link": "https://www.crunchyroll.com/search?q=",
+        "login_url": "https://www.crunchyroll.com/login",
+    },
+    "youtube": {
+        "name": "YouTube Premium",
+        "icon": "▶️",
+        "color": "#FF0000",
+        "deep_link": "https://www.youtube.com/results?search_query=",
+        "login_url": "https://accounts.google.com/",
+    },
+    "hbomax": {
+        "name": "HBO Max",
+        "icon": "🎭",
+        "color": "#5822B4",
+        "deep_link": "https://play.max.com/search?q=",
+        "login_url": "https://play.max.com/login",
+    },
+    "hulu": {
+        "name": "Hulu",
+        "icon": "📺",
+        "color": "#1CE783",
+        "deep_link": "https://www.hulu.com/search?q=",
+        "login_url": "https://www.hulu.com/login",
+    },
+    "peacock": {
+        "name": "Peacock",
+        "icon": "🦚",
+        "color": "#000000",
+        "deep_link": "https://www.peacocktv.com/search?q=",
+        "login_url": "https://www.peacocktv.com/signin",
+    },
+    "paramount": {
+        "name": "Paramount+",
+        "icon": "⭐",
+        "color": "#0064FF",
+        "deep_link": "https://www.paramountplus.com/search?q=",
+        "login_url": "https://www.paramountplus.com/account/signin/",
+    },
+    "appletv": {
+        "name": "Apple TV+",
+        "icon": "🍎",
+        "color": "#555555",
+        "deep_link": "https://tv.apple.com/search?term=",
+        "login_url": "https://tv.apple.com/",
+    },
+    "funimation": {
+        "name": "Funimation",
+        "icon": "🎌",
+        "color": "#5B0BB5",
+        "deep_link": "https://www.funimation.com/search?q=",
+        "login_url": "https://www.funimation.com/log-in/",
+    },
+}
+
+@api_router.get("/streaming-logins/services")
+async def get_streaming_services_list():
+    """Get list of supported streaming services."""
+    return list(STREAMING_SERVICE_CONFIGS.values())
+
+@api_router.get("/streaming-logins")
+async def get_user_streaming_logins(user: dict = Depends(require_auth)):
+    """Get user's configured streaming service logins (credentials hidden)."""
+    logins = await db.streaming_logins.find(
+        {"user_id": user["id"]},
+        {"_id": 0, "password_encrypted": 0}  # Don't return encrypted password
+    ).to_list(50)
+    
+    return logins
+
+@api_router.post("/streaming-logins")
+async def add_streaming_login(
+    service_id: str,
+    email: str,
+    password: str,
+    user: dict = Depends(require_auth)
+):
+    """Add or update a streaming service login."""
+    if service_id not in STREAMING_SERVICE_CONFIGS:
+        raise HTTPException(status_code=400, detail="Unknown streaming service")
+    
+    service = STREAMING_SERVICE_CONFIGS[service_id]
+    
+    # Encrypt password
+    try:
+        cipher = get_cipher()
+        encrypted_password = cipher.encrypt(password.encode()).decode()
+    except Exception as e:
+        logger.error(f"Encryption error: {e}")
+        encrypted_password = ""
+    
+    login_doc = {
+        "user_id": user["id"],
+        "service_id": service_id,
+        "service_name": service["name"],
+        "icon": service["icon"],
+        "color": service["color"],
+        "email": email,
+        "password_encrypted": encrypted_password,
+        "deep_link": service["deep_link"],
+        "login_url": service["login_url"],
+        "added_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    await db.streaming_logins.update_one(
+        {"user_id": user["id"], "service_id": service_id},
+        {"$set": login_doc},
+        upsert=True
+    )
+    
+    # Return without password
+    login_doc.pop("password_encrypted")
+    return {"status": "added", "login": login_doc}
+
+@api_router.delete("/streaming-logins/{service_id}")
+async def delete_streaming_login(service_id: str, user: dict = Depends(require_auth)):
+    """Remove a streaming service login."""
+    result = await db.streaming_logins.delete_one({
+        "user_id": user["id"],
+        "service_id": service_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Login not found")
+    
+    return {"status": "deleted"}
+
+@api_router.get("/streaming-logins/{service_id}/credentials")
+async def get_streaming_credentials(service_id: str, user: dict = Depends(require_auth)):
+    """Get decrypted credentials for a streaming service (for auto-login)."""
+    login = await db.streaming_logins.find_one(
+        {"user_id": user["id"], "service_id": service_id},
+        {"_id": 0}
+    )
+    
+    if not login:
+        raise HTTPException(status_code=404, detail="Login not found")
+    
+    # Decrypt password
+    password = ""
+    if login.get("password_encrypted"):
+        try:
+            cipher = get_cipher()
+            password = cipher.decrypt(login["password_encrypted"].encode()).decode()
+        except Exception as e:
+            logger.error(f"Decryption error: {e}")
+    
+    return {
+        "email": login.get("email"),
+        "password": password,
+        "login_url": login.get("login_url"),
+    }
+
+# ==================== WATCH PARTY ====================
+from watch_party import get_party_manager, WatchParty
+from fastapi import WebSocket, WebSocketDisconnect
+
+@api_router.get("/watch-party/list")
+async def list_watch_parties(user: dict = Depends(require_auth)):
+    """List public watch parties."""
+    manager = get_party_manager()
+    return manager.list_public_parties()
+
+@api_router.post("/watch-party/create")
+async def create_watch_party_rest(
+    media_id: str,
+    media_title: str,
+    media_type: str = "movie",
+    user: dict = Depends(require_auth)
+):
+    """Create a watch party (REST endpoint for getting party code before WebSocket)."""
+    manager = get_party_manager()
+    
+    # Generate party code
+    party_code = manager.generate_party_code()
+    
+    # Store pending party info
+    pending_party = {
+        "party_code": party_code,
+        "host_id": user["id"],
+        "host_username": user.get("username", "Host"),
+        "media_id": media_id,
+        "media_title": media_title,
+        "media_type": media_type,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    await db.pending_parties.update_one(
+        {"party_code": party_code},
+        {"$set": pending_party},
+        upsert=True
+    )
+    
+    return {
+        "party_code": party_code,
+        "share_url": f"/party/{party_code}",
+        "message": "Connect via WebSocket to start the party"
+    }
+
+@api_router.get("/watch-party/{party_code}")
+async def get_watch_party_info(party_code: str, user: dict = Depends(require_auth)):
+    """Get watch party information."""
+    manager = get_party_manager()
+    party = manager.get_party(party_code)
+    
+    if party:
+        return party.to_dict()
+    
+    # Check pending parties
+    pending = await db.pending_parties.find_one(
+        {"party_code": party_code.upper()},
+        {"_id": 0}
+    )
+    
+    if pending:
+        return {
+            "party_code": pending["party_code"],
+            "status": "pending",
+            "media_title": pending.get("media_title"),
+            "host": pending.get("host_username"),
+        }
+    
+    raise HTTPException(status_code=404, detail="Watch party not found")
+
+# WebSocket endpoint for Watch Party
+@app.websocket("/ws/party/{party_code}")
+async def watch_party_websocket(websocket: WebSocket, party_code: str):
+    """WebSocket connection for watch party synchronization."""
+    await websocket.accept()
+    
+    manager = get_party_manager()
+    user_id = None
+    
+    try:
+        # First message should be authentication
+        auth_msg = await websocket.receive_json()
+        
+        if auth_msg.get("type") != "auth":
+            await websocket.send_json({"type": "error", "message": "Authentication required"})
+            await websocket.close()
+            return
+        
+        # Validate token or session
+        token = auth_msg.get("token")
+        user_id = auth_msg.get("user_id")
+        username = auth_msg.get("username", "Guest")
+        action = auth_msg.get("action", "join")  # create or join
+        
+        if action == "create":
+            # Check for pending party
+            pending = await db.pending_parties.find_one({"party_code": party_code.upper()})
+            
+            if pending:
+                party = await manager.create_party(
+                    host_id=user_id,
+                    host_username=username,
+                    media_id=pending.get("media_id", ""),
+                    media_title=pending.get("media_title", "Watch Party"),
+                    media_type=pending.get("media_type", "movie"),
+                    websocket=websocket,
+                )
+                
+                # Clean up pending
+                await db.pending_parties.delete_one({"party_code": party_code.upper()})
+            else:
+                party = await manager.create_party(
+                    host_id=user_id,
+                    host_username=username,
+                    media_id=auth_msg.get("media_id", ""),
+                    media_title=auth_msg.get("media_title", "Watch Party"),
+                    media_type=auth_msg.get("media_type", "movie"),
+                    websocket=websocket,
+                )
+        else:
+            party = await manager.join_party(
+                party_id=party_code,
+                user_id=user_id,
+                username=username,
+                websocket=websocket,
+            )
+        
+        if not party:
+            await websocket.send_json({"type": "error", "message": "Party not found"})
+            await websocket.close()
+            return
+        
+        # Send initial party state
+        await websocket.send_json({
+            "type": "party_joined",
+            "party": party.to_dict(),
+        })
+        
+        # Handle messages
+        while True:
+            message = await websocket.receive_json()
+            await manager.handle_message(user_id, message)
+            
+    except WebSocketDisconnect:
+        logger.info(f"User {user_id} disconnected from party {party_code}")
+    except Exception as e:
+        logger.error(f"Watch party error: {e}")
+    finally:
+        if user_id:
+            await manager.leave_party(user_id)
+
+# ==================== GELATIN - EXTERNAL ACCESS ====================
+from gelatin import get_gelatin_server
+
+@api_router.get("/gelatin/status")
+async def gelatin_status(user: dict = Depends(require_auth)):
+    """Get Gelatin server status and URLs."""
+    server = get_gelatin_server()
+    return server.get_server_info()
+
+@api_router.get("/gelatin/lan-url")
+async def gelatin_lan_url(user: dict = Depends(require_auth)):
+    """Get LAN URL for local network access."""
+    server = get_gelatin_server()
+    return {"lan_url": server.get_lan_url()}
+
+@api_router.post("/gelatin/tunnel/create")
+async def gelatin_create_tunnel(
+    provider: str = "built_in",
+    user: dict = Depends(require_auth)
+):
+    """Create a tunnel for external access."""
+    server = get_gelatin_server()
+    tunnel = await server.create_tunnel(provider)
+    
+    if tunnel:
+        return {
+            "tunnel_id": tunnel.tunnel_id,
+            "public_url": tunnel.public_url,
+            "created_at": tunnel.created_at,
+        }
+    
+    raise HTTPException(status_code=500, detail="Failed to create tunnel")
+
+@api_router.get("/gelatin/tunnels")
+async def gelatin_list_tunnels(user: dict = Depends(require_auth)):
+    """List active tunnels."""
+    server = get_gelatin_server()
+    return server.get_active_tunnels()
+
+@api_router.delete("/gelatin/tunnel/{tunnel_id}")
+async def gelatin_close_tunnel(tunnel_id: str, user: dict = Depends(require_auth)):
+    """Close an active tunnel."""
+    server = get_gelatin_server()
+    success = await server.close_tunnel(tunnel_id)
+    return {"status": "closed" if success else "not_found"}
+
+@api_router.post("/gelatin/access-token")
+async def gelatin_create_access_token(
+    permissions: str = "view,watch_party",
+    expires_hours: int = 24,
+    user: dict = Depends(require_auth)
+):
+    """Generate a temporary access token for sharing."""
+    server = get_gelatin_server()
+    perm_list = [p.strip() for p in permissions.split(",")]
+    token = server.generate_access_token(user["id"], perm_list, expires_hours)
+    
+    return {
+        "token": token,
+        "permissions": perm_list,
+        "expires_hours": expires_hours,
+    }
+
+@api_router.get("/gelatin/share-link")
+async def gelatin_share_link(
+    party_code: str,
+    use_external: bool = False,
+    user: dict = Depends(require_auth)
+):
+    """Generate a shareable link for a watch party."""
+    server = get_gelatin_server()
+    link = server.generate_share_link(party_code, use_external)
+    return {"share_link": link}
+
+@api_router.get("/gelatin/discover")
+async def gelatin_discover_servers(
+    timeout: float = 3.0,
+    user: dict = Depends(require_auth)
+):
+    """Discover other WatchNexus servers on the network."""
+    server = get_gelatin_server()
+    servers = await server.discover_servers(timeout)
+    return {"servers": servers}
+
 # ==================== HEALTH CHECK ====================
 
 @api_router.get("/health")
