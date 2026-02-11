@@ -52,6 +52,10 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - Plugin Marketplace page (full UI with sample plugins)
 - Theme Community page (full UI with theme previews)
 - DVR Recording page (full UI with scheduling/management)
+- **Fixed Syrup Scrapers**: Updated YTS and EZTV to use working mirror domains
+  - YTS: `yts.torrentbay.st` (primary), fallbacks available
+  - EZTV: `eztvx.to` (primary), fallbacks available
+  - Both scrapers now return real results with magnet links
 
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
