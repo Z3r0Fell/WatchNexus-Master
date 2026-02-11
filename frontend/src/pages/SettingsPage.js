@@ -392,7 +392,7 @@ export const SettingsPage = () => {
   };
 
   // Media Health Checker functions
-  const handleScanLibrary = async () => {
+  const handleHealthScan = async () => {
     if (!healthScanPath.trim()) {
       toast.error('Please enter a directory path to scan');
       return;
@@ -421,7 +421,7 @@ export const SettingsPage = () => {
       const res = await mediaHealthApi.repairFile(filePath);
       if (res.data.success) {
         toast.success(res.data.message);
-        await handleScanLibrary();
+        await handleHealthScan();
       } else {
         toast.error(res.data.message);
       }
