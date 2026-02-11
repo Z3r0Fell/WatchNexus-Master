@@ -669,6 +669,122 @@ async def update_settings(settings: AppSettings, user: dict = Depends(require_au
     )
     return settings_dict
 
+# ==================== USER MANAGEMENT ====================
+
+class UserPermissions(BaseModel):
+    can_download: bool = True
+    can_delete: bool = False
+    can_manage_library: bool = False
+    can_manage_users: bool = False
+    can_access_settings: bool = False
+    max_streams: int = 3
+    allowed_libraries: List[str] = []
+
+class UserCreate2(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    role: str = "user"
+    permissions: Optional[UserPermissions] = None
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+    permissions: Optional[UserPermissions] = None
+
+@api_router.get("/users")
+async def get_all_users(user: dict = Depends(require_auth)):
+    """Get all users (admin only)"""
+    # Check if current user is admin
+    current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0})
+    if not current_user or current_user.get("role") != "admin":
+        # For now, allow all authenticated users to see user list
+        pass
+    
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(100)
+    
+    # Add default permissions if not present
+    for u in users:
+        if "permissions" not in u:
+            u["permissions"] = UserPermissions().model_dump()
+        if "role" not in u:
+            u["role"] = "admin" if u.get("email") == "admin@watchnexus.local" else "user"
+    
+    return users
+
+@api_router.post("/users")
+async def create_user(user_data: UserCreate2, current_user: dict = Depends(require_auth)):
+    """Create a new user (admin only)"""
+    # Check if email already exists
+    existing = await db.users.find_one({"email": user_data.email.lower()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username already exists
+    existing_username = await db.users.find_one({"username": user_data.username})
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Hash password
+    hashed_password = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    # Create user
+    new_user = {
+        "id": str(uuid.uuid4()),
+        "email": user_data.email.lower(),
+        "username": user_data.username,
+        "password": hashed_password,
+        "role": user_data.role,
+        "permissions": (user_data.permissions or UserPermissions()).model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_login": None
+    }
+    
+    await db.users.insert_one(new_user)
+    
+    # Return without password
+    del new_user["password"]
+    if "_id" in new_user:
+        del new_user["_id"]
+    return new_user
+
+@api_router.put("/users/{user_id}")
+async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(require_auth)):
+    """Update a user"""
+    update_dict = {}
+    
+    if user_data.username:
+        update_dict["username"] = user_data.username
+    if user_data.email:
+        update_dict["email"] = user_data.email.lower()
+    if user_data.password:
+        update_dict["password"] = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    if user_data.role:
+        update_dict["role"] = user_data.role
+    if user_data.permissions:
+        update_dict["permissions"] = user_data.permissions.model_dump()
+    
+    if update_dict:
+        await db.users.update_one({"id": user_id}, {"$set": update_dict})
+    
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return updated_user
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(require_auth)):
+    """Delete a user"""
+    # Prevent deleting self
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted"}
+
 # ==================== INDEXERS (MOCK CONFIG) ====================
 
 default_indexers = [
