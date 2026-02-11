@@ -1,378 +1,325 @@
 #!/bin/bash
-#
-# WatchNexus Installer for Linux
-# Supports: Ubuntu/Debian, Fedora/RHEL, Arch Linux, openSUSE
-#
+#===============================================================================
+# WatchNexus Installation Script for Linux (Debian/Ubuntu/Fedora)
+# Supports: Ubuntu 22.04+, Debian 12+, Fedora 38+
+#===============================================================================
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+INSTALL_DIR="/opt/watchnexus"
+DATA_DIR="/var/lib/watchnexus"
+CONFIG_DIR="/etc/watchnexus"
+USER="watchnexus"
+VERSION="1.0.0"
 
-# Configuration
-INSTALL_DIR="${INSTALL_DIR:-/opt/watchnexus}"
-DATA_DIR="${DATA_DIR:-/var/lib/watchnexus}"
-CONFIG_DIR="${CONFIG_DIR:-/etc/watchnexus}"
-LOG_DIR="${LOG_DIR:-/var/log/watchnexus}"
-USER="${WATCHNEXUS_USER:-watchnexus}"
-VERSION="${VERSION:-1.0.0}"
+echo "=============================================="
+echo "  WatchNexus Installer - Linux"
+echo "=============================================="
+echo ""
 
-# Logging
-log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[✓]${NC} $1"; }
-log_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
-log_error() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
-
-# Banner
-show_banner() {
-    echo -e "${PURPLE}"
-    cat << 'EOF'
-    
-    ██╗    ██╗ █████╗ ████████╗ ██████╗██╗  ██╗███╗   ██╗███████╗██╗  ██╗██╗   ██╗███████╗
-    ██║    ██║██╔══██╗╚══██╔══╝██╔════╝██║  ██║████╗  ██║██╔════╝╚██╗██╔╝██║   ██║██╔════╝
-    ██║ █╗ ██║███████║   ██║   ██║     ███████║██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║███████╗
-    ██║███╗██║██╔══██║   ██║   ██║     ██╔══██║██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║
-    ╚███╔███╔╝██║  ██║   ██║   ╚██████╗██║  ██║██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║
-     ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
-    
-                        🍯 Unified Media Pipeline - Linux Installer
-EOF
-    echo -e "${NC}"
-}
-
-# Detect Linux distribution
+# Detect distribution
 detect_distro() {
-    if [[ -f /etc/os-release ]]; then
+    if [ -f /etc/os-release ]; then
         . /etc/os-release
         DISTRO=$ID
-        DISTRO_VERSION=$VERSION_ID
-        DISTRO_NAME=$NAME
-    elif [[ -f /etc/lsb-release ]]; then
+        VERSION_ID=$VERSION_ID
+    elif [ -f /etc/lsb-release ]; then
         . /etc/lsb-release
         DISTRO=$DISTRIB_ID
-        DISTRO_VERSION=$DISTRIB_RELEASE
+        VERSION_ID=$DISTRIB_RELEASE
     else
-        log_error "Cannot detect Linux distribution"
+        echo "Error: Could not detect Linux distribution"
+        exit 1
     fi
     
-    log_info "Detected: $DISTRO_NAME ($DISTRO $DISTRO_VERSION)"
+    echo "Detected: $DISTRO $VERSION_ID"
 }
 
-# Install dependencies based on distro
-install_dependencies() {
-    log_info "Installing dependencies..."
+# Install dependencies for Debian/Ubuntu
+install_deps_debian() {
+    echo "[1/7] Installing dependencies (apt)..."
     
-    case $DISTRO in
-        ubuntu|debian|linuxmint|pop)
-            sudo apt-get update
-            sudo apt-get install -y \
-                python3 python3-pip python3-venv \
-                nodejs npm \
-                mongodb \
-                ffmpeg \
-                git curl wget \
-                build-essential \
-                libssl-dev libffi-dev \
-                libtorrent-rasterbar-dev
-            
-            # Install yarn
-            sudo npm install -g yarn
-            ;;
-            
-        fedora|rhel|centos|rocky|alma)
-            sudo dnf install -y \
-                python3 python3-pip python3-virtualenv \
-                nodejs npm \
-                mongodb-server \
-                ffmpeg \
-                git curl wget \
-                gcc gcc-c++ make \
-                openssl-devel libffi-devel \
-                rb_libtorrent-devel
-            
-            sudo npm install -g yarn
-            ;;
-            
-        arch|manjaro|endeavouros)
-            sudo pacman -Syu --noconfirm
-            sudo pacman -S --needed --noconfirm \
-                python python-pip python-virtualenv \
-                nodejs npm yarn \
-                mongodb \
-                ffmpeg \
-                git curl wget \
-                base-devel \
-                openssl libffi \
-                libtorrent-rasterbar
-            ;;
-            
-        opensuse*|suse*)
-            sudo zypper install -y \
-                python3 python3-pip python3-virtualenv \
-                nodejs npm \
-                mongodb \
-                ffmpeg \
-                git curl wget \
-                gcc gcc-c++ make \
-                libopenssl-devel libffi-devel
-            
-            sudo npm install -g yarn
-            ;;
-            
-        *)
-            log_warning "Unsupported distribution: $DISTRO"
-            log_info "Please install dependencies manually:"
-            echo "  - Python 3.9+"
-            echo "  - Node.js 16+"
-            echo "  - MongoDB 5+"
-            echo "  - FFmpeg"
-            echo "  - libtorrent"
-            read -p "Continue anyway? [y/N] " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                exit 1
-            fi
-            ;;
-    esac
+    sudo apt-get update
+    sudo apt-get install -y \
+        curl \
+        gnupg \
+        ca-certificates \
+        build-essential \
+        python3 \
+        python3-pip \
+        python3-venv \
+        python3-dev \
+        ffmpeg \
+        libvips-dev \
+        libtorrent-rasterbar-dev \
+        python3-libtorrent
     
-    log_success "Dependencies installed"
-}
-
-# Create system user
-create_user() {
-    log_info "Creating system user: $USER"
-    
-    if id "$USER" &>/dev/null; then
-        log_info "User $USER already exists"
-    else
-        sudo useradd -r -s /bin/false -d "$DATA_DIR" "$USER"
-        log_success "User created"
+    # Install Node.js 20.x
+    if ! command -v node &> /dev/null; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
     fi
+    
+    # Install Yarn
+    if ! command -v yarn &> /dev/null; then
+        sudo npm install -g yarn
+    fi
+    
+    # Install MongoDB
+    if ! command -v mongod &> /dev/null; then
+        curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
+            sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
+            sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-org
+    fi
+    
+    echo "✓ Dependencies installed"
 }
 
-# Create directories
-create_directories() {
-    log_info "Creating directories..."
+# Install dependencies for Fedora/RHEL
+install_deps_fedora() {
+    echo "[1/7] Installing dependencies (dnf)..."
     
+    sudo dnf install -y \
+        curl \
+        gnupg2 \
+        gcc \
+        gcc-c++ \
+        make \
+        python3 \
+        python3-pip \
+        python3-devel \
+        python3-virtualenv \
+        ffmpeg \
+        vips-devel \
+        rb_libtorrent-devel \
+        rb_libtorrent-python3
+    
+    # Install Node.js
+    if ! command -v node &> /dev/null; then
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+        sudo dnf install -y nodejs
+    fi
+    
+    # Install Yarn
+    if ! command -v yarn &> /dev/null; then
+        sudo npm install -g yarn
+    fi
+    
+    # Install MongoDB
+    if ! command -v mongod &> /dev/null; then
+        cat > /etc/yum.repos.d/mongodb-org-7.0.repo << 'EOF'
+[mongodb-org-7.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+EOF
+        sudo dnf install -y mongodb-org
+    fi
+    
+    echo "✓ Dependencies installed"
+}
+
+# Create user and directories
+setup_user_and_dirs() {
+    echo "[2/7] Creating user and directories..."
+    
+    # Create service user
+    if ! id "$USER" &>/dev/null; then
+        sudo useradd -r -s /bin/false -d "$INSTALL_DIR" "$USER"
+    fi
+    
+    # Create directories
     sudo mkdir -p "$INSTALL_DIR"
-    sudo mkdir -p "$DATA_DIR"/{downloads,library,cache}
+    sudo mkdir -p "$DATA_DIR"/{config,themes,plugins,downloads,media}
     sudo mkdir -p "$CONFIG_DIR"
-    sudo mkdir -p "$LOG_DIR"
+    sudo mkdir -p /var/log/watchnexus
     
-    sudo chown -R "$USER:$USER" "$DATA_DIR"
-    sudo chown -R "$USER:$USER" "$LOG_DIR"
-    
-    log_success "Directories created"
+    echo "✓ Directories created"
 }
 
-# Install WatchNexus
-install_watchnexus() {
-    log_info "Installing WatchNexus..."
+# Build frontend
+build_frontend() {
+    echo "[3/7] Building frontend..."
     
-    # Clone or copy files
-    if [[ -d "/tmp/watchnexus-source" ]]; then
-        sudo cp -r /tmp/watchnexus-source/* "$INSTALL_DIR/"
-    else
-        # Download from release
-        log_info "Downloading WatchNexus v$VERSION..."
-        wget -q "https://github.com/watchnexus/watchnexus/releases/download/v$VERSION/watchnexus-$VERSION-linux.tar.gz" \
-            -O /tmp/watchnexus.tar.gz || {
-            log_warning "Could not download release, using local files..."
-            return
-        }
-        
-        sudo tar -xzf /tmp/watchnexus.tar.gz -C "$INSTALL_DIR"
-        rm /tmp/watchnexus.tar.gz
+    cd "$PROJECT_ROOT/frontend"
+    yarn install --frozen-lockfile
+    yarn build
+    
+    echo "✓ Frontend built"
+}
+
+# Install backend
+install_backend() {
+    echo "[4/7] Installing backend..."
+    
+    # Create virtual environment
+    cd "$PROJECT_ROOT/backend"
+    python3 -m venv venv
+    source venv/bin/activate
+    
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    
+    deactivate
+    
+    echo "✓ Backend installed"
+}
+
+# Copy files to installation directory
+install_files() {
+    echo "[5/7] Installing files..."
+    
+    # Copy frontend build
+    sudo cp -r "$PROJECT_ROOT/frontend/build" "$INSTALL_DIR/frontend"
+    
+    # Copy backend
+    sudo cp -r "$PROJECT_ROOT/backend" "$INSTALL_DIR/"
+    
+    # Copy plugins
+    if [ -d "$PROJECT_ROOT/backend/plugins" ]; then
+        sudo cp -r "$PROJECT_ROOT/backend/plugins"/* "$DATA_DIR/plugins/" 2>/dev/null || true
     fi
     
-    # Setup Python environment
-    cd "$INSTALL_DIR/backend"
-    sudo python3 -m venv venv
-    sudo ./venv/bin/pip install --upgrade pip
-    sudo ./venv/bin/pip install -r requirements.txt
+    # Set permissions
+    sudo chown -R "$USER:$USER" "$INSTALL_DIR"
+    sudo chown -R "$USER:$USER" "$DATA_DIR"
+    sudo chown -R "$USER:$USER" /var/log/watchnexus
     
-    # Setup frontend
-    cd "$INSTALL_DIR/frontend"
-    sudo yarn install --production
-    
-    log_success "WatchNexus installed"
+    echo "✓ Files installed"
 }
 
-# Create configuration
+# Create configuration files
 create_config() {
-    log_info "Creating configuration..."
+    echo "[6/7] Creating configuration..."
     
-    # Backend config
-    sudo tee "$CONFIG_DIR/backend.env" > /dev/null << EOF
-# WatchNexus Backend Configuration
+    # Create main config
+    sudo cat > "$CONFIG_DIR/watchnexus.conf" << EOF
+# WatchNexus Configuration
+
+# Server
+HOST=0.0.0.0
+BACKEND_PORT=8001
+FRONTEND_PORT=3000
+
+# Database
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
-DOWNLOAD_PATH=$DATA_DIR/downloads
-LIBRARY_PATH=$DATA_DIR/library
+
+# Paths
+DATA_DIR=$DATA_DIR
+MEDIA_DIR=$DATA_DIR/media
+DOWNLOADS_DIR=$DATA_DIR/downloads
+PLUGINS_DIR=$DATA_DIR/plugins
+THEMES_DIR=$DATA_DIR/themes
+
+# Security
 JWT_SECRET=$(openssl rand -hex 32)
-CORS_ORIGINS=*
+ENCRYPTION_KEY=$(openssl rand -hex 32)
 EOF
     
-    # Frontend config
-    sudo tee "$CONFIG_DIR/frontend.env" > /dev/null << EOF
-# WatchNexus Frontend Configuration
-REACT_APP_BACKEND_URL=http://localhost:8001
+    # Create environment file
+    sudo cat > "$INSTALL_DIR/backend/.env" << EOF
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=watchnexus
+WATCHNEXUS_PLUGINS_DIR=$DATA_DIR/plugins
+WATCHNEXUS_THEMES_DIR=$DATA_DIR/themes
 EOF
     
-    # Link configs
-    sudo ln -sf "$CONFIG_DIR/backend.env" "$INSTALL_DIR/backend/.env"
-    sudo ln -sf "$CONFIG_DIR/frontend.env" "$INSTALL_DIR/frontend/.env"
+    sudo chown "$USER:$USER" "$CONFIG_DIR/watchnexus.conf"
+    sudo chown "$USER:$USER" "$INSTALL_DIR/backend/.env"
+    sudo chmod 600 "$CONFIG_DIR/watchnexus.conf"
+    sudo chmod 600 "$INSTALL_DIR/backend/.env"
     
-    log_success "Configuration created"
+    echo "✓ Configuration created"
 }
 
-# Create systemd services
-create_services() {
-    log_info "Creating systemd services..."
+# Create systemd service
+create_service() {
+    echo "[7/7] Creating systemd service..."
     
-    # Backend service
-    sudo tee /etc/systemd/system/watchnexus-backend.service > /dev/null << EOF
+    sudo cat > /etc/systemd/system/watchnexus.service << EOF
 [Unit]
-Description=WatchNexus Backend (Marmalade Media Server)
+Description=WatchNexus Media Server
 After=network.target mongodb.service
-Requires=mongodb.service
+Wants=mongodb.service
 
 [Service]
 Type=simple
 User=$USER
 Group=$USER
 WorkingDirectory=$INSTALL_DIR/backend
-Environment="PATH=$INSTALL_DIR/backend/venv/bin"
-EnvironmentFile=$CONFIG_DIR/backend.env
-ExecStart=$INSTALL_DIR/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
+Environment="PATH=$INSTALL_DIR/backend/venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=$CONFIG_DIR/watchnexus.conf
+ExecStart=$INSTALL_DIR/backend/venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8001
 Restart=always
 RestartSec=10
+StandardOutput=append:/var/log/watchnexus/server.log
+StandardError=append:/var/log/watchnexus/error.log
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
-    # Frontend service (optional, for serving built frontend)
-    sudo tee /etc/systemd/system/watchnexus-frontend.service > /dev/null << EOF
-[Unit]
-Description=WatchNexus Frontend
-After=network.target watchnexus-backend.service
-
-[Service]
-Type=simple
-User=$USER
-Group=$USER
-WorkingDirectory=$INSTALL_DIR/frontend
-EnvironmentFile=$CONFIG_DIR/frontend.env
-ExecStart=/usr/bin/npx serve -s build -l 3000
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
+    
+    # Reload systemd
     sudo systemctl daemon-reload
     
-    log_success "Services created"
+    # Enable and start services
+    sudo systemctl enable mongod
+    sudo systemctl start mongod
+    sudo systemctl enable watchnexus
+    sudo systemctl start watchnexus
+    
+    echo "✓ Service created and started"
 }
 
-# Start services
-start_services() {
-    log_info "Starting services..."
-    
-    # Start MongoDB if not running
-    sudo systemctl enable mongodb || sudo systemctl enable mongod
-    sudo systemctl start mongodb || sudo systemctl start mongod
-    
-    # Start WatchNexus
-    sudo systemctl enable watchnexus-backend
-    sudo systemctl start watchnexus-backend
-    
-    log_success "Services started"
-}
-
-# Verify installation
-verify_installation() {
-    log_info "Verifying installation..."
-    
-    sleep 3
-    
-    if curl -s http://localhost:8001/api/health | grep -q "healthy"; then
-        log_success "Backend is running"
-    else
-        log_warning "Backend may not be running correctly"
-    fi
-}
-
-# Main installation
+# Main
 main() {
-    show_banner
-    
-    # Check root/sudo
-    if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run as root or with sudo"
-    fi
-    
-    # Parse arguments
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --user)
-                USER="$2"
-                shift 2
-                ;;
-            --install-dir)
-                INSTALL_DIR="$2"
-                shift 2
-                ;;
-            --version)
-                VERSION="$2"
-                shift 2
-                ;;
-            --help)
-                echo "Usage: sudo $0 [options]"
-                echo ""
-                echo "Options:"
-                echo "  --user USER         System user (default: watchnexus)"
-                echo "  --install-dir DIR   Installation directory (default: /opt/watchnexus)"
-                echo "  --version VER       Version to install (default: 1.0.0)"
-                echo "  --help              Show this help"
-                exit 0
-                ;;
-            *)
-                log_error "Unknown option: $1"
-                ;;
-        esac
-    done
-    
     detect_distro
-    install_dependencies
-    create_user
-    create_directories
-    install_watchnexus
+    
+    case "$DISTRO" in
+        ubuntu|debian|pop|linuxmint)
+            install_deps_debian
+            ;;
+        fedora|rhel|centos|rocky|alma)
+            install_deps_fedora
+            ;;
+        *)
+            echo "Unsupported distribution: $DISTRO"
+            echo "Try manual installation or use Docker."
+            exit 1
+            ;;
+    esac
+    
+    setup_user_and_dirs
+    build_frontend
+    install_backend
+    install_files
     create_config
-    create_services
-    start_services
-    verify_installation
+    create_service
     
     echo ""
-    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║          WatchNexus Installation Complete! 🎉                ║${NC}"
-    echo -e "${GREEN}╠══════════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${GREEN}║  Access WatchNexus at: http://localhost:8001                 ║${NC}"
-    echo -e "${GREEN}║                                                              ║${NC}"
-    echo -e "${GREEN}║  Manage services:                                            ║${NC}"
-    echo -e "${GREEN}║    sudo systemctl status watchnexus-backend                  ║${NC}"
-    echo -e "${GREEN}║    sudo systemctl restart watchnexus-backend                 ║${NC}"
-    echo -e "${GREEN}║                                                              ║${NC}"
-    echo -e "${GREEN}║  Logs: /var/log/watchnexus/                                  ║${NC}"
-    echo -e "${GREEN}║  Config: /etc/watchnexus/                                    ║${NC}"
-    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo "=============================================="
+    echo "  Installation Complete!"
+    echo "=============================================="
+    echo ""
+    echo "WatchNexus is now running at:"
+    echo "  http://localhost:8001"
+    echo ""
+    echo "Service commands:"
+    echo "  sudo systemctl status watchnexus"
+    echo "  sudo systemctl restart watchnexus"
+    echo "  sudo journalctl -u watchnexus -f"
+    echo ""
+    echo "Configuration: $CONFIG_DIR/watchnexus.conf"
+    echo "Data directory: $DATA_DIR"
+    echo "Logs: /var/log/watchnexus/"
     echo ""
 }
 
