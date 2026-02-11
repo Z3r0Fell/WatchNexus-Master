@@ -73,6 +73,52 @@ export const DownloadsPage = () => {
   const [downloadMode, setDownloadMode] = useState('builtin');
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [torrentFiles, setTorrentFiles] = useState([]);
+  
+  // Magnet link input
+  const [showMagnetInput, setShowMagnetInput] = useState(false);
+  const [magnetLink, setMagnetLink] = useState('');
+  const [addingMagnet, setAddingMagnet] = useState(false);
+
+  // Handle paste from clipboard
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.startsWith('magnet:')) {
+        setMagnetLink(text);
+        toast.success('Magnet link pasted');
+      } else {
+        toast.error('Clipboard does not contain a magnet link');
+      }
+    } catch (err) {
+      toast.error('Failed to read clipboard');
+    }
+  };
+
+  // Add magnet link
+  const handleAddMagnet = async () => {
+    if (!magnetLink || !magnetLink.startsWith('magnet:')) {
+      toast.error('Please enter a valid magnet link');
+      return;
+    }
+
+    setAddingMagnet(true);
+    try {
+      const response = await axios.post(`${API}/api/downloads/add-magnet`, null, {
+        params: { magnet: magnetLink, sequential: true }
+      });
+      
+      if (response.data.success) {
+        toast.success(`Added: ${response.data.name}`);
+        setMagnetLink('');
+        setShowMagnetInput(false);
+        fetchEngineData();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add magnet');
+    } finally {
+      setAddingMagnet(false);
+    }
+  };
 
   // Fetch built-in engine status and torrents
   const fetchEngineData = useCallback(async () => {
