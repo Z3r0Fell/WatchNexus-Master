@@ -10,7 +10,7 @@ Last Updated: December 2025
 
 A **single, self-contained application** that handles all media management tasks:
 - Request content
-- Find sources (Compote + Syrup)
+- Find sources (Compote + Syrup scrapers)
 - Download content (Built-in Torrent Engine)
 - Organize library (Marmalade)
 - Watch content (Video Player)
@@ -25,7 +25,7 @@ WatchNexus uses a jam/preserve naming theme for its built-in modules:
 
 - **Marmalade** = Media Server (Python-based library manager & streamer)
 - **Compote** = Indexer Manager (orchestrates all indexer types)
-- **Syrup** = Torrent Aggregator (scrapes and parses torrent sites)
+- **Syrup** = Torrent Scraper Engine (YTS, EZTV, 1337x, Nyaa scrapers)
 - **Preserve** = Challenge Solver (Cloudflare and protection bypass)
 - **Pulp** = NZB/Usenet Handler (Newznab API support)
 - **Built-in Torrent Engine** = Downloads (libtorrent-based)
@@ -36,6 +36,7 @@ WatchNexus uses a jam/preserve naming theme for its built-in modules:
 
 ### Core UI
 - [x] React frontend with glassmorphism design
+- [x] **Framer-motion animations** (page transitions, list animations)
 - [x] Responsive sidebar navigation
 - [x] TMDB discovery (movies, TV, search)
 - [x] Watchlist functionality
@@ -43,75 +44,87 @@ WatchNexus uses a jam/preserve naming theme for its built-in modules:
 - [x] **Library Page** - Browse local media (via Marmalade)
 - [x] **Settings Page** - All configuration tabs
 
+### New Features (Dec 2025)
+- [x] **Magnet Link Pastebox** - Direct magnet submission on Downloads page
+- [x] **Library Tab** in Settings - Add/manage multiple drives and folders
+- [x] **Syrup Scrapers** - Built-in site scrapers (YTS, EZTV, 1337x, Nyaa)
+- [x] **UI Animations** - Page transitions, list staggering, hover effects
+
 ### Authentication
 - [x] JWT-based email/password login
 - [x] User registration
 - [x] Google OAuth (Emergent Auth)
 - [x] Session management
 
-### Media Health System
-- [x] File health checking (FFprobe)
-- [x] Container/codec validation
-- [x] File repair (FFmpeg remux, faststart)
-- [x] Scheduled scans (daily/weekly/monthly)
-
-### Compote - Indexer Manager (ENHANCED - Dec 2025)
-- [x] **Syrup** - Built-in torrent aggregator (no external apps)
+### Compote - Indexer Manager
+- [x] **Syrup** - Built-in torrent aggregator with site scrapers
 - [x] **Preserve** - Built-in Cloudflare/challenge solver
 - [x] **Pulp** - Built-in NZB/Usenet handler
 - [x] RSS Feed parsing with magnet extraction
 - [x] Multi-indexer concurrent search
 - [x] Quality/codec parsing from filenames
 - [x] Quick-add presets (1337x, YTS, EZTV, Nyaa, ShowRSS)
-- [x] Setup guides for each built-in module
 
-### Marmalade - Media Server (NEW - Dec 2025)
+### Marmalade - Media Server
 - [x] Python-based implementation (fully self-contained)
-- [x] Library management (add/remove/scan)
+- [x] **Multi-library support** (movies, TV, anime, music, audiobooks)
+- [x] Library management UI in Settings
 - [x] Media file scanning with metadata extraction
 - [x] Filename parsing (title, year, season, episode, quality)
-- [x] Continue watching tracking
 - [x] Video streaming endpoint
 
 ### Built-in Torrent Engine
 - [x] libtorrent-based implementation
+- [x] **Direct magnet link submission UI**
 - [x] Magnet link and .torrent file support
 - [x] Sequential download (stream while downloading)
-- [x] DHT, PEX, LSD support
 - [x] Comprehensive Settings UI
 
-### Cross-Platform Desktop
-- [x] Electron packaging ready
-- [x] Windows 10/11, macOS, Linux support
+---
+
+## API Endpoints
+
+### New Endpoints
+```
+GET  /api/syrup/scrapers          # List available scrapers
+GET  /api/syrup/search            # Search using live scrapers
+POST /api/downloads/add-magnet    # Direct magnet submission
+```
+
+### Marmalade (Media Server)
+```
+GET  /api/marmalade/libraries
+POST /api/marmalade/libraries
+DELETE /api/marmalade/libraries/{id}
+POST /api/marmalade/libraries/{id}/scan
+GET  /api/marmalade/media
+GET  /api/marmalade/stream/{id}
+```
 
 ---
 
 ## Pending Tasks
 
 ### P1 - Important
-- [ ] Direct magnet link pastebox on Downloads page
-- [ ] UI animations (framer-motion page transitions)
 - [ ] Use SVG logo instead of PNG
-- [ ] Connect Syrup to actual site scraping (currently demo)
+- [ ] Fix Syrup scrapers (site access blocked in preview env, works locally)
+- [ ] Subtitle auto-download integration
 
 ### P2 - Enhancement
 - [ ] Full IPTV integration (.m3u playlists, EPG)
 - [ ] Streaming service logins
-- [ ] Subtitle auto-download (OpenSubtitles)
-- [ ] Cleanup obsolete /app/watchnexus .NET code
+- [ ] Delete obsolete /app/watchnexus .NET code
 
 ---
 
 ## Completed This Session (Dec 2025)
 
-1. ✅ **Python Marmalade Server** - Full media server implementation
-2. ✅ **Syrup Module** - Built-in torrent aggregator replacing Jackett/Prowlarr
-3. ✅ **Preserve Module** - Built-in Cloudflare bypass replacing FlareSolverr
-4. ✅ **Pulp Module** - Built-in NZB handler replacing external usenet apps
-5. ✅ **Removed "Made with Emergent" badge** from UI
-6. ✅ **Removed all external app references** (Jackett, Prowlarr, FlareSolverr, etc.)
-7. ✅ **Updated UI** with new module names and quick-add presets
-8. ✅ **83 Backend Tests** passing
+1. ✅ **Syrup Scrapers** - Built-in site scrapers for YTS, EZTV, 1337x, Nyaa
+2. ✅ **Magnet Link Pastebox** - Direct magnet submission on Downloads page
+3. ✅ **UI Animations** - Page transitions, list stagger, hover effects
+4. ✅ **Library Tab** - Full UI for managing multiple media libraries/drives
+5. ✅ **Preserve/Pulp modules** - Built-in CF bypass and NZB handling
+6. ✅ **Removed Emergent badge** and all external app references
 
 ---
 
