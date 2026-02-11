@@ -310,27 +310,29 @@ class Compote:
             if idx.enabled and (indexer_ids is None or idx.id in indexer_ids)
         ]
         
-        if not active_indexers:
-            logger.warning("No active indexers configured")
-            return []
-        
-        # Search all indexers concurrently
-        tasks = []
-        for indexer in active_indexers:
-            if indexer.type in ["torznab", "newznab"]:
-                tasks.append(
-                    self._search_torznab(indexer, query, categories, limit_per_indexer)
-                )
-        
-        # Gather results
         all_results = []
-        results_list = await asyncio.gather(*tasks, return_exceptions=True)
         
-        for results in results_list:
-            if isinstance(results, Exception):
-                logger.error(f"Search task failed: {results}")
-            else:
-                all_results.extend(results)
+        if not active_indexers:
+            logger.warning("No active indexers configured, using demo results")
+            # Return demo results so user can see the UI working
+            all_results = self._generate_demo_results(query, media_type)
+        else:
+            # Search all indexers concurrently
+            tasks = []
+            for indexer in active_indexers:
+                if indexer.type in ["torznab", "newznab"]:
+                    tasks.append(
+                        self._search_torznab(indexer, query, categories, limit_per_indexer)
+                    )
+            
+            # Gather results
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for results in results_list:
+                if isinstance(results, Exception):
+                    logger.error(f"Search task failed: {results}")
+                else:
+                    all_results.extend(results)
         
         # Sort results
         if sort_by == "seeders":
