@@ -475,21 +475,44 @@ export const DownloadsPage = () => {
               <p className="text-gray-400">Loading downloads...</p>
             </div>
           ) : currentTorrents.length === 0 ? (
-            <div className="glass-card rounded-xl p-12 text-center">
-              <Download className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+            <motion.div 
+              className="glass-card rounded-xl p-12 text-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+              >
+                <Download className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+              </motion.div>
               <h3 className="text-xl font-bold mb-2">No Downloads</h3>
               <p className="text-gray-400 mb-4">
-                Your download queue is empty. Search for content using Compote to get started!
+                Your download queue is empty. Search for content or add a magnet link!
               </p>
-              <Link to="/">
-                <Button className="bg-violet-600 hover:bg-violet-700">
-                  Browse Content
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  onClick={() => setShowMagnetInput(true)}
+                  variant="outline"
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Add Magnet
                 </Button>
-              </Link>
-            </div>
+                <Link to="/">
+                  <Button className="bg-violet-600 hover:bg-violet-700">
+                    Browse Content
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
           ) : (
-            <div className="space-y-4">
-              {currentTorrents.map((torrent) => {
+            <motion.div 
+              className="space-y-4"
+              variants={listVariants}
+              initial="hidden"
+              animate="show"
+            >
+              {currentTorrents.map((torrent, index) => {
                 const isBuiltin = downloadMode === 'builtin';
                 const id = isBuiltin ? torrent.id : torrent.hash;
                 const name = torrent.name || 'Unknown';
