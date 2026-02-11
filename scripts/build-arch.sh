@@ -1,399 +1,235 @@
 #!/bin/bash
-#
+#===============================================================================
 # WatchNexus Build Script for Arch Linux
-# Ensures all dependencies are installed and builds the application
-#
+# Creates an installable package using makepkg
+#===============================================================================
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Logging functions
-log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
-
-# Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-PYTHON_VERSION="3.11"
-NODE_VERSION="18"
+BUILD_DIR="$PROJECT_ROOT/build"
+DIST_DIR="$PROJECT_ROOT/dist"
+VERSION="1.0.0"
 
-# System dependencies (pacman packages)
-PACMAN_DEPS=(
-    "python"
-    "python-pip"
-    "python-virtualenv"
-    "nodejs"
-    "npm"
-    "yarn"
-    "mongodb"
-    "ffmpeg"
-    "git"
-    "base-devel"
-    "openssl"
-    "libffi"
-    "libtorrent-rasterbar"
-)
-
-# AUR dependencies (if needed)
-AUR_DEPS=(
-    # "mongodb-bin"  # Alternative if mongodb not in repos
-)
-
-# Python dependencies (from requirements.txt)
-PYTHON_DEPS=(
-    "fastapi"
-    "uvicorn"
-    "pymongo"
-    "python-jose"
-    "passlib"
-    "bcrypt"
-    "httpx"
-    "beautifulsoup4"
-    "lxml"
-    "cryptography"
-    "python-multipart"
-    "libtorrent"
-)
-
-# Node.js dependencies check
-NODE_DEPS=(
-    "react"
-    "react-dom"
-    "axios"
-    "framer-motion"
-    "tailwindcss"
-)
-
-echo ""
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║           WatchNexus Build Script - Arch Linux               ║"
-echo "║                    🍯 Unified Media Pipeline                  ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
+echo "=============================================="
+echo "  WatchNexus Build Script - Arch Linux"
+echo "=============================================="
 echo ""
 
-# Check if running as root (not recommended)
-if [[ $EUID -eq 0 ]]; then
-    log_warning "Running as root is not recommended. Consider using a regular user with sudo."
-fi
-
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" &> /dev/null
-}
-
-# Function to check pacman package
-package_installed() {
-    pacman -Qi "$1" &> /dev/null
-}
-
-# Function to install pacman packages
-install_pacman_deps() {
-    log_info "Checking system dependencies..."
+# Check for required tools
+check_dependencies() {
+    echo "[1/6] Checking dependencies..."
     
-    local missing_deps=()
+    local missing=()
     
-    for dep in "${PACMAN_DEPS[@]}"; do
-        if ! package_installed "$dep"; then
-            missing_deps+=("$dep")
-        fi
-    done
+    command -v node >/dev/null 2>&1 || missing+=("nodejs")
+    command -v yarn >/dev/null 2>&1 || missing+=("yarn")
+    command -v python3 >/dev/null 2>&1 || missing+=("python")
+    command -v pip >/dev/null 2>&1 || missing+=("python-pip")
+    command -v makepkg >/dev/null 2>&1 || missing+=("pacman")
     
-    if [[ ${#missing_deps[@]} -gt 0 ]]; then
-        log_info "Installing missing packages: ${missing_deps[*]}"
-        sudo pacman -S --needed --noconfirm "${missing_deps[@]}"
-        log_success "System dependencies installed"
-    else
-        log_success "All system dependencies already installed"
-    fi
-}
-
-# Function to install AUR packages (using yay or paru)
-install_aur_deps() {
-    if [[ ${#AUR_DEPS[@]} -eq 0 ]]; then
-        return 0
+    if [ ${#missing[@]} -ne 0 ]; then
+        echo "Missing dependencies: ${missing[*]}"
+        echo "Installing with pacman..."
+        sudo pacman -S --needed --noconfirm "${missing[@]}"
     fi
     
-    log_info "Checking AUR dependencies..."
-    
-    local aur_helper=""
-    if command_exists yay; then
-        aur_helper="yay"
-    elif command_exists paru; then
-        aur_helper="paru"
-    else
-        log_warning "No AUR helper found (yay/paru). Installing yay..."
-        
-        cd /tmp
-        git clone https://aur.archlinux.org/yay.git
-        cd yay
-        makepkg -si --noconfirm
-        cd "$PROJECT_ROOT"
-        aur_helper="yay"
-    fi
-    
-    for dep in "${AUR_DEPS[@]}"; do
-        if ! package_installed "$dep"; then
-            log_info "Installing AUR package: $dep"
-            $aur_helper -S --needed --noconfirm "$dep"
-        fi
-    done
-    
-    log_success "AUR dependencies installed"
+    echo "✓ All dependencies installed"
 }
 
-# Function to setup Python virtual environment
-setup_python_env() {
-    log_info "Setting up Python virtual environment..."
+# Install system dependencies
+install_system_deps() {
+    echo "[2/6] Installing system dependencies..."
     
-    cd "$PROJECT_ROOT/backend"
+    sudo pacman -S --needed --noconfirm \
+        base-devel \
+        mongodb \
+        libtorrent-rasterbar \
+        python-libtorrent \
+        ffmpeg \
+        libvips \
+        electron
     
-    if [[ ! -d "venv" ]]; then
-        python -m venv venv
-        log_info "Created virtual environment"
-    fi
-    
-    source venv/bin/activate
-    
-    # Upgrade pip
-    pip install --upgrade pip wheel setuptools
-    
-    # Install requirements
-    if [[ -f "requirements.txt" ]]; then
-        log_info "Installing Python dependencies..."
-        pip install -r requirements.txt
-        log_success "Python dependencies installed"
-    else
-        log_warning "requirements.txt not found, installing core dependencies..."
-        pip install "${PYTHON_DEPS[@]}"
-    fi
-    
-    deactivate
+    echo "✓ System dependencies installed"
 }
 
-# Function to setup Node.js/Frontend
-setup_node_env() {
-    log_info "Setting up Node.js environment..."
+# Build frontend
+build_frontend() {
+    echo "[3/6] Building frontend..."
     
     cd "$PROJECT_ROOT/frontend"
-    
-    # Check Node version
-    local node_ver=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-    if [[ "$node_ver" -lt 16 ]]; then
-        log_error "Node.js version 16+ required. Found: v$node_ver"
-        exit 1
-    fi
     
     # Install dependencies
-    if [[ -f "package.json" ]]; then
-        log_info "Installing Node.js dependencies..."
-        yarn install
-        log_success "Node.js dependencies installed"
-    else
-        log_error "package.json not found in frontend directory"
-        exit 1
-    fi
-}
-
-# Function to setup MongoDB
-setup_mongodb() {
-    log_info "Checking MongoDB..."
+    yarn install --frozen-lockfile
     
-    if ! systemctl is-active --quiet mongodb; then
-        log_info "Starting MongoDB service..."
-        sudo systemctl enable mongodb
-        sudo systemctl start mongodb
-    fi
-    
-    log_success "MongoDB is running"
-}
-
-# Function to build frontend for production
-build_frontend() {
-    log_info "Building frontend for production..."
-    
-    cd "$PROJECT_ROOT/frontend"
-    
-    # Set production environment
-    export NODE_ENV=production
-    
+    # Build production bundle
     yarn build
     
-    log_success "Frontend build complete"
+    echo "✓ Frontend built"
 }
 
-# Function to build Electron app
-build_electron() {
-    log_info "Building Electron application..."
+# Build backend
+build_backend() {
+    echo "[4/6] Building backend..."
     
-    cd "$PROJECT_ROOT/frontend"
-    
-    # Check if electron-builder is available
-    if ! yarn list electron-builder &> /dev/null; then
-        log_info "Installing electron-builder..."
-        yarn add --dev electron-builder
-    fi
-    
-    # Build for Linux
-    yarn electron:build --linux
-    
-    log_success "Electron build complete"
-}
-
-# Function to run tests
-run_tests() {
-    log_info "Running tests..."
-    
-    # Backend tests
     cd "$PROJECT_ROOT/backend"
+    
+    # Create virtual environment
+    python3 -m venv venv
     source venv/bin/activate
     
-    if [[ -d "tests" ]]; then
-        python -m pytest tests/ -v
-    fi
+    # Install dependencies
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    
+    # Create standalone with PyInstaller (optional)
+    # pip install pyinstaller
+    # pyinstaller --onefile server.py
     
     deactivate
     
-    # Frontend tests
-    cd "$PROJECT_ROOT/frontend"
-    yarn test --watchAll=false || true
-    
-    log_success "Tests complete"
+    echo "✓ Backend built"
 }
 
-# Function to create distribution package
-create_package() {
-    log_info "Creating distribution package..."
+# Create PKGBUILD
+create_pkgbuild() {
+    echo "[5/6] Creating PKGBUILD..."
     
-    local dist_dir="$PROJECT_ROOT/dist"
-    local version=$(cat "$PROJECT_ROOT/version.txt" 2>/dev/null || echo "1.0.0")
+    mkdir -p "$BUILD_DIR/pkg"
     
-    mkdir -p "$dist_dir"
+    cat > "$BUILD_DIR/pkg/PKGBUILD" << 'EOF'
+# Maintainer: WatchNexus Team <team@watchnexus.ca>
+pkgname=watchnexus
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Unified, self-hosted media pipeline"
+arch=('x86_64')
+url="https://watchnexus.ca"
+license=('MIT')
+depends=(
+    'electron'
+    'nodejs'
+    'python'
+    'python-pip'
+    'mongodb'
+    'libtorrent-rasterbar'
+    'python-libtorrent'
+    'ffmpeg'
+)
+makedepends=('yarn' 'npm')
+source=("watchnexus-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    cd "$srcdir/watchnexus-$pkgver"
     
-    # Copy backend
-    cp -r "$PROJECT_ROOT/backend" "$dist_dir/"
+    # Install frontend
+    install -dm755 "$pkgdir/opt/watchnexus/frontend"
+    cp -r frontend/build/* "$pkgdir/opt/watchnexus/frontend/"
     
-    # Copy frontend build
-    cp -r "$PROJECT_ROOT/frontend/build" "$dist_dir/frontend/"
+    # Install backend
+    install -dm755 "$pkgdir/opt/watchnexus/backend"
+    cp -r backend/* "$pkgdir/opt/watchnexus/backend/"
     
-    # Copy scripts
-    cp -r "$PROJECT_ROOT/scripts" "$dist_dir/"
+    # Install systemd service
+    install -Dm644 scripts/watchnexus.service "$pkgdir/usr/lib/systemd/system/watchnexus.service"
     
-    # Create version file
-    echo "$version" > "$dist_dir/version.txt"
+    # Install desktop entry
+    install -Dm644 scripts/watchnexus.desktop "$pkgdir/usr/share/applications/watchnexus.desktop"
     
-    # Create tarball
-    cd "$PROJECT_ROOT"
-    tar -czvf "watchnexus-$version-linux.tar.gz" -C dist .
+    # Install icon
+    install -Dm644 frontend/public/watchnexus-logo.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/watchnexus.svg"
     
-    log_success "Package created: watchnexus-$version-linux.tar.gz"
+    # Install launcher script
+    install -Dm755 scripts/watchnexus "$pkgdir/usr/bin/watchnexus"
+}
+EOF
+
+    # Create systemd service file
+    cat > "$BUILD_DIR/pkg/watchnexus.service" << 'EOF'
+[Unit]
+Description=WatchNexus Media Server
+After=network.target mongodb.service
+
+[Service]
+Type=simple
+User=watchnexus
+WorkingDirectory=/opt/watchnexus/backend
+ExecStart=/usr/bin/python3 -m uvicorn server:app --host 0.0.0.0 --port 8001
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Create desktop entry
+    cat > "$BUILD_DIR/pkg/watchnexus.desktop" << 'EOF'
+[Desktop Entry]
+Name=WatchNexus
+Comment=Unified Media Pipeline
+Exec=watchnexus
+Icon=watchnexus
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Player;
+StartupWMClass=WatchNexus
+EOF
+
+    # Create launcher script
+    cat > "$BUILD_DIR/pkg/watchnexus" << 'EOF'
+#!/bin/bash
+cd /opt/watchnexus/frontend
+electron .
+EOF
+
+    echo "✓ PKGBUILD created"
 }
 
-# Main build process
+# Build package
+build_package() {
+    echo "[6/6] Building package..."
+    
+    mkdir -p "$DIST_DIR"
+    cd "$BUILD_DIR/pkg"
+    
+    # Create source tarball
+    tar -czvf "watchnexus-$VERSION.tar.gz" \
+        -C "$PROJECT_ROOT" \
+        frontend/build \
+        backend \
+        scripts
+    
+    # Build package
+    makepkg -sf
+    
+    # Move package to dist
+    mv *.pkg.tar.zst "$DIST_DIR/"
+    
+    echo "✓ Package built: $DIST_DIR/watchnexus-$VERSION-1-x86_64.pkg.tar.zst"
+}
+
+# Main
 main() {
-    local start_time=$(date +%s)
-    
-    log_info "Starting WatchNexus build process..."
-    log_info "Project root: $PROJECT_ROOT"
-    
-    # Parse arguments
-    local skip_deps=false
-    local skip_tests=false
-    local build_electron_app=false
-    local create_dist=false
-    
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --skip-deps)
-                skip_deps=true
-                shift
-                ;;
-            --skip-tests)
-                skip_tests=true
-                shift
-                ;;
-            --electron)
-                build_electron_app=true
-                shift
-                ;;
-            --dist)
-                create_dist=true
-                shift
-                ;;
-            --help)
-                echo "Usage: $0 [options]"
-                echo ""
-                echo "Options:"
-                echo "  --skip-deps     Skip dependency installation"
-                echo "  --skip-tests    Skip running tests"
-                echo "  --electron      Build Electron desktop app"
-                echo "  --dist          Create distribution package"
-                echo "  --help          Show this help message"
-                exit 0
-                ;;
-            *)
-                log_error "Unknown option: $1"
-                exit 1
-                ;;
-        esac
-    done
-    
-    # Step 1: Install system dependencies
-    if [[ "$skip_deps" == false ]]; then
-        install_pacman_deps
-        install_aur_deps
-    fi
-    
-    # Step 2: Setup Python environment
-    setup_python_env
-    
-    # Step 3: Setup Node.js environment
-    setup_node_env
-    
-    # Step 4: Setup MongoDB
-    setup_mongodb
-    
-    # Step 5: Build frontend
+    check_dependencies
+    install_system_deps
     build_frontend
-    
-    # Step 6: Build Electron (if requested)
-    if [[ "$build_electron_app" == true ]]; then
-        build_electron
-    fi
-    
-    # Step 7: Run tests (if not skipped)
-    if [[ "$skip_tests" == false ]]; then
-        run_tests
-    fi
-    
-    # Step 8: Create distribution package (if requested)
-    if [[ "$create_dist" == true ]]; then
-        create_package
-    fi
-    
-    local end_time=$(date +%s)
-    local duration=$((end_time - start_time))
+    build_backend
+    create_pkgbuild
+    build_package
     
     echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    Build Complete! 🎉                        ║"
-    echo "╠══════════════════════════════════════════════════════════════╣"
-    echo "║  Duration: ${duration}s                                            ║"
-    echo "║                                                              ║"
-    echo "║  To start the application:                                   ║"
-    echo "║    Backend:  cd backend && source venv/bin/activate          ║"
-    echo "║              uvicorn server:app --reload                     ║"
-    echo "║    Frontend: cd frontend && yarn start                       ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "=============================================="
+    echo "  Build Complete!"
+    echo "=============================================="
+    echo ""
+    echo "Install with:"
+    echo "  sudo pacman -U $DIST_DIR/watchnexus-$VERSION-1-x86_64.pkg.tar.zst"
+    echo ""
+    echo "Or install from AUR:"
+    echo "  yay -S watchnexus-bin"
     echo ""
 }
 
-# Run main function
 main "$@"

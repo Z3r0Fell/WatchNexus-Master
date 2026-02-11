@@ -1,431 +1,254 @@
-#
-# WatchNexus Installer for Windows
-# PowerShell Script - Run as Administrator
-#
-# Usage: Right-click and "Run with PowerShell" or:
-#   Set-ExecutionPolicy Bypass -Scope Process -Force; .\install-windows.ps1
-#
+#===============================================================================
+# WatchNexus Installation Script for Windows
+# Supports: Windows 10/11
+# Run as Administrator
+#===============================================================================
 
-param(
-    [string]$InstallDir = "$env:LOCALAPPDATA\WatchNexus",
-    [string]$DataDir = "$env:APPDATA\WatchNexus",
-    [string]$Version = "1.0.0",
-    [switch]$SkipDependencies,
-    [switch]$Help
-)
+#Requires -RunAsAdministrator
 
-# Colors and formatting
-$Host.UI.RawUI.WindowTitle = "WatchNexus Installer"
+$ErrorActionPreference = "Stop"
 
-function Write-ColorOutput {
-    param([string]$Message, [string]$Color = "White")
-    Write-Host $Message -ForegroundColor $Color
-}
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Split-Path -Parent $ScriptDir
+$InstallDir = "$env:ProgramFiles\WatchNexus"
+$DataDir = "$env:LOCALAPPDATA\WatchNexus"
+$Version = "1.0.0"
 
-function Write-Info { Write-ColorOutput "[INFO] $args" "Cyan" }
-function Write-Success { Write-ColorOutput "[✓] $args" "Green" }
-function Write-Warning { Write-ColorOutput "[!] $args" "Yellow" }
-function Write-Error { Write-ColorOutput "[✗] $args" "Red" }
-
-# Banner
-function Show-Banner {
-    $banner = @"
-
-    ██╗    ██╗ █████╗ ████████╗ ██████╗██╗  ██╗███╗   ██╗███████╗██╗  ██╗██╗   ██╗███████╗
-    ██║    ██║██╔══██╗╚══██╔══╝██╔════╝██║  ██║████╗  ██║██╔════╝╚██╗██╔╝██║   ██║██╔════╝
-    ██║ █╗ ██║███████║   ██║   ██║     ███████║██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║███████╗
-    ██║███╗██║██╔══██║   ██║   ██║     ██╔══██║██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║
-    ╚███╔███╔╝██║  ██║   ██║   ╚██████╗██║  ██║██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║
-     ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
-
-                        🍯 Unified Media Pipeline - Windows Installer
-
-"@
-    Write-Host $banner -ForegroundColor Magenta
-}
-
-# Check if running as Administrator
-function Test-Administrator {
-    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
+Write-Host "=============================================="
+Write-Host "  WatchNexus Installer - Windows"
+Write-Host "=============================================="
+Write-Host ""
 
 # Check Windows version
 function Test-WindowsVersion {
-    $os = Get-CimInstance -ClassName Win32_OperatingSystem
-    $version = [System.Environment]::OSVersion.Version
-    
-    Write-Info "Detected: $($os.Caption) (Build $($os.BuildNumber))"
-    
-    if ($version.Major -lt 10) {
-        Write-Error "Windows 10 or later is required"
+    $osVersion = [System.Environment]::OSVersion.Version
+    if ($osVersion.Major -lt 10) {
+        Write-Error "WatchNexus requires Windows 10 or later"
         exit 1
     }
+    Write-Host "Windows version: $($osVersion.ToString()) ✓"
 }
 
-# Install Chocolatey (package manager)
+# Install Chocolatey if not present
 function Install-Chocolatey {
-    if (Get-Command choco -ErrorAction SilentlyContinue) {
-        Write-Info "Chocolatey already installed"
-        choco upgrade chocolatey -y | Out-Null
-    } else {
-        Write-Info "Installing Chocolatey..."
+    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+        Write-Host "[1/7] Installing Chocolatey..."
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         
         # Refresh environment
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-        
-        Write-Success "Chocolatey installed"
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+    } else {
+        Write-Host "[1/7] Chocolatey already installed ✓"
     }
 }
 
-# Install dependencies via Chocolatey
+# Install dependencies
 function Install-Dependencies {
-    Write-Info "Installing dependencies..."
+    Write-Host "[2/7] Installing dependencies..."
     
-    $packages = @(
-        "python311",
-        "nodejs-lts",
-        "yarn",
-        "mongodb",
-        "ffmpeg",
-        "git"
-    )
+    # Install required packages
+    choco install -y `
+        nodejs-lts `
+        yarn `
+        python311 `
+        mongodb `
+        ffmpeg `
+        git
     
-    foreach ($package in $packages) {
-        Write-Info "Installing $package..."
-        choco install $package -y --no-progress | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "$package installed"
-        }
-    }
+    # Refresh environment
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
     
-    # Refresh environment variables
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    # Start MongoDB service
+    Start-Service MongoDB
+    Set-Service MongoDB -StartupType Automatic
     
-    Write-Success "All dependencies installed"
+    Write-Host "✓ Dependencies installed"
 }
 
 # Create directories
 function New-Directories {
-    Write-Info "Creating directories..."
+    Write-Host "[3/7] Creating directories..."
     
-    $directories = @(
+    $dirs = @(
         $InstallDir,
+        "$DataDir\config",
+        "$DataDir\themes",
+        "$DataDir\plugins", 
         "$DataDir\downloads",
-        "$DataDir\library",
-        "$DataDir\cache",
-        "$DataDir\logs",
-        "$DataDir\config"
+        "$DataDir\media",
+        "$DataDir\logs"
     )
     
-    foreach ($dir in $directories) {
+    foreach ($dir in $dirs) {
         if (!(Test-Path $dir)) {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
         }
     }
     
-    Write-Success "Directories created"
+    Write-Host "✓ Directories created"
 }
 
-# Download and install WatchNexus
-function Install-WatchNexus {
-    Write-Info "Installing WatchNexus..."
+# Build frontend
+function Build-Frontend {
+    Write-Host "[4/7] Building frontend..."
     
-    # Check for local source
-    if (Test-Path ".\backend" -and Test-Path ".\frontend") {
-        Write-Info "Installing from local source..."
-        Copy-Item -Path ".\backend" -Destination $InstallDir -Recurse -Force
-        Copy-Item -Path ".\frontend" -Destination $InstallDir -Recurse -Force
-    } else {
-        Write-Info "Downloading WatchNexus v$Version..."
-        
-        $downloadUrl = "https://github.com/watchnexus/watchnexus/releases/download/v$Version/watchnexus-$Version-windows.zip"
-        $zipPath = "$env:TEMP\watchnexus.zip"
-        
-        try {
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
-            Expand-Archive -Path $zipPath -DestinationPath $InstallDir -Force
-            Remove-Item $zipPath -Force
-        } catch {
-            Write-Warning "Could not download release, please install from source"
-            return
-        }
-    }
+    Set-Location "$ProjectRoot\frontend"
+    yarn install --frozen-lockfile
+    yarn build
     
-    # Setup Python virtual environment
-    Write-Info "Setting up Python environment..."
-    Push-Location "$InstallDir\backend"
+    Write-Host "✓ Frontend built"
+}
+
+# Install backend
+function Install-Backend {
+    Write-Host "[5/7] Installing backend..."
     
+    Set-Location "$ProjectRoot\backend"
+    
+    # Create virtual environment
     python -m venv venv
-    & ".\venv\Scripts\pip.exe" install --upgrade pip
-    & ".\venv\Scripts\pip.exe" install -r requirements.txt
+    & ".\venv\Scripts\Activate.ps1"
     
-    Pop-Location
+    pip install --upgrade pip
+    pip install -r requirements.txt
     
-    # Setup frontend
-    Write-Info "Setting up frontend..."
-    Push-Location "$InstallDir\frontend"
+    deactivate
     
-    yarn install
-    
-    Pop-Location
-    
-    Write-Success "WatchNexus installed to $InstallDir"
+    Write-Host "✓ Backend installed"
 }
 
-# Create configuration files
-function New-Configuration {
-    Write-Info "Creating configuration..."
+# Install files
+function Install-Files {
+    Write-Host "[6/7] Installing files..."
     
-    $configDir = "$DataDir\config"
+    # Copy frontend
+    Copy-Item -Path "$ProjectRoot\frontend\build" -Destination "$InstallDir\frontend" -Recurse -Force
     
-    # Generate JWT secret
-    $jwtSecret = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 64 | ForEach-Object {[char]$_})
+    # Copy backend
+    Copy-Item -Path "$ProjectRoot\backend\*" -Destination "$InstallDir\backend" -Recurse -Force
     
-    # Backend .env
+    # Create environment file
     @"
-# WatchNexus Backend Configuration
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
-DOWNLOAD_PATH=$DataDir\downloads
-LIBRARY_PATH=$DataDir\library
-JWT_SECRET=$jwtSecret
-CORS_ORIGINS=*
-"@ | Out-File -FilePath "$configDir\backend.env" -Encoding utf8
+WATCHNEXUS_PLUGINS_DIR=$DataDir\plugins
+WATCHNEXUS_THEMES_DIR=$DataDir\themes
+"@ | Out-File -FilePath "$InstallDir\backend\.env" -Encoding UTF8
     
-    # Frontend .env
+    Write-Host "✓ Files installed"
+}
+
+# Create Windows service and shortcuts
+function Install-Service {
+    Write-Host "[7/7] Creating service and shortcuts..."
+    
+    # Create launcher script
+    $launcherPath = "$InstallDir\WatchNexus.bat"
     @"
-# WatchNexus Frontend Configuration
-REACT_APP_BACKEND_URL=http://localhost:8001
-"@ | Out-File -FilePath "$configDir\frontend.env" -Encoding utf8
+@echo off
+cd /d "$InstallDir\backend"
+call venv\Scripts\activate.bat
+python -m uvicorn server:app --host 127.0.0.1 --port 8001
+"@ | Out-File -FilePath $launcherPath -Encoding ASCII
     
-    # Copy to install directory
-    Copy-Item "$configDir\backend.env" "$InstallDir\backend\.env" -Force
-    Copy-Item "$configDir\frontend.env" "$InstallDir\frontend\.env" -Force
+    # Create PowerShell launcher
+    $psLauncherPath = "$InstallDir\Start-WatchNexus.ps1"
+    @"
+`$ErrorActionPreference = "SilentlyContinue"
+Set-Location "$InstallDir\backend"
+& ".\venv\Scripts\Activate.ps1"
+Start-Process -NoNewWindow python -ArgumentList "-m", "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "8001"
+Start-Sleep -Seconds 3
+Start-Process "http://localhost:8001"
+"@ | Out-File -FilePath $psLauncherPath -Encoding UTF8
     
-    Write-Success "Configuration created"
-}
-
-# Create Windows Service using NSSM
-function New-WindowsService {
-    Write-Info "Creating Windows service..."
+    # Create Start Menu shortcut
+    $WshShell = New-Object -ComObject WScript.Shell
+    $Shortcut = $WshShell.CreateShortcut("$env:ProgramData\Microsoft\Windows\Start Menu\Programs\WatchNexus.lnk")
+    $Shortcut.TargetPath = "powershell.exe"
+    $Shortcut.Arguments = "-ExecutionPolicy Bypass -File `"$psLauncherPath`""
+    $Shortcut.WorkingDirectory = $InstallDir
+    $Shortcut.IconLocation = "$InstallDir\frontend\watchnexus-logo.ico"
+    $Shortcut.Description = "WatchNexus - Unified Media Pipeline"
+    $Shortcut.Save()
     
-    # Install NSSM if not present
-    if (!(Get-Command nssm -ErrorAction SilentlyContinue)) {
-        choco install nssm -y | Out-Null
-    }
+    # Create Desktop shortcut
+    $DesktopShortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\WatchNexus.lnk")
+    $DesktopShortcut.TargetPath = "powershell.exe"
+    $DesktopShortcut.Arguments = "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$psLauncherPath`""
+    $DesktopShortcut.WorkingDirectory = $InstallDir
+    $DesktopShortcut.Description = "WatchNexus - Unified Media Pipeline"
+    $DesktopShortcut.Save()
     
-    # Remove existing service if present
-    nssm stop WatchNexusBackend 2>$null
-    nssm remove WatchNexusBackend confirm 2>$null
-    
-    # Create new service
-    $pythonExe = "$InstallDir\backend\venv\Scripts\python.exe"
-    $uvicornModule = "uvicorn"
-    $uvicornArgs = "server:app --host 0.0.0.0 --port 8001"
-    
-    nssm install WatchNexusBackend $pythonExe -m $uvicornModule $uvicornArgs
-    nssm set WatchNexusBackend AppDirectory "$InstallDir\backend"
-    nssm set WatchNexusBackend DisplayName "WatchNexus Backend"
-    nssm set WatchNexusBackend Description "WatchNexus Media Server Backend"
-    nssm set WatchNexusBackend Start SERVICE_AUTO_START
-    nssm set WatchNexusBackend AppStdout "$DataDir\logs\backend.log"
-    nssm set WatchNexusBackend AppStderr "$DataDir\logs\backend.error.log"
-    nssm set WatchNexusBackend AppRotateFiles 1
-    nssm set WatchNexusBackend AppRotateBytes 1048576
-    
-    Write-Success "Windows service created"
-}
-
-# Start MongoDB
-function Start-MongoDB {
-    Write-Info "Starting MongoDB..."
-    
-    # Check if MongoDB service exists
-    $mongoService = Get-Service -Name "MongoDB" -ErrorAction SilentlyContinue
-    
-    if ($mongoService) {
-        if ($mongoService.Status -ne "Running") {
-            Start-Service MongoDB
-        }
-        Write-Success "MongoDB is running"
+    # Install as Windows service using NSSM (optional)
+    if (Get-Command nssm -ErrorAction SilentlyContinue) {
+        nssm install WatchNexus "$InstallDir\backend\venv\Scripts\python.exe" "-m uvicorn server:app --host 127.0.0.1 --port 8001"
+        nssm set WatchNexus AppDirectory "$InstallDir\backend"
+        nssm set WatchNexus DisplayName "WatchNexus Media Server"
+        nssm set WatchNexus Description "Unified, self-hosted media pipeline"
+        nssm set WatchNexus Start SERVICE_AUTO_START
+        nssm set WatchNexus AppStdout "$DataDir\logs\server.log"
+        nssm set WatchNexus AppStderr "$DataDir\logs\error.log"
+        
+        Write-Host "Windows service 'WatchNexus' created"
+        Write-Host "Start with: nssm start WatchNexus"
     } else {
-        Write-Warning "MongoDB service not found. Starting manually..."
-        
-        # Create data directory
-        $mongoDataDir = "$DataDir\mongodb"
-        if (!(Test-Path $mongoDataDir)) {
-            New-Item -ItemType Directory -Path $mongoDataDir -Force | Out-Null
-        }
-        
-        # Start MongoDB in background
-        $mongod = Get-Command mongod -ErrorAction SilentlyContinue
-        if ($mongod) {
-            Start-Process -FilePath $mongod.Source -ArgumentList "--dbpath `"$mongoDataDir`"" -WindowStyle Hidden
-            Write-Success "MongoDB started"
-        } else {
-            Write-Error "MongoDB not found"
-        }
-    }
-}
-
-# Start WatchNexus
-function Start-WatchNexus {
-    Write-Info "Starting WatchNexus..."
-    
-    # Start service
-    nssm start WatchNexusBackend 2>$null
-    
-    # Wait for startup
-    Start-Sleep -Seconds 5
-    
-    # Verify
-    try {
-        $response = Invoke-WebRequest -Uri "http://localhost:8001/api/health" -UseBasicParsing -TimeoutSec 10
-        if ($response.Content -match "healthy") {
-            Write-Success "WatchNexus is running"
-        }
-    } catch {
-        Write-Warning "WatchNexus may not be running correctly"
-    }
-}
-
-# Create Start Menu shortcuts
-function New-Shortcuts {
-    Write-Info "Creating shortcuts..."
-    
-    $startMenuPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\WatchNexus"
-    
-    if (!(Test-Path $startMenuPath)) {
-        New-Item -ItemType Directory -Path $startMenuPath -Force | Out-Null
+        Write-Host "Note: Install NSSM for Windows service support: choco install nssm"
     }
     
-    # Create shortcut to web interface
-    $shell = New-Object -ComObject WScript.Shell
-    
-    $shortcut = $shell.CreateShortcut("$startMenuPath\WatchNexus.lnk")
-    $shortcut.TargetPath = "http://localhost:8001"
-    $shortcut.Description = "Open WatchNexus in browser"
-    $shortcut.Save()
-    
-    # Create shortcut to uninstaller
-    $uninstallShortcut = $shell.CreateShortcut("$startMenuPath\Uninstall WatchNexus.lnk")
-    $uninstallShortcut.TargetPath = "powershell.exe"
-    $uninstallShortcut.Arguments = "-ExecutionPolicy Bypass -File `"$InstallDir\uninstall.ps1`""
-    $uninstallShortcut.Description = "Uninstall WatchNexus"
-    $uninstallShortcut.Save()
-    
-    # Desktop shortcut
-    $desktopShortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\WatchNexus.lnk")
-    $desktopShortcut.TargetPath = "http://localhost:8001"
-    $desktopShortcut.Description = "Open WatchNexus"
-    $desktopShortcut.Save()
-    
-    Write-Success "Shortcuts created"
+    Write-Host "✓ Service and shortcuts created"
 }
 
-# Create uninstaller
-function New-Uninstaller {
-    $uninstallScript = @'
-# WatchNexus Uninstaller
-Write-Host "Uninstalling WatchNexus..." -ForegroundColor Yellow
-
-# Stop and remove service
-nssm stop WatchNexusBackend 2>$null
-nssm remove WatchNexusBackend confirm 2>$null
-
-# Remove files
-$InstallDir = "$env:LOCALAPPDATA\WatchNexus"
-$DataDir = "$env:APPDATA\WatchNexus"
-
-Remove-Item -Path $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\WatchNexus" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:USERPROFILE\Desktop\WatchNexus.lnk" -Force -ErrorAction SilentlyContinue
-
-# Ask about data
-$keepData = Read-Host "Keep user data (library, downloads)? [Y/n]"
-if ($keepData -eq "n" -or $keepData -eq "N") {
-    Remove-Item -Path $DataDir -Recurse -Force -ErrorAction SilentlyContinue
-}
-
-Write-Host "WatchNexus uninstalled" -ForegroundColor Green
-Read-Host "Press Enter to exit"
-'@
+# Add firewall rules
+function Add-FirewallRules {
+    Write-Host "Adding firewall rules..."
     
-    $uninstallScript | Out-File -FilePath "$InstallDir\uninstall.ps1" -Encoding utf8
+    # Remove existing rules
+    Remove-NetFirewallRule -DisplayName "WatchNexus*" -ErrorAction SilentlyContinue
+    
+    # Add new rules
+    New-NetFirewallRule -DisplayName "WatchNexus Backend" -Direction Inbound -LocalPort 8001 -Protocol TCP -Action Allow | Out-Null
+    New-NetFirewallRule -DisplayName "WatchNexus Frontend" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow | Out-Null
+    
+    Write-Host "✓ Firewall rules added"
 }
 
-# Main installation
+# Main
 function Main {
-    Show-Banner
-    
-    if ($Help) {
-        @"
-WatchNexus Windows Installer
-
-Usage: .\install-windows.ps1 [options]
-
-Options:
-  -InstallDir <path>    Installation directory (default: %LOCALAPPDATA%\WatchNexus)
-  -DataDir <path>       Data directory (default: %APPDATA%\WatchNexus)
-  -Version <version>    Version to install (default: 1.0.0)
-  -SkipDependencies     Skip installing dependencies
-  -Help                 Show this help message
-
-Examples:
-  .\install-windows.ps1
-  .\install-windows.ps1 -InstallDir "D:\WatchNexus"
-  .\install-windows.ps1 -SkipDependencies
-"@
-        return
-    }
-    
-    # Check admin rights
-    if (!(Test-Administrator)) {
-        Write-Warning "This script should be run as Administrator for best results"
-        $response = Read-Host "Continue anyway? [y/N]"
-        if ($response -ne "y" -and $response -ne "Y") {
-            exit 0
-        }
-    }
-    
     Test-WindowsVersion
-    
-    if (!$SkipDependencies) {
-        Install-Chocolatey
-        Install-Dependencies
-    }
-    
+    Install-Chocolatey
+    Install-Dependencies
     New-Directories
-    Install-WatchNexus
-    New-Configuration
-    Start-MongoDB
-    New-WindowsService
-    Start-WatchNexus
-    New-Shortcuts
-    New-Uninstaller
+    Build-Frontend
+    Install-Backend
+    Install-Files
+    Install-Service
+    Add-FirewallRules
     
     Write-Host ""
-    Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-    Write-Host "║          WatchNexus Installation Complete! 🎉                ║" -ForegroundColor Green
-    Write-Host "╠══════════════════════════════════════════════════════════════╣" -ForegroundColor Green
-    Write-Host "║  Access WatchNexus at: http://localhost:8001                 ║" -ForegroundColor Green
-    Write-Host "║                                                              ║" -ForegroundColor Green
-    Write-Host "║  Manage service:                                             ║" -ForegroundColor Green
-    Write-Host "║    Start: nssm start WatchNexusBackend                       ║" -ForegroundColor Green
-    Write-Host "║    Stop:  nssm stop WatchNexusBackend                        ║" -ForegroundColor Green
-    Write-Host "║    Status: nssm status WatchNexusBackend                     ║" -ForegroundColor Green
-    Write-Host "║                                                              ║" -ForegroundColor Green
-    Write-Host "║  Logs: $DataDir\logs                           ║" -ForegroundColor Green
-    Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+    Write-Host "=============================================="
+    Write-Host "  Installation Complete!"
+    Write-Host "=============================================="
     Write-Host ""
-    
-    # Open in browser
-    Start-Process "http://localhost:8001"
+    Write-Host "WatchNexus has been installed to:"
+    Write-Host "  $InstallDir"
+    Write-Host ""
+    Write-Host "Data directory:"
+    Write-Host "  $DataDir"
+    Write-Host ""
+    Write-Host "To start WatchNexus:"
+    Write-Host "  - Double-click the Desktop shortcut"
+    Write-Host "  - Or from Start Menu: WatchNexus"
+    Write-Host "  - Or run: $InstallDir\Start-WatchNexus.ps1"
+    Write-Host ""
+    Write-Host "Access at: http://localhost:8001"
+    Write-Host ""
+    Write-Host "MongoDB service:"
+    Write-Host "  Start-Service MongoDB"
+    Write-Host "  Stop-Service MongoDB"
+    Write-Host ""
 }
 
 Main
