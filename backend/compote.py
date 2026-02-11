@@ -786,10 +786,10 @@ class Compote:
             
             # Use Cloudflare bypasser if needed
             if indexer.cloudflare_protected:
-                cf = get_cf_bypasser()
-                response = await cf.make_request(client, indexer.url)
+                preserve = get_preserve()
+                response = await preserve.make_request(client, indexer.url)
             else:
-                headers = {"User-Agent": get_cf_bypasser().get_user_agent()}
+                headers = {"User-Agent": get_preserve().get_user_agent()}
                 response = await client.get(indexer.url, headers=headers)
             
             if not response or response.status_code != 200:
@@ -908,7 +908,7 @@ class Compote:
         
         try:
             client = await self._get_client()
-            cf = get_cf_bypasser()
+            preserve = get_preserve()
             
             # Build Torznab API URL
             params = {
@@ -927,9 +927,9 @@ class Compote:
             
             # Make request with CF bypass
             if indexer.cloudflare_protected:
-                response = await cf.make_request(client, full_url)
+                response = await preserve.make_request(client, full_url)
             else:
-                headers = {"User-Agent": cf.get_user_agent()}
+                headers = {"User-Agent": preserve.get_user_agent()}
                 if indexer.cookie:
                     headers["Cookie"] = indexer.cookie
                 response = await client.get(full_url, headers=headers)
@@ -1095,14 +1095,14 @@ class Compote:
         
         try:
             client = await self._get_client()
-            cf = get_cf_bypasser()
+            preserve = get_preserve()
             
             if indexer.type == "rss":
                 # For RSS, just try to fetch and parse the feed
                 if indexer.cloudflare_protected:
-                    response = await cf.make_request(client, indexer.url, timeout=15.0)
+                    response = await preserve.make_request(client, indexer.url, timeout=15.0)
                 else:
-                    headers = {"User-Agent": cf.get_user_agent()}
+                    headers = {"User-Agent": preserve.get_user_agent()}
                     response = await client.get(indexer.url, headers=headers, timeout=15.0)
                 
                 if response and response.status_code == 200:
@@ -1141,9 +1141,9 @@ class Compote:
                 
                 if indexer.cloudflare_protected:
                     full_url = f"{url}?{urlencode(params)}"
-                    response = await cf.make_request(client, full_url, timeout=15.0)
+                    response = await preserve.make_request(client, full_url, timeout=15.0)
                 else:
-                    headers = {"User-Agent": cf.get_user_agent()}
+                    headers = {"User-Agent": preserve.get_user_agent()}
                     if indexer.cookie:
                         headers["Cookie"] = indexer.cookie
                     response = await client.get(url, params=params, headers=headers, timeout=15.0)
