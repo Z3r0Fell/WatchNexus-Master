@@ -146,10 +146,32 @@ export const compoteApi = {
   getIndexers: () =>
     axios.get(`${API}/compote/indexers`),
   
-  addIndexer: (name, type, url, apiKey = '', enabled = true, priority = 50) =>
+  getIndexerTypes: () =>
+    axios.get(`${API}/compote/indexer-types`),
+  
+  getSetupGuide: () =>
+    axios.get(`${API}/compote/setup-guide`),
+  
+  getDefaultIndexers: () =>
+    axios.get(`${API}/compote/default-indexers`),
+  
+  addIndexer: (name, type, url, apiKey = '', enabled = true, priority = 50, options = {}) =>
     axios.post(`${API}/compote/indexers`, null, { 
-      params: { name, indexer_type: type, url, api_key: apiKey, enabled, priority } 
+      params: { 
+        name, 
+        indexer_type: type, 
+        url, 
+        api_key: apiKey, 
+        enabled, 
+        priority,
+        cloudflare_protected: options.cloudflare_protected || false,
+        search_path: options.search_path || '',
+        cookie: options.cookie || '',
+      } 
     }),
+  
+  updateIndexer: (indexerId, updates) =>
+    axios.put(`${API}/compote/indexers/${indexerId}`, updates),
   
   removeIndexer: (indexerId) =>
     axios.delete(`${API}/compote/indexers/${indexerId}`),
