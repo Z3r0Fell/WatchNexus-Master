@@ -52,16 +52,18 @@ export const Sidebar = () => {
       {/* Logo */}
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center">
-            <Play className="w-5 h-5 text-white fill-white" />
-          </div>
+          <img 
+            src="/watchnexus-logo.svg" 
+            alt="WatchNexus" 
+            className="w-10 h-10 rounded-xl"
+          />
           <AnimatePresence>
             {expanded && (
               <motion.span
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="font-bold text-xl tracking-tight"
+                className="font-bold text-xl tracking-tight bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent"
               >
                 WatchNexus
               </motion.span>
