@@ -848,6 +848,139 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
     )
     return {"id": service_id, "enabled": enabled, "username": username}
 
+# ==================== FILE BROWSER ====================
+
+@api_router.get("/filesystem/browse")
+async def browse_filesystem(
+    path: str = "/",
+    user: dict = Depends(require_auth)
+):
+    """
+    Browse the local filesystem to find media folders.
+    Returns directories and basic info for folder selection.
+    """
+    import os
+    from pathlib import Path as FilePath
+    
+    try:
+        # Normalize and validate path
+        target_path = FilePath(path).resolve()
+        
+        # Security: Prevent accessing sensitive system directories
+        blocked_paths = ['/proc', '/sys', '/dev', '/boot', '/etc/shadow']
+        if any(str(target_path).startswith(bp) for bp in blocked_paths):
+            raise HTTPException(status_code=403, detail="Access denied to system directory")
+        
+        if not target_path.exists():
+            raise HTTPException(status_code=404, detail="Path not found")
+        
+        if not target_path.is_dir():
+            raise HTTPException(status_code=400, detail="Path is not a directory")
+        
+        items = []
+        
+        # Add parent directory option (unless at root)
+        if str(target_path) != "/":
+            items.append({
+                "name": "..",
+                "path": str(target_path.parent),
+                "type": "directory",
+                "is_parent": True
+            })
+        
+        # List directory contents
+        try:
+            for entry in sorted(target_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+                try:
+                    # Skip hidden files and system files
+                    if entry.name.startswith('.'):
+                        continue
+                    
+                    item = {
+                        "name": entry.name,
+                        "path": str(entry),
+                        "type": "directory" if entry.is_dir() else "file",
+                        "is_parent": False
+                    }
+                    
+                    if entry.is_dir():
+                        # Count items in directory (limited check)
+                        try:
+                            item["item_count"] = len(list(entry.iterdir())[:100])
+                        except PermissionError:
+                            item["item_count"] = 0
+                            item["permission_denied"] = True
+                        items.append(item)
+                    else:
+                        # For files, add size and check if it's a media file
+                        try:
+                            stat = entry.stat()
+                            item["size"] = stat.st_size
+                            
+                            # Check if it's a media file
+                            media_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', 
+                                               '.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg',
+                                               '.jpg', '.jpeg', '.png', '.gif', '.bmp'}
+                            if entry.suffix.lower() in media_extensions:
+                                item["is_media"] = True
+                        except:
+                            item["size"] = 0
+                        
+                        # Only include directories for library selection
+                        # but we can show media file counts
+                except PermissionError:
+                    continue
+                except Exception:
+                    continue
+        except PermissionError:
+            raise HTTPException(status_code=403, detail="Permission denied to read directory")
+        
+        # Get common mount points/drives
+        drives = []
+        if os.name == 'nt':  # Windows
+            import string
+            for letter in string.ascii_uppercase:
+                drive = f"{letter}:\\"
+                if os.path.exists(drive):
+                    drives.append({"name": f"{letter}:", "path": drive})
+        else:  # Linux/Mac
+            common_mounts = ["/", "/home", "/media", "/mnt", "/srv", "/data"]
+            for mount in common_mounts:
+                if os.path.exists(mount) and os.path.isdir(mount):
+                    drives.append({"name": mount, "path": mount})
+            
+            # Add user home directory
+            home = os.path.expanduser("~")
+            if home not in common_mounts:
+                drives.append({"name": "Home", "path": home})
+        
+        # Count media files in current directory
+        media_count = 0
+        try:
+            for entry in target_path.iterdir():
+                if entry.is_file():
+                    media_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm',
+                                       '.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg'}
+                    if entry.suffix.lower() in media_extensions:
+                        media_count += 1
+        except:
+            pass
+        
+        return {
+            "current_path": str(target_path),
+            "parent_path": str(target_path.parent) if str(target_path) != "/" else None,
+            "items": items,
+            "drives": drives,
+            "media_files_in_current": media_count,
+            "is_root": str(target_path) == "/"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error browsing filesystem: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== LOCAL LIBRARY ====================
 
 @api_router.get("/library", response_model=List[MediaItem])
