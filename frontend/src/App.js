@@ -129,6 +129,14 @@ function AppRouter() {
         }
       />
       <Route
+        path="/indexers"
+        element={
+          <ProtectedRoute>
+            <IndexerSearchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/downloads"
         element={
           <ProtectedRoute>
