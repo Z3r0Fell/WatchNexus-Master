@@ -1772,55 +1772,12 @@ export const SettingsPage = () => {
 
               {/* Quality Profiles Sub-Tab */}
               {librarySubTab === 'quality-profiles' && (
-                <div className="space-y-6">
-                  <div className="glass-card rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                          <Layers className="w-5 h-5 text-violet-400" />
-                          Quality Profiles
-                        </h2>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Define quality preferences for automatic downloads
-                        </p>
-                      </div>
-                      <Button className="bg-violet-600 hover:bg-violet-700">
-                        <Plus className="w-4 h-4 mr-2" /> Add Profile
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {qualityProfiles.map((profile) => (
-                        <div key={profile.id} className="p-4 rounded-xl bg-surface border border-white/10 hover:border-violet-500/30 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium">{profile.name}</h4>
-                              <p className="text-sm text-gray-400 mt-1">
-                                Cutoff: <span className="text-violet-400">{profile.cutoff}</span>
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="sm" className="hover:bg-violet-500/20">
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="hover:bg-red-500/20 text-red-400">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {profile.items.map((item) => (
-                              <span key={item} className="px-2 py-1 text-xs rounded bg-white/5 text-gray-300">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <QualityProfilesTab
+                  qualityProfiles={qualityProfiles}
+                  setQualityProfiles={setQualityProfiles}
+                />
               )}
+
 
               {/* Mass Editor Sub-Tab */}
               {librarySubTab === 'mass-editor' && (
