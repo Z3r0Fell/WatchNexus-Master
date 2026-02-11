@@ -427,7 +427,7 @@ export const SettingsPage = () => {
     if (savedMode) {
       setDownloadClientMode(savedMode);
     }
-  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings, fetchLibraries, fetchGelatinStatus, fetchActiveTunnels]);
+  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings, fetchLibraries, fetchGelatinStatus, fetchActiveTunnels, fetchThemeForgeConfig]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
