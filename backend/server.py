@@ -2508,6 +2508,22 @@ async def unload_plugin(plugin_id: str, user: dict = Depends(require_auth)):
     success = await manager.unload_plugin(plugin_id)
     return {"status": "unloaded" if success else "not_found"}
 
+@api_router.post("/gadgets/plugins/{plugin_id}/enable")
+async def enable_plugin(plugin_id: str, user: dict = Depends(require_auth)):
+    """Enable and load a plugin."""
+    manager = get_gadgets_manager()
+    plugin = await manager.load_plugin(plugin_id)
+    if plugin:
+        return {"status": "enabled", "plugin": plugin.to_dict()}
+    raise HTTPException(status_code=500, detail="Failed to enable plugin")
+
+@api_router.post("/gadgets/plugins/{plugin_id}/disable")
+async def disable_plugin(plugin_id: str, user: dict = Depends(require_auth)):
+    """Disable and unload a plugin."""
+    manager = get_gadgets_manager()
+    success = await manager.unload_plugin(plugin_id)
+    return {"status": "disabled" if success else "not_found"}
+
 @api_router.get("/gadgets/plugin/{plugin_id}")
 async def get_plugin_info(plugin_id: str, user: dict = Depends(require_auth)):
     """Get detailed plugin information."""
