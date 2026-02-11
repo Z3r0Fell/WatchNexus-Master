@@ -230,6 +230,46 @@ export const SettingsPage = () => {
     }
   };
 
+  // Fetch Gadgets (Plugins)
+  const fetchPlugins = useCallback(async () => {
+    setLoadingPlugins(true);
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/plugins`);
+      setPlugins(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch plugins:', error);
+    } finally {
+      setLoadingPlugins(false);
+    }
+  }, []);
+
+  const handleTogglePlugin = async (pluginId, currentStatus) => {
+    setTogglingPlugin(pluginId);
+    try {
+      const action = currentStatus === 'active' ? 'disable' : 'enable';
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`);
+      toast.success(`Plugin ${action === 'enable' ? 'enabled' : 'disabled'}!`);
+      fetchPlugins();
+    } catch (error) {
+      toast.error('Failed to toggle plugin');
+    } finally {
+      setTogglingPlugin(null);
+    }
+  };
+
+  const handleDiscoverPlugins = async () => {
+    setLoadingPlugins(true);
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/discover`);
+      toast.success('Plugin discovery complete!');
+      fetchPlugins();
+    } catch (error) {
+      toast.error('Failed to discover plugins');
+    } finally {
+      setLoadingPlugins(false);
+    }
+  };
+
   // Fetch Gelatin status
   const fetchGelatinStatus = useCallback(async () => {
     try {
