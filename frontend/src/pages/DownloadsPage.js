@@ -266,7 +266,14 @@ export const DownloadsPage = () => {
 
   return (
     <Layout>
-      <div data-testid="downloads-page" className="min-h-screen p-8">
+      <motion.div 
+        data-testid="downloads-page" 
+        className="min-h-screen p-8"
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+      >
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -275,9 +282,13 @@ export const DownloadsPage = () => {
         >
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center">
+              <motion.div 
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
                 <Download className="w-6 h-6 text-white" />
-              </div>
+              </motion.div>
               <div>
                 <h1 className="text-3xl font-bold">Downloads</h1>
                 <p className="text-gray-400">Manage your download queue</p>
@@ -286,21 +297,91 @@ export const DownloadsPage = () => {
 
             {/* Stats */}
             <div className="flex gap-6">
-              <div className="text-right">
+              <motion.div 
+                className="text-right"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+              >
                 <p className="text-sm text-gray-400">Active</p>
                 <p className="text-2xl font-bold text-blue-400">{activeTorrents.length}</p>
-              </div>
-              <div className="text-right">
+              </motion.div>
+              <motion.div 
+                className="text-right"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 }}
+              >
                 <p className="text-sm text-gray-400">↓ Speed</p>
                 <p className="text-2xl font-bold text-green-400">{formatFileSize(totalDownSpeed)}/s</p>
-              </div>
-              <div className="text-right">
+              </motion.div>
+              <motion.div 
+                className="text-right"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
                 <p className="text-sm text-gray-400">↑ Speed</p>
                 <p className="text-2xl font-bold text-purple-400">{formatFileSize(totalUpSpeed)}/s</p>
-              </div>
+              </motion.div>
             </div>
           </div>
         </motion.div>
+
+        {/* Magnet Link Input */}
+        <AnimatePresence>
+          {showMagnetInput && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="glass-card rounded-xl p-4 overflow-hidden"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <Link2 className="w-5 h-5 text-violet-400" />
+                <h3 className="font-medium">Add Magnet Link</h3>
+                <button 
+                  onClick={() => setShowMagnetInput(false)}
+                  className="ml-auto p-1 hover:bg-white/10 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Input
+                    value={magnetLink}
+                    onChange={(e) => setMagnetLink(e.target.value)}
+                    placeholder="magnet:?xt=urn:btih:..."
+                    className="bg-white/5 border-white/10 pr-10 font-mono text-sm"
+                  />
+                  <button
+                    onClick={handlePasteFromClipboard}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded"
+                    title="Paste from clipboard"
+                  >
+                    <Clipboard className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+                <Button
+                  onClick={handleAddMagnet}
+                  disabled={addingMagnet || !magnetLink}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {addingMagnet ? (
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Add
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Paste a magnet link to add it directly to the download queue
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Engine Status */}
         <motion.div
@@ -336,7 +417,11 @@ export const DownloadsPage = () => {
               <div className="flex items-center gap-2">
                 {isConnected ? (
                   <>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <motion.div 
+                      className="w-2 h-2 rounded-full bg-green-500"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    />
                     <span className="text-green-400 text-sm">
                       {downloadMode === 'builtin' 
                         ? 'Built-in Engine Running'
@@ -358,12 +443,23 @@ export const DownloadsPage = () => {
               )}
             </div>
 
-            <Link to="/settings">
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                Configure
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowMagnetInput(!showMagnetInput)}
+                className={showMagnetInput ? 'bg-violet-600/20 border-violet-500' : ''}
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Add Magnet
               </Button>
-            </Link>
+              <Link to="/settings">
+                <Button variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure
+                </Button>
+              </Link>
+            </div>
           </div>
         </motion.div>
 
