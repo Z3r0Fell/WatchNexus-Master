@@ -1801,8 +1801,6 @@ export const SettingsPage = () => {
                   handleImportFiles={handleImportFiles}
                 />
               )}
-                </div>
-              )}
             </motion.div>
           </TabsContent>
 
