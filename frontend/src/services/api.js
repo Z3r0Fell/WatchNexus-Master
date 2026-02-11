@@ -170,7 +170,7 @@ export const compoteApi = {
     }),
 };
 
-// qBittorrent API calls
+// qBittorrent API calls (legacy - external client)
 export const qbittorrentApi = {
   // Status
   getStatus: () =>
@@ -201,6 +201,45 @@ export const qbittorrentApi = {
   testConnection: (host, port, username, password) =>
     axios.post(`${API}/qbittorrent/test`, null, { 
       params: { host, port, username, password } 
+    }),
+};
+
+// Built-in Torrent Engine API calls (no external apps required!)
+export const torrentEngineApi = {
+  // Status
+  getStatus: () =>
+    axios.get(`${API}/downloads/engine/status`),
+  
+  // Torrents
+  getTorrents: () =>
+    axios.get(`${API}/downloads/engine/torrents`),
+  
+  addTorrent: (magnet, savePath = '', sequential = false, category = 'watchnexus') =>
+    axios.post(`${API}/downloads/engine/add`, null, { 
+      params: { magnet, save_path: savePath, sequential, category } 
+    }),
+  
+  getTorrent: (torrentId) =>
+    axios.get(`${API}/downloads/engine/${torrentId}`),
+  
+  getFiles: (torrentId) =>
+    axios.get(`${API}/downloads/engine/${torrentId}/files`),
+  
+  pauseTorrent: (torrentId) =>
+    axios.post(`${API}/downloads/engine/${torrentId}/pause`),
+  
+  resumeTorrent: (torrentId) =>
+    axios.post(`${API}/downloads/engine/${torrentId}/resume`),
+  
+  removeTorrent: (torrentId, deleteFiles = false) =>
+    axios.delete(`${API}/downloads/engine/${torrentId}`, { params: { delete_files: deleteFiles } }),
+  
+  setSequential: (torrentId, enabled = true) =>
+    axios.post(`${API}/downloads/engine/${torrentId}/sequential`, null, { params: { enabled } }),
+  
+  updateSettings: (downloadRate = null, uploadRate = null) =>
+    axios.put(`${API}/downloads/engine/settings`, null, { 
+      params: { download_rate: downloadRate, upload_rate: uploadRate } 
     }),
 };
 
