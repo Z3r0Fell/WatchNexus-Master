@@ -72,6 +72,14 @@ export const SettingsPage = () => {
     auto_repair: false,
   });
 
+  // Download client mode: 'builtin' or 'qbittorrent'
+  const [downloadClientMode, setDownloadClientMode] = useState('builtin');
+
+  // Built-in torrent engine state
+  const [engineStatus, setEngineStatus] = useState(null);
+  const [engineTorrents, setEngineTorrents] = useState([]);
+  const [testingEngine, setTestingEngine] = useState(false);
+
   // qBittorrent state
   const [qbitConfig, setQbitConfig] = useState({
     host: 'localhost',
@@ -96,6 +104,25 @@ export const SettingsPage = () => {
   const [selectedService, setSelectedService] = useState('');
   const [serviceCredentials, setServiceCredentials] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState({});
+
+  // Fetch built-in engine status
+  const fetchEngineStatus = useCallback(async () => {
+    try {
+      const res = await torrentEngineApi.getStatus();
+      setEngineStatus(res.data);
+    } catch (error) {
+      setEngineStatus({ success: false, error: 'Engine not available' });
+    }
+  }, []);
+
+  const fetchEngineTorrents = useCallback(async () => {
+    try {
+      const res = await torrentEngineApi.getTorrents();
+      setEngineTorrents(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch engine torrents:', error);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
