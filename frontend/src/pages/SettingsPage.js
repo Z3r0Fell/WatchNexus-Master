@@ -171,6 +171,48 @@ export const SettingsPage = () => {
   const [browserLoading, setBrowserLoading] = useState(false);
   const [browserMediaCount, setBrowserMediaCount] = useState(0);
 
+  // Media Management state (Sonarr-like features)
+  const [librarySubTab, setLibrarySubTab] = useState('libraries');
+  const [mediaManagement, setMediaManagement] = useState({
+    // Naming
+    rename_files: true,
+    replace_illegal_chars: true,
+    colon_replacement: 'delete',
+    // Standard naming format
+    standard_movie_format: '{Movie Title} ({Release Year}) [{Quality Full}]',
+    standard_series_format: '{Series Title}/Season {season:00}/{Series Title} - S{season:00}E{episode:00} - {Episode Title} [{Quality Full}]',
+    // Organization
+    create_empty_folders: false,
+    delete_empty_folders: true,
+    skip_free_space_check: false,
+    minimum_free_space: 100, // MB
+    // Import
+    use_hardlinks: true,
+    import_extra_files: true,
+    extra_file_extensions: 'srt,sub,idx,nfo',
+    // File Management
+    unmonitor_deleted_files: false,
+    propers_and_repacks: 'preferAndUpgrade',
+    analyze_video_files: true,
+    rescan_after_refresh: 'always',
+    change_file_date: 'none',
+    recycling_bin: '',
+    recycling_bin_cleanup: 7,
+  });
+  const [qualityProfiles, setQualityProfiles] = useState([
+    { id: '1', name: 'Any', cutoff: 'Bluray-1080p', items: ['SDTV', 'WEBDL-480p', 'DVD', 'HDTV-720p', 'WEBDL-720p', 'Bluray-720p', 'HDTV-1080p', 'WEBDL-1080p', 'Bluray-1080p'] },
+    { id: '2', name: 'HD-720p/1080p', cutoff: 'Bluray-1080p', items: ['HDTV-720p', 'WEBDL-720p', 'Bluray-720p', 'HDTV-1080p', 'WEBDL-1080p', 'Bluray-1080p'] },
+    { id: '3', name: 'Ultra-HD', cutoff: 'Bluray-2160p', items: ['WEBDL-2160p', 'Bluray-2160p'] },
+    { id: '4', name: 'HD - 1080p', cutoff: 'Bluray-1080p', items: ['HDTV-1080p', 'WEBDL-1080p', 'Bluray-1080p'] },
+  ]);
+  const [rootFolders, setRootFolders] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [showMassEditor, setShowMassEditor] = useState(false);
+  const [showManualImport, setShowManualImport] = useState(false);
+  const [manualImportPath, setManualImportPath] = useState('');
+  const [manualImportFiles, setManualImportFiles] = useState([]);
+  const [savingMediaManagement, setSavingMediaManagement] = useState(false);
+
   // Gelatin (External Access) state
   const [gelatinStatus, setGelatinStatus] = useState(null);
   const [activeTunnels, setActiveTunnels] = useState([]);
