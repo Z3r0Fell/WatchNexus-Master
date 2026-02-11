@@ -823,25 +823,88 @@ class Compote:
         
         try:
             client = await self._get_client()
+            cf = get_cf_bypasser()
             
-            # Try caps endpoint for Torznab
-            url = f"{indexer.url.rstrip('/')}/api"
-            params = {"t": "caps", "apikey": indexer.api_key}
+            if indexer.type == "rss":
+                # For RSS, just try to fetch and parse the feed
+                if indexer.cloudflare_protected:
+                    response = await cf.make_request(client, indexer.url, timeout=15.0)
+                else:
+                    headers = {"User-Agent": cf.get_user_agent()}
+                    response = await client.get(indexer.url, headers=headers, timeout=15.0)
+                
+                if response and response.status_code == 200:
+                    # Try to parse as XML
+                    try:
+                        root = ET.fromstring(response.text)
+                        items = root.findall(".//item")
+                        return {
+                            "success": True,
+                            "message": f"RSS feed accessible - {len(items)} items found",
+                            "status_code": 200,
+                            "type": "rss",
+                            "item_count": len(items),
+                        }
+                    except ET.ParseError:
+                        return {
+                            "success": False,
+                            "error": "Invalid RSS/XML format",
+                            "status_code": response.status_code,
+                        }
+                else:
+                    status = response.status_code if response else "No response"
+                    return {
+                        "success": False,
+                        "error": f"HTTP {status}",
+                        "cloudflare_detected": response and ("cloudflare" in response.text.lower() if response.text else False),
+                    }
             
-            response = await client.get(url, params=params, timeout=10.0)
-            
-            if response.status_code == 200:
-                return {
-                    "success": True,
-                    "message": f"Successfully connected to {indexer.name}",
-                    "status_code": response.status_code
-                }
             else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}",
-                    "status_code": response.status_code
-                }
+                # Torznab/Newznab - try caps endpoint
+                search_path = indexer.search_path or "/api"
+                url = f"{indexer.url.rstrip('/')}{search_path}"
+                params = {"t": "caps"}
+                if indexer.api_key:
+                    params["apikey"] = indexer.api_key
+                
+                if indexer.cloudflare_protected:
+                    full_url = f"{url}?{urlencode(params)}"
+                    response = await cf.make_request(client, full_url, timeout=15.0)
+                else:
+                    headers = {"User-Agent": cf.get_user_agent()}
+                    if indexer.cookie:
+                        headers["Cookie"] = indexer.cookie
+                    response = await client.get(url, params=params, headers=headers, timeout=15.0)
+                
+                if response and response.status_code == 200:
+                    # Try to parse capabilities
+                    try:
+                        root = ET.fromstring(response.text)
+                        server_name = root.find(".//server")
+                        categories = root.findall(".//category")
+                        return {
+                            "success": True,
+                            "message": f"Successfully connected to {indexer.name}",
+                            "status_code": 200,
+                            "type": indexer.type,
+                            "categories_count": len(categories),
+                        }
+                    except ET.ParseError:
+                        # May still work for search even if caps fails
+                        return {
+                            "success": True,
+                            "message": f"Connected (caps not supported)",
+                            "status_code": 200,
+                        }
+                else:
+                    status = response.status_code if response else "No response"
+                    cloudflare_detected = response and "cloudflare" in response.text.lower() if response and response.text else False
+                    return {
+                        "success": False,
+                        "error": f"HTTP {status}" + (" (Cloudflare detected)" if cloudflare_detected else ""),
+                        "status_code": status,
+                        "cloudflare_detected": cloudflare_detected,
+                    }
                 
         except httpx.TimeoutException:
             return {"success": False, "error": "Connection timeout"}
