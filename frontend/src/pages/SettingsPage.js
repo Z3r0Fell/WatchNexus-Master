@@ -17,7 +17,6 @@ import {
   ScanLine, FolderCog, CheckSquare, Square
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
-import { MediaManagementTab, QualityProfilesTab, MassEditorTab, ManualImportTab } from '../components/MediaManagementTabs';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
