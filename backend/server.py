@@ -1641,15 +1641,6 @@ async def marmalade_get_media(
     media = server.get_all_media(library_id, media_type, limit, offset)
     return [m.to_dict() for m in media]
 
-@api_router.get("/marmalade/media/{media_id}")
-async def marmalade_get_media_item(media_id: str, user: dict = Depends(require_auth)):
-    """Get a specific media item."""
-    server = get_marmalade_server()
-    media = server.get_media(media_id)
-    if media:
-        return media.to_dict()
-    raise HTTPException(status_code=404, detail="Media not found")
-
 @api_router.get("/marmalade/media/recent")
 async def marmalade_get_recent(limit: int = 20, user: dict = Depends(require_auth)):
     """Get recently added media."""
@@ -1663,6 +1654,15 @@ async def marmalade_search(query: str, limit: int = 50, user: dict = Depends(req
     server = get_marmalade_server()
     media = server.search_media(query, limit)
     return [m.to_dict() for m in media]
+
+@api_router.get("/marmalade/media/{media_id}")
+async def marmalade_get_media_item(media_id: str, user: dict = Depends(require_auth)):
+    """Get a specific media item."""
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    if media:
+        return media.to_dict()
+    raise HTTPException(status_code=404, detail="Media not found")
 
 @api_router.get("/marmalade/continue-watching")
 async def marmalade_continue_watching(limit: int = 10, user: dict = Depends(require_auth)):
