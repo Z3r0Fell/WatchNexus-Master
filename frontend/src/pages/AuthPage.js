@@ -72,10 +72,11 @@ export const AuthPage = () => {
         <div className="glass-card rounded-2xl p-8">
           {/* Logo */}
           <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center">
-              <Play className="w-6 h-6 text-white fill-white" />
-            </div>
-            <span className="text-2xl font-bold tracking-tight">WatchNexus</span>
+            <img 
+              src="https://customer-assets.emergentagent.com/job_viewhub-1008/artifacts/z5wboqjd_image.png" 
+              alt="WatchNexus" 
+              className="h-12 w-auto"
+            />
           </div>
 
           {/* Title */}
