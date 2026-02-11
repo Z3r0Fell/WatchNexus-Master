@@ -323,7 +323,7 @@ class FondueEngine:
         # Load persisted torrents
         self._load_state()
         
-        logger.info("TorrentEngine started")
+        logger.info("FondueEngine started")
     
     def stop(self):
         """Stop the torrent engine."""
@@ -340,7 +340,7 @@ class FondueEngine:
             if handle.is_valid():
                 handle.pause()
         
-        logger.info("TorrentEngine stopped")
+        logger.info("FondueEngine stopped")
     
     def _worker_loop(self):
         """Background worker loop for processing alerts and auto-management."""
