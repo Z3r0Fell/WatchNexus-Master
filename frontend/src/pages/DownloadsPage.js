@@ -666,10 +666,10 @@ export const DownloadsPage = () => {
                   </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </motion.div>
-      </div>
+      </motion.div>
     </Layout>
   );
 };
