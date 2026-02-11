@@ -239,21 +239,16 @@ class TestIPTVExport(TestAuth):
 class TestPulpQueue(TestAuth):
     """Test /api/pulp/queue endpoint"""
     
-    def test_pulp_queue_returns_status(self, auth_headers):
-        """Test that Pulp queue endpoint returns queue status"""
+    def test_pulp_queue_returns_list(self, auth_headers):
+        """Test that Pulp queue endpoint returns queue list"""
         response = requests.get(f"{BASE_URL}/api/pulp/queue", headers=auth_headers)
         
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
         
-        # Verify queue structure
-        assert "items" in data, "Should have items field"
-        assert "total_size" in data, "Should have total_size field"
-        assert "download_rate" in data, "Should have download_rate field"
-        assert "status" in data, "Should have status field"
-        
-        assert isinstance(data["items"], list)
-        print(f"Pulp Queue: {data['status']}, {len(data['items'])} items")
+        # Queue returns a list of NZB items
+        assert isinstance(data, list), "Should return a list"
+        print(f"Pulp Queue: {len(data)} items")
     
     def test_pulp_queue_add_nzb(self, auth_headers):
         """Test adding an NZB to the queue"""
@@ -270,9 +265,10 @@ class TestPulpQueue(TestAuth):
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
         
-        assert "nzb_id" in data
-        assert "status" in data
-        print(f"Added NZB: {data['nzb_id']}")
+        # API returns id and status
+        assert "id" in data, f"Response should have 'id': {data}"
+        assert "status" in data, f"Response should have 'status': {data}"
+        print(f"Added NZB: {data['id']}, status: {data['status']}")
 
 
 class TestPulpSearch(TestAuth):
