@@ -17,6 +17,7 @@ import {
   ScanLine, FolderCog, CheckSquare, Square
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
+import { MediaManagementTab, QualityProfilesTab, MassEditorTab, ManualImportTab } from '../components/MediaManagementTabs';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -1760,119 +1761,32 @@ export const SettingsPage = () => {
 
               {/* Media Management Sub-Tab (Sonarr-like) */}
               {librarySubTab === 'media-management' && (
-                <div className="space-y-6">
-                  <div className="glass-card rounded-xl p-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
-                      <FolderCog className="w-5 h-5 text-violet-400" />
-                      Media Management
-                    </h2>
-                    <div className="space-y-4">
-                      <label className="flex items-center gap-3">
-                        <Switch checked={mediaManagement.rename_files} onCheckedChange={(v) => setMediaManagement(p => ({ ...p, rename_files: v }))} />
-                        <span>Rename Files on Import</span>
-                      </label>
-                      <label className="flex items-center gap-3">
-                        <Switch checked={mediaManagement.use_hardlinks} onCheckedChange={(v) => setMediaManagement(p => ({ ...p, use_hardlinks: v }))} />
-                        <span>Use Hardlinks Instead of Copy</span>
-                      </label>
-                      <label className="flex items-center gap-3">
-                        <Switch checked={mediaManagement.import_extra_files} onCheckedChange={(v) => setMediaManagement(p => ({ ...p, import_extra_files: v }))} />
-                        <span>Import Extra Files (subtitles, nfo)</span>
-                      </label>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Movie Naming Format</label>
-                        <Input value={mediaManagement.standard_movie_format} onChange={(e) => setMediaManagement(p => ({ ...p, standard_movie_format: e.target.value }))} className="bg-white/5 border-white/10 font-mono text-sm" />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Series Naming Format</label>
-                        <Input value={mediaManagement.standard_series_format} onChange={(e) => setMediaManagement(p => ({ ...p, standard_series_format: e.target.value }))} className="bg-white/5 border-white/10 font-mono text-sm" />
-                      </div>
-                      <div className="flex justify-end pt-4">
-                        <Button onClick={handleSaveMediaManagement} disabled={savingMediaManagement} className="bg-violet-600 hover:bg-violet-700">
-                          {savingMediaManagement ? 'Saving...' : 'Save Settings'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <MediaManagementTab
+                  mediaManagement={mediaManagement}
+                  setMediaManagement={setMediaManagement}
+                  savingMediaManagement={savingMediaManagement}
+                  handleSaveMediaManagement={handleSaveMediaManagement}
+                  openFileBrowser={openFileBrowser}
+                />
               )}
 
               {/* Quality Profiles Sub-Tab */}
               {librarySubTab === 'quality-profiles' && (
-                <div className="space-y-6">
-                  <div className="glass-card rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Layers className="w-5 h-5 text-violet-400" />
-                        Quality Profiles
-                      </h2>
-                      <Button className="bg-violet-600 hover:bg-violet-700"><Plus className="w-4 h-4 mr-2" /> Add Profile</Button>
-                    </div>
-                    <div className="space-y-3">
-                      {qualityProfiles.map((profile) => (
-                        <div key={profile.id} className="p-4 rounded-xl bg-surface border border-white/10">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium">{profile.name}</h4>
-                              <p className="text-sm text-gray-400">Cutoff: {profile.cutoff}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                              <Button variant="ghost" size="sm" className="text-red-400"><Trash2 className="w-4 h-4" /></Button>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {profile.items.map((item) => (
-                              <span key={item} className="px-2 py-1 text-xs rounded bg-white/5 text-gray-300">{item}</span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <QualityProfilesTab
+                  qualityProfiles={qualityProfiles}
+                  setQualityProfiles={setQualityProfiles}
+                />
               )}
+
 
               {/* Mass Editor Sub-Tab */}
               {librarySubTab === 'mass-editor' && (
-                <div className="space-y-6">
-                  <div className="glass-card rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-bold flex items-center gap-2">
-                        <ListChecks className="w-5 h-5 text-violet-400" />
-                        Mass Editor
-                      </h2>
-                      <span className="text-sm text-gray-400">{selectedItems.length} selected</span>
-                    </div>
-                    {selectedItems.length > 0 && (
-                      <div className="flex gap-2 mb-4 p-3 rounded-lg bg-violet-500/10">
-                        <Button size="sm" onClick={() => handleMassEdit('scan', true)} className="bg-blue-600"><RefreshCw className="w-4 h-4 mr-1" /> Rescan</Button>
-                        <Button size="sm" onClick={() => handleMassEdit('delete', true)} className="bg-red-600"><Trash2 className="w-4 h-4 mr-1" /> Delete</Button>
-                      </div>
-                    )}
-                    <div className="border border-white/10 rounded-lg">
-                      <div className="flex items-center gap-3 p-3 bg-white/5 border-b border-white/10">
-                        <button onClick={toggleSelectAll}>{selectedItems.length === libraries.length ? <CheckSquare className="w-5 h-5 text-violet-400" /> : <Square className="w-5 h-5" />}</button>
-                        <span className="flex-1 font-medium">Library</span>
-                        <span className="w-20 text-center">Type</span>
-                        <span className="w-20 text-center">Items</span>
-                      </div>
-                      {libraries.map((lib) => (
-                        <div key={lib.id} className={`flex items-center gap-3 p-3 border-b border-white/5 ${selectedItems.includes(lib.id) ? 'bg-violet-500/10' : ''}`}>
-                          <button onClick={() => toggleSelectItem(lib.id)}>{selectedItems.includes(lib.id) ? <CheckSquare className="w-5 h-5 text-violet-400" /> : <Square className="w-5 h-5" />}</button>
-                          <div className="flex-1 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-violet-500/20 flex items-center justify-center text-violet-400">
-                              <Film className="w-4 h-4" />
-                            </div>
-                            <span className="font-medium">{lib.name}</span>
-                          </div>
-                          <span className="w-20 text-center text-sm text-gray-400 capitalize">{lib.media_type}</span>
-                          <span className="w-20 text-center text-sm">{lib.item_count || 0}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <MassEditorTab
+                  libraries={libraries}
+                  selectedItems={selectedItems}
+                  setSelectedItems={setSelectedItems}
+                  handleMassEdit={handleMassEdit}
+                />
               )}
 
               {/* Manual Import Sub-Tab */}
@@ -1883,24 +1797,70 @@ export const SettingsPage = () => {
                       <FolderInput className="w-5 h-5 text-violet-400" />
                       Manual Import
                     </h2>
-                    <div className="flex gap-2 mb-4">
-                      <Input value={manualImportPath} onChange={(e) => setManualImportPath(e.target.value)} placeholder="/downloads/completed" className="bg-white/5 border-white/10 flex-1" />
-                      <Button onClick={() => openFileBrowser(manualImportPath || '/')} className="bg-violet-600 px-3"><FolderSearch className="w-4 h-4" /></Button>
-                      <Button onClick={handleManualImportScan} className="bg-green-600"><ScanLine className="w-4 h-4 mr-2" /> Scan</Button>
-                    </div>
-                    {manualImportFiles.length > 0 ? (
-                      <div className="border border-white/10 rounded-lg">
-                        <div className="p-3 bg-white/5 flex justify-between">
-                          <span>{manualImportFiles.length} files found</span>
-                          <Button size="sm" onClick={() => handleImportFiles(manualImportFiles)} className="bg-green-600"><Import className="w-4 h-4 mr-2" /> Import All</Button>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Path to Import</label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={manualImportPath}
+                            onChange={(e) => setManualImportPath(e.target.value)}
+                            placeholder="/downloads/completed or D:\Downloads"
+                            className="bg-white/5 border-white/10 flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => openFileBrowser(manualImportPath || '/')}
+                            className="bg-violet-600 hover:bg-violet-700 px-3"
+                            title="Browse folders"
+                          >
+                            <FolderSearch className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            onClick={handleManualImportScan}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <ScanLine className="w-4 h-4 mr-2" /> Scan
+                          </Button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="p-8 text-center text-gray-400 border border-dashed border-white/10 rounded-lg">
-                        <FolderInput className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Enter a path and click Scan to find files</p>
-                      </div>
-                    )}
+
+                      {manualImportFiles.length > 0 && (
+                        <div className="border border-white/10 rounded-lg overflow-hidden">
+                          <div className="p-3 bg-white/5 border-b border-white/10 flex justify-between items-center">
+                            <span className="font-medium">{manualImportFiles.length} files found</span>
+                            <Button
+                              size="sm"
+                              onClick={() => handleImportFiles(manualImportFiles)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Import className="w-4 h-4 mr-2" /> Import All
+                            </Button>
+                          </div>
+                          <div className="max-h-[400px] overflow-y-auto">
+                            {manualImportFiles.map((file, index) => (
+                              <div key={index} className="p-3 border-b border-white/5 flex items-center gap-3">
+                                <Film className="w-5 h-5 text-violet-400" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{file.name}</p>
+                                  <p className="text-xs text-gray-500 truncate">{file.path}</p>
+                                </div>
+                                <span className="text-sm text-gray-400">
+                                  {(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {manualImportFiles.length === 0 && (
+                        <div className="p-8 text-center text-gray-400 border border-dashed border-white/10 rounded-lg">
+                          <FolderInput className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>Enter a path and click Scan to find importable files</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
