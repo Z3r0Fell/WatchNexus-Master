@@ -63,7 +63,6 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - Connect Plugin Marketplace to backend API (currently uses sample data)
 - Connect Theme Community to backend API (currently uses sample data)
 - Connect DVR to backend recording service
-- Verify Syrup scrapers (YTS/EZTV) in live network environment
 
 ## API Endpoints Summary
 
