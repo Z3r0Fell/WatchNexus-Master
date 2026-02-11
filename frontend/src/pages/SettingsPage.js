@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { settingsApi, indexersApi, streamingApi, mediaHealthApi, qbittorrentApi, torrentEngineApi } from '../services/api';
+import { settingsApi, indexersApi, streamingApi, mediaHealthApi, qbittorrentApi, torrentEngineApi, compoteApi } from '../services/api';
 import { toast } from 'sonner';
 import { 
   Settings, Server, Download, Subtitles, Shield, 
