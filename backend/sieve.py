@@ -45,10 +45,11 @@ class MediaHealthReport:
         result['status'] = self.status.value
         return result
 
-class MediaHealthChecker:
+class SieveChecker:
     """
-    Comprehensive media file health checker using FFprobe and FFmpeg.
-    Detects common issues that cause playback failures in Jellyfin/media servers.
+    Sieve - Comprehensive media file health checker.
+    Filters out the bad, keeps the good - quality control for your media.
+    Uses FFprobe and FFmpeg to detect common issues that cause playback failures.
     """
     
     def __init__(self, ffprobe_path: str = "ffprobe", ffmpeg_path: str = "ffmpeg"):
