@@ -1,15 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { marmaladeMedia, marmaladeProgress, marmaladeStream, formatDuration, formatResolution } from '../services/marmaladeApi';
+import axios from 'axios';
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, ArrowLeft, Check,
-  RefreshCw, AlertTriangle
+  RefreshCw, AlertTriangle, Subtitles, Download, X,
+  Languages, ChevronRight
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Slider } from '../components/ui/slider';
 import { toast } from 'sonner';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const VideoPlayer = () => {
   const { mediaId } = useParams();
@@ -17,6 +21,7 @@ const VideoPlayer = () => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const progressInterval = useRef(null);
+  const trackRef = useRef(null);
   
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +35,19 @@ const VideoPlayer = () => {
   const [showControls, setShowControls] = useState(true);
   const [buffering, setBuffering] = useState(false);
   const controlsTimeout = useRef(null);
+
+  // Subtitle state
+  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
+  const [currentSubtitle, setCurrentSubtitle] = useState(null);
+  const [availableSubtitles, setAvailableSubtitles] = useState([]);
+  const [searchingSubtitles, setSearchingSubtitles] = useState(false);
+  const [subtitleOffset, setSubtitleOffset] = useState(0); // ms offset
+  const [subtitleSize, setSubtitleSize] = useState(100); // % of default size
+
+  // Settings menu state
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('subtitles');
 
   // Fetch media info
   useEffect(() => {
@@ -51,6 +69,72 @@ const VideoPlayer = () => {
     }
   }, [mediaId]);
 
+  // Search for subtitles when media loads
+  useEffect(() => {
+    const searchSubtitles = async () => {
+      if (!media) return;
+      
+      setSearchingSubtitles(true);
+      try {
+        const token = localStorage.getItem('watchnexus_token');
+        
+        // Determine if TV or movie
+        const isTV = media.type === 'tv' || media.series_name;
+        const endpoint = isTV ? '/api/subtitles/search/tv' : '/api/subtitles/search/movie';
+        
+        const params = isTV ? {
+          series_name: media.series_name || media.title,
+          season: media.season_number || 1,
+          episode: media.episode_number || 1,
+        } : {
+          title: media.title,
+          year: media.year,
+        };
+        
+        const res = await axios.get(`${API_URL}${endpoint}`, {
+          params,
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (res.data && res.data.length > 0) {
+          setAvailableSubtitles(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to search subtitles:', err);
+      } finally {
+        setSearchingSubtitles(false);
+      }
+    };
+    
+    searchSubtitles();
+  }, [media]);
+
+  // Load subtitle track
+  const loadSubtitle = async (subtitle) => {
+    try {
+      const token = localStorage.getItem('watchnexus_token');
+      
+      // Download subtitle
+      const res = await axios.post(`${API_URL}/api/subtitles/download`, {
+        download_url: subtitle.download_url,
+        media_id: mediaId,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data.file_path) {
+        // Create blob URL for subtitle
+        const subtitleUrl = `${API_URL}/api/subtitles/file/${res.data.file_path}`;
+        setCurrentSubtitle({ ...subtitle, url: subtitleUrl });
+        setSubtitlesEnabled(true);
+        toast.success(`Loaded: ${subtitle.language}`);
+      }
+    } catch (err) {
+      console.error('Failed to load subtitle:', err);
+      toast.error('Failed to load subtitle');
+    }
+  };
+
   // Report progress periodically
   useEffect(() => {
     if (playing && media) {
@@ -59,7 +143,7 @@ const VideoPlayer = () => {
           marmaladeProgress.updateProgress(mediaId, videoRef.current.currentTime)
             .catch(err => console.error('Failed to update progress:', err));
         }
-      }, 10000); // Every 10 seconds
+      }, 10000);
     }
     
     return () => {
@@ -77,19 +161,18 @@ const VideoPlayer = () => {
       clearTimeout(controlsTimeout.current);
     }
     
-    if (playing) {
+    if (playing && !showSubtitleMenu && !showSettings) {
       controlsTimeout.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
-  }, [playing]);
+  }, [playing, showSubtitleMenu, showSettings]);
 
   // Video event handlers
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
       
-      // Resume from saved progress
       if (media?.watch_progress && media.watch_progress > 0) {
         videoRef.current.currentTime = media.watch_progress;
       }
@@ -169,6 +252,12 @@ const VideoPlayer = () => {
     }
   };
 
+  // Subtitle offset adjustment with keyboard
+  const adjustSubtitleOffset = (delta) => {
+    setSubtitleOffset(prev => prev + delta);
+    toast.info(`Subtitle offset: ${subtitleOffset + delta}ms`);
+  };
+
   const handleKeyDown = useCallback((e) => {
     switch (e.key) {
       case ' ':
@@ -200,15 +289,35 @@ const VideoPlayer = () => {
         e.preventDefault();
         toggleMute();
         break;
+      case 's':
+        e.preventDefault();
+        setShowSubtitleMenu(prev => !prev);
+        break;
+      case 'c':
+        e.preventDefault();
+        setSubtitlesEnabled(prev => !prev);
+        break;
+      case 'g': // Delay subtitles
+        e.preventDefault();
+        adjustSubtitleOffset(-100);
+        break;
+      case 'h': // Advance subtitles
+        e.preventDefault();
+        adjustSubtitleOffset(100);
+        break;
       case 'Escape':
-        if (fullscreen) {
+        if (showSubtitleMenu) {
+          setShowSubtitleMenu(false);
+        } else if (showSettings) {
+          setShowSettings(false);
+        } else if (fullscreen) {
           document.exitFullscreen();
         }
         break;
       default:
         break;
     }
-  }, [volume, fullscreen]);
+  }, [volume, fullscreen, showSubtitleMenu, showSettings, subtitleOffset]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -244,7 +353,12 @@ const VideoPlayer = () => {
       ref={containerRef}
       className="min-h-screen bg-black relative"
       onMouseMove={handleMouseMove}
-      onClick={togglePlay}
+      onClick={() => {
+        if (!showSubtitleMenu && !showSettings) {
+          togglePlay();
+        }
+      }}
+      data-testid="video-player"
     >
       {/* Video */}
       <video
@@ -258,7 +372,33 @@ const VideoPlayer = () => {
         onPlaying={handlePlaying}
         onError={handleError}
         onClick={(e) => e.stopPropagation()}
-      />
+        crossOrigin="anonymous"
+      >
+        {/* Subtitle track */}
+        {currentSubtitle && subtitlesEnabled && (
+          <track
+            ref={trackRef}
+            kind="subtitles"
+            src={currentSubtitle.url}
+            srcLang={currentSubtitle.language_code || 'en'}
+            label={currentSubtitle.language}
+            default
+          />
+        )}
+      </video>
+
+      {/* Custom subtitle display (for better styling) */}
+      {currentSubtitle && subtitlesEnabled && (
+        <div 
+          className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none px-8"
+          style={{ 
+            fontSize: `${subtitleSize}%`,
+            transform: `translateY(${subtitleOffset / 100}px)`
+          }}
+        >
+          {/* Subtitles rendered via track element */}
+        </div>
+      )}
 
       {/* Buffering indicator */}
       {buffering && (
@@ -332,6 +472,7 @@ const VideoPlayer = () => {
               size="icon"
               onClick={togglePlay}
               className="text-white hover:bg-white/20"
+              data-testid="play-pause-btn"
             >
               {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
             </Button>
@@ -376,11 +517,39 @@ const VideoPlayer = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Subtitle indicator */}
+            {currentSubtitle && subtitlesEnabled && (
+              <span className="text-xs text-green-400 mr-2">
+                {currentSubtitle.language}
+              </span>
+            )}
+
             {/* Media info */}
             <span className="text-xs text-gray-400 mr-4">
               {formatResolution(media.width, media.height)}
               {media.codec_video && ` • ${media.codec_video.toUpperCase()}`}
             </span>
+
+            {/* Subtitles button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSubtitleMenu(!showSubtitleMenu)}
+              className={`text-white hover:bg-white/20 ${subtitlesEnabled ? 'text-green-400' : ''}`}
+              data-testid="subtitles-btn"
+            >
+              <Subtitles className="w-5 h-5" />
+            </Button>
+
+            {/* Settings */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-white hover:bg-white/20"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
 
             {/* Fullscreen */}
             <Button
@@ -395,8 +564,203 @@ const VideoPlayer = () => {
         </div>
       </motion.div>
 
+      {/* Subtitle Menu Overlay */}
+      <AnimatePresence>
+        {showSubtitleMenu && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="absolute right-4 bottom-24 w-80 max-h-96 overflow-y-auto rounded-xl bg-black/90 backdrop-blur-lg border border-white/10 pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="subtitle-menu"
+          >
+            <div className="p-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Subtitles className="w-5 h-5 text-green-400" />
+                  Subtitles (Garnish 🌿)
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSubtitleMenu(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-2">
+              {/* Off option */}
+              <button
+                onClick={() => {
+                  setSubtitlesEnabled(false);
+                  setCurrentSubtitle(null);
+                }}
+                className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/10 ${
+                  !subtitlesEnabled ? 'bg-white/10' : ''
+                }`}
+              >
+                <span>Off</span>
+                {!subtitlesEnabled && <Check className="w-4 h-4 text-green-400" />}
+              </button>
+
+              {/* Available subtitles */}
+              {searchingSubtitles ? (
+                <div className="p-4 text-center text-gray-400">
+                  <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
+                  Searching for subtitles...
+                </div>
+              ) : availableSubtitles.length > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500 px-3 py-2">Available ({availableSubtitles.length})</p>
+                  {availableSubtitles.map((sub, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => loadSubtitle(sub)}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/10 ${
+                        currentSubtitle?.download_url === sub.download_url && subtitlesEnabled ? 'bg-white/10' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Languages className="w-4 h-4 text-gray-400" />
+                        <div className="text-left">
+                          <p className="text-sm">{sub.language}</p>
+                          <p className="text-xs text-gray-500">{sub.source}</p>
+                        </div>
+                      </div>
+                      {currentSubtitle?.download_url === sub.download_url && subtitlesEnabled ? (
+                        <Check className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Download className="w-4 h-4 text-gray-500" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-gray-400">
+                  <Subtitles className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>No subtitles found</p>
+                  <p className="text-xs mt-1">Try adding sources in Settings → Subtitles</p>
+                </div>
+              )}
+            </div>
+
+            {/* Subtitle offset controls */}
+            {subtitlesEnabled && currentSubtitle && (
+              <div className="p-4 border-t border-white/10">
+                <p className="text-xs text-gray-500 mb-2">Sync adjustment</p>
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustSubtitleOffset(-100)}
+                    className="text-xs"
+                  >
+                    -100ms (G)
+                  </Button>
+                  <span className="text-sm">{subtitleOffset}ms</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustSubtitleOffset(100)}
+                    className="text-xs"
+                  >
+                    +100ms (H)
+                  </Button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Menu Overlay */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="absolute right-4 bottom-24 w-80 max-h-96 overflow-y-auto rounded-xl bg-black/90 backdrop-blur-lg border border-white/10 pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Settings
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSettings(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Subtitle size */}
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Subtitle Size</label>
+                <Slider
+                  value={[subtitleSize]}
+                  min={50}
+                  max={200}
+                  step={10}
+                  onValueChange={(v) => setSubtitleSize(v[0])}
+                />
+                <p className="text-xs text-gray-500 mt-1">{subtitleSize}%</p>
+              </div>
+
+              {/* Playback speed */}
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Playback Speed</label>
+                <div className="flex gap-2 flex-wrap">
+                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map(speed => (
+                    <button
+                      key={speed}
+                      onClick={() => {
+                        if (videoRef.current) videoRef.current.playbackRate = speed;
+                      }}
+                      className={`px-3 py-1 rounded text-sm ${
+                        videoRef.current?.playbackRate === speed 
+                          ? 'bg-violet-500/20 text-violet-400' 
+                          : 'bg-white/5 text-gray-400'
+                      }`}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Keyboard shortcuts */}
+              <div>
+                <p className="text-sm text-gray-400 mb-2">Keyboard Shortcuts</p>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">Space</kbd> Play/Pause</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">←/→</kbd> Seek ±10s</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">↑/↓</kbd> Volume</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">S</kbd> Subtitles</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">C</kbd> Toggle subs</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">G/H</kbd> Subtitle sync</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">F</kbd> Fullscreen</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-white/10 rounded">M</kbd> Mute</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Center play button (shown when paused) */}
-      {!playing && !buffering && (
+      {!playing && !buffering && !showSubtitleMenu && !showSettings && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
