@@ -162,6 +162,14 @@ export const SettingsPage = () => {
     media_type: 'movies',
   });
 
+  // File Browser state
+  const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [browserPath, setBrowserPath] = useState('/');
+  const [browserItems, setBrowserItems] = useState([]);
+  const [browserDrives, setBrowserDrives] = useState([]);
+  const [browserLoading, setBrowserLoading] = useState(false);
+  const [browserMediaCount, setBrowserMediaCount] = useState(0);
+
   // Gelatin (External Access) state
   const [gelatinStatus, setGelatinStatus] = useState(null);
   const [activeTunnels, setActiveTunnels] = useState([]);
