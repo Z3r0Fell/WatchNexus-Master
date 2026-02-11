@@ -147,6 +147,71 @@ export const SettingsPage = () => {
     cookie: '',
   });
 
+  // Library management state
+  const [libraries, setLibraries] = useState([]);
+  const [loadingLibraries, setLoadingLibraries] = useState(false);
+  const [scanningLibrary, setScanningLibrary] = useState(null);
+  const [showAddLibrary, setShowAddLibrary] = useState(false);
+  const [newLibrary, setNewLibrary] = useState({
+    name: '',
+    path: '',
+    media_type: 'movies',
+  });
+
+  // Fetch Marmalade libraries
+  const fetchLibraries = useCallback(async () => {
+    setLoadingLibraries(true);
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`);
+      setLibraries(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch libraries:', error);
+    } finally {
+      setLoadingLibraries(false);
+    }
+  }, []);
+
+  const handleAddLibrary = async () => {
+    if (!newLibrary.name || !newLibrary.path) {
+      toast.error('Name and path are required');
+      return;
+    }
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`, null, {
+        params: newLibrary
+      });
+      toast.success(`Library "${newLibrary.name}" added`);
+      setNewLibrary({ name: '', path: '', media_type: 'movies' });
+      setShowAddLibrary(false);
+      fetchLibraries();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add library');
+    }
+  };
+
+  const handleDeleteLibrary = async (libraryId) => {
+    try {
+      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}`);
+      toast.success('Library removed');
+      fetchLibraries();
+    } catch (error) {
+      toast.error('Failed to remove library');
+    }
+  };
+
+  const handleScanLibrary = async (libraryId) => {
+    setScanningLibrary(libraryId);
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}/scan`);
+      toast.success(`Scan complete: ${res.data.new} new, ${res.data.updated} updated`);
+      fetchLibraries();
+    } catch (error) {
+      toast.error('Scan failed');
+    } finally {
+      setScanningLibrary(null);
+    }
+  };
+
   // Fetch built-in engine status and settings
   const fetchEngineStatus = useCallback(async () => {
     try {
