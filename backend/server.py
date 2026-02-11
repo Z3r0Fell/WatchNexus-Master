@@ -751,7 +751,7 @@ async def add_to_library(item: MediaItem, user: dict = Depends(require_auth)):
 
 # ==================== MEDIA HEALTH CHECKER ====================
 
-from media_health_checker import check_media_health, repair_media_file, scan_library
+from sieve import check_media_health, repair_media_file, scan_library
 
 @api_router.post("/media/health-check")
 async def check_file_health(file_path: str, compute_hash: bool = False):
@@ -1471,7 +1471,7 @@ async def qbittorrent_test(
 # ==================== BUILT-IN TORRENT ENGINE ====================
 # Native torrent downloading - no external applications required!
 
-from torrent_engine import get_torrent_engine, shutdown_torrent_engine
+from fondue import get_fondue_engine, shutdown_fondue_engine
 
 @api_router.get("/downloads/engine/status")
 async def torrent_engine_status(user: dict = Depends(require_auth)):
@@ -1866,7 +1866,7 @@ async def marmalade_stream_file(media_id: str, request: Request):
     )
 
 # ==================== SUBTITLE SERVICE ====================
-from subtitle_service import get_subtitle_service
+from garnish import get_garnish_service
 
 @api_router.get("/subtitles/search/tv")
 async def search_tv_subtitles(
@@ -2151,7 +2151,7 @@ async def get_streaming_credentials(service_id: str, user: dict = Depends(requir
     }
 
 # ==================== WATCH PARTY ====================
-from watch_party import get_party_manager, WatchParty
+from potluck import get_potluck_manager, Potluck
 from fastapi import WebSocket, WebSocketDisconnect
 
 @api_router.get("/watch-party/list")
