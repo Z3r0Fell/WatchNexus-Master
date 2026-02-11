@@ -395,11 +395,11 @@ class PotluckManager:
             "message": asdict(msg),
         })
     
-    def get_party(self, party_id: str) -> Optional[WatchParty]:
+    def get_party(self, party_id: str) -> Optional[Potluck]:
         """Get party by ID."""
         return self.parties.get(party_id.upper())
     
-    def get_user_party(self, user_id: str) -> Optional[WatchParty]:
+    def get_user_party(self, user_id: str) -> Optional[Potluck]:
         """Get party that user is in."""
         party_id = self.user_party_map.get(user_id)
         if party_id:
