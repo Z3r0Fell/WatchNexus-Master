@@ -1185,32 +1185,10 @@ class Compote:
             return {"success": False, "error": str(e)}
 
 
-# Pre-configured indexers with different types and options
-# Users can add their own private indexers with API keys
+# Pre-configured indexers - WatchNexus built-in indexer support
+# All indexers work through our built-in Syrup aggregator
 DEFAULT_INDEXERS = [
-    # === TORZNAB INDEXERS (Prowlarr/Jackett compatible) ===
-    {
-        "id": "jackett",
-        "name": "Jackett (Local)",
-        "type": "torznab",
-        "url": "http://localhost:9117",
-        "search_path": "/api/v2.0/indexers/all/results/torznab",
-        "api_key": "",
-        "enabled": False,
-        "priority": 10,
-        "description": "Aggregates multiple indexers via Jackett",
-    },
-    {
-        "id": "prowlarr",
-        "name": "Prowlarr (Local)",
-        "type": "torznab",
-        "url": "http://localhost:9696",
-        "search_path": "/api/v1/search",
-        "api_key": "",
-        "enabled": False,
-        "priority": 10,
-        "description": "Aggregates multiple indexers via Prowlarr",
-    },
+    # === TORRENT INDEXERS (via Syrup) ===
     {
         "id": "1337x",
         "name": "1337x",
@@ -1220,13 +1198,13 @@ DEFAULT_INDEXERS = [
         "enabled": False,
         "priority": 50,
         "cloudflare_protected": True,
-        "description": "General torrent indexer (requires Jackett/Prowlarr)",
+        "description": "General torrent indexer - handled by Preserve",
     },
     {
         "id": "yts",
         "name": "YTS",
         "type": "torznab",
-        "url": "https://yts.mx",
+        "url": "https://yts.mx/api/v2",
         "api_key": "",
         "enabled": False,
         "priority": 60,
@@ -1252,6 +1230,27 @@ DEFAULT_INDEXERS = [
         "priority": 45,
         "description": "Anime and Japanese media",
     },
+    {
+        "id": "thepiratebay",
+        "name": "The Pirate Bay",
+        "type": "torznab",
+        "url": "https://thepiratebay.org",
+        "api_key": "",
+        "enabled": False,
+        "priority": 40,
+        "cloudflare_protected": True,
+        "description": "Classic torrent indexer - via Syrup",
+    },
+    {
+        "id": "rarbg",
+        "name": "RARBG (Mirror)",
+        "type": "torznab",
+        "url": "https://rarbg.to",
+        "api_key": "",
+        "enabled": False,
+        "priority": 35,
+        "description": "RARBG mirror - quality releases",
+    },
     
     # === RSS FEED INDEXERS ===
     {
@@ -1273,94 +1272,87 @@ DEFAULT_INDEXERS = [
         "description": "Add your own RSS feed URL",
     },
     
-    # === NEWZNAB (Usenet) ===
+    # === PULP (Usenet/NZB) ===
     {
-        "id": "nzbgeek",
-        "name": "NZBgeek",
+        "id": "pulp_nzb",
+        "name": "Pulp NZB Indexer",
         "type": "newznab",
-        "url": "https://api.nzbgeek.info",
+        "url": "",
         "api_key": "",
         "enabled": False,
         "priority": 30,
-        "description": "Usenet indexer (requires subscription)",
-    },
-    {
-        "id": "drunkenslug",
-        "name": "DrunkenSlug",
-        "type": "newznab",
-        "url": "https://api.drunkenslug.com",
-        "api_key": "",
-        "enabled": False,
-        "priority": 30,
-        "description": "Usenet indexer (requires subscription)",
+        "description": "Add NZB indexer URL for Pulp to search",
     },
 ]
 
 # Indexer type descriptions for UI
 INDEXER_TYPES = {
     "torznab": {
-        "name": "Torznab",
-        "description": "Standard torrent indexer API (Jackett, Prowlarr, many sites)",
-        "requires_api_key": True,
+        "name": "Torrent (Syrup)",
+        "description": "Torrent indexers - searched via built-in Syrup aggregator",
+        "requires_api_key": False,
         "supports_search": True,
-        "example_url": "http://localhost:9117/api/v2.0/indexers/all/results/torznab",
+        "example_url": "https://1337x.to",
+        "module": "Syrup",
     },
     "newznab": {
-        "name": "Newznab",
-        "description": "Usenet indexer API (NZBgeek, DrunkenSlug, etc.)",
+        "name": "NZB (Pulp)",
+        "description": "Usenet/NZB indexers - handled by built-in Pulp module",
         "requires_api_key": True,
         "supports_search": True,
-        "example_url": "https://api.nzbgeek.info",
+        "example_url": "https://nzbfinder.ws",
+        "module": "Pulp",
     },
     "rss": {
         "name": "RSS Feed",
         "description": "Standard RSS/Atom feed with torrent/magnet links",
         "requires_api_key": False,
         "supports_search": False,
-        "note": "RSS feeds are filtered client-side, not searched",
-        "example_url": "https://example.com/feed.rss",
+        "note": "RSS feeds are filtered locally, not searched remotely",
+        "module": "Compote",
     },
 }
 
-# Help documentation for adding indexers
+# Help documentation - WatchNexus built-in modules
 INDEXER_SETUP_GUIDE = {
-    "jackett": {
-        "title": "Setting up Jackett",
+    "syrup": {
+        "title": "Syrup - Built-in Torrent Aggregator",
         "steps": [
-            "Install Jackett from https://github.com/Jackett/Jackett",
-            "Run Jackett and access web UI at http://localhost:9117",
-            "Add indexers through Jackett's web interface",
-            "Copy the API key from Jackett's dashboard",
-            "Use URL: http://localhost:9117/api/v2.0/indexers/all/results/torznab",
+            "Syrup is WatchNexus's built-in indexer aggregator",
+            "No external software needed - it's fully integrated",
+            "Add torrent indexers directly - Syrup handles scraping",
+            "Supports most popular torrent sites automatically",
+            "Enable 'Cloudflare Protected' if site uses protection",
         ],
     },
-    "prowlarr": {
-        "title": "Setting up Prowlarr",
+    "preserve": {
+        "title": "Preserve - Challenge Solver",
         "steps": [
-            "Install Prowlarr from https://prowlarr.com",
-            "Run Prowlarr and access web UI at http://localhost:9696",
-            "Add indexers through Prowlarr's Indexers tab",
-            "Get API key from Settings > General",
-            "Enable search sync in Settings > Apps",
+            "Preserve handles Cloudflare and similar protections",
+            "Fully automatic - no configuration needed",
+            "Uses browser fingerprinting and cookie persistence",
+            "Handles rate limiting with smart backoff",
+            "Enable 'Cloudflare Protected' toggle for protected sites",
+        ],
+    },
+    "pulp": {
+        "title": "Pulp - NZB/Usenet Handler",
+        "steps": [
+            "Pulp is WatchNexus's built-in NZB handler",
+            "Supports Newznab API indexers",
+            "Enter your NZB indexer URL and API key",
+            "Downloads are managed through Downloads page",
+            "Works with any Newznab-compatible indexer",
         ],
     },
     "rss": {
-        "title": "Adding RSS Feeds",
+        "title": "RSS Feed Setup",
         "steps": [
+            "RSS feeds are great for tracking new releases",
             "Find RSS feeds from your favorite torrent sites",
-            "Common sources: ShowRSS for TV, private tracker feeds",
-            "RSS feeds don't support searching - they list recent releases",
-            "Good for monitoring new releases and auto-downloading",
-        ],
-    },
-    "cloudflare": {
-        "title": "Bypassing Cloudflare Protection",
-        "steps": [
-            "Some sites use Cloudflare to prevent automated access",
-            "Option 1: Use FlareSolverr (https://github.com/FlareSolverr/FlareSolverr)",
-            "Option 2: Use Jackett/Prowlarr which handles CF automatically",
-            "Option 3: Extract browser cookies and add to indexer config",
-            "Enable 'Cloudflare Protected' toggle when adding such indexers",
+            "ShowRSS.info is excellent for TV shows",
+            "Private trackers often provide personal RSS feeds",
+            "RSS is filtered locally - great for automation",
         ],
     },
 }
