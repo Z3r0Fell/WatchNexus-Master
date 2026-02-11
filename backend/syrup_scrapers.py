@@ -270,7 +270,7 @@ class Scraper1337x(BaseScraper):
                     response = await client.get(search_url, headers=headers, follow_redirects=True)
                 
                 if not response or response.status_code != 200:
-                    logger.warning(f"1337x: Failed to fetch search page")
+                    logger.warning("1337x: Failed to fetch search page")
                     return results
                 
                 soup = BeautifulSoup(response.text, 'html.parser')
