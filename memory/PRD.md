@@ -3,6 +3,21 @@
 ## Original Problem Statement
 Build a unified, self-hosted media pipeline called "WatchNexus" that replaces the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, fully self-contained application that handles requesting, acquiring, organizing, and watching media.
 
+## Module Code Names (Food Theme 🍯)
+
+| Module | Code Name | Description | File |
+|--------|-----------|-------------|------|
+| Indexer Aggregator | **Syrup** 🍯 | Aggregates multiple indexers, live scrapers | `syrup_scrapers.py` |
+| Challenge Solver | **Preserve** 🫙 | Cloudflare bypass / anti-bot protection | `compote.py` |
+| Usenet Handler | **Pulp** 🍊 | Usenet/NZB download management | `compote.py` |
+| Indexer Manager | **Compote** 🍇 | Central manager for Syrup, Preserve, Pulp | `compote.py` |
+| Media Server | **Marmalade** 🍊 | Library management, streaming, progress | `marmalade_server.py` |
+| External Access | **Gelatin** 🍮 | LAN discovery, tunneling, share links | `gelatin.py` |
+| Watch Party | **Potluck** 🍲 | WebSocket sync, chat, reactions | `potluck.py` |
+| Subtitle Service | **Garnish** 🌿 | Addic7ed/OpenSubtitles integration | `garnish.py` |
+| Torrent Engine | **Fondue** 🫕 | Built-in libtorrent client | `fondue.py` |
+| Media Health | **Sieve** 🫗 | File validation, repair, scans | `sieve.py` |
+
 ## User Personas
 - **Home Media Enthusiast**: Wants to manage their media library without running multiple applications
 - **Tech-Savvy User**: Comfortable with self-hosting but wants a simpler setup
