@@ -15,6 +15,344 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// EPG Guide View Component with Timeline
+const EPGGuideView = ({ channels }) => {
+  const [epgData, setEpgData] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedProgram, setSelectedProgram] = useState(null);
+  const timelineRef = useRef(null);
+  const getToken = () => localStorage.getItem('watchnexus_token');
+
+  // Generate time slots for 24 hours
+  const timeSlots = Array.from({ length: 48 }, (_, i) => {
+    const hour = Math.floor(i / 2);
+    const minute = (i % 2) * 30;
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  });
+
+  // Fetch EPG data for all channels
+  useEffect(() => {
+    const fetchEPG = async () => {
+      if (channels.length === 0) return;
+      
+      setLoading(true);
+      const data = {};
+      
+      for (const channel of channels.slice(0, 20)) { // Limit to first 20 channels
+        try {
+          const res = await axios.get(`${API_URL}/api/iptv/epg/${channel.id}`, {
+            headers: { Authorization: `Bearer ${getToken()}` }
+          });
+          data[channel.id] = res.data || [];
+        } catch (err) {
+          data[channel.id] = [];
+        }
+      }
+      
+      setEpgData(data);
+      setLoading(false);
+    };
+    
+    fetchEPG();
+  }, [channels]);
+
+  // Scroll to current time on load
+  useEffect(() => {
+    if (timelineRef.current) {
+      const now = new Date();
+      const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
+      const scrollPosition = (minutesSinceMidnight / (24 * 60)) * timelineRef.current.scrollWidth;
+      timelineRef.current.scrollLeft = scrollPosition - 200;
+    }
+  }, [loading]);
+
+  // Calculate position and width for a program
+  const getProgramStyle = (program) => {
+    const start = new Date(program.start);
+    const end = new Date(program.end);
+    const dayStart = new Date(currentDate);
+    dayStart.setHours(0, 0, 0, 0);
+    
+    const startMinutes = (start - dayStart) / (1000 * 60);
+    const duration = (end - start) / (1000 * 60);
+    
+    // Each 30 min = 100px
+    const left = (startMinutes / 30) * 100;
+    const width = (duration / 30) * 100;
+    
+    return { left: `${left}px`, width: `${Math.max(width, 50)}px` };
+  };
+
+  // Check if program is currently airing
+  const isNowPlaying = (program) => {
+    const now = new Date();
+    const start = new Date(program.start);
+    const end = new Date(program.end);
+    return now >= start && now <= end;
+  };
+
+  const navigateDay = (direction) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + direction);
+    setCurrentDate(newDate);
+  };
+
+  if (channels.length === 0) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="text-center py-20">
+          <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+          <h2 className="text-xl font-bold mb-2">TV Guide</h2>
+          <p className="text-gray-400 mb-4">
+            Add channels first to see the program guide.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      {/* Date Navigation */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" onClick={() => navigateDay(-1)}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div className="text-center">
+            <p className="font-medium">{currentDate.toLocaleDateString('en-US', { weekday: 'long' })}</p>
+            <p className="text-sm text-gray-400">{currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigateDay(1)}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentDate(new Date())}
+        >
+          <Clock className="w-4 h-4 mr-2" />
+          Now
+        </Button>
+      </div>
+
+      {/* EPG Grid */}
+      <div className="rounded-xl bg-surface border border-white/5 overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <RefreshCw className="w-8 h-8 animate-spin text-red-400" />
+          </div>
+        ) : (
+          <div className="flex">
+            {/* Channel Column */}
+            <div className="w-48 flex-shrink-0 border-r border-white/5">
+              {/* Time header placeholder */}
+              <div className="h-12 border-b border-white/5 bg-surface/50 flex items-center justify-center">
+                <span className="text-xs text-gray-500">Channels</span>
+              </div>
+              
+              {/* Channel list */}
+              {channels.slice(0, 20).map((channel) => (
+                <div
+                  key={channel.id}
+                  className="h-16 border-b border-white/5 flex items-center gap-3 px-3 hover:bg-white/5"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-black/30 overflow-hidden flex-shrink-0">
+                    {channel.logo ? (
+                      <img src={channel.logo} alt="" className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Radio className="w-4 h-4 text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{channel.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{channel.group}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Timeline */}
+            <div className="flex-1 overflow-x-auto" ref={timelineRef}>
+              {/* Time header */}
+              <div className="h-12 border-b border-white/5 bg-surface/50 flex" style={{ width: `${48 * 100}px` }}>
+                {timeSlots.map((time, i) => (
+                  <div
+                    key={time}
+                    className="w-[100px] flex-shrink-0 border-r border-white/5 flex items-center justify-center"
+                  >
+                    <span className="text-xs text-gray-500">{time}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Program rows */}
+              {channels.slice(0, 20).map((channel) => (
+                <div
+                  key={channel.id}
+                  className="h-16 border-b border-white/5 relative"
+                  style={{ width: `${48 * 100}px` }}
+                >
+                  {/* Time grid lines */}
+                  {timeSlots.map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute top-0 bottom-0 w-[100px] border-r border-white/5"
+                      style={{ left: `${i * 100}px` }}
+                    />
+                  ))}
+
+                  {/* Current time indicator */}
+                  {(() => {
+                    const now = new Date();
+                    const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
+                    const left = (minutesSinceMidnight / 30) * 100;
+                    return (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
+                        style={{ left: `${left}px` }}
+                      />
+                    );
+                  })()}
+
+                  {/* Programs */}
+                  {(epgData[channel.id] || []).map((program, idx) => {
+                    const style = getProgramStyle(program);
+                    const nowPlaying = isNowPlaying(program);
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`absolute top-1 bottom-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden ${
+                          nowPlaying 
+                            ? 'bg-red-500/30 border border-red-500/50' 
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                        }`}
+                        style={style}
+                        onClick={() => setSelectedProgram(program)}
+                      >
+                        <p className="text-xs font-medium truncate">{program.title}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {new Date(program.start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    );
+                  })}
+
+                  {/* No EPG data message */}
+                  {(!epgData[channel.id] || epgData[channel.id].length === 0) && (
+                    <div className="absolute inset-1 flex items-center justify-center text-xs text-gray-600">
+                      No program data available
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Program Details Modal */}
+      <AnimatePresence>
+        {selectedProgram && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setSelectedProgram(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-lg bg-surface rounded-2xl border border-white/10 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-bold">{selectedProgram.title}</h2>
+                  {selectedProgram.episode_title && (
+                    <p className="text-gray-400">{selectedProgram.episode_title}</p>
+                  )}
+                </div>
+                <button onClick={() => setSelectedProgram(null)} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    <span>
+                      {new Date(selectedProgram.start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - 
+                      {new Date(selectedProgram.end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <span className="text-gray-500">•</span>
+                  <span className="text-gray-400">{selectedProgram.duration_minutes} min</span>
+                  {selectedProgram.category && (
+                    <>
+                      <span className="text-gray-500">•</span>
+                      <span className="px-2 py-0.5 rounded bg-white/10 text-xs">{selectedProgram.category}</span>
+                    </>
+                  )}
+                </div>
+
+                {selectedProgram.season && selectedProgram.episode && (
+                  <p className="text-sm text-gray-400">
+                    Season {selectedProgram.season}, Episode {selectedProgram.episode}
+                  </p>
+                )}
+
+                {selectedProgram.description && (
+                  <p className="text-gray-300">{selectedProgram.description}</p>
+                )}
+
+                {selectedProgram.rating && (
+                  <p className="text-sm text-gray-400">Rating: {selectedProgram.rating}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button className="flex-1 bg-gradient-to-r from-red-600 to-rose-500">
+                  <Play className="w-4 h-4 mr-2" />
+                  Watch Now
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Set Reminder
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-6 text-xs text-gray-500">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-red-500/30 border border-red-500/50" />
+          <span>Now Playing</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-white/5 border border-white/10" />
+          <span>Scheduled</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-0.5 h-3 bg-red-500" />
+          <span>Current Time</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export const LiveTVPage = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
