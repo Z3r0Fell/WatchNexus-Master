@@ -10,7 +10,8 @@ import {
   AlertTriangle, CheckCircle, RefreshCw, FileSearch, Wrench, HardDrive,
   Clock, Bell, Calendar, DownloadCloud, Tv, Radio, Play, Eye, EyeOff,
   ChevronDown, Wifi, WifiOff, Zap, Package, Film, Music, Book, FolderOpen,
-  Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson
+  Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson,
+  Users, UserPlus, UserMinus, Crown, Lock, Edit2, Save
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
