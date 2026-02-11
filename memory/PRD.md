@@ -113,6 +113,9 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 │   ├── install-mac.sh
 │   └── install-windows.ps1
 └── website/            # Marketing site
+    └── src/pages/
+        ├── TermsPage.jsx       # Terms & Conditions (NEW)
+        └── DisclaimerPage.jsx  # Legal Disclaimer (NEW)
 ```
 
 ## Test Credentials
