@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { settingsApi, indexersApi, streamingApi, mediaHealthApi, qbittorrentApi } from '../services/api';
+import { settingsApi, indexersApi, streamingApi, mediaHealthApi, qbittorrentApi, torrentEngineApi } from '../services/api';
 import { toast } from 'sonner';
 import { 
   Settings, Server, Download, Subtitles, Shield, 
   Folder, Check, X, Plus, Trash2, ExternalLink, Globe,
   AlertTriangle, CheckCircle, RefreshCw, FileSearch, Wrench, HardDrive,
   Clock, Bell, Calendar, DownloadCloud, Tv, Radio, Play, Eye, EyeOff,
-  ChevronDown, Wifi, WifiOff
+  ChevronDown, Wifi, WifiOff, Zap, Package
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
