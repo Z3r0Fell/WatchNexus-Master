@@ -9,12 +9,14 @@ import {
   Folder, Check, X, Plus, Trash2, ExternalLink, Globe,
   AlertTriangle, CheckCircle, RefreshCw, FileSearch, Wrench, HardDrive,
   Clock, Bell, Calendar, DownloadCloud, Tv, Radio, Play, Eye, EyeOff,
-  ChevronDown, Wifi, WifiOff, Zap, Package, Film, Music, Book, FolderOpen
+  ChevronDown, Wifi, WifiOff, Zap, Package, Film, Music, Book, FolderOpen,
+  Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { JuiceColorPicker } from '../components/juice/JuiceColorPicker';
 
 // All streaming services with their icons/colors
 const STREAMING_SERVICES = [
