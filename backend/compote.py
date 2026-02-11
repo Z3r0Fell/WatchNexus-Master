@@ -495,6 +495,245 @@ class Compote:
         
         return results
     
+    async def _search_rss(
+        self,
+        indexer: IndexerConfig,
+        query: str,
+        limit: int = 100
+    ) -> List[SearchResult]:
+        """
+        Search/filter an RSS feed for matching content.
+        RSS feeds are parsed and filtered client-side since they don't support queries.
+        """
+        results = []
+        query_lower = query.lower()
+        query_words = query_lower.split()
+        
+        try:
+            client = await self._get_client()
+            
+            # Use Cloudflare bypasser if needed
+            if indexer.cloudflare_protected:
+                cf = get_cf_bypasser()
+                response = await cf.make_request(client, indexer.url)
+            else:
+                headers = {"User-Agent": get_cf_bypasser().get_user_agent()}
+                response = await client.get(indexer.url, headers=headers)
+            
+            if not response or response.status_code != 200:
+                logger.warning(f"Failed to fetch RSS from {indexer.name}")
+                return results
+            
+            # Parse RSS/XML
+            root = ET.fromstring(response.text)
+            
+            # Find all items (RSS 2.0 format)
+            for item in root.findall(".//item"):
+                title = item.findtext("title", "")
+                
+                # Filter by query - all query words must be in title
+                title_lower = title.lower()
+                if not all(word in title_lower for word in query_words):
+                    continue
+                
+                # Extract data
+                size = 0
+                seeders = 0
+                leechers = 0
+                magnet_url = ""
+                download_url = ""
+                info_url = item.findtext("link", "")
+                pub_date = item.findtext("pubDate", "")
+                description = item.findtext("description", "")
+                
+                # Try to get enclosure (common in torrent RSS)
+                enclosure = item.find("enclosure")
+                if enclosure is not None:
+                    enc_url = enclosure.get("url", "")
+                    if enc_url.startswith("magnet:"):
+                        magnet_url = enc_url
+                    else:
+                        download_url = enc_url
+                    try:
+                        size = int(enclosure.get("length", 0))
+                    except:
+                        pass
+                
+                # Check for magnet in various places
+                if not magnet_url:
+                    # Check <link> tag
+                    link_url = item.findtext("link", "")
+                    if link_url.startswith("magnet:"):
+                        magnet_url = link_url
+                    
+                    # Check for custom magnetURI tag
+                    magnet_uri = item.findtext("magnetURI", "")
+                    if magnet_uri:
+                        magnet_url = magnet_uri
+                    
+                    # Check in description/comments for magnet
+                    if not magnet_url and description:
+                        magnet_match = re.search(r'magnet:\?[^\s"<>]+', description)
+                        if magnet_match:
+                            magnet_url = magnet_match.group(0)
+                
+                # Try to extract size from title or description
+                if size == 0:
+                    size_match = re.search(r'(\d+(?:\.\d+)?)\s*(GB|MB|TB|GiB|MiB)', title + " " + description, re.IGNORECASE)
+                    if size_match:
+                        num = float(size_match.group(1))
+                        unit = size_match.group(2).upper()
+                        multipliers = {"MB": 1e6, "MIB": 1048576, "GB": 1e9, "GIB": 1073741824, "TB": 1e12}
+                        size = int(num * multipliers.get(unit, 1e9))
+                
+                # Try to extract seeders from title or description
+                seeders_match = re.search(r'seeds?:?\s*(\d+)', title + " " + description, re.IGNORECASE)
+                if seeders_match:
+                    seeders = int(seeders_match.group(1))
+                
+                # Skip if no download method
+                if not magnet_url and not download_url:
+                    continue
+                
+                # Extract quality info
+                quality_info = self._parse_quality(title)
+                
+                results.append(SearchResult(
+                    title=title,
+                    indexer=f"{indexer.name} (RSS)",
+                    size=size,
+                    seeders=seeders,
+                    leechers=leechers,
+                    download_url=download_url,
+                    magnet_url=magnet_url,
+                    info_url=info_url,
+                    category="",
+                    pub_date=pub_date,
+                    **quality_info
+                ))
+                
+                if len(results) >= limit:
+                    break
+            
+            logger.info(f"Found {len(results)} RSS results from {indexer.name} matching '{query}'")
+            
+        except ET.ParseError as e:
+            logger.error(f"RSS parse error from {indexer.name}: {e}")
+        except Exception as e:
+            logger.error(f"Error fetching RSS from {indexer.name}: {e}")
+        
+        return results
+
+    async def _search_torznab_with_cf(
+        self,
+        indexer: IndexerConfig,
+        query: str,
+        categories: List[int],
+        limit: int = 100
+    ) -> List[SearchResult]:
+        """Search a Torznab indexer with Cloudflare bypass support."""
+        results = []
+        
+        try:
+            client = await self._get_client()
+            cf = get_cf_bypasser()
+            
+            # Build Torznab API URL
+            params = {
+                "t": "search",
+                "q": query,
+                "limit": limit,
+            }
+            if indexer.api_key:
+                params["apikey"] = indexer.api_key
+            if categories:
+                params["cat"] = ",".join(map(str, categories))
+            
+            search_path = indexer.search_path or "/api"
+            url = f"{indexer.url.rstrip('/')}{search_path}"
+            full_url = f"{url}?{urlencode(params)}"
+            
+            # Make request with CF bypass
+            if indexer.cloudflare_protected:
+                response = await cf.make_request(client, full_url)
+            else:
+                headers = {"User-Agent": cf.get_user_agent()}
+                if indexer.cookie:
+                    headers["Cookie"] = indexer.cookie
+                response = await client.get(full_url, headers=headers)
+            
+            if not response or response.status_code != 200:
+                logger.warning(f"Failed to search {indexer.name}: HTTP {response.status_code if response else 'None'}")
+                return results
+            
+            # Parse XML response (same as regular torznab)
+            root = ET.fromstring(response.text)
+            
+            for item in root.findall(".//item"):
+                title = item.findtext("title", "")
+                size = 0
+                seeders = 0
+                leechers = 0
+                download_url = ""
+                magnet_url = ""
+                category = ""
+                pub_date = item.findtext("pubDate", "")
+                
+                enclosure = item.find("enclosure")
+                if enclosure is not None:
+                    download_url = enclosure.get("url", "")
+                    try:
+                        size = int(enclosure.get("length", 0))
+                    except:
+                        pass
+                
+                for attr in item.findall(".//{http://torznab.com/schemas/2015/feed}attr"):
+                    name = attr.get("name", "")
+                    value = attr.get("value", "")
+                    
+                    if name == "seeders":
+                        try:
+                            seeders = int(value)
+                        except:
+                            pass
+                    elif name == "peers":
+                        try:
+                            leechers = max(0, int(value) - seeders)
+                        except:
+                            pass
+                    elif name == "size" and not size:
+                        try:
+                            size = int(value)
+                        except:
+                            pass
+                    elif name == "magneturl":
+                        magnet_url = value
+                    elif name == "category":
+                        category = value
+                
+                quality_info = self._parse_quality(title)
+                
+                results.append(SearchResult(
+                    title=title,
+                    indexer=indexer.name,
+                    size=size,
+                    seeders=seeders,
+                    leechers=leechers,
+                    download_url=download_url,
+                    magnet_url=magnet_url,
+                    info_url=item.findtext("link", ""),
+                    category=category,
+                    pub_date=pub_date,
+                    **quality_info
+                ))
+            
+            logger.info(f"Found {len(results)} results from {indexer.name}")
+            
+        except Exception as e:
+            logger.error(f"Error searching {indexer.name}: {e}")
+        
+        return results
+
     async def search(
         self,
         query: str,
@@ -543,8 +782,17 @@ class Compote:
             tasks = []
             for indexer in active_indexers:
                 if indexer.type in ["torznab", "newznab"]:
+                    if indexer.cloudflare_protected:
+                        tasks.append(
+                            self._search_torznab_with_cf(indexer, query, categories, limit_per_indexer)
+                        )
+                    else:
+                        tasks.append(
+                            self._search_torznab(indexer, query, categories, limit_per_indexer)
+                        )
+                elif indexer.type == "rss":
                     tasks.append(
-                        self._search_torznab(indexer, query, categories, limit_per_indexer)
+                        self._search_rss(indexer, query, limit_per_indexer)
                     )
             
             # Gather results
