@@ -163,10 +163,10 @@ export const compoteApi = {
       params: { query, media_type: mediaType, sort_by: sortBy, limit } 
     }),
   
-  // Grab/Download
-  grab: (title, downloadUrl = null, magnetUrl = null, size = 0) =>
+  // Grab/Download - uses built-in engine by default
+  grab: (title, downloadUrl = null, magnetUrl = null, size = 0, useBuiltin = true) =>
     axios.post(`${API}/compote/grab`, null, { 
-      params: { title, download_url: downloadUrl, magnet_url: magnetUrl, size } 
+      params: { title, download_url: downloadUrl, magnet_url: magnetUrl, size, use_builtin: useBuiltin } 
     }),
 };
 
