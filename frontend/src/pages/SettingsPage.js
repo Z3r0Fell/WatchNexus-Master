@@ -159,6 +159,66 @@ export const SettingsPage = () => {
     media_type: 'movies',
   });
 
+  // Gelatin (External Access) state
+  const [gelatinStatus, setGelatinStatus] = useState(null);
+  const [activeTunnels, setActiveTunnels] = useState([]);
+  const [creatingTunnel, setCreatingTunnel] = useState(false);
+  const [accessToken, setAccessToken] = useState(null);
+
+  // Fetch Gelatin status
+  const fetchGelatinStatus = useCallback(async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/status`);
+      setGelatinStatus(res.data);
+    } catch (error) {
+      console.error('Failed to fetch Gelatin status:', error);
+    }
+  }, []);
+
+  const fetchActiveTunnels = useCallback(async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/tunnels`);
+      setActiveTunnels(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch tunnels:', error);
+    }
+  }, []);
+
+  const handleCreateTunnel = async () => {
+    setCreatingTunnel(true);
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/tunnel/create`);
+      toast.success('Tunnel created successfully');
+      setActiveTunnels(prev => [...prev, res.data]);
+      fetchGelatinStatus();
+    } catch (error) {
+      toast.error('Failed to create tunnel');
+    } finally {
+      setCreatingTunnel(false);
+    }
+  };
+
+  const handleCloseTunnel = async (tunnelId) => {
+    try {
+      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/tunnel/${tunnelId}`);
+      toast.success('Tunnel closed');
+      setActiveTunnels(prev => prev.filter(t => t.tunnel_id !== tunnelId));
+      fetchGelatinStatus();
+    } catch (error) {
+      toast.error('Failed to close tunnel');
+    }
+  };
+
+  const handleGenerateAccessToken = async () => {
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/access-token`);
+      setAccessToken(res.data);
+      toast.success('Access token generated');
+    } catch (error) {
+      toast.error('Failed to generate token');
+    }
+  };
+
   // Fetch Marmalade libraries
   const fetchLibraries = useCallback(async () => {
     setLoadingLibraries(true);
