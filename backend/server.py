@@ -2482,7 +2482,7 @@ from gadgets import get_gadgets_manager
 async def list_plugins(user: dict = Depends(require_auth)):
     """List all discovered plugins."""
     manager = get_gadgets_manager()
-    return {"plugins": manager.get_all_plugins()}
+    return manager.get_all_plugins()
 
 @api_router.post("/gadgets/discover")
 async def discover_plugins(user: dict = Depends(require_auth)):
