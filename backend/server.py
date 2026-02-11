@@ -1256,6 +1256,141 @@ async def qbittorrent_test(
     await qbit.close()
     return result
 
+# ==================== BUILT-IN TORRENT ENGINE ====================
+# Native torrent downloading - no external applications required!
+
+from torrent_engine import get_torrent_engine, shutdown_torrent_engine
+
+@api_router.get("/downloads/engine/status")
+async def torrent_engine_status(user: dict = Depends(require_auth)):
+    """Get built-in torrent engine status and transfer info."""
+    try:
+        engine = get_torrent_engine()
+        transfer = engine.get_transfer_info()
+        return {
+            "success": True,
+            "engine": "WatchNexus Built-in Torrent Engine",
+            "version": "1.0.0",
+            "transfer": transfer,
+            "message": "Engine running"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@api_router.get("/downloads/engine/torrents")
+async def torrent_engine_list(user: dict = Depends(require_auth)):
+    """Get list of all torrents from built-in engine."""
+    engine = get_torrent_engine()
+    torrents = engine.get_all_torrents()
+    return [t.to_dict() for t in torrents]
+
+@api_router.post("/downloads/engine/add")
+async def torrent_engine_add(
+    magnet: str = None,
+    save_path: str = "",
+    sequential: bool = False,
+    category: str = "watchnexus",
+    user: dict = Depends(require_auth)
+):
+    """Add a torrent to the built-in engine."""
+    if not magnet:
+        raise HTTPException(status_code=400, detail="Magnet link is required")
+    
+    # Get user's download path from settings
+    if not save_path:
+        settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
+        save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
+    
+    engine = get_torrent_engine()
+    torrent_id = await engine.add_magnet(
+        magnet_url=magnet,
+        save_path=save_path,
+        sequential=sequential,
+        category=category
+    )
+    
+    if torrent_id:
+        return {
+            "status": "added",
+            "torrent_id": torrent_id,
+            "message": "Torrent added to built-in download engine"
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to add torrent")
+
+@api_router.get("/downloads/engine/{torrent_id}")
+async def torrent_engine_get(torrent_id: str, user: dict = Depends(require_auth)):
+    """Get status of a specific torrent."""
+    engine = get_torrent_engine()
+    status = engine.get_status(torrent_id)
+    
+    if status:
+        return status.to_dict()
+    else:
+        raise HTTPException(status_code=404, detail="Torrent not found")
+
+@api_router.get("/downloads/engine/{torrent_id}/files")
+async def torrent_engine_files(torrent_id: str, user: dict = Depends(require_auth)):
+    """Get files in a torrent."""
+    engine = get_torrent_engine()
+    files = engine.get_files(torrent_id)
+    return [f.to_dict() for f in files]
+
+@api_router.post("/downloads/engine/{torrent_id}/pause")
+async def torrent_engine_pause(torrent_id: str, user: dict = Depends(require_auth)):
+    """Pause a torrent."""
+    engine = get_torrent_engine()
+    success = engine.pause(torrent_id)
+    return {"status": "paused" if success else "failed"}
+
+@api_router.post("/downloads/engine/{torrent_id}/resume")
+async def torrent_engine_resume(torrent_id: str, user: dict = Depends(require_auth)):
+    """Resume a paused torrent."""
+    engine = get_torrent_engine()
+    success = engine.resume(torrent_id)
+    return {"status": "resumed" if success else "failed"}
+
+@api_router.delete("/downloads/engine/{torrent_id}")
+async def torrent_engine_remove(
+    torrent_id: str,
+    delete_files: bool = False,
+    user: dict = Depends(require_auth)
+):
+    """Remove a torrent."""
+    engine = get_torrent_engine()
+    success = engine.remove(torrent_id, delete_files=delete_files)
+    return {"status": "removed" if success else "failed"}
+
+@api_router.post("/downloads/engine/{torrent_id}/sequential")
+async def torrent_engine_sequential(
+    torrent_id: str,
+    enabled: bool = True,
+    user: dict = Depends(require_auth)
+):
+    """Enable/disable sequential download for streaming."""
+    engine = get_torrent_engine()
+    success = engine.set_sequential(torrent_id, enabled)
+    return {"status": "updated" if success else "failed", "sequential": enabled}
+
+@api_router.put("/downloads/engine/settings")
+async def torrent_engine_settings(
+    download_rate: int = None,
+    upload_rate: int = None,
+    user: dict = Depends(require_auth)
+):
+    """Update torrent engine settings."""
+    engine = get_torrent_engine()
+    
+    if download_rate is not None:
+        engine.set_download_rate_limit(download_rate)
+    if upload_rate is not None:
+        engine.set_upload_rate_limit(upload_rate)
+    
+    return {"status": "updated"}
+
 # ==================== MARMALADE MEDIA SERVER PROXY ====================
 # Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
 
