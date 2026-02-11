@@ -10,6 +10,7 @@ import { MoviesPage } from "./pages/MoviesPage";
 import { TVShowsPage } from "./pages/TVShowsPage";
 import { MediaDetails } from "./pages/MediaDetails";
 import { SearchPage } from "./pages/SearchPage";
+import { IndexerSearchPage } from "./pages/IndexerSearchPage";
 import { DownloadsPage } from "./pages/DownloadsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StreamingPage } from "./pages/StreamingPage";
