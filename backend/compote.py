@@ -184,6 +184,65 @@ class Compote:
         
         return result
     
+    def _generate_demo_results(self, query: str, media_type: str) -> List[SearchResult]:
+        """Generate demo results when no indexers are configured."""
+        import random
+        
+        # Demo data templates
+        quality_options = ['2160p', '1080p', '720p', '480p']
+        codec_options = ['x265', 'x264', 'HEVC', 'AV1']
+        source_options = ['BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'Remux']
+        indexers = ['RARBG', '1337x', 'YTS', 'EZTV', 'Nyaa']
+        
+        demo_results = []
+        query_cap = query.title()
+        
+        # Generate 15-25 demo results
+        for i in range(random.randint(15, 25)):
+            quality = random.choice(quality_options)
+            codec = random.choice(codec_options)
+            source = random.choice(source_options)
+            indexer = random.choice(indexers)
+            
+            # Create realistic-looking title
+            year = random.randint(2018, 2025)
+            if media_type == 'tv':
+                season = random.randint(1, 8)
+                episode = random.randint(1, 22)
+                title = f"{query_cap} S{season:02d}E{episode:02d} {quality} {source} {codec}"
+            else:
+                title = f"{query_cap} ({year}) {quality} {source} {codec}"
+            
+            # Random size (500MB - 50GB)
+            size = random.randint(500_000_000, 50_000_000_000)
+            
+            # Higher seeders for better quality
+            base_seeders = {'2160p': 200, '1080p': 500, '720p': 300, '480p': 100}
+            seeders = random.randint(10, base_seeders.get(quality, 200) + 500)
+            leechers = random.randint(1, max(1, seeders // 3))
+            
+            # Generate a fake magnet link (demo purposes only)
+            fake_hash = ''.join(random.choices('0123456789abcdef', k=40))
+            magnet_url = f"magnet:?xt=urn:btih:{fake_hash}&dn={title.replace(' ', '+')}"
+            
+            demo_results.append(SearchResult(
+                title=title,
+                indexer=f"{indexer} (Demo)",
+                size=size,
+                seeders=seeders,
+                leechers=leechers,
+                download_url="",
+                magnet_url=magnet_url,
+                info_url="",
+                category=media_type,
+                pub_date="",
+                quality=quality,
+                codec=codec,
+                source=source,
+            ))
+        
+        return demo_results
+    
     async def _search_torznab(
         self,
         indexer: IndexerConfig,
