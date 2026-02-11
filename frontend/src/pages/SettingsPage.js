@@ -536,31 +536,58 @@ export const SettingsPage = () => {
   };
 
   // Streaming Services functions
-  const handleAddStreamingService = () => {
+  const handleAddStreamingService = async () => {
     if (!selectedService || !serviceCredentials.email || !serviceCredentials.password) {
       toast.error('Please select a service and enter credentials');
       return;
     }
-    const service = STREAMING_SERVICES.find(s => s.id === selectedService);
-    const newService = {
-      ...service,
-      email: serviceCredentials.email,
-      password: serviceCredentials.password,
-      addedAt: new Date().toISOString(),
-    };
-    const updated = [...configuredServices, newService];
-    setConfiguredServices(updated);
-    localStorage.setItem('watchnexus_streaming_services', JSON.stringify(updated));
-    setSelectedService('');
-    setServiceCredentials({ email: '', password: '' });
-    toast.success(`${service.name} added successfully`);
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins`, null, {
+        params: {
+          service_id: selectedService,
+          email: serviceCredentials.email,
+          password: serviceCredentials.password,
+        }
+      });
+      toast.success(`${res.data.login.service_name} added successfully`);
+      setSelectedService('');
+      setServiceCredentials({ email: '', password: '' });
+      fetchStreamingLogins();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add service');
+    }
   };
 
-  const handleDeleteStreamingService = (id) => {
-    const updated = configuredServices.filter(s => s.id !== id);
-    setConfiguredServices(updated);
-    localStorage.setItem('watchnexus_streaming_services', JSON.stringify(updated));
-    toast.success('Streaming service removed');
+  const handleDeleteStreamingService = async (serviceId) => {
+    try {
+      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins/${serviceId}`);
+      toast.success('Streaming service removed');
+      fetchStreamingLogins();
+    } catch (error) {
+      toast.error('Failed to remove service');
+    }
+  };
+
+  const fetchStreamingLogins = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins`);
+      // Transform backend response to match UI format
+      const transformed = (res.data || []).map(login => ({
+        id: login.service_id,
+        name: login.service_name,
+        icon: login.icon,
+        color: login.color,
+        email: login.email,
+        deep_link: login.deep_link,
+        login_url: login.login_url,
+      }));
+      setConfiguredServices(transformed);
+    } catch (error) {
+      console.error('Failed to fetch streaming logins:', error);
+      // Fall back to localStorage
+      const saved = localStorage.getItem('watchnexus_streaming_services');
+      if (saved) setConfiguredServices(JSON.parse(saved));
+    }
   };
 
   const getStatusColor = (status) => {
