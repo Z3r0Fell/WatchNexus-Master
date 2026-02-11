@@ -498,31 +498,31 @@ class SieveChecker:
 
 
 # Singleton instance
-media_checker = MediaHealthChecker()
+sieve_checker = SieveChecker()
 
 
 def check_media_health(file_path: str, compute_hash: bool = False) -> Dict:
     """
-    Quick function to check a single file's health.
+    Quick function to check a single file's health using Sieve.
     Returns a dictionary with the health report.
     """
-    report = media_checker.check_file(file_path, compute_hash)
+    report = sieve_checker.check_file(file_path, compute_hash)
     return report.to_dict()
 
 
 def repair_media_file(file_path: str, output_path: str = None) -> Dict:
     """
-    Attempt to repair a media file.
+    Attempt to repair a media file using Sieve.
     Returns dict with success status and message.
     """
-    success, message = media_checker.repair_file(file_path, output_path)
+    success, message = sieve_checker.repair_file(file_path, output_path)
     return {"success": success, "message": message}
 
 
 def scan_library(directory: str) -> List[Dict]:
     """
-    Scan a directory for media health issues.
+    Scan a directory for media health issues using Sieve.
     Returns list of health reports.
     """
-    reports = media_checker.scan_directory(directory)
+    reports = sieve_checker.scan_directory(directory)
     return [r.to_dict() for r in reports]
