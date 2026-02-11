@@ -159,6 +159,7 @@ export const SettingsPage = () => {
     fetchData();
     fetchScheduledScans();
     fetchNotifications();
+    fetchEngineStatus();
     
     // Load saved streaming services from localStorage
     const saved = localStorage.getItem('watchnexus_streaming_services');
@@ -171,7 +172,13 @@ export const SettingsPage = () => {
     if (savedIptv) {
       setIptvSources(JSON.parse(savedIptv));
     }
-  }, [fetchData, fetchScheduledScans, fetchNotifications]);
+    
+    // Load saved download client mode
+    const savedMode = localStorage.getItem('watchnexus_download_mode');
+    if (savedMode) {
+      setDownloadClientMode(savedMode);
+    }
+  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
