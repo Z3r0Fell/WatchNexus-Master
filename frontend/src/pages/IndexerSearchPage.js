@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { indexersApi } from '../services/api';
+import { compoteApi } from '../services/api';
 import { toast } from 'sonner';
 import { 
   Search, Download, Film, Tv, Music, Book, 
