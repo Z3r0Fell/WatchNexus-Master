@@ -635,6 +635,7 @@ export const SettingsPage = () => {
             <TabsTrigger value="iptv" className="data-[state=active]:bg-violet-600">IPTV</TabsTrigger>
             <TabsTrigger value="streaming" className="data-[state=active]:bg-violet-600">Streaming Services</TabsTrigger>
             <TabsTrigger value="subtitles" className="data-[state=active]:bg-violet-600">Subtitles</TabsTrigger>
+            <TabsTrigger value="gelatin" className="data-[state=active]:bg-violet-600">External Access</TabsTrigger>
           </TabsList>
 
           {/* General Settings */}
