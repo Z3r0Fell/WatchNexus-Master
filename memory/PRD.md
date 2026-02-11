@@ -68,6 +68,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
   - Granular permissions (download, delete, manage library, settings access)
   - Max concurrent streams setting
   - Server access info panel showing Jellyfin API endpoint
+- **Library File Browser**: Browse button in Library tab to navigate local filesystem
+  - Full folder navigation with item counts
+  - Quick access shortcuts (/, /home, /media, /mnt, /srv, /data, Home)
+  - Auto-detect library name and media type from folder name
+  - Select folder to add as library
 
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
