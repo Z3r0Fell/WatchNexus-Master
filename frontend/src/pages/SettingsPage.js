@@ -1862,7 +1862,7 @@ export const SettingsPage = () => {
                           <button onClick={() => toggleSelectItem(lib.id)}>{selectedItems.includes(lib.id) ? <CheckSquare className="w-5 h-5 text-violet-400" /> : <Square className="w-5 h-5" />}</button>
                           <div className="flex-1 flex items-center gap-3">
                             <div className="w-8 h-8 rounded bg-violet-500/20 flex items-center justify-center text-violet-400">
-                              {lib.media_type === 'movies' ? <Film className="w-4 h-4" /> : lib.media_type === 'tv' ? <Tv className="w-4 h-4" /> : <Music className="w-4 h-4" />}
+                              <Film className="w-4 h-4" />
                             </div>
                             <span className="font-medium">{lib.name}</span>
                           </div>
