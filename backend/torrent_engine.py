@@ -624,7 +624,7 @@ class TorrentEngine:
                 if handle.is_valid():
                     try:
                         handle.save_resume_data()
-                    except:
+                    except Exception:
                         pass
             
             logger.info(f"Saved state: {len(self.torrent_metadata)} torrents")
