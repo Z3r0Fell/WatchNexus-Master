@@ -134,7 +134,7 @@ class PotluckManager:
         media_title: str,
         media_type: str,
         websocket: WebSocket,
-    ) -> WatchParty:
+    ) -> Potluck:
         """Create a new watch party."""
         # Check if user is already in a party
         if host_id in self.user_party_map:
@@ -147,7 +147,7 @@ class PotluckManager:
         while party_id in self.parties:
             party_id = self.generate_party_code()
         
-        party = WatchParty(
+        party = Potluck(
             party_id=party_id,
             host_id=host_id,
             media_id=media_id,
@@ -182,7 +182,7 @@ class PotluckManager:
         user_id: str,
         username: str,
         websocket: WebSocket,
-    ) -> Optional[WatchParty]:
+    ) -> Optional[Potluck]:
         """Join an existing watch party."""
         party_id = party_id.upper()
         
@@ -357,7 +357,7 @@ class PotluckManager:
                     "resync": True,
                 })
     
-    async def _broadcast(self, party: WatchParty, message: dict, exclude: str = None):
+    async def _broadcast(self, party: Potluck, message: dict, exclude: str = None):
         """Broadcast message to all party members."""
         for member in party.members.values():
             if exclude and member.user_id == exclude:
@@ -371,14 +371,14 @@ class PotluckManager:
         except Exception as e:
             logger.debug(f"Failed to send to {member.username}: {e}")
     
-    async def _broadcast_party_update(self, party: WatchParty):
+    async def _broadcast_party_update(self, party: Potluck):
         """Broadcast party state update to all members."""
         await self._broadcast(party, {
             "type": "party_update",
             "party": party.to_dict(),
         })
     
-    async def _send_system_message(self, party: WatchParty, text: str):
+    async def _send_system_message(self, party: Potluck, text: str):
         """Send system message to party."""
         msg = ChatMessage(
             id=str(uuid.uuid4()),
