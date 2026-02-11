@@ -290,6 +290,7 @@ export const SettingsPage = () => {
     fetchNotifications();
     fetchEngineStatus();
     fetchEngineSettings();
+    fetchLibraries();
     
     // Load saved streaming services from localStorage
     const saved = localStorage.getItem('watchnexus_streaming_services');
@@ -308,7 +309,7 @@ export const SettingsPage = () => {
     if (savedMode) {
       setDownloadClientMode(savedMode);
     }
-  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings]);
+  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings, fetchLibraries]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
