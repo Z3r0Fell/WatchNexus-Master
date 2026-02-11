@@ -1,216 +1,221 @@
-# WatchNexus - Personal Media Command Center
+# WatchNexus - Unified Media Pipeline
 
 <p align="center">
   <img src="frontend/public/watchnexus-logo.svg" alt="WatchNexus Logo" width="400">
 </p>
 
 <p align="center">
-  <strong>Your unified media experience - Local libraries, streaming discovery, and more in one beautiful interface.</strong>
+  <strong>One app to rule them all - Request, acquire, organize, and watch media without needing multiple applications.</strong>
 </p>
 
 <p align="center">
   <a href="#-features">Features</a> •
   <a href="#-quick-start">Quick Start</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-production-status">Production Status</a>
+  <a href="#-cross-platform">Cross-Platform</a> •
+  <a href="#-architecture">Architecture</a>
 </p>
 
 ---
 
-## 🎯 Project Overview
+## 🎯 What is WatchNexus?
 
-WatchNexus is a unified media pipeline that combines the best features of:
-- **Jellyfin/Emby** → **Marmalade** (Media Server)
-- **Prowlarr** → **Compote** (Indexer Manager)
-- Custom React UI with TMDB integration
+WatchNexus is a **self-hosted, unified media pipeline** that replaces the need for multiple applications:
+
+| Instead of... | WatchNexus Has... |
+|---------------|-------------------|
+| Sonarr/Radarr | Built-in request system |
+| Prowlarr | **Compote** - Indexer manager |
+| qBittorrent | **Built-in Torrent Engine** |
+| Bazarr | Subtitle management |
+| Jellyfin | **Marmalade** - Media server |
 
 ### The Preserve Theme 🍊🍇
-- **Marmalade** - Media Server (Jellyfin fork)
-- **Compote** - Indexer Manager (Prowlarr-inspired)
+All components are named after fruit preserves:
+- **Marmalade** - Media Server (streams your content)
+- **Compote** - Indexer Manager (finds your content)
+- Built-in Torrent Engine (downloads your content)
 
 ---
 
-## ⚠️ Production Status
+## ✨ Key Features
 
-### Current State: **ALPHA**
+### 🔒 No External Dependencies
+- **Built-in Torrent Engine** - No qBittorrent, no Transmission
+- **libtorrent-powered** - Fast, reliable, cross-platform
+- **Sequential download** - Stream while downloading
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Custom React UI | ✅ Complete | Glassmorphism design |
-| TMDB Discovery | ✅ Complete | Movies, TV, search |
-| Authentication | ✅ Complete | JWT + Google OAuth |
-| Media Health Checker | ✅ Complete | FFprobe validation |
-| Scheduled Scans | ✅ Complete | Daily/weekly/monthly |
-| **Compote** (Indexers) | ✅ Complete | Torznab/Newznab support |
-| **Video Player** | ✅ Complete | Custom HTML5 player |
-| **Library UI** | ✅ Complete | Grid/list view |
-| Marmalade Integration | 🟡 Proxy Ready | Needs server running |
-| Download Client | 🟡 Mocked | Queue works, no actual downloads |
+### 📦 Cross-Platform Desktop App
+- **Windows 10/11** - NSIS installer + portable
+- **macOS** - Universal binary (Intel + Apple Silicon)
+- **Linux** - AppImage, .deb, .rpm
 
----
+### 🎬 Complete Media Experience
+- TMDB integration for metadata
+- Beautiful glassmorphism UI
+- Video player with subtitles
+- Library management
+- Health checking & repair
 
-## 🚀 Features
-
-### ✅ Implemented
-
-#### Core Features
-- **Modern UI** - Glassmorphism design with violet theme
-- **TMDB Discovery** - Trending movies, TV shows, search
-- **Video Player** - Custom HTML5 player with:
-  - Play/pause, seek, volume control
-  - Fullscreen support
-  - Keyboard shortcuts
-  - Playback speed control
-  - Subtitle support
-- **Library Browser** - Grid/list view of local media
-
-#### Authentication
-- **Email/Password** - JWT-based auth
-- **Google OAuth** - One-click sign-in
-
-#### Media Health System
-- **File Validation** - FFprobe-based checking
-- **Auto-Repair** - FFmpeg remux and faststart
-- **Scheduled Scans** - Automatic library validation
-- **Notifications** - Alert system for issues
-- **Re-download** - Queue replacement downloads
-
-#### Compote - Indexer Manager
-- **Multi-indexer Search** - Aggregate results
-- **Torznab/Newznab** - Standard protocol support
-- **Quality Parsing** - Auto-detect 1080p, 4K, etc.
-- **Grab/Download** - Queue releases
+### 🔐 Authentication
+- Email/password (JWT)
+- Google OAuth integration
+- Multi-user support
 
 ---
 
-## 📦 Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+
-- Python 3.10+
-- MongoDB 6+
-- FFmpeg (for health checks)
-- (Optional) .NET 8 SDK for Marmalade
-
-### Development Setup
+### Web Mode (Development)
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/watchnexus.git
-cd watchnexus
-
 # Backend
 cd backend
-python -m venv venv
-source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn server:app --host 0.0.0.0 --port 8001
 
-# Frontend (new terminal)
+# Frontend
 cd frontend
 yarn install
 yarn start
 ```
 
-### Environment Variables
+### Desktop Mode
 
-```env
-# Backend
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=watchnexus
-TMDB_API_KEY=your_key
-JWT_SECRET=your_secret
-MARMALADE_URL=http://localhost:8096
+```bash
+# Build backend
+cd backend
+pip install pyinstaller
+pyinstaller watchnexus.spec
 
-# Frontend
-REACT_APP_BACKEND_URL=http://localhost:8001
+# Build desktop app
+cd frontend
+yarn electron:build:linux    # Linux AppImage
+yarn electron:build:mac      # macOS .dmg
+yarn electron:build:win      # Windows .exe
 ```
+
+See [BUILD_GUIDE.md](BUILD_GUIDE.md) for detailed instructions.
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-watchnexus/
-├── frontend/                 # React frontend
+WatchNexus/
+├── frontend/                   # React + Electron
+│   ├── electron/               # Desktop app shell
+│   │   ├── main.js             # Main process
+│   │   └── preload.js          # IPC bridge
 │   ├── src/
 │   │   ├── pages/
-│   │   │   ├── LibraryPage.js    # Local media browser
-│   │   │   └── ...
-│   │   ├── components/
-│   │   │   └── VideoPlayer.jsx   # Custom video player
-│   │   └── services/
-│   │       ├── api.js            # Backend API
-│   │       ├── marmaladeApi.js   # Marmalade server
-│   │       └── compoteApi.js     # Indexer search
+│   │   │   ├── Dashboard.js    # Home page
+│   │   │   ├── LibraryPage.js  # Media browser
+│   │   │   ├── DownloadsPage.js # Download manager
+│   │   │   └── SettingsPage.js # Configuration
+│   │   └── components/
+│   │       └── VideoPlayer.jsx # HTML5 player
 │
-├── backend/                  # FastAPI backend
-│   ├── server.py            # Main application
-│   ├── compote.py           # Indexer manager
-│   └── media_health_checker.py
+├── backend/                    # FastAPI server
+│   ├── server.py               # Main API
+│   ├── torrent_engine.py       # Built-in downloader
+│   ├── compote.py              # Indexer manager
+│   ├── media_health_checker.py # File validation
+│   └── qbittorrent_client.py   # Legacy client (optional)
 │
-└── watchnexus/              # Marmalade server (optional)
-    └── server/              # .NET media server
+└── watchnexus/                 # Marmalade server
+    └── (Jellyfin fork)         # Media streaming
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
-### Compote (Indexer Manager)
+### Downloads - Built-in Engine
 ```
-GET  /api/compote/indexers          # List indexers
-POST /api/compote/indexers          # Add indexer
-DELETE /api/compote/indexers/{id}   # Remove indexer
-POST /api/compote/indexers/{id}/test # Test connection
-GET  /api/compote/search            # Search indexers
-POST /api/compote/grab              # Grab release
+GET  /api/downloads/engine/status     # Engine status
+GET  /api/downloads/engine/torrents   # List all
+POST /api/downloads/engine/add        # Add magnet
+POST /api/downloads/engine/{id}/pause # Pause
+POST /api/downloads/engine/{id}/resume # Resume
+DELETE /api/downloads/engine/{id}     # Remove
 ```
 
-### Marmalade Proxy
+### Compote - Indexer Manager
 ```
-* /api/marmalade/{path} → Media server
+GET  /api/compote/indexers            # List indexers
+POST /api/compote/indexers            # Add indexer
+GET  /api/compote/search              # Search
+POST /api/compote/grab                # Download release
 ```
 
 ### Media Health
 ```
-POST /api/media/health-check
-POST /api/media/repair
-POST /api/media/scan-library
-GET/POST/DELETE /api/media/scheduled-scans
-GET /api/media/notifications
-POST /api/media/redownload
+POST /api/media/health-check          # Check file
+POST /api/media/repair                # Fix file
+GET  /api/media/scheduled-scans       # List scans
+POST /api/media/redownload            # Re-acquire
 ```
+
+---
+
+## 💻 Cross-Platform Support
+
+### Windows
+- **Windows 10** (1903+)
+- **Windows 11**
+- Installer + Portable versions
+- Runs as tray application
+
+### macOS
+- **Intel Macs** (x64)
+- **Apple Silicon** (M1/M2/M3)
+- Signed and notarized
+- Menu bar integration
+
+### Linux
+- **AppImage** (universal)
+- **.deb** (Debian/Ubuntu)
+- **.rpm** (Fedora/RHEL)
+- System tray support
+
+---
+
+## 📋 Status
+
+| Feature | Status |
+|---------|--------|
+| Custom React UI | ✅ Complete |
+| TMDB Discovery | ✅ Complete |
+| Authentication | ✅ Complete |
+| Media Health Checker | ✅ Complete |
+| Compote (Indexers) | ✅ Complete |
+| **Built-in Torrent Engine** | ✅ Complete |
+| Video Player | ✅ Complete |
+| Library UI | ✅ Complete |
+| **Desktop Packaging** | ✅ Ready |
+| Marmalade Server | 🟡 Needs .NET |
+| IPTV Integration | 🔵 Planned |
+| Streaming Services | 🔵 Planned |
 
 ---
 
 ## 🗺️ Roadmap
 
-### Phase 1 (Complete) ✅
-- [x] Custom React UI
-- [x] TMDB integration
-- [x] JWT + Google OAuth
-- [x] Media Health Checker
-- [x] Scheduled scans
-- [x] **Compote indexer manager**
-- [x] **Video player**
-- [x] **Library UI**
+### v1.0 - Core ✅
+- [x] Built-in torrent engine
+- [x] Cross-platform packaging
+- [x] Settings UI
+- [x] Download management
 
-### Phase 2 - Integration
-- [ ] Connect video player to Marmalade streams
-- [ ] Real download client (qBittorrent/SABnzbd)
-- [ ] Real indexer connectivity
+### v1.1 - Media
+- [ ] Video player + Marmalade
+- [ ] Subtitle auto-download
+- [ ] Watch history
 
-### Phase 3 - Live TV
-- [ ] IPTV setup wizard
-- [ ] Channel browser
-- [ ] EPG display
-
-### Phase 4 - Polish
-- [ ] Desktop apps (Electron)
-- [ ] Mobile optimization
-- [ ] Installer packages
+### v1.2 - Integration
+- [ ] IPTV support
+- [ ] Streaming service logins
+- [ ] Mobile apps
 
 ---
 
@@ -222,10 +227,10 @@ GNU General Public License v2.0
 
 ## 🙏 Acknowledgments
 
-- [Jellyfin](https://jellyfin.org/) - Media server foundation
-- [Prowlarr](https://prowlarr.com/) - Indexer manager inspiration
-- [TMDB](https://www.themoviedb.org/) - Metadata provider
-- [Shadcn/UI](https://ui.shadcn.com/) - UI components
+- [libtorrent](https://libtorrent.org/) - Torrent library
+- [Jellyfin](https://jellyfin.org/) - Marmalade foundation
+- [TMDB](https://themoviedb.org/) - Metadata
+- [Electron](https://electronjs.org/) - Desktop framework
 
 ---
 
