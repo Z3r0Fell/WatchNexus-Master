@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { downloadsApi, qbittorrentApi } from '../services/api';
+import { torrentEngineApi, qbittorrentApi } from '../services/api';
 import { toast } from 'sonner';
 import { 
   Download, Pause, Play, Trash2, RefreshCw, 
   HardDrive, ArrowDown, ArrowUp, CheckCircle, AlertCircle, Clock,
-  Server, Wifi, WifiOff, Settings
+  Server, Wifi, WifiOff, Settings, Zap, Package, FileVideo, List
 } from 'lucide-react';
 import { formatFileSize } from '../lib/utils';
 import { Button } from '../components/ui/button';
@@ -16,85 +16,141 @@ import { Link } from 'react-router-dom';
 const statusColors = {
   queued: 'text-gray-400',
   downloading: 'text-blue-400',
+  downloading_metadata: 'text-blue-300',
   seeding: 'text-green-400',
+  finished: 'text-green-500',
   completed: 'text-green-500',
   paused: 'text-yellow-400',
-  pausedDL: 'text-yellow-400',
-  pausedUP: 'text-yellow-400',
   error: 'text-red-400',
-  stalledDL: 'text-orange-400',
-  stalledUP: 'text-orange-400',
-  uploading: 'text-purple-400',
-  metaDL: 'text-blue-300',
-  checkingDL: 'text-cyan-400',
-  checkingUP: 'text-cyan-400',
+  allocating: 'text-cyan-400',
+  checking: 'text-cyan-400',
 };
 
 const statusIcons = {
   queued: Clock,
   downloading: ArrowDown,
+  downloading_metadata: RefreshCw,
   seeding: ArrowUp,
+  finished: CheckCircle,
   completed: CheckCircle,
   paused: Pause,
-  pausedDL: Pause,
-  pausedUP: Pause,
   error: AlertCircle,
-  stalledDL: Clock,
-  stalledUP: Clock,
-  uploading: ArrowUp,
-  metaDL: RefreshCw,
-  checkingDL: RefreshCw,
-  checkingUP: RefreshCw,
+  allocating: HardDrive,
+  checking: RefreshCw,
 };
 
 export const DownloadsPage = () => {
-  const [downloads, setDownloads] = useState([]);
+  const [engineTorrents, setEngineTorrents] = useState([]);
+  const [engineStatus, setEngineStatus] = useState(null);
   const [qbitTorrents, setQbitTorrents] = useState([]);
   const [qbitStatus, setQbitStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [qbitConnected, setQbitConnected] = useState(false);
+  const [downloadMode, setDownloadMode] = useState('builtin');
+  const [selectedTorrent, setSelectedTorrent] = useState(null);
+  const [torrentFiles, setTorrentFiles] = useState([]);
 
-  const fetchQbitStatus = useCallback(async () => {
+  // Fetch built-in engine status and torrents
+  const fetchEngineData = useCallback(async () => {
     try {
-      const response = await qbittorrentApi.getStatus();
-      setQbitStatus(response.data);
-      setQbitConnected(response.data?.success === true);
+      const [statusRes, torrentsRes] = await Promise.all([
+        torrentEngineApi.getStatus(),
+        torrentEngineApi.getTorrents()
+      ]);
+      setEngineStatus(statusRes.data);
+      setEngineTorrents(torrentsRes.data || []);
+    } catch (error) {
+      console.error('Engine fetch failed:', error);
+      setEngineStatus({ success: false });
+    }
+  }, []);
+
+  // Fetch qBittorrent status and torrents
+  const fetchQbitData = useCallback(async () => {
+    try {
+      const statusRes = await qbittorrentApi.getStatus();
+      setQbitStatus(statusRes.data);
       
-      if (response.data?.success) {
-        // Fetch torrents if connected
+      if (statusRes.data?.success) {
         const torrentsRes = await qbittorrentApi.getTorrents('all', '', 100);
         setQbitTorrents(torrentsRes.data || []);
       }
     } catch (error) {
-      console.error('qBittorrent status check failed:', error);
-      setQbitConnected(false);
-    }
-  }, []);
-
-  const fetchDownloads = useCallback(async () => {
-    try {
-      const response = await downloadsApi.getAll();
-      setDownloads(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch downloads:', error);
-    } finally {
-      setLoading(false);
+      console.error('qBittorrent fetch failed:', error);
+      setQbitStatus({ success: false });
     }
   }, []);
 
   useEffect(() => {
-    fetchDownloads();
-    fetchQbitStatus();
+    // Load saved download mode
+    const savedMode = localStorage.getItem('watchnexus_download_mode') || 'builtin';
+    setDownloadMode(savedMode);
+
+    const fetchAll = async () => {
+      await Promise.all([fetchEngineData(), fetchQbitData()]);
+      setLoading(false);
+    };
     
-    // Poll for updates every 3 seconds
+    fetchAll();
+    
+    // Poll for updates
     const interval = setInterval(() => {
-      fetchQbitStatus();
-      fetchDownloads();
-    }, 3000);
+      if (downloadMode === 'builtin') {
+        fetchEngineData();
+      } else {
+        fetchQbitData();
+      }
+    }, 2000);
     
     return () => clearInterval(interval);
-  }, [fetchDownloads, fetchQbitStatus]);
+  }, [fetchEngineData, fetchQbitData, downloadMode]);
 
+  // Built-in engine actions
+  const handleEnginePauseResume = async (torrent) => {
+    try {
+      if (torrent.state === 'paused') {
+        await torrentEngineApi.resumeTorrent(torrent.id);
+        toast.success('Torrent resumed');
+      } else {
+        await torrentEngineApi.pauseTorrent(torrent.id);
+        toast.success('Torrent paused');
+      }
+      fetchEngineData();
+    } catch (error) {
+      toast.error('Failed to update torrent');
+    }
+  };
+
+  const handleEngineDelete = async (torrentId, deleteFiles = false) => {
+    try {
+      await torrentEngineApi.removeTorrent(torrentId, deleteFiles);
+      toast.success('Torrent removed');
+      setSelectedTorrent(null);
+      fetchEngineData();
+    } catch (error) {
+      toast.error('Failed to remove torrent');
+    }
+  };
+
+  const handleEngineSetSequential = async (torrentId, enabled) => {
+    try {
+      await torrentEngineApi.setSequential(torrentId, enabled);
+      toast.success(`Sequential download ${enabled ? 'enabled' : 'disabled'}`);
+      fetchEngineData();
+    } catch (error) {
+      toast.error('Failed to update sequential mode');
+    }
+  };
+
+  const fetchTorrentFiles = async (torrentId) => {
+    try {
+      const res = await torrentEngineApi.getFiles(torrentId);
+      setTorrentFiles(res.data || []);
+    } catch (error) {
+      setTorrentFiles([]);
+    }
+  };
+
+  // qBittorrent actions
   const handleQbitPauseResume = async (torrent) => {
     try {
       if (torrent.state.includes('paused')) {
@@ -104,7 +160,7 @@ export const DownloadsPage = () => {
         await qbittorrentApi.pauseTorrent(torrent.hash);
         toast.success('Torrent paused');
       }
-      fetchQbitStatus();
+      fetchQbitData();
     } catch (error) {
       toast.error('Failed to update torrent');
     }
@@ -114,47 +170,28 @@ export const DownloadsPage = () => {
     try {
       await qbittorrentApi.deleteTorrent(hash, deleteFiles);
       toast.success('Torrent removed');
-      fetchQbitStatus();
+      fetchQbitData();
     } catch (error) {
       toast.error('Failed to remove torrent');
     }
   };
 
-  const handlePauseResume = async (download) => {
-    try {
-      const newStatus = download.status === 'paused' ? 'downloading' : 'paused';
-      await downloadsApi.update(download.id, newStatus);
-      setDownloads(prev => prev.map(dl => 
-        dl.id === download.id ? { ...dl, status: newStatus } : dl
-      ));
-      toast.success(newStatus === 'paused' ? 'Download paused' : 'Download resumed');
-    } catch (error) {
-      toast.error('Failed to update download');
-    }
-  };
+  // Get current torrents based on mode
+  const currentTorrents = downloadMode === 'builtin' ? engineTorrents : qbitTorrents;
+  const isConnected = downloadMode === 'builtin' ? engineStatus?.success : qbitStatus?.success;
 
-  const handleDelete = async (downloadId) => {
-    try {
-      await downloadsApi.delete(downloadId);
-      setDownloads(prev => prev.filter(dl => dl.id !== downloadId));
-      toast.success('Download removed');
-    } catch (error) {
-      toast.error('Failed to remove download');
-    }
-  };
+  // Calculate totals
+  const totalDownSpeed = downloadMode === 'builtin'
+    ? engineTorrents.reduce((sum, t) => sum + (t.download_rate || 0), 0)
+    : qbitTorrents.reduce((sum, t) => sum + (t.dlspeed || 0), 0);
+  
+  const totalUpSpeed = downloadMode === 'builtin'
+    ? engineTorrents.reduce((sum, t) => sum + (t.upload_rate || 0), 0)
+    : qbitTorrents.reduce((sum, t) => sum + (t.upspeed || 0), 0);
 
-  // Categorize qBittorrent torrents
-  const activeTorrents = qbitTorrents.filter(t => t.is_downloading);
-  const seedingTorrents = qbitTorrents.filter(t => t.state === 'uploading' || t.state === 'stalledUP');
-  const completedTorrents = qbitTorrents.filter(t => t.is_complete && !t.state.includes('UP'));
-  const pausedTorrents = qbitTorrents.filter(t => t.state.includes('paused'));
-
-  // Queue from local downloads
-  const queuedDownloads = downloads.filter(d => d.status === 'queued' || d.status === 'searching');
-
-  // Calculate total speeds
-  const totalDownSpeed = qbitTorrents.reduce((sum, t) => sum + (t.dlspeed || 0), 0);
-  const totalUpSpeed = qbitTorrents.reduce((sum, t) => sum + (t.upspeed || 0), 0);
+  const activeTorrents = currentTorrents.filter(t => 
+    t.state === 'downloading' || t.state === 'downloading_metadata' || t.is_downloading
+  );
 
   return (
     <Layout>
@@ -165,7 +202,7 @@ export const DownloadsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center">
                 <Download className="w-6 h-6 text-white" />
@@ -194,326 +231,255 @@ export const DownloadsPage = () => {
           </div>
         </motion.div>
 
-        {/* qBittorrent Status */}
+        {/* Engine Status */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className={`mb-6 p-4 rounded-xl border ${
-            qbitConnected 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : 'bg-orange-500/10 border-orange-500/30'
-          }`}
+          className="glass-card rounded-xl p-4 mb-6"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {qbitConnected ? (
-                <Wifi className="w-5 h-5 text-green-400" />
-              ) : (
-                <WifiOff className="w-5 h-5 text-orange-400" />
-              )}
-              <div>
-                <p className={`font-medium ${qbitConnected ? 'text-green-400' : 'text-orange-400'}`}>
-                  {qbitConnected ? 'qBittorrent Connected' : 'qBittorrent Not Connected'}
-                </p>
-                <p className="text-sm text-gray-400">
-                  {qbitConnected 
-                    ? `v${qbitStatus?.version || 'Unknown'} • API v${qbitStatus?.api_version || 'Unknown'}`
-                    : 'Configure qBittorrent in Settings to enable real downloads'
-                  }
-                </p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              {/* Mode Toggle */}
+              <div className="flex rounded-lg bg-white/5 p-1">
+                <button
+                  onClick={() => { setDownloadMode('builtin'); localStorage.setItem('watchnexus_download_mode', 'builtin'); }}
+                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors text-sm ${
+                    downloadMode === 'builtin' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  Built-in
+                </button>
+                <button
+                  onClick={() => { setDownloadMode('qbittorrent'); localStorage.setItem('watchnexus_download_mode', 'qbittorrent'); }}
+                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors text-sm ${
+                    downloadMode === 'qbittorrent' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Package className="w-4 h-4" />
+                  qBittorrent
+                </button>
               </div>
+
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                {isConnected ? (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-green-400 text-sm">
+                      {downloadMode === 'builtin' 
+                        ? 'Built-in Engine Running'
+                        : `qBittorrent v${qbitStatus?.version}`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-red-400 text-sm">Not Connected</span>
+                  </>
+                )}
+              </div>
+
+              {downloadMode === 'builtin' && engineStatus?.transfer && (
+                <span className="text-xs text-gray-500">
+                  DHT: {engineStatus.transfer.dht_nodes} nodes
+                </span>
+              )}
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchQbitStatus}
-                className="border-white/10"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
+
+            <Link to="/settings">
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Configure
               </Button>
-              <Link to="/settings">
-                <Button variant="outline" size="sm" className="border-white/10">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
-            </div>
+            </Link>
           </div>
         </motion.div>
 
-        {/* Empty State */}
-        {qbitTorrents.length === 0 && downloads.length === 0 && !loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20"
-          >
-            <div className="w-24 h-24 rounded-full bg-surface flex items-center justify-center mb-6">
-              <HardDrive className="w-12 h-12 text-gray-600" />
+        {/* Torrent List */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          {loading ? (
+            <div className="glass-card rounded-xl p-12 text-center">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-violet-400" />
+              <p className="text-gray-400">Loading downloads...</p>
             </div>
-            <h2 className="text-xl font-bold mb-2">No Downloads</h2>
-            <p className="text-gray-400 text-center max-w-md">
-              Your download queue is empty. Use Compote search in Settings to find and grab content.
-            </p>
-          </motion.div>
-        )}
+          ) : currentTorrents.length === 0 ? (
+            <div className="glass-card rounded-xl p-12 text-center">
+              <Download className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+              <h3 className="text-xl font-bold mb-2">No Downloads</h3>
+              <p className="text-gray-400 mb-4">
+                Your download queue is empty. Search for content using Compote to get started!
+              </p>
+              <Link to="/">
+                <Button className="bg-violet-600 hover:bg-violet-700">
+                  Browse Content
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {currentTorrents.map((torrent) => {
+                const isBuiltin = downloadMode === 'builtin';
+                const id = isBuiltin ? torrent.id : torrent.hash;
+                const name = torrent.name || 'Unknown';
+                const progress = isBuiltin ? torrent.progress : (torrent.progress * 100);
+                const state = torrent.state;
+                const downloadRate = isBuiltin ? torrent.download_rate_formatted : formatFileSize(torrent.dlspeed) + '/s';
+                const uploadRate = isBuiltin ? torrent.upload_rate_formatted : formatFileSize(torrent.upspeed) + '/s';
+                const totalSize = isBuiltin ? torrent.total_size_formatted : formatFileSize(torrent.size);
+                const eta = isBuiltin ? torrent.eta_formatted : 'N/A';
+                const seeds = isBuiltin ? torrent.num_seeds : torrent.num_seeds;
+                const peers = isBuiltin ? torrent.num_peers : torrent.num_leechs;
+                
+                const StatusIcon = statusIcons[state] || Clock;
+                const statusColor = statusColors[state] || 'text-gray-400';
+                const isPaused = state === 'paused' || state?.includes?.('paused');
 
-        {/* Active Downloads (qBittorrent) */}
-        {activeTorrents.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <ArrowDown className="w-5 h-5 text-blue-400" />
-              Downloading ({activeTorrents.length})
-            </h2>
-            <div className="space-y-3">
-              {activeTorrents.map((torrent) => (
-                <QbitTorrentItem
-                  key={torrent.hash}
-                  torrent={torrent}
-                  onPauseResume={handleQbitPauseResume}
-                  onDelete={handleQbitDelete}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                return (
+                  <motion.div
+                    key={id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className={`glass-card rounded-xl p-4 transition-all hover:border-white/20 ${
+                      selectedTorrent === id ? 'border-violet-500/50' : ''
+                    }`}
+                    onClick={() => {
+                      setSelectedTorrent(selectedTorrent === id ? null : id);
+                      if (isBuiltin && selectedTorrent !== id) {
+                        fetchTorrentFiles(id);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        state === 'downloading' || state?.includes?.('downloading') 
+                          ? 'bg-blue-500/20' 
+                          : state === 'seeding' || state === 'finished'
+                          ? 'bg-green-500/20'
+                          : 'bg-white/10'
+                      }`}>
+                        <StatusIcon className={`w-5 h-5 ${statusColor}`} />
+                      </div>
 
-        {/* Seeding (qBittorrent) */}
-        {seedingTorrents.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <ArrowUp className="w-5 h-5 text-purple-400" />
-              Seeding ({seedingTorrents.length})
-            </h2>
-            <div className="space-y-3">
-              {seedingTorrents.map((torrent) => (
-                <QbitTorrentItem
-                  key={torrent.hash}
-                  torrent={torrent}
-                  onPauseResume={handleQbitPauseResume}
-                  onDelete={handleQbitDelete}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{name}</h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                          <span className={statusColor}>{state}</span>
+                          <span>{totalSize}</span>
+                          {state === 'downloading' && <span>ETA: {eta}</span>}
+                          <span>Seeds: {seeds}</span>
+                          <span>Peers: {peers}</span>
+                        </div>
+                      </div>
 
-        {/* Queued Downloads (Local) */}
-        {queuedDownloads.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-yellow-400" />
-              Queue ({queuedDownloads.length})
-            </h2>
-            <div className="space-y-3">
-              {queuedDownloads.map((download) => (
-                <DownloadItem
-                  key={download.id}
-                  download={download}
-                  onPauseResume={handlePauseResume}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                      {/* Speed */}
+                      <div className="text-right hidden md:block">
+                        <div className="flex items-center gap-1 text-green-400">
+                          <ArrowDown className="w-3 h-3" />
+                          <span className="text-sm">{downloadRate}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-purple-400">
+                          <ArrowUp className="w-3 h-3" />
+                          <span className="text-sm">{uploadRate}</span>
+                        </div>
+                      </div>
 
-        {/* Paused (qBittorrent) */}
-        {pausedTorrents.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Pause className="w-5 h-5 text-yellow-400" />
-              Paused ({pausedTorrents.length})
-            </h2>
-            <div className="space-y-3">
-              {pausedTorrents.map((torrent) => (
-                <QbitTorrentItem
-                  key={torrent.hash}
-                  torrent={torrent}
-                  onPauseResume={handleQbitPauseResume}
-                  onDelete={handleQbitDelete}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                      {/* Progress */}
+                      <div className="w-32 hidden md:block">
+                        <Progress value={progress} className="h-2 bg-white/10" />
+                        <p className="text-xs text-gray-400 mt-1 text-right">{progress?.toFixed?.(1) || progress}%</p>
+                      </div>
 
-        {/* Completed (qBittorrent) */}
-        {completedTorrents.length > 0 && (
-          <section>
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              Completed ({completedTorrents.length})
-            </h2>
-            <div className="space-y-3">
-              {completedTorrents.map((torrent) => (
-                <QbitTorrentItem
-                  key={torrent.hash}
-                  torrent={torrent}
-                  onPauseResume={handleQbitPauseResume}
-                  onDelete={handleQbitDelete}
-                />
-              ))}
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            isBuiltin ? handleEnginePauseResume(torrent) : handleQbitPauseResume(torrent);
+                          }}
+                        >
+                          {isPaused ? (
+                            <Play className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <Pause className="w-4 h-4 text-yellow-400" />
+                          )}
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Remove this torrent?')) {
+                              isBuiltin ? handleEngineDelete(id, false) : handleQbitDelete(id, false);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {selectedTorrent === id && isBuiltin && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-4 pt-4 border-t border-white/10"
+                      >
+                        <div className="flex items-center gap-4 mb-4">
+                          <Button
+                            size="sm"
+                            variant={torrent.sequential ? 'default' : 'outline'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEngineSetSequential(id, !torrent.sequential);
+                            }}
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            Sequential {torrent.sequential ? '(On)' : '(Off)'}
+                          </Button>
+                          <span className="text-xs text-gray-500">
+                            Info Hash: {torrent.info_hash?.slice(0, 16)}...
+                          </span>
+                        </div>
+
+                        {/* Files */}
+                        {torrentFiles.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium flex items-center gap-2">
+                              <List className="w-4 h-4" />
+                              Files ({torrentFiles.length})
+                            </h4>
+                            <div className="max-h-48 overflow-y-auto space-y-1">
+                              {torrentFiles.map((file) => (
+                                <div key={file.index} className="flex items-center gap-3 p-2 rounded bg-white/5 text-sm">
+                                  <FileVideo className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                                  <span className="flex-1 truncate">{file.path}</span>
+                                  <span className="text-gray-400">{file.size_formatted}</span>
+                                  <Progress value={file.progress} className="w-20 h-1.5" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
-          </section>
-        )}
+          )}
+        </motion.div>
       </div>
     </Layout>
-  );
-};
-
-const QbitTorrentItem = ({ torrent, onPauseResume, onDelete }) => {
-  const StatusIcon = statusIcons[torrent.state] || Clock;
-  const isPaused = torrent.state.includes('paused');
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      data-testid={`torrent-${torrent.hash}`}
-      className="glass-card rounded-xl p-4"
-    >
-      <div className="flex items-center gap-4">
-        {/* Status Icon */}
-        <div className={`w-10 h-10 rounded-lg bg-surface flex items-center justify-center ${statusColors[torrent.state] || 'text-gray-400'}`}>
-          <StatusIcon className="w-5 h-5" />
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium truncate">{torrent.name}</h3>
-            {torrent.category && (
-              <span className="px-2 py-0.5 rounded text-xs bg-violet-600/20 text-violet-400 uppercase">
-                {torrent.category}
-              </span>
-            )}
-          </div>
-          
-          {/* Progress */}
-          {torrent.progress < 100 && (
-            <div className="mt-2">
-              <Progress value={torrent.progress} className="h-2" />
-              <div className="flex justify-between mt-1 text-xs text-gray-500">
-                <span>{torrent.size_formatted}</span>
-                <span>{torrent.progress.toFixed(1)}%</span>
-              </div>
-            </div>
-          )}
-
-          {/* Speed & Stats */}
-          <div className="flex items-center gap-4 mt-1 text-sm">
-            {torrent.is_downloading && torrent.dlspeed > 0 && (
-              <span className="text-green-400">↓ {torrent.speed_formatted}</span>
-            )}
-            {torrent.upspeed > 0 && (
-              <span className="text-purple-400">↑ {formatFileSize(torrent.upspeed)}/s</span>
-            )}
-            <span className="text-gray-500">Seeds: {torrent.seeds}</span>
-            <span className="text-gray-500">Ratio: {torrent.ratio}</span>
-          </div>
-
-          {torrent.is_complete && (
-            <p className="text-sm text-gray-500 mt-1">
-              {torrent.size_formatted} • Completed
-            </p>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onPauseResume(torrent)}
-            className="hover:bg-white/10"
-          >
-            {isPaused ? (
-              <Play className="w-4 h-4" />
-            ) : (
-              <Pause className="w-4 h-4" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(torrent.hash, false)}
-            className="hover:bg-red-500/20 text-red-400"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const DownloadItem = ({ download, onPauseResume, onDelete }) => {
-  const StatusIcon = statusIcons[download.status] || Clock;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      data-testid={`download-${download.id}`}
-      className="glass-card rounded-xl p-4"
-    >
-      <div className="flex items-center gap-4">
-        {/* Status Icon */}
-        <div className={`w-10 h-10 rounded-lg bg-surface flex items-center justify-center ${statusColors[download.status]}`}>
-          <StatusIcon className="w-5 h-5" />
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium truncate">{download.title}</h3>
-            <span className="px-2 py-0.5 rounded text-xs bg-violet-600/20 text-violet-400 uppercase">
-              {download.media_type}
-            </span>
-          </div>
-          
-          {/* Progress */}
-          {download.status !== 'completed' && download.progress !== undefined && (
-            <div className="mt-2">
-              <Progress value={download.progress} className="h-2" />
-              <div className="flex justify-between mt-1 text-xs text-gray-500">
-                <span>{download.status === 'searching' ? 'Searching indexers...' : 'Queued'}</span>
-                <span>{download.progress?.toFixed(1) || 0}%</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          {download.status !== 'completed' && download.status !== 'searching' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onPauseResume(download)}
-              className="hover:bg-white/10"
-            >
-              {download.status === 'paused' ? (
-                <Play className="w-4 h-4" />
-              ) : (
-                <Pause className="w-4 h-4" />
-              )}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(download.id)}
-            className="hover:bg-red-500/20 text-red-400"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </motion.div>
   );
 };
 
