@@ -349,14 +349,40 @@ export const WatchPartyPage = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="relative aspect-video bg-black rounded-xl overflow-hidden"
             >
-              {/* Placeholder - In production, use actual video source */}
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-900/50 to-pink-900/50">
-                <div className="text-center">
-                  <Play className="w-16 h-16 mx-auto mb-4 text-white/50" />
-                  <p className="text-white/70">Video Player</p>
-                  <p className="text-sm text-white/50">{party?.media_title}</p>
+              {/* Actual Video Player - connects to Marmalade */}
+              {party?.media_id ? (
+                <video
+                  ref={videoRef}
+                  src={`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/stream/${party.media_id}/file`}
+                  className="w-full h-full object-contain"
+                  poster={party.media_poster || ''}
+                  muted={isMuted}
+                  onLoadedMetadata={(e) => setDuration(e.target.duration)}
+                  onTimeUpdate={(e) => {
+                    if (!isHost) return; // Only host updates time
+                    setCurrentTime(e.target.currentTime);
+                  }}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  crossOrigin="anonymous"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-900/50 to-pink-900/50">
+                  <div className="text-center">
+                    <Play className="w-16 h-16 mx-auto mb-4 text-white/50" />
+                    <p className="text-white/70">Waiting for media...</p>
+                    <p className="text-sm text-white/50">Host will select content</p>
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Sync indicator */}
+              {connected && party?.media_id && (
+                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm flex items-center gap-2">
+                  <Wifi className="w-4 h-4 text-green-400 animate-pulse" />
+                  <span className="text-xs text-white">Synced</span>
+                </div>
+              )}
               
               {/* Floating Reactions */}
               <AnimatePresence>
