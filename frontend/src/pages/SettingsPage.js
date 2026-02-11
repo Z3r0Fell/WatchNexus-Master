@@ -11,7 +11,7 @@ import {
   Clock, Bell, Calendar, DownloadCloud, Tv, Radio, Play, Eye, EyeOff,
   ChevronDown, Wifi, WifiOff, Zap, Package, Film, Music, Book, FolderOpen,
   Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson,
-  Users, UserPlus, UserMinus, Crown, Lock, Edit2, Save
+  Users, UserPlus, UserMinus, Crown, Lock, Edit2, Save, User
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
