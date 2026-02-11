@@ -1,16 +1,29 @@
 # WatchNexus - Product Requirements Document
 
-## Project Status: ALPHA
+## Project Status: ALPHA → BETA
 
 Last Updated: February 2026
 
 ---
 
+## Vision
+
+A **single, self-contained application** that handles all media management tasks:
+- Request content
+- Find sources (Compote)
+- Download content (Built-in Torrent Engine)
+- Organize library (Marmalade)
+- Watch content (Video Player)
+
+**No external applications required.**
+
+---
+
 ## The Preserve Theme 🍊🍇
 
-WatchNexus uses preserve/jam themed naming:
 - **Marmalade** = Media Server (Jellyfin fork)
-- **Compote** = Indexer Manager (Prowlarr-inspired)
+- **Compote** = Indexer Manager (finds content)
+- **Built-in Torrent Engine** = Downloads (replaces qBittorrent)
 
 ---
 
@@ -23,6 +36,7 @@ WatchNexus uses preserve/jam themed naming:
 - [x] Watchlist functionality
 - [x] **Video Player** - Custom HTML5 with controls
 - [x] **Library Page** - Browse local media
+- [x] **Settings Page** - All configuration tabs
 
 ### Authentication
 - [x] JWT-based email/password login
@@ -45,6 +59,24 @@ WatchNexus uses preserve/jam themed naming:
 - [x] Grab/download queueing
 - [x] Default indexer configurations
 
+### Built-in Torrent Engine (NEW)
+- [x] libtorrent-based implementation
+- [x] Magnet link support
+- [x] .torrent file support
+- [x] Sequential download (stream while downloading)
+- [x] DHT, PEX, LSD support
+- [x] Bandwidth management
+- [x] Progress tracking
+- [x] File priority selection
+- [x] Pause/resume/remove operations
+
+### Cross-Platform Desktop (NEW)
+- [x] Electron packaging ready
+- [x] Windows 10/11 support
+- [x] macOS Intel & Apple Silicon
+- [x] Linux AppImage support
+- [x] Portable mode
+
 ---
 
 ## API Endpoints
@@ -58,7 +90,7 @@ POST /api/auth/google/session
 POST /api/auth/logout
 ```
 
-### Compote
+### Compote (Indexers)
 ```
 GET  /api/compote/indexers
 POST /api/compote/indexers
@@ -66,6 +98,20 @@ DELETE /api/compote/indexers/{id}
 POST /api/compote/indexers/{id}/test
 GET  /api/compote/search
 POST /api/compote/grab
+```
+
+### Built-in Torrent Engine (NEW)
+```
+GET  /api/downloads/engine/status
+GET  /api/downloads/engine/torrents
+POST /api/downloads/engine/add
+GET  /api/downloads/engine/{id}
+GET  /api/downloads/engine/{id}/files
+POST /api/downloads/engine/{id}/pause
+POST /api/downloads/engine/{id}/resume
+DELETE /api/downloads/engine/{id}
+POST /api/downloads/engine/{id}/sequential
+PUT  /api/downloads/engine/settings
 ```
 
 ### Media Health
@@ -83,79 +129,110 @@ POST /api/media/redownload
 * /api/marmalade/{path}
 ```
 
+### qBittorrent (Legacy)
+```
+GET  /api/qbittorrent/status
+GET  /api/qbittorrent/torrents
+POST /api/qbittorrent/add
+...
+```
+
 ---
 
-## Files Structure
+## File Structure
 
 ```
 /app/
 ├── frontend/
+│   ├── electron/                  # Desktop app (NEW)
+│   │   ├── main.js                # Electron main process
+│   │   ├── preload.js             # IPC bridge
+│   │   └── entitlements.mac.plist # macOS permissions
+│   ├── electron-builder.yml       # Build config (NEW)
 │   └── src/
 │       ├── pages/
-│       │   ├── LibraryPage.js       # Local media browser
-│       │   ├── SettingsPage.js      # All settings tabs
-│       │   └── ...
+│       │   ├── Dashboard.js
+│       │   ├── LibraryPage.js
+│       │   ├── DownloadsPage.js   # Updated for built-in engine
+│       │   └── SettingsPage.js    # Updated with engine config
 │       ├── components/
-│       │   └── VideoPlayer.jsx      # Custom video player
+│       │   └── VideoPlayer.jsx
 │       └── services/
-│           ├── api.js               # Backend API
-│           └── marmaladeApi.js      # Media server
+│           └── api.js             # Updated with torrentEngineApi
 │
 ├── backend/
-│   ├── server.py                    # Main FastAPI app
-│   ├── compote.py                   # Indexer manager
-│   └── media_health_checker.py      # FFprobe validation
+│   ├── server.py                  # Main FastAPI app
+│   ├── torrent_engine.py          # NEW - Built-in downloader
+│   ├── compote.py                 # Indexer manager
+│   ├── media_health_checker.py    # File validation
+│   └── qbittorrent_client.py      # Legacy (optional)
 │
-└── watchnexus/
-    └── server/                      # Marmalade .NET server
+├── BUILD_GUIDE.md                 # NEW - Cross-platform build guide
+└── README.md                      # Updated
 ```
 
 ---
 
-## What's NOT Done
+## Pending Tasks
 
 ### P0 - Critical
-- Connect video player to Marmalade streams
-- Real download client integration
+- [ ] Test torrent engine with real magnet links
+- [ ] Connect Compote search → Built-in Engine
+- [ ] Verify all Settings tabs work
 
 ### P1 - Important
-- IPTV/Live TV setup wizard
-- Real indexer connectivity testing
+- [ ] Marmalade server (.NET runtime needed)
+- [ ] Video player integration with Marmalade
+- [ ] Subtitle auto-download
 
-### P2 - Future
-- Desktop packaging (Electron)
-- Mobile optimization
-
----
-
-## Test Results
-
-- Backend: All endpoints tested
-- Frontend: UI verified working
-- Test credentials: test@test.com / password
+### P2 - Enhancement
+- [ ] IPTV integration
+- [ ] Streaming service logins
+- [ ] UI animations (framer-motion)
+- [ ] Rename /app/watchnexus → /app/marmalade
 
 ---
 
-## Configuration
+## Test Credentials
 
-### Environment
-```env
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=watchnexus
-TMDB_API_KEY=your_key
-JWT_SECRET=your_secret
-MARMALADE_URL=http://localhost:8096
+- Email: test@test.com
+- Password: password
+- Google OAuth available
+
+---
+
+## Tech Stack
+
+- **Frontend**: React, Tailwind CSS, Shadcn/UI, Framer Motion
+- **Backend**: FastAPI, Python 3.10+
+- **Database**: MongoDB
+- **Torrent**: libtorrent 2.0
+- **Desktop**: Electron 28+
+- **Media**: FFmpeg, FFprobe
+
+---
+
+## Build Commands
+
+```bash
+# Web Development
+cd frontend && yarn start
+cd backend && uvicorn server:app --port 8001
+
+# Desktop Build
+yarn electron:build:mac      # macOS
+yarn electron:build:win      # Windows
+yarn electron:build:linux    # Linux AppImage
 ```
 
-### OAuth
-- Client ID: 392737972706-krhv8egv3jj8qrpd1ppri6712a16huno.apps.googleusercontent.com
-- Provider: Emergent Auth
-
 ---
 
-## Known Limitations
+## Changelog
 
-1. **Download client is MOCKED** - Queue works, no actual downloads
-2. **Indexers need API keys** - Default configs disabled
-3. **Marmalade requires .NET** - Not running in preview
-4. **Video playback needs Marmalade** - Player ready, server needed
+### 2026-02-11
+- Added built-in torrent engine (libtorrent)
+- Created cross-platform desktop packaging (Electron)
+- Updated DownloadsPage for built-in engine
+- Updated SettingsPage with engine configuration
+- Created BUILD_GUIDE.md
+- Updated README.md with new architecture
