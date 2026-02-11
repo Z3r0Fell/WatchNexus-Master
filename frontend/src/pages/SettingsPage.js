@@ -167,6 +167,64 @@ export const SettingsPage = () => {
   const [creatingTunnel, setCreatingTunnel] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
 
+  // Milk (Theme Forge) state
+  const [themeForgeConfig, setThemeForgeConfig] = useState(null);
+  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [customColors, setCustomColors] = useState({
+    primary: '#8B5CF6',
+    secondary: '#EC4899',
+    background: '#0F0F0F',
+    surface: '#1A1A1A',
+    text_primary: '#FFFFFF',
+  });
+  const [savingTheme, setSavingTheme] = useState(false);
+
+  // Fetch Theme Forge config
+  const fetchThemeForgeConfig = useCallback(async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/milk/theme-forge`);
+      setThemeForgeConfig(res.data);
+      if (res.data.current_theme) {
+        setSelectedTheme(res.data.current_theme.type);
+        if (res.data.current_theme.colors) {
+          setCustomColors(res.data.current_theme.colors);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch theme config:', error);
+    }
+  }, []);
+
+  const handleSetTheme = async (themeType) => {
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/milk/set-theme?theme_type=${themeType}`);
+      setSelectedTheme(themeType);
+      toast.success('Theme applied!');
+      fetchThemeForgeConfig();
+    } catch (error) {
+      toast.error('Failed to apply theme');
+    }
+  };
+
+  const handleSaveCustomTheme = async () => {
+    setSavingTheme(true);
+    try {
+      const themeData = {
+        name: 'My Custom Theme',
+        type: 'custom',
+        colors: customColors,
+      };
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/milk/custom-theme`, themeData);
+      toast.success('Custom theme saved!');
+      setSelectedTheme('custom');
+      fetchThemeForgeConfig();
+    } catch (error) {
+      toast.error('Failed to save custom theme');
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
   // Fetch Gelatin status
   const fetchGelatinStatus = useCallback(async () => {
     try {
