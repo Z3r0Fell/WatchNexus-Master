@@ -1781,103 +1781,12 @@ export const SettingsPage = () => {
 
               {/* Mass Editor Sub-Tab */}
               {librarySubTab === 'mass-editor' && (
-                <div className="space-y-6">
-                  <div className="glass-card rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                          <ListChecks className="w-5 h-5 text-violet-400" />
-                          Mass Editor
-                        </h2>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Bulk edit multiple items at once
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">{selectedItems.length} selected</span>
-                      </div>
-                    </div>
-
-                    {/* Bulk Actions */}
-                    {selectedItems.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4 p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                        <Button size="sm" onClick={() => handleMassEdit('monitor', true)} className="bg-green-600 hover:bg-green-700">
-                          <Eye className="w-4 h-4 mr-1" /> Monitor
-                        </Button>
-                        <Button size="sm" onClick={() => handleMassEdit('monitor', false)} className="bg-gray-600 hover:bg-gray-700">
-                          <EyeOff className="w-4 h-4 mr-1" /> Unmonitor
-                        </Button>
-                        <Button size="sm" onClick={() => handleMassEdit('scan', true)} className="bg-blue-600 hover:bg-blue-700">
-                          <RefreshCw className="w-4 h-4 mr-1" /> Rescan
-                        </Button>
-                        <Button size="sm" onClick={() => handleMassEdit('rename', true)} className="bg-purple-600 hover:bg-purple-700">
-                          <FileText className="w-4 h-4 mr-1" /> Rename
-                        </Button>
-                        <Button size="sm" onClick={() => handleMassEdit('delete', true)} className="bg-red-600 hover:bg-red-700">
-                          <Trash2 className="w-4 h-4 mr-1" /> Delete
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Items Table */}
-                    <div className="border border-white/10 rounded-lg overflow-hidden">
-                      <div className="flex items-center gap-3 p-3 bg-white/5 border-b border-white/10">
-                        <button onClick={toggleSelectAll} className="text-gray-400 hover:text-white">
-                          {selectedItems.length === libraries.length ? (
-                            <CheckSquare className="w-5 h-5 text-violet-400" />
-                          ) : (
-                            <Square className="w-5 h-5" />
-                          )}
-                        </button>
-                        <span className="flex-1 font-medium">Library</span>
-                        <span className="w-24 text-center">Type</span>
-                        <span className="w-24 text-center">Items</span>
-                        <span className="w-32 text-center">Status</span>
-                      </div>
-                      
-                      {libraries.length === 0 ? (
-                        <div className="p-8 text-center text-gray-400">
-                          <p>No libraries to edit</p>
-                        </div>
-                      ) : (
-                        libraries.map((lib) => (
-                          <div 
-                            key={lib.id} 
-                            className={`flex items-center gap-3 p-3 border-b border-white/5 hover:bg-white/5 ${
-                              selectedItems.includes(lib.id) ? 'bg-violet-500/10' : ''
-                            }`}
-                          >
-                            <button onClick={() => toggleSelectItem(lib.id)} className="text-gray-400 hover:text-white">
-                              {selectedItems.includes(lib.id) ? (
-                                <CheckSquare className="w-5 h-5 text-violet-400" />
-                              ) : (
-                                <Square className="w-5 h-5" />
-                              )}
-                            </button>
-                            <div className="flex-1 flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-violet-500/20 flex items-center justify-center text-violet-400">
-                                {lib.media_type === 'movies' && <Film className="w-4 h-4" />}
-                                {lib.media_type === 'tv' && <Tv className="w-4 h-4" />}
-                                {lib.media_type === 'music' && <Music className="w-4 h-4" />}
-                              </div>
-                              <div>
-                                <p className="font-medium">{lib.name}</p>
-                                <p className="text-xs text-gray-500 truncate max-w-[200px]">{lib.path}</p>
-                              </div>
-                            </div>
-                            <span className="w-24 text-center text-sm text-gray-400 capitalize">{lib.media_type}</span>
-                            <span className="w-24 text-center text-sm">{lib.item_count || 0}</span>
-                            <span className="w-32 text-center">
-                              <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
-                                Monitored
-                              </span>
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <MassEditorTab
+                  libraries={libraries}
+                  selectedItems={selectedItems}
+                  setSelectedItems={setSelectedItems}
+                  handleMassEdit={handleMassEdit}
+                />
               )}
 
               {/* Manual Import Sub-Tab */}
