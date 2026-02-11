@@ -12,7 +12,10 @@ import {
   ChevronDown, Wifi, WifiOff, Zap, Package, Film, Music, Book, FolderOpen,
   Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson,
   Users, UserPlus, UserMinus, Crown, Lock, Edit2, Save, User,
-  FolderSearch, ChevronRight, Home, Database
+  FolderSearch, ChevronRight, Home, Database,
+  FileText, FolderInput, HardDriveDownload, Layers, ListChecks, 
+  FileType, Replace, FolderSync, Archive, RotateCcw, ScanLine, 
+  FileCheck, FolderCog, CheckSquare, Square
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
