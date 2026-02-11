@@ -212,4 +212,4 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - Frontend runs on port 3000
 - All API routes prefixed with `/api`
 - MongoDB on default port
-- Preview URL: https://nexusplay-1.preview.emergentagent.com
+- Preview URL: https://streamvault-209.preview.emergentagent.com
