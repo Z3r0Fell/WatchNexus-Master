@@ -18,6 +18,7 @@ import { MusicPage } from "./pages/MusicPage";
 import { AudiobooksPage } from "./pages/AudiobooksPage";
 import { LiveTVPage } from "./pages/LiveTVPage";
 import { LibraryPage } from "./pages/LibraryPage";
+import { WatchPartyPage } from "./pages/WatchPartyPage";
 
 import "./App.css";
 
