@@ -1791,77 +1791,16 @@ export const SettingsPage = () => {
 
               {/* Manual Import Sub-Tab */}
               {librarySubTab === 'manual-import' && (
-                <div className="space-y-6">
-                  <div className="glass-card rounded-xl p-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
-                      <FolderInput className="w-5 h-5 text-violet-400" />
-                      Manual Import
-                    </h2>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Path to Import</label>
-                        <div className="flex gap-2">
-                          <Input
-                            value={manualImportPath}
-                            onChange={(e) => setManualImportPath(e.target.value)}
-                            placeholder="/downloads/completed or D:\Downloads"
-                            className="bg-white/5 border-white/10 flex-1"
-                          />
-                          <Button
-                            type="button"
-                            onClick={() => openFileBrowser(manualImportPath || '/')}
-                            className="bg-violet-600 hover:bg-violet-700 px-3"
-                            title="Browse folders"
-                          >
-                            <FolderSearch className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            onClick={handleManualImportScan}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <ScanLine className="w-4 h-4 mr-2" /> Scan
-                          </Button>
-                        </div>
-                      </div>
-
-                      {manualImportFiles.length > 0 && (
-                        <div className="border border-white/10 rounded-lg overflow-hidden">
-                          <div className="p-3 bg-white/5 border-b border-white/10 flex justify-between items-center">
-                            <span className="font-medium">{manualImportFiles.length} files found</span>
-                            <Button
-                              size="sm"
-                              onClick={() => handleImportFiles(manualImportFiles)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <Import className="w-4 h-4 mr-2" /> Import All
-                            </Button>
-                          </div>
-                          <div className="max-h-[400px] overflow-y-auto">
-                            {manualImportFiles.map((file, index) => (
-                              <div key={index} className="p-3 border-b border-white/5 flex items-center gap-3">
-                                <Film className="w-5 h-5 text-violet-400" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium truncate">{file.name}</p>
-                                  <p className="text-xs text-gray-500 truncate">{file.path}</p>
-                                </div>
-                                <span className="text-sm text-gray-400">
-                                  {(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {manualImportFiles.length === 0 && (
-                        <div className="p-8 text-center text-gray-400 border border-dashed border-white/10 rounded-lg">
-                          <FolderInput className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                          <p>Enter a path and click Scan to find importable files</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <ManualImportTab
+                  manualImportPath={manualImportPath}
+                  setManualImportPath={setManualImportPath}
+                  manualImportFiles={manualImportFiles}
+                  setManualImportFiles={setManualImportFiles}
+                  openFileBrowser={openFileBrowser}
+                  handleManualImportScan={handleManualImportScan}
+                  handleImportFiles={handleImportFiles}
+                />
+              )}
                 </div>
               )}
             </motion.div>
