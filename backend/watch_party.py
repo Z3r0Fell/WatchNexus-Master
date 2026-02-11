@@ -122,7 +122,7 @@ class WatchPartyManager:
     def generate_party_code(self) -> str:
         """Generate a short, readable party code."""
         chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # No confusing chars
-        code = "".join(chars[ord(b) % len(chars)] for b in uuid.uuid4().bytes[:6])
+        code = "".join(chars[b % len(chars)] for b in uuid.uuid4().bytes[:6])
         return code
     
     async def create_party(
