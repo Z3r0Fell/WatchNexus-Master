@@ -232,9 +232,10 @@ class TorrentFile:
         }
 
 
-class TorrentEngine:
+class FondueEngine:
     """
-    Built-in BitTorrent download engine with comprehensive settings.
+    Fondue - Built-in BitTorrent download engine.
+    Downloads come in pieces, layered together into a perfect whole.
     Uses libtorrent for efficient, cross-platform torrent downloading.
     """
     
@@ -257,7 +258,7 @@ class TorrentEngine:
         self._state_file = Path(self.settings.download_path) / ".watchnexus_engine.json"
         self._settings_file = Path(self.settings.download_path) / ".watchnexus_settings.json"
         
-        logger.info(f"TorrentEngine initialized. Download path: {self.settings.download_path}")
+        logger.info(f"FondueEngine initialized. Download path: {self.settings.download_path}")
     
     def _apply_settings_to_session(self):
         """Apply settings to libtorrent session."""
@@ -921,25 +922,25 @@ class TorrentEngine:
 
 
 # Singleton instance
-_torrent_engine: Optional[TorrentEngine] = None
+_fondue_engine: Optional[FondueEngine] = None
 
 
-def get_torrent_engine() -> TorrentEngine:
-    """Get or create the torrent engine instance."""
-    global _torrent_engine
+def get_fondue_engine() -> FondueEngine:
+    """Get or create the Fondue (torrent) engine instance."""
+    global _fondue_engine
     
-    if _torrent_engine is None:
+    if _fondue_engine is None:
         download_path = os.environ.get("DOWNLOAD_PATH", "/media/downloads")
         settings = EngineSettings(download_path=download_path)
-        _torrent_engine = TorrentEngine(settings=settings)
-        _torrent_engine.start()
+        _fondue_engine = FondueEngine(settings=settings)
+        _fondue_engine.start()
     
-    return _torrent_engine
+    return _fondue_engine
 
 
-def shutdown_torrent_engine():
-    """Shutdown the torrent engine."""
-    global _torrent_engine
-    if _torrent_engine:
-        _torrent_engine.stop()
-        _torrent_engine = None
+def shutdown_fondue_engine():
+    """Shutdown the Fondue engine."""
+    global _fondue_engine
+    if _fondue_engine:
+        _fondue_engine.stop()
+        _fondue_engine = None
