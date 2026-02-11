@@ -185,12 +185,18 @@ class YTSScraper(BaseScraper):
 class EZTVScraper(BaseScraper):
     """
     EZTV.re Scraper - TV show torrents.
-    Uses their API.
+    Uses their API with fallback mirrors.
     """
     
     name = "EZTV"
     base_url = "https://eztv.re"
-    api_url = "https://eztv.re/api/get-torrents"
+    # Multiple API URLs for resilience
+    api_urls = [
+        "https://eztvx.to/api/get-torrents",
+        "https://eztv.re/api/get-torrents",
+        "https://eztv.unblockit.day/api/get-torrents",
+    ]
+    api_url = api_urls[0]  # Default to working mirror
     
     async def search(self, query: str, limit: int = 50) -> List[TorrentResult]:
         results = []
