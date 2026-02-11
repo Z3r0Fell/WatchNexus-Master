@@ -73,6 +73,12 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
   - Quick access shortcuts (/, /home, /media, /mnt, /srv, /data, Home)
   - Auto-detect library name and media type from folder name
   - Select folder to add as library
+- **Media Management Sub-Tabs** (Sonarr-like): New sub-tab structure in Library settings
+  - Libraries: Main library management (existing)
+  - Media Management: File naming, importing, organization settings
+  - Quality Profiles: Define quality preferences (HD-720p, Ultra-HD, etc.)
+  - Mass Editor: Bulk edit multiple libraries
+  - Manual Import: Import files from custom paths
 
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
