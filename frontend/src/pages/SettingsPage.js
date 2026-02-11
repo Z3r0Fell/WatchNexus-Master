@@ -751,9 +751,12 @@ export const SettingsPage = () => {
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="text-sm text-gray-400 py-1">Quick Add:</span>
                   {[
-                    { name: 'Jackett', type: 'torznab', url: 'http://localhost:9117' },
-                    { name: 'Prowlarr', type: 'torznab', url: 'http://localhost:9696' },
-                    { name: 'RSS Feed', type: 'rss', url: '' },
+                    { name: '1337x', type: 'torznab', url: 'https://1337x.to', cf: true },
+                    { name: 'YTS Movies', type: 'torznab', url: 'https://yts.mx', cf: false },
+                    { name: 'EZTV', type: 'torznab', url: 'https://eztv.re', cf: false },
+                    { name: 'Nyaa', type: 'torznab', url: 'https://nyaa.si', cf: false },
+                    { name: 'ShowRSS', type: 'rss', url: 'https://showrss.info/other/all.rss', cf: false },
+                    { name: 'Custom RSS', type: 'rss', url: '', cf: false },
                   ].map((preset) => (
                     <button
                       key={preset.name}
@@ -763,7 +766,7 @@ export const SettingsPage = () => {
                           type: preset.type, 
                           url: preset.url,
                           api_key: '',
-                          cloudflare_protected: false,
+                          cloudflare_protected: preset.cf,
                           search_path: '',
                           cookie: '',
                         });
