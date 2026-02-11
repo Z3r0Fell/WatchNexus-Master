@@ -414,6 +414,7 @@ export const SettingsPage = () => {
     fetchStreamingLogins();
     fetchGelatinStatus();
     fetchActiveTunnels();
+    fetchThemeForgeConfig();
     
     // Load saved IPTV sources
     const savedIptv = localStorage.getItem('watchnexus_iptv_sources');
