@@ -684,7 +684,7 @@ class Compote:
                     download_url = enclosure.get("url", "")
                     try:
                         size = int(enclosure.get("length", 0))
-                    except:
+                    except (ValueError, TypeError):
                         pass
                 
                 for attr in item.findall(".//{http://torznab.com/schemas/2015/feed}attr"):
@@ -694,17 +694,17 @@ class Compote:
                     if name == "seeders":
                         try:
                             seeders = int(value)
-                        except:
+                        except (ValueError, TypeError):
                             pass
                     elif name == "peers":
                         try:
                             leechers = max(0, int(value) - seeders)
-                        except:
+                        except (ValueError, TypeError):
                             pass
                     elif name == "size" and not size:
                         try:
                             size = int(value)
-                        except:
+                        except (ValueError, TypeError):
                             pass
                     elif name == "magneturl":
                         magnet_url = value
