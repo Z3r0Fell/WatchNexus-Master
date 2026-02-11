@@ -105,12 +105,18 @@ class BaseScraper:
 class YTSScraper(BaseScraper):
     """
     YTS.mx Scraper - Movie torrents with small file sizes.
-    Uses their public API.
+    Uses their public API with fallback mirrors.
     """
     
     name = "YTS"
     base_url = "https://yts.mx"
-    api_url = "https://yts.mx/api/v2/list_movies.json"
+    # Multiple API URLs for resilience (primary domain may be DNS blocked)
+    api_urls = [
+        "https://yts.torrentbay.st/api/v2/list_movies.json",
+        "https://yts.mx/api/v2/list_movies.json",
+        "https://yts.unblockit.day/api/v2/list_movies.json",
+    ]
+    api_url = api_urls[0]  # Default to working mirror
     
     async def search(self, query: str, limit: int = 50) -> List[TorrentResult]:
         results = []
