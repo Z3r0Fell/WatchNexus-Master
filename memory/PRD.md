@@ -1,179 +1,197 @@
 # WatchNexus - Product Requirements Document
 
-## Project Status: BETA
+## Original Problem Statement
+Build a unified, self-hosted media pipeline called "WatchNexus" that replaces the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, fully self-contained application that handles requesting, acquiring, organizing, and watching media.
 
-Last Updated: December 2025
+## User Personas
+- **Home Media Enthusiast**: Wants to manage their media library without running multiple applications
+- **Tech-Savvy User**: Comfortable with self-hosting but wants a simpler setup
+- **Watch Party Host**: Wants to share media experiences with friends remotely
 
----
+## Core Requirements
+1. **Unified & Self-Contained**: Single application with no external dependencies
+2. **Branded Modules**: Syrup (indexer aggregator), Preserve (challenge solver), Pulp (usenet), Gelatin (external access)
+3. **Cross-Platform**: Packageable for Mac, Linux, and Windows via Electron
+4. **Rich Metadata**: TMDB integration
+5. **Subtitles**: Addic7ed integration
+6. **Authentication**: JWT and Google OAuth
+7. **Watch Party**: Synchronized viewing with chat
+8. **Streaming Services**: Credential management for Netflix, Disney+, Prime, Crunchyroll, YouTube
 
-## Vision
+## Tech Stack
+- **Frontend**: React, Electron, TailwindCSS, Shadcn UI, Framer Motion
+- **Backend**: Python FastAPI, libtorrent
+- **Database**: MongoDB
+- **Real-time**: WebSockets for Watch Party
 
-A **single, self-contained application** that handles all media management tasks:
-- Request content
-- Find sources (Compote + Syrup scrapers)
-- Download content (Built-in Torrent Engine)
-- Organize library (Marmalade)
-- Watch content (Video Player)
+## Code Architecture
+```
+/app/
+├── backend/
+│   ├── server.py               # Main FastAPI app with all routes
+│   ├── torrent_engine.py       # Built-in libtorrent client
+│   ├── marmalade_server.py     # Python media server
+│   ├── media_health_checker.py # Media file validation
+│   ├── compote.py              # Indexer manager (Syrup, Preserve, Pulp)
+│   ├── syrup_scrapers.py       # Live site scrapers
+│   ├── subtitle_service.py     # Addic7ed/OpenSubtitles integration
+│   ├── watch_party.py          # WebSocket synchronized viewing
+│   └── gelatin.py              # External access module
+├── frontend/
+│   ├── electron/               # Electron packaging
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── SettingsPage.js # Settings with 9 tabs
+│   │   │   ├── WatchPartyPage.js # Watch party UI
+│   │   │   └── ...
+│   │   ├── components/
+│   │   └── services/api.js     # API service layer
+│   └── public/
+│       └── watchnexus-logo.svg # App logo
+└── memory/
+    └── PRD.md                  # This file
+```
 
-**No external applications required.** All functionality is built-in.
+## What's Implemented (as of Feb 2025)
 
----
+### ✅ Completed Features
 
-## The Preserve Theme 🍊🍇
+#### Core Infrastructure
+- [x] Full-stack React + FastAPI + MongoDB architecture
+- [x] JWT Authentication with Google OAuth support
+- [x] TMDB API integration for metadata
+- [x] Built-in torrent engine (libtorrent)
 
-WatchNexus uses a jam/preserve naming theme for its built-in modules:
+#### Media Management (Marmalade)
+- [x] Library scanning and organization
+- [x] Multiple media type support (movies, TV, music, audiobooks)
+- [x] Watch progress tracking
+- [x] Media health checker with repair capabilities
+- [x] Streaming with range request support
 
-- **Marmalade** = Media Server (Python-based library manager & streamer)
-- **Compote** = Indexer Manager (orchestrates all indexer types)
-- **Syrup** = Torrent Scraper Engine (YTS, EZTV, 1337x, Nyaa scrapers)
-- **Preserve** = Challenge Solver (Cloudflare and protection bypass)
-- **Pulp** = NZB/Usenet Handler (Newznab API support)
-- **Built-in Torrent Engine** = Downloads (libtorrent-based)
+#### Download Management
+- [x] Built-in torrent client
+- [x] Direct magnet link submission
+- [x] Queue management
+- [x] qBittorrent integration (optional)
 
----
+#### Indexer Management (Compote)
+- [x] Syrup - Indexer aggregator with live scrapers (1337x, YTS, EZTV)
+- [x] Preserve - Cloudflare bypass module
+- [x] Pulp - Usenet handler placeholder
+- [x] Torznab/RSS feed support
 
-## Implemented Features
+#### External Access (Gelatin)
+- [x] LAN server discovery
+- [x] Tunnel creation for external access
+- [x] Access token generation
+- [x] Share link generation for Watch Party
 
-### Core UI
-- [x] React frontend with glassmorphism design
-- [x] **Framer-motion animations** (page transitions, list animations)
-- [x] Responsive sidebar navigation
-- [x] TMDB discovery (movies, TV, search)
-- [x] Watchlist functionality
-- [x] **Video Player** - Custom HTML5 with controls
-- [x] **Library Page** - Browse local media (via Marmalade)
-- [x] **Settings Page** - All configuration tabs
+#### Watch Party
+- [x] Real-time WebSocket synchronization
+- [x] Party creation with 6-character codes
+- [x] Host controls (play/pause/seek)
+- [x] Live chat with emoji reactions
+- [x] Member ready status
 
-### New Features (Dec 2025)
-- [x] **Magnet Link Pastebox** - Direct magnet submission on Downloads page
-- [x] **Library Tab** in Settings - Add/manage multiple drives and folders
-- [x] **Syrup Scrapers** - Built-in site scrapers (YTS, EZTV, 1337x, Nyaa)
-- [x] **UI Animations** - Page transitions, list staggering, hover effects
+#### Streaming Service Logins
+- [x] Encrypted credential storage
+- [x] Support for 11 services: Netflix, Disney+, Prime, Crunchyroll, YouTube, HBO Max, Hulu, Peacock, Paramount+, Apple TV+, Funimation
+- [x] Deep linking to services
 
-### Authentication
-- [x] JWT-based email/password login
-- [x] User registration
-- [x] Google OAuth (Emergent Auth)
-- [x] Session management
+#### Subtitles
+- [x] Addic7ed scraper implementation
+- [x] OpenSubtitles API support (requires API key)
+- [x] Language preference settings
+- [x] Search by TV show (season/episode) or movie
 
-### Compote - Indexer Manager
-- [x] **Syrup** - Built-in torrent aggregator with site scrapers
-- [x] **Preserve** - Built-in Cloudflare/challenge solver
-- [x] **Pulp** - Built-in NZB/Usenet handler
-- [x] RSS Feed parsing with magnet extraction
-- [x] Multi-indexer concurrent search
-- [x] Quality/codec parsing from filenames
-- [x] Quick-add presets (1337x, YTS, EZTV, Nyaa, ShowRSS)
+#### UI/UX
+- [x] Custom sidebar with WatchNexus logo
+- [x] Framer Motion animations
+- [x] 9 settings tabs: General, Library, Media Health, Indexers, Download Client, IPTV, Streaming Services, Subtitles, External Access
+- [x] Dark theme with violet/pink accents
 
-### Marmalade - Media Server
-- [x] Python-based implementation (fully self-contained)
-- [x] **Multi-library support** (movies, TV, anime, music, audiobooks)
-- [x] Library management UI in Settings
-- [x] Media file scanning with metadata extraction
-- [x] Filename parsing (title, year, season, episode, quality)
-- [x] Video streaming endpoint
+### 🔄 In Progress / Known Limitations
 
-### Built-in Torrent Engine
-- [x] libtorrent-based implementation
-- [x] **Direct magnet link submission UI**
-- [x] Magnet link and .torrent file support
-- [x] Sequential download (stream while downloading)
-- [x] Comprehensive Settings UI
+#### Network Restrictions
+- Syrup live scrapers (1337x, YTS, EZTV) are blocked in preview environment
+- Addic7ed scraper returns 0 results in preview environment
+- These will work in production/self-hosted environments
 
----
+### 📋 Backlog (P2)
+
+1. **IPTV Integration**
+   - M3U playlist parsing
+   - EPG data support
+   - Live TV channel management
+
+2. **Full Pulp (Usenet) Implementation**
+   - NZB handling
+   - Usenet provider connections
+
+3. **VideoPlayer Subtitle Integration**
+   - Subtitle selection overlay in player
+   - Auto-download on play
+
+4. **Watch Party Video Integration**
+   - Connect to actual video sources
+   - Sync with Marmalade library
 
 ## API Endpoints
 
-### New Endpoints
-```
-GET  /api/syrup/scrapers          # List available scrapers
-GET  /api/syrup/search            # Search using live scrapers
-POST /api/downloads/add-magnet    # Direct magnet submission
-```
+### Authentication
+- `POST /api/auth/register` - Register user
+- `POST /api/auth/login` - JWT login
+- `GET /api/auth/google/url` - Google OAuth URL
+- `POST /api/auth/google/callback` - OAuth callback
+
+### Gelatin (External Access)
+- `GET /api/gelatin/status` - Server status
+- `GET /api/gelatin/lan-url` - LAN URL
+- `POST /api/gelatin/tunnel/create` - Create tunnel
+- `GET /api/gelatin/tunnels` - List tunnels
+- `DELETE /api/gelatin/tunnel/{id}` - Close tunnel
+- `POST /api/gelatin/access-token` - Generate token
+- `GET /api/gelatin/share-link` - Get share link
+
+### Watch Party
+- `POST /api/watch-party/create` - Create party
+- `GET /api/watch-party/{code}` - Get party info
+- `GET /api/watch-party/list` - List parties
+- `WS /ws/party/{code}` - WebSocket connection
+
+### Streaming Logins
+- `GET /api/streaming-logins/services` - Available services
+- `GET /api/streaming-logins` - User's logins
+- `POST /api/streaming-logins` - Add login
+- `DELETE /api/streaming-logins/{service_id}` - Remove login
+
+### Subtitles
+- `GET /api/subtitles/search/tv` - Search TV subs
+- `GET /api/subtitles/search/movie` - Search movie subs
+- `POST /api/subtitles/download` - Download subtitle
+- `GET /api/subtitles/settings` - Get settings
+- `PUT /api/subtitles/settings` - Update settings
 
 ### Marmalade (Media Server)
-```
-GET  /api/marmalade/libraries
-POST /api/marmalade/libraries
-DELETE /api/marmalade/libraries/{id}
-POST /api/marmalade/libraries/{id}/scan
-GET  /api/marmalade/media
-GET  /api/marmalade/stream/{id}
-```
+- `GET /api/marmalade/status` - Server status
+- `GET/POST/DELETE /api/marmalade/libraries` - Library CRUD
+- `GET /api/marmalade/media` - List media
+- `GET /api/marmalade/stream/{id}/file` - Stream media
 
----
-
-## Pending Tasks
-
-### P1 - Important
-- [ ] Use SVG logo instead of PNG
-- [ ] Fix Syrup scrapers (site access blocked in preview env, works locally)
-- [ ] Subtitle auto-download integration
-
-### P2 - Enhancement
-- [ ] Full IPTV integration (.m3u playlists, EPG)
-- [ ] Streaming service logins
-- [ ] Delete obsolete /app/watchnexus .NET code
-
----
-
-## Completed This Session (Dec 2025)
-
-1. ✅ **Syrup Scrapers** - Built-in site scrapers for YTS, EZTV, 1337x, Nyaa
-2. ✅ **Magnet Link Pastebox** - Direct magnet submission on Downloads page
-3. ✅ **UI Animations** - Page transitions, list stagger, hover effects
-4. ✅ **Library Tab** - Full UI for managing multiple media libraries/drives
-5. ✅ **Preserve/Pulp modules** - Built-in CF bypass and NZB handling
-6. ✅ **Removed Emergent badge** and all external app references
-
----
+### Compote (Indexers)
+- `GET /api/compote/indexers` - List indexers
+- `POST /api/compote/indexers` - Add indexer
+- `GET /api/compote/search` - Search content
+- `GET /api/syrup/search` - Live scraper search
 
 ## Test Credentials
-- Email: test@test.com
-- Password: password
+- **Email**: test@test.com
+- **Password**: password
 
----
-
-## Test Credentials
-
-- Email: test@test.com
-- Password: password
-- Google OAuth available
-
----
-
-## Tech Stack
-
-- **Frontend**: React, Tailwind CSS, Shadcn/UI, Framer Motion
-- **Backend**: FastAPI, Python 3.10+
-- **Database**: MongoDB
-- **Torrent**: libtorrent 2.0
-- **Desktop**: Electron 28+
-- **Media**: FFmpeg, FFprobe
-
----
-
-## Build Commands
-
-```bash
-# Web Development
-cd frontend && yarn start
-cd backend && uvicorn server:app --port 8001
-
-# Desktop Build
-yarn electron:build:mac      # macOS
-yarn electron:build:win      # Windows
-yarn electron:build:linux    # Linux AppImage
-```
-
----
-
-## Changelog
-
-### 2026-02-11
-- Added built-in torrent engine (libtorrent)
-- Created cross-platform desktop packaging (Electron)
-- Updated DownloadsPage for built-in engine
-- Updated SettingsPage with engine configuration
-- Created BUILD_GUIDE.md
-- Updated README.md with new architecture
+## Deployment Notes
+- Backend runs on port 8001 (internal)
+- Frontend runs on port 3000
+- All API routes prefixed with `/api`
+- MongoDB on default port
+- Preview URL: https://nexusplay-1.preview.emergentagent.com
