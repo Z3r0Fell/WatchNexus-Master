@@ -880,7 +880,6 @@ class Compote:
                     # Try to parse capabilities
                     try:
                         root = ET.fromstring(response.text)
-                        server_name = root.find(".//server")
                         categories = root.findall(".//category")
                         return {
                             "success": True,
@@ -893,7 +892,7 @@ class Compote:
                         # May still work for search even if caps fails
                         return {
                             "success": True,
-                            "message": f"Connected (caps not supported)",
+                            "message": "Connected (caps not supported)",
                             "status_code": 200,
                         }
                 else:
