@@ -185,6 +185,28 @@ export const SettingsPage = () => {
   const [loadingPlugins, setLoadingPlugins] = useState(false);
   const [togglingPlugin, setTogglingPlugin] = useState(null);
 
+  // Users Management state
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [savingUser, setSavingUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role: 'user',
+    permissions: {
+      can_download: true,
+      can_delete: false,
+      can_manage_library: false,
+      can_manage_users: false,
+      can_access_settings: false,
+      max_streams: 3,
+      allowed_libraries: [],
+    }
+  });
+
   // Fetch Theme Forge config
   const fetchThemeForgeConfig = useCallback(async () => {
     try {
