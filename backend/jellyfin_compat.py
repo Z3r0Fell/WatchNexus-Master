@@ -25,8 +25,8 @@ import uuid
 import hashlib
 import os
 
-# Create hidden router - prefix with /emby for client compatibility
-jellyfin_router = APIRouter(prefix="/emby", tags=["Jellyfin Compatible API (Hidden)"])
+# Create hidden router - prefix with /api/emby for proper routing through ingress
+jellyfin_router = APIRouter(prefix="/api/emby", tags=["Jellyfin Compatible API (Hidden)"])
 
 # ==================== MODELS ====================
 
