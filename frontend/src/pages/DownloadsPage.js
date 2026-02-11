@@ -532,9 +532,8 @@ export const DownloadsPage = () => {
                 return (
                   <motion.div
                     key={id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`glass-card rounded-xl p-4 transition-all hover:border-white/20 ${
+                    variants={itemVariants}
+                    className={`glass-card rounded-xl p-4 transition-all hover:border-white/20 cursor-pointer ${
                       selectedTorrent === id ? 'border-violet-500/50' : ''
                     }`}
                     onClick={() => {
@@ -543,6 +542,8 @@ export const DownloadsPage = () => {
                         fetchTorrentFiles(id);
                       }
                     }}
+                    whileHover={{ scale: 1.005 }}
+                    whileTap={{ scale: 0.995 }}
                   >
                     <div className="flex items-center gap-4">
                       {/* Icon */}
