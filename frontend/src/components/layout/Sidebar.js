@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Play,
   Layers,
-  FolderOpen
+  FolderOpen,
+  Compass
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
@@ -30,6 +31,7 @@ const navItems = [
   { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks' },
   { icon: Radio, label: 'Live TV', path: '/live' },
   { icon: Layers, label: 'Streaming', path: '/streaming' },
+  { icon: Compass, label: 'Indexers', path: '/indexers' },
   { icon: Download, label: 'Downloads', path: '/downloads' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
