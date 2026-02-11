@@ -19,6 +19,9 @@ import { AudiobooksPage } from "./pages/AudiobooksPage";
 import { LiveTVPage } from "./pages/LiveTVPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { WatchPartyPage } from "./pages/WatchPartyPage";
+import { PluginMarketplacePage } from "./pages/PluginMarketplacePage";
+import { ThemeCommunityPage } from "./pages/ThemeCommunityPage";
+import { DVRPage } from "./pages/DVRPage";
 
 import "./App.css";
 
