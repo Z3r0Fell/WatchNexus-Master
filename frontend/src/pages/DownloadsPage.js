@@ -1,17 +1,42 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { torrentEngineApi, qbittorrentApi } from '../services/api';
 import { toast } from 'sonner';
 import { 
   Download, Pause, Play, Trash2, RefreshCw, 
   HardDrive, ArrowDown, ArrowUp, CheckCircle, AlertCircle, Clock,
-  Server, Wifi, WifiOff, Settings, Zap, Package, FileVideo, List
+  Server, Wifi, WifiOff, Settings, Zap, Package, FileVideo, List,
+  Link2, Plus, Clipboard, X
 } from 'lucide-react';
 import { formatFileSize } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
+import { Input } from '../components/ui/input';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+
+const API = process.env.REACT_APP_BACKEND_URL;
+
+// Page transition animations
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  exit: { opacity: 0, y: -20, transition: { duration: 0.2 } }
+};
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+};
 
 const statusColors = {
   queued: 'text-gray-400',
