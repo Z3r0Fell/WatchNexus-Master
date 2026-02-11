@@ -451,7 +451,7 @@ class GadgetsManager:
     def __init__(self, plugins_dir: str = None):
         self.plugins_dir = Path(plugins_dir or os.environ.get(
             "WATCHNEXUS_PLUGINS_DIR",
-            "/var/lib/watchnexus/plugins"
+            os.path.join(os.path.dirname(__file__), "plugins")
         ))
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
         
