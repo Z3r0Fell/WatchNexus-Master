@@ -975,55 +975,55 @@ export const SettingsPage = () => {
               <div className="glass-card rounded-xl p-6">
                 <h3 className="font-bold mb-4 flex items-center gap-2">
                   <FileSearch className="w-5 h-5 text-blue-400" />
-                  Setup Guide
+                  Built-in Modules Guide
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Jackett Setup */}
+                  {/* Syrup - Aggregator */}
                   <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                    <h4 className="font-medium text-blue-400 mb-2">Jackett (Recommended)</h4>
+                    <h4 className="font-medium text-blue-400 mb-2">🍯 Syrup - Indexer Aggregator</h4>
                     <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
-                      <li>Install Jackett from github.com/Jackett/Jackett</li>
-                      <li>Access web UI at http://localhost:9117</li>
-                      <li>Add your favorite indexers in Jackett</li>
-                      <li>Copy API key from Jackett dashboard</li>
-                      <li>Use "all" URL for aggregate search</li>
+                      <li>Built-in torrent indexer aggregator</li>
+                      <li>No external software needed</li>
+                      <li>Add torrent sites directly - Syrup scrapes them</li>
+                      <li>Supports 1337x, YTS, EZTV, Nyaa, and more</li>
+                      <li>Smart parsing of quality, codec, and size</li>
                     </ol>
                   </div>
 
-                  {/* RSS Setup */}
-                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <h4 className="font-medium text-orange-400 mb-2">RSS Feeds</h4>
-                    <ol className="text-sm text-orange-300 space-y-1 list-decimal list-inside">
-                      <li>Find RSS feeds from torrent sites</li>
-                      <li>ShowRSS.info for TV shows</li>
-                      <li>Private tracker personal RSS feeds</li>
-                      <li>RSS is filtered, not searched</li>
-                      <li>Great for auto-downloading new releases</li>
-                    </ol>
-                  </div>
-
-                  {/* Cloudflare Bypass */}
+                  {/* Preserve - CF Bypass */}
                   <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                    <h4 className="font-medium text-yellow-400 mb-2">Cloudflare Protected Sites</h4>
+                    <h4 className="font-medium text-yellow-400 mb-2">🛡️ Preserve - Challenge Solver</h4>
                     <ol className="text-sm text-yellow-300 space-y-1 list-decimal list-inside">
-                      <li>Some sites use Cloudflare protection</li>
-                      <li>Best: Use Jackett (handles CF automatically)</li>
-                      <li>Alt: Install FlareSolverr for direct access</li>
-                      <li>Manual: Extract browser cookies</li>
+                      <li>Built-in Cloudflare protection bypass</li>
+                      <li>Automatic - no configuration needed</li>
+                      <li>Browser fingerprinting & cookie handling</li>
+                      <li>Smart rate limiting with backoff</li>
                       <li>Enable "Cloudflare Protected" toggle</li>
                     </ol>
                   </div>
 
-                  {/* Usenet */}
+                  {/* RSS Feeds */}
+                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <h4 className="font-medium text-orange-400 mb-2">📡 RSS Feed Support</h4>
+                    <ol className="text-sm text-orange-300 space-y-1 list-decimal list-inside">
+                      <li>Add any RSS feed with torrent links</li>
+                      <li>ShowRSS.info for TV show tracking</li>
+                      <li>Private tracker personal feeds</li>
+                      <li>Automatic magnet link extraction</li>
+                      <li>Great for new release automation</li>
+                    </ol>
+                  </div>
+
+                  {/* Pulp - NZB */}
                   <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                    <h4 className="font-medium text-purple-400 mb-2">Usenet (Newznab)</h4>
+                    <h4 className="font-medium text-purple-400 mb-2">📰 Pulp - NZB Handler</h4>
                     <ol className="text-sm text-purple-300 space-y-1 list-decimal list-inside">
-                      <li>Sign up for a usenet indexer (NZBgeek, etc.)</li>
-                      <li>Get your API key from account settings</li>
-                      <li>Add as Newznab type indexer</li>
-                      <li>Also need usenet provider (Easynews, etc.)</li>
-                      <li>Use SABnzbd for downloads</li>
+                      <li>Built-in Usenet/NZB support</li>
+                      <li>Supports Newznab API indexers</li>
+                      <li>Enter your NZB indexer credentials</li>
+                      <li>Integrated download management</li>
+                      <li>Works with any Newznab indexer</li>
                     </ol>
                   </div>
                 </div>
