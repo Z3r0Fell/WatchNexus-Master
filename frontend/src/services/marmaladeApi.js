@@ -1,258 +1,114 @@
 import axios from 'axios';
 
-// Marmalade Media Server runs on port 8096 internally
-// We proxy through our backend for external access
-const MARMALADE_API = '/api/marmalade';
+const API = process.env.REACT_APP_BACKEND_URL;
 
-// Create axios instance for Marmalade with auth header
-const marmaladeClient = axios.create();
-
-// Set auth token for Marmalade requests
-export const setMarmaladeAuth = (token, userId) => {
-  const authHeader = `MediaBrowser Client="WatchNexus", Device="Web", DeviceId="watchnexus-web", Version="1.0.0", Token="${token}"`;
-  marmaladeClient.defaults.headers.common['X-Emby-Authorization'] = authHeader;
-  marmaladeClient.defaults.headers.common['X-Emby-Token'] = token;
+// Get auth token from localStorage
+const getAuthHeader = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Marmalade Authentication
-export const marmaladeAuth = {
-  // Get public server info
-  getPublicInfo: () =>
-    axios.get(`${MARMALADE_API}/System/Info/Public`),
-  
-  // Authenticate user
-  login: (username, password) =>
-    axios.post(`${MARMALADE_API}/Users/AuthenticateByName`, {
-      Username: username,
-      Pw: password,
-    }),
-  
-  // Get current user
-  getCurrentUser: () =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/Me`),
-  
-  // Logout
-  logout: () =>
-    marmaladeClient.post(`${MARMALADE_API}/Sessions/Logout`),
-};
-
-// Marmalade Library
-export const marmaladeLibrary = {
-  // Get all libraries (views)
-  getLibraries: (userId) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Views`),
-  
-  // Get items from a library
-  getItems: (userId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Items`, { params }),
-  
-  // Get latest items
-  getLatest: (userId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Items/Latest`, { params }),
-  
-  // Get resume items (continue watching)
-  getResume: (userId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Items/Resume`, { params }),
-  
-  // Get next up (TV shows)
-  getNextUp: (userId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Shows/NextUp`, { params: { userId, ...params } }),
-  
-  // Get item details
-  getItem: (userId, itemId) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Items/${itemId}`),
-  
-  // Get similar items
-  getSimilar: (itemId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Items/${itemId}/Similar`, { params }),
-  
-  // Search
-  search: (userId, searchTerm, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Items`, {
-      params: { searchTerm, recursive: true, ...params },
-    }),
-  
-  // Get genres
-  getGenres: (userId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Genres`, { params: { userId, ...params } }),
-  
-  // Get seasons for a TV show
-  getSeasons: (seriesId, userId) =>
-    marmaladeClient.get(`${MARMALADE_API}/Shows/${seriesId}/Seasons`, { params: { userId } }),
-  
-  // Get episodes for a season
-  getEpisodes: (seriesId, seasonId, userId) =>
-    marmaladeClient.get(`${MARMALADE_API}/Shows/${seriesId}/Episodes`, { 
-      params: { seasonId, userId } 
-    }),
-};
-
-// Marmalade Playback
-export const marmaladePlayback = {
-  // Get playback info
-  getPlaybackInfo: (itemId, userId) =>
-    marmaladeClient.post(`${MARMALADE_API}/Items/${itemId}/PlaybackInfo`, {
-      UserId: userId,
-      DeviceProfile: getDeviceProfile(),
-    }),
-  
-  // Report playback start
-  reportStart: (data) =>
-    marmaladeClient.post(`${MARMALADE_API}/Sessions/Playing`, data),
-  
-  // Report playback progress
-  reportProgress: (data) =>
-    marmaladeClient.post(`${MARMALADE_API}/Sessions/Playing/Progress`, data),
-  
-  // Report playback stopped
-  reportStopped: (data) =>
-    marmaladeClient.post(`${MARMALADE_API}/Sessions/Playing/Stopped`, data),
-  
-  // Mark as played
-  markPlayed: (userId, itemId) =>
-    marmaladeClient.post(`${MARMALADE_API}/Users/${userId}/PlayedItems/${itemId}`),
-  
-  // Mark as unplayed
-  markUnplayed: (userId, itemId) =>
-    marmaladeClient.delete(`${MARMALADE_API}/Users/${userId}/PlayedItems/${itemId}`),
-};
-
-// Marmalade User Data
-export const marmaladeUserData = {
-  // Toggle favorite
-  toggleFavorite: (userId, itemId, isFavorite) =>
-    isFavorite
-      ? marmaladeClient.delete(`${MARMALADE_API}/Users/${userId}/FavoriteItems/${itemId}`)
-      : marmaladeClient.post(`${MARMALADE_API}/Users/${userId}/FavoriteItems/${itemId}`),
-  
-  // Get favorites
-  getFavorites: (userId, params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/Users/${userId}/Items`, {
-      params: { isFavorite: true, recursive: true, ...params },
-    }),
-};
-
-// Marmalade System
-export const marmaladeSystem = {
-  // Get server info
-  getInfo: () =>
-    marmaladeClient.get(`${MARMALADE_API}/System/Info`),
-  
-  // Get activity log
-  getActivity: (params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/System/ActivityLog/Entries`, { params }),
-  
-  // Get scheduled tasks
-  getTasks: () =>
-    marmaladeClient.get(`${MARMALADE_API}/ScheduledTasks`),
-  
-  // Run task
-  runTask: (taskId) =>
-    marmaladeClient.post(`${MARMALADE_API}/ScheduledTasks/Running/${taskId}`),
-  
-  // Restart server
-  restart: () =>
-    marmaladeClient.post(`${MARMALADE_API}/System/Restart`),
-  
-  // Shutdown server
-  shutdown: () =>
-    marmaladeClient.post(`${MARMALADE_API}/System/Shutdown`),
-};
-
-// Marmalade Configuration
-export const marmaladeConfig = {
-  // Get library options
-  getLibraryOptions: () =>
-    marmaladeClient.get(`${MARMALADE_API}/Library/VirtualFolders`),
-  
-  // Add library
-  addLibrary: (name, collectionType, paths, options = {}) =>
-    marmaladeClient.post(`${MARMALADE_API}/Library/VirtualFolders`, null, {
-      params: { name, collectionType, paths: paths.join(','), ...options },
-    }),
-  
-  // Remove library
-  removeLibrary: (name) =>
-    marmaladeClient.delete(`${MARMALADE_API}/Library/VirtualFolders`, {
-      params: { name },
-    }),
-  
-  // Refresh library
-  refreshLibrary: () =>
-    marmaladeClient.post(`${MARMALADE_API}/Library/Refresh`),
-  
-  // Get plugins
-  getPlugins: () =>
-    marmaladeClient.get(`${MARMALADE_API}/Plugins`),
-  
-  // Get available plugins
-  getAvailablePlugins: () =>
-    marmaladeClient.get(`${MARMALADE_API}/Packages`),
-};
-
-// Marmalade Live TV
-export const marmaladeLiveTV = {
-  // Get channels
-  getChannels: (params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/LiveTv/Channels`, { params }),
-  
-  // Get programs (guide)
-  getPrograms: (params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/LiveTv/Programs`, { params }),
-  
-  // Get recordings
-  getRecordings: (params = {}) =>
-    marmaladeClient.get(`${MARMALADE_API}/LiveTv/Recordings`, { params }),
-  
-  // Get tuner hosts (IPTV sources)
-  getTunerHosts: () =>
-    marmaladeClient.get(`${MARMALADE_API}/LiveTv/TunerHosts`),
-  
-  // Add tuner host (IPTV)
-  addTunerHost: (data) =>
-    marmaladeClient.post(`${MARMALADE_API}/LiveTv/TunerHosts`, data),
-  
-  // Delete tuner host
-  deleteTunerHost: (id) =>
-    marmaladeClient.delete(`${MARMALADE_API}/LiveTv/TunerHosts`, { params: { id } }),
-  
-  // Get listing providers (EPG sources)
-  getListingProviders: () =>
-    marmaladeClient.get(`${MARMALADE_API}/LiveTv/ListingProviders`),
-};
-
-// Helper: Get image URL from Marmalade
-export const getMarmaladeImageUrl = (itemId, imageType = 'Primary', params = {}) => {
-  const baseUrl = process.env.REACT_APP_BACKEND_URL;
-  const query = new URLSearchParams({ ...params, quality: 90 }).toString();
-  return `${baseUrl}/api/marmalade/Items/${itemId}/Images/${imageType}?${query}`;
-};
-
-// Helper: Get stream URL
-export const getMarmaladeStreamUrl = (itemId, params = {}) => {
-  const baseUrl = process.env.REACT_APP_BACKEND_URL;
-  const query = new URLSearchParams(params).toString();
-  return `${baseUrl}/api/marmalade/Videos/${itemId}/stream?${query}`;
-};
-
-// Device profile for playback
-const getDeviceProfile = () => ({
-  MaxStreamingBitrate: 120000000,
-  MaxStaticBitrate: 100000000,
-  MusicStreamingTranscodingBitrate: 384000,
-  DirectPlayProfiles: [
-    { Container: 'webm', Type: 'Video', VideoCodec: 'vp8,vp9,av1', AudioCodec: 'vorbis,opus' },
-    { Container: 'mp4,m4v', Type: 'Video', VideoCodec: 'h264,h265,hevc,vp9,av1', AudioCodec: 'aac,mp3,opus,flac,vorbis' },
-    { Container: 'mkv', Type: 'Video', VideoCodec: 'h264,h265,hevc,vp9,av1', AudioCodec: 'aac,mp3,opus,flac,vorbis' },
-    { Container: 'mp3', Type: 'Audio' },
-    { Container: 'aac', Type: 'Audio' },
-    { Container: 'flac', Type: 'Audio' },
-    { Container: 'webm', Type: 'Audio', AudioCodec: 'vorbis,opus' },
-  ],
-  TranscodingProfiles: [
-    { Container: 'ts', Type: 'Video', VideoCodec: 'h264', AudioCodec: 'aac,mp3' },
-    { Container: 'mp3', Type: 'Audio', AudioCodec: 'mp3' },
-  ],
+// Create axios instance for Marmalade
+const marmaladeClient = axios.create({
+  baseURL: `${API}/api/marmalade`,
 });
+
+// Add auth header to all requests
+marmaladeClient.interceptors.request.use((config) => {
+  config.headers = { ...config.headers, ...getAuthHeader() };
+  return config;
+});
+
+// Marmalade Server Status
+export const marmaladeStatus = {
+  getStatus: () => marmaladeClient.get('/status'),
+};
+
+// Library Management
+export const marmaladeLibrary = {
+  // Get all libraries
+  getLibraries: () => marmaladeClient.get('/libraries'),
+  
+  // Add a new library
+  addLibrary: (name, path, mediaType = 'movies') =>
+    marmaladeClient.post('/libraries', null, { params: { name, path, media_type: mediaType } }),
+  
+  // Remove a library
+  removeLibrary: (libraryId) =>
+    marmaladeClient.delete(`/libraries/${libraryId}`),
+  
+  // Scan a library
+  scanLibrary: (libraryId) =>
+    marmaladeClient.post(`/libraries/${libraryId}/scan`),
+};
+
+// Media Retrieval
+export const marmaladeMedia = {
+  // Get media list with optional filtering
+  getMedia: (params = {}) =>
+    marmaladeClient.get('/media', { params }),
+  
+  // Get a specific media item
+  getMediaItem: (mediaId) =>
+    marmaladeClient.get(`/media/${mediaId}`),
+  
+  // Get recently added media
+  getRecent: (limit = 20) =>
+    marmaladeClient.get('/media/recent', { params: { limit } }),
+  
+  // Search media
+  search: (query, limit = 50) =>
+    marmaladeClient.get('/media/search', { params: { query, limit } }),
+  
+  // Get continue watching list
+  getContinueWatching: (limit = 10) =>
+    marmaladeClient.get('/continue-watching', { params: { limit } }),
+};
+
+// Watch Progress
+export const marmaladeProgress = {
+  // Update watch progress
+  updateProgress: (mediaId, progress) =>
+    marmaladeClient.post(`/media/${mediaId}/progress`, null, { params: { progress } }),
+  
+  // Mark as watched/unwatched
+  markWatched: (mediaId, watched = true) =>
+    marmaladeClient.post(`/media/${mediaId}/watched`, null, { params: { watched } }),
+};
+
+// Streaming
+export const marmaladeStream = {
+  // Get stream info for a media file
+  getStreamInfo: (mediaId, quality = 'original') =>
+    marmaladeClient.get(`/stream/${mediaId}`, { params: { quality } }),
+  
+  // Get the actual stream URL (for the video player)
+  getStreamUrl: (mediaId) =>
+    `${API}/api/marmalade/stream/${mediaId}/file`,
+};
+
+// Helper functions
+export const formatDuration = (seconds) => {
+  if (!seconds) return '0:00';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const formatResolution = (width, height) => {
+  if (!width || !height) return '';
+  
+  if (height >= 2160) return '4K';
+  if (height >= 1440) return '1440p';
+  if (height >= 1080) return '1080p';
+  if (height >= 720) return '720p';
+  if (height >= 480) return '480p';
+  return `${height}p`;
+};
 
 export default marmaladeClient;
