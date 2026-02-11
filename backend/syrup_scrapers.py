@@ -131,7 +131,6 @@ class YTSScraper(BaseScraper):
                     
                     for movie in movies:
                         title_base = movie.get("title_long", movie.get("title", ""))
-                        year = movie.get("year", "")
                         
                         for torrent in movie.get("torrents", []):
                             quality = torrent.get("quality", "")
