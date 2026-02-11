@@ -101,8 +101,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 │       │   ├── VideoPlayer.jsx  # With subtitle overlay
 │       │   └── juice/JuiceColorPicker.jsx
 │       └── pages/
-│           ├── LiveTVPage.js    # Full IPTV UI (NEW)
-│           ├── SettingsPage.js  # Theme Forge + Plugins
+│           ├── DVRPage.js        # DVR Recording (NEW)
+│           ├── LiveTVPage.js     # Full IPTV UI + EPG Guide
+│           ├── PluginMarketplacePage.js  # Plugin Marketplace (NEW)
+│           ├── SettingsPage.js   # Theme Forge + Plugins
+│           ├── ThemeCommunityPage.js     # Theme Community (NEW)
 │           └── WatchPartyPage.js # Video integration
 ├── scripts/
 │   ├── build-arch.sh
