@@ -79,6 +79,35 @@ export const SettingsPage = () => {
   const [engineStatus, setEngineStatus] = useState(null);
   const [engineTorrents, setEngineTorrents] = useState([]);
   const [testingEngine, setTestingEngine] = useState(false);
+  const [engineSettings, setEngineSettings] = useState({
+    // Queue Management
+    max_active_downloads: 3,
+    max_active_uploads: 3,
+    max_active_torrents: 5,
+    // Speed Limits (KB/s, 0 = unlimited)
+    max_download_rate: 0,
+    max_upload_rate: 0,
+    // Connection Limits
+    max_connections_global: 200,
+    max_connections_per_torrent: 50,
+    // Seeding Limits
+    seed_ratio_limit: 1.0,
+    seed_time_limit: 60,
+    seed_ratio_action: 'pause',
+    // Auto-cleanup
+    remove_after_completion: false,
+    remove_after_seeding: false,
+    delete_files_on_remove: false,
+    max_completed_torrents: 50,
+    // Behavior
+    sequential_download_default: false,
+    add_paused: false,
+    // Network
+    enable_dht: true,
+    enable_pex: true,
+    enable_lsd: true,
+  });
+  const [savingEngineSettings, setSavingEngineSettings] = useState(false);
 
   // qBittorrent state
   const [qbitConfig, setQbitConfig] = useState({
@@ -105,7 +134,7 @@ export const SettingsPage = () => {
   const [serviceCredentials, setServiceCredentials] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState({});
 
-  // Fetch built-in engine status
+  // Fetch built-in engine status and settings
   const fetchEngineStatus = useCallback(async () => {
     try {
       const res = await torrentEngineApi.getStatus();
@@ -114,6 +143,27 @@ export const SettingsPage = () => {
       setEngineStatus({ success: false, error: 'Engine not available' });
     }
   }, []);
+
+  const fetchEngineSettings = useCallback(async () => {
+    try {
+      const res = await torrentEngineApi.getSettings();
+      setEngineSettings(prev => ({ ...prev, ...res.data }));
+    } catch (error) {
+      console.error('Failed to fetch engine settings:', error);
+    }
+  }, []);
+
+  const saveEngineSettings = async () => {
+    setSavingEngineSettings(true);
+    try {
+      await torrentEngineApi.updateSettings(engineSettings);
+      toast.success('Engine settings saved');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setSavingEngineSettings(false);
+    }
+  };
 
   const fetchEngineTorrents = useCallback(async () => {
     try {
