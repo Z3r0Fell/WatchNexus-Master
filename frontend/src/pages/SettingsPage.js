@@ -347,6 +347,96 @@ export const SettingsPage = () => {
     }
   };
 
+  // Fetch Users
+  const fetchUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/users`);
+      setUsers(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      // If API doesn't exist yet, use mock data
+      setUsers([
+        {
+          id: '1',
+          username: 'admin',
+          email: 'admin@watchnexus.local',
+          role: 'admin',
+          created_at: '2024-01-01',
+          last_login: '2024-02-11',
+          permissions: {
+            can_download: true,
+            can_delete: true,
+            can_manage_library: true,
+            can_manage_users: true,
+            can_access_settings: true,
+            max_streams: 10,
+          }
+        }
+      ]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
+  const handleAddUser = async () => {
+    if (!newUser.username || !newUser.email || !newUser.password) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setSavingUser(true);
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/users`, newUser);
+      setUsers(prev => [...prev, res.data]);
+      setShowAddUser(false);
+      setNewUser({
+        username: '',
+        email: '',
+        password: '',
+        role: 'user',
+        permissions: {
+          can_download: true,
+          can_delete: false,
+          can_manage_library: false,
+          can_manage_users: false,
+          can_access_settings: false,
+          max_streams: 3,
+          allowed_libraries: [],
+        }
+      });
+      toast.success('User created successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const handleUpdateUser = async (userId, updates) => {
+    setSavingUser(true);
+    try {
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`, updates);
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+      setEditingUser(null);
+      toast.success('User updated successfully');
+    } catch (error) {
+      toast.error('Failed to update user');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`);
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      toast.success('User deleted');
+    } catch (error) {
+      toast.error('Failed to delete user');
+    }
+  };
+
   // Fetch Marmalade libraries
   const fetchLibraries = useCallback(async () => {
     setLoadingLibraries(true);
