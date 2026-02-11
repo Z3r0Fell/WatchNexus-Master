@@ -46,12 +46,20 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - Watch Party video integration with Marmalade
 - Live TV page with full channel management UI
 
+### ✅ Session Feb 11, 2025 - Complete
+- Legal Pages on Marketing Website (Terms & Conditions, Legal Disclaimer)
+- EPG Guide View with full timeline implementation in Live TV page
+- Plugin Marketplace page (full UI with sample plugins)
+- Theme Community page (full UI with theme previews)
+- DVR Recording page (full UI with scheduling/management)
+
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
 - Investigate Roku & Fire Stick
-- Plugin marketplace
-- Theme community sharing
-- Full EPG guide view
+- Connect Plugin Marketplace to backend API (currently uses sample data)
+- Connect Theme Community to backend API (currently uses sample data)
+- Connect DVR to backend recording service
+- Verify Syrup scrapers (YTS/EZTV) in live network environment
 
 ## API Endpoints Summary
 
