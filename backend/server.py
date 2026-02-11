@@ -2386,6 +2386,172 @@ async def gelatin_discover_servers(
     servers = await server.discover_servers(timeout)
     return {"servers": servers}
 
+# ==================== MILK THEME ENGINE ====================
+from milk import get_milk_engine, ThemeType, ThemeConfig
+
+@api_router.get("/milk/themes")
+async def get_all_themes(user: dict = Depends(require_auth)):
+    """Get all available themes (built-in + custom)."""
+    engine = get_milk_engine()
+    return {
+        "current": engine.get_current_theme().to_dict() if engine.get_current_theme() else None,
+        "built_in": engine.get_built_in_themes(),
+        "custom": engine.get_custom_themes(),
+    }
+
+@api_router.get("/milk/current")
+async def get_current_theme(user: dict = Depends(require_auth)):
+    """Get current active theme configuration."""
+    engine = get_milk_engine()
+    theme = engine.get_current_theme()
+    return theme.to_dict() if theme else None
+
+@api_router.get("/milk/css")
+async def get_theme_css(user: dict = Depends(require_auth)):
+    """Get CSS for current theme."""
+    engine = get_milk_engine()
+    return {"css": engine.get_current_css()}
+
+@api_router.post("/milk/set-theme")
+async def set_theme(
+    theme_type: str,
+    user: dict = Depends(require_auth)
+):
+    """Set active theme by type."""
+    engine = get_milk_engine()
+    try:
+        theme = engine.set_theme(ThemeType(theme_type))
+        return {"status": "success", "theme": theme.to_dict()}
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Unknown theme type: {theme_type}")
+
+@api_router.post("/milk/custom-theme")
+async def set_custom_theme(
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Create or update custom theme."""
+    engine = get_milk_engine()
+    body = await request.json()
+    
+    config = ThemeConfig.from_dict(body)
+    theme = engine.set_custom_theme(config)
+    
+    return {"status": "success", "theme": theme.to_dict()}
+
+@api_router.delete("/milk/custom-theme/{name}")
+async def delete_custom_theme(name: str, user: dict = Depends(require_auth)):
+    """Delete a custom theme."""
+    engine = get_milk_engine()
+    success = engine.delete_custom_theme(name)
+    return {"status": "deleted" if success else "not_found"}
+
+@api_router.get("/milk/theme-forge")
+async def get_theme_forge_config(user: dict = Depends(require_auth)):
+    """Get full Theme Forge configuration for UI."""
+    engine = get_milk_engine()
+    return engine.get_theme_forge_config()
+
+@api_router.post("/milk/export/{name}")
+async def export_theme(name: str, user: dict = Depends(require_auth)):
+    """Export a custom theme as JSON."""
+    engine = get_milk_engine()
+    json_str = engine.export_theme(name)
+    if json_str:
+        return {"json": json_str}
+    raise HTTPException(status_code=404, detail="Theme not found")
+
+@api_router.post("/milk/import")
+async def import_theme(
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Import a theme from JSON."""
+    engine = get_milk_engine()
+    body = await request.json()
+    
+    theme = engine.import_theme(json.dumps(body))
+    if theme:
+        return {"status": "imported", "theme": theme.to_dict()}
+    raise HTTPException(status_code=400, detail="Invalid theme data")
+
+# ==================== GADGETS PLUGIN SYSTEM ====================
+from gadgets import get_gadgets_manager
+
+@api_router.get("/gadgets/plugins")
+async def list_plugins(user: dict = Depends(require_auth)):
+    """List all discovered plugins."""
+    manager = get_gadgets_manager()
+    return {"plugins": manager.get_all_plugins()}
+
+@api_router.post("/gadgets/discover")
+async def discover_plugins(user: dict = Depends(require_auth)):
+    """Scan for new plugins."""
+    manager = get_gadgets_manager()
+    manifests = await manager.discover_plugins()
+    return {"discovered": len(manifests), "plugins": [m.to_dict() for m in manifests]}
+
+@api_router.post("/gadgets/load/{plugin_id}")
+async def load_plugin(plugin_id: str, user: dict = Depends(require_auth)):
+    """Load and activate a plugin."""
+    manager = get_gadgets_manager()
+    plugin = await manager.load_plugin(plugin_id)
+    
+    if plugin:
+        return {"status": "loaded", "plugin": plugin.to_dict()}
+    raise HTTPException(status_code=500, detail="Failed to load plugin")
+
+@api_router.post("/gadgets/unload/{plugin_id}")
+async def unload_plugin(plugin_id: str, user: dict = Depends(require_auth)):
+    """Unload and deactivate a plugin."""
+    manager = get_gadgets_manager()
+    success = await manager.unload_plugin(plugin_id)
+    return {"status": "unloaded" if success else "not_found"}
+
+@api_router.get("/gadgets/plugin/{plugin_id}")
+async def get_plugin_info(plugin_id: str, user: dict = Depends(require_auth)):
+    """Get detailed plugin information."""
+    manager = get_gadgets_manager()
+    plugin = manager.get_plugin(plugin_id)
+    
+    if plugin:
+        return plugin.to_dict()
+    raise HTTPException(status_code=404, detail="Plugin not found or not loaded")
+
+@api_router.put("/gadgets/plugin/{plugin_id}/settings")
+async def update_plugin_settings(
+    plugin_id: str,
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Update plugin settings."""
+    manager = get_gadgets_manager()
+    body = await request.json()
+    
+    success = await manager.update_plugin_settings(plugin_id, body)
+    return {"status": "updated" if success else "failed"}
+
+@api_router.get("/gadgets/providers/{provider_type}")
+async def list_providers(provider_type: str, user: dict = Depends(require_auth)):
+    """List plugins by provider type."""
+    manager = get_gadgets_manager()
+    
+    providers_map = {
+        "metadata": manager.get_metadata_providers,
+        "indexer": manager.get_indexer_providers,
+        "subtitle": manager.get_subtitle_providers,
+        "notification": manager.get_notification_providers,
+        "theme": manager.get_theme_providers,
+        "scheduled": manager.get_scheduled_tasks,
+    }
+    
+    getter = providers_map.get(provider_type)
+    if getter:
+        providers = getter()
+        return {"providers": [p.to_dict() for p in providers]}
+    
+    raise HTTPException(status_code=400, detail=f"Unknown provider type: {provider_type}")
+
 # ==================== HEALTH CHECK ====================
 
 @api_router.get("/health")
