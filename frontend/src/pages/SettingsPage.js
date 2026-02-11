@@ -134,6 +134,19 @@ export const SettingsPage = () => {
   const [serviceCredentials, setServiceCredentials] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState({});
 
+  // Indexer management state
+  const [showAddIndexer, setShowAddIndexer] = useState(false);
+  const [testingIndexer, setTestingIndexer] = useState(null);
+  const [newIndexer, setNewIndexer] = useState({
+    name: '',
+    type: 'torznab',
+    url: '',
+    api_key: '',
+    cloudflare_protected: false,
+    search_path: '',
+    cookie: '',
+  });
+
   // Fetch built-in engine status and settings
   const fetchEngineStatus = useCallback(async () => {
     try {
