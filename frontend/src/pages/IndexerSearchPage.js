@@ -52,7 +52,7 @@ export const IndexerSearchPage = () => {
     setSearchDone(false);
     
     try {
-      const res = await indexersApi.search(query, mediaType, sortBy, 100);
+      const res = await compoteApi.search(query, mediaType, sortBy, 100);
       setResults(res.data.results || []);
       setSearchDone(true);
       
@@ -75,7 +75,7 @@ export const IndexerSearchPage = () => {
       // Check download mode preference
       const useBuiltin = localStorage.getItem('watchnexus_download_mode') !== 'qbittorrent';
       
-      const res = await indexersApi.grab(
+      const res = await compoteApi.grab(
         result.title,
         result.download_url || null,
         result.magnet_url || null,
