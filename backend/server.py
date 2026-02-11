@@ -1680,57 +1680,6 @@ async def marmalade_stream_file(media_id: str, request: Request):
         media_type=server._get_mime_type(file_path),
         headers={'Accept-Ranges': 'bytes'}
     )
-    """Proxy all requests to the Marmalade media server"""
-    async with httpx.AsyncClient(timeout=30.0) as http_client:
-        # Build the target URL
-        url = f"{MARMALADE_URL}/{path}"
-        
-        # Get query params
-        params = dict(request.query_params)
-        
-        # Get headers (forward auth headers)
-        headers = {}
-        for key, value in request.headers.items():
-            if key.lower() in ['x-emby-authorization', 'x-emby-token', 'authorization', 'content-type']:
-                headers[key] = value
-        
-        # Get body for POST/PUT/PATCH
-        body = None
-        if request.method in ["POST", "PUT", "PATCH"]:
-            try:
-                body = await request.json()
-            except:
-                body = await request.body()
-        
-        try:
-            if request.method == "GET":
-                response = await http_client.get(url, params=params, headers=headers)
-            elif request.method == "POST":
-                response = await http_client.post(url, params=params, headers=headers, json=body if isinstance(body, dict) else None, content=body if isinstance(body, bytes) else None)
-            elif request.method == "PUT":
-                response = await http_client.put(url, params=params, headers=headers, json=body if isinstance(body, dict) else None)
-            elif request.method == "DELETE":
-                response = await http_client.delete(url, params=params, headers=headers)
-            elif request.method == "PATCH":
-                response = await http_client.patch(url, params=params, headers=headers, json=body if isinstance(body, dict) else None)
-            
-            # Return the response
-            content_type = response.headers.get('content-type', 'application/json')
-            
-            if 'image' in content_type:
-                return Response(content=response.content, media_type=content_type)
-            elif 'json' in content_type:
-                return response.json()
-            else:
-                return Response(content=response.content, media_type=content_type)
-                
-        except httpx.TimeoutException:
-            raise HTTPException(status_code=504, detail="Marmalade server timeout")
-        except httpx.ConnectError:
-            raise HTTPException(status_code=503, detail="Cannot connect to Marmalade server")
-        except Exception as e:
-            logger.error(f"Marmalade proxy error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== HEALTH CHECK ====================
 
