@@ -1,7 +1,7 @@
 """
 Compote - Indexer Manager for WatchNexus
 A Python-based indexer aggregator inspired by Prowlarr.
-Supports Torznab and Newznab indexers for searching torrents and usenet.
+Supports Torznab, Newznab, RSS feeds, and Cloudflare-protected indexers.
 """
 
 import httpx
@@ -13,8 +13,153 @@ from datetime import datetime, timezone
 import hashlib
 import logging
 import re
+import base64
+import json
+import time
+from urllib.parse import urlparse, parse_qs, urlencode
 
 logger = logging.getLogger(__name__)
+
+# ==================== CLOUDFLARE BYPASS ====================
+
+class CloudflareBypasser:
+    """
+    Handles Cloudflare protection bypass for indexers.
+    Supports multiple bypass methods:
+    1. FlareSolverr proxy (recommended for heavy CF protection)
+    2. Cookie persistence (for simple challenges)
+    3. User-Agent rotation
+    """
+    
+    # Common User-Agents that work well with CF
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    ]
+    
+    def __init__(self, flaresolverr_url: str = None):
+        self.flaresolverr_url = flaresolverr_url or "http://localhost:8191/v1"
+        self.cookie_store: Dict[str, Dict[str, str]] = {}  # domain -> cookies
+        self.ua_index = 0
+    
+    def get_user_agent(self) -> str:
+        """Get a rotating user agent."""
+        ua = self.USER_AGENTS[self.ua_index % len(self.USER_AGENTS)]
+        self.ua_index += 1
+        return ua
+    
+    def get_stored_cookies(self, url: str) -> Dict[str, str]:
+        """Get stored cookies for a domain."""
+        domain = urlparse(url).netloc
+        return self.cookie_store.get(domain, {})
+    
+    def store_cookies(self, url: str, cookies: Dict[str, str]):
+        """Store cookies for a domain."""
+        domain = urlparse(url).netloc
+        if domain not in self.cookie_store:
+            self.cookie_store[domain] = {}
+        self.cookie_store[domain].update(cookies)
+    
+    async def solve_challenge(self, url: str, client: httpx.AsyncClient) -> Optional[Dict[str, Any]]:
+        """
+        Attempt to solve Cloudflare challenge using FlareSolverr.
+        Returns cookies and user agent if successful.
+        """
+        try:
+            payload = {
+                "cmd": "request.get",
+                "url": url,
+                "maxTimeout": 60000,
+            }
+            
+            response = await client.post(
+                self.flaresolverr_url,
+                json=payload,
+                timeout=70.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("status") == "ok":
+                    solution = data.get("solution", {})
+                    cookies = {c["name"]: c["value"] for c in solution.get("cookies", [])}
+                    self.store_cookies(url, cookies)
+                    
+                    return {
+                        "cookies": cookies,
+                        "user_agent": solution.get("userAgent", self.get_user_agent()),
+                    }
+            
+            logger.warning(f"FlareSolverr failed for {url}")
+            return None
+            
+        except Exception as e:
+            logger.debug(f"FlareSolverr not available: {e}")
+            return None
+    
+    async def make_request(
+        self,
+        client: httpx.AsyncClient,
+        url: str,
+        method: str = "GET",
+        **kwargs
+    ) -> Optional[httpx.Response]:
+        """
+        Make a request with Cloudflare bypass support.
+        Automatically handles challenges and retries.
+        """
+        # Prepare headers
+        headers = kwargs.pop("headers", {})
+        headers.setdefault("User-Agent", self.get_user_agent())
+        headers.setdefault("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+        headers.setdefault("Accept-Language", "en-US,en;q=0.5")
+        
+        # Add stored cookies
+        stored_cookies = self.get_stored_cookies(url)
+        if stored_cookies:
+            existing_cookies = kwargs.get("cookies", {})
+            kwargs["cookies"] = {**stored_cookies, **existing_cookies}
+        
+        try:
+            # First attempt
+            response = await client.request(method, url, headers=headers, **kwargs)
+            
+            # Check for Cloudflare challenge
+            if response.status_code == 403 or response.status_code == 503:
+                if "cloudflare" in response.text.lower() or "cf-ray" in response.headers:
+                    logger.info(f"Cloudflare challenge detected for {url}")
+                    
+                    # Try FlareSolverr
+                    solution = await self.solve_challenge(url, client)
+                    if solution:
+                        headers["User-Agent"] = solution["user_agent"]
+                        kwargs["cookies"] = solution["cookies"]
+                        
+                        # Retry with solved cookies
+                        response = await client.request(method, url, headers=headers, **kwargs)
+            
+            # Store any new cookies
+            if response.cookies:
+                self.store_cookies(url, dict(response.cookies))
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Request failed for {url}: {e}")
+            return None
+
+
+# Global bypasser instance
+_cf_bypasser: Optional[CloudflareBypasser] = None
+
+def get_cf_bypasser() -> CloudflareBypasser:
+    """Get or create the Cloudflare bypasser instance."""
+    global _cf_bypasser
+    if _cf_bypasser is None:
+        _cf_bypasser = CloudflareBypasser()
+    return _cf_bypasser
 
 @dataclass
 class SearchResult:
