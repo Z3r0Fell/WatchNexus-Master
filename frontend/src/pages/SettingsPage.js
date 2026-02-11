@@ -499,6 +499,56 @@ export const SettingsPage = () => {
     }
   };
 
+  // File Browser functions
+  const openFileBrowser = async (initialPath = '/') => {
+    setShowFileBrowser(true);
+    await browsePath(initialPath);
+  };
+
+  const browsePath = async (path) => {
+    setBrowserLoading(true);
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/filesystem/browse`, {
+        params: { path }
+      });
+      setBrowserPath(res.data.current_path);
+      setBrowserItems(res.data.items || []);
+      setBrowserDrives(res.data.drives || []);
+      setBrowserMediaCount(res.data.media_files_in_current || 0);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to browse directory');
+    } finally {
+      setBrowserLoading(false);
+    }
+  };
+
+  const selectFolderFromBrowser = () => {
+    // Set the selected path to the newLibrary
+    setNewLibrary(prev => ({ ...prev, path: browserPath }));
+    
+    // Try to auto-detect library name from folder name
+    const folderName = browserPath.split('/').filter(Boolean).pop() || browserPath.split('\\').filter(Boolean).pop();
+    if (folderName && !newLibrary.name) {
+      const prettyName = folderName.charAt(0).toUpperCase() + folderName.slice(1).replace(/[-_]/g, ' ');
+      setNewLibrary(prev => ({ ...prev, name: prettyName }));
+    }
+    
+    // Try to auto-detect media type from folder name
+    const lowerName = folderName?.toLowerCase() || '';
+    if (lowerName.includes('movie')) {
+      setNewLibrary(prev => ({ ...prev, media_type: 'movies' }));
+    } else if (lowerName.includes('tv') || lowerName.includes('series') || lowerName.includes('show')) {
+      setNewLibrary(prev => ({ ...prev, media_type: 'tv' }));
+    } else if (lowerName.includes('anime')) {
+      setNewLibrary(prev => ({ ...prev, media_type: 'anime' }));
+    } else if (lowerName.includes('music') || lowerName.includes('audio')) {
+      setNewLibrary(prev => ({ ...prev, media_type: 'music' }));
+    }
+    
+    setShowFileBrowser(false);
+    setShowAddLibrary(true);
+  };
+
   // Fetch built-in engine status and settings
   const fetchEngineStatus = useCallback(async () => {
     try {
