@@ -62,13 +62,24 @@ export const Footer = () => {
               <li><a href="#" className="hover:text-white transition-colors">Contributing</a></li>
             </ul>
           </div>
+
+          {/* Legal */}
+          <div>
+            <h3 className="font-semibold mb-4">Legal</h3>
+            <ul className="space-y-2 text-gray-400 text-sm">
+              <li><Link to="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
+              <li><Link to="/disclaimer" className="hover:text-white transition-colors">Legal Disclaimer</Link></li>
+              <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">License (MIT)</a></li>
+            </ul>
+          </div>
         </div>
 
         <div className="border-t border-white/5 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
           <p>© {new Date().getFullYear()} WatchNexus. Open source under MIT License.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <Link to="/disclaimer" className="hover:text-white transition-colors">Legal Disclaimer</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
           </div>
         </div>
       </div>
