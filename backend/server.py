@@ -1321,6 +1321,94 @@ async def torrent_engine_add(
     else:
         raise HTTPException(status_code=500, detail="Failed to add torrent")
 
+# Settings routes MUST come before {torrent_id} routes to avoid path conflicts
+@api_router.get("/downloads/engine/settings")
+async def torrent_engine_get_settings(user: dict = Depends(require_auth)):
+    """Get current torrent engine settings."""
+    engine = get_torrent_engine()
+    settings = engine.get_settings()
+    return settings.to_dict()
+
+@api_router.put("/downloads/engine/settings")
+async def torrent_engine_update_settings(
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Update torrent engine settings."""
+    engine = get_torrent_engine()
+    
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    
+    # Also check query params
+    params = dict(request.query_params)
+    body.update(params)
+    
+    # Convert string numbers to proper types
+    int_fields = [
+        'max_active_downloads', 'max_active_uploads', 'max_active_torrents',
+        'max_download_rate', 'max_upload_rate', 'alt_download_rate', 'alt_upload_rate',
+        'max_connections_global', 'max_connections_per_torrent',
+        'max_uploads_global', 'max_uploads_per_torrent',
+        'seed_time_limit', 'max_completed_torrents', 'slow_torrent_threshold', 'listen_port'
+    ]
+    float_fields = ['seed_ratio_limit']
+    bool_fields = [
+        'remove_after_completion', 'remove_after_seeding', 'delete_files_on_remove',
+        'dont_count_slow_torrents', 'enable_dht', 'enable_pex', 'enable_lsd',
+        'enable_upnp', 'enable_natpmp', 'preallocate_storage', 'add_paused',
+        'sequential_download_default', 'prioritize_first_last_pieces', 'announce_to_all_trackers'
+    ]
+    
+    for field in int_fields:
+        if field in body and body[field] is not None:
+            try:
+                body[field] = int(body[field])
+            except (ValueError, TypeError):
+                pass
+    
+    for field in float_fields:
+        if field in body and body[field] is not None:
+            try:
+                body[field] = float(body[field])
+            except (ValueError, TypeError):
+                pass
+    
+    for field in bool_fields:
+        if field in body:
+            if isinstance(body[field], str):
+                body[field] = body[field].lower() in ('true', '1', 'yes')
+    
+    updated = engine.update_settings(body)
+    return {"status": "updated", "settings": updated.to_dict()}
+
+@api_router.post("/downloads/engine/pause-all")
+async def torrent_engine_pause_all(user: dict = Depends(require_auth)):
+    """Pause all torrents."""
+    engine = get_torrent_engine()
+    count = engine.pause_all()
+    return {"status": "paused", "count": count}
+
+@api_router.post("/downloads/engine/resume-all")
+async def torrent_engine_resume_all(user: dict = Depends(require_auth)):
+    """Resume all torrents."""
+    engine = get_torrent_engine()
+    count = engine.resume_all()
+    return {"status": "resumed", "count": count}
+
+@api_router.post("/downloads/engine/remove-completed")
+async def torrent_engine_remove_completed(
+    delete_files: bool = False,
+    user: dict = Depends(require_auth)
+):
+    """Remove all completed torrents."""
+    engine = get_torrent_engine()
+    count = engine.remove_completed(delete_files=delete_files)
+    return {"status": "removed", "count": count}
+
+# Torrent-specific routes (dynamic {torrent_id} comes after static routes)
 @api_router.get("/downloads/engine/{torrent_id}")
 async def torrent_engine_get(torrent_id: str, user: dict = Depends(require_auth)):
     """Get status of a specific torrent."""
@@ -1374,10 +1462,6 @@ async def torrent_engine_sequential(
     engine = get_torrent_engine()
     success = engine.set_sequential(torrent_id, enabled)
     return {"status": "updated" if success else "failed", "sequential": enabled}
-
-@api_router.get("/downloads/engine/settings")
-async def torrent_engine_get_settings(user: dict = Depends(require_auth)):
-    """Get current torrent engine settings."""
     engine = get_torrent_engine()
     settings = engine.get_settings()
     return settings.to_dict()
