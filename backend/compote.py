@@ -914,10 +914,32 @@ class Compote:
             return {"success": False, "error": str(e)}
 
 
-# Pre-configured public indexers (for demo purposes)
-# In production, users would add their own private indexers
+# Pre-configured indexers with different types and options
+# Users can add their own private indexers with API keys
 DEFAULT_INDEXERS = [
-    # These are example configurations - actual URLs would need valid API keys
+    # === TORZNAB INDEXERS (Prowlarr/Jackett compatible) ===
+    {
+        "id": "jackett",
+        "name": "Jackett (Local)",
+        "type": "torznab",
+        "url": "http://localhost:9117",
+        "search_path": "/api/v2.0/indexers/all/results/torznab",
+        "api_key": "",
+        "enabled": False,
+        "priority": 10,
+        "description": "Aggregates multiple indexers via Jackett",
+    },
+    {
+        "id": "prowlarr",
+        "name": "Prowlarr (Local)",
+        "type": "torznab",
+        "url": "http://localhost:9696",
+        "search_path": "/api/v1/search",
+        "api_key": "",
+        "enabled": False,
+        "priority": 10,
+        "description": "Aggregates multiple indexers via Prowlarr",
+    },
     {
         "id": "1337x",
         "name": "1337x",
@@ -926,15 +948,8 @@ DEFAULT_INDEXERS = [
         "api_key": "",
         "enabled": False,
         "priority": 50,
-    },
-    {
-        "id": "rarbg",
-        "name": "RARBG (Archive)",
-        "type": "torznab", 
-        "url": "https://rarbg.to",
-        "api_key": "",
-        "enabled": False,
-        "priority": 40,
+        "cloudflare_protected": True,
+        "description": "General torrent indexer (requires Jackett/Prowlarr)",
     },
     {
         "id": "yts",
@@ -944,6 +959,7 @@ DEFAULT_INDEXERS = [
         "api_key": "",
         "enabled": False,
         "priority": 60,
+        "description": "High quality movie releases (smaller file sizes)",
     },
     {
         "id": "eztv",
@@ -953,6 +969,7 @@ DEFAULT_INDEXERS = [
         "api_key": "",
         "enabled": False,
         "priority": 55,
+        "description": "TV show focused indexer",
     },
     {
         "id": "nyaa",
@@ -962,8 +979,120 @@ DEFAULT_INDEXERS = [
         "api_key": "",
         "enabled": False,
         "priority": 45,
+        "description": "Anime and Japanese media",
+    },
+    
+    # === RSS FEED INDEXERS ===
+    {
+        "id": "showrss",
+        "name": "ShowRSS",
+        "type": "rss",
+        "url": "https://showrss.info/other/all.rss",
+        "enabled": False,
+        "priority": 40,
+        "description": "TV show RSS feed - auto-updates with new episodes",
+    },
+    {
+        "id": "custom_rss",
+        "name": "Custom RSS Feed",
+        "type": "rss",
+        "url": "",
+        "enabled": False,
+        "priority": 50,
+        "description": "Add your own RSS feed URL",
+    },
+    
+    # === NEWZNAB (Usenet) ===
+    {
+        "id": "nzbgeek",
+        "name": "NZBgeek",
+        "type": "newznab",
+        "url": "https://api.nzbgeek.info",
+        "api_key": "",
+        "enabled": False,
+        "priority": 30,
+        "description": "Usenet indexer (requires subscription)",
+    },
+    {
+        "id": "drunkenslug",
+        "name": "DrunkenSlug",
+        "type": "newznab",
+        "url": "https://api.drunkenslug.com",
+        "api_key": "",
+        "enabled": False,
+        "priority": 30,
+        "description": "Usenet indexer (requires subscription)",
     },
 ]
+
+# Indexer type descriptions for UI
+INDEXER_TYPES = {
+    "torznab": {
+        "name": "Torznab",
+        "description": "Standard torrent indexer API (Jackett, Prowlarr, many sites)",
+        "requires_api_key": True,
+        "supports_search": True,
+        "example_url": "http://localhost:9117/api/v2.0/indexers/all/results/torznab",
+    },
+    "newznab": {
+        "name": "Newznab",
+        "description": "Usenet indexer API (NZBgeek, DrunkenSlug, etc.)",
+        "requires_api_key": True,
+        "supports_search": True,
+        "example_url": "https://api.nzbgeek.info",
+    },
+    "rss": {
+        "name": "RSS Feed",
+        "description": "Standard RSS/Atom feed with torrent/magnet links",
+        "requires_api_key": False,
+        "supports_search": False,
+        "note": "RSS feeds are filtered client-side, not searched",
+        "example_url": "https://example.com/feed.rss",
+    },
+}
+
+# Help documentation for adding indexers
+INDEXER_SETUP_GUIDE = {
+    "jackett": {
+        "title": "Setting up Jackett",
+        "steps": [
+            "Install Jackett from https://github.com/Jackett/Jackett",
+            "Run Jackett and access web UI at http://localhost:9117",
+            "Add indexers through Jackett's web interface",
+            "Copy the API key from Jackett's dashboard",
+            "Use URL: http://localhost:9117/api/v2.0/indexers/all/results/torznab",
+        ],
+    },
+    "prowlarr": {
+        "title": "Setting up Prowlarr",
+        "steps": [
+            "Install Prowlarr from https://prowlarr.com",
+            "Run Prowlarr and access web UI at http://localhost:9696",
+            "Add indexers through Prowlarr's Indexers tab",
+            "Get API key from Settings > General",
+            "Enable search sync in Settings > Apps",
+        ],
+    },
+    "rss": {
+        "title": "Adding RSS Feeds",
+        "steps": [
+            "Find RSS feeds from your favorite torrent sites",
+            "Common sources: ShowRSS for TV, private tracker feeds",
+            "RSS feeds don't support searching - they list recent releases",
+            "Good for monitoring new releases and auto-downloading",
+        ],
+    },
+    "cloudflare": {
+        "title": "Bypassing Cloudflare Protection",
+        "steps": [
+            "Some sites use Cloudflare to prevent automated access",
+            "Option 1: Use FlareSolverr (https://github.com/FlareSolverr/FlareSolverr)",
+            "Option 2: Use Jackett/Prowlarr which handles CF automatically",
+            "Option 3: Extract browser cookies and add to indexer config",
+            "Enable 'Cloudflare Protected' toggle when adding such indexers",
+        ],
+    },
+}
 
 
 # Singleton instance
