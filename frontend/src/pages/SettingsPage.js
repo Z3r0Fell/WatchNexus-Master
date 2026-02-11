@@ -804,8 +804,8 @@ export const SettingsPage = () => {
                           onChange={(e) => setNewIndexer(p => ({ ...p, type: e.target.value }))}
                           className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
                         >
-                          <option value="torznab">Torznab (Jackett, Prowlarr)</option>
-                          <option value="newznab">Newznab (Usenet)</option>
+                          <option value="torznab">Torrent (via Syrup)</option>
+                          <option value="newznab">NZB (via Pulp)</option>
                           <option value="rss">RSS Feed</option>
                         </select>
                       </div>
