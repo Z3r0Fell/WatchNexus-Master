@@ -2,187 +2,210 @@
 The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single application that handles requesting, acquiring, organizing, and watching TV shows and movies.
 
 **Product Requirements:**
-- **Unified Identity:** A single application that incorporates the best features of existing media automation tools.
+- **Unified Identity:** A single application that incorporates the best features of existing media automation tools, with a unique brand identity. The user has requested a preserve/jam theme, leading to rebrands like Marmalade (for the Jellyfin-based media server) and Compote (for the Prowlarr-like indexer manager).
 - **Modular Design:** Start with a mocked-up version, but with settings to configure live services (indexers, download clients) later.
 - **Rich Metadata:** Use a real service like TMDB for movie/TV show posters and information.
-- **Authentication:** Support both JWT (email/password) and an option to configure Google OAuth.
-- **Broad Catalog Support:** The application should handle TV shows, movies, audiobooks, music, music videos, and live TV.
-- **Streaming Service Integration:** Include connectors or links for popular streaming services like Netflix, Disney+, and Prime Video.
-- **Jellyfin as a Base:** The user decided to fork the Jellyfin project to use its stable media server capabilities as the foundation for WatchNexus.
-- **Custom UI:** Despite forking Jellyfin, the user wants a unique, modern, custom-built React frontend, not the standard Jellyfin web UI. The agent had initially built a custom UI which the user liked and wants to be connected to the Jellyfin backend.
-- **File Integrity:** Implement a system to check for corrupted or incomplete video files.
-- **Branding:** The application must be thoroughly rebranded as WatchNexus, including a custom logo provided by the user, unique terminology (e.g., Secret Code for password), and a distinct visual theme with animations.
-- **Documentation:** A comprehensive  is required, detailing compilation for Windows, Mac, Linux, and Docker, along with a quickstart guide and troubleshooting steps.
+- **Authentication:** Support both JWT (email/password) and Google OAuth. The user provided a Google Client ID.
+- **Broad Catalog Support:** Handle TV shows, movies, audiobooks, music, and more.
+- **Streaming Service Integration:** Include a settings section to configure logins for popular streaming services like Netflix, Disney+, Prime Video, and Crunchyroll.
+- **Custom UI & Forked Backend:** Use a custom-built React frontend with a unique design, connected to a forked, rebranded Jellyfin/.NET server (Marmalade) that acts as the core media backend.
+- **File Integrity:** Implement a system to check for corrupted or incomplete video files, with options to schedule scans, receive notifications, and attempt repairs.
+- **Documentation:** Maintain a comprehensive  and a .
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project currently consists of a three-part architecture:
-1.  **Custom React Frontend**: A modern, visually appealing UI built from scratch, featuring a glassmorphism design, violet/purple theme, and custom components. This is the user-approved interface. It's located in .
-2.  **FastAPI Backend**: Originally the main backend, it now serves as a proxy and business logic layer. It handles user authentication (for the custom UI), proxies requests to the TMDB API for discovery, and has newly added proxy endpoints to communicate with the Jellyfin server. It's located in .
-3.  **Jellyfin Server Fork (WatchNexus)**: A forked, rebranded version of the Jellyfin/.NET server running as a separate service. Its purpose is to handle the heavy lifting of media scanning, library management, transcoding, and streaming. It runs on port 8096 internally. It is located in .
+The project is a full-stack application with a three-part architecture:
+1.  **Custom React Frontend**: A modern UI in  with a glassmorphism design, handling all user interaction.
+2.  **FastAPI Backend**: A proxy and business logic layer in . It manages custom JWT/Google OAuth, proxies requests to TMDB, and serves as the API gateway for all other services. It now includes modules for a media health checker, an indexer manager (Compote), and a download client (qBittorrent).
+3.  **Marmalade Server (formerly WatchNexus/Jellyfin)**: A forked and rebranded Jellyfin/.NET server, intended to handle media scanning, library management, and streaming. This service is currently **not running** due to a missing  runtime in the environment.
 
-The original React UI has been re-instated as the primary interface, and work has begun to connect its functions to the Jellyfin backend via the FastAPI proxy.
+The agent has recently implemented Google OAuth, a full-featured media health checker with scheduled scans, and a mock indexer manager (Compote). Work has begun on integrating a real download client (qBittorrent).
 
 **Last working item**:
-- **Last item agent was working:** The agent was beginning to implement a media file health checker. This was in response to the user's request to detect corrupted or incomplete video files. The agent created the initial Python script  and was about to add the corresponding API endpoints to  and update the frontend logo.
+- **Last item agent was working:** The agent was in the process of a major rewrite of the  file. This was triggered by a user request to fix a previous error and add extensive new functionality, including IPTV configuration and a dynamic UI for adding/configuring multiple streaming service logins (Netflix, Crunchyroll, etc.). The agent just overwrote the file with a new, complex implementation.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** backend testing agent
+- **Which testing method agent to use?** frontend testing agent
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1:** The setup wizard for the forked Jellyfin instance was unstable and kept restarting. While the UI has been switched to the custom React app, the underlying Jellyfin server's stability might still be a concern and could impact library scanning or other background tasks.
+- **Issue 1:** Fix and Validate the Rewritten Settings Page (P0)
+- **Issue 2:** Marmalade/.NET Server Fails to Start (P1)
 
 **Issues Detail:**
-- **Issue 1: Jellyfin server instability during setup**
-    - **Attempted fixes:** The agent tried to complete the wizard multiple times via screenshot automation, but it often timed out or reset. The agent later changed the port and reconfigured supervisor, but the root cause of the wizard reset was never fully diagnosed.
+- **Issue 1: Fix and Validate the Rewritten Settings Page**
+    - **Attempted fixes:** The agent performed a full overwrite of  to address user requests for new features and to fix a previous bug. The new code has not been tested or verified.
     - **Next debug checklist:**
-        - Check the Jellyfin server logs () for errors related to configuration saving or restarts.
-        - Examine the Jellyfin configuration files () to see if they are being written correctly.
-    - **Why fix this issue and what will be achieved with the fix?** Although the wizard is no longer user-facing, an unstable server process can affect core functionalities like media scanning, transcoding, and playback. Ensuring server stability is critical for a production-ready app.
-    - **Status:** NOT STARTED (since the pivot back to custom UI)
+        1.  Restart the frontend and backend services.
+        2.  Check for any console errors in the browser when navigating to the  page.
+        3.  Verify that all tabs (General, Media Health, Indexers, Download Client, IPTV, Streaming Services) render correctly.
+        4.  Ensure the new dynamic UI for adding streaming services works as expected.
+    - **Why fix this issue and what will be achieved with the fix?** This is a direct and immediate user request. A functional settings page is critical for configuring all other parts of the application, including the upcoming download client and indexer integrations.
+    - **Status:** IN PROGRESS
+    - **Is recurring issue?** Y (The settings page has had issues before).
+    - **Should Test frontend/backend/both after fix?** frontend
+    - **Blocked on other issue:** None
+
+- **Issue 2: Marmalade/.NET Server Fails to Start**
+    - **Attempted fixes:** None in this session. The agent noted the  log error  and decided to work around it.
+    - **Next debug checklist:**
+        - This is likely an environment issue. The  runtime needs to be installed. A potential fix is to run Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Hit:4 https://deb.nodesource.com/node_20.x nodistro InRelease
+Hit:5 https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 InRelease
+Fetched 103 kB in 1s (186 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information....
+        - Once installed, restart the  (Marmalade) process via watchnexus-server: stopped
+watchnexus-server: ERROR (no such file).
+        - Check the logs () for successful startup.
+    - **Why fix this issue and what will be achieved with the fix?** This is a **critical blocker** for all core media server functionality, including library browsing, media scanning, and video playback. The application cannot be production-ready without it.
+    - **Status:** NOT STARTED
     - **Is recurring issue?** Y
     - **Should Test backend/both after fix?** backend
     - **Blocked on other issue:** None
 
 **In progress Task List**:
-- **Task 1: Complete Media Health Checker Integration (P0)**
-    - **Where to resume:**
-        1.  Add new API endpoints to  that utilize the functions in . These endpoints should allow triggering a scan for a specific file or an entire library.
-        2.  Integrate these endpoints into the frontend. Add a Scan for issues button on the media details page or in the library management section.
-        3.  Display the health status (e.g., Healthy, Corrupted, Incomplete) in the UI.
-    - **What will be achieved with this?** It will fulfill the user's request for a system that can verify the integrity of downloaded media files, preventing playback issues.
+- **Task 1: Complete qBittorrent and Compote Integration (P1)**
+    - **Where to resume:** The backend modules (, ) and API endpoints exist. The frontend  has UI for configuration. The next steps are:
+        1.  Connect the Re-download button in the Media Health UI to an API that uses Compote to search for a replacement and sends it to qBittorrent.
+        2.  Build out a search interface that uses Compote to find media and allows sending downloads to qBittorrent.
+    - **What will be achieved with this?** This will complete the acquisition part of the media pipeline, fulfilling a core product requirement.
     - **Status:** IN PROGRESS
     - **Should Test frontend/backend/both after fix?** both
-    - **Blocked on something:** None
+    - **Blocked on something:** A working  to configure the clients.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-- **Task 1: Make the Application Production-Ready (P0)**
-  - Integrate the frontend video player with the Jellyfin backend's streaming URLs. Currently, the UI can browse content but cannot play it.
-  - Implement real download client integration (currently mocked). The settings page needs to be wired up to control a real client like qBittorrent.
-  - Implement real indexer integration (e.g., Prowlarr).
+- **Task 1: Implement Video Player and Library UI (P0)**
+  - Integrate the existing  component with the Marmalade server's streaming URLs. This is blocked by the Marmalade server not running.
+  - Enhance  to fetch and display media directly from the Marmalade server's library instead of showing the current placeholder message.
 - **Task 2: Finalize Branding and UI/UX (P1)**
-  - Replace all remaining hardcoded Jellyfin text in the source code with WatchNexus or generic terms.
-  - Properly integrate the user-provided . The agent used a PNG version, but the SVG should be used for better quality and scalability.
-  - Make the logo more prominent in the header.
-  - Add the requested UI animations (page transitions, flyout menus, hover effects) using the created  and .
-- **Task 3: Update  (P1)**
-  - Add detailed, platform-specific compilation guides for Windows, Mac, and Arch Linux, including dependencies (, , yarn install v1.22.22
-[1/4] Resolving packages...
-[2/4] Fetching packages...
-[3/4] Linking dependencies...
-[4/4] Building fresh packages...
-success Saved lockfile.
-Done in 0.03s., ).
-  - Provide instructions for creating installers (e.g., using  for Windows, creating / for Linux).
-  - Include a Production Readiness section clarifying what works and what doesn't.
+  - Use the user-provided  instead of the current PNG.
+  - Rename the  directory to  to complete the rebranding.
+  - Implement the requested UI animations (page transitions, hover effects) using .
 
 **Future Tasks:**
-- **Task 1: Streaming Service Login (P2)**
-  - Implement the UI for logging into streaming services. Since most services lack public APIs for this, this would likely be a tracking feature where users can manually mark what they've watched.
-- **Task 2: Full Multi-Library Support (P2)**
-  - Thoroughly test and ensure the UI correctly handles multiple libraries from different physical/network locations as configured in Jellyfin.
+- **Task 1: Full Multi-Library Support (P2)**
+  - Ensure the UI correctly handles multiple media libraries from different physical/network locations as configured in Marmalade.
+- **Task 2: Full IPTV Integration (P2)**
+  - Implement the backend logic to handle IPTV playlist () files and EPG data, and display channels in the UI.
 
 **Completed work in this session**
-- **First Version:** Built a full-stack application from scratch with a React frontend and FastAPI/MongoDB backend.
-- **Jellyfin Fork:** Successfully forked, compiled, and ran the Jellyfin media server.
-- **Rebranding:** Extensively rebranded the Jellyfin fork to WatchNexus, changing the name, color scheme, and logos.
-- **Architectural Pivot:** Switched from the Jellyfin UI to the custom React UI, establishing a new architecture where the custom frontend communicates with the Jellyfin server via a FastAPI proxy.
-- **API Proxy:** Implemented proxy endpoints in the FastAPI backend to route requests to the Jellyfin server API.
-- **UI Restoration:** Successfully restored and connected the user-preferred custom React UI to display data from TMDB and the Jellyfin backend.
-- **Documentation:** Created a  and .
-- **Media Health Checker:** Started development of a media file integrity checker.
+- **Full Rebranding:** Renamed Jellyfin to Marmalade across the entire codebase, including files, documentation, and UI text.
+- **Compote Indexer Manager:** Created a Python-based mock of Prowlarr named Compote () with API endpoints for managing and searching indexers.
+- **Media Health Checker:** Fully implemented and tested the backend media health checker (/ based) and integrated it into a new Media Health tab in the settings UI.
+- **Scheduled Health Scans:** Added API and UI to schedule recurring library health checks (daily, weekly, monthly) with notification and auto-repair toggles.
+- **Google OAuth Integration:** Implemented Google Social Login on both the backend and frontend, including a new callback page.
+- **qBittorrent Client Foundation:** Created a Python client () and API endpoints to manage a qBittorrent instance.
+- **New UI Components:** Created initial versions of  and .
+- **Documentation:** Updated  and  with all new features and created a new .
 
 **Earlier issues found/mentioned but not fixed**
-- No issues other than the one listed in the All Pending/In progress Issue list.
+- The  runtime required for the Marmalade (forked Jellyfin) server is missing from the environment, preventing it from starting.
 
 **Known issue recurrence from previous fork**
-- No previous fork summary was provided.
+- **Issue:** The  (Jellyfin fork) process is unstable or fails to start.
+- **Recurrence count:** 2
+- **Status:** NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React,  for API calls,  for animations, TailwindCSS.
-- **Backend (Proxy):** FastAPI (Python),  for async requests to other services (TMDB, Jellyfin).
-- **Backend (Media Server):** Jellyfin (.NET Core), which handles media library management, transcoding, and streaming.
-- **Process Management:**  is used to manage all running processes (FastAPI backend, React dev server, Jellyfin server).
-- **Database:** The initial app used MongoDB for user data. The Jellyfin server uses its own database (typically SQLite by default) for media metadata and user profiles.
+- **Frontend:** React, , , TailwindCSS, Shadcn UI.
+- **Backend (Proxy):** FastAPI, , Pydantic.
+- **Backend (Media Server):** Jellyfin/.NET Core (rebranded as Marmalade).
+- **Integrations:** TMDB API, Google OAuth, qBittorrent Web API (planned).
+- **Process Management:**  manages all services.
+- **Media Tools:**  and  for the media health checker.
 
 **key DB schema**
 - **MongoDB (for FastAPI backend):**
-  - : { ,  }
-  - : { ,  }
-- **Jellyfin (SQLite/internal):** Manages its own complex schema for users, libraries, media items, metadata, and playback state. This is not directly managed by the agent.
+  - : { , ,  }
+  - : { , ,  }
+  - : { , , , ,  }
 
 **changes in tech stack**
-- The project pivoted from a self-contained FastAPI/MongoDB application to a hybrid system using a forked Jellyfin/.NET server as the core media backend. The FastAPI application now primarily functions as an API gateway/proxy.
+- The project has introduced two new Python-based services within the FastAPI backend to replace the need for separate applications:  (a Prowlarr mock) and .
 
 **All files of reference**
-- : The core of the proxy backend, contains all API routes.
-- : The new module for validating media files.
-- : The main entry point for the React application, defining routes.
-- : The main landing page of the custom UI.
-- : Defines API calls to the FastAPI proxy.
-- : Intended for Jellyfin-specific API calls.
-- : Contains project overview and setup instructions.
-- : Contains the product requirements document.
-- : Defines how the , , and  processes are managed.
+- : **Critical file.** Was just overwritten and needs immediate validation.
+- : Contains all backend logic and endpoints.
+- : The new indexer manager service.
+- : The new download client service.
+- : The new page for browsing the media library.
+- : The component for media playback.
+- , , : Project documentation.
+- : Service management configuration.
 
 **key api endpoints**
-- , : User authentication for the custom UI.
-- : Proxied TMDB endpoints for fetching media metadata.
-- : Proxied Jellyfin server endpoints (e.g., ).
-- (Upcoming) : Endpoints for the media health checker.
+- , : Google OAuth flow.
+- , : CRUD for scheduled health scans.
+- : Triggers a re-download for a faulty file.
+- , : Endpoints for the indexer manager.
+- , : Endpoints for the download client.
+- : Proxied Marmalade server endpoints (currently failing).
 
 **Critical Info for New Agent**
-- **The Architecture is Key:** The user wants the custom React UI () connected to the Jellyfin server () for media operations. The FastAPI backend () acts as the glue. Do NOT revert to using the Jellyfin web UI. The main goal is to integrate the beautiful custom UI with the powerful Jellyfin backend.
-- **Two Servers Running:** You must manage two separate backend services: the FastAPI proxy () and the Jellyfin fork (). Both are managed by .
-- **Production Readiness is the Goal:** The user's final request is to make this production-ready. This means wiring up actual media playback from the Jellyfin server in the React UI, finishing the settings pages to control real services, and ensuring stability.
-- **Use the SVG Logo:** The user provided an SVG logo. You should prioritize using this over the PNG version for better quality.
+- **Fix the Settings Page First:** The user's last explicit instruction was to fix the settings page after adding many new features. This is your highest priority (P0). Validate it works before moving on.
+- **Marmalade Server is the Biggest Blocker:** You cannot implement video playback or library browsing without getting the Marmalade () process running. The error logs point to a missing  runtime. This needs to be solved to make the app functional.
+- **Follow the Branding Theme:** The user is committed to the Marmalade (media server) and Compote (indexer) branding. Adhere to this theme in all new development.
+- **The Goal is Production Readiness:** The overarching goal is to connect all the pieces: Compote for searching, qBittorrent for downloading, and Marmalade for storing/streaming.
 
 **documents and test reports created in this job**
+-  (updated)
+-  (updated)
+-  (new)
+- 
 - 
 - 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks for  with compilation instructions for various platforms, an honest assessment of production readiness, and to use the new logos provided.
-2.  **Agent:** Acknowledges and proceeds to update the logo and create the .
-3.  **Agent:** Creates a comprehensive  and updates the PRD.
-4.  **Agent:** Finishes, providing a summary that the README is complete and the app is not yet production-ready because playback isn't integrated.
-5.  **User:** Asks the agent to investigate and implement a system to check for corrupted video files, a common issue with Jellyfin. After that, they want the agent to make the project production-ready and finish the roadmap.
-6.  **Agent:** Acknowledges the request, analyzes the problem of corrupted files, and plans to build a media health checker.
-7.  **Agent:** Creates the file .
-8.  **Agent:** States the plan to add API endpoints for the health checker and update the frontend logo.
-9.  **User:** (from problem statement) go to blazes and just let you work! - User is self-aware they might be interjecting too much, giving the agent freedom to work.
-10. **User:** (from problem statement) Provides detailed feedback on library structure (multiple hard drives, network locations), IPTV setup, and streaming service logins.
+1.  **User:** Requests integration of Prowlarr, but rebranded as Compote, and then to focus on the video player and library UI.
+2.  **Agent:** Proposes a Python-based Compote service instead of forking the complex .NET Prowlarr project, and begins implementation.
+3.  **Agent:** Creates Compote backend, Video Player component, and Library page.
+4.  **Agent:** Suggests integrating a real download client like qBittorrent.
+5.  **User:** Asks agent to finish P0 tasks.
+6.  **Agent:** Begins integrating qBittorrent.
+7.  **User:** Says continue.
+8.  **User:** Says fix the settings page please.
+9.  **User:** Gives agent a large credit budget and asks to finish the current module, ensure the settings page loads without errors, and add tabs for IPTV and logins for all popular streaming services (Netflix, Crunchyroll) with a dynamic Add button.
+10. **Agent:** Acknowledges and proceeds with a full rewrite of  to implement all requested features.
 
 **Project Health Check:**
 - **Broken:**
-    - Media playback: The custom UI can browse content but cannot actually play videos from the Jellyfin server.
+    - : State is unknown after a complete file overwrite. It is likely broken.
+    - **Marmalade Server Process:** The core media server is not running due to a missing  runtime. This blocks all media playback and library functionality.
 - **Mocked:**
-    - Download client integration.
-    - Indexer/Prowlarr integration.
-    - Subtitle integration (via Bazarr was in the original plan, not yet implemented).
+    - **Compote:** Searches a hardcoded list of indexers and returns mock search results.
+    - **qBittorrent Integration:** The backend client exists, but it's not connected to a running qBittorrent instance. The frontend settings are not yet verified.
+    - **Re-download:** The API endpoint exists but returns a no indexers configured message as it's not fully wired up.
 
 **3rd Party Integrations**
-- **The Movie Database (TMDB):** Actively used for fetching metadata and images for the discovery sections of the UI.
-- **Jellyfin:** A forked version is used as the core media server backend.
+- **The Movie Database (TMDB):** Active.
+- **Jellyfin:** Used as a forked base for the Marmalade server.
+- **Google OAuth:** Implemented, using the Client ID .
+- **qBittorrent:** Integration in progress.
+- **Prowlarr:** Replaced with a custom mock service named Compote.
 
 **Testing status**
-- **Testing agent used after significant changes:** NO (The agent attempted to, but the test runs were timing out or not producing reports.)
+- **Testing agent used after significant changes:** YES. The agent ran the testing agent three times, achieving 100% pass rates on the features implemented up to that point.
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** []
-- **Known regressions:** The initial custom UI was temporarily replaced by the Jellyfin UI, which was a regression from the user's perspective but was quickly fixed.
+- **Known regressions:** None, but the  is at high risk of regression.
 
 **Credentials to test flow:**
-The agent created a user during the initial setup. Use the following to log into the custom UI:
-- **Username/Email:**  or 
+- **Email:** 
 - **Password:** 
+- Or, register a new user.
+- Google OAuth is also available.
 
 **What agent forgot to execute**
-- The agent has not yet implemented the user-requested animations (page flips, flyouts) despite creating a CSS file for them.
-- The agent used a PNG version of the user's logo, not the provided SVG version, which would be better for quality and scaling.
-- The user asked to finish the 5 roadmap phases, and while the agent is working on a key feature (health checker), the full scope of making the app production-ready (the implicit goal of the phases) is still pending.</analysis>
+- The agent has not yet used the user-provided SVG logo (), still using a PNG.
+- The user-requested UI animations have not been implemented.
+- The  directory has not been renamed to  to match the rebranding.</analysis>
