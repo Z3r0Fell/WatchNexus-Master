@@ -41,8 +41,8 @@ class ChatMessage:
 
 
 @dataclass
-class WatchParty:
-    """Represents a watch party session."""
+class Potluck:
+    """Represents a potluck (watch party) session."""
     party_id: str
     host_id: str
     media_id: str
@@ -110,14 +110,14 @@ class WatchParty:
         }
 
 
-class WatchPartyManager:
+class PotluckManager:
     """
-    Manages all watch party sessions.
+    Manages all potluck (watch party) sessions.
     Handles WebSocket connections and synchronization.
     """
     
     def __init__(self):
-        self.parties: Dict[str, WatchParty] = {}
+        self.parties: Dict[str, Potluck] = {}
         self.user_party_map: Dict[str, str] = {}  # user_id -> party_id
     
     def generate_party_code(self) -> str:
@@ -423,11 +423,11 @@ class WatchPartyManager:
 
 
 # Singleton instance
-_party_manager: Optional[WatchPartyManager] = None
+_potluck_manager: Optional[PotluckManager] = None
 
-def get_party_manager() -> WatchPartyManager:
-    """Get or create party manager instance."""
-    global _party_manager
-    if _party_manager is None:
-        _party_manager = WatchPartyManager()
-    return _party_manager
+def get_potluck_manager() -> PotluckManager:
+    """Get or create potluck manager instance."""
+    global _potluck_manager
+    if _potluck_manager is None:
+        _potluck_manager = PotluckManager()
+    return _potluck_manager
