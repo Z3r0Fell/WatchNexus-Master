@@ -363,16 +363,20 @@ class Compote:
         if categories is None:
             categories = self.CATEGORIES.get(media_type, [])
         
-        # Filter indexers
+        # Filter indexers - only use indexers with valid URLs (not test URLs)
         active_indexers = [
             idx for idx in self.indexers.values()
-            if idx.enabled and (indexer_ids is None or idx.id in indexer_ids)
+            if idx.enabled 
+            and (indexer_ids is None or idx.id in indexer_ids)
+            and idx.url
+            and not idx.url.startswith("http://test")
+            and "example.com" not in idx.url
         ]
         
         all_results = []
         
         if not active_indexers:
-            logger.warning("No active indexers configured, using demo results")
+            logger.info("No valid indexers configured, using demo results")
             # Return demo results so user can see the UI working
             all_results = self._generate_demo_results(query, media_type)
         else:
