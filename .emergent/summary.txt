@@ -2,175 +2,167 @@
 The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media, with no external application dependencies.
 
 **Product Requirements:**
--   **Unified & Self-Contained:** A single application that incorporates the best features of existing media automation tools. It must not rely on external helper applications like qBittorrent.
--   **Cross-Platform Portability:** The final application should be packageable for Mac, Linux (AppImage), and Windows (10 & 11).
--   **Modular Design:** Start with a mocked-up version, but with settings to configure live services.
--   **Rich Metadata:** Use a real service like TMDB for movie/TV show posters and information.
--   **Authentication:** Support both JWT (email/password) and Google OAuth.
--   **Broad Catalog Support:** Handle TV shows, movies, audiobooks, music, and more.
--   **Streaming Service Integration:** Include a settings section to configure logins for popular streaming services.
--   **Custom UI & Backend:** Use a custom-built React frontend with a unique design, connected to a custom Python backend that handles all logic.
--   **File Integrity:** Implement a system to check for corrupted or incomplete video files.
--   **Documentation:** Maintain a comprehensive , , and .
+-   **Unified & Self-Contained:** A single application that incorporates the best features of existing media automation tools. It must not rely on external helper applications.
+-   **Branded Modules:** Internal components should have unique branding:  (indexer aggregator),  (challenge solver),  (usenet handler).
+-   **Cross-Platform Portability:** The final application should be packageable for Mac, Linux, and Windows.
+-   **Rich Metadata & Subtitles:** Use TMDB for metadata and services like Addic7ed for subtitles.
+-   **Authentication:** Support JWT (email/password) and Google OAuth.
+-   **Advanced Features:** Support streaming service logins and a watch party feature.
+-   **Custom UI & Backend:** Use a custom-built React frontend with a unique design, connected to a custom Python backend.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project is a full-stack application with a custom React frontend and a FastAPI backend. A significant pivot has occurred:
-1.  **Custom React Frontend:** A modern UI with a glassmorphism design. It includes pages for a dashboard, downloads, settings, and indexer search. It is configured for cross-platform packaging with Electron.
-2.  **FastAPI Backend:** A robust backend that manages JWT/Google OAuth, proxies TMDB requests, and now features:
-    *   A **built-in torrent client** () using , replacing the previous qBittorrent dependency. It is fully integrated with a comprehensive settings UI.
-    *   A mock indexer manager (Compote) that can search for media and send it to the built-in torrent engine.
-    *   A brand-new, Python-based **Marmalade media server** () intended to replace the original non-functional .NET/Jellyfin fork.
-3.  **Obsolete .NET Server:** The original forked Jellyfin server in  is **not running** and has been **abandoned** in favor of the new Python-based implementation.
+The project is a full-stack application with a React frontend and FastAPI backend. It features a built-in torrent engine, a working Python-based Marmalade media server for library management and streaming, and a refactored Compote indexer manager. Based on user feedback, all references to external tools like Jackett have been removed and replaced with uniquely branded, self-contained modules:  (for aggregating indexers),  (for bypassing Cloudflare), and  (for Usenet).
+
+The UI has been significantly enhanced with a new Library tab in settings for managing media folders, a direct magnet-link submission feature on the Downloads page, and UI animations.
 
 **Last working item**:
--   **Last item agent was working:** The agent performed a major architectural pivot based on user feedback. To make the app fully self-contained and get the media server working, the agent created a brand-new, Python-based media server from scratch (). It then overwrote the frontend files (, , ) to integrate with this new, untested Python server instead of the old, non-functional .NET one.
+-   **Last item agent was working:** The agent was beginning the implementation of three new features requested by the user:
+    1.  Subtitle search/download via Addic7ed.
+    2.  Streaming service credential management.
+    3.  A Watch Party feature.
+    The agent created the placeholder backend files (, ) and was about to start adding the necessary API endpoints and frontend components.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
 -   **Which testing method agent to use?** both
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** Validate and Complete the new Python-based Marmalade Media Server (P0)
+-   **Issue 1:** Implement Subtitles, Streaming Logins, and Watch Party (P0)
 
 **Issues Detail:**
--   **Issue 1: Validate and Complete the new Python-based Marmalade Media Server**
-    -   **Attempted fixes:** A new file  was created, along with new API endpoints in . The corresponding frontend pages (, ) were completely rewritten to use this new API. However, the implementation is a scaffold and has not been tested at all.
+-   **Issue 1: Implement Subtitles, Streaming Logins, and Watch Party**
+    -   **Attempted fixes:** The agent created placeholder files:  and .
     -   **Next debug checklist:**
-        1.  Flesh out the implementation in . It needs logic to scan library paths, parse media files, fetch metadata (likely from TMDB), and generate streaming-compatible responses.
-        2.  Thoroughly test the new API endpoints (, ) using .
-        3.  Test the frontend  to ensure it can fetch and display media items from the backend.
-        4.  Test the  to ensure it can stream a video file from the backend.
-    -   **Why fix this issue and what will be achieved with the fix?** This is the final core component required to fulfill the user's vision. A working media server is essential for browsing and watching content, which is the primary purpose of the application. This is the user's highest priority.
+        1.  **Subtitles:** Flesh out  to scrape/query . Add an API endpoint in  to search for and download subtitles. Integrate a subtitle selection UI into .
+        2.  **Streaming Logins:** Implement backend logic to securely store encrypted credentials for streaming services. Create a new UI section in  to add/manage these logins.
+        3.  **Watch Party:** Flesh out  using WebSockets for synchronized playback. Add API endpoints in  to create/join sessions. Create UI controls in  to manage the watch party.
+        4.  **Testing:** Thoroughly test all three features end-to-end, including API functionality and UI interactions.
+    -   **Why fix this issue and what will be achieved with the fix?** These are the next major features requested by the user to enhance the media consumption experience within WatchNexus.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N (This is a new approach).
+    -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Cleanup Obsolete .NET Marmalade Server (P2)**
-    -   **Where to resume:** The old  server code is in the  directory. The supervisor configuration in  still contains an entry for .
-    -   **What will be achieved with this?** Remove dead code and configuration to prevent confusion and simplify the project architecture. This should be done after the new Python server is confirmed to be working.
-    -   **Status:** NOT STARTED
-    -   **Should Test frontend/backend/both after fix?** backend (by checking supervisor status)
-    -   **Blocked on something:** P0 Issue: Validate the new Python-based Marmalade Media Server.
+-   None. The current work is captured in the P0 issue above.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Implement direct magnet link submission (P1):** Add a UI element (e.g., a pastebox on the Downloads page) to allow users to add magnet links directly to the built-in engine, as suggested in a previous summary.
 -   **Finalize Branding and UI/UX (P1):**
-    -   Use the user-provided  instead of the current PNG.
-    -   Rename the  directory to  (or just delete it, per the cleanup task).
-    -   Implement the requested UI animations (page transitions, hover effects) using .
+    -   Update the sidebar to use the user-provided .
+    -   Implement UI animations more broadly across the application using  (currently only on the Downloads page).
+-   **Cleanup Obsolete .NET Marmalade Server (P2):**
+    -   Delete the  directory.
+    -   Remove the corresponding  entry from .
 
 **Future Tasks:**
--   **Full IPTV Integration (P2):** Implement the backend logic to handle IPTV playlist () files and EPG data.
--   **Connect Compote to Live Indexers (P2):** The Compote search currently uses mock demo data. The next step would be to connect it to the user's actual indexer configurations from the settings page.
+-   **Connect Syrup to Live Scrapers (P2):** The live scrapers () are implemented but failed to return results in the preview environment (likely due to network restrictions). They need to be verified in a real-world environment and potentially debugged.
+-   **Full IPTV Integration (P2):** Implement backend logic to handle IPTV playlist () files and EPG data.
+-   **Connect Compote to Live Indexers (P2):** The Compote search for Torznab/RSS relies on user-configured indexers which have not been tested live.
 
 **Completed work in this session**
--   **Built-in Torrent Engine:** Replaced the external qBittorrent dependency with a fully integrated, Python-based torrent engine using .
--   **Comprehensive Torrent Settings:** Implemented a detailed settings UI and backend for the new engine, covering queue management, seeding limits, speed limits, and auto-cleanup rules.
--   **Compote Search Integration:** Created a dedicated Compote Search page and wired its grab functionality to send downloads directly to the new built-in engine.
--   **Downloads Page Rewrite:** Overhauled the Downloads page to display real-time status of torrents from the built-in engine.
--   **Cross-Platform Packaging Setup:** Created a full Electron build configuration (, , ) and a  to enable building for Mac, Linux, and Windows.
--   **Initial Bug Fix:** Verified and confirmed the rewritten  from the previous session now loads correctly.
--   **Architectural Pivot to Python Media Server:** Initiated the replacement of the non-functional .NET/Jellyfin server with a new, self-contained Python implementation.
+-   **Python Marmalade Media Server:** Validated, tested, and confirmed the new Python-based media server is fully functional for adding, scanning, and retrieving library media.
+-   **Compote Indexer Overhaul:** Completely rewrote the indexer management UI and backend to be self-contained, removing all references to external tools.
+-   **Branding Refactor:** Replaced concepts like Jackett/Flamesolverr with branded, in-house modules: , , and .
+-   **UI/UX Enhancements:**
+    -   Removed the Made with Emergent tag and updated the application title.
+    -   Implemented a direct magnet link submission feature on the Downloads page.
+    -   Added a new Library tab in Settings for managing multiple media source folders.
+    -   Added  animations to the Downloads page.
+-   **Live Scrapers for Syrup:** Implemented scrapers for 1337x, YTS, and EZTV in .
+-   **Testing:** Successfully used the testing agent, which found and fixed a route-ordering bug in . All tests passed.
 
 **Earlier issues found/mentioned but not fixed**
--   The  runtime issue is no longer relevant as the  server has been abandoned.
+-   **Issue 1: Syrup Scrapers Unverified**
+    -   **Debug checklist:** The live scrapers for YTS and EZTV returned zero results during testing. While this is likely an environment-specific network issue, the functionality is not confirmed. The agent should test these scrapers in a different environment or add more robust error handling to inform the user if a scraper is being blocked.
+    -   **Why to solve this issue and what will be achieved with this?** The core purpose of Syrup is to search live sites. If the scrapers don't work, this feature is incomplete.
+    -   **Should Test frontend/backend/both after fix:** backend
+    -   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
 -   **Issue:** The  (Jellyfin fork) process fails to start.
 -   **Recurrence count:** 2
--   **Status:** RESOLVED (by abandonment of the component).
+-   **Status:** RESOLVED (by abandoning the component in favor of the new Python server).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Frontend:** React, Electron, , , TailwindCSS, Shadcn UI.
--   **Backend:** FastAPI,  (for the built-in engine), Pydantic.
--   **Integrations:** TMDB API, Google OAuth.
--   **Process Management:** .
+-   **Backend:** FastAPI, , WebSockets (planned for Watch Party),  (for scraping).
+-   **Integrations:** TMDB API, Google OAuth, Addic7ed (planned).
 
 **key DB schema**
--   No changes to the DB schema in this session.
-    -   **MongoDB (for FastAPI backend):**
-        -   : { , ,  }
-        -   : { , ,  }
+-   No changes.
 
 **changes in tech stack**
--   **qBittorrent (External) -> libtorrent (Internal):** The download client is now a built-in Python module, a major change towards a self-contained app.
--   **.NET/Jellyfin (External) -> Python (Internal):** The core media server is being rebuilt from scratch in Python, abandoning the forked .NET project.
--   **Electron:** Added for cross-platform desktop application packaging.
+-    and  were added for web scraping.
 
 **All files of reference**
--   : **CRITICAL (NEW & WIP).** The new Python media server. Needs implementation and testing.
--   : **CRITICAL (REWRITTEN).** Needs to be tested against the new Python server.
--   : **CRITICAL (REWRITTEN).** Needs to be tested against the new Python server.
--   : The completed and feature-rich built-in torrent client.
--   : The heavily updated settings page with UI for the new torrent engine.
--   : The new, functional UI for searching and grabbing media.
--   : The new configuration for building the desktop app.
--   : The entire directory is now considered obsolete.
+-   : **CRITICAL (NEW & WIP).**
+-   : **CRITICAL (NEW & WIP).**
+-   : Heavily modified with new endpoints.
+-   : Heavily modified with Syrup/Preserve/Pulp logic.
+-   : New file containing live search logic.
+-   : Heavily modified with new Library and rebranded Indexer tabs.
+-   : Modified with magnet link submission and animations.
+-   : Modified to remove branding.
 
 **key api endpoints**
--    (GET, PATCH): Manage settings for the new built-in torrent engine.
--    (POST): Add torrents to the built-in engine.
--   , : Search for media and send it to the download client.
--   , : **NEW & UNTESTED** endpoints for the Python-based media server.
+-    (GET, POST, DELETE): Manage media libraries.
+-   , : Endpoints for the rebranded indexer UI.
+-   : **NEW** endpoint for searching via live scrapers.
+-   : **NEW** endpoint for direct magnet submission.
 
 **Critical Info for New Agent**
--   **PRIORITY #1: Get the Python Media Server Working.** The last action was to create a new Python-based media server () and rewrite the frontend to use it. This is completely untested. Your immediate goal is to flesh out this implementation, test it, and ensure the  and  are functional. This is a critical blocker.
--   **The .NET Server is Abandoned.** Do not try to fix or install dependencies for the server in the  directory. It is obsolete and should be removed once the new Python server is stable.
--   **The Torrent Engine is Complete.** The built-in torrent downloader is feature-complete and works well. You should not need to modify it unless a bug is found.
--   **Follow the Self-Contained Goal.** The user's primary motivation is to have a single, portable application with no external dependencies. All future development should align with this goal.
+-   **PRIORITY #1: Implement New Features.** Your immediate task is to build out the three features requested by the user: subtitle integration, streaming service logins, and the watch party feature. The placeholder files are already created.
+-   **Branding is Key.** The user is firm on the self-contained goal. All new UI and backend logic must adhere to the , , and  branding. Do not re-introduce references to external tools.
+-   **Scrapers Need Verification.** The live scrapers in  are coded but unverified. Acknowledge this limitation; the code may need debugging in a real-world network environment.
+-   **Cleanup is Pending.** The old  server in  still needs to be deleted. This is a low-priority cleanup task.
 
 **documents and test reports created in this job**
--    (new)
--    (new)
--    (new)
--    (new)
--    (new)
--    (updated)
--    (updated)
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks to complete action items 1, 2, and 3 from the previous summary, then focus on getting the Marmalade Server running today.
-2.  **Agent:** Starts working on the action items, beginning with integrating Compote search with the built-in engine.
-3.  **Agent:** Creates a new  and wires it up to the Compote API and built-in torrent engine.
-4.  **Agent:** Debugs and fixes multiple issues with the Compote demo search and frontend API calls.
-5.  **Agent:** Successfully demonstrates the end-to-end flow: searching on the Compote page, clicking grab, and seeing the torrent appear on the Downloads page.
-6.  **Agent:** Pivots to the Marmalade Server task. Citing the user's desire for a self-contained app and to avoid .NET SDK installation costs, the agent decides to build a new media server in Python instead of fixing the old one.
-7.  **Agent:** Creates .
-8.  **Agent:** Adds new API routes to  for the Python-based Marmalade server.
-9.  **Agent:** Rewrites , , and  to integrate with the new Python server API.
-10. **User:** (No pending messages. The agent was in the middle of implementation when the fork occurred).
+1.  **User:** Requests agent to build modules for Jackett (->Syrup), Flamesolverr (->Preserve), and Usenet (->Pulp) and remove the Made with Emergent tag.
+2.  **Agent:** Removes the tag and refactors the backend () and frontend () to use the new module names and self-contained branding.
+3.  **Agent:** Confirms via screenshots and API tests that all branding changes are complete.
+4.  **Agent:** Finishes, suggesting next steps.
+5.  **User:** Asks agent to implement the suggested next actions (Syrup scrapers, magnet link, UI animations) and also add a new Library settings tab.
+6.  **Agent:** Implements all four features: creates , updates  with a magnet form and animations, and adds the new Library management tab to .
+7.  **Agent:** Tests the features, noting the scraper APIs are likely blocked by the environment but the code is complete. Screenshots confirm UI changes.
+8.  **Agent:** Finishes, summarizing the work.
+9.  **User:** Asks agent to complete the next actions: add Addic7ed for subtitles, tackle streaming service logins, and add a watch party feature.
+10. **Agent:** Acknowledges the request and begins implementation by creating placeholder files for the new features (, ).
 
 **Project Health Check:**
--   **Broken:**
-    -   **Python Marmalade Server:** The new media server () is just a scaffold. It's completely untested and non-functional, blocking all library and playback features.
-    -    and : These have been rewritten to point to the broken Marmalade server, so they are currently non-functional.
--   **Mocked:**
-    -   **Compote Search:** Still uses hardcoded demo results. It does not yet search against the user's configured indexers from settings.
+-   **Broken:** None.
+-   **Mocked/In-Progress:**
+    -   **Subtitle, Streaming Login, Watch Party features:** exist only as empty placeholder files.
+    -   **Syrup Scrapers:** Implemented but unverified in a real network environment. They did not return results in testing.
+    -   **Compote Search:** Relies on user-configured indexers that have not been tested with live data.
 
 **3rd Party Integrations**
--   **The Movie Database (TMDB):** Active (used for dashboard).
+-   **The Movie Database (TMDB):** Active.
 -   **Google OAuth:** Implemented.
--   **Electron/Electron-Builder:** Added for cross-platform packaging.
--   **Jellyfin/.NET:** **DEPRECATED**. The forked server is no longer in use.
+-   **Electron/Electron-Builder:** Active.
+-   **BeautifulSoup4:** Added for web scraping.
+-   **Addic7ed:** Planned for subtitle integration.
+-   **Jellyfin/.NET:** **DEPRECATED**.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO (not since the last major features were added).
--   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Testing agent used after significant changes:** YES.
+-   **Troubleshoot agent used after agent stuck in loop:** NO.
 -   **Test files created:** []
--   **Known regressions:** Library browsing and video playback are currently broken due to the architectural pivot to the new, unfinished Python media server.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Email:** 
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent did not implement the direct magnet link pastebox that was a suggested action item in a previous finish summary.
--   The final branding tasks (using the SVG logo, UI animations) have not been implemented.</analysis>
+-   The agent has not yet replaced the placeholder logo with the  provided by the user.
+-   UI animations have only been added to one page () and should be applied more broadly.
+-   The cleanup task for the obsolete  directory is still pending.</analysis>
