@@ -291,12 +291,7 @@ export const SettingsPage = () => {
     fetchEngineStatus();
     fetchEngineSettings();
     fetchLibraries();
-    
-    // Load saved streaming services from localStorage
-    const saved = localStorage.getItem('watchnexus_streaming_services');
-    if (saved) {
-      setConfiguredServices(JSON.parse(saved));
-    }
+    fetchStreamingLogins();
     
     // Load saved IPTV sources
     const savedIptv = localStorage.getItem('watchnexus_iptv_sources');
