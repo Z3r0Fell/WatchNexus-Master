@@ -233,12 +233,20 @@ class EZTVScraper(BaseScraper):
                         
                         quality_info = self.parse_quality(title)
                         
+                        # Ensure numeric types (API may return strings)
+                        try:
+                            size_bytes = int(torrent.get("size_bytes", 0) or 0)
+                            seeds = int(torrent.get("seeds", 0) or 0)
+                            peers = int(torrent.get("peers", 0) or 0)
+                        except (ValueError, TypeError):
+                            size_bytes, seeds, peers = 0, 0, 0
+                        
                         results.append(TorrentResult(
                             title=title,
                             magnet_url=magnet,
-                            size=torrent.get("size_bytes", 0),
-                            seeders=torrent.get("seeds", 0),
-                            leechers=torrent.get("peers", 0),
+                            size=size_bytes,
+                            seeders=seeds,
+                            leechers=peers,
                             info_url=torrent.get("episode_url", ""),
                             indexer=self.name,
                             pub_date=str(torrent.get("date_released_unix", "")),
