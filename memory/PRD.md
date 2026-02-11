@@ -56,6 +56,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
   - YTS: `yts.torrentbay.st` (primary), fallbacks available
   - EZTV: `eztvx.to` (primary), fallbacks available
   - Both scrapers now return real results with magnet links
+- **Hidden Jellyfin-Compatible API**: `/api/emby/*` endpoints for existing clients
+  - System info, authentication, library views, items, images, playback
+  - Compatible with Jellyfin/Emby clients (Infuse, Swiftfin, etc.)
+- **Kickstarter Campaign Document**: `/app/docs/KICKSTARTER-CAMPAIGN.md`
+- **Client App Research**: `/app/docs/CLIENT-APP-RESEARCH.md`
 
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
