@@ -204,6 +204,30 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/plugins"
+        element={
+          <ProtectedRoute>
+            <PluginMarketplacePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/themes"
+        element={
+          <ProtectedRoute>
+            <ThemeCommunityPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dvr"
+        element={
+          <ProtectedRoute>
+            <DVRPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
