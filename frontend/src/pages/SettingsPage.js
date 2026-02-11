@@ -917,7 +917,7 @@ export const SettingsPage = () => {
                   placeholder="/media/library or /path/to/movies"
                   className="bg-white/5 border-white/10 flex-1"
                 />
-                <Button onClick={handleScanLibrary} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
+                <Button onClick={handleHealthScan} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
                   {scanning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4" />}
                   <span className="ml-2">{scanning ? 'Scanning...' : 'Scan'}</span>
                 </Button>
