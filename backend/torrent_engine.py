@@ -250,8 +250,6 @@ class TorrentEngine:
     
     def _handle_alert(self, alert):
         """Handle libtorrent alerts."""
-        alert_type = type(alert).__name__
-        
         if isinstance(alert, lt.torrent_finished_alert):
             info_hash = str(alert.handle.info_hash())
             logger.info(f"Torrent finished: {info_hash}")
