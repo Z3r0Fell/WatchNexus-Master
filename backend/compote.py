@@ -556,7 +556,7 @@ class Compote:
                         download_url = enc_url
                     try:
                         size = int(enclosure.get("length", 0))
-                    except:
+                    except (ValueError, TypeError):
                         pass
                 
                 # Check for magnet in various places
