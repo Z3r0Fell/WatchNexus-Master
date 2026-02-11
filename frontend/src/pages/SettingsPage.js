@@ -766,61 +766,327 @@ export const SettingsPage = () => {
 
               {/* Built-in Engine Configuration */}
               {downloadClientMode === 'builtin' && (
-                <div className="glass-card rounded-xl p-6 space-y-6">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-green-400" />
-                    Built-in Torrent Engine
-                  </h3>
-
-                  {/* Status */}
-                  <div className={`p-4 rounded-xl border ${engineStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
-                    <div className="flex items-center gap-3">
-                      {engineStatus?.success ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertTriangle className="w-5 h-5 text-yellow-400" />}
-                      <div className="flex-1">
-                        <p className={engineStatus?.success ? 'text-green-400 font-medium' : 'text-yellow-400'}>
-                          {engineStatus?.success ? `${engineStatus.engine} - Running` : 'Engine Starting...'}
-                        </p>
-                        {engineStatus?.transfer && (
-                          <p className="text-sm text-gray-400">
-                            ↓ {engineStatus.transfer.download_rate_formatted} | ↑ {engineStatus.transfer.upload_rate_formatted} | {engineStatus.transfer.num_torrents} torrents
+                <div className="space-y-6">
+                  {/* Status Card */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <Zap className="w-5 h-5 text-green-400" />
+                      Engine Status
+                    </h3>
+                    <div className={`p-4 rounded-xl border ${engineStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
+                      <div className="flex items-center gap-3">
+                        {engineStatus?.success ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertTriangle className="w-5 h-5 text-yellow-400" />}
+                        <div className="flex-1">
+                          <p className={engineStatus?.success ? 'text-green-400 font-medium' : 'text-yellow-400'}>
+                            {engineStatus?.success ? `${engineStatus.engine} - Running` : 'Engine Starting...'}
                           </p>
-                        )}
+                          {engineStatus?.transfer && (
+                            <p className="text-sm text-gray-400">
+                              ↓ {engineStatus.transfer.download_rate_formatted} | ↑ {engineStatus.transfer.upload_rate_formatted} | 
+                              {engineStatus.transfer.downloading} downloading | {engineStatus.transfer.seeding} seeding | 
+                              DHT: {engineStatus.transfer.dht_nodes} nodes
+                            </p>
+                          )}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => { setTestingEngine(true); fetchEngineStatus().finally(() => setTestingEngine(false)); }}
+                          disabled={testingEngine}
+                        >
+                          <RefreshCw className={`w-4 h-4 ${testingEngine ? 'animate-spin' : ''}`} />
+                        </Button>
                       </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => { setTestingEngine(true); fetchEngineStatus().finally(() => setTestingEngine(false)); }}
-                        disabled={testingEngine}
-                      >
-                        <RefreshCw className={`w-4 h-4 ${testingEngine ? 'animate-spin' : ''}`} />
-                      </Button>
                     </div>
                   </div>
 
-                  {/* Features */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-3 rounded-lg bg-surface border border-white/5">
-                      <CheckCircle className="w-5 h-5 text-green-400 mb-2" />
-                      <p className="font-medium text-sm">No External Apps</p>
-                      <p className="text-xs text-gray-500">Everything built-in</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-surface border border-white/5">
-                      <Play className="w-5 h-5 text-violet-400 mb-2" />
-                      <p className="font-medium text-sm">Stream While Downloading</p>
-                      <p className="text-xs text-gray-500">Sequential download support</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-surface border border-white/5">
-                      <HardDrive className="w-5 h-5 text-blue-400 mb-2" />
-                      <p className="font-medium text-sm">Cross-Platform</p>
-                      <p className="text-xs text-gray-500">Mac, Linux, Windows</p>
+                  {/* Queue Management */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <DownloadCloud className="w-5 h-5 text-blue-400" />
+                      Queue Management
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Max Active Downloads</label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="20"
+                          value={engineSettings.max_active_downloads}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_active_downloads: parseInt(e.target.value) || 3 }))}
+                          className="bg-white/5 border-white/10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Recommended: 3-5</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Max Active Uploads</label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="20"
+                          value={engineSettings.max_active_uploads}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_active_uploads: parseInt(e.target.value) || 3 }))}
+                          className="bg-white/5 border-white/10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Recommended: 2-4</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Max Total Active</label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="30"
+                          value={engineSettings.max_active_torrents}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_active_torrents: parseInt(e.target.value) || 5 }))}
+                          className="bg-white/5 border-white/10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Recommended: 5-10</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                    <p className="text-sm text-green-400">
-                      <strong>Ready to go!</strong> The built-in engine handles all downloads automatically. 
-                      No configuration needed - just search and grab content via Compote.
-                    </p>
+                  {/* Speed Limits */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <Zap className="w-5 h-5 text-yellow-400" />
+                      Speed Limits
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Max Download Speed (KB/s)</label>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          value={engineSettings.max_download_rate}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_download_rate: parseInt(e.target.value) || 0 }))}
+                          className="bg-white/5 border-white/10"
+                          placeholder="0 = Unlimited"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">0 = Unlimited</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Max Upload Speed (KB/s)</label>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          value={engineSettings.max_upload_rate}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_upload_rate: parseInt(e.target.value) || 0 }))}
+                          className="bg-white/5 border-white/10"
+                          placeholder="0 = Unlimited"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">0 = Unlimited</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seeding Limits */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <Clock className="w-5 h-5 text-purple-400" />
+                      Seeding Limits
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">Stop seeding when either condition is met (whichever comes first)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Seed Ratio Limit</label>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          step="0.1"
+                          value={engineSettings.seed_ratio_limit}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, seed_ratio_limit: parseFloat(e.target.value) || 0 }))}
+                          className="bg-white/5 border-white/10"
+                          placeholder="1.0"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">0 = Disabled | 1.0 = Equal upload</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Seed Time Limit (minutes)</label>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          value={engineSettings.seed_time_limit}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, seed_time_limit: parseInt(e.target.value) || 0 }))}
+                          className="bg-white/5 border-white/10"
+                          placeholder="60"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">0 = Disabled</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">When Limit Reached</label>
+                        <select
+                          value={engineSettings.seed_ratio_action}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, seed_ratio_action: e.target.value }))}
+                          className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
+                        >
+                          <option value="pause">Pause Torrent</option>
+                          <option value="remove">Remove Torrent</option>
+                          <option value="remove_with_data">Remove + Delete Files</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Auto-Cleanup */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <Trash2 className="w-5 h-5 text-red-400" />
+                      Auto-Cleanup
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">Automatically manage completed torrents to prevent buildup</p>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Remove After Download Complete</p>
+                          <p className="text-sm text-gray-500">Immediately remove torrent when download finishes</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.remove_after_completion}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, remove_after_completion: checked }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Remove After Seeding Limit</p>
+                          <p className="text-sm text-gray-500">Remove torrent when seeding limit is reached</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.remove_after_seeding}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, remove_after_seeding: checked }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Delete Files When Removing</p>
+                          <p className="text-sm text-gray-500 text-red-400">⚠️ Will delete downloaded content!</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.delete_files_on_remove}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, delete_files_on_remove: checked }))}
+                        />
+                      </div>
+                      <div className="pt-4 border-t border-white/10">
+                        <label className="text-sm text-gray-400 mb-2 block">Max Completed Torrents to Keep</label>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          value={engineSettings.max_completed_torrents}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_completed_torrents: parseInt(e.target.value) || 0 }))}
+                          className="bg-white/5 border-white/10 w-32"
+                          placeholder="50"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">0 = Keep all | Oldest will be auto-removed when exceeded</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Connection Settings */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <Globe className="w-5 h-5 text-cyan-400" />
+                      Connection Settings
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Global Max Connections</label>
+                        <Input 
+                          type="number" 
+                          min="10" 
+                          max="1000"
+                          value={engineSettings.max_connections_global}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_connections_global: parseInt(e.target.value) || 200 }))}
+                          className="bg-white/5 border-white/10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Recommended: 200-500</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Max Connections Per Torrent</label>
+                        <Input 
+                          type="number" 
+                          min="5" 
+                          max="200"
+                          value={engineSettings.max_connections_per_torrent}
+                          onChange={(e) => setEngineSettings(p => ({ ...p, max_connections_per_torrent: parseInt(e.target.value) || 50 }))}
+                          className="bg-white/5 border-white/10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Recommended: 50-100</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">DHT (Distributed Hash Table)</p>
+                          <p className="text-sm text-gray-500">Find peers without trackers</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.enable_dht}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, enable_dht: checked }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">PEX (Peer Exchange)</p>
+                          <p className="text-sm text-gray-500">Share peers with other clients</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.enable_pex}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, enable_pex: checked }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">LSD (Local Service Discovery)</p>
+                          <p className="text-sm text-gray-500">Find peers on local network</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.enable_lsd}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, enable_lsd: checked }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Behavior */}
+                  <div className="glass-card rounded-xl p-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                      <Settings className="w-5 h-5 text-gray-400" />
+                      Behavior
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Sequential Download by Default</p>
+                          <p className="text-sm text-gray-500">Download pieces in order (better for streaming)</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.sequential_download_default}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, sequential_download_default: checked }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Add Torrents Paused</p>
+                          <p className="text-sm text-gray-500">New torrents start paused for manual review</p>
+                        </div>
+                        <Switch 
+                          checked={engineSettings.add_paused}
+                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, add_paused: checked }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={saveEngineSettings} 
+                      disabled={savingEngineSettings}
+                      className="bg-violet-600 hover:bg-violet-700"
+                    >
+                      {savingEngineSettings ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                      Save Engine Settings
+                    </Button>
                   </div>
                 </div>
               )}
