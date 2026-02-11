@@ -69,6 +69,14 @@ A **single, self-contained application** that handles all media management tasks
 - [x] Progress tracking
 - [x] File priority selection
 - [x] Pause/resume/remove operations
+- [x] **Comprehensive Settings UI:**
+  - Queue Management (max active downloads/uploads/torrents)
+  - Speed Limits (download/upload rate caps)
+  - Seeding Limits (ratio & time limits with configurable action)
+  - Auto-Cleanup (remove after completion/seeding, max completed)
+  - Connection Settings (global/per-torrent limits)
+  - Network toggles (DHT, PEX, LSD)
+  - Behavior options (sequential default, add paused)
 
 ### Cross-Platform Desktop (NEW)
 - [x] Electron packaging ready
