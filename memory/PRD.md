@@ -17,6 +17,9 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 | Subtitle Service | **Garnish** 🌿 | Addic7ed/OpenSubtitles integration | `garnish.py` |
 | Torrent Engine | **Fondue** 🫕 | Built-in libtorrent client | `fondue.py` |
 | Media Health | **Sieve** 🫗 | File validation, repair, scans | `sieve.py` |
+| Plugin System | **Gadgets** 🔧 | Extension/plugin framework | `gadgets.py` |
+| Theme Engine | **Milk** 🥛 | Visual customization, Theme Forge | `milk.py` |
+| Color Picker | **Juice** 🧃 | Color selection component | `JuiceColorPicker.jsx` |
 
 ## User Personas
 - **Home Media Enthusiast**: Wants to manage their media library without running multiple applications
