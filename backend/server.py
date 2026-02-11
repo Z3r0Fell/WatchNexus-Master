@@ -965,7 +965,7 @@ async def request_redownload(
 # ==================== COMPOTE - INDEXER MANAGER ====================
 # Python-based indexer aggregator (inspired by Prowlarr)
 
-from compote import get_compote, IndexerConfig, DEFAULT_INDEXERS
+from compote import get_compote, IndexerConfig, DEFAULT_INDEXERS, INDEXER_TYPES, INDEXER_SETUP_GUIDE
 
 @api_router.get("/compote/indexers")
 async def compote_list_indexers(user: dict = Depends(require_auth)):
@@ -979,6 +979,21 @@ async def compote_list_indexers(user: dict = Depends(require_auth)):
     
     return indexers
 
+@api_router.get("/compote/indexer-types")
+async def compote_get_indexer_types():
+    """Get available indexer types and their descriptions."""
+    return INDEXER_TYPES
+
+@api_router.get("/compote/setup-guide")
+async def compote_get_setup_guide():
+    """Get setup guides for different indexer types."""
+    return INDEXER_SETUP_GUIDE
+
+@api_router.get("/compote/default-indexers")
+async def compote_get_default_indexers():
+    """Get list of default/preset indexers that can be added."""
+    return DEFAULT_INDEXERS
+
 @api_router.post("/compote/indexers")
 async def compote_add_indexer(
     name: str,
@@ -987,13 +1002,16 @@ async def compote_add_indexer(
     api_key: str = "",
     enabled: bool = True,
     priority: int = 50,
+    cloudflare_protected: bool = False,
+    search_path: str = "",
+    cookie: str = "",
     user: dict = Depends(require_auth)
 ):
     """Add a new indexer to Compote."""
     compote = get_compote()
     
     # Generate ID from name
-    indexer_id = name.lower().replace(" ", "_")
+    indexer_id = name.lower().replace(" ", "_").replace("-", "_")
     
     config = IndexerConfig(
         id=indexer_id,
@@ -1003,6 +1021,9 @@ async def compote_add_indexer(
         api_key=api_key,
         enabled=enabled,
         priority=priority,
+        cloudflare_protected=cloudflare_protected,
+        search_path=search_path,
+        cookie=cookie,
     )
     
     compote.add_indexer(config)
@@ -1018,12 +1039,77 @@ async def compote_add_indexer(
             "api_key": api_key,
             "enabled": enabled,
             "priority": priority,
+            "cloudflare_protected": cloudflare_protected,
+            "search_path": search_path,
+            "cookie": cookie,
             "user_id": user["id"],
         }},
         upsert=True
     )
     
     return {"status": "added", "id": indexer_id, "name": name}
+
+@api_router.put("/compote/indexers/{indexer_id}")
+async def compote_update_indexer(
+    indexer_id: str,
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Update an existing indexer."""
+    compote = get_compote()
+    
+    try:
+        body = await request.json()
+    except:
+        body = {}
+    
+    # Get existing config
+    existing = compote.get_indexer(indexer_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Indexer not found")
+    
+    # Update fields
+    name = body.get("name", existing.name)
+    url = body.get("url", existing.url)
+    api_key = body.get("api_key", existing.api_key)
+    enabled = body.get("enabled", existing.enabled)
+    priority = body.get("priority", existing.priority)
+    cloudflare_protected = body.get("cloudflare_protected", existing.cloudflare_protected)
+    search_path = body.get("search_path", existing.search_path)
+    cookie = body.get("cookie", existing.cookie)
+    
+    # Create updated config
+    config = IndexerConfig(
+        id=indexer_id,
+        name=name,
+        type=existing.type,
+        url=url,
+        api_key=api_key,
+        enabled=enabled,
+        priority=priority,
+        cloudflare_protected=cloudflare_protected,
+        search_path=search_path,
+        cookie=cookie,
+    )
+    
+    compote.add_indexer(config)  # This replaces the existing one
+    
+    # Update in database
+    await db.compote_indexers.update_one(
+        {"id": indexer_id, "user_id": user["id"]},
+        {"$set": {
+            "name": name,
+            "url": url,
+            "api_key": api_key,
+            "enabled": enabled,
+            "priority": priority,
+            "cloudflare_protected": cloudflare_protected,
+            "search_path": search_path,
+            "cookie": cookie,
+        }}
+    )
+    
+    return {"status": "updated", "id": indexer_id}
 
 @api_router.delete("/compote/indexers/{indexer_id}")
 async def compote_remove_indexer(indexer_id: str, user: dict = Depends(require_auth)):
