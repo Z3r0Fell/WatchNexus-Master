@@ -210,6 +210,7 @@ export const SettingsPage = () => {
     fetchScheduledScans();
     fetchNotifications();
     fetchEngineStatus();
+    fetchEngineSettings();
     
     // Load saved streaming services from localStorage
     const saved = localStorage.getItem('watchnexus_streaming_services');
