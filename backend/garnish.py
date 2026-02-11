@@ -1,5 +1,6 @@
 """
-Subtitle Service - WatchNexus Built-in Subtitle Manager
+Garnish - WatchNexus Subtitle Service
+The finishing touch that adds clarity to your content.
 Supports Addic7ed and OpenSubtitles search and download.
 """
 
