@@ -646,63 +646,195 @@ export const SettingsPage = () => {
 
           {/* Download Client */}
           <TabsContent value="download">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Download className="w-5 h-5 text-violet-400" />
-                qBittorrent Configuration
-              </h2>
-
-              {/* Status */}
-              <div className={`p-4 rounded-xl border ${qbitStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
-                <div className="flex items-center gap-3">
-                  {qbitStatus?.success ? <Wifi className="w-5 h-5 text-green-400" /> : <WifiOff className="w-5 h-5 text-gray-400" />}
-                  <div>
-                    <p className={qbitStatus?.success ? 'text-green-400 font-medium' : 'text-gray-400'}>
-                      {qbitStatus?.success ? `Connected - v${qbitStatus.version}` : 'Not Connected'}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              {/* Download Client Mode Selection */}
+              <div className="glass-card rounded-xl p-6">
+                <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                  <Download className="w-5 h-5 text-violet-400" />
+                  Download Client
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {/* Built-in Engine Option */}
+                  <button
+                    onClick={() => {
+                      setDownloadClientMode('builtin');
+                      localStorage.setItem('watchnexus_download_mode', 'builtin');
+                    }}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      downloadClientMode === 'builtin'
+                        ? 'border-violet-500 bg-violet-500/10'
+                        : 'border-white/10 bg-surface hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        downloadClientMode === 'builtin' ? 'bg-violet-500' : 'bg-white/10'
+                      }`}>
+                        <Zap className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold">Built-in Engine</h3>
+                        <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">Recommended</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      No external apps required! Fully integrated torrent engine with streaming support.
                     </p>
-                    {qbitStatus?.error && <p className="text-sm text-red-400">{qbitStatus.error}</p>}
+                  </button>
+                  
+                  {/* qBittorrent Option */}
+                  <button
+                    onClick={() => {
+                      setDownloadClientMode('qbittorrent');
+                      localStorage.setItem('watchnexus_download_mode', 'qbittorrent');
+                    }}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      downloadClientMode === 'qbittorrent'
+                        ? 'border-violet-500 bg-violet-500/10'
+                        : 'border-white/10 bg-surface hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        downloadClientMode === 'qbittorrent' ? 'bg-violet-500' : 'bg-white/10'
+                      }`}>
+                        <Package className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold">qBittorrent</h3>
+                        <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">External App</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      Connect to external qBittorrent instance. Requires separate installation.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Built-in Engine Configuration */}
+              {downloadClientMode === 'builtin' && (
+                <div className="glass-card rounded-xl p-6 space-y-6">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-green-400" />
+                    Built-in Torrent Engine
+                  </h3>
+
+                  {/* Status */}
+                  <div className={`p-4 rounded-xl border ${engineStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
+                    <div className="flex items-center gap-3">
+                      {engineStatus?.success ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertTriangle className="w-5 h-5 text-yellow-400" />}
+                      <div className="flex-1">
+                        <p className={engineStatus?.success ? 'text-green-400 font-medium' : 'text-yellow-400'}>
+                          {engineStatus?.success ? `${engineStatus.engine} - Running` : 'Engine Starting...'}
+                        </p>
+                        {engineStatus?.transfer && (
+                          <p className="text-sm text-gray-400">
+                            ↓ {engineStatus.transfer.download_rate_formatted} | ↑ {engineStatus.transfer.upload_rate_formatted} | {engineStatus.transfer.num_torrents} torrents
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => { setTestingEngine(true); fetchEngineStatus().finally(() => setTestingEngine(false)); }}
+                        disabled={testingEngine}
+                      >
+                        <RefreshCw className={`w-4 h-4 ${testingEngine ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-3 rounded-lg bg-surface border border-white/5">
+                      <CheckCircle className="w-5 h-5 text-green-400 mb-2" />
+                      <p className="font-medium text-sm">No External Apps</p>
+                      <p className="text-xs text-gray-500">Everything built-in</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-surface border border-white/5">
+                      <Play className="w-5 h-5 text-violet-400 mb-2" />
+                      <p className="font-medium text-sm">Stream While Downloading</p>
+                      <p className="text-xs text-gray-500">Sequential download support</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-surface border border-white/5">
+                      <HardDrive className="w-5 h-5 text-blue-400 mb-2" />
+                      <p className="font-medium text-sm">Cross-Platform</p>
+                      <p className="text-xs text-gray-500">Mac, Linux, Windows</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                    <p className="text-sm text-green-400">
+                      <strong>Ready to go!</strong> The built-in engine handles all downloads automatically. 
+                      No configuration needed - just search and grab content via Compote.
+                    </p>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Host</label>
-                  <Input value={qbitConfig.host} onChange={(e) => setQbitConfig(p => ({ ...p, host: e.target.value }))}
-                    placeholder="localhost" className="bg-white/5 border-white/10" />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Port</label>
-                  <Input value={qbitConfig.port} onChange={(e) => setQbitConfig(p => ({ ...p, port: e.target.value }))}
-                    placeholder="8080" className="bg-white/5 border-white/10" />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Username</label>
-                  <Input value={qbitConfig.username} onChange={(e) => setQbitConfig(p => ({ ...p, username: e.target.value }))}
-                    placeholder="admin" className="bg-white/5 border-white/10" />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Password</label>
-                  <Input type="password" value={qbitConfig.password} 
-                    onChange={(e) => setQbitConfig(p => ({ ...p, password: e.target.value }))}
-                    placeholder="••••••••" className="bg-white/5 border-white/10" />
-                </div>
-              </div>
+              {/* qBittorrent Configuration */}
+              {downloadClientMode === 'qbittorrent' && (
+                <div className="glass-card rounded-xl p-6 space-y-6">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Package className="w-5 h-5 text-blue-400" />
+                    qBittorrent Connection
+                  </h3>
 
-              <Button onClick={handleTestQbit} disabled={testingQbit} className="bg-violet-600 hover:bg-violet-700">
-                {testingQbit ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Wifi className="w-4 h-4 mr-2" />}
-                Test Connection
-              </Button>
+                  {/* Status */}
+                  <div className={`p-4 rounded-xl border ${qbitStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
+                    <div className="flex items-center gap-3">
+                      {qbitStatus?.success ? <Wifi className="w-5 h-5 text-green-400" /> : <WifiOff className="w-5 h-5 text-gray-400" />}
+                      <div>
+                        <p className={qbitStatus?.success ? 'text-green-400 font-medium' : 'text-gray-400'}>
+                          {qbitStatus?.success ? `Connected - v${qbitStatus.version}` : 'Not Connected'}
+                        </p>
+                        {qbitStatus?.error && <p className="text-sm text-red-400">{qbitStatus.error}</p>}
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <h4 className="font-medium text-blue-400 mb-2">Setup Instructions</h4>
-                <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
-                  <li>Install qBittorrent from qbittorrent.org</li>
-                  <li>Enable Web UI in Tools → Options → Web UI</li>
-                  <li>Set username and password</li>
-                  <li>Enter connection details above and test</li>
-                </ol>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">Host</label>
+                      <Input value={qbitConfig.host} onChange={(e) => setQbitConfig(p => ({ ...p, host: e.target.value }))}
+                        placeholder="localhost" className="bg-white/5 border-white/10" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">Port</label>
+                      <Input value={qbitConfig.port} onChange={(e) => setQbitConfig(p => ({ ...p, port: e.target.value }))}
+                        placeholder="8080" className="bg-white/5 border-white/10" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">Username</label>
+                      <Input value={qbitConfig.username} onChange={(e) => setQbitConfig(p => ({ ...p, username: e.target.value }))}
+                        placeholder="admin" className="bg-white/5 border-white/10" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">Password</label>
+                      <Input type="password" value={qbitConfig.password} 
+                        onChange={(e) => setQbitConfig(p => ({ ...p, password: e.target.value }))}
+                        placeholder="••••••••" className="bg-white/5 border-white/10" />
+                    </div>
+                  </div>
+
+                  <Button onClick={handleTestQbit} disabled={testingQbit} className="bg-violet-600 hover:bg-violet-700">
+                    {testingQbit ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Wifi className="w-4 h-4 mr-2" />}
+                    Test Connection
+                  </Button>
+
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <h4 className="font-medium text-blue-400 mb-2">Setup Instructions</h4>
+                    <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
+                      <li>Install qBittorrent from qbittorrent.org</li>
+                      <li>Enable Web UI in Tools → Options → Web UI</li>
+                      <li>Set username and password</li>
+                      <li>Enter connection details above and test</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
