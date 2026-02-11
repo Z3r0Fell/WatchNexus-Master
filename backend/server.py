@@ -2747,6 +2747,16 @@ async def parse_nzb_content(content: str, user: dict = Depends(require_auth)):
 # Include router and middleware
 app.include_router(api_router)
 
+# Hidden Jellyfin-compatible API layer
+# Allows connection from existing Jellyfin/Emby clients
+# Connect to: http://server:8096/emby (or your server URL + /emby)
+try:
+    from jellyfin_compat import jellyfin_router
+    app.include_router(jellyfin_router)
+    logger.info("Jellyfin-compatible API layer enabled at /emby")
+except ImportError as e:
+    logger.warning(f"Jellyfin compatibility layer not available: {e}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
