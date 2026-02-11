@@ -229,7 +229,7 @@ export const SettingsPage = () => {
     if (savedMode) {
       setDownloadClientMode(savedMode);
     }
-  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus]);
+  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
