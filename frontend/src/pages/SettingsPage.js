@@ -665,6 +665,237 @@ export const SettingsPage = () => {
             </motion.div>
           </TabsContent>
 
+          {/* Library Management */}
+          <TabsContent value="library">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              {/* Header */}
+              <div className="glass-card rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                      <FolderOpen className="w-5 h-5 text-violet-400" />
+                      Media Libraries (Marmalade)
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Add folders and drives to scan for media content
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowAddLibrary(!showAddLibrary)}
+                    className="bg-violet-600 hover:bg-violet-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Add Library
+                  </Button>
+                </div>
+
+                {/* Add Library Form */}
+                <AnimatePresence>
+                  {showAddLibrary && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-4 rounded-xl bg-surface border border-white/10 space-y-4 mb-4">
+                        <h3 className="font-bold flex items-center gap-2">
+                          <Plus className="w-4 h-4 text-green-400" />
+                          Add New Library
+                        </h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm text-gray-400 mb-2 block">Library Name *</label>
+                            <Input
+                              value={newLibrary.name}
+                              onChange={(e) => setNewLibrary(p => ({ ...p, name: e.target.value }))}
+                              placeholder="Movies, TV Shows, Anime..."
+                              className="bg-white/5 border-white/10"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm text-gray-400 mb-2 block">Media Type *</label>
+                            <select
+                              value={newLibrary.media_type}
+                              onChange={(e) => setNewLibrary(p => ({ ...p, media_type: e.target.value }))}
+                              className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
+                            >
+                              <option value="movies">🎬 Movies</option>
+                              <option value="tv">📺 TV Shows</option>
+                              <option value="anime">🎌 Anime</option>
+                              <option value="music">🎵 Music</option>
+                              <option value="audiobooks">📚 Audiobooks</option>
+                              <option value="other">📁 Other</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm text-gray-400 mb-2 block">Folder Path *</label>
+                            <Input
+                              value={newLibrary.path}
+                              onChange={(e) => setNewLibrary(p => ({ ...p, path: e.target.value }))}
+                              placeholder="/media/movies or D:\Movies"
+                              className="bg-white/5 border-white/10"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 justify-end pt-2">
+                          <Button variant="outline" onClick={() => setShowAddLibrary(false)}>Cancel</Button>
+                          <Button 
+                            onClick={handleAddLibrary}
+                            className="bg-green-600 hover:bg-green-700"
+                            disabled={!newLibrary.name || !newLibrary.path}
+                          >
+                            <Plus className="w-4 h-4 mr-2" /> Add Library
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Common Paths */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-sm text-gray-400 py-1">Quick paths:</span>
+                  {[
+                    { name: '/media/movies', type: 'movies' },
+                    { name: '/media/tv', type: 'tv' },
+                    { name: '/media/downloads', type: 'other' },
+                    { name: '/mnt/nas/media', type: 'movies' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.name}
+                      onClick={() => {
+                        setNewLibrary({ 
+                          name: preset.name.split('/').pop().charAt(0).toUpperCase() + preset.name.split('/').pop().slice(1), 
+                          path: preset.name,
+                          media_type: preset.type,
+                        });
+                        setShowAddLibrary(true);
+                      }}
+                      className="px-3 py-1 text-xs rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                    >
+                      + {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Configured Libraries */}
+              <div className="glass-card rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold">Configured Libraries ({libraries.length})</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={fetchLibraries}
+                    disabled={loadingLibraries}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loadingLibraries ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+                
+                {loadingLibraries ? (
+                  <div className="text-center py-8">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-violet-400" />
+                    <p className="text-gray-400">Loading libraries...</p>
+                  </div>
+                ) : libraries.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No libraries configured</p>
+                    <p className="text-sm">Add folders above to start scanning for media</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {libraries.map((library) => (
+                      <motion.div 
+                        key={library.id} 
+                        className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/5 hover:border-white/10 transition-colors"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                            library.media_type === 'movies' ? 'bg-violet-500/20 text-violet-400' :
+                            library.media_type === 'tv' ? 'bg-blue-500/20 text-blue-400' :
+                            library.media_type === 'anime' ? 'bg-pink-500/20 text-pink-400' :
+                            library.media_type === 'music' ? 'bg-green-500/20 text-green-400' :
+                            'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {library.media_type === 'movies' ? <Film className="w-6 h-6" /> :
+                             library.media_type === 'tv' ? <Tv className="w-6 h-6" /> :
+                             library.media_type === 'anime' ? <Play className="w-6 h-6" /> :
+                             library.media_type === 'music' ? <Music className="w-6 h-6" /> :
+                             library.media_type === 'audiobooks' ? <Book className="w-6 h-6" /> :
+                             <Folder className="w-6 h-6" />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{library.name}</p>
+                              <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-gray-400">
+                                {library.media_type.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500">{library.path}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {library.item_count || 0} items • 
+                              Last scan: {library.last_scan ? new Date(library.last_scan).toLocaleDateString() : 'Never'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleScanLibrary(library.id)}
+                            disabled={scanningLibrary === library.id}
+                          >
+                            {scanningLibrary === library.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <FileSearch className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleDeleteLibrary(library.id)}
+                            className="text-red-400 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tips */}
+              <div className="glass-card rounded-xl p-6">
+                <h3 className="font-bold mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                  Library Tips
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300">
+                    <p><strong>Naming:</strong> Use standard naming like "Movie Name (2024).mkv" or "Show.S01E01.mkv" for best metadata matching.</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-300">
+                    <p><strong>Network:</strong> Network paths (NAS, SMB) work too! Use mount points like /mnt/nas/media.</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300">
+                    <p><strong>Scanning:</strong> Large libraries may take a while to scan. Marmalade extracts metadata from filenames.</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-300">
+                    <p><strong>Formats:</strong> Supports .mp4, .mkv, .avi, .mov, .wmv, .flv, .webm and more.</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </TabsContent>
+
           {/* Media Health */}
           <TabsContent value="media-health">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
