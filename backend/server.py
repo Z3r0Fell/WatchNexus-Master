@@ -2593,3 +2593,173 @@ async def shutdown_db_client():
     except:
         pass
     client.close()
+
+
+# ==================== RELISH (IPTV) API ====================
+
+from relish import get_relish
+
+@api_router.get("/iptv/sources")
+async def list_iptv_sources(user: dict = Depends(require_auth)):
+    """List all IPTV sources."""
+    relish = get_relish()
+    return relish.list_sources()
+
+@api_router.post("/iptv/sources")
+async def add_iptv_source(
+    name: str,
+    url: str,
+    epg_url: str = "",
+    user: dict = Depends(require_auth)
+):
+    """Add a new IPTV source (M3U playlist)."""
+    relish = get_relish()
+    source = await relish.add_source(name, url, epg_url)
+    return source.to_dict()
+
+@api_router.delete("/iptv/sources/{source_id}")
+async def remove_iptv_source(source_id: str, user: dict = Depends(require_auth)):
+    """Remove an IPTV source."""
+    relish = get_relish()
+    success = relish.remove_source(source_id)
+    return {"success": success}
+
+@api_router.post("/iptv/sources/{source_id}/refresh")
+async def refresh_iptv_source(source_id: str, user: dict = Depends(require_auth)):
+    """Refresh channels from an IPTV source."""
+    relish = get_relish()
+    success = await relish.refresh_source(source_id)
+    return {"success": success}
+
+@api_router.get("/iptv/channels")
+async def list_iptv_channels(
+    group: str = None,
+    favorites_only: bool = False,
+    search: str = None,
+    user: dict = Depends(require_auth)
+):
+    """List IPTV channels with filters."""
+    relish = get_relish()
+    return relish.list_channels(group=group, favorites_only=favorites_only, search=search)
+
+@api_router.get("/iptv/channels/{channel_id}")
+async def get_iptv_channel(channel_id: str, user: dict = Depends(require_auth)):
+    """Get IPTV channel details."""
+    relish = get_relish()
+    channel = relish.get_channel(channel_id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    return channel
+
+@api_router.get("/iptv/groups")
+async def get_iptv_groups(user: dict = Depends(require_auth)):
+    """Get list of channel groups."""
+    relish = get_relish()
+    return relish.get_groups()
+
+@api_router.post("/iptv/channels/{channel_id}/favorite")
+async def toggle_iptv_favorite(channel_id: str, user: dict = Depends(require_auth)):
+    """Toggle favorite status for a channel."""
+    relish = get_relish()
+    success = relish.toggle_favorite(channel_id)
+    return {"success": success}
+
+@api_router.post("/iptv/channels/{channel_id}/hide")
+async def toggle_iptv_hidden(channel_id: str, user: dict = Depends(require_auth)):
+    """Toggle hidden status for a channel."""
+    relish = get_relish()
+    success = relish.toggle_hidden(channel_id)
+    return {"success": success}
+
+@api_router.get("/iptv/channels/{channel_id}/check")
+async def check_iptv_stream(channel_id: str, user: dict = Depends(require_auth)):
+    """Check if a stream is accessible."""
+    relish = get_relish()
+    return await relish.check_stream(channel_id)
+
+@api_router.get("/iptv/epg/{channel_id}")
+async def get_iptv_epg(channel_id: str, user: dict = Depends(require_auth)):
+    """Get EPG programs for a channel."""
+    relish = get_relish()
+    return relish.get_programs(channel_id)
+
+@api_router.get("/iptv/epg/{channel_id}/current")
+async def get_iptv_current_program(channel_id: str, user: dict = Depends(require_auth)):
+    """Get currently playing program."""
+    relish = get_relish()
+    program = relish.get_current_program(channel_id)
+    if not program:
+        return {"message": "No current program"}
+    return program
+
+@api_router.get("/iptv/stats")
+async def get_iptv_stats(user: dict = Depends(require_auth)):
+    """Get IPTV statistics."""
+    relish = get_relish()
+    return relish.get_stats()
+
+@api_router.post("/iptv/parse-m3u")
+async def parse_iptv_m3u(content: str, user: dict = Depends(require_auth)):
+    """Parse M3U content and return channels (preview without saving)."""
+    relish = get_relish()
+    channels = await relish.parse_m3u(content)
+    return [c.to_dict() for c in channels]
+
+@api_router.get("/iptv/export")
+async def export_iptv_m3u(
+    favorites_only: bool = False,
+    user: dict = Depends(require_auth)
+):
+    """Export channels as M3U playlist."""
+    relish = get_relish()
+    channels = relish.list_channels(favorites_only=favorites_only)
+    channel_ids = [c["id"] for c in channels]
+    m3u_content = relish.export_m3u(channel_ids)
+    return {"content": m3u_content, "filename": "watchnexus_iptv.m3u"}
+
+
+# ==================== PULP (USENET) EXTENDED API ====================
+
+from compote import get_pulp
+
+@api_router.get("/pulp/queue")
+async def get_usenet_queue(user: dict = Depends(require_auth)):
+    """Get current NZB download queue."""
+    pulp = get_pulp()
+    return pulp.get_queue()
+
+@api_router.post("/pulp/queue")
+async def add_to_usenet_queue(
+    nzb_url: str,
+    title: str,
+    category: str = "",
+    user: dict = Depends(require_auth)
+):
+    """Add NZB to download queue."""
+    pulp = get_pulp()
+    nzb_id = pulp.queue_nzb(nzb_url, title, category)
+    return {"id": nzb_id, "status": "queued"}
+
+@api_router.post("/pulp/search")
+async def search_usenet(
+    indexer_url: str,
+    api_key: str,
+    query: str,
+    categories: str = "",
+    user: dict = Depends(require_auth)
+):
+    """Search Newznab indexer for NZB releases."""
+    pulp = get_pulp()
+    cat_list = [int(c) for c in categories.split(",") if c.strip().isdigit()] if categories else None
+    results = await pulp.search_newznab(indexer_url, api_key, query, cat_list)
+    return results
+
+@api_router.post("/pulp/parse-nzb")
+async def parse_nzb_content(content: str, user: dict = Depends(require_auth)):
+    """Parse NZB XML content."""
+    pulp = get_pulp()
+    parsed = pulp.parse_nzb(content)
+    if not parsed:
+        raise HTTPException(status_code=400, detail="Invalid NZB content")
+    return parsed
+
