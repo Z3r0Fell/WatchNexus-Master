@@ -657,40 +657,307 @@ export const SettingsPage = () => {
 
           {/* Indexers */}
           <TabsContent value="indexers">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Server className="w-5 h-5 text-violet-400" />
-                  Indexers (Compote)
-                </h2>
-                <Button variant="outline" className="bg-white/5 border-white/10">
-                  <Plus className="w-4 h-4 mr-2" /> Add Indexer
-                </Button>
-              </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              {/* Header */}
+              <div className="glass-card rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                      <Server className="w-5 h-5 text-violet-400" />
+                      Indexers (Compote)
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Configure torrent indexers, RSS feeds, and usenet sources
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowAddIndexer(!showAddIndexer)}
+                    className="bg-violet-600 hover:bg-violet-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Add Indexer
+                  </Button>
+                </div>
 
-              <div className="space-y-3">
-                {indexers.map((indexer) => (
-                  <div key={indexer.id} className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        indexer.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        <Globe className="w-5 h-5" />
+                {/* Quick Add Presets */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="text-sm text-gray-400 py-1">Quick Add:</span>
+                  {[
+                    { name: 'Jackett', type: 'torznab', url: 'http://localhost:9117' },
+                    { name: 'Prowlarr', type: 'torznab', url: 'http://localhost:9696' },
+                    { name: 'RSS Feed', type: 'rss', url: '' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.name}
+                      onClick={() => {
+                        setNewIndexer({ 
+                          name: preset.name, 
+                          type: preset.type, 
+                          url: preset.url,
+                          api_key: '',
+                          cloudflare_protected: false,
+                          search_path: '',
+                          cookie: '',
+                        });
+                        setShowAddIndexer(true);
+                      }}
+                      className="px-3 py-1 text-xs rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                    >
+                      + {preset.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Add Indexer Form */}
+                {showAddIndexer && (
+                  <div className="p-4 rounded-xl bg-surface border border-white/10 space-y-4">
+                    <h3 className="font-bold flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-green-400" />
+                      Add New Indexer
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Indexer Name *</label>
+                        <Input
+                          value={newIndexer.name}
+                          onChange={(e) => setNewIndexer(p => ({ ...p, name: e.target.value }))}
+                          placeholder="My Indexer"
+                          className="bg-white/5 border-white/10"
+                        />
                       </div>
                       <div>
-                        <p className="font-medium">{indexer.name}</p>
-                        <p className="text-sm text-gray-500">{indexer.url}</p>
+                        <label className="text-sm text-gray-400 mb-2 block">Type *</label>
+                        <select
+                          value={newIndexer.type}
+                          onChange={(e) => setNewIndexer(p => ({ ...p, type: e.target.value }))}
+                          className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
+                        >
+                          <option value="torznab">Torznab (Jackett, Prowlarr)</option>
+                          <option value="newznab">Newznab (Usenet)</option>
+                          <option value="rss">RSS Feed</option>
+                        </select>
                       </div>
                     </div>
-                    <Switch checked={indexer.enabled} onCheckedChange={() => handleIndexerToggle(indexer)} />
+
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">URL *</label>
+                      <Input
+                        value={newIndexer.url}
+                        onChange={(e) => setNewIndexer(p => ({ ...p, url: e.target.value }))}
+                        placeholder={
+                          newIndexer.type === 'rss' 
+                            ? 'https://example.com/feed.rss' 
+                            : 'http://localhost:9117/api/v2.0/indexers/all/results/torznab'
+                        }
+                        className="bg-white/5 border-white/10"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {newIndexer.type === 'torznab' && 'Torznab URL from Jackett/Prowlarr'}
+                        {newIndexer.type === 'newznab' && 'Newznab API URL from your usenet indexer'}
+                        {newIndexer.type === 'rss' && 'Direct link to RSS/Atom feed'}
+                      </p>
+                    </div>
+
+                    {newIndexer.type !== 'rss' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-gray-400 mb-2 block">API Key</label>
+                          <Input
+                            value={newIndexer.api_key}
+                            onChange={(e) => setNewIndexer(p => ({ ...p, api_key: e.target.value }))}
+                            placeholder="Your API key"
+                            className="bg-white/5 border-white/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-400 mb-2 block">Search Path (optional)</label>
+                          <Input
+                            value={newIndexer.search_path}
+                            onChange={(e) => setNewIndexer(p => ({ ...p, search_path: e.target.value }))}
+                            placeholder="/api (default)"
+                            className="bg-white/5 border-white/10"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Advanced Options */}
+                    <div className="pt-4 border-t border-white/10">
+                      <h4 className="text-sm font-medium mb-3">Advanced Options</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">Cloudflare Protected</p>
+                            <p className="text-xs text-gray-500">Enable for sites with Cloudflare protection</p>
+                          </div>
+                          <Switch 
+                            checked={newIndexer.cloudflare_protected || false}
+                            onCheckedChange={(checked) => setNewIndexer(p => ({ ...p, cloudflare_protected: checked }))}
+                          />
+                        </div>
+                        {newIndexer.cloudflare_protected && (
+                          <div>
+                            <label className="text-sm text-gray-400 mb-2 block">Browser Cookie (optional)</label>
+                            <Input
+                              value={newIndexer.cookie || ''}
+                              onChange={(e) => setNewIndexer(p => ({ ...p, cookie: e.target.value }))}
+                              placeholder="cf_clearance=...; __cf_bm=..."
+                              className="bg-white/5 border-white/10"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Extract from browser DevTools → Application → Cookies</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-4">
+                      <Button variant="outline" onClick={() => setShowAddIndexer(false)}>Cancel</Button>
+                      <Button 
+                        onClick={handleAddNewIndexer}
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={!newIndexer.name || !newIndexer.url}
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Add Indexer
+                      </Button>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
 
-              <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                <p className="text-sm text-yellow-400">
-                  <strong>Note:</strong> Enable indexers and provide API keys to search real content.
-                </p>
+              {/* Configured Indexers */}
+              <div className="glass-card rounded-xl p-6">
+                <h3 className="font-bold mb-4">Configured Indexers ({indexers.length})</h3>
+                
+                {indexers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Server className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No indexers configured</p>
+                    <p className="text-sm">Add indexers above to search for content</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {indexers.map((indexer) => (
+                      <div 
+                        key={indexer.id} 
+                        className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/5 hover:border-white/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            indexer.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {indexer.type === 'rss' ? (
+                              <Radio className="w-5 h-5" />
+                            ) : indexer.type === 'newznab' ? (
+                              <Package className="w-5 h-5" />
+                            ) : (
+                              <Globe className="w-5 h-5" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{indexer.name}</p>
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                indexer.type === 'torznab' ? 'bg-blue-500/20 text-blue-400' :
+                                indexer.type === 'newznab' ? 'bg-purple-500/20 text-purple-400' :
+                                'bg-orange-500/20 text-orange-400'
+                              }`}>
+                                {indexer.type.toUpperCase()}
+                              </span>
+                              {indexer.cloudflare_protected && (
+                                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400">CF</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 truncate max-w-md">{indexer.url}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleTestIndexer(indexer.id)}
+                            disabled={testingIndexer === indexer.id}
+                          >
+                            {testingIndexer === indexer.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Wifi className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleDeleteIndexer(indexer.id)}
+                            className="text-red-400 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Switch 
+                            checked={indexer.enabled} 
+                            onCheckedChange={() => handleIndexerToggle(indexer)} 
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Setup Guide */}
+              <div className="glass-card rounded-xl p-6">
+                <h3 className="font-bold mb-4 flex items-center gap-2">
+                  <FileSearch className="w-5 h-5 text-blue-400" />
+                  Setup Guide
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Jackett Setup */}
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <h4 className="font-medium text-blue-400 mb-2">Jackett (Recommended)</h4>
+                    <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
+                      <li>Install Jackett from github.com/Jackett/Jackett</li>
+                      <li>Access web UI at http://localhost:9117</li>
+                      <li>Add your favorite indexers in Jackett</li>
+                      <li>Copy API key from Jackett dashboard</li>
+                      <li>Use "all" URL for aggregate search</li>
+                    </ol>
+                  </div>
+
+                  {/* RSS Setup */}
+                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <h4 className="font-medium text-orange-400 mb-2">RSS Feeds</h4>
+                    <ol className="text-sm text-orange-300 space-y-1 list-decimal list-inside">
+                      <li>Find RSS feeds from torrent sites</li>
+                      <li>ShowRSS.info for TV shows</li>
+                      <li>Private tracker personal RSS feeds</li>
+                      <li>RSS is filtered, not searched</li>
+                      <li>Great for auto-downloading new releases</li>
+                    </ol>
+                  </div>
+
+                  {/* Cloudflare Bypass */}
+                  <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                    <h4 className="font-medium text-yellow-400 mb-2">Cloudflare Protected Sites</h4>
+                    <ol className="text-sm text-yellow-300 space-y-1 list-decimal list-inside">
+                      <li>Some sites use Cloudflare protection</li>
+                      <li>Best: Use Jackett (handles CF automatically)</li>
+                      <li>Alt: Install FlareSolverr for direct access</li>
+                      <li>Manual: Extract browser cookies</li>
+                      <li>Enable "Cloudflare Protected" toggle</li>
+                    </ol>
+                  </div>
+
+                  {/* Usenet */}
+                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                    <h4 className="font-medium text-purple-400 mb-2">Usenet (Newznab)</h4>
+                    <ol className="text-sm text-purple-300 space-y-1 list-decimal list-inside">
+                      <li>Sign up for a usenet indexer (NZBgeek, etc.)</li>
+                      <li>Get your API key from account settings</li>
+                      <li>Add as Newznab type indexer</li>
+                      <li>Also need usenet provider (Easynews, etc.)</li>
+                      <li>Use SABnzbd for downloads</li>
+                    </ol>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </TabsContent>
