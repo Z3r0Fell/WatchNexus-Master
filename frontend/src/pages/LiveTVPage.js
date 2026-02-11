@@ -410,18 +410,7 @@ export const LiveTVPage = () => {
 
           {/* Guide Tab (EPG) */}
           <TabsContent value="guide">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="text-center py-20">
-                <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-                <h2 className="text-xl font-bold mb-2">TV Guide</h2>
-                <p className="text-gray-400 mb-4">
-                  EPG data will appear here when available from your IPTV sources.
-                </p>
-                <p className="text-sm text-gray-500">
-                  Add a source with an EPG URL to see the program guide.
-                </p>
-              </div>
-            </motion.div>
+            <EPGGuideView channels={channels} />
           </TabsContent>
 
           {/* Sources Tab */}
