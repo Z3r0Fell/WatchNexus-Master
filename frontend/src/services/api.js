@@ -237,10 +237,22 @@ export const torrentEngineApi = {
   setSequential: (torrentId, enabled = true) =>
     axios.post(`${API}/downloads/engine/${torrentId}/sequential`, null, { params: { enabled } }),
   
-  updateSettings: (downloadRate = null, uploadRate = null) =>
-    axios.put(`${API}/downloads/engine/settings`, null, { 
-      params: { download_rate: downloadRate, upload_rate: uploadRate } 
-    }),
+  // Settings
+  getSettings: () =>
+    axios.get(`${API}/downloads/engine/settings`),
+  
+  updateSettings: (settings) =>
+    axios.put(`${API}/downloads/engine/settings`, settings),
+  
+  // Bulk operations
+  pauseAll: () =>
+    axios.post(`${API}/downloads/engine/pause-all`),
+  
+  resumeAll: () =>
+    axios.post(`${API}/downloads/engine/resume-all`),
+  
+  removeCompleted: (deleteFiles = false) =>
+    axios.post(`${API}/downloads/engine/remove-completed`, null, { params: { delete_files: deleteFiles } }),
 };
 
 // Health check
