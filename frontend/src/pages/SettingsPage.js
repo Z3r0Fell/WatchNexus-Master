@@ -1422,12 +1422,22 @@ export const SettingsPage = () => {
                           </div>
                           <div>
                             <label className="text-sm text-gray-400 mb-2 block">Folder Path *</label>
-                            <Input
-                              value={newLibrary.path}
-                              onChange={(e) => setNewLibrary(p => ({ ...p, path: e.target.value }))}
-                              placeholder="/media/movies or D:\Movies"
-                              className="bg-white/5 border-white/10"
-                            />
+                            <div className="flex gap-2">
+                              <Input
+                                value={newLibrary.path}
+                                onChange={(e) => setNewLibrary(p => ({ ...p, path: e.target.value }))}
+                                placeholder="/media/movies or D:\Movies"
+                                className="bg-white/5 border-white/10 flex-1"
+                              />
+                              <Button
+                                type="button"
+                                onClick={() => openFileBrowser(newLibrary.path || '/')}
+                                className="bg-violet-600 hover:bg-violet-700 px-3"
+                                title="Browse folders"
+                              >
+                                <FolderSearch className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
 
