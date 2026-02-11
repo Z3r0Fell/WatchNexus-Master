@@ -352,6 +352,8 @@ export const SettingsPage = () => {
     fetchEngineSettings();
     fetchLibraries();
     fetchStreamingLogins();
+    fetchGelatinStatus();
+    fetchActiveTunnels();
     
     // Load saved IPTV sources
     const savedIptv = localStorage.getItem('watchnexus_iptv_sources');
@@ -364,7 +366,7 @@ export const SettingsPage = () => {
     if (savedMode) {
       setDownloadClientMode(savedMode);
     }
-  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings, fetchLibraries]);
+  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings, fetchLibraries, fetchGelatinStatus, fetchActiveTunnels]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
