@@ -595,6 +595,108 @@ export const SettingsPage = () => {
     setShowAddLibrary(true);
   };
 
+  // Media Management functions (Sonarr-like)
+  const handleSaveMediaManagement = async () => {
+    setSavingMediaManagement(true);
+    try {
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/settings`, mediaManagement);
+      toast.success('Media management settings saved');
+    } catch (error) {
+      toast.error('Failed to save media management settings');
+    } finally {
+      setSavingMediaManagement(false);
+    }
+  };
+
+  const handlePreviewRename = async (libraryId) => {
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/preview-rename`, {
+        library_id: libraryId,
+        format: mediaManagement.standard_movie_format
+      });
+      toast.info(`${res.data.preview_count || 0} files would be renamed`);
+    } catch (error) {
+      toast.error('Failed to preview rename');
+    }
+  };
+
+  const handleOrganizeFiles = async (libraryId) => {
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/organize`, {
+        library_id: libraryId
+      });
+      toast.success(`Organized ${res.data.moved || 0} files`);
+    } catch (error) {
+      toast.error('Failed to organize files');
+    }
+  };
+
+  const handleManualImportScan = async () => {
+    if (!manualImportPath) {
+      toast.error('Please enter a path to scan');
+      return;
+    }
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/scan-import`, {
+        path: manualImportPath
+      });
+      setManualImportFiles(res.data.files || []);
+      toast.success(`Found ${res.data.files?.length || 0} importable files`);
+    } catch (error) {
+      toast.error('Failed to scan directory');
+    }
+  };
+
+  const handleImportFiles = async (files) => {
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/import`, {
+        files: files,
+        settings: mediaManagement
+      });
+      toast.success('Files imported successfully');
+      setShowManualImport(false);
+      setManualImportFiles([]);
+      fetchLibraries();
+    } catch (error) {
+      toast.error('Failed to import files');
+    }
+  };
+
+  const handleMassEdit = async (action, value) => {
+    if (selectedItems.length === 0) {
+      toast.error('No items selected');
+      return;
+    }
+    try {
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/mass-edit`, {
+        item_ids: selectedItems,
+        action: action,
+        value: value
+      });
+      toast.success(`Updated ${selectedItems.length} items`);
+      setSelectedItems([]);
+      fetchLibraries();
+    } catch (error) {
+      toast.error('Mass edit failed');
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.length === libraries.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(libraries.map(l => l.id));
+    }
+  };
+
+  const toggleSelectItem = (itemId) => {
+    if (selectedItems.includes(itemId)) {
+      setSelectedItems(prev => prev.filter(id => id !== itemId));
+    } else {
+      setSelectedItems(prev => [...prev, itemId]);
+    }
+  };
+
   // Fetch built-in engine status and settings
   const fetchEngineStatus = useCallback(async () => {
     try {
