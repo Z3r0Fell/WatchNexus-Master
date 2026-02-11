@@ -1,6 +1,7 @@
 """
-Watch Party Service - WatchNexus Synchronized Viewing
+Potluck - WatchNexus Watch Party Service
 Real-time synchronized playback with chat for group watching.
+Everyone brings something to share - the ultimate viewing experience together.
 """
 
 import asyncio

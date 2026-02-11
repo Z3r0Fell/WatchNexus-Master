@@ -1,5 +1,6 @@
 """
-WatchNexus Media Health Checker
+Sieve - WatchNexus Media Health Checker
+Filters out the bad, keeps the good - quality control for your media.
 Validates and optionally repairs media files to prevent playback issues.
 Works with the Marmalade media server to detect corrupted or incomplete files.
 """

@@ -1,7 +1,7 @@
 """
-WatchNexus Built-in Torrent Engine
+Fondue - WatchNexus Torrent Engine
+Downloads come in pieces, layered together into a perfect whole.
 A fully integrated torrent download client using libtorrent.
-Eliminates the need for external applications like qBittorrent.
 
 Features:
 - BitTorrent protocol support (DHT, PEX, LSD)
