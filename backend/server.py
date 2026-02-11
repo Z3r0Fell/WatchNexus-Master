@@ -1491,13 +1491,195 @@ async def torrent_engine_sequential(
     success = engine.set_sequential(torrent_id, enabled)
     return {"status": "updated" if success else "failed", "sequential": enabled}
 
-# ==================== MARMALADE MEDIA SERVER PROXY ====================
-# Proxy requests to the local Marmalade media server (based on Jellyfin/Emby protocol)
+# ==================== MARMALADE MEDIA SERVER ====================
+# Python-based media server (replaces Jellyfin)
 
-MARMALADE_URL = os.environ.get("MARMALADE_URL", "http://localhost:8096")
+from marmalade_server import get_marmalade_server
 
-@api_router.api_route("/marmalade/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def marmalade_proxy(path: str, request: Request):
+@api_router.get("/marmalade/status")
+async def marmalade_status(user: dict = Depends(require_auth)):
+    """Get Marmalade server status."""
+    server = get_marmalade_server()
+    return {
+        "status": "running",
+        "version": "1.0.0",
+        "engine": "Marmalade (Python)",
+        "libraries": len(server.libraries),
+        "media_files": len(server.media_files),
+    }
+
+# Library Management
+@api_router.get("/marmalade/libraries")
+async def marmalade_get_libraries(user: dict = Depends(require_auth)):
+    """Get all libraries."""
+    server = get_marmalade_server()
+    return [lib.to_dict() for lib in server.get_libraries()]
+
+@api_router.post("/marmalade/libraries")
+async def marmalade_add_library(
+    name: str,
+    path: str,
+    media_type: str = "movies",
+    user: dict = Depends(require_auth)
+):
+    """Add a new library."""
+    server = get_marmalade_server()
+    library = server.add_library(name, path, media_type)
+    return library.to_dict()
+
+@api_router.delete("/marmalade/libraries/{library_id}")
+async def marmalade_remove_library(library_id: str, user: dict = Depends(require_auth)):
+    """Remove a library."""
+    server = get_marmalade_server()
+    success = server.remove_library(library_id)
+    return {"status": "removed" if success else "not_found"}
+
+@api_router.post("/marmalade/libraries/{library_id}/scan")
+async def marmalade_scan_library(library_id: str, user: dict = Depends(require_auth)):
+    """Scan a library for new media."""
+    server = get_marmalade_server()
+    result = await server.scan_library(library_id)
+    return result
+
+# Media Retrieval
+@api_router.get("/marmalade/media")
+async def marmalade_get_media(
+    library_id: str = None,
+    media_type: str = None,
+    limit: int = 100,
+    offset: int = 0,
+    user: dict = Depends(require_auth)
+):
+    """Get media files with optional filtering."""
+    server = get_marmalade_server()
+    media = server.get_all_media(library_id, media_type, limit, offset)
+    return [m.to_dict() for m in media]
+
+@api_router.get("/marmalade/media/{media_id}")
+async def marmalade_get_media_item(media_id: str, user: dict = Depends(require_auth)):
+    """Get a specific media item."""
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    if media:
+        return media.to_dict()
+    raise HTTPException(status_code=404, detail="Media not found")
+
+@api_router.get("/marmalade/media/recent")
+async def marmalade_get_recent(limit: int = 20, user: dict = Depends(require_auth)):
+    """Get recently added media."""
+    server = get_marmalade_server()
+    media = server.get_recent_media(limit)
+    return [m.to_dict() for m in media]
+
+@api_router.get("/marmalade/media/search")
+async def marmalade_search(query: str, limit: int = 50, user: dict = Depends(require_auth)):
+    """Search for media."""
+    server = get_marmalade_server()
+    media = server.search_media(query, limit)
+    return [m.to_dict() for m in media]
+
+@api_router.get("/marmalade/continue-watching")
+async def marmalade_continue_watching(limit: int = 10, user: dict = Depends(require_auth)):
+    """Get continue watching list."""
+    server = get_marmalade_server()
+    media = server.get_continue_watching(limit)
+    return [m.to_dict() for m in media]
+
+# Watch Progress
+@api_router.post("/marmalade/media/{media_id}/progress")
+async def marmalade_update_progress(
+    media_id: str,
+    progress: float,
+    user: dict = Depends(require_auth)
+):
+    """Update watch progress."""
+    server = get_marmalade_server()
+    success = server.update_watch_progress(media_id, progress)
+    return {"status": "updated" if success else "not_found"}
+
+@api_router.post("/marmalade/media/{media_id}/watched")
+async def marmalade_mark_watched(
+    media_id: str,
+    watched: bool = True,
+    user: dict = Depends(require_auth)
+):
+    """Mark media as watched/unwatched."""
+    server = get_marmalade_server()
+    success = server.mark_watched(media_id, watched)
+    return {"status": "updated" if success else "not_found"}
+
+# Streaming
+@api_router.get("/marmalade/stream/{media_id}")
+async def marmalade_get_stream(
+    media_id: str,
+    quality: str = "original",
+    user: dict = Depends(require_auth)
+):
+    """Get stream info for a media file."""
+    server = get_marmalade_server()
+    stream_info = server.get_stream_url(media_id, quality)
+    if stream_info:
+        return stream_info
+    raise HTTPException(status_code=404, detail="Media not found")
+
+@api_router.get("/marmalade/stream/{media_id}/file")
+async def marmalade_stream_file(media_id: str, request: Request):
+    """Stream a media file (supports range requests)."""
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    
+    if not media or not os.path.exists(media.path):
+        raise HTTPException(status_code=404, detail="Media file not found")
+    
+    file_path = media.path
+    file_size = os.path.getsize(file_path)
+    
+    # Get range header for partial content
+    range_header = request.headers.get('range')
+    
+    if range_header:
+        # Parse range header
+        range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
+        if range_match:
+            start = int(range_match.group(1))
+            end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+            
+            if start >= file_size:
+                raise HTTPException(status_code=416, detail="Range not satisfiable")
+            
+            content_length = end - start + 1
+            
+            def iter_file():
+                with open(file_path, 'rb') as f:
+                    f.seek(start)
+                    remaining = content_length
+                    while remaining > 0:
+                        chunk_size = min(8192, remaining)
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            break
+                        remaining -= len(chunk)
+                        yield chunk
+            
+            from starlette.responses import StreamingResponse
+            return StreamingResponse(
+                iter_file(),
+                status_code=206,
+                media_type=server._get_mime_type(file_path),
+                headers={
+                    'Content-Range': f'bytes {start}-{end}/{file_size}',
+                    'Content-Length': str(content_length),
+                    'Accept-Ranges': 'bytes',
+                }
+            )
+    
+    # Full file response
+    from starlette.responses import FileResponse
+    return FileResponse(
+        file_path,
+        media_type=server._get_mime_type(file_path),
+        headers={'Accept-Ranges': 'bytes'}
+    )
     """Proxy all requests to the Marmalade media server"""
     async with httpx.AsyncClient(timeout=30.0) as http_client:
         # Build the target URL
