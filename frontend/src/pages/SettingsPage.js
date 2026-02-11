@@ -815,14 +815,14 @@ export const SettingsPage = () => {
                         onChange={(e) => setNewIndexer(p => ({ ...p, url: e.target.value }))}
                         placeholder={
                           newIndexer.type === 'rss' 
-                            ? 'https://example.com/feed.rss' 
-                            : 'http://localhost:9117/api/v2.0/indexers/all/results/torznab'
+                            ? 'https://showrss.info/other/all.rss' 
+                            : 'https://1337x.to'
                         }
                         className="bg-white/5 border-white/10"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        {newIndexer.type === 'torznab' && 'Torznab URL from Jackett/Prowlarr'}
-                        {newIndexer.type === 'newznab' && 'Newznab API URL from your usenet indexer'}
+                        {newIndexer.type === 'torznab' && 'Torrent site URL - Syrup handles the scraping'}
+                        {newIndexer.type === 'newznab' && 'NZB indexer API URL for Pulp'}
                         {newIndexer.type === 'rss' && 'Direct link to RSS/Atom feed'}
                       </p>
                     </div>
@@ -830,11 +830,11 @@ export const SettingsPage = () => {
                     {newIndexer.type !== 'rss' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm text-gray-400 mb-2 block">API Key</label>
+                          <label className="text-sm text-gray-400 mb-2 block">API Key (if required)</label>
                           <Input
                             value={newIndexer.api_key}
                             onChange={(e) => setNewIndexer(p => ({ ...p, api_key: e.target.value }))}
-                            placeholder="Your API key"
+                            placeholder="Optional for most torrent sites"
                             className="bg-white/5 border-white/10"
                           />
                         </div>
@@ -843,7 +843,7 @@ export const SettingsPage = () => {
                           <Input
                             value={newIndexer.search_path}
                             onChange={(e) => setNewIndexer(p => ({ ...p, search_path: e.target.value }))}
-                            placeholder="/api (default)"
+                            placeholder="Auto-detected"
                             className="bg-white/5 border-white/10"
                           />
                         </div>
@@ -852,12 +852,12 @@ export const SettingsPage = () => {
 
                     {/* Advanced Options */}
                     <div className="pt-4 border-t border-white/10">
-                      <h4 className="text-sm font-medium mb-3">Advanced Options</h4>
+                      <h4 className="text-sm font-medium mb-3">Advanced Options (Preserve)</h4>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-sm">Cloudflare Protected</p>
-                            <p className="text-xs text-gray-500">Enable for sites with Cloudflare protection</p>
+                            <p className="text-xs text-gray-500">Preserve will handle challenge solving automatically</p>
                           </div>
                           <Switch 
                             checked={newIndexer.cloudflare_protected || false}
@@ -866,14 +866,14 @@ export const SettingsPage = () => {
                         </div>
                         {newIndexer.cloudflare_protected && (
                           <div>
-                            <label className="text-sm text-gray-400 mb-2 block">Browser Cookie (optional)</label>
+                            <label className="text-sm text-gray-400 mb-2 block">Browser Cookie (optional fallback)</label>
                             <Input
                               value={newIndexer.cookie || ''}
                               onChange={(e) => setNewIndexer(p => ({ ...p, cookie: e.target.value }))}
-                              placeholder="cf_clearance=...; __cf_bm=..."
+                              placeholder="Usually not needed - Preserve handles this"
                               className="bg-white/5 border-white/10"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Extract from browser DevTools → Application → Cookies</p>
+                            <p className="text-xs text-gray-500 mt-1">Only needed if automatic solving fails</p>
                           </div>
                         )}
                       </div>
