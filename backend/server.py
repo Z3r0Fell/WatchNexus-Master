@@ -1250,7 +1250,7 @@ async def add_magnet_direct(
     save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
     
     try:
-        engine = get_torrent_engine()
+        engine = get_fondue_engine()
         torrent_id = await engine.add_magnet(
             magnet,
             save_path=save_path,
@@ -1299,7 +1299,7 @@ async def compote_grab(
     if download_mode == "builtin":
         # Use built-in torrent engine
         try:
-            engine = get_torrent_engine()
+            engine = get_fondue_engine()
             
             if magnet_url:
                 torrent_id = await engine.add_magnet(
@@ -1477,7 +1477,7 @@ from fondue import get_fondue_engine, shutdown_fondue_engine
 async def torrent_engine_status(user: dict = Depends(require_auth)):
     """Get built-in torrent engine status and transfer info."""
     try:
-        engine = get_torrent_engine()
+        engine = get_fondue_engine()
         transfer = engine.get_transfer_info()
         return {
             "success": True,
@@ -1495,7 +1495,7 @@ async def torrent_engine_status(user: dict = Depends(require_auth)):
 @api_router.get("/downloads/engine/torrents")
 async def torrent_engine_list(user: dict = Depends(require_auth)):
     """Get list of all torrents from built-in engine."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     torrents = engine.get_all_torrents()
     return [t.to_dict() for t in torrents]
 
@@ -1516,7 +1516,7 @@ async def torrent_engine_add(
         settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
         save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
     
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     torrent_id = await engine.add_magnet(
         magnet_url=magnet,
         save_path=save_path,
@@ -1537,7 +1537,7 @@ async def torrent_engine_add(
 @api_router.get("/downloads/engine/settings")
 async def torrent_engine_get_settings(user: dict = Depends(require_auth)):
     """Get current torrent engine settings."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     settings = engine.get_settings()
     return settings.to_dict()
 
@@ -1547,7 +1547,7 @@ async def torrent_engine_update_settings(
     user: dict = Depends(require_auth)
 ):
     """Update torrent engine settings."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     
     try:
         body = await request.json()
@@ -1599,14 +1599,14 @@ async def torrent_engine_update_settings(
 @api_router.post("/downloads/engine/pause-all")
 async def torrent_engine_pause_all(user: dict = Depends(require_auth)):
     """Pause all torrents."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     count = engine.pause_all()
     return {"status": "paused", "count": count}
 
 @api_router.post("/downloads/engine/resume-all")
 async def torrent_engine_resume_all(user: dict = Depends(require_auth)):
     """Resume all torrents."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     count = engine.resume_all()
     return {"status": "resumed", "count": count}
 
@@ -1616,7 +1616,7 @@ async def torrent_engine_remove_completed(
     user: dict = Depends(require_auth)
 ):
     """Remove all completed torrents."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     count = engine.remove_completed(delete_files=delete_files)
     return {"status": "removed", "count": count}
 
@@ -1624,7 +1624,7 @@ async def torrent_engine_remove_completed(
 @api_router.get("/downloads/engine/{torrent_id}")
 async def torrent_engine_get(torrent_id: str, user: dict = Depends(require_auth)):
     """Get status of a specific torrent."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     status = engine.get_status(torrent_id)
     
     if status:
@@ -1635,21 +1635,21 @@ async def torrent_engine_get(torrent_id: str, user: dict = Depends(require_auth)
 @api_router.get("/downloads/engine/{torrent_id}/files")
 async def torrent_engine_files(torrent_id: str, user: dict = Depends(require_auth)):
     """Get files in a torrent."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     files = engine.get_files(torrent_id)
     return [f.to_dict() for f in files]
 
 @api_router.post("/downloads/engine/{torrent_id}/pause")
 async def torrent_engine_pause(torrent_id: str, user: dict = Depends(require_auth)):
     """Pause a torrent."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     success = engine.pause(torrent_id)
     return {"status": "paused" if success else "failed"}
 
 @api_router.post("/downloads/engine/{torrent_id}/resume")
 async def torrent_engine_resume(torrent_id: str, user: dict = Depends(require_auth)):
     """Resume a paused torrent."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     success = engine.resume(torrent_id)
     return {"status": "resumed" if success else "failed"}
 
@@ -1660,7 +1660,7 @@ async def torrent_engine_remove(
     user: dict = Depends(require_auth)
 ):
     """Remove a torrent."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     success = engine.remove(torrent_id, delete_files=delete_files)
     return {"status": "removed" if success else "failed"}
 
@@ -1671,7 +1671,7 @@ async def torrent_engine_sequential(
     user: dict = Depends(require_auth)
 ):
     """Enable/disable sequential download for streaming."""
-    engine = get_torrent_engine()
+    engine = get_fondue_engine()
     success = engine.set_sequential(torrent_id, enabled)
     return {"status": "updated" if success else "failed", "sequential": enabled}
 
@@ -1877,7 +1877,7 @@ async def search_tv_subtitles(
     user: dict = Depends(require_auth)
 ):
     """Search for TV show subtitles."""
-    service = get_subtitle_service()
+    service = get_garnish_service()
     lang_list = [l.strip() for l in languages.split(",")]
     results = await service.search_tv(show_name, season, episode, lang_list)
     return {"results": results, "count": len(results)}
@@ -1891,7 +1891,7 @@ async def search_movie_subtitles(
     user: dict = Depends(require_auth)
 ):
     """Search for movie subtitles."""
-    service = get_subtitle_service()
+    service = get_garnish_service()
     lang_list = [l.strip() for l in languages.split(",")]
     results = await service.search_movie(movie_name, year, imdb_id, lang_list)
     return {"results": results, "count": len(results)}
@@ -1904,7 +1904,7 @@ async def download_subtitle(
     user: dict = Depends(require_auth)
 ):
     """Download a subtitle file."""
-    service = get_subtitle_service()
+    service = get_garnish_service()
     
     # Get media path for save location
     server = get_marmalade_server()
@@ -1955,7 +1955,7 @@ async def update_subtitle_settings(
     )
     
     # Update service config
-    service = get_subtitle_service()
+    service = get_garnish_service()
     service.configure(body)
     
     return {"status": "updated"}
@@ -2157,7 +2157,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 @api_router.get("/watch-party/list")
 async def list_watch_parties(user: dict = Depends(require_auth)):
     """List public watch parties."""
-    manager = get_party_manager()
+    manager = get_potluck_manager()
     return manager.list_public_parties()
 
 @api_router.post("/watch-party/create")
@@ -2168,7 +2168,7 @@ async def create_watch_party_rest(
     user: dict = Depends(require_auth)
 ):
     """Create a watch party (REST endpoint for getting party code before WebSocket)."""
-    manager = get_party_manager()
+    manager = get_potluck_manager()
     
     # Generate party code
     party_code = manager.generate_party_code()
@@ -2199,7 +2199,7 @@ async def create_watch_party_rest(
 @api_router.get("/watch-party/{party_code}")
 async def get_watch_party_info(party_code: str, user: dict = Depends(require_auth)):
     """Get watch party information."""
-    manager = get_party_manager()
+    manager = get_potluck_manager()
     party = manager.get_party(party_code)
     
     if party:
@@ -2227,7 +2227,7 @@ async def watch_party_websocket(websocket: WebSocket, party_code: str):
     """WebSocket connection for watch party synchronization."""
     await websocket.accept()
     
-    manager = get_party_manager()
+    manager = get_potluck_manager()
     user_id = None
     
     try:
@@ -2407,7 +2407,7 @@ app.add_middleware(
 async def shutdown_db_client():
     # Shutdown torrent engine gracefully
     try:
-        shutdown_torrent_engine()
+        shutdown_fondue_engine()
     except:
         pass
     client.close()
