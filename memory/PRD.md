@@ -41,33 +41,59 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - **Backend**: Python FastAPI, libtorrent
 - **Database**: MongoDB
 - **Real-time**: WebSockets for Watch Party
+- **Marketing Website**: Vite + React + TailwindCSS
 
 ## Code Architecture
 ```
 /app/
 ├── backend/
-│   ├── server.py               # Main FastAPI app with all routes
-│   ├── torrent_engine.py       # Built-in libtorrent client
-│   ├── marmalade_server.py     # Python media server
-│   ├── media_health_checker.py # Media file validation
-│   ├── compote.py              # Indexer manager (Syrup, Preserve, Pulp)
-│   ├── syrup_scrapers.py       # Live site scrapers
-│   ├── subtitle_service.py     # Addic7ed/OpenSubtitles integration
-│   ├── watch_party.py          # WebSocket synchronized viewing
-│   └── gelatin.py              # External access module
+│   ├── plugins/              # Bundled plugins (AniDB, Discord)
+│   ├── tests/
+│   │   ├── test_new_modules.py
+│   │   └── test_milk_gadgets.py
+│   ├── compote.py            # Indexer manager
+│   ├── fondue.py             # Torrent engine
+│   ├── gadgets.py            # Plugin system
+│   ├── garnish.py            # Subtitle service
+│   ├── gelatin.py            # External access
+│   ├── marmalade_server.py   # Media server
+│   ├── milk.py               # Theme engine
+│   ├── potluck.py            # Watch party
+│   ├── server.py             # Main FastAPI app
+│   ├── sieve.py              # Media health
+│   └── syrup_scrapers.py     # Live scrapers
 ├── frontend/
-│   ├── electron/               # Electron packaging
+│   ├── electron/
 │   ├── src/
-│   │   ├── pages/
-│   │   │   ├── SettingsPage.js # Settings with 9 tabs
-│   │   │   ├── WatchPartyPage.js # Watch party UI
-│   │   │   └── ...
 │   │   ├── components/
-│   │   └── services/api.js     # API service layer
+│   │   │   └── juice/
+│   │   │       └── JuiceColorPicker.jsx
+│   │   ├── pages/
+│   │   │   ├── SettingsPage.js  # 11 tabs including Theme Forge & Plugins
+│   │   │   ├── WatchPartyPage.js
+│   │   │   └── ...
+│   │   └── services/api.js
 │   └── public/
-│       └── watchnexus-logo.svg # App logo
-└── memory/
-    └── PRD.md                  # This file
+├── scripts/                  # Build/install scripts
+│   ├── build-arch.sh
+│   ├── install-linux.sh
+│   ├── install-mac.sh
+│   └── install-windows.ps1
+├── website/                  # Marketing website (Vite)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx
+│   │   │   └── Footer.jsx
+│   │   └── pages/
+│   │       ├── HomePage.jsx
+│   │       ├── FeaturesPage.jsx
+│   │       ├── DownloadPage.jsx
+│   │       ├── FAQPage.jsx
+│   │       ├── TroubleshootingPage.jsx
+│   │       └── DemoPage.jsx
+│   └── package.json
+└── docs/
+    └── WN-SPLIT-STRUCTURE.md
 ```
 
 ## What's Implemented (as of Feb 2025)
@@ -88,7 +114,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - [x] Streaming with range request support
 
 #### Download Management
-- [x] Built-in torrent client
+- [x] Built-in torrent client (Fondue)
 - [x] Direct magnet link submission
 - [x] Queue management
 - [x] qBittorrent integration (optional)
@@ -105,7 +131,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - [x] Access token generation
 - [x] Share link generation for Watch Party
 
-#### Watch Party
+#### Watch Party (Potluck)
 - [x] Real-time WebSocket synchronization
 - [x] Party creation with 6-character codes
 - [x] Host controls (play/pause/seek)
@@ -114,19 +140,47 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 
 #### Streaming Service Logins
 - [x] Encrypted credential storage
-- [x] Support for 11 services: Netflix, Disney+, Prime, Crunchyroll, YouTube, HBO Max, Hulu, Peacock, Paramount+, Apple TV+, Funimation
+- [x] Support for 11 services
 - [x] Deep linking to services
 
-#### Subtitles
+#### Subtitles (Garnish)
 - [x] Addic7ed scraper implementation
-- [x] OpenSubtitles API support (requires API key)
+- [x] OpenSubtitles API support
 - [x] Language preference settings
-- [x] Search by TV show (season/episode) or movie
+
+#### Theme Engine (Milk) - NEW
+- [x] 6 built-in themes (TV, Movie, Anime, Music, Minimalist, Service)
+- [x] Theme Forge UI for customization
+- [x] Juice color picker integration
+- [x] Custom theme creation and saving
+- [x] CSS variable generation
+- [x] Theme import/export
+
+#### Plugin System (Gadgets) - NEW
+- [x] Plugin discovery and loading
+- [x] Plugin lifecycle management (enable/disable)
+- [x] Provider interfaces (Metadata, Indexer, Subtitle, Notification, Theme, Scheduled)
+- [x] Settings management per plugin
+- [x] Example plugins bundled (AniDB, Discord)
+
+#### Marketing Website - NEW
+- [x] Homepage with hero section and feature overview
+- [x] Features page with module breakdown
+- [x] Download page with multi-platform instructions
+- [x] FAQ page with search and categories
+- [x] Troubleshooting page with solutions
+- [x] Demo page with interactive features
+
+#### Build Infrastructure - NEW
+- [x] Arch Linux build script (PKGBUILD)
+- [x] Linux install script (Debian/Ubuntu/Fedora)
+- [x] macOS install script (Homebrew)
+- [x] Windows install script (PowerShell/Chocolatey)
 
 #### UI/UX
 - [x] Custom sidebar with WatchNexus logo
 - [x] Framer Motion animations
-- [x] 9 settings tabs: General, Library, Media Health, Indexers, Download Client, IPTV, Streaming Services, Subtitles, External Access
+- [x] 11 settings tabs
 - [x] Dark theme with violet/pink accents
 
 ### 🔄 In Progress / Known Limitations
@@ -155,6 +209,13 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
    - Connect to actual video sources
    - Sync with Marmalade library
 
+5. **Client Apps (Planning Stage)**
+   - Android mobile app
+   - Android TV app
+   - Chromecast support
+   - Kodi addon
+   - Investigate: Roku & Amazon Fire Stick
+
 ## API Endpoints
 
 ### Authentication
@@ -172,7 +233,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - `POST /api/gelatin/access-token` - Generate token
 - `GET /api/gelatin/share-link` - Get share link
 
-### Watch Party
+### Watch Party (Potluck)
 - `POST /api/watch-party/create` - Create party
 - `GET /api/watch-party/{code}` - Get party info
 - `GET /api/watch-party/list` - List parties
@@ -184,7 +245,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - `POST /api/streaming-logins` - Add login
 - `DELETE /api/streaming-logins/{service_id}` - Remove login
 
-### Subtitles
+### Subtitles (Garnish)
 - `GET /api/subtitles/search/tv` - Search TV subs
 - `GET /api/subtitles/search/movie` - Search movie subs
 - `POST /api/subtitles/download` - Download subtitle
@@ -203,6 +264,28 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - `GET /api/compote/search` - Search content
 - `GET /api/syrup/search` - Live scraper search
 
+### Milk (Themes) - NEW
+- `GET /api/milk/themes` - All themes
+- `GET /api/milk/current` - Current theme
+- `GET /api/milk/css` - Theme CSS
+- `POST /api/milk/set-theme` - Set theme
+- `POST /api/milk/custom-theme` - Create custom
+- `DELETE /api/milk/custom-theme/{name}` - Delete custom
+- `GET /api/milk/theme-forge` - Theme Forge config
+- `POST /api/milk/export/{name}` - Export theme
+- `POST /api/milk/import` - Import theme
+
+### Gadgets (Plugins) - NEW
+- `GET /api/gadgets/plugins` - List plugins
+- `POST /api/gadgets/discover` - Scan for plugins
+- `POST /api/gadgets/load/{id}` - Load plugin
+- `POST /api/gadgets/unload/{id}` - Unload plugin
+- `POST /api/gadgets/plugins/{id}/enable` - Enable plugin
+- `POST /api/gadgets/plugins/{id}/disable` - Disable plugin
+- `GET /api/gadgets/plugin/{id}` - Plugin info
+- `PUT /api/gadgets/plugin/{id}/settings` - Update settings
+- `GET /api/gadgets/providers/{type}` - List by type
+
 ## Test Credentials
 - **Email**: test@test.com
 - **Password**: password
@@ -210,6 +293,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 ## Deployment Notes
 - Backend runs on port 8001 (internal)
 - Frontend runs on port 3000
+- Marketing website runs on port 3001
 - All API routes prefixed with `/api`
 - MongoDB on default port
 - Preview URL: https://streamvault-209.preview.emergentagent.com
