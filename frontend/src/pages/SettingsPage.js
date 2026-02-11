@@ -258,13 +258,69 @@ export const SettingsPage = () => {
 
   const handleIndexerToggle = async (indexer) => {
     try {
-      await indexersApi.update(indexer.id, !indexer.enabled);
+      await compoteApi.updateIndexer(indexer.id, { enabled: !indexer.enabled });
       setIndexers(prev => prev.map(i => 
         i.id === indexer.id ? { ...i, enabled: !i.enabled } : i
       ));
       toast.success(`${indexer.name} ${indexer.enabled ? 'disabled' : 'enabled'}`);
     } catch (error) {
       toast.error('Failed to update indexer');
+    }
+  };
+
+  const handleAddNewIndexer = async () => {
+    if (!newIndexer.name || !newIndexer.url) {
+      toast.error('Name and URL are required');
+      return;
+    }
+    try {
+      await compoteApi.addIndexer(
+        newIndexer.name,
+        newIndexer.type,
+        newIndexer.url,
+        newIndexer.api_key,
+        true,
+        50,
+        {
+          cloudflare_protected: newIndexer.cloudflare_protected,
+          search_path: newIndexer.search_path,
+          cookie: newIndexer.cookie,
+        }
+      );
+      toast.success(`Indexer "${newIndexer.name}" added`);
+      setShowAddIndexer(false);
+      setNewIndexer({ name: '', type: 'torznab', url: '', api_key: '', cloudflare_protected: false, search_path: '', cookie: '' });
+      // Refresh indexers list
+      const res = await compoteApi.getIndexers();
+      setIndexers(res.data || []);
+    } catch (error) {
+      toast.error('Failed to add indexer');
+    }
+  };
+
+  const handleTestIndexer = async (indexerId) => {
+    setTestingIndexer(indexerId);
+    try {
+      const res = await compoteApi.testIndexer(indexerId);
+      if (res.data.success) {
+        toast.success(res.data.message || 'Connection successful');
+      } else {
+        toast.error(res.data.error || 'Connection failed');
+      }
+    } catch (error) {
+      toast.error('Test failed: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setTestingIndexer(null);
+    }
+  };
+
+  const handleDeleteIndexer = async (indexerId) => {
+    try {
+      await compoteApi.removeIndexer(indexerId);
+      setIndexers(prev => prev.filter(i => i.id !== indexerId));
+      toast.success('Indexer removed');
+    } catch (error) {
+      toast.error('Failed to remove indexer');
     }
   };
 
