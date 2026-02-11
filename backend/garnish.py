@@ -455,9 +455,10 @@ class OpenSubtitlesAPI:
 
 
 # Main subtitle service
-class SubtitleService:
+class GarnishService:
     """
-    Unified Subtitle Service for WatchNexus.
+    Garnish - Unified Subtitle Service for WatchNexus.
+    The finishing touch that adds clarity to your content.
     Combines multiple providers: Addic7ed, OpenSubtitles.
     """
     
@@ -620,11 +621,11 @@ class SubtitleService:
 
 
 # Singleton instance
-_subtitle_service: Optional[SubtitleService] = None
+_garnish_service: Optional[GarnishService] = None
 
-def get_subtitle_service() -> SubtitleService:
-    """Get or create subtitle service instance."""
-    global _subtitle_service
-    if _subtitle_service is None:
-        _subtitle_service = SubtitleService()
-    return _subtitle_service
+def get_garnish_service() -> GarnishService:
+    """Get or create Garnish (subtitle) service instance."""
+    global _garnish_service
+    if _garnish_service is None:
+        _garnish_service = GarnishService()
+    return _garnish_service
