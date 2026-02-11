@@ -179,6 +179,11 @@ export const SettingsPage = () => {
   });
   const [savingTheme, setSavingTheme] = useState(false);
 
+  // Gadgets (Plugins) state
+  const [plugins, setPlugins] = useState([]);
+  const [loadingPlugins, setLoadingPlugins] = useState(false);
+  const [togglingPlugin, setTogglingPlugin] = useState(null);
+
   // Fetch Theme Forge config
   const fetchThemeForgeConfig = useCallback(async () => {
     try {
