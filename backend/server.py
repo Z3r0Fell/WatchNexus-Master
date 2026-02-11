@@ -1094,43 +1094,68 @@ async def compote_grab(
     download_url: str = None,
     magnet_url: str = None,
     size: int = 0,
+    use_builtin: bool = True,  # Default to built-in engine
     user: dict = Depends(require_auth)
 ):
-    """Grab/download a release - sends to qBittorrent if configured."""
+    """Grab/download a release - sends to built-in engine or qBittorrent."""
     if not download_url and not magnet_url:
         raise HTTPException(status_code=400, detail="Either download_url or magnet_url is required")
     
-    # Try to add to qBittorrent
-    qbit_success = False
-    qbit_message = ""
+    # Get user's download settings
+    settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
+    save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
     
-    try:
-        from qbittorrent_client import get_qbittorrent_client
-        qbit = get_qbittorrent_client()
-        
-        # Get settings for save path
-        settings = await db.settings.find_one({"user_id": user["id"]}, {"_id": 0})
-        save_path = settings.get("download_path", "/media/downloads") if settings else "/media/downloads"
-        
-        if magnet_url:
-            qbit_success = await qbit.add_magnet(magnet_url, save_path=save_path, category="watchnexus")
-        elif download_url:
-            qbit_success = await qbit.add_torrent(urls=[download_url], save_path=save_path, category="watchnexus")
-        
-        if qbit_success:
-            qbit_message = "Added to qBittorrent"
-        else:
-            qbit_message = "qBittorrent: Failed to add"
-    except Exception as e:
-        qbit_message = f"qBittorrent not available: {str(e)}"
-        logger.warning(f"qBittorrent grab failed: {e}")
+    download_success = False
+    download_message = ""
+    torrent_id = None
     
-    # Always create a download entry for tracking
+    # Check user preference (stored in localStorage on frontend, passed here)
+    download_mode = "builtin" if use_builtin else "qbittorrent"
+    
+    if download_mode == "builtin":
+        # Use built-in torrent engine
+        try:
+            engine = get_torrent_engine()
+            
+            if magnet_url:
+                torrent_id = await engine.add_magnet(
+                    magnet_url,
+                    save_path=save_path,
+                    sequential=True,  # Enable for streaming
+                    category="watchnexus"
+                )
+                download_success = torrent_id is not None
+                download_message = "Added to built-in engine" if download_success else "Engine: Failed to add"
+            else:
+                # For .torrent URLs, we'd need to download the file first
+                # For now, skip non-magnet downloads
+                download_message = "Built-in engine requires magnet links"
+                
+        except Exception as e:
+            download_message = f"Built-in engine error: {str(e)}"
+            logger.warning(f"Built-in engine grab failed: {e}")
+    else:
+        # Use qBittorrent
+        try:
+            from qbittorrent_client import get_qbittorrent_client
+            qbit = get_qbittorrent_client()
+            
+            if magnet_url:
+                download_success = await qbit.add_magnet(magnet_url, save_path=save_path, category="watchnexus")
+            elif download_url:
+                download_success = await qbit.add_torrent(urls=[download_url], save_path=save_path, category="watchnexus")
+            
+            download_message = "Added to qBittorrent" if download_success else "qBittorrent: Failed to add"
+        except Exception as e:
+            download_message = f"qBittorrent not available: {str(e)}"
+            logger.warning(f"qBittorrent grab failed: {e}")
+    
+    # Create a download entry for tracking
     download = DownloadItem(
         title=title,
         media_type="movie",
         size=size,
-        status="downloading" if qbit_success else "queued",
+        status="downloading" if download_success else "queued",
         progress=0,
     )
     
@@ -1144,17 +1169,20 @@ async def compote_grab(
         "download_url": download_url,
         "magnet_url": magnet_url,
         "size": size,
-        "status": "grabbed",
-        "qbit_success": qbit_success,
+        "status": "grabbed" if download_success else "queued",
+        "engine": download_mode,
+        "torrent_id": torrent_id,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.grab_requests.insert_one(grab_request)
     
     return {
-        "status": "grabbed" if qbit_success else "queued",
+        "status": "grabbed" if download_success else "queued",
         "download_id": download.id,
-        "message": f"Added '{title}' to download queue. {qbit_message}",
-        "qbittorrent": qbit_success
+        "torrent_id": torrent_id,
+        "message": f"Added '{title}' to download queue. {download_message}",
+        "engine": download_mode,
+        "success": download_success
     }
 
 # ==================== QBITTORRENT API ====================
