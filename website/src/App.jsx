@@ -7,6 +7,8 @@ import { DownloadPage } from './pages/DownloadPage';
 import { FAQPage } from './pages/FAQPage';
 import { TroubleshootingPage } from './pages/TroubleshootingPage';
 import { DemoPage } from './pages/DemoPage';
+import { TermsPage } from './pages/TermsPage';
+import { DisclaimerPage } from './pages/DisclaimerPage';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/troubleshooting" element={<TroubleshootingPage />} />
             <Route path="/demo" element={<DemoPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/disclaimer" element={<DisclaimerPage />} />
           </Routes>
         </main>
         <Footer />
