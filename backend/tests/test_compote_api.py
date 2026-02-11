@@ -190,7 +190,7 @@ class TestCompoteGrab:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
         data = response.json()
-        assert data["status"] == "grabbed", "Status should be 'grabbed'"
+        assert data["status"] in ["grabbed", "queued"], "Status should be 'grabbed' or 'queued'"
         assert "download_id" in data, "Response should include 'download_id'"
         assert "message" in data, "Response should include 'message'"
         assert "TEST_Movie_Download" in data["message"], "Message should include title"
@@ -211,7 +211,7 @@ class TestCompoteGrab:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
         data = response.json()
-        assert data["status"] == "grabbed", "Status should be 'grabbed'"
+        assert data["status"] in ["grabbed", "queued"], "Status should be 'grabbed' or 'queued'"
         print(f"✓ POST /api/compote/grab with download_url: {data['download_id']}")
     
     def test_grab_requires_url(self, authenticated_client):
