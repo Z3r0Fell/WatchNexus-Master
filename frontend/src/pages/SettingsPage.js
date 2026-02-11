@@ -13,11 +13,11 @@ import {
   Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson,
   Users, UserPlus, UserMinus, Crown, Lock, Edit2, Save, User,
   FolderSearch, ChevronRight, Home, Database,
-  FileText, FolderInput, HardDriveDownload, Layers, ListChecks, 
-  FileType, Replace, FolderSync, Archive, RotateCcw, ScanLine, 
-  FileCheck, FolderCog, CheckSquare, Square
+  FileText, FolderInput, Layers, ListChecks, 
+  ScanLine, FolderCog, CheckSquare, Square
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
+import { MediaManagementTab, QualityProfilesTab, MassEditorTab, ManualImportTab } from '../components/MediaManagementTabs';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
