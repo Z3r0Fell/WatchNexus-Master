@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { 
   Radio, Play, Pause, Star, StarOff, Eye, EyeOff, Search, 
   Plus, RefreshCw, Trash2, Upload, Download, Tv, Calendar,
-  ChevronRight, Grid, List, ExternalLink, Check, X, Settings
+  ChevronRight, Grid, List, ExternalLink, Check, X, Settings,
+  Clock, ChevronLeft
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
