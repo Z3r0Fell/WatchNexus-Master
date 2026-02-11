@@ -193,6 +193,14 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/party/:partyCode"
+        element={
+          <ProtectedRoute>
+            <WatchPartyPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
