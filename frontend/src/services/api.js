@@ -279,3 +279,85 @@ export const torrentEngineApi = {
 
 // Health check
 export const healthCheck = () => axios.get(`${API}/health`);
+
+// Watch Party API calls
+export const watchPartyApi = {
+  list: () => axios.get(`${API}/watch-party/list`),
+  
+  create: (mediaId, mediaTitle, mediaType = 'movie') =>
+    axios.post(`${API}/watch-party/create`, null, { 
+      params: { media_id: mediaId, media_title: mediaTitle, media_type: mediaType } 
+    }),
+  
+  get: (partyCode) => axios.get(`${API}/watch-party/${partyCode}`),
+  
+  // WebSocket URL builder
+  getWebSocketUrl: (partyCode) => {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const backendHost = process.env.REACT_APP_BACKEND_URL.replace(/^https?:\/\//, '');
+    return `${wsProtocol}//${backendHost}/ws/party/${partyCode}`;
+  },
+};
+
+// Subtitle API calls
+export const subtitleApi = {
+  searchTV: (showName, season, episode, languages = 'en') =>
+    axios.get(`${API}/subtitles/search/tv`, { 
+      params: { show_name: showName, season, episode, languages } 
+    }),
+  
+  searchMovie: (movieName, year = null, imdbId = null, languages = 'en') =>
+    axios.get(`${API}/subtitles/search/movie`, { 
+      params: { movie_name: movieName, year, imdb_id: imdbId, languages } 
+    }),
+  
+  download: (downloadUrl, source, mediaId) =>
+    axios.post(`${API}/subtitles/download`, null, { 
+      params: { download_url: downloadUrl, source, media_id: mediaId } 
+    }),
+  
+  getSettings: () => axios.get(`${API}/subtitles/settings`),
+  
+  updateSettings: (settings) => axios.put(`${API}/subtitles/settings`, settings),
+};
+
+// Gelatin (External Access) API calls
+export const gelatinApi = {
+  status: () => axios.get(`${API}/gelatin/status`),
+  
+  getLanUrl: () => axios.get(`${API}/gelatin/lan-url`),
+  
+  createTunnel: (provider = 'built_in') =>
+    axios.post(`${API}/gelatin/tunnel/create`, null, { params: { provider } }),
+  
+  listTunnels: () => axios.get(`${API}/gelatin/tunnels`),
+  
+  closeTunnel: (tunnelId) => axios.delete(`${API}/gelatin/tunnel/${tunnelId}`),
+  
+  generateAccessToken: (permissions = 'view,watch_party', expiresHours = 24) =>
+    axios.post(`${API}/gelatin/access-token`, null, { 
+      params: { permissions, expires_hours: expiresHours } 
+    }),
+  
+  getShareLink: (partyCode, useExternal = false) =>
+    axios.get(`${API}/gelatin/share-link`, { params: { party_code: partyCode, use_external: useExternal } }),
+  
+  discoverServers: (timeout = 3.0) =>
+    axios.get(`${API}/gelatin/discover`, { params: { timeout } }),
+};
+
+// Streaming Logins API calls
+export const streamingLoginsApi = {
+  getServices: () => axios.get(`${API}/streaming-logins/services`),
+  
+  getLogins: () => axios.get(`${API}/streaming-logins`),
+  
+  addLogin: (serviceId, email, password) =>
+    axios.post(`${API}/streaming-logins`, null, { 
+      params: { service_id: serviceId, email, password } 
+    }),
+  
+  deleteLogin: (serviceId) => axios.delete(`${API}/streaming-logins/${serviceId}`),
+  
+  getCredentials: (serviceId) => axios.get(`${API}/streaming-logins/${serviceId}/credentials`),
+};
