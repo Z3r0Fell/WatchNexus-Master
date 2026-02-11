@@ -59,7 +59,9 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 
 ### 📋 Remaining Backlog
 - Client apps (Android, Android TV, Chromecast, Kodi)
-- Investigate Roku & Fire Stick
+- ✅ Roku & Fire Stick Research Complete (see /app/docs/CLIENT-APP-RESEARCH.md)
+  - Fire Stick: ✅ HIGHLY FEASIBLE (Android-based, easy sideload)
+  - Roku: ⚠️ DEPRIORITIZED (proprietary BrightScript, no code reuse)
 - Connect Plugin Marketplace to backend API (currently uses sample data)
 - Connect Theme Community to backend API (currently uses sample data)
 - Connect DVR to backend recording service
