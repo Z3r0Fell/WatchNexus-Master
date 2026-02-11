@@ -211,7 +211,7 @@ class IndexerConfig:
     """Configuration for an indexer."""
     id: str
     name: str
-    type: str  # torznab, newznab, rss
+    type: str  # torznab, newznab, rss, json_api
     url: str
     api_key: str = ""
     enabled: bool = True
@@ -222,6 +222,20 @@ class IndexerConfig:
     max_requests_per_minute: int = 30
     last_request_time: float = 0
     request_count: int = 0
+    
+    # Cloudflare settings
+    cloudflare_protected: bool = False
+    use_flaresolverr: bool = False
+    
+    # RSS-specific settings
+    rss_title_pattern: str = ""  # Regex to extract title info
+    rss_size_pattern: str = ""   # Regex to extract size
+    rss_magnet_selector: str = ""  # CSS selector or tag for magnet
+    
+    # Additional options
+    download_link_type: str = "auto"  # auto, magnet, torrent, nzb
+    search_path: str = ""  # Custom search path (e.g., /api, /search)
+    cookie: str = ""  # Manual cookie for auth
 
 
 class Compote:
