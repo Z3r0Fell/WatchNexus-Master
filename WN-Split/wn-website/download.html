@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download - WatchNexus</title>
+  <meta name="description" content="Download WatchNexus for Windows, macOS, Linux, or Docker.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <a href="index.html" class="navbar-logo">
+        <span>🎬</span>
+        <span>WatchNexus</span>
+      </a>
+      <div class="navbar-links">
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="demo.html">Demo</a>
+        <a href="faq.html">FAQ</a>
+        <a href="troubleshooting.html">Support</a>
+      </div>
+      <div class="navbar-cta">
+        <a href="https://github.com/watchnexus" class="btn btn-ghost">GitHub</a>
+        <a href="download.html" class="btn btn-primary">Download</a>
+      </div>
+      <button class="mobile-menu-btn">☰</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" style="min-height: auto; padding-top: 8rem; padding-bottom: 4rem;">
+    <h1 class="hero-title">Download <span class="text-gradient">WatchNexus</span></h1>
+    <p class="hero-subtitle">Available for all major platforms. Free and open source.</p>
+  </section>
+
+  <!-- Download Options -->
+  <section class="section">
+    <div class="container">
+      <div class="download-grid">
+        <!-- Windows -->
+        <div class="card download-card">
+          <div class="download-icon">🪟</div>
+          <h3 class="download-title">Windows</h3>
+          <p class="download-version">Windows 10/11 (64-bit)</p>
+          <a href="#" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+            Download Installer (.exe)
+          </a>
+          <a href="#" class="btn btn-outline" style="width: 100%;">
+            Portable Version (.zip)
+          </a>
+          <p style="color: var(--color-text-dark); font-size: 0.75rem; margin-top: 1rem;">
+            Includes MongoDB and all dependencies
+          </p>
+        </div>
+        
+        <!-- macOS -->
+        <div class="card download-card">
+          <div class="download-icon">🍎</div>
+          <h3 class="download-title">macOS</h3>
+          <p class="download-version">macOS 12+ (Intel & Apple Silicon)</p>
+          <a href="#" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+            Download DMG
+          </a>
+          <a href="#" class="btn btn-outline" style="width: 100%;">
+            Homebrew Cask
+          </a>
+          <p style="color: var(--color-text-dark); font-size: 0.75rem; margin-top: 1rem;">
+            Universal binary for Intel and M1/M2
+          </p>
+        </div>
+        
+        <!-- Linux -->
+        <div class="card download-card">
+          <div class="download-icon">🐧</div>
+          <h3 class="download-title">Linux</h3>
+          <p class="download-version">Debian, Ubuntu, Fedora, Arch</p>
+          <a href="#" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+            Download .deb
+          </a>
+          <a href="#" class="btn btn-outline" style="width: 100%; margin-bottom: 0.5rem;">
+            Download .rpm
+          </a>
+          <a href="#" class="btn btn-outline" style="width: 100%;">
+            AUR Package
+          </a>
+        </div>
+        
+        <!-- Docker -->
+        <div class="card download-card">
+          <div class="download-icon">🐳</div>
+          <h3 class="download-title">Docker</h3>
+          <p class="download-version">Any platform with Docker</p>
+          <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+            <code style="color: var(--color-primary); font-size: 0.8rem;">
+              docker pull watchnexus/watchnexus:latest
+            </code>
+          </div>
+          <a href="#" class="btn btn-outline" style="width: 100%;">
+            Docker Compose
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- System Requirements -->
+  <section class="section" style="background: var(--color-surface);">
+    <div class="container">
+      <h2 class="section-title text-center">System Requirements</h2>
+      
+      <div class="grid grid-cols-2 gap-4" style="max-width: 800px; margin: 0 auto;">
+        <div class="card">
+          <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--color-primary);">Minimum</h3>
+          <ul style="color: var(--color-text-muted); font-size: 0.875rem; list-style: none;">
+            <li style="margin-bottom: 0.5rem;">✓ 2 CPU cores</li>
+            <li style="margin-bottom: 0.5rem;">✓ 2 GB RAM</li>
+            <li style="margin-bottom: 0.5rem;">✓ 1 GB disk space (+ media storage)</li>
+            <li style="margin-bottom: 0.5rem;">✓ 64-bit operating system</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--color-primary);">Recommended</h3>
+          <ul style="color: var(--color-text-muted); font-size: 0.875rem; list-style: none;">
+            <li style="margin-bottom: 0.5rem;">✓ 4+ CPU cores</li>
+            <li style="margin-bottom: 0.5rem;">✓ 4+ GB RAM</li>
+            <li style="margin-bottom: 0.5rem;">✓ SSD for database</li>
+            <li style="margin-bottom: 0.5rem;">✓ Hardware transcoding (Intel QSV, NVIDIA NVENC)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Installation Guide -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title text-center">Quick Start Guide</h2>
+      
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">1. Download and Install</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.875rem;">
+            Download the appropriate version for your platform. Run the installer or extract the archive.
+          </p>
+        </div>
+        
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">2. Start WatchNexus</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.875rem;">
+            Launch WatchNexus from your applications menu or run the startup script. The web interface will be available at <code style="color: var(--color-primary);">http://localhost:8001</code>
+          </p>
+        </div>
+        
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">3. Configure Your Libraries</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.875rem;">
+            Go to Settings → Library to add your media folders. WatchNexus will scan and organize your existing content.
+          </p>
+        </div>
+        
+        <div class="card">
+          <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">4. Add Indexers</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.875rem;">
+            Go to Settings → Indexers to add your preferred torrent or usenet indexers. Test connections to ensure everything works.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>WatchNexus</h4>
+        <p style="color: var(--color-text-muted); font-size: 0.875rem;">Your unified, self-hosted media pipeline.</p>
+      </div>
+      <div class="footer-section">
+        <h4>Product</h4>
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="demo.html">Demo</a>
+        <a href="faq.html">FAQ</a>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <a href="troubleshooting.html">Troubleshooting</a>
+        <a href="https://github.com/watchnexus">GitHub</a>
+        <a href="https://discord.gg/watchnexus">Discord</a>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <a href="terms.html">Terms of Service</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>&copy; 2025 WatchNexus. All rights reserved.</div>
+      <div>Made with ❤️ for the self-hosting community</div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
