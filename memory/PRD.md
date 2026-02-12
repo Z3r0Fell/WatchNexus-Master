@@ -1,161 +1,191 @@
 # WatchNexus - Product Requirements Document
 
 ## Original Problem Statement
-Build a unified, self-hosted media pipeline called "WatchNexus" that replaces the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, fully self-contained application that handles requesting, acquiring, organizing, and watching media.
+Build a unified, self-hosted media pipeline called "WatchNexus" that replaces the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. A single, fully self-contained application handling requesting, acquiring, organizing, and watching media.
 
-## Module Code Names (Food Theme 🍯)
+## Core Architecture
 
-| Module | Code Name | Description | File |
-|--------|-----------|-------------|------|
-| Indexer Aggregator | **Syrup** 🍯 | Aggregates multiple indexers, live scrapers | `syrup_scrapers.py` |
-| Challenge Solver | **Preserve** 🫙 | Cloudflare bypass / anti-bot protection | `compote.py` |
-| Usenet Handler | **Pulp** 🍊 | Usenet/NZB download management | `compote.py` |
-| Indexer Manager | **Compote** 🍇 | Central manager for Syrup, Preserve, Pulp | `compote.py` |
-| Media Server | **Marmalade** 🍊 | Library management, streaming, progress | `marmalade_server.py` |
-| External Access | **Gelatin** 🍮 | LAN discovery, tunneling, share links | `gelatin.py` |
-| Watch Party | **Potluck** 🍲 | WebSocket sync, chat, reactions | `potluck.py` |
-| Subtitle Service | **Garnish** 🌿 | Addic7ed/OpenSubtitles integration | `garnish.py` |
-| Torrent Engine | **Fondue** 🫕 | Built-in libtorrent client | `fondue.py` |
-| Media Health | **Sieve** 🫗 | File validation, repair, scans | `sieve.py` |
-| Plugin System | **Gadgets** 🔧 | Extension/plugin framework | `gadgets.py` |
-| Theme Engine | **Milk** 🥛 | Visual customization, Theme Forge | `milk.py` |
-| Color Picker | **Juice** 🧃 | Color selection component | `JuiceColorPicker.jsx` |
-| IPTV Manager | **Relish** 📺 | M3U parsing, EPG, live TV | `relish.py` |
+### Frontend
+- React with TailwindCSS
+- Shadcn UI components
+- Framer Motion animations
 
-## What's Implemented (as of Feb 2025)
+### Backend
+- FastAPI (Python)
+- MongoDB database
+- Built-in torrent engine (Syrup)
 
-### ✅ All P0 Features Complete
-- Full-stack React + FastAPI + MongoDB architecture
-- JWT Authentication with Google OAuth
-- TMDB API integration
-- Built-in torrent engine (Fondue)
-- Library management (Marmalade)
-- Watch progress tracking
-- External access (Gelatin)
-- Watch Party (Potluck) with video integration
-- Subtitle service (Garnish) with VideoPlayer integration
-- Theme engine (Milk) with Theme Forge UI
+### Key Modules
+- **Syrup** - Media Acquisition (torrents/usenet)
+- **Marmalade** - Library Manager
+- **Compote** - Indexer Manager
+- **Pulp** - Usenet Handler
+- **Gelatin** - Remote Access
+- **Juice** - UI Engine
+- **Milk** - Theme Forge
+
+---
+
+## What's Been Implemented
+
+### ✅ Core Application
+- Complete React frontend with responsive design
+- FastAPI backend with MongoDB
+- User authentication system
+- Dashboard with activity feeds
+- Movies & TV Shows library views
+- Search functionality with TMDB integration
+- Settings page with multiple tabs
+
+### ✅ Media Pipeline
+- Built-in torrent engine (Syrup) with queue management
+- Indexer management (Compote)
+- Library management (Marmalade) with folder scanning
+- Subtitle support (Bazarr-like features)
+- Media health checker
+- IPTV support with M3U playlists
+
+### ✅ Streaming & Access
+- Built-in video player with transcoding
+- Jellyfin-compatible API (`/api/emby/*`) for existing clients
+- Multi-user support with permissions
+- Remote access via Gelatin (Cloudflare tunnels)
+
+### ✅ Customization
+- Theme Forge (Milk) - custom color schemes
 - Plugin system (Gadgets)
-- Marketing website (watchnexus.ca)
-- Build/install scripts for all platforms
+- Streaming service integrations
 
-### ✅ All P1 Features Complete
-- IPTV Integration (Relish) - M3U parsing, EPG, channel management
-- Usenet/NZB support (Pulp)
-- VideoPlayer subtitle overlay with Garnish
-- Watch Party video integration with Marmalade
-- Live TV page with full channel management UI
+### ✅ Installation Scripts (FIXED - Dec 2024)
+- `build-arch.sh` - Arch Linux package builder
+- `install-linux.sh` - Debian/Ubuntu/Fedora installer
+- `install-mac.sh` - macOS installer
+- `install-windows.ps1` - Windows PowerShell installer
 
-### ✅ Session Feb 11, 2025 - Complete
-- Legal Pages on Marketing Website (Terms & Conditions, Legal Disclaimer)
-- EPG Guide View with full timeline implementation in Live TV page
-- Plugin Marketplace page (full UI with sample plugins)
-- Theme Community page (full UI with theme previews)
-- DVR Recording page (full UI with scheduling/management)
-- **Fixed Syrup Scrapers**: Updated YTS and EZTV to use working mirror domains
-  - YTS: `yts.torrentbay.st` (primary), fallbacks available
-  - EZTV: `eztvx.to` (primary), fallbacks available
-  - Both scrapers now return real results with magnet links
-- **Hidden Jellyfin-Compatible API**: `/api/emby/*` endpoints for existing clients
-  - System info, authentication, library views, items, images, playback
-  - Compatible with Jellyfin/Emby clients (Infuse, Swiftfin, etc.)
-- **Kickstarter Campaign Document**: `/app/docs/KICKSTARTER-CAMPAIGN.md`
-- **Client App Research**: `/app/docs/CLIENT-APP-RESEARCH.md`
-- **Updated Login Logo**: Replaced play button with proper WatchNexus gradient logo
-- **Users Management Tab**: New Settings > Users tab with full CRUD operations
-  - Create, edit, delete users
-  - Role assignment (admin/user/guest)
-  - Granular permissions (download, delete, manage library, settings access)
-  - Max concurrent streams setting
-  - Server access info panel showing Jellyfin API endpoint
-- **Library File Browser**: Browse button in Library tab to navigate local filesystem
-  - Full folder navigation with item counts
-  - Quick access shortcuts (/, /home, /media, /mnt, /srv, /data, Home)
-  - Auto-detect library name and media type from folder name
-  - Select folder to add as library
-- **Media Management Sub-Tabs** (Sonarr-like): New sub-tab structure in Library settings
-  - Libraries: Main library management (existing)
-  - Media Management: File naming, importing, organization settings
-  - Quality Profiles: Define quality preferences (HD-720p, Ultra-HD, etc.)
-  - Mass Editor: Bulk edit multiple libraries
-  - Manual Import: Import files from custom paths
+### ✅ Marketing Website
+- React version at `/app/website`
+- **NEW: Static HTML version at `/app/website-static`** (easily editable)
+- Features, Download, Demo, FAQ, Troubleshooting, Terms, Disclaimer pages
+- `.htaccess` for IONOS deployment
 
-### 📋 Remaining Backlog
-- Client apps (Android, Android TV, Chromecast, Kodi)
-- ✅ Roku & Fire Stick Research Complete (see /app/docs/CLIENT-APP-RESEARCH.md)
-  - Fire Stick: ✅ HIGHLY FEASIBLE (Android-based, easy sideload)
-  - Roku: ⚠️ DEPRIORITIZED (proprietary BrightScript, no code reuse)
-- Connect Plugin Marketplace to backend API (currently uses sample data)
-- Connect Theme Community to backend API (currently uses sample data)
-- Connect DVR to backend recording service
+### ✅ Code Stabilization (Dec 2024)
+- Refactored `SettingsPage.js` from 3559 to 2872 lines
+- Extracted components:
+  - `GeneralSettings.jsx`
+  - `UsersSettings.jsx`
+  - `LibrarySettings.jsx`
+- Stable build with no "Maximum call stack size exceeded" errors
 
-## API Endpoints Summary
+---
 
-### IPTV (Relish) - NEW
-- `GET /api/iptv/stats` - Statistics
-- `GET/POST/DELETE /api/iptv/sources` - Source CRUD
-- `POST /api/iptv/sources/{id}/refresh` - Refresh channels
-- `GET /api/iptv/channels` - List with filters
-- `GET /api/iptv/groups` - Channel groups
-- `POST /api/iptv/channels/{id}/favorite` - Toggle favorite
-- `GET /api/iptv/epg/{id}` - EPG programs
-- `GET /api/iptv/export` - Export M3U
+## Pending/In-Progress
 
-### Pulp (Usenet) - NEW
-- `GET /api/pulp/queue` - NZB queue
-- `POST /api/pulp/queue` - Add NZB
-- `POST /api/pulp/search` - Search Newznab
-- `POST /api/pulp/parse-nzb` - Parse NZB
+### 🔶 Media Management UI (P1)
+- Basic sub-tab structure exists in Library settings
+- Full Sonarr-like implementation pending
+- Needs: file renaming, quality profiles, mass editor
 
-## Architecture
-```
-/app/
-├── backend/
-│   ├── compote.py      # Indexer + Pulp
-│   ├── fondue.py       # Torrent engine
-│   ├── gadgets.py      # Plugins
-│   ├── garnish.py      # Subtitles
-│   ├── gelatin.py      # External access
-│   ├── marmalade_server.py  # Media server
-│   ├── milk.py         # Themes
-│   ├── potluck.py      # Watch party
-│   ├── relish.py       # IPTV (NEW)
-│   ├── server.py       # FastAPI routes
-│   ├── sieve.py        # Media health
-│   └── syrup_scrapers.py
-├── frontend/
-│   └── src/
-│       ├── components/
-│       │   ├── VideoPlayer.jsx  # With subtitle overlay
-│       │   └── juice/JuiceColorPicker.jsx
-│       └── pages/
-│           ├── DVRPage.js        # DVR Recording (NEW)
-│           ├── LiveTVPage.js     # Full IPTV UI + EPG Guide
-│           ├── PluginMarketplacePage.js  # Plugin Marketplace (NEW)
-│           ├── SettingsPage.js   # Theme Forge + Plugins
-│           ├── ThemeCommunityPage.js     # Theme Community (NEW)
-│           └── WatchPartyPage.js # Video integration
-├── scripts/
-│   ├── build-arch.sh
-│   ├── install-linux.sh
-│   ├── install-mac.sh
-│   └── install-windows.ps1
-└── website/            # Marketing site
-    └── src/pages/
-        ├── TermsPage.jsx       # Terms & Conditions (NEW)
-        └── DisclaimerPage.jsx  # Legal Disclaimer (NEW)
-```
+### 🔶 Community/DVR Pages
+- UI designed but using static data
+- Need backend API connections
+
+---
+
+## Backlog (Future Tasks)
+
+### P1 - High Priority
+- Complete Media Management UI (Sonarr-like features)
+- Connect Community & DVR pages to backend
+- Client app documentation (Android, Android TV, Chromecast, Kodi)
+
+### P2 - Medium Priority
+- Native mobile apps (iOS, Android)
+- Roku/Fire Stick client apps
+- Live usenet/indexer testing (Pulp, Compote modules)
+
+### P3 - Lower Priority
+- Separate Git repositories for plugins/community
+- Advanced DVR functionality
+- Watch party features
+
+---
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+
+### Users
+- `GET /api/users` - List all users
+- `POST /api/users` - Create user
+
+### Libraries
+- `GET /api/libraries` - List libraries
+- `POST /api/libraries` - Add library
+- `POST /api/libraries/{id}/scan` - Scan library
+
+### Media
+- `GET /api/movies` - List movies
+- `GET /api/tvshows` - List TV shows
+- `GET /api/search` - Search TMDB
+
+### Torrents (Syrup)
+- `GET /api/syrup/search` - Search torrents
+- `POST /api/syrup/download` - Start download
+
+### File Browser
+- `GET /api/browse` - Browse file system
+
+### Jellyfin Compatible
+- `GET /api/emby/*` - Jellyfin-compatible API
+
+---
 
 ## Test Credentials
-- Email: test@test.com
-- Password: password
+- **Email:** `test@test.com`
+- **Password:** `password`
 
-## Preview URL
-https://nexusmedia-2.preview.emergentagent.com
+---
 
-## Next Steps: Client App Planning
-1. Android mobile app
-2. Android TV app
-3. Chromecast support
-4. Kodi addon
-5. Investigate: Roku & Amazon Fire Stick
+## File References
+
+### Critical Files
+- `/app/frontend/src/pages/SettingsPage.js` - Main settings (2872 lines)
+- `/app/frontend/src/components/settings/` - Extracted settings components
+- `/app/backend/server.py` - Main backend server
+- `/app/backend/jellyfin_compat.py` - Jellyfin API facade
+
+### Scripts
+- `/app/scripts/build-arch.sh` - Arch Linux builder
+- `/app/scripts/install-linux.sh` - Linux installer
+- `/app/scripts/install-mac.sh` - macOS installer
+- `/app/scripts/install-windows.ps1` - Windows installer
+
+### Static Website
+- `/app/website-static/` - Fully static HTML website
+- `/app/website-static/README.md` - Editing instructions
+- `/app/website-static/css/styles.css` - All styles (easy to customize)
+
+### Documentation
+- `/app/docs/CLIENT-APP-RESEARCH.md` - Client app feasibility
+- `/app/docs/KICKSTARTER-CAMPAIGN.md` - Kickstarter document
+
+---
+
+## Notes
+
+### Known Issues Resolved
+1. ✅ Torrent scrapers (YTS, EZTV) fixed with fallback domains
+2. ✅ Installation scripts fixed for all platforms
+3. ✅ SettingsPage.js build instability resolved via refactoring
+
+### Architecture Decisions
+- MongoDB for flexibility with media metadata
+- Jellyfin API compatibility for existing app ecosystem
+- Modular design with named "modules" (Syrup, Marmalade, etc.)
+- Plugin system for extensibility
+
+---
+
+*Last updated: December 2024*
