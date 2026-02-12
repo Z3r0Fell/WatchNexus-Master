@@ -6,12 +6,12 @@ import {
   RefreshCw, Filter, Grid, List, Shield, Code, Globe, Tv,
   MessageSquare, Palette, Calendar, Database, Bell, ChevronRight,
   Music, Image, Settings, Gamepad2, Monitor, Zap, Box, Layers,
-  Play, Radio, Cloud, Sun, Eye, Upload, ArrowRight, FileArchive,
-  CheckCircle, AlertTriangle
+  Play, Radio, Cloud, Sun, Eye, ArrowRight
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { PluginConverter } from '../components/PluginConverter';
 import { toast } from 'sonner';
 import axios from 'axios';
 
