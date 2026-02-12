@@ -68,12 +68,12 @@ export const PluginMarketplacePage = () => {
   const [installing, setInstalling] = useState(null);
 
   const getToken = () => localStorage.getItem('watchnexus_token');
-  const authHeader = { Authorization: `Bearer ${getToken()}` };
+  const getAuthHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 
   // Fetch Kodi categories
   const fetchKodiCategories = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/kodi/categories`, { headers: authHeader });
+      const res = await axios.get(`${API_URL}/api/kodi/categories`, { headers: getAuthHeader() });
       setKodiCategories(res.data.categories || {});
     } catch (err) {
       console.error('Failed to fetch Kodi categories:', err);
