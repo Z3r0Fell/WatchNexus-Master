@@ -2918,6 +2918,88 @@ async def refresh_kodi_addons(user: dict = Depends(require_auth)):
     addons = await browser.fetch_addons(force_refresh=True)
     return {"status": "refreshed", "addon_count": len(addons)}
 
+# ==================== PLUGIN ADAPTER API ====================
+from plugin_adapter import AdapterFactory, convert_kodi_addon
+
+@api_router.post("/adapter/convert")
+async def convert_plugin(
+    source_path: str,
+    ecosystem: str = None,
+    user: dict = Depends(require_auth)
+):
+    """
+    Convert a plugin from Kodi/Jellyfin/Plex to WatchNexus format.
+    
+    Args:
+        source_path: Path to plugin source (zip or directory)
+        ecosystem: Source ecosystem (auto-detected if not provided)
+    """
+    manifest, result = AdapterFactory.convert(source_path, ecosystem=ecosystem)
+    
+    if manifest:
+        return {
+            "status": "success",
+            "manifest": manifest.to_dict(),
+            "output_path": result
+        }
+    else:
+        raise HTTPException(status_code=400, detail=result)
+
+@api_router.get("/adapter/detect")
+async def detect_plugin_ecosystem(
+    source_path: str,
+    user: dict = Depends(require_auth)
+):
+    """Detect the ecosystem of a plugin source."""
+    ecosystem = AdapterFactory.detect_ecosystem(source_path)
+    if ecosystem:
+        return {"ecosystem": ecosystem}
+    raise HTTPException(status_code=400, detail="Could not detect plugin ecosystem")
+
+@api_router.post("/kodi/addons/{addon_id}/install")
+async def install_kodi_addon(
+    addon_id: str,
+    user: dict = Depends(require_auth)
+):
+    """
+    Download and convert a Kodi addon for installation.
+    """
+    browser = get_kodi_browser()
+    addon = await browser.get_addon(addon_id)
+    
+    if not addon:
+        raise HTTPException(status_code=404, detail="Addon not found")
+    
+    # Download addon
+    import tempfile
+    import aiohttp
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(addon.download_url) as resp:
+            if resp.status != 200:
+                raise HTTPException(status_code=502, detail="Failed to download addon")
+            
+            # Save to temp file
+            temp_dir = tempfile.mkdtemp()
+            zip_path = os.path.join(temp_dir, f"{addon_id}.zip")
+            
+            with open(zip_path, 'wb') as f:
+                f.write(await resp.read())
+    
+    # Convert
+    manifest, output_path = convert_kodi_addon(zip_path)
+    
+    if manifest:
+        return {
+            "status": "converted",
+            "addon": addon.to_dict(),
+            "manifest": manifest.to_dict(),
+            "output_path": output_path,
+            "notes": manifest.adaptation_notes
+        }
+    else:
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {output_path}")
+
 # ==================== HEALTH CHECK ====================
 
 @api_router.get("/health")
