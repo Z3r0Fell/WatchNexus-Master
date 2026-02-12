@@ -164,40 +164,6 @@ export const PluginMarketplacePage = () => {
     fetchKodiAddons(category);
   };
 
-  // Convert plugin handler
-  const handleConvertPlugin = async () => {
-    if (!convertFile) {
-      toast.error('Please select a ZIP file');
-      return;
-    }
-    setConverting(true);
-    setConvertResult(null);
-    setConvertError(null);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', convertFile);
-      if (convertEcosystem) {
-        formData.append('ecosystem', convertEcosystem);
-      }
-      
-      const res = await axios.post(`${API_URL}/api/adapter/convert`, formData, {
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setConvertResult(res.data);
-      toast.success(`Plugin converted from ${res.data.ecosystem}`);
-    } catch (err) {
-      const detail = err.response?.data?.detail || 'Conversion failed';
-      setConvertError(detail);
-      toast.error(detail);
-    } finally {
-      setConverting(false);
-    }
-  };
-
   // Go back to categories
   const handleBackToCategories = () => {
     setSelectedCategory(null);
