@@ -91,6 +91,33 @@ export const MediaManagementSubTab = () => {
   );
 };
 
+const ProfileCard = ({ profile, onEdit, onDelete }) => (
+  <div className="p-4 rounded-xl bg-surface border border-white/10 hover:border-violet-500/30">
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
+          <Layers className="w-5 h-5 text-violet-400" />
+        </div>
+        <div>
+          <p className="font-semibold">{profile.name}</p>
+          <p className="text-xs text-gray-400">Upgrade until: {profile.upgradeUntil}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" className="border-white/20" onClick={onEdit}>Edit</Button>
+        <Button size="sm" variant="ghost" className="hover:bg-red-500/20 text-red-400" onClick={onDelete}>
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+    <div className="flex flex-wrap gap-2">
+      <span className="px-2 py-1 rounded text-xs font-medium bg-white/5 text-gray-300">{profile.qualities[0]}</span>
+      <span className="px-2 py-1 rounded text-xs font-medium bg-white/5 text-gray-300">{profile.qualities[1]}</span>
+      {profile.qualities[2] && <span className="px-2 py-1 rounded text-xs font-medium bg-white/5 text-gray-300">{profile.qualities[2]}</span>}
+    </div>
+  </div>
+);
+
 export const QualityProfilesSubTab = () => {
   const profiles = [
     { id: 1, name: 'Any', upgradeUntil: 'Bluray-1080p', qualities: ['WEB-720p', 'WEB-1080p', 'Bluray-1080p'] },
@@ -114,46 +141,33 @@ export const QualityProfilesSubTab = () => {
           </Button>
         </div>
         <div className="space-y-4">
-          {profiles.map((profile) => (
-            <div key={profile.id} className="p-4 rounded-xl bg-surface border border-white/10 hover:border-violet-500/30">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
-                    <Layers className="w-5 h-5 text-violet-400" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{profile.name}</p>
-                    <p className="text-xs text-gray-400">Upgrade until: {profile.upgradeUntil}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="border-white/20">Edit</Button>
-                  <Button size="sm" variant="ghost" className="hover:bg-red-500/20 text-red-400">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {profile.qualities.map((q) => (
-                  <span key={q} className="px-2 py-1 rounded text-xs font-medium bg-white/5 text-gray-300">{q}</span>
-                ))}
-              </div>
-            </div>
-          ))}
+          <ProfileCard profile={profiles[0]} onEdit={() => {}} onDelete={() => {}} />
+          <ProfileCard profile={profiles[1]} onEdit={() => {}} onDelete={() => {}} />
+          <ProfileCard profile={profiles[2]} onEdit={() => {}} onDelete={() => {}} />
         </div>
       </div>
     </div>
   );
 };
 
+const SeriesRow = ({ series, isSelected, onSelect }) => (
+  <div onClick={onSelect} className={`p-3 border-b border-white/5 flex items-center gap-4 cursor-pointer hover:bg-white/5 ${isSelected ? 'bg-violet-500/10' : ''}`}>
+    <span className="flex-1 font-medium">{series.title}</span>
+    <span className={`w-24 text-sm ${series.status === 'continuing' ? 'text-green-400' : 'text-gray-400'}`}>
+      {series.status === 'continuing' ? 'Continuing' : 'Ended'}
+    </span>
+    <span className="w-20 text-center">
+      <span className={`inline-block w-3 h-3 rounded-full ${series.monitored ? 'bg-green-500' : 'bg-gray-600'}`} />
+    </span>
+  </div>
+);
+
 export const MassEditorSubTab = () => {
   const [selectedItems, setSelectedItems] = useState([]);
-  const mockSeries = [
-    { id: 1, title: 'Breaking Bad', status: 'ended', monitored: true },
-    { id: 2, title: 'Game of Thrones', status: 'ended', monitored: true },
-    { id: 3, title: 'The Mandalorian', status: 'continuing', monitored: true },
-    { id: 4, title: 'Stranger Things', status: 'continuing', monitored: false },
-  ];
+  const series1 = { id: 1, title: 'Breaking Bad', status: 'ended', monitored: true };
+  const series2 = { id: 2, title: 'Game of Thrones', status: 'ended', monitored: true };
+  const series3 = { id: 3, title: 'The Mandalorian', status: 'continuing', monitored: true };
+  const series4 = { id: 4, title: 'Stranger Things', status: 'continuing', monitored: false };
 
   const toggleSelect = (id) => {
     setSelectedItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -179,17 +193,10 @@ export const MassEditorSubTab = () => {
             <span className="w-24 font-medium text-sm">Status</span>
             <span className="w-20 font-medium text-sm text-center">Monitored</span>
           </div>
-          {mockSeries.map((series) => (
-            <div key={series.id} onClick={() => toggleSelect(series.id)} className={`p-3 border-b border-white/5 flex items-center gap-4 cursor-pointer hover:bg-white/5 ${selectedItems.includes(series.id) ? 'bg-violet-500/10' : ''}`}>
-              <span className="flex-1 font-medium">{series.title}</span>
-              <span className={`w-24 text-sm ${series.status === 'continuing' ? 'text-green-400' : 'text-gray-400'}`}>
-                {series.status === 'continuing' ? 'Continuing' : 'Ended'}
-              </span>
-              <span className="w-20 text-center">
-                <span className={`inline-block w-3 h-3 rounded-full ${series.monitored ? 'bg-green-500' : 'bg-gray-600'}`} />
-              </span>
-            </div>
-          ))}
+          <SeriesRow series={series1} isSelected={selectedItems.includes(1)} onSelect={() => toggleSelect(1)} />
+          <SeriesRow series={series2} isSelected={selectedItems.includes(2)} onSelect={() => toggleSelect(2)} />
+          <SeriesRow series={series3} isSelected={selectedItems.includes(3)} onSelect={() => toggleSelect(3)} />
+          <SeriesRow series={series4} isSelected={selectedItems.includes(4)} onSelect={() => toggleSelect(4)} />
         </div>
       </div>
     </div>
