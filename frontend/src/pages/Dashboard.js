@@ -136,6 +136,7 @@ export const Dashboard = () => {
   const [watchlist, setWatchlist] = useState([]);
   const [continueWatching, setContinueWatching] = useState([]);
   const [nextUp, setNextUp] = useState([]);
+  const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -144,13 +145,14 @@ export const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [trendingRes, nowPlayingRes, onTheAirRes, watchlistRes, progressRes, nextUpRes] = await Promise.all([
+      const [trendingRes, nowPlayingRes, onTheAirRes, watchlistRes, progressRes, nextUpRes, recentRes] = await Promise.all([
         tmdbApi.getTrending('all', 'week'),
         tmdbApi.getNowPlaying(),
         tmdbApi.getOnTheAir(),
         watchlistApi.get().catch(() => ({ data: [] })),
         progressApi.get().catch(() => ({ data: [] })),
         progressApi.getNextUp().catch(() => ({ data: [] })),
+        libraryApi.getRecentlyAdded(12).catch(() => ({ data: [] })),
       ]);
 
       setTrending(trendingRes.data.results || []);
@@ -159,6 +161,7 @@ export const Dashboard = () => {
       setWatchlist(watchlistRes.data || []);
       setContinueWatching(progressRes.data || []);
       setNextUp(nextUpRes.data || []);
+      setRecentlyAdded(recentRes.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load content');
