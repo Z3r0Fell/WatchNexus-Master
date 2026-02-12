@@ -13,6 +13,16 @@ DATA_DIR="$HOME/Library/Application Support/WatchNexus"
 CONFIG_DIR="$DATA_DIR/config"
 VERSION="1.0.0"
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
 echo "=============================================="
 echo "  WatchNexus Installer - macOS"
 echo "=============================================="
@@ -24,101 +34,157 @@ check_macos_version() {
     local major=$(echo "$version" | cut -d. -f1)
     
     if [ "$major" -lt 12 ]; then
-        echo "Error: WatchNexus requires macOS 12 Monterey or later"
-        echo "Current version: $version"
+        log_error "WatchNexus requires macOS 12 Monterey or later"
+        log_error "Current version: $version"
         exit 1
     fi
     
-    echo "macOS version: $version ✓"
+    log_info "macOS version: $version ✓"
 }
 
 # Install Homebrew if not present
 install_homebrew() {
     if ! command -v brew &> /dev/null; then
-        echo "[1/6] Installing Homebrew..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        log_info "[1/6] Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || {
+            log_error "Failed to install Homebrew"
+            exit 1
+        }
         
         # Add Homebrew to PATH
         if [[ $(uname -m) == "arm64" ]]; then
             eval "$(/opt/homebrew/bin/brew shellenv)"
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
         else
             eval "$(/usr/local/bin/brew shellenv)"
         fi
     else
-        echo "[1/6] Homebrew already installed ✓"
+        log_info "[1/6] Homebrew already installed ✓"
     fi
 }
 
 # Install dependencies
 install_deps() {
-    echo "[2/6] Installing dependencies..."
+    log_info "[2/6] Installing dependencies..."
     
-    brew update
+    brew update || log_warn "Homebrew update failed, continuing..."
     
     # Install required packages
-    brew install \
-        node \
-        yarn \
-        python@3.11 \
-        mongodb-community \
-        ffmpeg \
-        vips \
-        libtorrent-rasterbar
+    brew install node yarn python@3.11 ffmpeg vips || {
+        log_error "Failed to install required packages"
+        exit 1
+    }
     
-    # Start MongoDB
-    brew services start mongodb-community
+    # MongoDB - try to install, don't fail if unavailable
+    if ! command -v mongod &> /dev/null; then
+        log_info "Installing MongoDB..."
+        brew tap mongodb/brew 2>/dev/null || true
+        brew install mongodb-community 2>/dev/null || {
+            log_warn "Could not install MongoDB via Homebrew"
+            log_warn "You can use Docker instead:"
+            log_warn "  docker run -d --name mongodb -p 27017:27017 mongo:7"
+        }
+    fi
     
-    echo "✓ Dependencies installed"
+    # Start MongoDB if installed
+    if command -v mongod &> /dev/null; then
+        brew services start mongodb-community 2>/dev/null || true
+    fi
+    
+    log_info "✓ Dependencies installed"
 }
 
 # Create directories
 create_directories() {
-    echo "[3/6] Creating directories..."
+    log_info "[3/6] Creating directories..."
     
     mkdir -p "$DATA_DIR"/{config,themes,plugins,downloads,media,logs}
     mkdir -p "$CONFIG_DIR"
     
-    echo "✓ Directories created"
+    log_info "✓ Directories created"
 }
 
 # Build frontend
 build_frontend() {
-    echo "[4/6] Building frontend..."
+    log_info "[4/6] Building frontend..."
     
     cd "$PROJECT_ROOT/frontend"
-    yarn install --frozen-lockfile
-    yarn build
     
-    echo "✓ Frontend built"
+    if [ ! -f "package.json" ]; then
+        log_error "frontend/package.json not found"
+        exit 1
+    fi
+    
+    # Install dependencies
+    if [ -f "yarn.lock" ]; then
+        yarn install --frozen-lockfile 2>/dev/null || yarn install
+    else
+        yarn install
+    fi
+    
+    # Build
+    yarn build || {
+        log_error "Frontend build failed"
+        exit 1
+    }
+    
+    # Determine output directory
+    if [ -d "build" ]; then
+        FRONTEND_BUILD_DIR="build"
+    elif [ -d "dist" ]; then
+        FRONTEND_BUILD_DIR="dist"
+    else
+        log_error "No frontend build directory found"
+        exit 1
+    fi
+    
+    log_info "✓ Frontend built"
 }
 
 # Install backend
 install_backend() {
-    echo "[5/6] Installing backend..."
+    log_info "[5/6] Installing backend..."
     
     cd "$PROJECT_ROOT/backend"
     
+    if [ ! -f "requirements.txt" ]; then
+        log_error "backend/requirements.txt not found"
+        exit 1
+    fi
+    
     # Create virtual environment
-    python3 -m venv venv
+    python3 -m venv venv || {
+        log_error "Failed to create virtual environment"
+        exit 1
+    }
+    
     source venv/bin/activate
     
     pip install --upgrade pip
-    pip install -r requirements.txt
+    pip install -r requirements.txt || {
+        log_error "Failed to install Python dependencies"
+        deactivate
+        exit 1
+    }
     
     deactivate
     
-    echo "✓ Backend installed"
+    log_info "✓ Backend installed"
 }
 
 # Create macOS app bundle
 create_app_bundle() {
-    echo "[6/6] Creating app bundle..."
+    log_info "[6/6] Creating app bundle..."
+    
+    # Remove old installation
+    rm -rf "$INSTALL_DIR" 2>/dev/null || true
     
     # Create app structure
     mkdir -p "$INSTALL_DIR/Contents/"{MacOS,Resources}
     
     # Copy frontend
-    cp -r "$PROJECT_ROOT/frontend/build" "$INSTALL_DIR/Contents/Resources/frontend"
+    cd "$PROJECT_ROOT/frontend"
+    cp -r "$FRONTEND_BUILD_DIR" "$INSTALL_DIR/Contents/Resources/frontend"
     
     # Copy backend
     cp -r "$PROJECT_ROOT/backend" "$INSTALL_DIR/Contents/Resources/"
@@ -156,27 +222,35 @@ create_app_bundle() {
 EOF
 
     # Create launcher script
-    cat > "$INSTALL_DIR/Contents/MacOS/watchnexus" << 'EOF'
+    cat > "$INSTALL_DIR/Contents/MacOS/watchnexus" << 'LAUNCHEREOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RESOURCES_DIR="$SCRIPT_DIR/../Resources"
 DATA_DIR="$HOME/Library/Application Support/WatchNexus"
+LOG_DIR="$DATA_DIR/logs"
+
+mkdir -p "$LOG_DIR"
 
 # Start backend
 cd "$RESOURCES_DIR/backend"
 source venv/bin/activate
-python -m uvicorn server:app --host 127.0.0.1 --port 8001 &
+python -m uvicorn server:app --host 127.0.0.1 --port 8001 >> "$LOG_DIR/server.log" 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to start
-sleep 2
+sleep 3
 
-# Open frontend in browser
-open "http://localhost:8001"
-
-# Wait for backend process
-wait $BACKEND_PID
-EOF
+# Check if backend started
+if kill -0 $BACKEND_PID 2>/dev/null; then
+    # Open frontend in browser
+    open "http://localhost:8001"
+    
+    # Wait for backend process
+    wait $BACKEND_PID
+else
+    osascript -e 'display alert "WatchNexus" message "Failed to start backend. Check logs at ~/Library/Application Support/WatchNexus/logs/"'
+fi
+LAUNCHEREOF
     
     chmod +x "$INSTALL_DIR/Contents/MacOS/watchnexus"
     
@@ -188,10 +262,10 @@ WATCHNEXUS_PLUGINS_DIR=$DATA_DIR/plugins
 WATCHNEXUS_THEMES_DIR=$DATA_DIR/themes
 EOF
     
-    echo "✓ App bundle created"
+    log_info "✓ App bundle created"
 }
 
-# Create LaunchAgent for auto-start
+# Create LaunchAgent for auto-start (optional)
 create_launch_agent() {
     local plist_dir="$HOME/Library/LaunchAgents"
     local plist_file="$plist_dir/ca.watchnexus.server.plist"
@@ -219,9 +293,9 @@ create_launch_agent() {
     <key>WorkingDirectory</key>
     <string>$INSTALL_DIR/Contents/Resources/backend</string>
     <key>RunAtLoad</key>
-    <true/>
+    <false/>
     <key>KeepAlive</key>
-    <true/>
+    <false/>
     <key>StandardOutPath</key>
     <string>$DATA_DIR/logs/server.log</string>
     <key>StandardErrorPath</key>
@@ -230,8 +304,8 @@ create_launch_agent() {
 </plist>
 EOF
     
-    echo "LaunchAgent created (optional auto-start)"
-    echo "Enable with: launchctl load $plist_file"
+    log_info "LaunchAgent created (for optional auto-start)"
+    log_info "Enable with: launchctl load $plist_file"
 }
 
 # Main
@@ -261,9 +335,20 @@ main() {
     echo "  2. Or run from terminal:"
     echo "     $INSTALL_DIR/Contents/MacOS/watchnexus"
     echo ""
-    echo "MongoDB service:"
-    echo "  brew services start mongodb-community"
-    echo "  brew services stop mongodb-community"
+    echo "Access at: http://localhost:8001"
+    echo ""
+    
+    if ! command -v mongod &> /dev/null; then
+        echo ""
+        log_warn "MongoDB is required but not installed."
+        log_warn "Start MongoDB before using WatchNexus:"
+        log_warn "  brew services start mongodb-community"
+        log_warn "  OR: docker run -d --name mongodb -p 27017:27017 mongo:7"
+    else
+        echo "MongoDB service:"
+        echo "  brew services start mongodb-community"
+        echo "  brew services stop mongodb-community"
+    fi
     echo ""
 }
 
