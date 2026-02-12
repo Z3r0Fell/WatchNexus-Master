@@ -574,12 +574,10 @@ export const PluginMarketplacePage = () => {
           </TabsContent>
 
           {/* Convert Plugin Tab */}
-          <TabsContent value="convert" className="mt-6" data-testid="convert-plugin-tab">
-            <div className="max-w-3xl mx-auto space-y-6">
-              <div className="glass-card rounded-xl p-6">
-                <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-                  <ArrowRight className="w-5 h-5 text-violet-400" />
-                  Plugin Converter
+          <TabsContent value="convert" className="mt-6">
+            <PluginConverter />
+          </TabsContent>
+        </Tabs>
                 </h2>
                 <p className="text-gray-400 text-sm mb-6">
                   Convert plugins from Kodi, Jellyfin/Emby, or Plex to the WatchNexus format. 
