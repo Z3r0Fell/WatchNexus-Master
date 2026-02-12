@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { 
   Package, Search, Download, Star, ExternalLink, Check, X,
-  RefreshCw, Filter, Grid, List, Shield, Code, Globe,
-  MessageSquare, Palette, Calendar, Database, Bell, ChevronRight
+  RefreshCw, Filter, Grid, List, Shield, Code, Globe, Tv,
+  MessageSquare, Palette, Calendar, Database, Bell, ChevronRight,
+  Music, Image, Settings, Gamepad2, Monitor, Zap, Box, Layers,
+  Play, Radio, Cloud, Sun, Eye
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -14,7 +16,28 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Plugin type icons and colors
+// Kodi category icons and colors
+const kodiCategoryConfig = {
+  video: { icon: Tv, color: 'blue', label: 'Video Add-ons', emoji: '📺' },
+  audio: { icon: Music, color: 'green', label: 'Music Add-ons', emoji: '🎵' },
+  image: { icon: Image, color: 'pink', label: 'Picture Add-ons', emoji: '🖼️' },
+  program: { icon: Settings, color: 'purple', label: 'Program Add-ons', emoji: '⚙️' },
+  script: { icon: Code, color: 'orange', label: 'Scripts', emoji: '📜' },
+  service: { icon: Zap, color: 'yellow', label: 'Services', emoji: '⚡' },
+  skin: { icon: Palette, color: 'violet', label: 'Skins', emoji: '🎨' },
+  resource: { icon: Box, color: 'cyan', label: 'Resources', emoji: '📦' },
+  context: { icon: Layers, color: 'rose', label: 'Context Menus', emoji: '📋' },
+  subtitle: { icon: MessageSquare, color: 'teal', label: 'Subtitles', emoji: '💬' },
+  metadata: { icon: Database, color: 'indigo', label: 'Metadata', emoji: '🗄️' },
+  lyrics: { icon: Radio, color: 'fuchsia', label: 'Lyrics', emoji: '🎤' },
+  screensaver: { icon: Monitor, color: 'slate', label: 'Screensavers', emoji: '🖥️' },
+  weather: { icon: Sun, color: 'amber', label: 'Weather', emoji: '☀️' },
+  repository: { icon: Cloud, color: 'sky', label: 'Repositories', emoji: '☁️' },
+  game: { icon: Gamepad2, color: 'red', label: 'Games', emoji: '🎮' },
+  other: { icon: Package, color: 'gray', label: 'Other', emoji: '📁' },
+};
+
+// WatchNexus plugin type config
 const pluginTypeConfig = {
   metadata_provider: { icon: Database, color: 'blue', label: 'Metadata' },
   indexer_provider: { icon: Globe, color: 'green', label: 'Indexer' },
@@ -24,545 +47,535 @@ const pluginTypeConfig = {
   scheduled_task: { icon: Calendar, color: 'orange', label: 'Scheduled' },
 };
 
-// Sample marketplace plugins (in production, this would come from an API)
-const marketplacePlugins = [
-  {
-    id: 'anidb-metadata',
-    name: 'AniDB Metadata',
-    description: 'Fetch anime metadata from AniDB including episode titles, air dates, and detailed information.',
-    author: 'WatchNexus',
-    version: '1.2.0',
-    plugin_type: 'metadata_provider',
-    downloads: 12450,
-    rating: 4.8,
-    verified: true,
-    homepage: 'https://github.com/watchnexus/plugin-anidb',
-    installed: false,
-    featured: true,
-  },
-  {
-    id: 'discord-notify',
-    name: 'Discord Notifications',
-    description: 'Send notifications to Discord channels when new media is added or downloads complete.',
-    author: 'WatchNexus',
-    version: '2.0.1',
-    plugin_type: 'notification_provider',
-    downloads: 8923,
-    rating: 4.9,
-    verified: true,
-    homepage: 'https://github.com/watchnexus/plugin-discord',
-    installed: true,
-    featured: true,
-  },
-  {
-    id: 'telegram-notify',
-    name: 'Telegram Notifications',
-    description: 'Get instant notifications on Telegram when media is added, downloads finish, or watch parties start.',
-    author: 'community',
-    version: '1.1.0',
-    plugin_type: 'notification_provider',
-    downloads: 5621,
-    rating: 4.6,
-    verified: false,
-    homepage: 'https://github.com/user/watchnexus-telegram',
-    installed: false,
-  },
-  {
-    id: 'trakt-sync',
-    name: 'Trakt.tv Sync',
-    description: 'Sync your watch history, ratings, and watchlist with Trakt.tv automatically.',
-    author: 'community',
-    version: '1.5.2',
-    plugin_type: 'metadata_provider',
-    downloads: 15234,
-    rating: 4.7,
-    verified: true,
-    homepage: 'https://github.com/user/watchnexus-trakt',
-    installed: false,
-    featured: true,
-  },
-  {
-    id: 'opensubtitles-enhanced',
-    name: 'OpenSubtitles Enhanced',
-    description: 'Enhanced OpenSubtitles integration with better search, auto-download, and subtitle sync.',
-    author: 'community',
-    version: '2.1.0',
-    plugin_type: 'subtitle_provider',
-    downloads: 9876,
-    rating: 4.5,
-    verified: false,
-    homepage: 'https://github.com/user/os-enhanced',
-    installed: false,
-  },
-  {
-    id: 'plex-theme',
-    name: 'Plex-Inspired Theme',
-    description: 'A dark theme inspired by the Plex media server interface.',
-    author: 'community',
-    version: '1.0.0',
-    plugin_type: 'theme_provider',
-    downloads: 3421,
-    rating: 4.3,
-    verified: false,
-    homepage: 'https://github.com/user/watchnexus-plex-theme',
-    installed: false,
-  },
-  {
-    id: 'jackett-indexer',
-    name: 'Jackett Integration',
-    description: 'Connect Jackett as an indexer source for expanded torrent site coverage.',
-    author: 'WatchNexus',
-    version: '1.0.0',
-    plugin_type: 'indexer_provider',
-    downloads: 7890,
-    rating: 4.8,
-    verified: true,
-    homepage: 'https://github.com/watchnexus/plugin-jackett',
-    installed: false,
-  },
-  {
-    id: 'auto-organize',
-    name: 'Auto Organize',
-    description: 'Automatically rename and organize downloaded media files based on metadata.',
-    author: 'community',
-    version: '1.3.0',
-    plugin_type: 'scheduled_task',
-    downloads: 6543,
-    rating: 4.4,
-    verified: false,
-    homepage: 'https://github.com/user/watchnexus-auto-organize',
-    installed: false,
-  },
-  {
-    id: 'email-notify',
-    name: 'Email Notifications',
-    description: 'Send email notifications for important events like download completion and new releases.',
-    author: 'community',
-    version: '1.0.0',
-    plugin_type: 'notification_provider',
-    downloads: 2134,
-    rating: 4.2,
-    verified: false,
-    homepage: 'https://github.com/user/watchnexus-email',
-    installed: false,
-  },
-  {
-    id: 'fanart-enhanced',
-    name: 'Fanart.tv Enhanced',
-    description: 'Fetch high-quality artwork from Fanart.tv including logos, banners, and backgrounds.',
-    author: 'WatchNexus',
-    version: '1.1.0',
-    plugin_type: 'metadata_provider',
-    downloads: 4567,
-    rating: 4.6,
-    verified: true,
-    homepage: 'https://github.com/watchnexus/plugin-fanart',
-    installed: false,
-  },
-];
-
 export const PluginMarketplacePage = () => {
-  const [plugins, setPlugins] = useState(marketplacePlugins);
-  const [installedPlugins, setInstalledPlugins] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('kodi');
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [sortBy, setSortBy] = useState('downloads');
   const [viewMode, setViewMode] = useState('grid');
-  const [selectedPlugin, setSelectedPlugin] = useState(null);
+  
+  // Kodi addons state
+  const [kodiAddons, setKodiAddons] = useState([]);
+  const [kodiCategories, setKodiCategories] = useState({});
+  const [popularAddons, setPopularAddons] = useState([]);
+  const [loadingKodi, setLoadingKodi] = useState(false);
+  
+  // WatchNexus plugins state
+  const [installedPlugins, setInstalledPlugins] = useState([]);
+  const [loadingPlugins, setLoadingPlugins] = useState(false);
+  
+  // UI state
+  const [selectedAddon, setSelectedAddon] = useState(null);
   const [installing, setInstalling] = useState(null);
 
   const getToken = () => localStorage.getItem('watchnexus_token');
+  const authHeader = { Authorization: `Bearer ${getToken()}` };
 
-  // Fetch installed plugins
-  const fetchInstalledPlugins = useCallback(async () => {
+  // Fetch Kodi categories
+  const fetchKodiCategories = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/gadgets/plugins`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      setInstalledPlugins(res.data || []);
-      
-      // Update marketplace plugins with installed status
-      setPlugins(prev => prev.map(p => ({
-        ...p,
-        installed: (res.data || []).some(ip => ip.id === p.id)
-      })));
+      const res = await axios.get(`${API_URL}/api/kodi/categories`, { headers: authHeader });
+      setKodiCategories(res.data.categories || {});
     } catch (err) {
-      console.error('Failed to fetch installed plugins:', err);
+      console.error('Failed to fetch Kodi categories:', err);
     }
   }, []);
 
+  // Fetch popular Kodi addons
+  const fetchPopularAddons = useCallback(async () => {
+    setLoadingKodi(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/kodi/addons/popular?limit=12`, { headers: authHeader });
+      setPopularAddons(res.data.addons || []);
+    } catch (err) {
+      console.error('Failed to fetch popular addons:', err);
+    } finally {
+      setLoadingKodi(false);
+    }
+  }, []);
+
+  // Fetch Kodi addons by category or search
+  const fetchKodiAddons = useCallback(async (category = null, query = '') => {
+    setLoadingKodi(true);
+    try {
+      let url = `${API_URL}/api/kodi/addons?limit=100`;
+      if (query) url += `&query=${encodeURIComponent(query)}`;
+      if (category) url += `&category=${category}`;
+      
+      const res = await axios.get(url, { headers: authHeader });
+      setKodiAddons(res.data.addons || []);
+    } catch (err) {
+      console.error('Failed to fetch Kodi addons:', err);
+      toast.error('Failed to fetch addons');
+    } finally {
+      setLoadingKodi(false);
+    }
+  }, []);
+
+  // Fetch installed WatchNexus plugins
+  const fetchInstalledPlugins = useCallback(async () => {
+    setLoadingPlugins(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/gadgets/plugins`, { headers: authHeader });
+      setInstalledPlugins(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch installed plugins:', err);
+    } finally {
+      setLoadingPlugins(false);
+    }
+  }, []);
+
+  // Refresh Kodi repository
+  const refreshKodiRepo = async () => {
+    setLoadingKodi(true);
+    try {
+      await axios.post(`${API_URL}/api/kodi/refresh`, {}, { headers: authHeader });
+      toast.success('Kodi repository refreshed');
+      await fetchKodiCategories();
+      await fetchPopularAddons();
+    } catch (err) {
+      toast.error('Failed to refresh repository');
+    } finally {
+      setLoadingKodi(false);
+    }
+  };
+
+  // Initial load
   useEffect(() => {
+    fetchKodiCategories();
+    fetchPopularAddons();
     fetchInstalledPlugins();
-  }, [fetchInstalledPlugins]);
+  }, [fetchKodiCategories, fetchPopularAddons, fetchInstalledPlugins]);
 
-  // Filter and sort plugins
-  const filteredPlugins = plugins
-    .filter(p => {
-      if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !p.description.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      if (selectedType !== 'all' && p.plugin_type !== selectedType) {
-        return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'downloads') return b.downloads - a.downloads;
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'newest') return b.version.localeCompare(a.version);
-      return 0;
-    });
+  // Search handler
+  useEffect(() => {
+    if (activeTab === 'kodi' && searchQuery) {
+      const debounce = setTimeout(() => {
+        fetchKodiAddons(selectedCategory, searchQuery);
+      }, 300);
+      return () => clearTimeout(debounce);
+    }
+  }, [searchQuery, selectedCategory, activeTab, fetchKodiAddons]);
 
-  const featuredPlugins = plugins.filter(p => p.featured);
-
-  const handleInstall = async (plugin) => {
-    setInstalling(plugin.id);
-    // Simulate installation (in production, this would download and install the plugin)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setPlugins(prev => prev.map(p => 
-      p.id === plugin.id ? { ...p, installed: true } : p
-    ));
-    toast.success(`${plugin.name} installed successfully!`);
-    setInstalling(null);
-    fetchInstalledPlugins();
+  // Category selection handler
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setSearchQuery('');
+    fetchKodiAddons(category);
   };
 
-  const handleUninstall = async (plugin) => {
-    if (!confirm(`Uninstall ${plugin.name}?`)) return;
-    
-    setPlugins(prev => prev.map(p => 
-      p.id === plugin.id ? { ...p, installed: false } : p
-    ));
-    toast.success(`${plugin.name} uninstalled`);
-    fetchInstalledPlugins();
+  // Go back to categories
+  const handleBackToCategories = () => {
+    setSelectedCategory(null);
+    setKodiAddons([]);
+    setSearchQuery('');
   };
 
-  const PluginCard = ({ plugin, compact = false }) => {
-    const typeConfig = pluginTypeConfig[plugin.plugin_type] || { icon: Package, color: 'gray', label: 'Other' };
-    const TypeIcon = typeConfig.icon;
-
+  // Kodi Addon Card
+  const KodiAddonCard = ({ addon }) => {
+    const categoryConfig = kodiCategoryConfig[addon.category] || kodiCategoryConfig.other;
+    
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -2 }}
-        className={`p-4 rounded-xl bg-surface border border-white/5 hover:border-violet-500/50 cursor-pointer transition-all ${compact ? '' : 'h-full'}`}
-        onClick={() => setSelectedPlugin(plugin)}
+        layout
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="glass-card rounded-xl overflow-hidden hover:border-violet-500/30 transition-all cursor-pointer group"
+        onClick={() => setSelectedAddon(addon)}
       >
-        <div className="flex items-start gap-3 mb-3">
-          <div className={`w-12 h-12 rounded-xl bg-${typeConfig.color}-500/20 flex items-center justify-center flex-shrink-0`}>
-            <TypeIcon className={`w-6 h-6 text-${typeConfig.color}-400`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium truncate">{plugin.name}</h3>
-              {plugin.verified && (
-                <Shield className="w-4 h-4 text-blue-400 flex-shrink-0" title="Verified" />
-              )}
+        <div className="aspect-video bg-gradient-to-br from-violet-500/20 to-pink-500/20 relative overflow-hidden">
+          {addon.icon ? (
+            <img 
+              src={addon.icon} 
+              alt={addon.name}
+              className="w-full h-full object-contain p-4"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-4xl">
+              {categoryConfig.emoji}
             </div>
-            <p className="text-xs text-gray-500">by {plugin.author} • v{plugin.version}</p>
+          )}
+          <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium bg-${categoryConfig.color}-500/30 text-${categoryConfig.color}-300`}>
+            {categoryConfig.label}
           </div>
         </div>
-
-        <p className="text-sm text-gray-400 mb-4 line-clamp-2">{plugin.description}</p>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <Download className="w-3 h-3" />
-              {plugin.downloads.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="w-3 h-3 fill-current text-yellow-400" />
-              {plugin.rating}
-            </span>
+        <div className="p-4">
+          <h3 className="font-bold text-white truncate group-hover:text-violet-400 transition-colors">
+            {addon.name}
+          </h3>
+          <p className="text-sm text-gray-400 mt-1 line-clamp-2">
+            {addon.summary || addon.description || 'No description available'}
+          </p>
+          <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+            <span>{addon.provider}</span>
+            <span>v{addon.version}</span>
           </div>
-          
-          {plugin.installed ? (
-            <span className="flex items-center gap-1 text-xs text-green-400">
-              <Check className="w-3 h-3" />
-              Installed
-            </span>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Category Card (Kodi-style)
+  const CategoryCard = ({ category, count }) => {
+    const config = kodiCategoryConfig[category] || kodiCategoryConfig.other;
+    const Icon = config.icon;
+    
+    return (
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => handleCategorySelect(category)}
+        className="glass-card rounded-xl p-6 text-left hover:border-violet-500/30 transition-all group"
+      >
+        <div className={`w-12 h-12 rounded-xl bg-${config.color}-500/20 flex items-center justify-center mb-4`}>
+          <Icon className={`w-6 h-6 text-${config.color}-400`} />
+        </div>
+        <h3 className="font-bold text-white group-hover:text-violet-400 transition-colors">
+          {config.label}
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">
+          {count} add-ons
+        </p>
+      </motion.button>
+    );
+  };
+
+  // Installed Plugin Card
+  const InstalledPluginCard = ({ plugin }) => {
+    const config = pluginTypeConfig[plugin.plugin_type] || pluginTypeConfig.metadata_provider;
+    const Icon = config.icon;
+    
+    return (
+      <div className="glass-card rounded-xl p-4 flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-xl bg-${config.color}-500/20 flex items-center justify-center flex-shrink-0`}>
+          {plugin.icon ? (
+            <span className="text-2xl">{plugin.icon}</span>
           ) : (
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleInstall(plugin);
-              }}
-              disabled={installing === plugin.id}
-              className="h-7 text-xs"
-            >
-              {installing === plugin.id ? (
-                <RefreshCw className="w-3 h-3 animate-spin" />
-              ) : (
-                <>
-                  <Download className="w-3 h-3 mr-1" />
-                  Install
-                </>
-              )}
-            </Button>
+            <Icon className={`w-6 h-6 text-${config.color}-400`} />
           )}
         </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-white truncate">{plugin.name}</h3>
+          <p className="text-sm text-gray-400 truncate">{plugin.description}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            plugin.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+          }`}>
+            {plugin.enabled ? 'Enabled' : 'Disabled'}
+          </span>
+          <span className="text-xs text-gray-500">v{plugin.version}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Addon Detail Modal
+  const AddonDetailModal = ({ addon, onClose }) => {
+    if (!addon) return null;
+    
+    const categoryConfig = kodiCategoryConfig[addon.category] || kodiCategoryConfig.other;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          className="glass-card rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header with image */}
+          <div className="aspect-video bg-gradient-to-br from-violet-500/20 to-pink-500/20 relative">
+            {addon.fanart ? (
+              <img 
+                src={addon.fanart} 
+                alt={addon.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            ) : addon.icon ? (
+              <img 
+                src={addon.icon} 
+                alt={addon.name}
+                className="w-full h-full object-contain p-8"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-6xl">
+                {categoryConfig.emoji}
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="p-6">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white">{addon.name}</h2>
+                <p className="text-gray-400">{addon.provider}</p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${categoryConfig.color}-500/20 text-${categoryConfig.color}-300`}>
+                {categoryConfig.label}
+              </span>
+            </div>
+            
+            <p className="text-gray-300 mb-6">
+              {addon.description || addon.summary || 'No description available'}
+            </p>
+            
+            {/* Info grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-3 rounded-lg bg-white/5">
+                <p className="text-xs text-gray-500">Version</p>
+                <p className="font-medium">{addon.version}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-white/5">
+                <p className="text-xs text-gray-500">Platform</p>
+                <p className="font-medium">{addon.platform || 'All'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-white/5">
+                <p className="text-xs text-gray-500">License</p>
+                <p className="font-medium">{addon.license || 'Unknown'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-white/5">
+                <p className="text-xs text-gray-500">Category</p>
+                <p className="font-medium">{addon.category}</p>
+              </div>
+            </div>
+            
+            {/* Dependencies */}
+            {addon.dependencies && addon.dependencies.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium mb-2">Dependencies</h3>
+                <div className="flex flex-wrap gap-2">
+                  {addon.dependencies.slice(0, 8).map((dep, i) => (
+                    <span key={i} className="px-2 py-1 rounded text-xs bg-white/5 text-gray-400">
+                      {dep.addon} {dep.version && `>= ${dep.version}`}
+                    </span>
+                  ))}
+                  {addon.dependencies.length > 8 && (
+                    <span className="px-2 py-1 rounded text-xs bg-white/5 text-gray-500">
+                      +{addon.dependencies.length - 8} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Actions */}
+            <div className="flex gap-3">
+              {addon.website && (
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(addon.website, '_blank')}
+                  className="flex-1"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Website
+                </Button>
+              )}
+              <Button
+                className="flex-1 bg-violet-600 hover:bg-violet-700"
+                disabled={installing === addon.id}
+              >
+                {installing === addon.id ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Install Add-on
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-500 text-center mt-4">
+              Note: Kodi add-on compatibility with WatchNexus may vary
+            </p>
+          </div>
+        </motion.div>
       </motion.div>
     );
   };
 
   return (
     <Layout>
-      <div data-testid="plugin-marketplace-page" className="min-h-screen p-8">
+      <div data-testid="plugin-marketplace-page" className="space-y-6 pb-20">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center">
-                <Package className="w-6 h-6 text-white" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Package className="w-8 h-8 text-violet-400" />
+              Add-ons & Plugins
+            </h1>
+            <p className="text-gray-400 mt-1">
+              Extend WatchNexus with add-ons from Kodi and the community
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={refreshKodiRepo}
+              disabled={loadingKodi}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loadingKodi ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-white/5 p-1 rounded-xl">
+            <TabsTrigger value="kodi" className="data-[state=active]:bg-violet-600">
+              <Globe className="w-4 h-4 mr-2" />
+              Kodi Repository
+            </TabsTrigger>
+            <TabsTrigger value="installed" className="data-[state=active]:bg-violet-600">
+              <Check className="w-4 h-4 mr-2" />
+              Installed ({installedPlugins.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Kodi Repository Tab */}
+          <TabsContent value="kodi" className="mt-6">
+            {/* Search bar */}
+            <div className="flex gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  placeholder="Search add-ons..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white/5 border-white/10"
+                />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
-                  Plugin Marketplace
-                  <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full">Gadgets 🔧</span>
-                </h1>
-                <p className="text-gray-400">Extend WatchNexus with community plugins</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={fetchInstalledPlugins}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-              <a href="https://github.com/watchnexus/plugins" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline">
-                  <Code className="w-4 h-4 mr-2" />
-                  Create Plugin
+              {selectedCategory && (
+                <Button variant="outline" onClick={handleBackToCategories}>
+                  ← Back to Categories
                 </Button>
-              </a>
+              )}
             </div>
-          </div>
-        </motion.div>
 
-        {/* Featured Plugins */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mb-8"
-        >
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Star className="w-5 h-5 text-yellow-400" />
-            Featured Plugins
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {featuredPlugins.slice(0, 3).map(plugin => (
-              <PluginCard key={plugin.id} plugin={plugin} />
-            ))}
-          </div>
-        </motion.div>
+            {/* Loading state */}
+            {loadingKodi && (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="w-8 h-8 animate-spin text-violet-400" />
+              </div>
+            )}
 
-        {/* Search and Filters */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-wrap items-center gap-4 mb-6"
-        >
-          <div className="relative flex-1 min-w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <Input
-              placeholder="Search plugins..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+            {/* Category grid (when no category selected and no search) */}
+            {!loadingKodi && !selectedCategory && !searchQuery && (
+              <>
+                {/* Popular Add-ons */}
+                {popularAddons.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <Star className="w-5 h-5 text-yellow-400" />
+                      Popular Add-ons
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                      {popularAddons.map((addon) => (
+                        <KodiAddonCard key={addon.id} addon={addon} />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-white/10 text-white"
-          >
-            <option value="all">All Types</option>
-            {Object.entries(pluginTypeConfig).map(([key, { label }]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
+                {/* Categories */}
+                <div>
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-violet-400" />
+                    Browse by Category
+                  </h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {Object.entries(kodiCategories)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([cat, count]) => (
+                        <CategoryCard key={cat} category={cat} count={count} />
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
 
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-white/10 text-white"
-          >
-            <option value="downloads">Most Downloads</option>
-            <option value="rating">Highest Rated</option>
-            <option value="name">Name A-Z</option>
-            <option value="newest">Newest</option>
-          </select>
+            {/* Addon list (when category selected or searching) */}
+            {!loadingKodi && (selectedCategory || searchQuery) && (
+              <div>
+                {selectedCategory && (
+                  <h2 className="text-xl font-bold mb-4">
+                    {kodiCategoryConfig[selectedCategory]?.label || selectedCategory}
+                    <span className="text-gray-500 font-normal ml-2">
+                      ({kodiAddons.length} add-ons)
+                    </span>
+                  </h2>
+                )}
+                {searchQuery && (
+                  <h2 className="text-xl font-bold mb-4">
+                    Search results for "{searchQuery}"
+                    <span className="text-gray-500 font-normal ml-2">
+                      ({kodiAddons.length} found)
+                    </span>
+                  </h2>
+                )}
+                
+                {kodiAddons.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No add-ons found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {kodiAddons.map((addon) => (
+                      <KodiAddonCard key={addon.id} addon={addon} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
 
-          <div className="flex gap-1 bg-surface rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white/10' : ''}`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded ${viewMode === 'list' ? 'bg-white/10' : ''}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
+          {/* Installed Plugins Tab */}
+          <TabsContent value="installed" className="mt-6">
+            {loadingPlugins ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="w-8 h-8 animate-spin text-violet-400" />
+              </div>
+            ) : installedPlugins.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No plugins installed</p>
+                <p className="text-sm mt-2">Browse the Kodi repository to find add-ons</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {installedPlugins.map((plugin) => (
+                  <InstalledPluginCard key={plugin.id} plugin={plugin} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
-        {/* Plugin Grid */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-            : 'space-y-3'
-          }
-        >
-          {filteredPlugins.map(plugin => (
-            <PluginCard key={plugin.id} plugin={plugin} compact={viewMode === 'list'} />
-          ))}
-        </motion.div>
-
-        {filteredPlugins.length === 0 && (
-          <div className="text-center py-20">
-            <Package className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-            <h2 className="text-xl font-bold mb-2">No Plugins Found</h2>
-            <p className="text-gray-400">Try adjusting your search or filters</p>
-          </div>
-        )}
-
-        {/* Plugin Detail Modal */}
+        {/* Addon Detail Modal */}
         <AnimatePresence>
-          {selectedPlugin && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-              onClick={() => setSelectedPlugin(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-2xl bg-surface rounded-2xl border border-white/10 overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Header */}
-                <div className="p-6 border-b border-white/10">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-16 h-16 rounded-xl bg-${pluginTypeConfig[selectedPlugin.plugin_type]?.color || 'gray'}-500/20 flex items-center justify-center`}>
-                        {(() => {
-                          const Icon = pluginTypeConfig[selectedPlugin.plugin_type]?.icon || Package;
-                          return <Icon className={`w-8 h-8 text-${pluginTypeConfig[selectedPlugin.plugin_type]?.color || 'gray'}-400`} />;
-                        })()}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-2xl font-bold">{selectedPlugin.name}</h2>
-                          {selectedPlugin.verified && (
-                            <Shield className="w-5 h-5 text-blue-400" title="Verified by WatchNexus" />
-                          )}
-                        </div>
-                        <p className="text-gray-400">by {selectedPlugin.author}</p>
-                        <div className="flex items-center gap-4 mt-2 text-sm">
-                          <span className={`px-2 py-0.5 rounded bg-${pluginTypeConfig[selectedPlugin.plugin_type]?.color || 'gray'}-500/20 text-${pluginTypeConfig[selectedPlugin.plugin_type]?.color || 'gray'}-400`}>
-                            {pluginTypeConfig[selectedPlugin.plugin_type]?.label || 'Plugin'}
-                          </span>
-                          <span className="text-gray-500">v{selectedPlugin.version}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button onClick={() => setSelectedPlugin(null)} className="text-gray-400 hover:text-white">
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
-                  <p className="text-gray-300 mb-6">{selectedPlugin.description}</p>
-
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="p-4 rounded-xl bg-white/5 text-center">
-                      <Download className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                      <p className="text-2xl font-bold">{selectedPlugin.downloads.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">Downloads</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/5 text-center">
-                      <Star className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-                      <p className="text-2xl font-bold">{selectedPlugin.rating}</p>
-                      <p className="text-xs text-gray-500">Rating</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/5 text-center">
-                      <Code className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                      <p className="text-2xl font-bold">v{selectedPlugin.version}</p>
-                      <p className="text-xs text-gray-500">Version</p>
-                    </div>
-                  </div>
-
-                  {selectedPlugin.homepage && (
-                    <a
-                      href={selectedPlugin.homepage}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-violet-400 hover:underline mb-6"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      View on GitHub
-                    </a>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="p-6 border-t border-white/10 flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => setSelectedPlugin(null)}>
-                    Close
-                  </Button>
-                  {selectedPlugin.installed ? (
-                    <Button
-                      variant="outline"
-                      className="text-red-400 hover:text-red-300"
-                      onClick={() => {
-                        handleUninstall(selectedPlugin);
-                        setSelectedPlugin(null);
-                      }}
-                    >
-                      Uninstall
-                    </Button>
-                  ) : (
-                    <Button
-                      className="bg-gradient-to-r from-violet-600 to-pink-500"
-                      onClick={() => {
-                        handleInstall(selectedPlugin);
-                        setSelectedPlugin(null);
-                      }}
-                      disabled={installing === selectedPlugin.id}
-                    >
-                      {installing === selectedPlugin.id ? (
-                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Download className="w-4 h-4 mr-2" />
-                      )}
-                      Install Plugin
-                    </Button>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
+          {selectedAddon && (
+            <AddonDetailModal 
+              addon={selectedAddon} 
+              onClose={() => setSelectedAddon(null)} 
+            />
           )}
         </AnimatePresence>
       </div>
