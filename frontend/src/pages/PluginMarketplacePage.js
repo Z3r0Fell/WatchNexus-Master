@@ -581,11 +581,17 @@ export const PluginMarketplacePage = () => {
 
         {/* Addon Detail Modal */}
         <AnimatePresence>
-                      return (
-                        <button
-                          key={eco.id}
-                          data-testid={`ecosystem-${eco.id || 'auto'}`}
-                          onClick={() => setConvertEcosystem(eco.id)}
+          {selectedAddon && (
+            <AddonDetailModal 
+              addon={selectedAddon} 
+              onClose={() => setSelectedAddon(null)} 
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </Layout>
+  );
+};
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                             convertEcosystem === eco.id
                               ? 'border-violet-500 bg-violet-500/20 text-violet-300'
