@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderOpen, Plus, Trash2, RefreshCw, Film, Tv, Music,
