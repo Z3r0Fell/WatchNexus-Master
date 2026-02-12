@@ -2862,6 +2862,62 @@ async def list_providers(provider_type: str, user: dict = Depends(require_auth))
     
     raise HTTPException(status_code=400, detail=f"Unknown provider type: {provider_type}")
 
+# ==================== KODI REPOSITORY BROWSER ====================
+from kodi_browser import get_kodi_browser
+
+@api_router.get("/kodi/addons")
+async def list_kodi_addons(
+    query: str = "",
+    category: str = None,
+    limit: int = 50,
+    user: dict = Depends(require_auth)
+):
+    """Search and list Kodi addons."""
+    browser = get_kodi_browser()
+    addons = await browser.search_addons(query=query, category=category, limit=limit)
+    return {"addons": [a.to_dict() for a in addons], "total": len(addons)}
+
+@api_router.get("/kodi/addons/popular")
+async def get_popular_kodi_addons(limit: int = 20, user: dict = Depends(require_auth)):
+    """Get popular/featured Kodi addons."""
+    browser = get_kodi_browser()
+    addons = await browser.get_popular_addons(limit=limit)
+    return {"addons": [a.to_dict() for a in addons]}
+
+@api_router.get("/kodi/categories")
+async def get_kodi_categories(user: dict = Depends(require_auth)):
+    """Get all Kodi addon categories with counts."""
+    browser = get_kodi_browser()
+    categories = await browser.get_categories()
+    return {"categories": categories}
+
+@api_router.get("/kodi/addons/{addon_id}")
+async def get_kodi_addon(addon_id: str, user: dict = Depends(require_auth)):
+    """Get detailed info about a specific Kodi addon."""
+    browser = get_kodi_browser()
+    addon = await browser.get_addon(addon_id)
+    if addon:
+        return addon.to_dict()
+    raise HTTPException(status_code=404, detail="Addon not found")
+
+@api_router.get("/kodi/addons/category/{category}")
+async def get_kodi_addons_by_category(
+    category: str,
+    limit: int = 50,
+    user: dict = Depends(require_auth)
+):
+    """Get addons in a specific category."""
+    browser = get_kodi_browser()
+    addons = await browser.get_addons_by_category(category, limit=limit)
+    return {"addons": [a.to_dict() for a in addons], "category": category}
+
+@api_router.post("/kodi/refresh")
+async def refresh_kodi_addons(user: dict = Depends(require_auth)):
+    """Force refresh the Kodi addon cache."""
+    browser = get_kodi_browser()
+    addons = await browser.fetch_addons(force_refresh=True)
+    return {"status": "refreshed", "addon_count": len(addons)}
+
 # ==================== HEALTH CHECK ====================
 
 @api_router.get("/health")
