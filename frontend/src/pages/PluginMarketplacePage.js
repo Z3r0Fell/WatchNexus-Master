@@ -578,11 +578,8 @@ export const PluginMarketplacePage = () => {
             <PluginConverter />
           </TabsContent>
         </Tabs>
-                </h2>
-                <p className="text-gray-400 text-sm mb-6">
-                  Convert plugins from Kodi, Jellyfin/Emby, or Plex to the WatchNexus format. 
-                  Upload a plugin ZIP file and the converter will auto-detect the source ecosystem.
-                </p>
+
+        {/* Addon Detail Modal */}
 
                 {/* Ecosystem selector */}
                 <div className="mb-4">
