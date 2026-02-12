@@ -1,0 +1,17 @@
+/* MediaHub Custom Styles */
+
+.App {
+    min-height: 100vh;
+    background-color: #0A0A0A;
+}
+
+/* Override default link styles */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Ensure proper dark mode */
+html {
+    color-scheme: dark;
+}

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - WatchNexus</title>
+  <meta name="description" content="Frequently asked questions about WatchNexus.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <a href="index.html" class="navbar-logo">
+        <span>🎬</span>
+        <span>WatchNexus</span>
+      </a>
+      <div class="navbar-links">
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="demo.html">Demo</a>
+        <a href="faq.html">FAQ</a>
+        <a href="troubleshooting.html">Support</a>
+      </div>
+      <div class="navbar-cta">
+        <a href="https://github.com/watchnexus" class="btn btn-ghost">GitHub</a>
+        <a href="download.html" class="btn btn-primary">Download</a>
+      </div>
+      <button class="mobile-menu-btn">☰</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" style="min-height: auto; padding-top: 8rem; padding-bottom: 4rem;">
+    <h1 class="hero-title">Frequently Asked <span class="text-gradient">Questions</span></h1>
+    <p class="hero-subtitle">Got questions? We've got answers.</p>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section">
+    <div class="container">
+      <div class="faq-list">
+        
+        <!-- General -->
+        <h2 style="margin-bottom: 1.5rem; color: var(--color-primary);">General</h2>
+        
+        <div class="faq-item">
+          <button class="faq-question">What is WatchNexus?</button>
+          <div class="faq-answer">
+            <p>WatchNexus is a unified, self-hosted media pipeline that combines the functionality of multiple applications (Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin) into a single, easy-to-use application. It handles everything from discovering and downloading media to organizing and streaming it.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Is WatchNexus free?</button>
+          <div class="faq-answer">
+            <p>Yes! WatchNexus is completely free and open source. There are no subscriptions, no premium tiers, and no hidden costs. You can download, use, and modify it however you like.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">What does WatchNexus replace?</button>
+          <div class="faq-answer">
+            <p>WatchNexus can replace:</p>
+            <ul style="margin-top: 0.5rem;">
+              <li><strong>Sonarr/Radarr</strong> - For requesting and monitoring TV shows/movies</li>
+              <li><strong>Prowlarr</strong> - For managing indexers</li>
+              <li><strong>qBittorrent/Transmission</strong> - For downloading torrents</li>
+              <li><strong>NZBGet/SABnzbd</strong> - For usenet downloads</li>
+              <li><strong>Bazarr</strong> - For subtitle management</li>
+              <li><strong>Jellyfin/Plex</strong> - For streaming and library management</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">Can I use WatchNexus alongside my existing setup?</button>
+          <div class="faq-answer">
+            <p>Absolutely! WatchNexus is designed to work standalone, but it can also integrate with existing tools. You can use external download clients (qBittorrent), connect existing indexers, or use WatchNexus just for specific features.</p>
+          </div>
+        </div>
+        
+        <!-- Technical -->
+        <h2 style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Technical</h2>
+        
+        <div class="faq-item">
+          <button class="faq-question">What are the system requirements?</button>
+          <div class="faq-answer">
+            <p><strong>Minimum:</strong></p>
+            <ul>
+              <li>2 CPU cores</li>
+              <li>2 GB RAM</li>
+              <li>1 GB disk space (plus your media storage)</li>
+            </ul>
+            <p style="margin-top: 0.5rem;"><strong>Recommended:</strong></p>
+            <ul>
+              <li>4+ CPU cores (for transcoding)</li>
+              <li>4+ GB RAM</li>
+              <li>SSD for database</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Does WatchNexus require port forwarding?</button>
+          <div class="faq-answer">
+            <p>No! WatchNexus includes Gelatin, our built-in remote access module that uses Cloudflare tunnels. This means you can access your server from anywhere without opening ports or configuring your router.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Can I use my existing Jellyfin/Emby apps?</button>
+          <div class="faq-answer">
+            <p>Yes! WatchNexus includes a Jellyfin-compatible API, meaning most Jellyfin and Emby apps will work with WatchNexus. Simply point them to your WatchNexus server address.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">What database does WatchNexus use?</button>
+          <div class="faq-answer">
+            <p>WatchNexus uses MongoDB for its database. The desktop installers include MongoDB bundled, or you can connect to an existing MongoDB instance. Docker users can use the official MongoDB container.</p>
+          </div>
+        </div>
+        
+        <!-- Features -->
+        <h2 style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Features</h2>
+        
+        <div class="faq-item">
+          <button class="faq-question">Does WatchNexus support 4K and HDR?</button>
+          <div class="faq-answer">
+            <p>Yes! WatchNexus fully supports 4K, HDR10, HDR10+, Dolby Vision, and high bitrate content. The built-in transcoding engine can handle any format, and direct play is supported when your client is compatible.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Can multiple users stream at once?</button>
+          <div class="faq-answer">
+            <p>Yes! WatchNexus supports multiple concurrent streams. Each user can have their own account with separate watch progress, preferences, and permissions. You can limit the number of streams per user in settings.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Are subtitles automatically downloaded?</button>
+          <div class="faq-answer">
+            <p>Yes! WatchNexus automatically searches multiple subtitle providers (OpenSubtitles, Addic7ed, Subscene) and downloads subtitles for your media. You can configure preferred languages and providers in settings.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Can I add plugins or extensions?</button>
+          <div class="faq-answer">
+            <p>Yes! WatchNexus has a plugin system called "Gadgets" that allows you to extend functionality. You can add custom metadata providers, notification services, and more. Community plugins are available in our marketplace.</p>
+          </div>
+        </div>
+        
+        <!-- Legal -->
+        <h2 style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Legal</h2>
+        
+        <div class="faq-item">
+          <button class="faq-question">Is WatchNexus legal to use?</button>
+          <div class="faq-answer">
+            <p>WatchNexus is legal software. It's a media management and streaming application - similar to Plex or Jellyfin. However, users are responsible for ensuring they have the legal right to download and stream any content they add to their library. We do not condone piracy.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">Does WatchNexus collect any data?</button>
+          <div class="faq-answer">
+            <p>No. WatchNexus is completely self-hosted and does not phone home or collect any data. Your media library, watch history, and personal information stay on your server.</p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>WatchNexus</h4>
+        <p style="color: var(--color-text-muted); font-size: 0.875rem;">Your unified, self-hosted media pipeline.</p>
+      </div>
+      <div class="footer-section">
+        <h4>Product</h4>
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="demo.html">Demo</a>
+        <a href="faq.html">FAQ</a>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <a href="troubleshooting.html">Troubleshooting</a>
+        <a href="https://github.com/watchnexus">GitHub</a>
+        <a href="https://discord.gg/watchnexus">Discord</a>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <a href="terms.html">Terms of Service</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>&copy; 2025 WatchNexus. All rights reserved.</div>
+      <div>Made with ❤️ for the self-hosting community</div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
