@@ -67,7 +67,7 @@ export const PluginMarketplacePage = () => {
   const [selectedAddon, setSelectedAddon] = useState(null);
   const [installing, setInstalling] = useState(null);
 
-  const getToken = () => localStorage.getItem('watchnexus_token');
+  const getToken = () => localStorage.getItem('token');
   const getAuthHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 
   // Fetch Kodi categories
