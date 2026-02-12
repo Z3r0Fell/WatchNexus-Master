@@ -151,7 +151,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - Password: password
 
 ## Preview URL
-https://viewhub-1008.preview.emergentagent.com
+https://nexusmedia-2.preview.emergentagent.com
 
 ## Next Steps: Client App Planning
 1. Android mobile app
