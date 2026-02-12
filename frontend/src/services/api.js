@@ -43,6 +43,7 @@ export const watchlistApi = {
 export const progressApi = {
   get: () => axios.get(`${API}/watch-progress`),
   update: (progress) => axios.post(`${API}/watch-progress`, progress),
+  getNextUp: () => axios.get(`${API}/next-up`),
 };
 
 // Downloads API calls
