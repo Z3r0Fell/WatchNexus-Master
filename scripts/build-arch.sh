@@ -24,15 +24,22 @@ check_dependencies() {
     local missing=()
     
     command -v node >/dev/null 2>&1 || missing+=("nodejs")
-    command -v yarn >/dev/null 2>&1 || missing+=("yarn")
+    command -v npm >/dev/null 2>&1 || missing+=("npm")
     command -v python3 >/dev/null 2>&1 || missing+=("python")
     command -v pip >/dev/null 2>&1 || missing+=("python-pip")
-    command -v makepkg >/dev/null 2>&1 || missing+=("pacman")
+    command -v makepkg >/dev/null 2>&1 || missing+=("base-devel")
+    command -v git >/dev/null 2>&1 || missing+=("git")
     
     if [ ${#missing[@]} -ne 0 ]; then
         echo "Missing dependencies: ${missing[*]}"
         echo "Installing with pacman..."
-        sudo pacman -S --needed --noconfirm "${missing[@]}"
+        sudo pacman -Sy --needed --noconfirm "${missing[@]}"
+    fi
+    
+    # Install yarn globally if not present
+    if ! command -v yarn &> /dev/null; then
+        echo "Installing yarn..."
+        sudo npm install -g yarn
     fi
     
     echo "✓ All dependencies installed"
@@ -42,14 +49,18 @@ check_dependencies() {
 install_system_deps() {
     echo "[2/6] Installing system dependencies..."
     
-    sudo pacman -S --needed --noconfirm \
+    # Install available packages (some may not exist in repos)
+    sudo pacman -Sy --needed --noconfirm \
         base-devel \
-        mongodb \
-        libtorrent-rasterbar \
-        python-libtorrent \
         ffmpeg \
-        libvips \
-        electron
+        libvips || true
+    
+    # MongoDB - use AUR or skip
+    if ! command -v mongod &> /dev/null; then
+        echo "Note: MongoDB not found in official repos."
+        echo "Install from AUR: yay -S mongodb-bin"
+        echo "Or use Docker: docker run -d -p 27017:27017 mongo:7"
+    fi
     
     echo "✓ System dependencies installed"
 }
@@ -60,8 +71,19 @@ build_frontend() {
     
     cd "$PROJECT_ROOT/frontend"
     
-    # Install dependencies
-    yarn install --frozen-lockfile
+    # Check if frontend directory exists
+    if [ ! -f "package.json" ]; then
+        echo "Error: frontend/package.json not found"
+        echo "Make sure you're running this from the WatchNexus project root"
+        exit 1
+    fi
+    
+    # Install dependencies (don't use frozen-lockfile if no lock file)
+    if [ -f "yarn.lock" ]; then
+        yarn install --frozen-lockfile
+    else
+        yarn install
+    fi
     
     # Build production bundle
     yarn build
@@ -75,6 +97,12 @@ build_backend() {
     
     cd "$PROJECT_ROOT/backend"
     
+    # Check if backend directory exists
+    if [ ! -f "requirements.txt" ]; then
+        echo "Error: backend/requirements.txt not found"
+        exit 1
+    fi
+    
     # Create virtual environment
     python3 -m venv venv
     source venv/bin/activate
@@ -83,131 +111,88 @@ build_backend() {
     pip install --upgrade pip
     pip install -r requirements.txt
     
-    # Create standalone with PyInstaller (optional)
-    # pip install pyinstaller
-    # pyinstaller --onefile server.py
-    
     deactivate
     
     echo "✓ Backend built"
 }
 
-# Create PKGBUILD
+# Create PKGBUILD and support files
 create_pkgbuild() {
     echo "[5/6] Creating PKGBUILD..."
     
     mkdir -p "$BUILD_DIR/pkg"
     
-    cat > "$BUILD_DIR/pkg/PKGBUILD" << 'EOF'
-# Maintainer: WatchNexus Team <team@watchnexus.ca>
-pkgname=watchnexus
-pkgver=1.0.0
-pkgrel=1
-pkgdesc="Unified, self-hosted media pipeline"
-arch=('x86_64')
-url="https://watchnexus.ca"
-license=('MIT')
-depends=(
-    'electron'
-    'nodejs'
-    'python'
-    'python-pip'
-    'mongodb'
-    'libtorrent-rasterbar'
-    'python-libtorrent'
-    'ffmpeg'
-)
-makedepends=('yarn' 'npm')
-source=("watchnexus-$pkgver.tar.gz")
-sha256sums=('SKIP')
-
-package() {
-    cd "$srcdir/watchnexus-$pkgver"
-    
-    # Install frontend
-    install -dm755 "$pkgdir/opt/watchnexus/frontend"
-    cp -r frontend/build/* "$pkgdir/opt/watchnexus/frontend/"
-    
-    # Install backend
-    install -dm755 "$pkgdir/opt/watchnexus/backend"
-    cp -r backend/* "$pkgdir/opt/watchnexus/backend/"
-    
-    # Install systemd service
-    install -Dm644 scripts/watchnexus.service "$pkgdir/usr/lib/systemd/system/watchnexus.service"
-    
-    # Install desktop entry
-    install -Dm644 scripts/watchnexus.desktop "$pkgdir/usr/share/applications/watchnexus.desktop"
-    
-    # Install icon
-    install -Dm644 frontend/public/watchnexus-logo.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/watchnexus.svg"
-    
-    # Install launcher script
-    install -Dm755 scripts/watchnexus "$pkgdir/usr/bin/watchnexus"
-}
-EOF
-
     # Create systemd service file
-    cat > "$BUILD_DIR/pkg/watchnexus.service" << 'EOF'
+    cat > "$BUILD_DIR/pkg/watchnexus.service" << 'SERVICEEOF'
 [Unit]
 Description=WatchNexus Media Server
-After=network.target mongodb.service
+After=network.target
 
 [Service]
 Type=simple
 User=watchnexus
 WorkingDirectory=/opt/watchnexus/backend
-ExecStart=/usr/bin/python3 -m uvicorn server:app --host 0.0.0.0 --port 8001
+ExecStart=/opt/watchnexus/backend/venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8001
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-EOF
+SERVICEEOF
 
     # Create desktop entry
-    cat > "$BUILD_DIR/pkg/watchnexus.desktop" << 'EOF'
+    cat > "$BUILD_DIR/pkg/watchnexus.desktop" << 'DESKTOPEOF'
 [Desktop Entry]
 Name=WatchNexus
 Comment=Unified Media Pipeline
-Exec=watchnexus
+Exec=xdg-open http://localhost:8001
 Icon=watchnexus
 Terminal=false
 Type=Application
 Categories=AudioVideo;Video;Player;
-StartupWMClass=WatchNexus
-EOF
+DESKTOPEOF
 
     # Create launcher script
-    cat > "$BUILD_DIR/pkg/watchnexus" << 'EOF'
+    cat > "$BUILD_DIR/pkg/watchnexus" << 'LAUNCHEREOF'
 #!/bin/bash
-cd /opt/watchnexus/frontend
-electron .
-EOF
+cd /opt/watchnexus/backend
+source venv/bin/activate
+python -m uvicorn server:app --host 127.0.0.1 --port 8001 &
+sleep 2
+xdg-open http://localhost:8001
+LAUNCHEREOF
 
-    echo "✓ PKGBUILD created"
+    chmod +x "$BUILD_DIR/pkg/watchnexus"
+
+    echo "✓ Support files created"
 }
 
-# Build package
-build_package() {
-    echo "[6/6] Building package..."
+# Build/Install locally (without makepkg)
+install_local() {
+    echo "[6/6] Installing locally..."
     
-    mkdir -p "$DIST_DIR"
-    cd "$BUILD_DIR/pkg"
+    INSTALL_DIR="/opt/watchnexus"
     
-    # Create source tarball
-    tar -czvf "watchnexus-$VERSION.tar.gz" \
-        -C "$PROJECT_ROOT" \
-        frontend/build \
-        backend \
-        scripts
+    # Create directories
+    sudo mkdir -p "$INSTALL_DIR"
+    sudo mkdir -p /var/lib/watchnexus/{themes,plugins,downloads,media}
     
-    # Build package
-    makepkg -sf
+    # Copy files
+    sudo cp -r "$PROJECT_ROOT/frontend/build" "$INSTALL_DIR/frontend" 2>/dev/null || \
+    sudo cp -r "$PROJECT_ROOT/frontend/dist" "$INSTALL_DIR/frontend" 2>/dev/null || \
+    echo "Warning: No frontend build found"
     
-    # Move package to dist
-    mv *.pkg.tar.zst "$DIST_DIR/"
+    sudo cp -r "$PROJECT_ROOT/backend" "$INSTALL_DIR/"
     
-    echo "✓ Package built: $DIST_DIR/watchnexus-$VERSION-1-x86_64.pkg.tar.zst"
+    # Install service
+    sudo cp "$BUILD_DIR/pkg/watchnexus.service" /etc/systemd/system/ 2>/dev/null || true
+    
+    # Create user
+    sudo useradd -r -s /bin/false watchnexus 2>/dev/null || true
+    sudo chown -R watchnexus:watchnexus "$INSTALL_DIR"
+    sudo chown -R watchnexus:watchnexus /var/lib/watchnexus
+    
+    echo "✓ Installed to $INSTALL_DIR"
 }
 
 # Main
@@ -217,18 +202,25 @@ main() {
     build_frontend
     build_backend
     create_pkgbuild
-    build_package
+    install_local
     
     echo ""
     echo "=============================================="
     echo "  Build Complete!"
     echo "=============================================="
     echo ""
-    echo "Install with:"
-    echo "  sudo pacman -U $DIST_DIR/watchnexus-$VERSION-1-x86_64.pkg.tar.zst"
+    echo "WatchNexus installed to: /opt/watchnexus"
     echo ""
-    echo "Or install from AUR:"
-    echo "  yay -S watchnexus-bin"
+    echo "Start the service:"
+    echo "  sudo systemctl daemon-reload"
+    echo "  sudo systemctl enable --now watchnexus"
+    echo ""
+    echo "Or run manually:"
+    echo "  cd /opt/watchnexus/backend"
+    echo "  source venv/bin/activate"
+    echo "  python -m uvicorn server:app --host 0.0.0.0 --port 8001"
+    echo ""
+    echo "Access at: http://localhost:8001"
     echo ""
 }
 
