@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Subtitles } from 'lucide-react';
+import { Captions } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
@@ -20,7 +20,7 @@ export const SubtitleSettings = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6" data-testid="subtitle-settings">
       <h2 className="text-xl font-bold flex items-center gap-2">
-        <Subtitles className="w-5 h-5 text-violet-400" /> Subtitle Settings
+        <Captions className="w-5 h-5 text-violet-400" /> Subtitle Settings
       </h2>
       <div className="space-y-4">
         <div className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/5">
