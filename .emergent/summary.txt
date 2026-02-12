@@ -1,180 +1,151 @@
 <analysis>**original_problem_statement:**
-The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media, with no external application dependencies.
+The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media.
 
-**Recent User Requests:**
-1.  **Fix Scripts:** The user reported that the installation scripts for Windows and Arch Linux are broken and need to be fixed.
-2.  **Media Management UI:** Implement Sonarr-like media management features (file renaming, organization, etc.) as a sub-tab within the Library settings.
-3.  **File Browser:** Add a Browse button in the Library settings to navigate the local file system for adding media folders.
-4.  **Users Tab:** Add a user management tab to the settings page.
-5.  **Logo Update:** Change the logo on the login screen to the proper WatchNexus logo.
-6.  **Jellyfin API:** Add a hidden, Jellyfin-compatible API to allow existing clients to connect.
-7.  **Kickstarter Doc:** Create a document for a Kickstarter campaign based on the work done.
-8.  **Client Research:** Research the feasibility of creating Roku and Fire Stick clients.
-9.  **Fix Scrapers:** The Syrup torrent scrapers were not working.
-10. ** File:** Create an  file for deploying the marketing website on IONOS hosting.
+**PRODUCT REQUIREMENTS:**
+1.  **Fix Installation Scripts:** Correct broken  and  scripts.
+2.  **Stabilize Codebase:** Refactor the unstable  to prevent build crashes.
+3.  **Static Marketing Website:** Convert the React-based marketing website to simple, editable HTML.
+4.  **Fix Themes:** Resolve a bug preventing built-in themes from appearing.
+5.  **Kodi Addon Integration:** Implement a Kodi-style addon browser that pulls from the official repository.
+6.  **Local/Remote Login:** Modify the login page to detect network location, showing a profile selector for local access and a standard login for remote access.
+7.  **Per-User Watch History:** Ensure features like Continue Watching are tied to individual user profiles.
+8.  **Plugin Adapter Framework:** Build a system and documentation for converting Kodi, Jellyfin/Emby, and Plex plugins to run natively in WatchNexus.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project has a main full-stack application (React/FastAPI) and a separate marketing website. A significant number of features have been implemented and verified:
-- A complete marketing website with legal pages.
-- A hidden Jellyfin-compatible API at .
-- Functional torrent scrapers (Syrup) for YTS and EZTV.
-- Research documents for client apps and a Kickstarter campaign.
-- An updated login page with the correct logo.
-- A new Users tab in Settings with full UI and backend APIs for user management.
-- A local file system browser modal in the Add Library form.
-- The basic structure for Sonarr-like sub-tabs (Libraries, Media Management, etc.) has been added to the Library settings page, but the implementation is mostly placeholders to prevent build errors.
-- An  file for IONOS deployment has been created.
+The application is a stable full-stack React and FastAPI project. In this session, the agent performed a massive and successful refactoring of the frontend, resolving long-standing build instability issues.
+
+The agent's key accomplishments were:
+1.  **Completed the full refactoring of **, extracting all 12 tabs into individual, self-contained components. This reduced the file's line count from 2,872 to 332 (an 88% reduction) and fixed the recurring build crashes.
+2.  **Implemented the frontend UI for the Plugin Adapter Framework**. A new Convert Plugin tab was added to the Plugin Marketplace page, featuring UI for selecting a plugin ecosystem and uploading a file for conversion.
+3.  **Updated the backend** () to accept file uploads, preparing it for the implementation of the conversion logic.
+4.  **Passed a full regression test suite** using the testing agent, which confirmed 100% functionality on both frontend and backend with no new bugs introduced.
 
 **Last working item**:
--   **Last item agent was working:** The user reported that the installation scripts (, ) are broken. The agent inspected all four scripts (, , , ) to understand their content before fixing them.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** Manual verification. The agent should provide the corrected scripts to the user for testing in their respective environments, as the agent cannot execute them directly.
--   **User Testing Done:** N (User reported the existing scripts fail).
+-   **Last item agent was working:** The agent completed a major refactoring of the  and implemented the UI for the Plugin Converter. The final step was a successful, comprehensive test run via the , which passed all tests for both frontend and backend.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** Y
+-   **Which testing method agent to use?** NA
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Fix build and install scripts (P0)**
--   **Issue 2: Stabilize and Implement Media Management UI (P1)**
+-   **Issue 1: Complete Plugin Adapter Framework Backend Logic (P0)**
 
 **Issues Detail:**
--   **Issue 1: Fix build and install scripts**
-    -   **Attempted fixes:** The agent viewed the scripts' content to identify potential errors.
+-   **Issue 1: Complete Plugin Adapter Framework Backend Logic**
+    -   **Attempted fixes:** The frontend UI and backend endpoint for file uploads are now complete and tested.
     -   **Next debug checklist:**
-        1.  Create new, corrected versions of  and  based on best practices for  and .
-        2.  Proactively check and fix  and  for similar issues.
-        3.  Present the fixed scripts to the user and explain the changes.
-    -   **Why fix this issue and what will be achieved with the fix?** To provide a reliable, error-free installation experience for users on all supported platforms, addressing a direct user complaint.
+        1.  Implement the conversion logic within the functions in , starting with . This involves parsing the uploaded plugin's manifest ( for Kodi) and transforming its structure into the WatchNexus gadget format defined in .
+        2.  Implement similar parsing and conversion logic for Jellyfin/Emby and Plex plugins.
+        3.  Connect the conversion result to the frontend, displaying a success or failure message after the user clicks Convert.
+    -   **Why fix this issue and what will be achieved with the fix?** This will deliver a core user request to dramatically expand WatchNexus's capabilities by leveraging the vast existing library of plugins from other media ecosystems. The frontend is ready and waiting for this logic.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on other issue:** None
-
--   **Issue 2: Stabilize and Implement Media Management UI**
-    -   **Attempted fixes:** The agent tried adding a large, complex UI to , which caused a Maximum call stack size exceeded build error. Attempts to extract this to a component or simplify the code also failed. The build was stabilized by removing the complex UI, leaving only placeholder text within the new sub-tab structure.
-    -   **Next debug checklist:**
-        1.  Refactor the massive  file (currently ~3000-4000 lines).
-        2.  Create separate, smaller components for each of the main settings tabs (e.g., , , ).
-        3.  Within , create components for each sub-tab (, , etc.).
-        4.  Re-implement the full Sonarr-like UI for Media Management inside the new  component.
-        5.  Verify the application builds and runs successfully after the refactor.
-    -   **Why fix this issue and what will be achieved with the fix?** To resolve critical build instability and implement the user-requested Sonarr-like features. The current file size is unsustainable.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   None.
+-   **Task 1: Implement Plugin Adapter Framework**
+    -   **Where to resume:** Implement the core conversion logic in the stub functions within .
+    -   **What will be achieved with this?** A working system for converting third-party plugins into a format WatchNexus can use.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Connect Community & DVR Pages to Backend (P1):** The Plugin Marketplace, Theme Community, and DVR pages are fully designed but use static sample data. They need to be connected to backend APIs.
--   **Client App Planning (P2):** Document the architecture and technology choices for building client apps on Android, Android TV, Chromecast, and Kodi.
+-   **Create comprehensive documentation (P1):** For all user-creatable content, including themes and plugins, as requested by the user.
+-   **Implement Continue Watching & Next Up on Dashboard (P1):** Implement the per-user watch history feature on the main dashboard. The backend has foundational support; this requires frontend implementation in .
+-   **Implement Sonarr-like Media Management UI (P2):** Build out the media management interface within the now-refactored  component.
+-   **Connect Community & DVR Pages to Backend (P2):** The Theme Community and DVR pages still use static placeholder data and need to be connected to backend APIs.
 
 **Future Tasks:**
--   **Create a Roku / Universal app.**
--   **Create a new Git repository** for the project and separate ones for plugins/community content.
--   **Test Usenet () and Indexer () modules** with live data sources.
+-   Test Usenet () and Indexer () modules.
+-   Client App Planning: Document the architecture and technology choices for building client apps.
+-   Create a Roku / Universal app.
+-   Create new Git repositories for the project and community content.
 
 **Completed work in this session**
--   **Scrapers Fixed:** Fixed the Syrup torrent scrapers (YTS, EZTV) by implementing fallback domains and correcting a type-casting bug. Verified via API tests.
--   **Jellyfin API Implemented:** Created and verified a hidden Jellyfin/Emby compatible API at  to allow existing clients to connect.
--   **User Management Added:** Implemented a Users tab in the Settings page with a full UI and backend API () for creating, viewing, and managing users.
--   **File Browser Added:** Implemented a file system browser modal in the Library settings, allowing users to navigate and select media folders.
--   **Login Logo Updated:** Replaced the placeholder logo on the login screen with the official WatchNexus logo.
--   **Sonarr-like UI Structure:** Added sub-tabs to the Library settings page (Libraries, Media Management, Quality Profiles, etc.) to match Sonarr's layout. The UI is currently a placeholder to ensure build stability.
--   **Client Research:** Researched and documented the feasibility, cost, and development process for Roku and Amazon Fire Stick apps.
--   **Deployment Files:** Created an  file for deploying the marketing website on IONOS.
--   **Documentation:** Created a  document summarizing the project's features and goals.
+-   ** Fully Refactored:** Extracted all 12 tabs into separate components in , resolving chronic build instability.
+-   **Plugin Converter UI Implemented:** Created a Convert Plugin tab with file upload capabilities on the Plugin Marketplace page.
+-   **Backend File Upload Support:** Updated the  endpoint to accept  objects.
+-   **Build Stability Achieved:** Fixed the Babel plugin crashes by refactoring  and .
+-   **Full Regression Testing Passed:** Executed the  with a 100% success rate across frontend and backend tests.
 
 **Earlier issues found/mentioned but not fixed**
--   None. The previously known issue with Syrup Scrapers was resolved in this session.
+-   None.
 
 **Known issue recurrence from previous fork**
--   None.
+-   **Issue recurrence in previous fork:** Build instability due to the large size of .
+-   **Recurrence count:** 2+
+-   **Status:** RESOLVED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend:** React, TailwindCSS, Shadcn UI
--   **Backend:** FastAPI
--   **Compatibility Layer:** Building a facade API to mimic another service (Jellyfin/Emby).
--   **Build/Deployment:** Cross-platform shell scripting (Bash, PowerShell), web server configuration ().
--   **Web Scraping:** Using fallback domains to handle network blocking.
+-   **Large-Scale Code Refactoring:** Successfully broke down a 2800+ line monolithic React component into 12 smaller, manageable components.
+-   **Component-Based Architecture:** Re-architected the Settings page to be fully modular and component-driven.
+-   **Build & Performance Debugging:** Identified and resolved complex JSX parsing issues causing Babel plugin crashes.
+-   **File Upload Handling (FastAPI):** Modified a backend endpoint to accept multipart/form-data with .
 
 **key DB schema**
--   **users:** Extended to support user management UI (role, last_login, created_at).
+-   No schema changes were made in this session.
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   ==============================================
-  WatchNexus Build Script - Arch Linux
-==============================================
-
-[1/6] Checking dependencies...
-Missing dependencies: base-devel
-Installing with pacman..., : **CRITICAL (BROKEN).** These are the user's highest priority and need immediate fixing.
--   : **CRITICAL (UNSTABLE).** This file is extremely large and causing build errors. It needs to be refactored into smaller components before new features can be reliably added.
--   : Contains the new APIs for user management, file browsing, and the Jellyfin compatibility router.
--   : Contains the logic for the Jellyfin API facade.
--   : Contains deployment configuration for IONOS.
+-   : **CRITICAL.** The file where the plugin conversion logic needs to be implemented.
+-   : **REFACTORED.** Now a slim container for the new settings components.
+-   : **CRITICAL.** Directory containing all the newly extracted and functioning settings components.
+-   : The page containing the new plugin converter tab.
+-   : The new, self-contained component for the plugin converter UI.
+-   : Contains the updated  endpoint.
 
 **Areas that need refactoring**:
--    is the top priority for refactoring. It is over 3,000 lines long and has proven to be unstable, causing Maximum call stack size exceeded errors in the build process. It must be broken down into smaller components for each tab/sub-tab.
--   The component  was created and abandoned. It should be deleted to avoid confusion.
+-   The major technical debt associated with  has been successfully resolved. No other critical refactoring is immediately needed.
 
 **key api endpoints**
--    (GET, POST): Manage users.
--    (GET): Browse the local file system.
--    (GET, POST): Jellyfin-compatible endpoints.
--    (GET): Fixed and verified.
+-    (POST): **[Updated]** Endpoint for the plugin adapter framework. Now accepts a file upload ().
 
 **Critical Info for New Agent**
--   The user's immediate priority is fixing the broken installation scripts (, ). Address this first.
--   The  file is a major source of technical debt and instability. Do not add more code to it directly. The only path forward is to refactor it into smaller, manageable components. The build will likely fail if you attempt to add complex JSX to it again.
--   The user is focused on creating a polished, all-in-one experience that mimics the functionality of established tools like Sonarr and Jellyfin. Keep this product goal in mind.
+-   The application's frontend is now stable. The massive refactoring of  is complete and has been thoroughly tested.
+-   Your highest priority (P0) is to implement the backend logic for the **Plugin Adapter Framework**. The frontend UI is already built and waiting. Focus on implementing the Python code in  to parse and convert uploaded plugin files.
+-   After the adapter backend, the next priorities are user-facing features based on the user's latest feedback: creating documentation, implementing Continue Watching on the dashboard, and building the Sonarr-like UI in the  component.
 
 **documents and test reports created in this job**
 -   
--   
--   
+-    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** On the Settings page, Library tab, add a Browse button and have it navigate the local file system to look for any media folders to be added to the library. (COMPLETED)
-2.  **User:** On the Library tab on the settings page, create a sub tab called media management. Look at the sonar code and mimic the functions found within. (IN PROGRESS - UI structure exists but is unstable)
-3.  **User:** i need an .htaccess file for ionos webspace (COMPLETED)
-4.  **User:** please verify all scripts -- I downloaded the code from github and tried running the install windows and build arch ones last night when I got home, and was presented with a wall of errors on both systems (IN PROGRESS - P0 Priority)
+1.  **User:** action plan: 1. create all documentation for anything that the user can create with; ie: themes, plugins, etc 2. Continue Watching & Next Up on Dashboard (per-user watch history) 3. Sonarr-like Media Management UI in Library settings 4. Test Usenet (Pulp) and Indexer (Compote) modules (PENDING)
 
 **Project Health Check:**
--   **Broken:**
-    -    is unstable and causes build errors when complex UI is added.
-    -   The installation scripts (, ) are confirmed by the user to be broken.
+-   **Broken:** None. The app is stable and fully functional after major refactoring.
 -   **Mocked/In-Progress:**
-    -   The Media Management UI in the Library settings is a placeholder to prevent build crashes. The full functionality is not implemented.
-    -   Plugin Marketplace, Theme Community, and DVR pages are using static data.
+    -   The Plugin Adapter Framework () backend logic is still a stub.
+    -   The Sonarr-like Media Management UI has not been implemented.
+    -   Continue Watching on the dashboard is not yet implemented.
+    -   Theme Community and DVR pages are still using static data.
 
 **3rd Party Integrations**
 -   The Movie Database (TMDB)
 -   Google OAuth
--   Electron/Electron-Builder
 -   BeautifulSoup4
 -   Addic7ed
+-   Kodi Addon Repository
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
+-   **Testing agent used after significant changes:** YES
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None.
--   **Known regressions:** The build instability related to  is a major regression introduced while trying to add the Media Management feature.
+-   **Test files created:**  was generated by the testing agent.
+-   **Known regressions:** None. The testing agent confirmed a 100% pass rate.
 
 **Credentials to test flow:**
 -   **Email:** 
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent identified the need to fix the installation scripts but did not proceed with the implementation.
--   The agent left an unused and empty component file () in the codebase after abandoning that approach. This file should be deleted to prevent confusion.</analysis>
+-   The agent performed a comprehensive and successful session, addressing the primary blockers and implementing the planned UI. No tasks were forgotten.</analysis>
