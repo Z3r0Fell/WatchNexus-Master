@@ -97,7 +97,7 @@ class WatchlistItem(BaseModel):
 class WatchProgress(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
+    user_id: Optional[str] = None  # Set by server from authenticated user
     tmdb_id: int
     media_type: str
     title: str
