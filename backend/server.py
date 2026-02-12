@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, Cookie
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, Cookie, UploadFile, File, Form
 from fastapi.responses import Response, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -2922,28 +2922,51 @@ async def refresh_kodi_addons(user: dict = Depends(require_auth)):
 from plugin_adapter import AdapterFactory, convert_kodi_addon
 
 @api_router.post("/adapter/convert")
-async def convert_plugin(
-    source_path: str,
-    ecosystem: str = None,
+async def convert_plugin_upload(
+    file: UploadFile = File(...),
+    ecosystem: str = Form(None),
     user: dict = Depends(require_auth)
 ):
     """
-    Convert a plugin from Kodi/Jellyfin/Plex to WatchNexus format.
-    
-    Args:
-        source_path: Path to plugin source (zip or directory)
-        ecosystem: Source ecosystem (auto-detected if not provided)
+    Convert an uploaded plugin ZIP from Kodi/Jellyfin/Plex to WatchNexus format.
     """
-    manifest, result = AdapterFactory.convert(source_path, ecosystem=ecosystem)
+    import tempfile
+    import shutil
     
-    if manifest:
-        return {
-            "status": "success",
-            "manifest": manifest.to_dict(),
-            "output_path": result
-        }
-    else:
-        raise HTTPException(status_code=400, detail=result)
+    if not file.filename.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="Only ZIP files are supported")
+    
+    temp_dir = tempfile.mkdtemp(prefix="wn_upload_")
+    zip_path = os.path.join(temp_dir, file.filename)
+    
+    try:
+        with open(zip_path, 'wb') as f:
+            content = await file.read()
+            f.write(content)
+        
+        detected = ecosystem or AdapterFactory.detect_ecosystem(zip_path)
+        if not detected:
+            raise HTTPException(status_code=400, detail="Could not detect plugin ecosystem. Please specify ecosystem manually.")
+        
+        manifest, result = AdapterFactory.convert(zip_path, ecosystem=detected)
+        
+        if manifest:
+            return {
+                "status": "success",
+                "ecosystem": detected,
+                "manifest": manifest.to_dict(),
+                "output_path": result,
+                "warnings": getattr(AdapterFactory.get_adapter(detected), 'warnings', []),
+                "errors": getattr(AdapterFactory.get_adapter(detected), 'errors', []),
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 @api_router.get("/adapter/detect")
 async def detect_plugin_ecosystem(
@@ -2955,6 +2978,17 @@ async def detect_plugin_ecosystem(
     if ecosystem:
         return {"ecosystem": ecosystem}
     raise HTTPException(status_code=400, detail="Could not detect plugin ecosystem")
+
+@api_router.get("/adapter/supported")
+async def get_supported_ecosystems():
+    """Get list of supported plugin ecosystems."""
+    return {
+        "ecosystems": [
+            {"id": "kodi", "name": "Kodi", "extensions": ["addon.xml"], "description": "Kodi add-ons (.zip with addon.xml)"},
+            {"id": "jellyfin", "name": "Jellyfin/Emby", "extensions": ["meta.json"], "description": "Jellyfin plugins (.zip with meta.json)"},
+            {"id": "plex", "name": "Plex", "extensions": ["Info.plist"], "description": "Plex plugins (.bundle or .zip with Info.plist)"},
+        ]
+    }
 
 @api_router.post("/kodi/addons/{addon_id}/install")
 async def install_kodi_addon(
