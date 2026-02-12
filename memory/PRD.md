@@ -1,7 +1,7 @@
 # WatchNexus - Product Requirements Document
 
 ## Original Problem Statement
-Build a unified, self-hosted media pipeline called "WatchNexus" that replaces the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. A single, fully self-contained application handling requesting, acquiring, organizing, and watching media.
+Build a unified, self-hosted media pipeline called "WatchNexus" that replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application.
 
 ## Core Architecture
 
@@ -14,131 +14,101 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 - FastAPI (Python)
 - MongoDB database
 - Built-in torrent engine (Syrup)
-
-### Key Modules
-- **Syrup** - Media Acquisition (torrents/usenet)
-- **Marmalade** - Library Manager
-- **Compote** - Indexer Manager
-- **Pulp** - Usenet Handler
-- **Gelatin** - Remote Access
-- **Juice** - UI Engine
-- **Milk** - Theme Forge
+- Kodi Repository Browser
 
 ---
 
-## What's Been Implemented
+## What's Been Implemented (December 2024)
 
 ### ✅ Core Application
 - Complete React frontend with responsive design
 - FastAPI backend with MongoDB
-- User authentication system
-- Dashboard with activity feeds
+- User authentication system (local/remote detection)
+- Dashboard with continue watching, activity feeds
 - Movies & TV Shows library views
-- Search functionality with TMDB integration
-- Settings page with multiple tabs
+- Search with TMDB integration
+- Comprehensive Settings page
+
+### ✅ Login System (NEW)
+- **Local/Remote Network Detection** - Detects if accessing from home network (192.168.x.x, 10.x.x.x) or remotely
+- **Profile Selection** - Netflix-style "Who's Watching?" for local network users
+- **Per-user profiles** - Each user has own watch progress, preferences
+- Home Network = Green badge, shows profile picker
+- Remote Access = Blue badge, standard login form
+
+### ✅ Theme System
+- **Built-in Themes**: Living Room, Cinema, Anime Pop, Audio Waves, Minimal, Streaming Service
+- Custom theme color picker
+- API endpoint working at `/api/milk/theme-forge`
+
+### ✅ Kodi Repository Browser (NEW)
+- Fetches from official Kodi repository (mirrors.kodi.tv)
+- **1000+ add-ons** available
+- Categories:
+  - Video Add-ons (194)
+  - Music Add-ons (33)
+  - Scripts (185)
+  - Metadata (36)
+  - Services (32)
+  - Skins (13)
+  - Resources (174)
+  - Screensavers (40)
+  - Weather (8)
+  - And more...
+- Popular/Featured add-ons section
+- Search functionality
+- Addon detail modals with dependencies
+- Category browsing with counts
 
 ### ✅ Media Pipeline
-- Built-in torrent engine (Syrup) with queue management
+- Built-in torrent engine (Syrup)
 - Indexer management (Compote)
-- Library management (Marmalade) with folder scanning
-- Subtitle support (Bazarr-like features)
-- Media health checker
-- IPTV support with M3U playlists
+- Library management (Marmalade)
+- Subtitle support
+- IPTV support
 
 ### ✅ Streaming & Access
 - Built-in video player with transcoding
-- Jellyfin-compatible API (`/api/emby/*`) for existing clients
+- Jellyfin-compatible API (`/api/emby/*`)
 - Multi-user support with permissions
-- Remote access via Gelatin (Cloudflare tunnels)
+- Remote access via Gelatin
 
-### ✅ Customization
-- Theme Forge (Milk) - custom color schemes
-- Plugin system (Gadgets)
-- Streaming service integrations
-
-### ✅ Installation Scripts (FIXED - Dec 2024)
-- `build-arch.sh` - Arch Linux package builder
-- `install-linux.sh` - Debian/Ubuntu/Fedora installer
-- `install-mac.sh` - macOS installer
-- `install-windows.ps1` - Windows PowerShell installer
+### ✅ Installation Scripts (FIXED)
+- `build-arch.sh` - Arch Linux
+- `install-linux.sh` - Debian/Ubuntu/Fedora
+- `install-mac.sh` - macOS
+- `install-windows.ps1` - Windows
 
 ### ✅ Marketing Website
 - React version at `/app/website`
-- **NEW: Static HTML version at `/app/website-static`** (easily editable)
-- Features, Download, Demo, FAQ, Troubleshooting, Terms, Disclaimer pages
-- `.htaccess` for IONOS deployment
+- Static HTML version at `/app/website-static`
 
-### ✅ Code Stabilization (Dec 2024)
-- Refactored `SettingsPage.js` from 3559 to 2872 lines
-- Extracted components:
-  - `GeneralSettings.jsx`
-  - `UsersSettings.jsx`
-  - `LibrarySettings.jsx`
-- Stable build with no "Maximum call stack size exceeded" errors
-
----
-
-## Pending/In-Progress
-
-### 🔶 Media Management UI (P1)
-- Basic sub-tab structure exists in Library settings
-- Full Sonarr-like implementation pending
-- Needs: file renaming, quality profiles, mass editor
-
-### 🔶 Community/DVR Pages
-- UI designed but using static data
-- Need backend API connections
-
----
-
-## Backlog (Future Tasks)
-
-### P1 - High Priority
-- Complete Media Management UI (Sonarr-like features)
-- Connect Community & DVR pages to backend
-- Client app documentation (Android, Android TV, Chromecast, Kodi)
-
-### P2 - Medium Priority
-- Native mobile apps (iOS, Android)
-- Roku/Fire Stick client apps
-- Live usenet/indexer testing (Pulp, Compote modules)
-
-### P3 - Lower Priority
-- Separate Git repositories for plugins/community
-- Advanced DVR functionality
-- Watch party features
+### ✅ Code Stabilization
+- Refactored SettingsPage.js (3559 → 2872 lines)
+- Extracted components for better maintainability
 
 ---
 
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `GET /api/users/profiles` - Local network profile selection
 
-### Users
-- `GET /api/users` - List all users
-- `POST /api/users` - Create user
+### Kodi Repository (NEW)
+- `GET /api/kodi/categories` - List categories with counts
+- `GET /api/kodi/addons` - Search/list addons
+- `GET /api/kodi/addons/popular` - Featured addons
+- `GET /api/kodi/addons/{id}` - Addon details
+- `GET /api/kodi/addons/category/{cat}` - By category
+- `POST /api/kodi/refresh` - Refresh cache
 
-### Libraries
-- `GET /api/libraries` - List libraries
-- `POST /api/libraries` - Add library
-- `POST /api/libraries/{id}/scan` - Scan library
+### Themes
+- `GET /api/milk/theme-forge` - Get theme config
 
-### Media
-- `GET /api/movies` - List movies
-- `GET /api/tvshows` - List TV shows
-- `GET /api/search` - Search TMDB
-
-### Torrents (Syrup)
-- `GET /api/syrup/search` - Search torrents
-- `POST /api/syrup/download` - Start download
-
-### File Browser
-- `GET /api/browse` - Browse file system
-
-### Jellyfin Compatible
-- `GET /api/emby/*` - Jellyfin-compatible API
+### Libraries, Media, Downloads, etc.
+(See previous documentation)
 
 ---
 
@@ -148,43 +118,38 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces th
 
 ---
 
-## File References
+## Pending/Upcoming Tasks
 
-### Critical Files
-- `/app/frontend/src/pages/SettingsPage.js` - Main settings (2872 lines)
-- `/app/frontend/src/components/settings/` - Extracted settings components
-- `/app/backend/server.py` - Main backend server
-- `/app/backend/jellyfin_compat.py` - Jellyfin API facade
+### 🔶 P1 - High Priority
+- Complete Media Management UI (Sonarr-like features)
+- Install Kodi addons to WatchNexus (adapter layer)
+- Connect Community & DVR pages to backend
 
-### Scripts
-- `/app/scripts/build-arch.sh` - Arch Linux builder
-- `/app/scripts/install-linux.sh` - Linux installer
-- `/app/scripts/install-mac.sh` - macOS installer
-- `/app/scripts/install-windows.ps1` - Windows installer
+### 🔶 P2 - Medium Priority  
+- Native mobile apps
+- Roku/Fire Stick clients
+- Live usenet/indexer testing
 
-### Static Website
-- `/app/website-static/` - Fully static HTML website
-- `/app/website-static/README.md` - Editing instructions
-- `/app/website-static/css/styles.css` - All styles (easy to customize)
-
-### Documentation
-- `/app/docs/CLIENT-APP-RESEARCH.md` - Client app feasibility
-- `/app/docs/KICKSTARTER-CAMPAIGN.md` - Kickstarter document
+### 🔶 P3 - Lower Priority
+- Watch party features
+- Advanced DVR
+- Plugin marketplace for custom plugins
 
 ---
 
-## Notes
+## File References
 
-### Known Issues Resolved
-1. ✅ Torrent scrapers (YTS, EZTV) fixed with fallback domains
-2. ✅ Installation scripts fixed for all platforms
-3. ✅ SettingsPage.js build instability resolved via refactoring
+### New/Updated Files
+- `/app/frontend/src/pages/AuthPage.js` - Login with local/remote detection
+- `/app/frontend/src/pages/PluginMarketplacePage.js` - Kodi-style addon browser
+- `/app/backend/kodi_browser.py` - Kodi repository fetcher/parser
+- `/app/backend/server.py` - Added Kodi endpoints, user profiles endpoint
 
-### Architecture Decisions
-- MongoDB for flexibility with media metadata
-- Jellyfin API compatibility for existing app ecosystem
-- Modular design with named "modules" (Syrup, Marmalade, etc.)
-- Plugin system for extensibility
+### Scripts
+- `/app/scripts/*.sh`, `/app/scripts/*.ps1` - Fixed installers
+
+### Static Website
+- `/app/website-static/` - Easy-to-edit HTML website
 
 ---
 
