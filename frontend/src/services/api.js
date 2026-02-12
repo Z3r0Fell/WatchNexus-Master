@@ -80,6 +80,7 @@ export const streamingApi = {
 export const libraryApi = {
   getAll: (mediaType) => axios.get(`${API}/library`, { params: { media_type: mediaType } }),
   add: (item) => axios.post(`${API}/library`, item),
+  getRecentlyAdded: (limit = 20) => axios.get(`${API}/marmalade/media/recent`, { params: { limit } }),
 };
 
 // Media Health Checker API calls
