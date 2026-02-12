@@ -489,6 +489,10 @@ export const PluginMarketplacePage = () => {
               <Check className="w-4 h-4 mr-2" />
               Installed ({installedPlugins.length})
             </TabsTrigger>
+            <TabsTrigger value="convert" className="data-[state=active]:bg-violet-600">
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Convert Plugin
+            </TabsTrigger>
           </TabsList>
 
           {/* Kodi Repository Tab */}
