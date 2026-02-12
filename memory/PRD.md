@@ -41,6 +41,7 @@ WatchNexus is a unified, self-hosted media pipeline that replaces the need for S
 - **Dashboard Enhanced with Per-User Watch History**:
   - "Continue Watching" section with progress bars, time remaining, episode info
   - "Next Up" section for TV shows with next episode suggestions
+  - "Recently Added" section showing new library additions with NEW badges
   - Per-user profile support (shows "for {username}")
   - New API endpoint: `/api/next-up` (GET) - returns next episodes to watch
 
