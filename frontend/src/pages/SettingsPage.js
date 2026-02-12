@@ -2452,7 +2452,7 @@ export const SettingsPage = () => {
                 </h3>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {themeForgeConfig?.built_in?.map((theme) => (
+                  {themeForgeConfig?.built_in_themes?.map((theme) => (
                     <button
                       key={theme.type}
                       onClick={() => handleSetTheme(theme.type)}
