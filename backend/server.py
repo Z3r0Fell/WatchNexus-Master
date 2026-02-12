@@ -610,6 +610,71 @@ async def get_watch_progress(user: dict = Depends(require_auth)):
     ).sort("updated_at", -1).to_list(20)
     return items
 
+@api_router.get("/next-up")
+async def get_next_up(user: dict = Depends(require_auth)):
+    """
+    Get 'Next Up' list - next episodes for TV shows the user is watching.
+    Returns episodes that haven't been started yet for shows with watch progress.
+    """
+    # Get user's TV watch progress items
+    tv_progress = await db.watch_progress.find(
+        {"user_id": user["id"], "media_type": "tv"},
+        {"_id": 0}
+    ).sort("updated_at", -1).to_list(50)
+    
+    next_up = []
+    seen_shows = set()
+    
+    for item in tv_progress:
+        # Skip if we already have next-up for this show
+        if item["tmdb_id"] in seen_shows:
+            continue
+        
+        # Calculate next episode
+        current_season = item.get("season", 1)
+        current_episode = item.get("episode", 1)
+        progress = item.get("progress", 0)
+        
+        # If current episode is mostly watched (>85%), suggest next episode
+        if progress >= 85:
+            next_episode = current_episode + 1
+            next_season = current_season
+        else:
+            # Continue current episode
+            next_up.append({
+                "tmdb_id": item["tmdb_id"],
+                "title": item["title"],
+                "poster_path": item.get("poster_path"),
+                "backdrop_path": item.get("backdrop_path"),
+                "season": current_season,
+                "episode": current_episode,
+                "progress": progress,
+                "current_time": item.get("current_time", 0),
+                "duration": item.get("duration", 0),
+                "is_continue": True,
+                "updated_at": item.get("updated_at")
+            })
+            seen_shows.add(item["tmdb_id"])
+            continue
+        
+        # Add next episode suggestion
+        next_up.append({
+            "tmdb_id": item["tmdb_id"],
+            "title": item["title"],
+            "poster_path": item.get("poster_path"),
+            "backdrop_path": item.get("backdrop_path"),
+            "season": next_season,
+            "episode": next_episode,
+            "progress": 0,
+            "current_time": 0,
+            "duration": item.get("duration", 0),
+            "is_continue": False,
+            "updated_at": item.get("updated_at")
+        })
+        seen_shows.add(item["tmdb_id"])
+    
+    return next_up[:10]  # Limit to 10 items
+
 # ==================== DOWNLOADS (MOCK) ====================
 
 mock_downloads = []
