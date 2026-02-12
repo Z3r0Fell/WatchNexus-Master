@@ -237,6 +237,42 @@ export const Dashboard = () => {
           </section>
         )}
 
+        {recentlyAdded.length > 0 && (
+          <section data-testid="recently-added-section" className="py-6 px-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <FolderPlus className="w-5 h-5 text-green-400" />
+                Recently Added
+                <span className="text-sm font-normal text-gray-500 ml-2">New in your library</span>
+              </h2>
+              <Link to="/library" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                View Library <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              {recentlyAdded.slice(0, 8).map((item, index) => (
+                <motion.div key={item.id || `recent-${index}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.03 }}>
+                  <Link to={`/${item.media_type || 'movie'}/${item.tmdb_id || item.id}`} data-testid={`recent-${item.id}`} className="aspect-[2/3] rounded-xl overflow-hidden media-card block relative group">
+                    {item.poster_path ? (
+                      <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-green-900/50 to-violet-900/50 flex items-center justify-center">
+                        <Film className="w-8 h-8 text-gray-500" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/80">NEW</span>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                      <p className="text-xs font-medium line-clamp-2">{item.title}</p>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <MediaRow
           title={<span className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-pink-500" />Trending This Week</span>}
           items={trending}
