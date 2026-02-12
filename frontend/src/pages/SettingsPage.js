@@ -10,7 +10,7 @@ import {
   IPTVSettings, StreamingSettings, SubtitleSettings,
   GelatinSettings, ThemeForgeSettings, PluginsSettings
 } from '../components/settings';
-import Layout from '../components/Layout';
+import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { settingsApi } from '../services/api';
