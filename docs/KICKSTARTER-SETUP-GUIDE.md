@@ -397,36 +397,25 @@ Add these to your Story section after rewards:
 • Community Discord launch
 • Bug fix fund
 
-### $10,000 - Android Apps 📱
+### $6,000 - Android Apps 📱
 • Native Android mobile app
 • Fire TV Stick app  
 • Android TV app
+
+### $8,500 - iOS 🍎
+• Native iOS app
+• Apple TV app
+• Requires Apple Developer account
+
+### $10,000 - Roku 📺
+• Native Roku channel
+• Requires BrightScript development
+• Certification with Roku
 
 ### $15,000 - Cloud Sync ☁️
 • Optional cloud sync between devices
 • Watch history sync
 • Settings backup
-
-### $20,000 - Advanced Features 🚀
-• DVR recording for Live TV
-• Multi-user household support
-• Chromecast casting
-
-### $30,000 - Ecosystem 🔌
-• Native Kodi addon
-• Complete Plugin SDK
-• Theme SDK documentation
-• Developer portal
-
-### $50,000 - Roku 📺
-• Native Roku channel
-• Requires BrightScript development
-• Certification with Roku
-
-### $75,000 - iOS 🍎
-• Native iOS app
-• Apple TV app
-• Requires Apple Developer account
 ```
 
 **[INSERT IMAGE: Create a stretch goal graphic showing the tiers as a progress bar]**
