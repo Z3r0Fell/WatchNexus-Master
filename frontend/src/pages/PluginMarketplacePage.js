@@ -594,16 +594,6 @@ export const PluginMarketplacePage = () => {
 };
 
 export default PluginMarketplacePage;
-                        >
-                          <Icon className="w-4 h-4" />
-                          {eco.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* File upload */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-300 mb-2">Plugin ZIP File</label>
                   <div
