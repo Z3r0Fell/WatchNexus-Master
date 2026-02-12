@@ -84,7 +84,7 @@ export const PluginMarketplacePage = () => {
   const fetchPopularAddons = useCallback(async () => {
     setLoadingKodi(true);
     try {
-      const res = await axios.get(`${API_URL}/api/kodi/addons/popular?limit=12`, { headers: authHeader });
+      const res = await axios.get(`${API_URL}/api/kodi/addons/popular?limit=12`, { headers: getAuthHeader() });
       setPopularAddons(res.data.addons || []);
     } catch (err) {
       console.error('Failed to fetch popular addons:', err);
@@ -101,7 +101,7 @@ export const PluginMarketplacePage = () => {
       if (query) url += `&query=${encodeURIComponent(query)}`;
       if (category) url += `&category=${category}`;
       
-      const res = await axios.get(url, { headers: authHeader });
+      const res = await axios.get(url, { headers: getAuthHeader() });
       setKodiAddons(res.data.addons || []);
     } catch (err) {
       console.error('Failed to fetch Kodi addons:', err);
@@ -115,7 +115,7 @@ export const PluginMarketplacePage = () => {
   const fetchInstalledPlugins = useCallback(async () => {
     setLoadingPlugins(true);
     try {
-      const res = await axios.get(`${API_URL}/api/gadgets/plugins`, { headers: authHeader });
+      const res = await axios.get(`${API_URL}/api/gadgets/plugins`, { headers: getAuthHeader() });
       setInstalledPlugins(res.data || []);
     } catch (err) {
       console.error('Failed to fetch installed plugins:', err);
@@ -128,7 +128,7 @@ export const PluginMarketplacePage = () => {
   const refreshKodiRepo = async () => {
     setLoadingKodi(true);
     try {
-      await axios.post(`${API_URL}/api/kodi/refresh`, {}, { headers: authHeader });
+      await axios.post(`${API_URL}/api/kodi/refresh`, {}, { headers: getAuthHeader() });
       toast.success('Kodi repository refreshed');
       await fetchKodiCategories();
       await fetchPopularAddons();
