@@ -613,6 +613,219 @@ export const PluginMarketplacePage = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* Convert Plugin Tab */}
+          <TabsContent value="convert" className="mt-6" data-testid="convert-plugin-tab">
+            <div className="max-w-3xl mx-auto space-y-6">
+              <div className="glass-card rounded-xl p-6">
+                <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <ArrowRight className="w-5 h-5 text-violet-400" />
+                  Plugin Converter
+                </h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Convert plugins from Kodi, Jellyfin/Emby, or Plex to the WatchNexus format. 
+                  Upload a plugin ZIP file and the converter will auto-detect the source ecosystem.
+                </p>
+
+                {/* Ecosystem selector */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Source Ecosystem (optional)</label>
+                  <div className="flex gap-3">
+                    {[
+                      { id: '', label: 'Auto-detect', icon: Zap },
+                      { id: 'kodi', label: 'Kodi', icon: Globe },
+                      { id: 'jellyfin', label: 'Jellyfin/Emby', icon: Tv },
+                      { id: 'plex', label: 'Plex', icon: Play },
+                    ].map((eco) => {
+                      const Icon = eco.icon;
+                      return (
+                        <button
+                          key={eco.id}
+                          data-testid={`ecosystem-${eco.id || 'auto'}`}
+                          onClick={() => setConvertEcosystem(eco.id)}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                            convertEcosystem === eco.id
+                              ? 'border-violet-500 bg-violet-500/20 text-violet-300'
+                              : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {eco.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* File upload */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Plugin ZIP File</label>
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                      convertFile ? 'border-violet-500/50 bg-violet-500/5' : 'border-white/10 hover:border-white/20'
+                    }`}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
+                      if (file?.name.endsWith('.zip')) setConvertFile(file);
+                      else toast.error('Only ZIP files are supported');
+                    }}
+                  >
+                    {convertFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <FileArchive className="w-8 h-8 text-violet-400" />
+                        <div className="text-left">
+                          <p className="font-medium text-white">{convertFile.name}</p>
+                          <p className="text-sm text-gray-400">{(convertFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <button
+                          onClick={() => { setConvertFile(null); setConvertResult(null); setConvertError(null); }}
+                          className="ml-4 p-1 rounded-full hover:bg-white/10"
+                        >
+                          <X className="w-4 h-4 text-gray-400" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+                        <p className="text-gray-400 mb-2">Drag & drop a plugin ZIP file here</p>
+                        <label className="inline-block cursor-pointer">
+                          <span className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors">
+                            Browse Files
+                          </span>
+                          <input
+                            data-testid="convert-file-input"
+                            type="file"
+                            accept=".zip"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) setConvertFile(file);
+                            }}
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Convert button */}
+                <Button
+                  data-testid="convert-plugin-btn"
+                  onClick={handleConvertPlugin}
+                  disabled={!convertFile || converting}
+                  className="w-full bg-violet-600 hover:bg-violet-700 h-12 text-base"
+                >
+                  {converting ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                      Converting...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRight className="w-5 h-5 mr-2" />
+                      Convert to WatchNexus Format
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Conversion error */}
+              {convertError && (
+                <div className="glass-card rounded-xl p-4 border border-red-500/30 bg-red-500/5" data-testid="convert-error">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-red-400">Conversion Failed</p>
+                      <p className="text-sm text-gray-400 mt-1">{convertError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Conversion result */}
+              {convertResult && (
+                <div className="glass-card rounded-xl p-6 border border-green-500/30 bg-green-500/5" data-testid="convert-result">
+                  <div className="flex items-center gap-3 mb-4">
+                    <CheckCircle className="w-6 h-6 text-green-400" />
+                    <h3 className="text-lg font-bold text-green-400">Conversion Successful</h3>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-violet-500/20 text-violet-300">
+                      {convertResult.ecosystem}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="p-3 rounded-lg bg-white/5">
+                      <p className="text-xs text-gray-500">Plugin Name</p>
+                      <p className="font-medium">{convertResult.manifest?.name}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5">
+                      <p className="text-xs text-gray-500">Version</p>
+                      <p className="font-medium">{convertResult.manifest?.version}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5">
+                      <p className="text-xs text-gray-500">Type</p>
+                      <p className="font-medium">{convertResult.manifest?.plugin_type}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5">
+                      <p className="text-xs text-gray-500">Author</p>
+                      <p className="font-medium">{convertResult.manifest?.author || 'Unknown'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5 col-span-2">
+                      <p className="text-xs text-gray-500">WatchNexus ID</p>
+                      <p className="font-medium font-mono text-sm">{convertResult.manifest?.id}</p>
+                    </div>
+                  </div>
+
+                  {convertResult.manifest?.description && (
+                    <p className="text-sm text-gray-400 mb-4">{convertResult.manifest.description}</p>
+                  )}
+
+                  {convertResult.manifest?.adaptation_notes?.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-500 mb-2">Adaptation Notes</p>
+                      <div className="space-y-1">
+                        {convertResult.manifest.adaptation_notes.map((note, i) => (
+                          <p key={i} className="text-sm text-yellow-400/80 flex items-center gap-2">
+                            <AlertTriangle className="w-3 h-3 flex-shrink-0" /> {note}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500 mt-4">
+                    Converted plugin saved at: {convertResult.output_path}
+                  </p>
+                </div>
+              )}
+
+              {/* Supported ecosystems info */}
+              <div className="glass-card rounded-xl p-6">
+                <h3 className="font-bold mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-violet-400" />
+                  Supported Plugin Ecosystems
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { name: 'Kodi', icon: Globe, desc: 'Add-ons with addon.xml manifest. Supports video, audio, subtitle, metadata, and service plugins.', color: 'blue' },
+                    { name: 'Jellyfin/Emby', icon: Tv, desc: 'Plugins with meta.json. Both C# and JavaScript plugins supported with conversion notes.', color: 'purple' },
+                    { name: 'Plex', icon: Play, desc: 'Channel bundles with Info.plist. Python-based plugins with Framework API conversion.', color: 'orange' },
+                  ].map((eco) => {
+                    const Icon = eco.icon;
+                    return (
+                      <div key={eco.name} className="p-4 rounded-lg bg-white/5 border border-white/5">
+                        <Icon className={`w-8 h-8 text-${eco.color}-400 mb-3`} />
+                        <h4 className="font-bold text-white mb-1">{eco.name}</h4>
+                        <p className="text-xs text-gray-400">{eco.desc}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Addon Detail Modal */}
