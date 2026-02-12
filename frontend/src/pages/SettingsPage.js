@@ -1,57 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Layout } from '../components/layout/Layout';
-import { settingsApi, indexersApi, streamingApi, mediaHealthApi, qbittorrentApi, torrentEngineApi, compoteApi } from '../services/api';
-import { toast } from 'sonner';
-import axios from 'axios';
-import { 
-  Settings, Server, Download, Subtitles, Shield, 
-  Folder, Check, X, Plus, Trash2, ExternalLink, Globe,
-  AlertTriangle, CheckCircle, RefreshCw, FileSearch, Wrench, HardDrive,
-  Clock, Bell, Calendar, DownloadCloud, Tv, Radio, Play, Eye, EyeOff,
-  ChevronDown, Wifi, WifiOff, Zap, Package, Film, Music, Book, FolderOpen,
-  Palette, Paintbrush, Moon, Sun, Sparkles, Import, FileJson,
-  Users, UserPlus, UserMinus, Crown, Lock, Edit2, Save, User,
-  FolderSearch, ChevronRight, Home, Database,
-  FileText, FolderInput, Layers, ListChecks, 
-  ScanLine, FolderCog, CheckSquare, Square
-} from 'lucide-react';
+import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, Lock, Film } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { JuiceColorPicker } from '../components/juice/JuiceColorPicker';
-import { GeneralSettings, UsersSettings, LibrarySettings } from '../components/settings';
-
-// All streaming services with their icons/colors
-const STREAMING_SERVICES = [
-  { id: 'netflix', name: 'Netflix', color: '#E50914', icon: '🎬' },
-  { id: 'disney', name: 'Disney+', color: '#113CCF', icon: '🏰' },
-  { id: 'prime', name: 'Amazon Prime Video', color: '#00A8E1', icon: '📦' },
-  { id: 'hulu', name: 'Hulu', color: '#1CE783', icon: '📺' },
-  { id: 'hbomax', name: 'HBO Max', color: '#5822B4', icon: '🎭' },
-  { id: 'peacock', name: 'Peacock', color: '#000000', icon: '🦚' },
-  { id: 'paramount', name: 'Paramount+', color: '#0064FF', icon: '⭐' },
-  { id: 'appletv', name: 'Apple TV+', color: '#555555', icon: '🍎' },
-  { id: 'crunchyroll', name: 'Crunchyroll', color: '#F47521', icon: '🍥' },
-  { id: 'funimation', name: 'Funimation', color: '#5B0BB5', icon: '🎌' },
-  { id: 'youtube', name: 'YouTube Premium', color: '#FF0000', icon: '▶️' },
-  { id: 'showtime', name: 'Showtime', color: '#FF0000', icon: '🎪' },
-  { id: 'starz', name: 'Starz', color: '#000000', icon: '⭐' },
-  { id: 'discovery', name: 'Discovery+', color: '#0033A0', icon: '🌍' },
-  { id: 'britbox', name: 'BritBox', color: '#C8102E', icon: '🇬🇧' },
-  { id: 'curiosity', name: 'CuriosityStream', color: '#FF6B00', icon: '🔬' },
-  { id: 'mubi', name: 'MUBI', color: '#000000', icon: '🎥' },
-  { id: 'criterion', name: 'Criterion Channel', color: '#000000', icon: '🎞️' },
-  { id: 'shudder', name: 'Shudder', color: '#000000', icon: '👻' },
-  { id: 'tubi', name: 'Tubi', color: '#FA382F', icon: '📱' },
-  { id: 'pluto', name: 'Pluto TV', color: '#000000', icon: '🪐' },
-  { id: 'vudu', name: 'Vudu', color: '#3399FF', icon: '💿' },
-  { id: 'rakuten', name: 'Rakuten Viki', color: '#0B1E3F', icon: '🇰🇷' },
-  { id: 'hidive', name: 'HIDIVE', color: '#00AEEF', icon: '🎌' },
-];
+import {
+  GeneralSettings, UsersSettings, LibrarySettings,
+  MediaHealthSettings, IndexerSettings, DownloadSettings,
+  IPTVSettings, StreamingSettings, SubtitleSettings,
+  GelatinSettings, ThemeForgeSettings, PluginsSettings
+} from '../components/settings';
+import Layout from '../components/Layout';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { settingsApi } from '../services/api';
 
 export const SettingsPage = () => {
+  // General settings
   const [settings, setSettings] = useState({
     download_path: '/media/downloads',
     library_path: '/media/library',
@@ -59,114 +24,19 @@ export const SettingsPage = () => {
     subtitle_languages: ['en'],
     quality_preference: '1080p',
   });
-  const [indexers, setIndexers] = useState([]);
   const [saving, setSaving] = useState(false);
-  
-  // Media Health Checker state
-  const [healthScanPath, setHealthScanPath] = useState('');
-  const [healthResults, setHealthResults] = useState([]);
-  const [scanning, setScanning] = useState(false);
-  const [repairing, setRepairing] = useState(null);
-  const [redownloading, setRedownloading] = useState(null);
-  
-  // Scheduled scans state
-  const [scheduledScans, setScheduledScans] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [newScanForm, setNewScanForm] = useState({
-    directory: '',
-    schedule_type: 'daily',
-    schedule_time: '03:00',
-    notify_on_issues: true,
-    auto_repair: false,
-  });
 
-  // Download client mode: 'builtin' or 'qbittorrent'
-  const [downloadClientMode, setDownloadClientMode] = useState('builtin');
-
-  // Built-in torrent engine state
-  const [engineStatus, setEngineStatus] = useState(null);
-  const [engineTorrents, setEngineTorrents] = useState([]);
-  const [testingEngine, setTestingEngine] = useState(false);
-  const [engineSettings, setEngineSettings] = useState({
-    // Queue Management
-    max_active_downloads: 3,
-    max_active_uploads: 3,
-    max_active_torrents: 5,
-    // Speed Limits (KB/s, 0 = unlimited)
-    max_download_rate: 0,
-    max_upload_rate: 0,
-    // Connection Limits
-    max_connections_global: 200,
-    max_connections_per_torrent: 50,
-    // Seeding Limits
-    seed_ratio_limit: 1.0,
-    seed_time_limit: 60,
-    seed_ratio_action: 'pause',
-    // Auto-cleanup
-    remove_after_completion: false,
-    remove_after_seeding: false,
-    delete_files_on_remove: false,
-    max_completed_torrents: 50,
-    // Behavior
-    sequential_download_default: false,
-    add_paused: false,
-    // Network
-    enable_dht: true,
-    enable_pex: true,
-    enable_lsd: true,
-  });
-  const [savingEngineSettings, setSavingEngineSettings] = useState(false);
-
-  // qBittorrent state
-  const [qbitConfig, setQbitConfig] = useState({
-    host: 'localhost',
-    port: '8080',
-    username: 'admin',
-    password: '',
-  });
-  const [qbitStatus, setQbitStatus] = useState(null);
-  const [testingQbit, setTestingQbit] = useState(false);
-
-  // IPTV state
-  const [iptvSources, setIptvSources] = useState([]);
-  const [newIptvSource, setNewIptvSource] = useState({
-    name: '',
-    url: '',
-    epg_url: '',
-    type: 'm3u',
-  });
-
-  // Streaming Services state
-  const [configuredServices, setConfiguredServices] = useState([]);
-  const [selectedService, setSelectedService] = useState('');
-  const [serviceCredentials, setServiceCredentials] = useState({ email: '', password: '' });
-  const [showPassword, setShowPassword] = useState({});
-
-  // Indexer management state
-  const [showAddIndexer, setShowAddIndexer] = useState(false);
-  const [testingIndexer, setTestingIndexer] = useState(null);
-  const [newIndexer, setNewIndexer] = useState({
-    name: '',
-    type: 'torznab',
-    url: '',
-    api_key: '',
-    cloudflare_protected: false,
-    search_path: '',
-    cookie: '',
-  });
-
-  // Library management state
+  // Library management
   const [libraries, setLibraries] = useState([]);
   const [loadingLibraries, setLoadingLibraries] = useState(false);
   const [scanningLibrary, setScanningLibrary] = useState(null);
   const [showAddLibrary, setShowAddLibrary] = useState(false);
-  const [newLibrary, setNewLibrary] = useState({
-    name: '',
-    path: '',
-    media_type: 'movies',
-  });
+  const [newLibrary, setNewLibrary] = useState({ name: '', path: '', media_type: 'movies' });
+  const [librarySubTab, setLibrarySubTab] = useState('libraries');
+  const [manualImportPath, setManualImportPath] = useState('');
+  const [manualImportFiles, setManualImportFiles] = useState([]);
 
-  // File Browser state
+  // File browser
   const [showFileBrowser, setShowFileBrowser] = useState(false);
   const [browserPath, setBrowserPath] = useState('/');
   const [browserItems, setBrowserItems] = useState([]);
@@ -174,296 +44,41 @@ export const SettingsPage = () => {
   const [browserLoading, setBrowserLoading] = useState(false);
   const [browserMediaCount, setBrowserMediaCount] = useState(0);
 
-  // Media Management state (Sonarr-like features)
-  const [librarySubTab, setLibrarySubTab] = useState('libraries');
-  const [mediaManagement, setMediaManagement] = useState({
-    // Naming
-    rename_files: true,
-    replace_illegal_chars: true,
-    colon_replacement: 'delete',
-    // Standard naming format
-    standard_movie_format: '{Movie Title} ({Release Year}) [{Quality Full}]',
-    standard_series_format: '{Series Title}/Season {season:00}/{Series Title} - S{season:00}E{episode:00} - {Episode Title} [{Quality Full}]',
-    // Organization
-    create_empty_folders: false,
-    delete_empty_folders: true,
-    skip_free_space_check: false,
-    minimum_free_space: 100, // MB
-    // Import
-    use_hardlinks: true,
-    import_extra_files: true,
-    extra_file_extensions: 'srt,sub,idx,nfo',
-    // File Management
-    unmonitor_deleted_files: false,
-    propers_and_repacks: 'preferAndUpgrade',
-    analyze_video_files: true,
-    rescan_after_refresh: 'always',
-    change_file_date: 'none',
-    recycling_bin: '',
-    recycling_bin_cleanup: 7,
-  });
-  const [qualityProfiles, setQualityProfiles] = useState([
-    { id: '1', name: 'Any', cutoff: 'Bluray-1080p', items: ['SDTV', 'WEBDL-480p', 'DVD', 'HDTV-720p', 'WEBDL-720p', 'Bluray-720p', 'HDTV-1080p', 'WEBDL-1080p', 'Bluray-1080p'] },
-    { id: '2', name: 'HD-720p/1080p', cutoff: 'Bluray-1080p', items: ['HDTV-720p', 'WEBDL-720p', 'Bluray-720p', 'HDTV-1080p', 'WEBDL-1080p', 'Bluray-1080p'] },
-    { id: '3', name: 'Ultra-HD', cutoff: 'Bluray-2160p', items: ['WEBDL-2160p', 'Bluray-2160p'] },
-    { id: '4', name: 'HD - 1080p', cutoff: 'Bluray-1080p', items: ['HDTV-1080p', 'WEBDL-1080p', 'Bluray-1080p'] },
-  ]);
-  const [rootFolders, setRootFolders] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [showMassEditor, setShowMassEditor] = useState(false);
-  const [showManualImport, setShowManualImport] = useState(false);
-  const [manualImportPath, setManualImportPath] = useState('');
-  const [manualImportFiles, setManualImportFiles] = useState([]);
-  const [savingMediaManagement, setSavingMediaManagement] = useState(false);
-
-  // Gelatin (External Access) state
-  const [gelatinStatus, setGelatinStatus] = useState(null);
-  const [activeTunnels, setActiveTunnels] = useState([]);
-  const [creatingTunnel, setCreatingTunnel] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
-
-  // Milk (Theme Forge) state
-  const [themeForgeConfig, setThemeForgeConfig] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState(null);
-  const [customColors, setCustomColors] = useState({
-    primary: '#8B5CF6',
-    secondary: '#EC4899',
-    background: '#0F0F0F',
-    surface: '#1A1A1A',
-    text_primary: '#FFFFFF',
-  });
-  const [savingTheme, setSavingTheme] = useState(false);
-
-  // Gadgets (Plugins) state
-  const [plugins, setPlugins] = useState([]);
-  const [loadingPlugins, setLoadingPlugins] = useState(false);
-  const [togglingPlugin, setTogglingPlugin] = useState(null);
-
-  // Users Management state
+  // Users management
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [savingUser, setSavingUser] = useState(false);
   const [newUser, setNewUser] = useState({
-    username: '',
-    email: '',
-    password: '',
-    role: 'user',
-    permissions: {
-      can_download: true,
-      can_delete: false,
-      can_manage_library: false,
-      can_manage_users: false,
-      can_access_settings: false,
-      max_streams: 3,
-      allowed_libraries: [],
-    }
+    username: '', email: '', password: '', role: 'user',
+    permissions: { can_download: true, can_delete: false, can_manage_library: false, can_manage_users: false, can_access_settings: false, max_streams: 3, allowed_libraries: [] }
   });
 
-  // Fetch Theme Forge config
-  const fetchThemeForgeConfig = useCallback(async () => {
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/milk/theme-forge`);
-      setThemeForgeConfig(res.data);
-      if (res.data.current_theme) {
-        setSelectedTheme(res.data.current_theme.type);
-        if (res.data.current_theme.colors) {
-          setCustomColors(res.data.current_theme.colors);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch theme config:', error);
-    }
-  }, []);
-
-  const handleSetTheme = async (themeType) => {
-    try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/milk/set-theme?theme_type=${themeType}`);
-      setSelectedTheme(themeType);
-      toast.success('Theme applied!');
-      fetchThemeForgeConfig();
-    } catch (error) {
-      toast.error('Failed to apply theme');
-    }
-  };
-
-  const handleSaveCustomTheme = async () => {
-    setSavingTheme(true);
-    try {
-      const themeData = {
-        name: 'My Custom Theme',
-        type: 'custom',
-        colors: customColors,
-      };
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/milk/custom-theme`, themeData);
-      toast.success('Custom theme saved!');
-      setSelectedTheme('custom');
-      fetchThemeForgeConfig();
-    } catch (error) {
-      toast.error('Failed to save custom theme');
-    } finally {
-      setSavingTheme(false);
-    }
-  };
-
-  // Fetch Gadgets (Plugins)
-  const fetchPlugins = useCallback(async () => {
-    setLoadingPlugins(true);
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/plugins`);
-      setPlugins(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch plugins:', error);
-    } finally {
-      setLoadingPlugins(false);
-    }
-  }, []);
-
-  const handleTogglePlugin = async (pluginId, currentStatus) => {
-    setTogglingPlugin(pluginId);
-    try {
-      const action = currentStatus === 'active' ? 'disable' : 'enable';
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`);
-      toast.success(`Plugin ${action === 'enable' ? 'enabled' : 'disabled'}!`);
-      fetchPlugins();
-    } catch (error) {
-      toast.error('Failed to toggle plugin');
-    } finally {
-      setTogglingPlugin(null);
-    }
-  };
-
-  const handleDiscoverPlugins = async () => {
-    setLoadingPlugins(true);
-    try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/discover`);
-      toast.success('Plugin discovery complete!');
-      fetchPlugins();
-    } catch (error) {
-      toast.error('Failed to discover plugins');
-    } finally {
-      setLoadingPlugins(false);
-    }
-  };
-
-  // Fetch Gelatin status
-  const fetchGelatinStatus = useCallback(async () => {
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/status`);
-      setGelatinStatus(res.data);
-    } catch (error) {
-      console.error('Failed to fetch Gelatin status:', error);
-    }
-  }, []);
-
-  const fetchActiveTunnels = useCallback(async () => {
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/tunnels`);
-      setActiveTunnels(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch tunnels:', error);
-    }
-  }, []);
-
-  const handleCreateTunnel = async () => {
-    setCreatingTunnel(true);
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/tunnel/create`);
-      toast.success('Tunnel created successfully');
-      setActiveTunnels(prev => [...prev, res.data]);
-      fetchGelatinStatus();
-    } catch (error) {
-      toast.error('Failed to create tunnel');
-    } finally {
-      setCreatingTunnel(false);
-    }
-  };
-
-  const handleCloseTunnel = async (tunnelId) => {
-    try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/tunnel/${tunnelId}`);
-      toast.success('Tunnel closed');
-      setActiveTunnels(prev => prev.filter(t => t.tunnel_id !== tunnelId));
-      fetchGelatinStatus();
-    } catch (error) {
-      toast.error('Failed to close tunnel');
-    }
-  };
-
-  const handleGenerateAccessToken = async () => {
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gelatin/access-token`);
-      setAccessToken(res.data);
-      toast.success('Access token generated');
-    } catch (error) {
-      toast.error('Failed to generate token');
-    }
-  };
-
-  // Fetch Users
+  // Fetch users
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
       const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/users`);
       setUsers(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-      // If API doesn't exist yet, use mock data
-      setUsers([
-        {
-          id: '1',
-          username: 'admin',
-          email: 'admin@watchnexus.local',
-          role: 'admin',
-          created_at: '2024-01-01',
-          last_login: '2024-02-11',
-          permissions: {
-            can_download: true,
-            can_delete: true,
-            can_manage_library: true,
-            can_manage_users: true,
-            can_access_settings: true,
-            max_streams: 10,
-          }
-        }
-      ]);
-    } finally {
-      setLoadingUsers(false);
-    }
+    } catch {
+      setUsers([{ id: '1', username: 'admin', email: 'admin@watchnexus.local', role: 'admin', avatar: null, created_at: new Date().toISOString(),
+        permissions: { can_download: true, can_delete: true, can_manage_library: true, can_manage_users: true, can_access_settings: true, max_streams: 10 }
+      }]);
+    } finally { setLoadingUsers(false); }
   }, []);
 
   const handleAddUser = async () => {
-    if (!newUser.username || !newUser.email || !newUser.password) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
+    if (!newUser.username || !newUser.email || !newUser.password) { toast.error('Please fill in all required fields'); return; }
     setSavingUser(true);
     try {
       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/users`, newUser);
       setUsers(prev => [...prev, res.data]);
       setShowAddUser(false);
-      setNewUser({
-        username: '',
-        email: '',
-        password: '',
-        role: 'user',
-        permissions: {
-          can_download: true,
-          can_delete: false,
-          can_manage_library: false,
-          can_manage_users: false,
-          can_access_settings: false,
-          max_streams: 3,
-          allowed_libraries: [],
-        }
-      });
+      setNewUser({ username: '', email: '', password: '', role: 'user', permissions: { can_download: true, can_delete: false, can_manage_library: false, can_manage_users: false, can_access_settings: false, max_streams: 3, allowed_libraries: [] } });
       toast.success('User created successfully');
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create user');
-    } finally {
-      setSavingUser(false);
-    }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to create user'); }
+    finally { setSavingUser(false); }
   };
 
   const handleUpdateUser = async (userId, updates) => {
@@ -471,636 +86,112 @@ export const SettingsPage = () => {
     try {
       await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`, updates);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-      setEditingUser(null);
-      toast.success('User updated successfully');
-    } catch (error) {
-      toast.error('Failed to update user');
-    } finally {
-      setSavingUser(false);
-    }
+      setEditingUser(null); toast.success('User updated successfully');
+    } catch { toast.error('Failed to update user'); }
+    finally { setSavingUser(false); }
   };
 
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`);
-      setUsers(prev => prev.filter(u => u.id !== userId));
-      toast.success('User deleted');
-    } catch (error) {
-      toast.error('Failed to delete user');
-    }
+    try { await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`); setUsers(prev => prev.filter(u => u.id !== userId)); toast.success('User deleted'); }
+    catch { toast.error('Failed to delete user'); }
   };
 
-  // Fetch Marmalade libraries
+  // Fetch libraries
   const fetchLibraries = useCallback(async () => {
     setLoadingLibraries(true);
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`);
-      setLibraries(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch libraries:', error);
-    } finally {
-      setLoadingLibraries(false);
-    }
+    try { const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`); setLibraries(res.data || []); }
+    catch {} finally { setLoadingLibraries(false); }
   }, []);
 
   const handleAddLibrary = async () => {
-    if (!newLibrary.name || !newLibrary.path) {
-      toast.error('Name and path are required');
-      return;
-    }
+    if (!newLibrary.name || !newLibrary.path) { toast.error('Name and path are required'); return; }
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`, null, {
-        params: newLibrary
-      });
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`, null, { params: newLibrary });
       toast.success(`Library "${newLibrary.name}" added`);
-      setNewLibrary({ name: '', path: '', media_type: 'movies' });
-      setShowAddLibrary(false);
-      fetchLibraries();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to add library');
-    }
+      setNewLibrary({ name: '', path: '', media_type: 'movies' }); setShowAddLibrary(false); fetchLibraries();
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to add library'); }
   };
 
   const handleDeleteLibrary = async (libraryId) => {
-    try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}`);
-      toast.success('Library removed');
-      fetchLibraries();
-    } catch (error) {
-      toast.error('Failed to remove library');
-    }
+    try { await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}`); toast.success('Library removed'); fetchLibraries(); }
+    catch { toast.error('Failed to remove library'); }
   };
 
   const handleScanLibrary = async (libraryId) => {
     setScanningLibrary(libraryId);
     try {
       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}/scan`);
-      toast.success(`Scan complete: ${res.data.new} new, ${res.data.updated} updated`);
-      fetchLibraries();
-    } catch (error) {
-      toast.error('Scan failed');
-    } finally {
-      setScanningLibrary(null);
-    }
+      toast.success(`Scan complete: ${res.data.new} new, ${res.data.updated} updated`); fetchLibraries();
+    } catch { toast.error('Scan failed'); }
+    finally { setScanningLibrary(null); }
   };
 
-  // File Browser functions
+  // File browser
   const openFileBrowser = async (initialPath = '/') => {
-    setShowFileBrowser(true);
-    await browsePath(initialPath);
+    setShowFileBrowser(true); await browsePath(initialPath);
   };
 
   const browsePath = async (path) => {
     setBrowserLoading(true);
     try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/filesystem/browse`, {
-        params: { path }
-      });
-      setBrowserPath(res.data.current_path);
-      setBrowserItems(res.data.items || []);
-      setBrowserDrives(res.data.drives || []);
-      setBrowserMediaCount(res.data.media_files_in_current || 0);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to browse directory');
-    } finally {
-      setBrowserLoading(false);
-    }
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/filesystem/browse`, { params: { path } });
+      setBrowserPath(res.data.current_path); setBrowserItems(res.data.items || []);
+      setBrowserDrives(res.data.drives || []); setBrowserMediaCount(res.data.media_files_in_current || 0);
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to browse directory'); }
+    finally { setBrowserLoading(false); }
   };
 
   const selectFolderFromBrowser = () => {
-    // Set the selected path to the newLibrary
     setNewLibrary(prev => ({ ...prev, path: browserPath }));
-    
-    // Try to auto-detect library name from folder name
     const folderName = browserPath.split('/').filter(Boolean).pop() || browserPath.split('\\').filter(Boolean).pop();
     if (folderName && !newLibrary.name) {
-      const prettyName = folderName.charAt(0).toUpperCase() + folderName.slice(1).replace(/[-_]/g, ' ');
-      setNewLibrary(prev => ({ ...prev, name: prettyName }));
+      setNewLibrary(prev => ({ ...prev, name: folderName.charAt(0).toUpperCase() + folderName.slice(1).replace(/[-_]/g, ' ') }));
     }
-    
-    // Try to auto-detect media type from folder name
     const lowerName = folderName?.toLowerCase() || '';
-    if (lowerName.includes('movie')) {
-      setNewLibrary(prev => ({ ...prev, media_type: 'movies' }));
-    } else if (lowerName.includes('tv') || lowerName.includes('series') || lowerName.includes('show')) {
-      setNewLibrary(prev => ({ ...prev, media_type: 'tv' }));
-    } else if (lowerName.includes('anime')) {
-      setNewLibrary(prev => ({ ...prev, media_type: 'anime' }));
-    } else if (lowerName.includes('music') || lowerName.includes('audio')) {
-      setNewLibrary(prev => ({ ...prev, media_type: 'music' }));
-    }
-    
-    setShowFileBrowser(false);
-    setShowAddLibrary(true);
+    if (lowerName.includes('movie')) setNewLibrary(prev => ({ ...prev, media_type: 'movies' }));
+    else if (lowerName.includes('tv') || lowerName.includes('series')) setNewLibrary(prev => ({ ...prev, media_type: 'tv' }));
+    else if (lowerName.includes('anime')) setNewLibrary(prev => ({ ...prev, media_type: 'anime' }));
+    else if (lowerName.includes('music')) setNewLibrary(prev => ({ ...prev, media_type: 'music' }));
+    setShowFileBrowser(false); setShowAddLibrary(true);
   };
 
-  // Media Management functions (Sonarr-like)
-  const handleSaveMediaManagement = async () => {
-    setSavingMediaManagement(true);
-    try {
-      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/settings`, mediaManagement);
-      toast.success('Media management settings saved');
-    } catch (error) {
-      toast.error('Failed to save media management settings');
-    } finally {
-      setSavingMediaManagement(false);
-    }
-  };
-
-  const handlePreviewRename = async (libraryId) => {
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/preview-rename`, {
-        library_id: libraryId,
-        format: mediaManagement.standard_movie_format
-      });
-      toast.info(`${res.data.preview_count || 0} files would be renamed`);
-    } catch (error) {
-      toast.error('Failed to preview rename');
-    }
-  };
-
-  const handleOrganizeFiles = async (libraryId) => {
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/organize`, {
-        library_id: libraryId
-      });
-      toast.success(`Organized ${res.data.moved || 0} files`);
-    } catch (error) {
-      toast.error('Failed to organize files');
-    }
-  };
-
+  // Media management handlers
   const handleManualImportScan = async () => {
-    if (!manualImportPath) {
-      toast.error('Please enter a path to scan');
-      return;
-    }
+    if (!manualImportPath) { toast.error('Please enter a path to scan'); return; }
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/scan-import`, {
-        path: manualImportPath
-      });
-      setManualImportFiles(res.data.files || []);
-      toast.success(`Found ${res.data.files?.length || 0} importable files`);
-    } catch (error) {
-      toast.error('Failed to scan directory');
-    }
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/scan-import`, { path: manualImportPath });
+      setManualImportFiles(res.data.files || []); toast.success(`Found ${res.data.files?.length || 0} importable files`);
+    } catch { toast.error('Failed to scan directory'); }
   };
 
   const handleImportFiles = async (files) => {
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/import`, {
-        files: files,
-        settings: mediaManagement
-      });
-      toast.success('Files imported successfully');
-      setShowManualImport(false);
-      setManualImportFiles([]);
-      fetchLibraries();
-    } catch (error) {
-      toast.error('Failed to import files');
-    }
+      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/import`, { files });
+      toast.success('Files imported successfully'); setManualImportFiles([]); fetchLibraries();
+    } catch { toast.error('Failed to import files'); }
   };
 
-  const handleMassEdit = async (action, value) => {
-    if (selectedItems.length === 0) {
-      toast.error('No items selected');
-      return;
-    }
-    try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/mass-edit`, {
-        item_ids: selectedItems,
-        action: action,
-        value: value
-      });
-      toast.success(`Updated ${selectedItems.length} items`);
-      setSelectedItems([]);
-      fetchLibraries();
-    } catch (error) {
-      toast.error('Mass edit failed');
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.length === libraries.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(libraries.map(l => l.id));
-    }
-  };
-
-  const toggleSelectItem = (itemId) => {
-    if (selectedItems.includes(itemId)) {
-      setSelectedItems(prev => prev.filter(id => id !== itemId));
-    } else {
-      setSelectedItems(prev => [...prev, itemId]);
-    }
-  };
-
-  // Fetch built-in engine status and settings
-  const fetchEngineStatus = useCallback(async () => {
-    try {
-      const res = await torrentEngineApi.getStatus();
-      setEngineStatus(res.data);
-    } catch (error) {
-      setEngineStatus({ success: false, error: 'Engine not available' });
-    }
-  }, []);
-
-  const fetchEngineSettings = useCallback(async () => {
-    try {
-      const res = await torrentEngineApi.getSettings();
-      setEngineSettings(prev => ({ ...prev, ...res.data }));
-    } catch (error) {
-      console.error('Failed to fetch engine settings:', error);
-    }
-  }, []);
-
-  const saveEngineSettings = async () => {
-    setSavingEngineSettings(true);
-    try {
-      await torrentEngineApi.updateSettings(engineSettings);
-      toast.success('Engine settings saved');
-    } catch (error) {
-      toast.error('Failed to save settings');
-    } finally {
-      setSavingEngineSettings(false);
-    }
-  };
-
-  const fetchEngineTorrents = useCallback(async () => {
-    try {
-      const res = await torrentEngineApi.getTorrents();
-      setEngineTorrents(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch engine torrents:', error);
-    }
-  }, []);
-
+  // Settings handlers
   const fetchData = useCallback(async () => {
     try {
-      const [settingsRes, indexersRes] = await Promise.all([
-        settingsApi.get().catch(() => ({ data: settings })),
-        indexersApi.getAll(),
-      ]);
+      const settingsRes = await settingsApi.get().catch(() => ({ data: settings }));
       setSettings(settingsRes.data || settings);
-      setIndexers(indexersRes.data || []);
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-    }
+    } catch {}
   }, []);
-
-  const fetchScheduledScans = useCallback(async () => {
-    try {
-      const res = await mediaHealthApi.getScheduledScans();
-      setScheduledScans(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch scheduled scans:', error);
-    }
-  }, []);
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await mediaHealthApi.getNotifications(true);
-      setNotifications(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-    fetchScheduledScans();
-    fetchNotifications();
-    fetchEngineStatus();
-    fetchEngineSettings();
-    fetchLibraries();
-    fetchStreamingLogins();
-    fetchGelatinStatus();
-    fetchActiveTunnels();
-    fetchThemeForgeConfig();
-    fetchPlugins();
-    fetchUsers();
-    
-    // Load saved IPTV sources
-    const savedIptv = localStorage.getItem('watchnexus_iptv_sources');
-    if (savedIptv) {
-      setIptvSources(JSON.parse(savedIptv));
-    }
-    
-    // Load saved download client mode
-    const savedMode = localStorage.getItem('watchnexus_download_mode');
-    if (savedMode) {
-      setDownloadClientMode(savedMode);
-    }
-  }, [fetchData, fetchScheduledScans, fetchNotifications, fetchEngineStatus, fetchEngineSettings, fetchLibraries, fetchGelatinStatus, fetchActiveTunnels, fetchThemeForgeConfig, fetchPlugins, fetchUsers]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
-    try {
-      await settingsApi.update(settings);
-      toast.success('Settings saved successfully');
-    } catch (error) {
-      toast.error('Failed to save settings');
-    } finally {
-      setSaving(false);
-    }
+    try { await settingsApi.update(settings); toast.success('Settings saved successfully'); }
+    catch { toast.error('Failed to save settings'); }
+    finally { setSaving(false); }
   };
 
-  const handleIndexerToggle = async (indexer) => {
-    try {
-      await compoteApi.updateIndexer(indexer.id, { enabled: !indexer.enabled });
-      setIndexers(prev => prev.map(i => 
-        i.id === indexer.id ? { ...i, enabled: !i.enabled } : i
-      ));
-      toast.success(`${indexer.name} ${indexer.enabled ? 'disabled' : 'enabled'}`);
-    } catch (error) {
-      toast.error('Failed to update indexer');
-    }
-  };
-
-  const handleAddNewIndexer = async () => {
-    if (!newIndexer.name || !newIndexer.url) {
-      toast.error('Name and URL are required');
-      return;
-    }
-    try {
-      await compoteApi.addIndexer(
-        newIndexer.name,
-        newIndexer.type,
-        newIndexer.url,
-        newIndexer.api_key,
-        true,
-        50,
-        {
-          cloudflare_protected: newIndexer.cloudflare_protected,
-          search_path: newIndexer.search_path,
-          cookie: newIndexer.cookie,
-        }
-      );
-      toast.success(`Indexer "${newIndexer.name}" added`);
-      setShowAddIndexer(false);
-      setNewIndexer({ name: '', type: 'torznab', url: '', api_key: '', cloudflare_protected: false, search_path: '', cookie: '' });
-      // Refresh indexers list
-      const res = await compoteApi.getIndexers();
-      setIndexers(res.data || []);
-    } catch (error) {
-      toast.error('Failed to add indexer');
-    }
-  };
-
-  const handleTestIndexer = async (indexerId) => {
-    setTestingIndexer(indexerId);
-    try {
-      const res = await compoteApi.testIndexer(indexerId);
-      if (res.data.success) {
-        toast.success(res.data.message || 'Connection successful');
-      } else {
-        toast.error(res.data.error || 'Connection failed');
-      }
-    } catch (error) {
-      toast.error('Test failed: ' + (error.response?.data?.detail || error.message));
-    } finally {
-      setTestingIndexer(null);
-    }
-  };
-
-  const handleDeleteIndexer = async (indexerId) => {
-    try {
-      await compoteApi.removeIndexer(indexerId);
-      setIndexers(prev => prev.filter(i => i.id !== indexerId));
-      toast.success('Indexer removed');
-    } catch (error) {
-      toast.error('Failed to remove indexer');
-    }
-  };
-
-  // Media Health Checker functions
-  const handleHealthScan = async () => {
-    if (!healthScanPath.trim()) {
-      toast.error('Please enter a directory path to scan');
-      return;
-    }
-    setScanning(true);
-    setHealthResults([]);
-    try {
-      const res = await mediaHealthApi.scanLibrary(healthScanPath);
-      setHealthResults(res.data || []);
-      const issues = (res.data || []).filter(r => r.status !== 'healthy');
-      if (issues.length > 0) {
-        toast.warning(`Found ${issues.length} file(s) with issues`);
-      } else {
-        toast.success('All files are healthy!');
-      }
-    } catch (error) {
-      toast.error('Failed to scan library');
-    } finally {
-      setScanning(false);
-    }
-  };
-
-  const handleRepairFile = async (filePath) => {
-    setRepairing(filePath);
-    try {
-      const res = await mediaHealthApi.repairFile(filePath);
-      if (res.data.success) {
-        toast.success(res.data.message);
-        await handleHealthScan();
-      } else {
-        toast.error(res.data.message);
-      }
-    } catch (error) {
-      toast.error('Failed to repair file');
-    } finally {
-      setRepairing(null);
-    }
-  };
-
-  const handleRedownload = async (filePath) => {
-    setRedownloading(filePath);
-    try {
-      const filename = filePath.split('/').pop();
-      const title = filename.replace(/\.[^/.]+$/, '').replace(/[._-]/g, ' ');
-      const res = await mediaHealthApi.requestRedownload(filePath, title, 'movie');
-      toast.success(res.data.message);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to queue re-download');
-    } finally {
-      setRedownloading(null);
-    }
-  };
-
-  const handleCreateScheduledScan = async () => {
-    if (!newScanForm.directory.trim()) {
-      toast.error('Please enter a directory to scan');
-      return;
-    }
-    try {
-      await mediaHealthApi.createScheduledScan(newScanForm);
-      toast.success('Scheduled scan created');
-      setNewScanForm({
-        directory: '',
-        schedule_type: 'daily',
-        schedule_time: '03:00',
-        notify_on_issues: true,
-        auto_repair: false,
-      });
-      fetchScheduledScans();
-    } catch (error) {
-      toast.error('Failed to create scheduled scan');
-    }
-  };
-
-  const handleDeleteScheduledScan = async (scanId) => {
-    try {
-      await mediaHealthApi.deleteScheduledScan(scanId);
-      toast.success('Scheduled scan deleted');
-      fetchScheduledScans();
-    } catch (error) {
-      toast.error('Failed to delete scheduled scan');
-    }
-  };
-
-  const handleRunScanNow = async (scanId) => {
-    setScanning(true);
-    try {
-      const res = await mediaHealthApi.runScheduledScanNow(scanId);
-      toast.success(`Scan complete: ${res.data.total_files} files`);
-      fetchScheduledScans();
-      fetchNotifications();
-    } catch (error) {
-      toast.error('Failed to run scan');
-    } finally {
-      setScanning(false);
-    }
-  };
-
-  // qBittorrent functions
-  const handleTestQbit = async () => {
-    setTestingQbit(true);
-    try {
-      const res = await qbittorrentApi.testConnection(
-        qbitConfig.host,
-        parseInt(qbitConfig.port),
-        qbitConfig.username,
-        qbitConfig.password
-      );
-      setQbitStatus(res.data);
-      if (res.data.success) {
-        toast.success(`Connected to qBittorrent v${res.data.version}`);
-      } else {
-        toast.error(res.data.error || 'Connection failed');
-      }
-    } catch (error) {
-      toast.error('Failed to connect to qBittorrent');
-      setQbitStatus({ success: false, error: 'Connection failed' });
-    } finally {
-      setTestingQbit(false);
-    }
-  };
-
-  // IPTV functions
-  const handleAddIptvSource = () => {
-    if (!newIptvSource.name || !newIptvSource.url) {
-      toast.error('Please enter name and URL');
-      return;
-    }
-    const updated = [...iptvSources, { ...newIptvSource, id: Date.now().toString() }];
-    setIptvSources(updated);
-    localStorage.setItem('watchnexus_iptv_sources', JSON.stringify(updated));
-    setNewIptvSource({ name: '', url: '', epg_url: '', type: 'm3u' });
-    toast.success('IPTV source added');
-  };
-
-  const handleDeleteIptvSource = (id) => {
-    const updated = iptvSources.filter(s => s.id !== id);
-    setIptvSources(updated);
-    localStorage.setItem('watchnexus_iptv_sources', JSON.stringify(updated));
-    toast.success('IPTV source removed');
-  };
-
-  // Streaming Services functions
-  const handleAddStreamingService = async () => {
-    if (!selectedService || !serviceCredentials.email || !serviceCredentials.password) {
-      toast.error('Please select a service and enter credentials');
-      return;
-    }
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins`, null, {
-        params: {
-          service_id: selectedService,
-          email: serviceCredentials.email,
-          password: serviceCredentials.password,
-        }
-      });
-      toast.success(`${res.data.login.service_name} added successfully`);
-      setSelectedService('');
-      setServiceCredentials({ email: '', password: '' });
-      fetchStreamingLogins();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to add service');
-    }
-  };
-
-  const handleDeleteStreamingService = async (serviceId) => {
-    try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins/${serviceId}`);
-      toast.success('Streaming service removed');
-      fetchStreamingLogins();
-    } catch (error) {
-      toast.error('Failed to remove service');
-    }
-  };
-
-  const fetchStreamingLogins = async () => {
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins`);
-      // Transform backend response to match UI format
-      const transformed = (res.data || []).map(login => ({
-        id: login.service_id,
-        name: login.service_name,
-        icon: login.icon,
-        color: login.color,
-        email: login.email,
-        deep_link: login.deep_link,
-        login_url: login.login_url,
-      }));
-      setConfiguredServices(transformed);
-    } catch (error) {
-      console.error('Failed to fetch streaming logins:', error);
-      // Fall back to localStorage
-      const saved = localStorage.getItem('watchnexus_streaming_services');
-      if (saved) setConfiguredServices(JSON.parse(saved));
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'healthy': return 'bg-green-500/20 text-green-400';
-      case 'warning': return 'bg-yellow-500/20 text-yellow-400';
-      case 'repairable': return 'bg-orange-500/20 text-orange-400';
-      default: return 'bg-red-500/20 text-red-400';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'healthy': return <CheckCircle className="w-5 h-5" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5" />;
-      case 'repairable': return <Wrench className="w-5 h-5" />;
-      default: return <X className="w-5 h-5" />;
-    }
-  };
-
-  // Get services not yet configured
-  const availableServices = STREAMING_SERVICES.filter(
-    s => !configuredServices.some(cs => cs.id === s.id)
-  );
+  useEffect(() => { fetchData(); fetchLibraries(); fetchUsers(); }, [fetchData, fetchLibraries, fetchUsers]);
 
   return (
     <Layout>
       <div data-testid="settings-page" className="min-h-screen p-8">
-        {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 flex items-center justify-center">
@@ -1113,7 +204,6 @@ export const SettingsPage = () => {
           </div>
         </motion.div>
 
-        {/* Tabs */}
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList className="bg-surface border border-white/10 flex-wrap gap-1">
             <TabsTrigger value="general" className="data-[state=active]:bg-violet-600">General</TabsTrigger>
@@ -1130,1699 +220,84 @@ export const SettingsPage = () => {
             <TabsTrigger value="plugins" className="data-[state=active]:bg-violet-600">Plugins</TabsTrigger>
           </TabsList>
 
-          {/* General Settings */}
           <TabsContent value="general">
-            <GeneralSettings
-              settings={settings}
-              setSettings={setSettings}
-              onSave={handleSaveSettings}
-              saving={saving}
-            />
+            <GeneralSettings settings={settings} setSettings={setSettings} onSave={handleSaveSettings} saving={saving} />
           </TabsContent>
 
-          {/* Users Management */}
           <TabsContent value="users">
-            <UsersSettings
-              users={users}
-              loadingUsers={loadingUsers}
-              showAddUser={showAddUser}
-              setShowAddUser={setShowAddUser}
-              newUser={newUser}
-              setNewUser={setNewUser}
-              savingUser={savingUser}
-              editingUser={editingUser}
-              setEditingUser={setEditingUser}
-              onAddUser={handleAddUser}
-              onUpdateUser={handleUpdateUser}
-              onDeleteUser={handleDeleteUser}
-            />
+            <UsersSettings users={users} loadingUsers={loadingUsers} showAddUser={showAddUser} setShowAddUser={setShowAddUser}
+              newUser={newUser} setNewUser={setNewUser} savingUser={savingUser} editingUser={editingUser}
+              setEditingUser={setEditingUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />
           </TabsContent>
 
-          {/* Library Management */}
           <TabsContent value="library">
-            <LibrarySettings
-              libraries={libraries}
-              loadingLibraries={loadingLibraries}
-              scanningLibrary={scanningLibrary}
-              showAddLibrary={showAddLibrary}
-              setShowAddLibrary={setShowAddLibrary}
-              newLibrary={newLibrary}
-              setNewLibrary={setNewLibrary}
-              onAddLibrary={handleAddLibrary}
-              onDeleteLibrary={handleDeleteLibrary}
-              onScanLibrary={handleScanLibrary}
-              onOpenFileBrowser={openFileBrowser}
-              librarySubTab={librarySubTab}
-              setLibrarySubTab={setLibrarySubTab}
-              manualImportPath={manualImportPath}
-              setManualImportPath={setManualImportPath}
-              manualImportFiles={manualImportFiles}
-              onManualImportScan={handleManualImportScan}
-              onImportFiles={handleImportFiles}
-            />
+            <LibrarySettings libraries={libraries} loadingLibraries={loadingLibraries} scanningLibrary={scanningLibrary}
+              showAddLibrary={showAddLibrary} setShowAddLibrary={setShowAddLibrary} newLibrary={newLibrary}
+              setNewLibrary={setNewLibrary} onAddLibrary={handleAddLibrary} onDeleteLibrary={handleDeleteLibrary}
+              onScanLibrary={handleScanLibrary} onOpenFileBrowser={openFileBrowser} librarySubTab={librarySubTab}
+              setLibrarySubTab={setLibrarySubTab} manualImportPath={manualImportPath} setManualImportPath={setManualImportPath}
+              manualImportFiles={manualImportFiles} onManualImportScan={handleManualImportScan} onImportFiles={handleImportFiles} />
           </TabsContent>
 
-          {/* Media Health */}
-          <TabsContent value="media-health">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <HardDrive className="w-5 h-5 text-violet-400" />
-                    Media Health Checker
-                  </h2>
-                  <p className="text-sm text-gray-400 mt-1">Scan for corrupted or incomplete files</p>
-                </div>
-              </div>
-
-              {/* Scan Input */}
-              <div className="flex gap-3">
-                <Input
-                  value={healthScanPath}
-                  onChange={(e) => setHealthScanPath(e.target.value)}
-                  placeholder="/media/library or /path/to/movies"
-                  className="bg-white/5 border-white/10 flex-1"
-                />
-                <Button onClick={handleHealthScan} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
-                  {scanning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4" />}
-                  <span className="ml-2">{scanning ? 'Scanning...' : 'Scan'}</span>
-                </Button>
-              </div>
-
-              {/* Results */}
-              {healthResults.length > 0 && (
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  <div className="flex gap-2 text-sm mb-3">
-                    <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">
-                      {healthResults.filter(r => r.status === 'healthy').length} Healthy
-                    </span>
-                    <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">
-                      {healthResults.filter(r => r.status === 'warning').length} Warnings
-                    </span>
-                    <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">
-                      {healthResults.filter(r => ['error', 'corrupt'].includes(r.status)).length} Errors
-                    </span>
-                  </div>
-                  {healthResults.map((result, index) => (
-                    <div key={index} className="p-3 rounded-lg bg-surface border border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getStatusColor(result.status)}`}>
-                          {getStatusIcon(result.status)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{result.file_path.split('/').pop()}</p>
-                          <p className="text-xs text-gray-500 truncate">{result.file_path}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {result.repairable && (
-                          <Button size="sm" variant="outline" onClick={() => handleRepairFile(result.file_path)}
-                            disabled={repairing === result.file_path} className="text-orange-400 border-orange-500/30">
-                            {repairing === result.file_path ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
-                          </Button>
-                        )}
-                        {result.status !== 'healthy' && (
-                          <Button size="sm" variant="outline" onClick={() => handleRedownload(result.file_path)}
-                            disabled={redownloading === result.file_path} className="text-blue-400 border-blue-500/30">
-                            {redownloading === result.file_path ? <RefreshCw className="w-4 h-4 animate-spin" /> : <DownloadCloud className="w-4 h-4" />}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Scheduled Scans */}
-              <div className="border-t border-white/10 pt-6 space-y-4">
-                <h3 className="font-bold flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-violet-400" />
-                  Scheduled Scans
-                  {notifications.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-xs ml-2">
-                      {notifications.length} alerts
-                    </span>
-                  )}
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <Input value={newScanForm.directory} onChange={(e) => setNewScanForm(p => ({ ...p, directory: e.target.value }))}
-                    placeholder="/media/movies" className="bg-white/5 border-white/10" />
-                  <select value={newScanForm.schedule_type} onChange={(e) => setNewScanForm(p => ({ ...p, schedule_type: e.target.value }))}
-                    className="bg-white/5 border border-white/10 rounded-md px-3 text-white">
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                  <Input type="time" value={newScanForm.schedule_time} 
-                    onChange={(e) => setNewScanForm(p => ({ ...p, schedule_time: e.target.value }))}
-                    className="bg-white/5 border-white/10" />
-                  <Button onClick={handleCreateScheduledScan} className="bg-violet-600 hover:bg-violet-700">
-                    <Plus className="w-4 h-4 mr-2" /> Add
-                  </Button>
-                </div>
-
-                {scheduledScans.length > 0 && (
-                  <div className="space-y-2">
-                    {scheduledScans.map((scan) => (
-                      <div key={scan.id} className="p-3 rounded-lg bg-surface border border-white/5 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-violet-400" />
-                          <div>
-                            <p className="font-medium">{scan.directory}</p>
-                            <p className="text-xs text-gray-500">{scan.schedule_type} at {scan.schedule_time}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleRunScanNow(scan.id)} disabled={scanning}>
-                            <RefreshCw className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteScheduledScan(scan.id)} className="text-red-400">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </TabsContent>
-
-          {/* Indexers */}
-          <TabsContent value="indexers">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              {/* Header */}
-              <div className="glass-card rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                      <Server className="w-5 h-5 text-violet-400" />
-                      Indexers (Compote)
-                    </h2>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Configure torrent indexers, RSS feeds, and usenet sources
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => setShowAddIndexer(!showAddIndexer)}
-                    className="bg-violet-600 hover:bg-violet-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Add Indexer
-                  </Button>
-                </div>
-
-                {/* Quick Add Presets */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="text-sm text-gray-400 py-1">Quick Add:</span>
-                  {[
-                    { name: '1337x', type: 'torznab', url: 'https://1337x.to', cf: true },
-                    { name: 'YTS Movies', type: 'torznab', url: 'https://yts.mx', cf: false },
-                    { name: 'EZTV', type: 'torznab', url: 'https://eztv.re', cf: false },
-                    { name: 'Nyaa', type: 'torznab', url: 'https://nyaa.si', cf: false },
-                    { name: 'ShowRSS', type: 'rss', url: 'https://showrss.info/other/all.rss', cf: false },
-                    { name: 'Custom RSS', type: 'rss', url: '', cf: false },
-                  ].map((preset) => (
-                    <button
-                      key={preset.name}
-                      onClick={() => {
-                        setNewIndexer({ 
-                          name: preset.name, 
-                          type: preset.type, 
-                          url: preset.url,
-                          api_key: '',
-                          cloudflare_protected: preset.cf,
-                          search_path: '',
-                          cookie: '',
-                        });
-                        setShowAddIndexer(true);
-                      }}
-                      className="px-3 py-1 text-xs rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-                    >
-                      + {preset.name}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Add Indexer Form */}
-                {showAddIndexer && (
-                  <div className="p-4 rounded-xl bg-surface border border-white/10 space-y-4">
-                    <h3 className="font-bold flex items-center gap-2">
-                      <Plus className="w-4 h-4 text-green-400" />
-                      Add New Indexer
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Indexer Name *</label>
-                        <Input
-                          value={newIndexer.name}
-                          onChange={(e) => setNewIndexer(p => ({ ...p, name: e.target.value }))}
-                          placeholder="My Indexer"
-                          className="bg-white/5 border-white/10"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Type *</label>
-                        <select
-                          value={newIndexer.type}
-                          onChange={(e) => setNewIndexer(p => ({ ...p, type: e.target.value }))}
-                          className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
-                        >
-                          <option value="torznab">Torrent (via Syrup)</option>
-                          <option value="newznab">NZB (via Pulp)</option>
-                          <option value="rss">RSS Feed</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">URL *</label>
-                      <Input
-                        value={newIndexer.url}
-                        onChange={(e) => setNewIndexer(p => ({ ...p, url: e.target.value }))}
-                        placeholder={
-                          newIndexer.type === 'rss' 
-                            ? 'https://showrss.info/other/all.rss' 
-                            : 'https://1337x.to'
-                        }
-                        className="bg-white/5 border-white/10"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {newIndexer.type === 'torznab' && 'Torrent site URL - Syrup handles the scraping'}
-                        {newIndexer.type === 'newznab' && 'NZB indexer API URL for Pulp'}
-                        {newIndexer.type === 'rss' && 'Direct link to RSS/Atom feed'}
-                      </p>
-                    </div>
-
-                    {newIndexer.type !== 'rss' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm text-gray-400 mb-2 block">API Key (if required)</label>
-                          <Input
-                            value={newIndexer.api_key}
-                            onChange={(e) => setNewIndexer(p => ({ ...p, api_key: e.target.value }))}
-                            placeholder="Optional for most torrent sites"
-                            className="bg-white/5 border-white/10"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm text-gray-400 mb-2 block">Search Path (optional)</label>
-                          <Input
-                            value={newIndexer.search_path}
-                            onChange={(e) => setNewIndexer(p => ({ ...p, search_path: e.target.value }))}
-                            placeholder="Auto-detected"
-                            className="bg-white/5 border-white/10"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Advanced Options */}
-                    <div className="pt-4 border-t border-white/10">
-                      <h4 className="text-sm font-medium mb-3">Advanced Options (Preserve)</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">Cloudflare Protected</p>
-                            <p className="text-xs text-gray-500">Preserve will handle challenge solving automatically</p>
-                          </div>
-                          <Switch 
-                            checked={newIndexer.cloudflare_protected || false}
-                            onCheckedChange={(checked) => setNewIndexer(p => ({ ...p, cloudflare_protected: checked }))}
-                          />
-                        </div>
-                        {newIndexer.cloudflare_protected && (
-                          <div>
-                            <label className="text-sm text-gray-400 mb-2 block">Browser Cookie (optional fallback)</label>
-                            <Input
-                              value={newIndexer.cookie || ''}
-                              onChange={(e) => setNewIndexer(p => ({ ...p, cookie: e.target.value }))}
-                              placeholder="Usually not needed - Preserve handles this"
-                              className="bg-white/5 border-white/10"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Only needed if automatic solving fails</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 justify-end pt-4">
-                      <Button variant="outline" onClick={() => setShowAddIndexer(false)}>Cancel</Button>
-                      <Button 
-                        onClick={handleAddNewIndexer}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={!newIndexer.name || !newIndexer.url}
-                      >
-                        <Plus className="w-4 h-4 mr-2" /> Add Indexer
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Configured Indexers */}
-              <div className="glass-card rounded-xl p-6">
-                <h3 className="font-bold mb-4">Configured Indexers ({indexers.length})</h3>
-                
-                {indexers.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Server className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No indexers configured</p>
-                    <p className="text-sm">Add indexers above to search for content</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {indexers.map((indexer) => (
-                      <div 
-                        key={indexer.id} 
-                        className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/5 hover:border-white/10 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            indexer.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-                          }`}>
-                            {indexer.type === 'rss' ? (
-                              <Radio className="w-5 h-5" />
-                            ) : indexer.type === 'newznab' ? (
-                              <Package className="w-5 h-5" />
-                            ) : (
-                              <Globe className="w-5 h-5" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{indexer.name}</p>
-                              <span className={`text-xs px-2 py-0.5 rounded ${
-                                indexer.type === 'torznab' ? 'bg-blue-500/20 text-blue-400' :
-                                indexer.type === 'newznab' ? 'bg-purple-500/20 text-purple-400' :
-                                'bg-orange-500/20 text-orange-400'
-                              }`}>
-                                {indexer.type.toUpperCase()}
-                              </span>
-                              {indexer.cloudflare_protected && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400">CF</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 truncate max-w-md">{indexer.url}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleTestIndexer(indexer.id)}
-                            disabled={testingIndexer === indexer.id}
-                          >
-                            {testingIndexer === indexer.id ? (
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Wifi className="w-4 h-4" />
-                            )}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleDeleteIndexer(indexer.id)}
-                            className="text-red-400 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <Switch 
-                            checked={indexer.enabled} 
-                            onCheckedChange={() => handleIndexerToggle(indexer)} 
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Setup Guide */}
-              <div className="glass-card rounded-xl p-6">
-                <h3 className="font-bold mb-4 flex items-center gap-2">
-                  <FileSearch className="w-5 h-5 text-blue-400" />
-                  Built-in Modules Guide
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Syrup - Aggregator */}
-                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                    <h4 className="font-medium text-blue-400 mb-2">🍯 Syrup - Indexer Aggregator</h4>
-                    <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
-                      <li>Built-in torrent indexer aggregator</li>
-                      <li>No external software needed</li>
-                      <li>Add torrent sites directly - Syrup scrapes them</li>
-                      <li>Supports 1337x, YTS, EZTV, Nyaa, and more</li>
-                      <li>Smart parsing of quality, codec, and size</li>
-                    </ol>
-                  </div>
-
-                  {/* Preserve - CF Bypass */}
-                  <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                    <h4 className="font-medium text-yellow-400 mb-2">🛡️ Preserve - Challenge Solver</h4>
-                    <ol className="text-sm text-yellow-300 space-y-1 list-decimal list-inside">
-                      <li>Built-in Cloudflare protection bypass</li>
-                      <li>Automatic - no configuration needed</li>
-                      <li>Browser fingerprinting & cookie handling</li>
-                      <li>Smart rate limiting with backoff</li>
-                      <li>Enable "Cloudflare Protected" toggle</li>
-                    </ol>
-                  </div>
-
-                  {/* RSS Feeds */}
-                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <h4 className="font-medium text-orange-400 mb-2">📡 RSS Feed Support</h4>
-                    <ol className="text-sm text-orange-300 space-y-1 list-decimal list-inside">
-                      <li>Add any RSS feed with torrent links</li>
-                      <li>ShowRSS.info for TV show tracking</li>
-                      <li>Private tracker personal feeds</li>
-                      <li>Automatic magnet link extraction</li>
-                      <li>Great for new release automation</li>
-                    </ol>
-                  </div>
-
-                  {/* Pulp - NZB */}
-                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                    <h4 className="font-medium text-purple-400 mb-2">📰 Pulp - NZB Handler</h4>
-                    <ol className="text-sm text-purple-300 space-y-1 list-decimal list-inside">
-                      <li>Built-in Usenet/NZB support</li>
-                      <li>Supports Newznab API indexers</li>
-                      <li>Enter your NZB indexer credentials</li>
-                      <li>Integrated download management</li>
-                      <li>Works with any Newznab indexer</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </TabsContent>
-
-          {/* Download Client */}
-          <TabsContent value="download">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              {/* Download Client Mode Selection */}
-              <div className="glass-card rounded-xl p-6">
-                <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-                  <Download className="w-5 h-5 text-violet-400" />
-                  Download Client
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {/* Built-in Engine Option */}
-                  <button
-                    onClick={() => {
-                      setDownloadClientMode('builtin');
-                      localStorage.setItem('watchnexus_download_mode', 'builtin');
-                    }}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      downloadClientMode === 'builtin'
-                        ? 'border-violet-500 bg-violet-500/10'
-                        : 'border-white/10 bg-surface hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        downloadClientMode === 'builtin' ? 'bg-violet-500' : 'bg-white/10'
-                      }`}>
-                        <Zap className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold">Built-in Engine</h3>
-                        <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">Recommended</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400">
-                      No external apps required! Fully integrated torrent engine with streaming support.
-                    </p>
-                  </button>
-                  
-                  {/* qBittorrent Option */}
-                  <button
-                    onClick={() => {
-                      setDownloadClientMode('qbittorrent');
-                      localStorage.setItem('watchnexus_download_mode', 'qbittorrent');
-                    }}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      downloadClientMode === 'qbittorrent'
-                        ? 'border-violet-500 bg-violet-500/10'
-                        : 'border-white/10 bg-surface hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        downloadClientMode === 'qbittorrent' ? 'bg-violet-500' : 'bg-white/10'
-                      }`}>
-                        <Package className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold">qBittorrent</h3>
-                        <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">External App</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400">
-                      Connect to external qBittorrent instance. Requires separate installation.
-                    </p>
-                  </button>
-                </div>
-              </div>
-
-              {/* Built-in Engine Configuration */}
-              {downloadClientMode === 'builtin' && (
-                <div className="space-y-6">
-                  {/* Status Card */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <Zap className="w-5 h-5 text-green-400" />
-                      Engine Status
-                    </h3>
-                    <div className={`p-4 rounded-xl border ${engineStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
-                      <div className="flex items-center gap-3">
-                        {engineStatus?.success ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertTriangle className="w-5 h-5 text-yellow-400" />}
-                        <div className="flex-1">
-                          <p className={engineStatus?.success ? 'text-green-400 font-medium' : 'text-yellow-400'}>
-                            {engineStatus?.success ? `${engineStatus.engine} - Running` : 'Engine Starting...'}
-                          </p>
-                          {engineStatus?.transfer && (
-                            <p className="text-sm text-gray-400">
-                              ↓ {engineStatus.transfer.download_rate_formatted} | ↑ {engineStatus.transfer.upload_rate_formatted} | 
-                              {engineStatus.transfer.downloading} downloading | {engineStatus.transfer.seeding} seeding | 
-                              DHT: {engineStatus.transfer.dht_nodes} nodes
-                            </p>
-                          )}
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => { setTestingEngine(true); fetchEngineStatus().finally(() => setTestingEngine(false)); }}
-                          disabled={testingEngine}
-                        >
-                          <RefreshCw className={`w-4 h-4 ${testingEngine ? 'animate-spin' : ''}`} />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Queue Management */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <DownloadCloud className="w-5 h-5 text-blue-400" />
-                      Queue Management
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Max Active Downloads</label>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="20"
-                          value={engineSettings.max_active_downloads}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_active_downloads: parseInt(e.target.value) || 3 }))}
-                          className="bg-white/5 border-white/10"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Recommended: 3-5</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Max Active Uploads</label>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="20"
-                          value={engineSettings.max_active_uploads}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_active_uploads: parseInt(e.target.value) || 3 }))}
-                          className="bg-white/5 border-white/10"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Recommended: 2-4</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Max Total Active</label>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="30"
-                          value={engineSettings.max_active_torrents}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_active_torrents: parseInt(e.target.value) || 5 }))}
-                          className="bg-white/5 border-white/10"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Recommended: 5-10</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Speed Limits */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <Zap className="w-5 h-5 text-yellow-400" />
-                      Speed Limits
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Max Download Speed (KB/s)</label>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          value={engineSettings.max_download_rate}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_download_rate: parseInt(e.target.value) || 0 }))}
-                          className="bg-white/5 border-white/10"
-                          placeholder="0 = Unlimited"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">0 = Unlimited</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Max Upload Speed (KB/s)</label>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          value={engineSettings.max_upload_rate}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_upload_rate: parseInt(e.target.value) || 0 }))}
-                          className="bg-white/5 border-white/10"
-                          placeholder="0 = Unlimited"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">0 = Unlimited</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Seeding Limits */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <Clock className="w-5 h-5 text-purple-400" />
-                      Seeding Limits
-                    </h3>
-                    <p className="text-sm text-gray-400 mb-4">Stop seeding when either condition is met (whichever comes first)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Seed Ratio Limit</label>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          step="0.1"
-                          value={engineSettings.seed_ratio_limit}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, seed_ratio_limit: parseFloat(e.target.value) || 0 }))}
-                          className="bg-white/5 border-white/10"
-                          placeholder="1.0"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">0 = Disabled | 1.0 = Equal upload</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Seed Time Limit (minutes)</label>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          value={engineSettings.seed_time_limit}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, seed_time_limit: parseInt(e.target.value) || 0 }))}
-                          className="bg-white/5 border-white/10"
-                          placeholder="60"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">0 = Disabled</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">When Limit Reached</label>
-                        <select
-                          value={engineSettings.seed_ratio_action}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, seed_ratio_action: e.target.value }))}
-                          className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
-                        >
-                          <option value="pause">Pause Torrent</option>
-                          <option value="remove">Remove Torrent</option>
-                          <option value="remove_with_data">Remove + Delete Files</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Auto-Cleanup */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <Trash2 className="w-5 h-5 text-red-400" />
-                      Auto-Cleanup
-                    </h3>
-                    <p className="text-sm text-gray-400 mb-4">Automatically manage completed torrents to prevent buildup</p>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Remove After Download Complete</p>
-                          <p className="text-sm text-gray-500">Immediately remove torrent when download finishes</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.remove_after_completion}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, remove_after_completion: checked }))}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Remove After Seeding Limit</p>
-                          <p className="text-sm text-gray-500">Remove torrent when seeding limit is reached</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.remove_after_seeding}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, remove_after_seeding: checked }))}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Delete Files When Removing</p>
-                          <p className="text-sm text-gray-500 text-red-400">⚠️ Will delete downloaded content!</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.delete_files_on_remove}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, delete_files_on_remove: checked }))}
-                        />
-                      </div>
-                      <div className="pt-4 border-t border-white/10">
-                        <label className="text-sm text-gray-400 mb-2 block">Max Completed Torrents to Keep</label>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          value={engineSettings.max_completed_torrents}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_completed_torrents: parseInt(e.target.value) || 0 }))}
-                          className="bg-white/5 border-white/10 w-32"
-                          placeholder="50"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">0 = Keep all | Oldest will be auto-removed when exceeded</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Connection Settings */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <Globe className="w-5 h-5 text-cyan-400" />
-                      Connection Settings
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Global Max Connections</label>
-                        <Input 
-                          type="number" 
-                          min="10" 
-                          max="1000"
-                          value={engineSettings.max_connections_global}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_connections_global: parseInt(e.target.value) || 200 }))}
-                          className="bg-white/5 border-white/10"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Recommended: 200-500</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 mb-2 block">Max Connections Per Torrent</label>
-                        <Input 
-                          type="number" 
-                          min="5" 
-                          max="200"
-                          value={engineSettings.max_connections_per_torrent}
-                          onChange={(e) => setEngineSettings(p => ({ ...p, max_connections_per_torrent: parseInt(e.target.value) || 50 }))}
-                          className="bg-white/5 border-white/10"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Recommended: 50-100</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">DHT (Distributed Hash Table)</p>
-                          <p className="text-sm text-gray-500">Find peers without trackers</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.enable_dht}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, enable_dht: checked }))}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">PEX (Peer Exchange)</p>
-                          <p className="text-sm text-gray-500">Share peers with other clients</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.enable_pex}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, enable_pex: checked }))}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">LSD (Local Service Discovery)</p>
-                          <p className="text-sm text-gray-500">Find peers on local network</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.enable_lsd}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, enable_lsd: checked }))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Behavior */}
-                  <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-                      <Settings className="w-5 h-5 text-gray-400" />
-                      Behavior
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Sequential Download by Default</p>
-                          <p className="text-sm text-gray-500">Download pieces in order (better for streaming)</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.sequential_download_default}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, sequential_download_default: checked }))}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Add Torrents Paused</p>
-                          <p className="text-sm text-gray-500">New torrents start paused for manual review</p>
-                        </div>
-                        <Switch 
-                          checked={engineSettings.add_paused}
-                          onCheckedChange={(checked) => setEngineSettings(p => ({ ...p, add_paused: checked }))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="flex justify-end">
-                    <Button 
-                      onClick={saveEngineSettings} 
-                      disabled={savingEngineSettings}
-                      className="bg-violet-600 hover:bg-violet-700"
-                    >
-                      {savingEngineSettings ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-                      Save Engine Settings
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* qBittorrent Configuration */}
-              {downloadClientMode === 'qbittorrent' && (
-                <div className="glass-card rounded-xl p-6 space-y-6">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <Package className="w-5 h-5 text-blue-400" />
-                    qBittorrent Connection
-                  </h3>
-
-                  {/* Status */}
-                  <div className={`p-4 rounded-xl border ${qbitStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
-                    <div className="flex items-center gap-3">
-                      {qbitStatus?.success ? <Wifi className="w-5 h-5 text-green-400" /> : <WifiOff className="w-5 h-5 text-gray-400" />}
-                      <div>
-                        <p className={qbitStatus?.success ? 'text-green-400 font-medium' : 'text-gray-400'}>
-                          {qbitStatus?.success ? `Connected - v${qbitStatus.version}` : 'Not Connected'}
-                        </p>
-                        {qbitStatus?.error && <p className="text-sm text-red-400">{qbitStatus.error}</p>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Host</label>
-                      <Input value={qbitConfig.host} onChange={(e) => setQbitConfig(p => ({ ...p, host: e.target.value }))}
-                        placeholder="localhost" className="bg-white/5 border-white/10" />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Port</label>
-                      <Input value={qbitConfig.port} onChange={(e) => setQbitConfig(p => ({ ...p, port: e.target.value }))}
-                        placeholder="8080" className="bg-white/5 border-white/10" />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Username</label>
-                      <Input value={qbitConfig.username} onChange={(e) => setQbitConfig(p => ({ ...p, username: e.target.value }))}
-                        placeholder="admin" className="bg-white/5 border-white/10" />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Password</label>
-                      <Input type="password" value={qbitConfig.password} 
-                        onChange={(e) => setQbitConfig(p => ({ ...p, password: e.target.value }))}
-                        placeholder="••••••••" className="bg-white/5 border-white/10" />
-                    </div>
-                  </div>
-
-                  <Button onClick={handleTestQbit} disabled={testingQbit} className="bg-violet-600 hover:bg-violet-700">
-                    {testingQbit ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Wifi className="w-4 h-4 mr-2" />}
-                    Test Connection
-                  </Button>
-
-                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                    <h4 className="font-medium text-blue-400 mb-2">Setup Instructions</h4>
-                    <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">
-                      <li>Install qBittorrent from qbittorrent.org</li>
-                      <li>Enable Web UI in Tools → Options → Web UI</li>
-                      <li>Set username and password</li>
-                      <li>Enter connection details above and test</li>
-                    </ol>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </TabsContent>
-
-          {/* IPTV */}
-          <TabsContent value="iptv">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Radio className="w-5 h-5 text-violet-400" />
-                IPTV Configuration
-              </h2>
-              <p className="text-gray-400">Add M3U playlists or Xtream Codes for live TV channels.</p>
-
-              {/* Add New Source */}
-              <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
-                <h3 className="font-medium">Add IPTV Source</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input value={newIptvSource.name} onChange={(e) => setNewIptvSource(p => ({ ...p, name: e.target.value }))}
-                    placeholder="Source Name (e.g., My IPTV)" className="bg-white/5 border-white/10" />
-                  <select value={newIptvSource.type} onChange={(e) => setNewIptvSource(p => ({ ...p, type: e.target.value }))}
-                    className="bg-white/5 border border-white/10 rounded-md px-3 text-white">
-                    <option value="m3u">M3U Playlist</option>
-                    <option value="xtream">Xtream Codes</option>
-                  </select>
-                </div>
-                <Input value={newIptvSource.url} onChange={(e) => setNewIptvSource(p => ({ ...p, url: e.target.value }))}
-                  placeholder={newIptvSource.type === 'm3u' ? 'http://example.com/playlist.m3u' : 'http://server.com:port'}
-                  className="bg-white/5 border-white/10" />
-                <Input value={newIptvSource.epg_url} onChange={(e) => setNewIptvSource(p => ({ ...p, epg_url: e.target.value }))}
-                  placeholder="EPG URL (optional) - http://example.com/epg.xml"
-                  className="bg-white/5 border-white/10" />
-                <Button onClick={handleAddIptvSource} className="bg-violet-600 hover:bg-violet-700">
-                  <Plus className="w-4 h-4 mr-2" /> Add Source
-                </Button>
-              </div>
-
-              {/* Configured Sources */}
-              {iptvSources.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-medium">Configured Sources ({iptvSources.length})</h3>
-                  {iptvSources.map((source) => (
-                    <div key={source.id} className="p-4 rounded-xl bg-surface border border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                          <Radio className="w-5 h-5 text-violet-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{source.name}</p>
-                          <p className="text-xs text-gray-500">{source.type.toUpperCase()} • {source.url.substring(0, 40)}...</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={() => handleDeleteIptvSource(source.id)} className="text-red-400">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {iptvSources.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Radio className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No IPTV sources configured</p>
-                  <p className="text-sm">Add an M3U playlist or Xtream Codes above</p>
-                </div>
-              )}
-            </motion.div>
-          </TabsContent>
-
-          {/* Streaming Services */}
-          <TabsContent value="streaming">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Tv className="w-5 h-5 text-violet-400" />
-                Streaming Service Logins
-              </h2>
-              <p className="text-gray-400">Save your streaming service credentials for quick access tracking.</p>
-
-              {/* Add New Service */}
-              <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
-                <h3 className="font-medium">Add Streaming Service</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="relative">
-                    <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white appearance-none">
-                      <option value="">Select Service...</option>
-                      {availableServices.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.icon} {service.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
-                  <Input value={serviceCredentials.email} 
-                    onChange={(e) => setServiceCredentials(p => ({ ...p, email: e.target.value }))}
-                    placeholder="Email / Username" className="bg-white/5 border-white/10" />
-                  <div className="relative">
-                    <Input type={showPassword['new'] ? 'text' : 'password'} value={serviceCredentials.password}
-                      onChange={(e) => setServiceCredentials(p => ({ ...p, password: e.target.value }))}
-                      placeholder="Password" className="bg-white/5 border-white/10 pr-10" />
-                    <button type="button" onClick={() => setShowPassword(p => ({ ...p, new: !p.new }))}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-                      {showPassword['new'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button onClick={handleAddStreamingService} disabled={!selectedService} className="bg-violet-600 hover:bg-violet-700">
-                  <Plus className="w-4 h-4 mr-2" /> Add Service
-                </Button>
-              </div>
-
-              {/* Configured Services */}
-              {configuredServices.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-medium">Configured Services ({configuredServices.length})</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {configuredServices.map((service, index) => (
-                      <div key={`${service.id}-${index}`} className="p-4 rounded-xl border border-white/5 flex items-center justify-between"
-                        style={{ backgroundColor: `${service.color}15` }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                            style={{ backgroundColor: `${service.color}30` }}>
-                            {service.icon}
-                          </div>
-                          <div>
-                            <p className="font-medium">{service.name}</p>
-                            <p className="text-xs text-gray-400">{service.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <a href={`https://${service.id === 'prime' ? 'primevideo.com' : service.id === 'disney' ? 'disneyplus.com' : service.id + '.com'}`}
-                            target="_blank" rel="noopener noreferrer"
-                            className="p-2 rounded-lg hover:bg-white/10 transition-colors">
-                            <ExternalLink className="w-4 h-4 text-gray-400" />
-                          </a>
-                          <Button size="sm" variant="ghost" onClick={() => handleDeleteStreamingService(service.id)}
-                            className="text-red-400 hover:bg-red-500/10">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {configuredServices.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Tv className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No streaming services configured</p>
-                  <p className="text-sm">Add your subscriptions above for easy access</p>
-                </div>
-              )}
-
-              <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                <p className="text-sm text-yellow-400">
-                  <strong>Note:</strong> Credentials are stored locally for your convenience.
-                  WatchNexus does not share or sync this data.
-                </p>
-              </div>
-            </motion.div>
-          </TabsContent>
-
-          {/* Subtitles */}
-          <TabsContent value="subtitles">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Subtitles className="w-5 h-5 text-violet-400" />
-                Subtitle Settings
-              </h2>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/5">
-                  <div>
-                    <p className="font-medium">Auto-download Subtitles</p>
-                    <p className="text-sm text-gray-500">Automatically fetch subtitles for new media</p>
-                  </div>
-                  <Switch checked={settings.auto_subtitles}
-                    onCheckedChange={(checked) => setSettings({ ...settings, auto_subtitles: checked })} />
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Preferred Languages</label>
-                  <select multiple className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white h-32">
-                    <option value="en" selected>English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="it">Italian</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="ja">Japanese</option>
-                    <option value="ko">Korean</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ar">Arabic</option>
-                  </select>
-                </div>
-              </div>
-
-              <Button onClick={handleSaveSettings} disabled={saving} className="bg-violet-600 hover:bg-violet-700">
-                {saving ? 'Saving...' : 'Save Settings'}
-              </Button>
-            </motion.div>
-          </TabsContent>
-
-          {/* Gelatin - External Access */}
-          <TabsContent value="gelatin">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Globe className="w-5 h-5 text-violet-400" />
-                Gelatin - External Access
-              </h2>
-              <p className="text-gray-400">
-                Make WatchNexus accessible from outside your local network for watch parties and remote streaming.
-              </p>
-
-              {/* Server Status */}
-              {gelatinStatus && (
-                <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
-                  <h3 className="font-medium flex items-center gap-2">
-                    <Server className="w-4 h-4 text-gray-400" />
-                    Server Status
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg bg-white/5">
-                      <p className="text-xs text-gray-500 mb-1">Server ID</p>
-                      <p className="font-mono text-sm">{gelatinStatus.server_id}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-white/5">
-                      <p className="text-xs text-gray-500 mb-1">Local IP</p>
-                      <p className="font-mono text-sm">{gelatinStatus.local_ip}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-white/5 md:col-span-2">
-                      <p className="text-xs text-gray-500 mb-1">LAN URL</p>
-                      <div className="flex items-center gap-2">
-                        <p className="font-mono text-sm text-violet-400">{gelatinStatus.lan_url}</p>
-                        <Button size="sm" variant="ghost" onClick={() => {
-                          navigator.clipboard.writeText(gelatinStatus.lan_url);
-                          toast.success('Copied to clipboard');
-                        }}>
-                          Copy
-                        </Button>
-                      </div>
-                    </div>
-                    {gelatinStatus.external_url && (
-                      <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 md:col-span-2">
-                        <p className="text-xs text-green-400 mb-1">External URL (Active)</p>
-                        <div className="flex items-center gap-2">
-                          <p className="font-mono text-sm text-green-400">{gelatinStatus.external_url}</p>
-                          <Button size="sm" variant="ghost" onClick={() => {
-                            navigator.clipboard.writeText(gelatinStatus.external_url);
-                            toast.success('Copied to clipboard');
-                          }}>
-                            Copy
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {gelatinStatus.features?.map((feature) => (
-                      <span key={feature} className="px-2 py-1 rounded-full bg-violet-500/20 text-violet-400 text-xs">
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tunnel Management */}
-              <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium flex items-center gap-2">
-                    <Wifi className="w-4 h-4 text-gray-400" />
-                    Network Tunnels
-                  </h3>
-                  <Button onClick={handleCreateTunnel} disabled={creatingTunnel} className="bg-violet-600 hover:bg-violet-700">
-                    {creatingTunnel ? (
-                      <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
-                    ) : (
-                      <><Plus className="w-4 h-4 mr-2" /> Create Tunnel</>
-                    )}
-                  </Button>
-                </div>
-                
-                {activeTunnels.length > 0 ? (
-                  <div className="space-y-2">
-                    {activeTunnels.map((tunnel) => (
-                      <div key={tunnel.tunnel_id} className="p-3 rounded-lg bg-white/5 flex items-center justify-between">
-                        <div>
-                          <p className="font-mono text-sm text-violet-400">{tunnel.public_url}</p>
-                          <p className="text-xs text-gray-500">ID: {tunnel.tunnel_id} • Created: {new Date(tunnel.created_at).toLocaleString()}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="ghost" onClick={() => {
-                            navigator.clipboard.writeText(tunnel.public_url);
-                            toast.success('URL copied');
-                          }}>
-                            Copy
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleCloseTunnel(tunnel.tunnel_id)} className="text-red-400 hover:bg-red-500/10">
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    <WifiOff className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                    <p>No active tunnels</p>
-                    <p className="text-sm">Create a tunnel to enable external access</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Access Token */}
-              <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-gray-400" />
-                      Access Tokens
-                    </h3>
-                    <p className="text-sm text-gray-500">Generate tokens for secure guest access</p>
-                  </div>
-                  <Button onClick={handleGenerateAccessToken} variant="outline" className="border-white/10 hover:bg-white/5">
-                    <Plus className="w-4 h-4 mr-2" /> Generate Token
-                  </Button>
-                </div>
-                
-                {accessToken && (
-                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <p className="text-xs text-green-400 mb-2">New Access Token (copy now, won't be shown again)</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 p-2 rounded bg-black/20 text-sm font-mono break-all">{accessToken.token}</code>
-                      <Button size="sm" onClick={() => {
-                        navigator.clipboard.writeText(accessToken.token);
-                        toast.success('Token copied');
-                      }}>
-                        Copy
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">Permissions: {accessToken.permissions?.join(', ')} • Expires in {accessToken.expires_hours}h</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <p className="text-sm text-blue-400">
-                  <strong>Tip:</strong> Use external access for watch parties with friends who aren't on your local network.
-                  The LAN URL works for devices connected to the same WiFi/network.
-                </p>
-              </div>
-            </motion.div>
-          </TabsContent>
-
-          {/* Theme Forge (Milk) */}
-          <TabsContent value="theme-forge">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Palette className="w-5 h-5 text-violet-400" />
-                Theme Forge
-                <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full">Milk 🥛</span>
-              </h2>
-              <p className="text-gray-400">
-                Customize the visual appearance of WatchNexus with built-in themes or create your own.
-              </p>
-
-              {/* Built-in Themes */}
-              <div className="space-y-4">
-                <h3 className="font-medium flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-gray-400" />
-                  Built-in Themes
-                </h3>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {themeForgeConfig?.built_in_themes?.map((theme) => (
-                    <button
-                      key={theme.type}
-                      onClick={() => handleSetTheme(theme.type)}
-                      className={`p-4 rounded-xl border transition-all text-left ${
-                        selectedTheme === theme.type
-                          ? 'border-violet-500 bg-violet-500/10'
-                          : 'border-white/10 bg-white/5 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: theme.preview_colors?.primary }}
-                        />
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: theme.preview_colors?.secondary }}
-                        />
-                      </div>
-                      <p className="font-medium">{theme.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">{theme.description}</p>
-                      {selectedTheme === theme.type && (
-                        <div className="mt-2 flex items-center gap-1 text-violet-400 text-xs">
-                          <Check className="w-3 h-3" /> Active
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Theme */}
-              <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium flex items-center gap-2">
-                    <Paintbrush className="w-4 h-4 text-gray-400" />
-                    Custom Theme
-                  </h3>
-                  <Button
-                    onClick={handleSaveCustomTheme}
-                    disabled={savingTheme}
-                    className="bg-violet-600 hover:bg-violet-700"
-                  >
-                    {savingTheme ? 'Saving...' : 'Save & Apply'}
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <JuiceColorPicker
-                    label="Primary Color"
-                    color={customColors.primary}
-                    onChange={(color) => setCustomColors(prev => ({ ...prev, primary: color }))}
-                  />
-                  <JuiceColorPicker
-                    label="Secondary Color"
-                    color={customColors.secondary}
-                    onChange={(color) => setCustomColors(prev => ({ ...prev, secondary: color }))}
-                  />
-                  <JuiceColorPicker
-                    label="Background"
-                    color={customColors.background}
-                    onChange={(color) => setCustomColors(prev => ({ ...prev, background: color }))}
-                  />
-                  <JuiceColorPicker
-                    label="Surface"
-                    color={customColors.surface}
-                    onChange={(color) => setCustomColors(prev => ({ ...prev, surface: color }))}
-                  />
-                </div>
-
-                {/* Preview */}
-                <div className="p-4 rounded-lg" style={{ backgroundColor: customColors.background }}>
-                  <p className="text-sm text-gray-500 mb-2">Preview</p>
-                  <div className="p-3 rounded-lg" style={{ backgroundColor: customColors.surface }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg" style={{ background: `linear-gradient(135deg, ${customColors.primary}, ${customColors.secondary})` }} />
-                      <div>
-                        <p style={{ color: customColors.text_primary || '#fff' }}>Sample Title</p>
-                        <p className="text-sm" style={{ color: '#a1a1aa' }}>Sample description text</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button className="px-4 py-2 rounded-lg text-white text-sm" style={{ backgroundColor: customColors.primary }}>
-                        Primary Button
-                      </button>
-                      <button className="px-4 py-2 rounded-lg text-white text-sm" style={{ backgroundColor: customColors.secondary }}>
-                        Secondary
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Import/Export */}
-              <div className="flex items-center gap-3 pt-2">
-                <Button variant="outline" className="border-white/10 hover:bg-white/5">
-                  <Import className="w-4 h-4 mr-2" /> Import Theme
-                </Button>
-                <Button variant="outline" className="border-white/10 hover:bg-white/5">
-                  <FileJson className="w-4 h-4 mr-2" /> Export Theme
-                </Button>
-              </div>
-
-              <div className="p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
-                <p className="text-sm text-pink-400">
-                  <strong>Tip:</strong> Changes are applied instantly. Use the preview to see how colors look together before saving.
-                </p>
-              </div>
-            </motion.div>
-          </TabsContent>
-
-          {/* Plugins (Gadgets) */}
-          <TabsContent value="plugins">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Package className="w-5 h-5 text-violet-400" />
-                  Plugins
-                  <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full">Gadgets 🔧</span>
-                </h2>
-                <Button
-                  onClick={handleDiscoverPlugins}
-                  disabled={loadingPlugins}
-                  variant="outline"
-                  className="border-white/10 hover:bg-white/5"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loadingPlugins ? 'animate-spin' : ''}`} />
-                  Discover Plugins
-                </Button>
-              </div>
-              <p className="text-gray-400">
-                Extend WatchNexus functionality with custom plugins. Manage metadata providers, indexers, notification services, and more.
-              </p>
-
-              {/* Plugin Types Legend */}
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { type: 'metadata_provider', label: 'Metadata', color: 'bg-blue-500/20 text-blue-400' },
-                  { type: 'indexer_provider', label: 'Indexer', color: 'bg-green-500/20 text-green-400' },
-                  { type: 'subtitle_provider', label: 'Subtitles', color: 'bg-yellow-500/20 text-yellow-400' },
-                  { type: 'notification_provider', label: 'Notifications', color: 'bg-pink-500/20 text-pink-400' },
-                  { type: 'theme_provider', label: 'Theme', color: 'bg-purple-500/20 text-purple-400' },
-                  { type: 'scheduled_task', label: 'Scheduled', color: 'bg-orange-500/20 text-orange-400' },
-                ].map((t) => (
-                  <span key={t.type} className={`px-2 py-1 rounded-full text-xs ${t.color}`}>
-                    {t.label}
-                  </span>
-                ))}
-              </div>
-
-              {/* Plugin List */}
-              <div className="space-y-3">
-                {loadingPlugins && plugins.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
-                    Loading plugins...
-                  </div>
-                ) : plugins.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p className="font-medium">No plugins installed</p>
-                    <p className="text-sm mt-1">Place plugins in the plugins directory and click "Discover Plugins"</p>
-                  </div>
-                ) : (
-                  plugins.map((plugin) => (
-                    <motion.div
-                      key={plugin.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-xl bg-surface border border-white/5 hover:border-white/10 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium">{plugin.name}</h3>
-                            <span className="text-xs text-gray-500">v{plugin.version}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${
-                              plugin.plugin_type === 'metadata_provider' ? 'bg-blue-500/20 text-blue-400' :
-                              plugin.plugin_type === 'indexer_provider' ? 'bg-green-500/20 text-green-400' :
-                              plugin.plugin_type === 'subtitle_provider' ? 'bg-yellow-500/20 text-yellow-400' :
-                              plugin.plugin_type === 'notification_provider' ? 'bg-pink-500/20 text-pink-400' :
-                              plugin.plugin_type === 'theme_provider' ? 'bg-purple-500/20 text-purple-400' :
-                              'bg-gray-500/20 text-gray-400'
-                            }`}>
-                              {plugin.plugin_type?.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-400 mb-2">{plugin.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>by {plugin.author}</span>
-                            {plugin.homepage && (
-                              <a href={plugin.homepage} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline flex items-center gap-1">
-                                <ExternalLink className="w-3 h-3" /> Homepage
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className={`px-2 py-1 rounded-full text-xs ${
-                            plugin.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                            plugin.status === 'error' ? 'bg-red-500/20 text-red-400' :
-                            'bg-gray-500/20 text-gray-400'
-                          }`}>
-                            {plugin.status === 'active' ? (
-                              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span>
-                            ) : plugin.status === 'error' ? (
-                              <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Error</span>
-                            ) : (
-                              <span>Disabled</span>
-                            )}
-                          </div>
-                          <Switch
-                            checked={plugin.status === 'active'}
-                            disabled={togglingPlugin === plugin.id}
-                            onCheckedChange={() => handleTogglePlugin(plugin.id, plugin.status)}
-                          />
-                        </div>
-                      </div>
-                      {plugin.error_message && (
-                        <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                          {plugin.error_message}
-                        </div>
-                      )}
-                    </motion.div>
-                  ))
-                )}
-              </div>
-
-              {/* Example Plugins */}
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-violet-400" />
-                  Example Plugins (Bundled)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-black/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
-                        📊
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">AniDB Metadata</p>
-                        <p className="text-xs text-gray-500">Anime metadata from AniDB</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-black/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        💬
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Discord Notifications</p>
-                        <p className="text-xs text-gray-500">Send alerts to Discord</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                <p className="text-sm text-violet-400">
-                  <strong>Plugin Directory:</strong> <code className="bg-black/30 px-2 py-0.5 rounded">/plugins</code><br />
-                  <span className="text-gray-400 text-xs">Place plugin folders with a <code>manifest.json</code> to install them.</span>
-                </p>
-              </div>
-            </motion.div>
-          </TabsContent>
+          <TabsContent value="media-health"><MediaHealthSettings /></TabsContent>
+          <TabsContent value="indexers"><IndexerSettings /></TabsContent>
+          <TabsContent value="download"><DownloadSettings /></TabsContent>
+          <TabsContent value="iptv"><IPTVSettings /></TabsContent>
+          <TabsContent value="streaming"><StreamingSettings /></TabsContent>
+          <TabsContent value="subtitles"><SubtitleSettings /></TabsContent>
+          <TabsContent value="gelatin"><GelatinSettings /></TabsContent>
+          <TabsContent value="theme-forge"><ThemeForgeSettings /></TabsContent>
+          <TabsContent value="plugins"><PluginsSettings /></TabsContent>
         </Tabs>
       </div>
 
       {/* File Browser Modal */}
       <AnimatePresence>
         {showFileBrowser && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowFileBrowser(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+            onClick={() => setShowFileBrowser(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="bg-surface border border-white/10 rounded-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
+              onClick={(e) => e.stopPropagation()}>
               <div className="p-4 border-b border-white/10">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <FolderSearch className="w-5 h-5 text-violet-400" />
-                    Browse for Folder
+                    <FolderSearch className="w-5 h-5 text-violet-400" /> Browse for Folder
                   </h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowFileBrowser(false)}
-                    className="hover:bg-white/10"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setShowFileBrowser(false)} className="hover:bg-white/10">
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
-                
-                {/* Current Path */}
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-400">Current:</span>
-                  <code className="flex-1 bg-black/30 px-3 py-1.5 rounded-lg text-violet-400 truncate">
-                    {browserPath}
-                  </code>
+                  <code className="flex-1 bg-black/30 px-3 py-1.5 rounded-lg text-violet-400 truncate">{browserPath}</code>
                 </div>
-                
-                {/* Quick Access Drives */}
                 <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
                   <span className="text-xs text-gray-500 shrink-0">Quick access:</span>
                   {browserDrives.map((drive) => (
-                    <button
-                      key={drive.path}
-                      onClick={() => browsePath(drive.path)}
-                      className={`px-3 py-1 text-xs rounded-full border transition-colors shrink-0 ${
-                        browserPath === drive.path 
-                          ? 'bg-violet-600 border-violet-500 text-white' 
-                          : 'bg-white/5 border-white/10 hover:bg-white/10'
-                      }`}
-                    >
+                    <button key={drive.path} onClick={() => browsePath(drive.path)}
+                      className={`px-3 py-1 text-xs rounded-full border transition-colors shrink-0 ${browserPath === drive.path ? 'bg-violet-600 border-violet-500 text-white' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
                       {drive.name}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Content */}
               <div className="flex-1 overflow-y-auto p-4">
                 {browserLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <RefreshCw className="w-6 h-6 animate-spin text-violet-400" />
-                  </div>
+                  <div className="flex items-center justify-center py-12"><RefreshCw className="w-6 h-6 animate-spin text-violet-400" /></div>
                 ) : browserItems.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">
-                    <FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>This folder is empty</p>
-                  </div>
+                  <div className="text-center py-12 text-gray-400"><FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>This folder is empty</p></div>
                 ) : (
                   <div className="space-y-1">
                     {browserItems.filter(item => item.type === 'directory').map((item) => (
-                      <button
-                        key={item.path}
-                        onClick={() => browsePath(item.path)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
-                          item.is_parent 
-                            ? 'bg-white/5 hover:bg-white/10' 
-                            : 'hover:bg-violet-500/10'
-                        }`}
-                      >
-                        {item.is_parent ? (
-                          <ChevronRight className="w-5 h-5 text-gray-400 rotate-180" />
-                        ) : (
-                          <Folder className="w-5 h-5 text-violet-400" />
-                        )}
-                        <span className="flex-1 truncate">
-                          {item.is_parent ? 'Go up' : item.name}
-                        </span>
+                      <button key={item.path} onClick={() => browsePath(item.path)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${item.is_parent ? 'bg-white/5 hover:bg-white/10' : 'hover:bg-violet-500/10'}`}>
+                        {item.is_parent ? <ChevronRight className="w-5 h-5 text-gray-400 rotate-180" /> : <Folder className="w-5 h-5 text-violet-400" />}
+                        <span className="flex-1 truncate">{item.is_parent ? 'Go up' : item.name}</span>
                         {!item.is_parent && (
                           <span className="text-xs text-gray-500">
-                            {item.permission_denied ? (
-                              <Lock className="w-4 h-4 text-red-400" />
-                            ) : (
-                              `${item.item_count || 0} items`
-                            )}
+                            {item.permission_denied ? <Lock className="w-4 h-4 text-red-400" /> : `${item.item_count || 0} items`}
                           </span>
                         )}
                         <ChevronRight className="w-4 h-4 text-gray-500" />
@@ -2831,32 +306,17 @@ export const SettingsPage = () => {
                   </div>
                 )}
               </div>
-
-              {/* Footer */}
               <div className="p-4 border-t border-white/10 bg-black/20">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-400">
                     {browserMediaCount > 0 && (
-                      <span className="flex items-center gap-2">
-                        <Film className="w-4 h-4 text-green-400" />
-                        {browserMediaCount} media files in this folder
-                      </span>
+                      <span className="flex items-center gap-2"><Film className="w-4 h-4 text-green-400" />{browserMediaCount} media files in this folder</span>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFileBrowser(false)}
-                      className="border-white/20"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={selectFolderFromBrowser}
-                      className="bg-violet-600 hover:bg-violet-700"
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Select This Folder
+                    <Button variant="outline" onClick={() => setShowFileBrowser(false)} className="border-white/20">Cancel</Button>
+                    <Button onClick={selectFolderFromBrowser} className="bg-violet-600 hover:bg-violet-700">
+                      <Check className="w-4 h-4 mr-2" /> Select This Folder
                     </Button>
                   </div>
                 </div>
