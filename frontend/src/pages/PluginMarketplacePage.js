@@ -68,13 +68,6 @@ export const PluginMarketplacePage = () => {
   const [selectedAddon, setSelectedAddon] = useState(null);
   const [installing, setInstalling] = useState(null);
 
-  // Converter state
-  const [convertFile, setConvertFile] = useState(null);
-  const [convertEcosystem, setConvertEcosystem] = useState('');
-  const [converting, setConverting] = useState(false);
-  const [convertResult, setConvertResult] = useState(null);
-  const [convertError, setConvertError] = useState(null);
-
   const getToken = () => localStorage.getItem('token');
   const getAuthHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 
