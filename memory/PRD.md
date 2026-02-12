@@ -1,156 +1,105 @@
 # WatchNexus - Product Requirements Document
 
-## Original Problem Statement
-Build a unified, self-hosted media pipeline called "WatchNexus" that replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application.
+## Overview
+WatchNexus is a unified, self-hosted media pipeline that replaces the need for Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin in a single application.
 
 ## Core Architecture
+- **Frontend:** React + shadcn/UI + Framer Motion
+- **Backend:** FastAPI + MongoDB
+- **Key Modules:** Syrup (torrent), Compote (indexers), Marmalade (library), Gelatin (external access), Milk (themes), Gadgets (plugins)
 
-### Frontend
-- React with TailwindCSS
-- Shadcn UI components
-- Framer Motion animations
+## Completed Features
 
-### Backend
-- FastAPI (Python)
-- MongoDB database
-- Built-in torrent engine (Syrup)
-- Kodi Repository Browser
+### Phase 1 (Previous Sessions)
+- Full-stack React + FastAPI application with MongoDB
+- Jellyfin-compatible API layer (/emby)
+- User management with auth (JWT + Google OAuth)
+- Torrent scraping and media library management
+- Installation scripts for Windows, Linux, macOS, Arch
 
----
+### Phase 2 (Previous Session)
+- Fixed all 4 installation scripts
+- Converted marketing website to static HTML (/app/website-static)
+- Fixed built-in themes bug (API key mismatch)
+- Enhanced login page with local/remote network detection
+- Kodi addon browser on Plugins page
+- Plugin adapter framework initiated
 
-## What's Been Implemented (December 2024)
+### Phase 3 (Current Session - Feb 12, 2026)
+- **SettingsPage.js fully refactored**: 2872 lines → 332 lines (88% reduction)
+  - Extracted 9 self-contained tab components into /app/frontend/src/components/settings/
+  - All 12 settings tabs working: General, Users, Library, Media Health, Indexers, Download Client, IPTV, Streaming Services, Subtitles, External Access, Theme Forge, Plugins
+- **Plugin Adapter Framework completed**:
+  - Backend: /api/adapter/convert accepts ZIP file uploads (multipart/form-data)
+  - Backend: /api/adapter/supported returns ecosystem list
+  - Frontend: PluginConverter component with ecosystem selection, drag-and-drop file upload
+  - Full conversion logic for Kodi, Jellyfin/Emby, and Plex plugins
+- **Testing**: 100% pass rate (15/15 backend, all frontend features)
 
-### ✅ Core Application
-- Complete React frontend with responsive design
-- FastAPI backend with MongoDB
-- User authentication system (local/remote detection)
-- Dashboard with continue watching, activity feeds
-- Movies & TV Shows library views
-- Search with TMDB integration
-- Comprehensive Settings page
+## File Architecture
+```
+/app/
+├── backend/
+│   ├── server.py                 # Main FastAPI server
+│   ├── plugin_adapter.py         # Plugin conversion framework
+│   ├── kodi_browser.py           # Kodi repository browser
+│   └── tests/
+├── frontend/src/
+│   ├── components/
+│   │   ├── PluginConverter.jsx   # Plugin conversion UI
+│   │   ├── settings/             # 12 settings tab components
+│   │   │   ├── GeneralSettings.jsx
+│   │   │   ├── UsersSettings.jsx
+│   │   │   ├── LibrarySettings.jsx
+│   │   │   ├── MediaHealthSettings.jsx
+│   │   │   ├── IndexerSettings.jsx
+│   │   │   ├── DownloadSettings.jsx
+│   │   │   ├── IPTVSettings.jsx
+│   │   │   ├── StreamingSettings.jsx
+│   │   │   ├── SubtitleSettings.jsx
+│   │   │   ├── GelatinSettings.jsx
+│   │   │   ├── ThemeForgeSettings.jsx
+│   │   │   ├── PluginsSettings.jsx
+│   │   │   └── index.js
+│   │   └── ui/                   # shadcn components
+│   └── pages/
+│       ├── SettingsPage.js       # 332 lines (thin shell)
+│       ├── PluginMarketplacePage.js
+│       ├── Dashboard.js
+│       └── AuthPage.js
+├── docs/
+│   └── PLUGIN-DEVELOPMENT-GUIDE.md
+└── website-static/
+```
 
-### ✅ Login System (NEW)
-- **Local/Remote Network Detection** - Detects if accessing from home network (192.168.x.x, 10.x.x.x) or remotely
-- **Profile Selection** - Netflix-style "Who's Watching?" for local network users
-- **Per-user profiles** - Each user has own watch progress, preferences
-- Home Network = Green badge, shows profile picker
-- Remote Access = Blue badge, standard login form
+## Prioritized Backlog
 
-### ✅ Theme System
-- **Built-in Themes**: Living Room, Cinema, Anime Pop, Audio Waves, Minimal, Streaming Service
-- Custom theme color picker
-- API endpoint working at `/api/milk/theme-forge`
+### P0 - High Priority
+- [ ] "Continue Watching" & "Next Up" on Dashboard (per-user watch history)
+- [ ] Connect Community & DVR pages to backend APIs
 
-### ✅ Kodi Repository Browser (NEW)
-- Fetches from official Kodi repository (mirrors.kodi.tv)
-- **1000+ add-ons** available
-- Categories:
-  - Video Add-ons (194)
-  - Music Add-ons (33)
-  - Scripts (185)
-  - Metadata (36)
-  - Services (32)
-  - Skins (13)
-  - Resources (174)
-  - Screensavers (40)
-  - Weather (8)
-  - And more...
-- Popular/Featured add-ons section
-- Search functionality
-- Addon detail modals with dependencies
-- Category browsing with counts
+### P1 - Medium Priority
+- [ ] Sonarr-like Media Management UI
+- [ ] Client App Planning (Android, Android TV, Chromecast, Kodi)
 
-### ✅ Media Pipeline
-- Built-in torrent engine (Syrup)
-- Indexer management (Compote)
-- Library management (Marmalade)
-- Subtitle support
-- IPTV support
+### P2 - Low Priority / Future
+- [ ] Roku / Universal app
+- [ ] New Git repositories for project and community content
+- [ ] Test Usenet (Pulp) and Indexer (Compote) modules
 
-### ✅ Streaming & Access
-- Built-in video player with transcoding
-- Jellyfin-compatible API (`/api/emby/*`)
-- Multi-user support with permissions
-- Remote access via Gelatin
-
-### ✅ Installation Scripts (FIXED)
-- `build-arch.sh` - Arch Linux
-- `install-linux.sh` - Debian/Ubuntu/Fedora
-- `install-mac.sh` - macOS
-- `install-windows.ps1` - Windows
-
-### ✅ Marketing Website
-- React version at `/app/website`
-- Static HTML version at `/app/website-static`
-
-### ✅ Code Stabilization
-- Refactored SettingsPage.js (3559 → 2872 lines)
-- Extracted components for better maintainability
-
----
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/login`
-- `POST /api/auth/register`
-- `GET /api/users/profiles` - Local network profile selection
-
-### Kodi Repository (NEW)
-- `GET /api/kodi/categories` - List categories with counts
-- `GET /api/kodi/addons` - Search/list addons
-- `GET /api/kodi/addons/popular` - Featured addons
-- `GET /api/kodi/addons/{id}` - Addon details
-- `GET /api/kodi/addons/category/{cat}` - By category
-- `POST /api/kodi/refresh` - Refresh cache
-
-### Themes
-- `GET /api/milk/theme-forge` - Get theme config
-
-### Libraries, Media, Downloads, etc.
-(See previous documentation)
-
----
+## Key API Endpoints
+- `/api/auth/login` (POST) - Login
+- `/api/auth/me` (GET) - Current user
+- `/api/users/profiles` (GET) - User profiles for local login
+- `/api/kodi/categories` (GET) - Kodi addon categories
+- `/api/kodi/addons/popular` (GET) - Popular Kodi addons
+- `/api/adapter/convert` (POST) - Convert plugin ZIP (multipart)
+- `/api/adapter/supported` (GET) - List supported ecosystems
+- `/api/adapter/detect` (GET) - Detect plugin ecosystem
 
 ## Test Credentials
-- **Email:** `test@test.com`
-- **Password:** `password`
+- Email: test@test.com
+- Password: password
 
 ---
-
-## Pending/Upcoming Tasks
-
-### 🔶 P1 - High Priority
-- Complete Media Management UI (Sonarr-like features)
-- Install Kodi addons to WatchNexus (adapter layer)
-- Connect Community & DVR pages to backend
-
-### 🔶 P2 - Medium Priority  
-- Native mobile apps
-- Roku/Fire Stick clients
-- Live usenet/indexer testing
-
-### 🔶 P3 - Lower Priority
-- Watch party features
-- Advanced DVR
-- Plugin marketplace for custom plugins
-
----
-
-## File References
-
-### New/Updated Files
-- `/app/frontend/src/pages/AuthPage.js` - Login with local/remote detection
-- `/app/frontend/src/pages/PluginMarketplacePage.js` - Kodi-style addon browser
-- `/app/backend/kodi_browser.py` - Kodi repository fetcher/parser
-- `/app/backend/server.py` - Added Kodi endpoints, user profiles endpoint
-
-### Scripts
-- `/app/scripts/*.sh`, `/app/scripts/*.ps1` - Fixed installers
-
-### Static Website
-- `/app/website-static/` - Easy-to-edit HTML website
-
----
-
-*Last updated: December 2024*
+*Last updated: February 12, 2026*
