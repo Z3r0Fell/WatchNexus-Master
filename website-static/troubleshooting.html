@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Troubleshooting - WatchNexus</title>
+  <meta name="description" content="Common issues and solutions for WatchNexus.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <a href="index.html" class="navbar-logo">
+        <span>🎬</span>
+        <span>WatchNexus</span>
+      </a>
+      <div class="navbar-links">
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="demo.html">Demo</a>
+        <a href="faq.html">FAQ</a>
+        <a href="troubleshooting.html">Support</a>
+      </div>
+      <div class="navbar-cta">
+        <a href="https://github.com/watchnexus" class="btn btn-ghost">GitHub</a>
+        <a href="download.html" class="btn btn-primary">Download</a>
+      </div>
+      <button class="mobile-menu-btn">☰</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" style="min-height: auto; padding-top: 8rem; padding-bottom: 4rem;">
+    <h1 class="hero-title"><span class="text-gradient">Troubleshooting</span></h1>
+    <p class="hero-subtitle">Common issues and how to fix them.</p>
+  </section>
+
+  <!-- Troubleshooting Sections -->
+  <section class="section">
+    <div class="container">
+      
+      <!-- Installation Issues -->
+      <h2 style="margin-bottom: 1.5rem; color: var(--color-primary);">Installation Issues</h2>
+      
+      <div class="troubleshoot-grid">
+        <div class="card troubleshoot-card">
+          <h3>MongoDB won't start</h3>
+          <p>If MongoDB fails to start, try these steps:</p>
+          <code>
+# Linux/Mac: Check if port 27017 is in use
+sudo lsof -i :27017
+
+# Windows: Check MongoDB service
+sc query MongoDB
+
+# Try restarting the service
+sudo systemctl restart mongod
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Permission denied errors</h3>
+          <p>Make sure your media folders have the correct permissions:</p>
+          <code>
+# Linux: Fix ownership
+sudo chown -R $USER:$USER /media/library
+
+# Or add read permissions
+sudo chmod -R 755 /media/library
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Port already in use</h3>
+          <p>If port 8001 is already in use:</p>
+          <code>
+# Find what's using the port
+# Linux/Mac:
+lsof -i :8001
+
+# Windows:
+netstat -ano | findstr :8001
+
+# Kill the process or change the port in settings
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>FFmpeg not found</h3>
+          <p>Install FFmpeg for transcoding support:</p>
+          <code>
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Windows - download from ffmpeg.org
+# or use: choco install ffmpeg
+          </code>
+        </div>
+      </div>
+      
+      <!-- Streaming Issues -->
+      <h2 style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Streaming Issues</h2>
+      
+      <div class="troubleshoot-grid">
+        <div class="card troubleshoot-card">
+          <h3>Video won't play</h3>
+          <p>Check these common causes:</p>
+          <code>
+1. Check browser console for errors (F12)
+2. Try a different browser
+3. Check if FFmpeg is installed
+4. Verify file permissions
+5. Try direct play vs transcoding
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Buffering/slow playback</h3>
+          <p>Improve streaming performance:</p>
+          <code>
+• Lower transcoding quality in settings
+• Enable hardware transcoding (Intel QSV, NVIDIA)
+• Use a wired connection instead of WiFi
+• Check if server CPU is maxed out
+• Try direct play if client supports the format
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Subtitles not showing</h3>
+          <p>Troubleshoot subtitle issues:</p>
+          <code>
+• Check if subtitle file exists (.srt, .vtt)
+• Verify subtitle encoding (UTF-8 recommended)
+• Try burning subtitles into video
+• Check subtitle settings in player
+• Manually select subtitle track
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Remote access not working</h3>
+          <p>Configure Gelatin for remote access:</p>
+          <code>
+1. Enable Gelatin in Settings > External Access
+2. Create a new tunnel
+3. No port forwarding needed!
+4. Access via your custom domain
+5. Check Cloudflare status if issues persist
+          </code>
+        </div>
+      </div>
+      
+      <!-- Download Issues -->
+      <h2 style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Download Issues</h2>
+      
+      <div class="troubleshoot-grid">
+        <div class="card troubleshoot-card">
+          <h3>Torrents not downloading</h3>
+          <p>Check the built-in engine:</p>
+          <code>
+• Verify DHT/PEX is enabled in settings
+• Check if port is blocked by firewall
+• Try different indexers
+• Check torrent health (seeders)
+• Review download queue in Activity
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Indexer connection failed</h3>
+          <p>Test indexer connectivity:</p>
+          <code>
+1. Verify API key is correct
+2. Test URL in browser
+3. Check if Cloudflare protection is enabled
+4. Try enabling "Cloudflare Protected" option
+5. Check server logs for detailed errors
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>No search results</h3>
+          <p>Improve search results:</p>
+          <code>
+• Add more indexers in Settings
+• Check indexer is enabled
+• Try different search terms
+• Verify indexer categories match media type
+• Some indexers require registration
+          </code>
+        </div>
+        
+        <div class="card troubleshoot-card">
+          <h3>Slow download speeds</h3>
+          <p>Optimize download performance:</p>
+          <code>
+• Check your ISP isn't throttling
+• Increase connection limits in settings
+• Enable DHT, PEX, and LSD
+• Try using a VPN
+• Verify disk write speed isn't bottleneck
+          </code>
+        </div>
+      </div>
+      
+      <!-- Getting Help -->
+      <h2 style="margin-top: 3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Still Need Help?</h2>
+      
+      <div class="grid grid-cols-2 gap-4" style="max-width: 800px;">
+        <div class="card text-center">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">💬</div>
+          <h3 style="margin-bottom: 0.5rem;">Discord Community</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+            Join our Discord for real-time help from the community.
+          </p>
+          <a href="https://discord.gg/watchnexus" class="btn btn-outline">Join Discord</a>
+        </div>
+        
+        <div class="card text-center">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">📝</div>
+          <h3 style="margin-bottom: 0.5rem;">GitHub Issues</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+            Report bugs or request features on GitHub.
+          </p>
+          <a href="https://github.com/watchnexus/issues" class="btn btn-outline">Open Issue</a>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>WatchNexus</h4>
+        <p style="color: var(--color-text-muted); font-size: 0.875rem;">Your unified, self-hosted media pipeline.</p>
+      </div>
+      <div class="footer-section">
+        <h4>Product</h4>
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="demo.html">Demo</a>
+        <a href="faq.html">FAQ</a>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <a href="troubleshooting.html">Troubleshooting</a>
+        <a href="https://github.com/watchnexus">GitHub</a>
+        <a href="https://discord.gg/watchnexus">Discord</a>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <a href="terms.html">Terms of Service</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>&copy; 2025 WatchNexus. All rights reserved.</div>
+      <div>Made with ❤️ for the self-hosting community</div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
