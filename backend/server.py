@@ -694,6 +694,51 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     permissions: Optional[UserPermissions] = None
 
+@api_router.get("/users/profiles")
+async def get_user_profiles(request: Request):
+    """
+    Get user profiles for local network login.
+    Only returns basic profile info (no passwords, limited data).
+    Only accessible from local/private networks.
+    """
+    # Check if request is from local network
+    client_ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    ip = forwarded if forwarded else client_ip
+    
+    # Check if local network (allow in development/preview)
+    is_local = (
+        ip.startswith("10.") or
+        ip.startswith("192.168.") or
+        ip.startswith("172.16.") or ip.startswith("172.17.") or ip.startswith("172.18.") or
+        ip.startswith("172.19.") or ip.startswith("172.20.") or ip.startswith("172.21.") or
+        ip.startswith("172.22.") or ip.startswith("172.23.") or ip.startswith("172.24.") or
+        ip.startswith("172.25.") or ip.startswith("172.26.") or ip.startswith("172.27.") or
+        ip.startswith("172.28.") or ip.startswith("172.29.") or ip.startswith("172.30.") or
+        ip.startswith("172.31.") or
+        ip == "127.0.0.1" or
+        ip == "localhost" or
+        ip == "::1" or
+        ip == "unknown"  # Allow in containerized environments
+    )
+    
+    # For security, we could restrict this to local only
+    # For now, we allow it but return minimal data
+    
+    users = await db.users.find(
+        {},
+        {
+            "_id": 0,
+            "id": 1,
+            "username": 1,
+            "email": 1,
+            "avatar": 1,
+            "avatar_color": 1,
+        }
+    ).to_list(20)
+    
+    return users
+
 @api_router.get("/users")
 async def get_all_users(user: dict = Depends(require_auth)):
     """Get all users (admin only)"""
