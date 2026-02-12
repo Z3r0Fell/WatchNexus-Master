@@ -21,6 +21,7 @@ import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { JuiceColorPicker } from '../components/juice/JuiceColorPicker';
+import { GeneralSettings, UsersSettings, LibrarySettings } from '../components/settings';
 
 // All streaming services with their icons/colors
 const STREAMING_SERVICES = [
