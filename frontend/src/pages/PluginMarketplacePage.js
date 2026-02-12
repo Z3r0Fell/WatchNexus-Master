@@ -580,18 +580,7 @@ export const PluginMarketplacePage = () => {
         </Tabs>
 
         {/* Addon Detail Modal */}
-
-                {/* Ecosystem selector */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Source Ecosystem (optional)</label>
-                  <div className="flex gap-3">
-                    {[
-                      { id: '', label: 'Auto-detect', icon: Zap },
-                      { id: 'kodi', label: 'Kodi', icon: Globe },
-                      { id: 'jellyfin', label: 'Jellyfin/Emby', icon: Tv },
-                      { id: 'plex', label: 'Plex', icon: Play },
-                    ].map((eco) => {
-                      const Icon = eco.icon;
+        <AnimatePresence>
                       return (
                         <button
                           key={eco.id}
