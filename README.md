@@ -83,10 +83,12 @@ iwr -useb https://raw.githubusercontent.com/watchnexus/watchnexus/main/scripts/i
 
 ### Manual Installation
 
+📖 **For detailed instructions with direct download links**, see **[docs/BUILD_GUIDE.md](docs/BUILD_GUIDE.md)**
+
 1. **Prerequisites**
    - Python 3.11+
    - Node.js 18+
-   - MongoDB 5+
+   - MongoDB 6+
    - FFmpeg
 
 2. **Clone & Setup**
