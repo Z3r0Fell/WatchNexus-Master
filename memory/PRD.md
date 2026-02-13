@@ -25,67 +25,86 @@ WatchNexus is a unified, self-hosted media pipeline that replaces the need for S
 - Kodi addon browser on Plugins page
 - Plugin adapter framework initiated
 
-### Phase 3 (Feb 12, 2026 - Session 1)
+### Phase 3 (Feb 12, 2026)
 - **SettingsPage.js fully refactored**: 2872 lines → 332 lines (88% reduction)
   - Extracted 12 self-contained tab components into /app/frontend/src/components/settings/
 - **Plugin Adapter Framework completed**:
   - Backend: /api/adapter/convert accepts ZIP file uploads
   - Frontend: PluginConverter component with ecosystem selection, drag-and-drop file upload
 
-### Phase 4 (Feb 12, 2026 - Current Session) ✅
+### Phase 4 (Feb 12, 2026)
 - **Documentation Created**:
-  - `/app/docs/THEME-DEVELOPMENT-GUIDE.md` (726 lines) - Complete theme customization guide
-  - `/app/docs/GADGETS-GUIDE.md` (171 lines) - Plugin/Gadget quick reference
-  - `/app/docs/USER-GUIDE.md` (380 lines) - User guide with keyboard shortcuts
+  - `/app/docs/THEME-DEVELOPMENT-GUIDE.md` - Complete theme customization guide
+  - `/app/docs/GADGETS-GUIDE.md` - Plugin/Gadget quick reference
+  - `/app/docs/USER-GUIDE.md` - User guide with keyboard shortcuts
 
 - **Dashboard Enhanced with Per-User Watch History**:
   - "Continue Watching" section with progress bars, time remaining, episode info
   - "Next Up" section for TV shows with next episode suggestions
   - "Recently Added" section showing new library additions with NEW badges
   - Per-user profile support (shows "for {username}")
-  - New API endpoint: `/api/next-up` (GET) - returns next episodes to watch
+  - New API endpoint: `/api/next-up` (GET)
 
 - **Sonarr-like Media Management UI**:
   - Library Settings now has 5 sub-tabs: Libraries, Media Management, Quality Profiles, Mass Editor, Manual Import
-  - Episode Naming with format templates (e.g., `{Series Title} - S{season:00}E{episode:00}`)
-  - Importing settings (hardlinks, extra files, min free space)
-  - Quality Profiles with 3 presets (Any, HD-720p/1080p, Ultra-HD)
-  - Mass Editor with series selection and bulk actions
+  - Episode Naming with format templates
+  - Quality Profiles with 3 presets
 
-- **Testing**: 100% pass rate (22/22 backend tests, all frontend features)
+### Phase 5 (Feb 13, 2026) - Current Session ✅
+- **Plugin Adapter Framework Backend VERIFIED COMPLETE**:
+  - Full implementation for Kodi, Jellyfin/Emby, and Plex plugin conversion
+  - API endpoints: `/api/adapter/convert`, `/api/adapter/detect`, `/api/adapter/supported`
+  - 1440+ lines of conversion logic in `/app/backend/plugin_adapter.py`
+
+- **Fixed Installation Scripts**:
+  - **Windows (`install-windows.ps1`)**: Fixed to download dependencies directly without Chocolatey requirement
+    - Direct download links for Node.js, Python, Git, VC++ Redistributable
+    - Better error handling and progress feedback
+  - **Arch Linux (`build-arch.sh`)**: Enhanced with interactive MongoDB installation options
+    - Full pacman commands for all dependencies
+    - AUR helper installation (yay/paru) for MongoDB
+    - Docker alternative offered
+    - systemd service creation
+
+- **Created Comprehensive BUILD_GUIDE.md** (`/app/docs/BUILD_GUIDE.md`):
+  - Direct download links for Windows dependencies (Node.js, Python, Git, MongoDB, FFmpeg)
+  - Arch Linux pacman commands for all packages
+  - Non-git installation methods (release downloads)
+  - Ubuntu/Debian and Fedora instructions
+  - Docker MongoDB setup
+  - Troubleshooting section
 
 ## File Architecture
 ```
 /app/
 ├── backend/
 │   ├── server.py                 # Main FastAPI server
-│   ├── plugin_adapter.py         # Plugin conversion framework
+│   ├── plugin_adapter.py         # Plugin conversion framework (1440 lines)
 │   └── tests/
-│       └── test_new_dashboard_features.py
 ├── frontend/src/
 │   ├── components/
-│   │   ├── settings/
-│   │   │   ├── LibrarySettings.jsx    # Main library tab with sub-tabs
-│   │   │   ├── MediaManagement.jsx    # Sonarr-like Media Management components
-│   │   │   └── ... (12 settings components)
-│   │   └── PluginConverter.jsx
+│   │   ├── settings/             # 12 settings tab components
+│   │   └── PluginConverter.jsx   # Plugin conversion UI
 │   └── pages/
-│       ├── Dashboard.js               # Enhanced with Continue Watching & Next Up
-│       └── SettingsPage.js
 ├── docs/
-│   ├── THEME-DEVELOPMENT-GUIDE.md     # NEW - Theme development guide
-│   ├── GADGETS-GUIDE.md               # NEW - Plugin/Gadget guide
-│   ├── USER-GUIDE.md                  # NEW - User guide
-│   └── PLUGIN-DEVELOPMENT-GUIDE.md
-└── website-static/
+│   ├── BUILD_GUIDE.md            # NEW - Comprehensive build instructions
+│   ├── THEME-DEVELOPMENT-GUIDE.md
+│   ├── GADGETS-GUIDE.md
+│   ├── USER-GUIDE.md
+│   └── KICKSTARTER-SETUP-GUIDE.md
+├── scripts/
+│   ├── install-windows.ps1       # FIXED - Windows installer
+│   ├── build-arch.sh             # FIXED - Arch Linux installer
+│   ├── install-linux.sh          # Debian/Ubuntu/Fedora installer
+│   └── install-mac.sh            # macOS installer
+└── website-static/               # Marketing website
 ```
 
 ## Prioritized Backlog
 
 ### P0 - High Priority
-- [x] ~~"Continue Watching" & "Next Up" on Dashboard (per-user watch history)~~ ✅
-- [x] ~~Create documentation for user-creatable content (themes, plugins)~~ ✅
-- [x] ~~Sonarr-like Media Management UI~~ ✅
+- [x] ~~Fix installation scripts for Windows and Linux~~ ✅
+- [x] ~~Plugin Adapter Framework~~ ✅
 - [ ] Test Usenet (Pulp) and Indexer (Compote) modules
 
 ### P1 - Medium Priority
@@ -94,15 +113,16 @@ WatchNexus is a unified, self-hosted media pipeline that replaces the need for S
 
 ### P2 - Low Priority / Future
 - [ ] Roku / Universal app
-- [ ] New Git repositories for project and community content
+- [ ] Pre-built binary releases (.exe, .AppImage, .dmg)
 
 ## Key API Endpoints
 - `/api/auth/login` (POST) - Login
 - `/api/auth/me` (GET) - Current user
 - `/api/watch-progress` (GET/POST) - Watch progress per user
-- `/api/next-up` (GET) - **NEW** - Next episodes for TV shows
+- `/api/next-up` (GET) - Next episodes for TV shows
 - `/api/kodi/categories` (GET) - Kodi addon categories
 - `/api/adapter/convert` (POST) - Convert plugin ZIP
+- `/api/adapter/supported` (GET) - List supported plugin ecosystems
 - `/api/marmalade/libraries` (GET) - Media libraries
 
 ## Test Credentials
@@ -110,4 +130,4 @@ WatchNexus is a unified, self-hosted media pipeline that replaces the need for S
 - Password: password
 
 ---
-*Last updated: February 12, 2026*
+*Last updated: February 13, 2026*
