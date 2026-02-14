@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -11,7 +12,7 @@ import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = BACKEND_URL;
 
 // Sample community themes
 const communityThemes = [
