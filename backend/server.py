@@ -1,11 +1,12 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, Cookie, UploadFile, File, Form
-from fastapi.responses import Response, JSONResponse, FileResponse
+from fastapi.responses import Response, JSONResponse, FileResponse, PlainTextResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
@@ -20,6 +21,34 @@ import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# ==================== LOGGING SETUP ====================
+LOG_DIR = ROOT_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "watchnexus.log"
+
+# Create file handler with rotation (10MB max, keep 7 backups)
+file_handler = RotatingFileHandler(
+    LOG_FILE,
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=7,
+    encoding='utf-8'
+)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+
+# Configure root logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+        file_handler               # File output
+    ]
+)
+logger = logging.getLogger("server")
+logger.info(f"Logging initialized. Log file: {LOG_FILE}")
 
 # Database - SQLite (self-contained, no external dependencies)
 from database import init_database, SQLiteDB
