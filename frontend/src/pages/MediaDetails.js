@@ -237,6 +237,20 @@ export const MediaDetails = () => {
                     {isInWatchlist ? <Check className="w-5 h-5 mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
                     {isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
                   </Button>
+                  <AddToPlaylistButton
+                    mediaItem={{
+                      tmdb_id: parseInt(id),
+                      title: title,
+                      media_type: type,
+                      poster_path: media.poster_path,
+                      backdrop_path: media.backdrop_path,
+                      duration: media.runtime ? media.runtime * 60 : 0,
+                    }}
+                    variant="outline"
+                    size="default"
+                    showLabel={true}
+                    className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border-white/10"
+                  />
                   <Button
                     onClick={handleDownload}
                     data-testid="download-btn"
