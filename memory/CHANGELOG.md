@@ -2,6 +2,25 @@
 
 All notable changes to WatchNexus will be documented in this file.
 
+## [1.2.4] - 2025-12-19
+
+### Added
+- **Anime Section** - Dedicated anime page in sidebar with Japanese animation filtering
+  - Genre filters (Action, Comedy, Drama, etc.)
+  - Most Popular/Highest Rated/Newest sorting
+  - Search functionality
+- **Folder Browser** - Visual directory picker in Add Library form
+  - Quick access buttons (Home, Media, Root)
+  - Navigate folders with double-click
+  - Selected path display
+- **Auto-Scan** - Libraries automatically scan after being added
+- **Enhanced TMDB Discover** - Backend now supports `with_original_language`, `with_keywords`, and more filters
+
+### Fixed
+- Anime page now properly filters for Japanese animation (origin_language: 'ja')
+
+---
+
 ## [1.2.3] - 2025-12-19
 
 ### Fixed
