@@ -299,7 +299,8 @@ export const watchPartyApi = {
   // WebSocket URL builder
   getWebSocketUrl: (partyCode) => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const backendHost = process.env.REACT_APP_BACKEND_URL.replace(/^https?:\/\//, '');
+    // Use current host if BACKEND_URL is empty (production standalone mode)
+    const backendHost = BACKEND_URL ? BACKEND_URL.replace(/^https?:\/\//, '') : window.location.host;
     return `${wsProtocol}//${backendHost}/ws/party/${partyCode}`;
   },
 };
