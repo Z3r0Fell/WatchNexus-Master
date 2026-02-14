@@ -76,7 +76,7 @@ const VideoPlayer = () => {
       
       setSearchingSubtitles(true);
       try {
-        const token = localStorage.getItem('watchnexus_token');
+        const token = localStorage.getItem('token');
         
         // Determine if TV or movie
         const isTV = media.type === 'tv' || media.series_name;
@@ -112,7 +112,7 @@ const VideoPlayer = () => {
   // Load subtitle track
   const loadSubtitle = async (subtitle) => {
     try {
-      const token = localStorage.getItem('watchnexus_token');
+      const token = localStorage.getItem('token');
       
       // Download subtitle
       const res = await axios.post(`${API_URL}/api/subtitles/download`, {
