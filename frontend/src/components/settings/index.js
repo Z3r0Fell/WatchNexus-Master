@@ -3,6 +3,7 @@ export { UsersSettings } from './UsersSettings';
 export { LibrarySettings } from './LibrarySettings';
 export { MediaHealthSettings } from './MediaHealthSettings';
 export { IndexerSettings } from './IndexerSettings';
+export { IndexerHealthCheck } from './IndexerHealthCheck';
 export { DownloadSettings } from './DownloadSettings';
 export { IPTVSettings } from './IPTVSettings';
 export { StreamingSettings } from './StreamingSettings';
