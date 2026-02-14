@@ -3119,7 +3119,87 @@ async def install_kodi_addon(
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-# ==================== DATABASE MAINTENANCE ====================
+# ==================== SYSTEM MAINTENANCE ====================
+
+import platform
+import psutil
+import sys
+
+# Server start time for uptime calculation
+SERVER_START_TIME = datetime.now(timezone.utc)
+APP_VERSION = "1.2.0"
+
+@api_router.get("/system/info")
+async def get_system_info():
+    """Get comprehensive system information (no auth required for basic info)."""
+    return {
+        "app_name": "WatchNexus",
+        "version": APP_VERSION,
+        "server_time": datetime.now(timezone.utc).isoformat(),
+    }
+
+@api_router.get("/system/stats")
+async def get_system_stats(user: dict = Depends(require_auth)):
+    """Get detailed system statistics."""
+    try:
+        # Calculate uptime
+        uptime_seconds = (datetime.now(timezone.utc) - SERVER_START_TIME).total_seconds()
+        uptime_str = _format_uptime(uptime_seconds)
+        
+        # Get system stats
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        # Get Python info
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        
+        return {
+            "app": {
+                "name": "WatchNexus",
+                "version": APP_VERSION,
+                "uptime": uptime_str,
+                "uptime_seconds": int(uptime_seconds),
+                "started_at": SERVER_START_TIME.isoformat(),
+            },
+            "system": {
+                "platform": platform.system(),
+                "platform_release": platform.release(),
+                "platform_version": platform.version(),
+                "architecture": platform.machine(),
+                "hostname": platform.node(),
+                "python_version": python_version,
+            },
+            "resources": {
+                "cpu_percent": cpu_percent,
+                "cpu_count": psutil.cpu_count(),
+                "memory_total_gb": round(memory.total / (1024**3), 2),
+                "memory_used_gb": round(memory.used / (1024**3), 2),
+                "memory_percent": memory.percent,
+                "disk_total_gb": round(disk.total / (1024**3), 2),
+                "disk_used_gb": round(disk.used / (1024**3), 2),
+                "disk_free_gb": round(disk.free / (1024**3), 2),
+                "disk_percent": round((disk.used / disk.total) * 100, 1),
+            },
+        }
+    except Exception as e:
+        logger.error(f"Error getting system stats: {e}")
+        return {"error": str(e)}
+
+def _format_uptime(seconds: float) -> str:
+    """Format uptime seconds into human readable string."""
+    days, remainder = divmod(int(seconds), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, secs = divmod(remainder, 60)
+    
+    if days > 0:
+        return f"{days}d {hours}h {minutes}m"
+    elif hours > 0:
+        return f"{hours}h {minutes}m {secs}s"
+    elif minutes > 0:
+        return f"{minutes}m {secs}s"
+    else:
+        return f"{secs}s"
 
 @api_router.get("/db/stats")
 async def get_database_stats(user: dict = Depends(require_auth)):
@@ -3127,8 +3207,25 @@ async def get_database_stats(user: dict = Depends(require_auth)):
     if db:
         stats = await db.get_stats()
         stats["status"] = "healthy"
+        stats["engine"] = "SQLite"
+        stats["mode"] = "WAL"
         return stats
     return {"status": "not_initialized"}
+
+@api_router.get("/db/backups")
+async def list_database_backups(user: dict = Depends(require_auth)):
+    """List all available database backups."""
+    from database import BACKUP_DIR
+    backups = []
+    if BACKUP_DIR.exists():
+        for backup_file in sorted(BACKUP_DIR.glob("watchnexus_*.db"), reverse=True):
+            stat = backup_file.stat()
+            backups.append({
+                "filename": backup_file.name,
+                "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                "created_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            })
+    return {"backups": backups, "total": len(backups), "max_kept": 7}
 
 @api_router.post("/db/vacuum")
 async def vacuum_database(user: dict = Depends(require_auth)):
@@ -3145,6 +3242,37 @@ async def create_database_backup(user: dict = Depends(require_auth)):
         db._create_backup()
         return {"status": "success", "message": "Backup created"}
     return {"status": "error", "message": "Database not initialized"}
+
+@api_router.get("/cache/stats")
+async def get_cache_stats(user: dict = Depends(require_auth)):
+    """Get TMDB cache statistics."""
+    return {
+        "tmdb_cache_entries": len(tmdb_cache),
+        "cache_ttl_seconds": CACHE_TTL,
+    }
+
+@api_router.post("/cache/clear")
+async def clear_cache(user: dict = Depends(require_auth)):
+    """Clear the TMDB cache."""
+    global tmdb_cache
+    count = len(tmdb_cache)
+    tmdb_cache = {}
+    return {"status": "success", "cleared_entries": count}
+
+@api_router.get("/torrent/status")
+async def get_torrent_engine_status(user: dict = Depends(require_auth)):
+    """Get torrent engine (Fondue) status."""
+    try:
+        engine = get_fondue_engine()
+        if engine:
+            return {
+                "status": "running",
+                "engine": "LTorrent",
+                "active_torrents": len(engine.torrents) if hasattr(engine, 'torrents') else 0,
+            }
+        return {"status": "stopped", "engine": "LTorrent"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 
 # ==================== RELISH (IPTV) API ====================
