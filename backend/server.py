@@ -2330,6 +2330,191 @@ async def marmalade_stream_file(media_id: str, request: Request):
         headers={'Accept-Ranges': 'bytes'}
     )
 
+# ==================== ADVANCED PLAYBACK CONTROLS ====================
+
+@api_router.get("/marmalade/media/{media_id}/skip-segments")
+async def get_skip_segments(media_id: str, user: dict = Depends(require_auth)):
+    """
+    Get skip segments (intro, credits, recap) for a media file.
+    Returns estimated segments based on duration if no custom segments exist.
+    """
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    
+    # Check database for custom skip segments
+    skip_data = await get_skip_segments_from_db(media_id)
+    
+    if skip_data:
+        return {"media_id": media_id, "segments": skip_data}
+    
+    # Generate estimated skip segments based on media type and duration
+    segments = []
+    duration = media.duration
+    
+    if duration > 0:
+        # TV episode typically has intro in first 30-120 seconds
+        if media.media_type.value == "episode" or media.series_name:
+            # Estimate intro (usually 30-90 seconds, starts within first 5 minutes)
+            if duration > 300:  # Only for videos longer than 5 minutes
+                segments.append({
+                    "type": "intro",
+                    "start": 30,  # Often after cold open
+                    "end": 90,    # Most intros are 30-60 seconds
+                    "estimated": True
+                })
+            
+            # Estimate credits (last 60-120 seconds)
+            if duration > 300:
+                credits_start = max(duration - 90, duration * 0.95)
+                segments.append({
+                    "type": "credits",
+                    "start": credits_start,
+                    "end": duration,
+                    "estimated": True
+                })
+        
+        # Movies typically have longer credits
+        elif media.media_type.value == "movie":
+            # Movies usually have credits at the very end
+            if duration > 3600:  # For movies > 1 hour
+                credits_start = max(duration - 180, duration * 0.97)
+                segments.append({
+                    "type": "credits",
+                    "start": credits_start,
+                    "end": duration,
+                    "estimated": True
+                })
+    
+    return {"media_id": media_id, "segments": segments}
+
+
+async def get_skip_segments_from_db(media_id: str) -> list:
+    """Fetch custom skip segments from database if available."""
+    from database import get_database
+    db = get_database()
+    
+    try:
+        segments = await db.skip_segments.find_one({"media_id": media_id})
+        if segments:
+            return segments.get("segments", [])
+    except Exception:
+        pass
+    
+    return []
+
+
+@api_router.post("/marmalade/media/{media_id}/skip-segments")
+async def set_skip_segments(
+    media_id: str,
+    segments: List[dict],
+    user: dict = Depends(require_auth)
+):
+    """
+    Set custom skip segments for a media file.
+    Requires admin permission.
+    """
+    from database import get_database
+    db = get_database()
+    
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    
+    # Validate segments
+    valid_types = ["intro", "credits", "recap", "preview"]
+    for segment in segments:
+        if segment.get("type") not in valid_types:
+            raise HTTPException(status_code=400, detail=f"Invalid segment type: {segment.get('type')}")
+        if "start" not in segment or "end" not in segment:
+            raise HTTPException(status_code=400, detail="Segments must have start and end times")
+        if segment["start"] >= segment["end"]:
+            raise HTTPException(status_code=400, detail="Segment start must be before end")
+    
+    # Save to database
+    await db.skip_segments.update_one(
+        {"media_id": media_id},
+        {"$set": {"media_id": media_id, "segments": segments, "updated_at": datetime.utcnow().isoformat()}},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Skip segments saved"}
+
+
+@api_router.get("/marmalade/media/{media_id}/next-episode")
+async def get_next_episode(media_id: str, user: dict = Depends(require_auth)):
+    """
+    Get the next episode in a series for auto-play functionality.
+    """
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    
+    # Only works for TV episodes
+    if media.media_type.value != "episode" and not media.series_name:
+        return None
+    
+    series_name = media.series_name or media.title
+    current_season = media.season_number or 1
+    current_episode = media.episode_number or 1
+    
+    # Get all media from the same series
+    all_media = server.get_all_media(media_type="episode")
+    
+    # Filter to same series
+    series_episodes = [
+        m for m in all_media 
+        if (m.series_name or m.title) == series_name
+    ]
+    
+    # Sort by season and episode
+    series_episodes.sort(key=lambda x: (x.season_number or 0, x.episode_number or 0))
+    
+    # Find next episode
+    next_ep = None
+    found_current = False
+    
+    for ep in series_episodes:
+        if found_current:
+            next_ep = ep
+            break
+        if ep.id == media_id:
+            found_current = True
+    
+    # Also check for next episode in same season, then next season
+    if not next_ep:
+        # Try next episode number in same season
+        for ep in series_episodes:
+            if (ep.season_number or 0) == current_season and (ep.episode_number or 0) == current_episode + 1:
+                next_ep = ep
+                break
+        
+        # Try first episode of next season
+        if not next_ep:
+            for ep in series_episodes:
+                if (ep.season_number or 0) == current_season + 1 and (ep.episode_number or 0) == 1:
+                    next_ep = ep
+                    break
+    
+    if next_ep:
+        return {
+            "id": next_ep.id,
+            "title": next_ep.title,
+            "series_name": next_ep.series_name,
+            "season_number": next_ep.season_number,
+            "episode_number": next_ep.episode_number,
+            "thumbnail": next_ep.poster_url or next_ep.backdrop_url,
+            "duration": next_ep.duration,
+        }
+    
+    return None
+
 # ==================== SUBTITLE SERVICE ====================
 from garnish import get_garnish_service
 
