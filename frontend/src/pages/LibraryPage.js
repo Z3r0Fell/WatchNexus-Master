@@ -304,6 +304,7 @@ export const LibraryPage = () => {
               {libraries.map((library) => {
                 const Icon = MEDIA_TYPE_ICONS[library.media_type] || FolderOpen;
                 const isScanning = scanning[library.id];
+                const isRefreshing = refreshingMetadata[library.id];
                 
                 return (
                   <div
@@ -332,14 +333,25 @@ export const LibraryPage = () => {
                         <Button
                           size="icon"
                           variant="ghost"
+                          title="Scan for new files"
                           onClick={(e) => { e.stopPropagation(); handleScanLibrary(library.id); }}
-                          disabled={isScanning}
+                          disabled={isScanning || isRefreshing}
                         >
                           <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
+                          title="Refresh metadata from TMDB"
+                          onClick={(e) => { e.stopPropagation(); handleRefreshMetadata(library.id); }}
+                          disabled={isScanning || isRefreshing}
+                        >
+                          <ImageIcon className={`w-4 h-4 ${isRefreshing ? 'animate-pulse' : ''}`} />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Delete library"
                           onClick={(e) => { e.stopPropagation(); handleRemoveLibrary(library.id, library.name); }}
                         >
                           <Trash2 className="w-4 h-4 text-red-400" />
