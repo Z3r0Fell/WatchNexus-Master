@@ -31,23 +31,154 @@ class SQLiteDB:
     """
     Async SQLite database wrapper that mimics MongoDB's motor interface.
     This allows minimal code changes in server.py
+    
+    Production hardening:
+    - WAL mode for concurrent read/write access
+    - Automatic backups on startup
+    - Periodic VACUUM for optimization
     """
     
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
         self._connection: Optional[aiosqlite.Connection] = None
+        self._vacuum_task: Optional[asyncio.Task] = None
         
     async def connect(self):
         """Initialize database connection and create tables."""
+        # Create backup before connecting (protects existing data)
+        self._create_backup()
+        
         self._connection = await aiosqlite.connect(self.db_path)
         self._connection.row_factory = aiosqlite.Row
+        
+        # Enable WAL mode for better concurrent access
+        await self._connection.execute("PRAGMA journal_mode=WAL")
+        # Enable foreign keys
+        await self._connection.execute("PRAGMA foreign_keys=ON")
+        # Optimize for performance
+        await self._connection.execute("PRAGMA synchronous=NORMAL")
+        await self._connection.execute("PRAGMA cache_size=-64000")  # 64MB cache
+        await self._connection.execute("PRAGMA temp_store=MEMORY")
+        
         await self._create_tables()
-        logger.info(f"SQLite database connected: {self.db_path}")
+        
+        # Start periodic VACUUM task (runs every 24 hours)
+        self._vacuum_task = asyncio.create_task(self._periodic_vacuum())
+        
+        logger.info(f"SQLite database connected (WAL mode): {self.db_path}")
+        
+    def _create_backup(self):
+        """Create a backup of the database file."""
+        if not self.db_path.exists():
+            return  # No database to backup yet
+            
+        try:
+            BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+            
+            # Create timestamped backup
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = BACKUP_DIR / f"watchnexus_{timestamp}.db"
+            
+            # Copy the database file
+            shutil.copy2(self.db_path, backup_path)
+            
+            # Also copy WAL and SHM files if they exist
+            wal_path = Path(str(self.db_path) + "-wal")
+            shm_path = Path(str(self.db_path) + "-shm")
+            if wal_path.exists():
+                shutil.copy2(wal_path, BACKUP_DIR / f"watchnexus_{timestamp}.db-wal")
+            if shm_path.exists():
+                shutil.copy2(shm_path, BACKUP_DIR / f"watchnexus_{timestamp}.db-shm")
+            
+            logger.info(f"Database backup created: {backup_path}")
+            
+            # Clean up old backups (keep only MAX_BACKUPS)
+            self._cleanup_old_backups()
+            
+        except Exception as e:
+            logger.warning(f"Failed to create backup: {e}")
+            
+    def _cleanup_old_backups(self):
+        """Remove old backups, keeping only the most recent MAX_BACKUPS."""
+        try:
+            backups = sorted(BACKUP_DIR.glob("watchnexus_*.db"), reverse=True)
+            for old_backup in backups[MAX_BACKUPS:]:
+                old_backup.unlink()
+                # Also remove associated WAL/SHM files
+                wal = Path(str(old_backup) + "-wal")
+                shm = Path(str(old_backup) + "-shm")
+                if wal.exists():
+                    wal.unlink()
+                if shm.exists():
+                    shm.unlink()
+                logger.debug(f"Removed old backup: {old_backup}")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup old backups: {e}")
+            
+    async def _periodic_vacuum(self):
+        """Run VACUUM periodically to optimize database."""
+        while True:
+            try:
+                # Wait 24 hours between vacuums
+                await asyncio.sleep(24 * 60 * 60)
+                
+                if self._connection:
+                    logger.info("Running scheduled database VACUUM...")
+                    await self._connection.execute("VACUUM")
+                    await self._connection.execute("ANALYZE")
+                    logger.info("Database VACUUM completed")
+                    
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.warning(f"VACUUM failed: {e}")
+                
+    async def vacuum_now(self):
+        """Manually trigger a VACUUM operation."""
+        if self._connection:
+            logger.info("Running manual database VACUUM...")
+            await self._connection.execute("VACUUM")
+            await self._connection.execute("ANALYZE")
+            logger.info("Database VACUUM completed")
+            
+    async def get_stats(self) -> Dict[str, Any]:
+        """Get database statistics."""
+        stats = {
+            "path": str(self.db_path),
+            "size_mb": round(self.db_path.stat().st_size / (1024 * 1024), 2) if self.db_path.exists() else 0,
+            "backups": len(list(BACKUP_DIR.glob("watchnexus_*.db"))) if BACKUP_DIR.exists() else 0,
+        }
+        
+        if self._connection:
+            # Get table row counts
+            tables = ["users", "watchlist", "watch_progress", "library", "settings"]
+            for table in tables:
+                try:
+                    async with self._connection.execute(f"SELECT COUNT(*) FROM {table}") as cursor:
+                        row = await cursor.fetchone()
+                        stats[f"{table}_count"] = row[0] if row else 0
+                except:
+                    stats[f"{table}_count"] = 0
+                    
+        return stats
         
     async def close(self):
         """Close database connection."""
+        if self._vacuum_task:
+            self._vacuum_task.cancel()
+            try:
+                await self._vacuum_task
+            except asyncio.CancelledError:
+                pass
+                
         if self._connection:
+            # Checkpoint WAL before closing for clean shutdown
+            try:
+                await self._connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            except:
+                pass
             await self._connection.close()
+            logger.info("Database connection closed")
             
     async def _create_tables(self):
         """Create all required tables if they don't exist."""
