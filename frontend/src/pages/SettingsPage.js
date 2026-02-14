@@ -150,6 +150,15 @@ export const SettingsPage = () => {
   };
 
   const selectFolderFromBrowser = () => {
+    // If we have a target field (for settings), update settings directly
+    if (browserTargetField) {
+      setSettings(prev => ({ ...prev, [browserTargetField]: browserPath }));
+      setShowFileBrowser(false);
+      setBrowserTargetField(null);
+      return;
+    }
+    
+    // Otherwise, it's for library creation
     setNewLibrary(prev => ({ ...prev, path: browserPath }));
     const folderName = browserPath.split('/').filter(Boolean).pop() || browserPath.split('\\').filter(Boolean).pop();
     if (folderName && !newLibrary.name) {
