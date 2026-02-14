@@ -177,11 +177,13 @@ NOTES
 
 TORRENT ENGINE
 --------------
-WatchNexus includes a built-in torrent engine (Fondue) using aiotorrent.
+WatchNexus includes a built-in torrent engine (Fondue) using LTorrent.
 This is a pure Python implementation with NO system dependencies.
 
-Note: aiotorrent currently supports .torrent files only.
-Magnet link support is planned for future versions.
+Supports:
+- Magnet links (full support)
+- .torrent files
+- Sequential download for streaming
 
 SUPPORT
 -------
