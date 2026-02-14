@@ -1,151 +1,261 @@
 <analysis>**original_problem_statement:**
 The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media.
 
-**PRODUCT REQUIREMENTS:**
-1.  **Fix Installation Scripts:** Correct broken  and  scripts.
-2.  **Stabilize Codebase:** Refactor the unstable  to prevent build crashes.
-3.  **Static Marketing Website:** Convert the React-based marketing website to simple, editable HTML.
-4.  **Fix Themes:** Resolve a bug preventing built-in themes from appearing.
-5.  **Kodi Addon Integration:** Implement a Kodi-style addon browser that pulls from the official repository.
-6.  **Local/Remote Login:** Modify the login page to detect network location, showing a profile selector for local access and a standard login for remote access.
-7.  **Per-User Watch History:** Ensure features like Continue Watching are tied to individual user profiles.
-8.  **Plugin Adapter Framework:** Build a system and documentation for converting Kodi, Jellyfin/Emby, and Plex plugins to run natively in WatchNexus.
+The user's most recent requests were to:
+1.  Fix the broken installation scripts for Windows and Linux.
+2.  Create downloadable release packages.
+3.  Generate marketing video assets, including AI-generated clips (Sora 2) and a UI walkthrough with a visible cursor.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a stable full-stack React and FastAPI project. In this session, the agent performed a massive and successful refactoring of the frontend, resolving long-standing build instability issues.
-
-The agent's key accomplishments were:
-1.  **Completed the full refactoring of **, extracting all 12 tabs into individual, self-contained components. This reduced the file's line count from 2,872 to 332 (an 88% reduction) and fixed the recurring build crashes.
-2.  **Implemented the frontend UI for the Plugin Adapter Framework**. A new Convert Plugin tab was added to the Plugin Marketplace page, featuring UI for selecting a plugin ecosystem and uploading a file for conversion.
-3.  **Updated the backend** () to accept file uploads, preparing it for the implementation of the conversion logic.
-4.  **Passed a full regression test suite** using the testing agent, which confirmed 100% functionality on both frontend and backend with no new bugs introduced.
+The application is a full-stack React/FastAPI project. In this session, the agent focused on creating distributable release packages for Linux and Windows. This involved creating build/installation guides, packaging scripts, and attempting to resolve numerous Python dependency issues reported by the user when trying to run the Linux package. The agent also created some video assets (a UI walkthrough and one Sora 2 clip) before getting blocked by the installation failures. The core of the application remains functional within the development environment, but the standalone release package is currently broken.
 
 **Last working item**:
--   **Last item agent was working:** The agent completed a major refactoring of the  and implemented the UI for the Plugin Converter. The final step was a successful, comprehensive test run via the , which passed all tests for both frontend and backend.
--   **Status:** USER VERIFICATION PENDING
--   **Agent Testing Done:** Y
--   **Which testing method agent to use?** NA
--   **User Testing Done:** N
+-   **Last item agent was working:** The agent was trying to find a truly pure Python torrent library to replace . The last attempt, using the  library, failed because it also has a hidden dependency on the  system package, causing a  error during .
+-   **Status:** BLOCKED
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Propose a code change (a new torrent library) and provide clear, step-by-step instructions for the user to test on their local machine. This is a user-facing build issue.
+-   **User Testing Done:** Y (Failed repeatedly)
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Complete Plugin Adapter Framework Backend Logic (P0)**
+-   **Issue 1: Fix Standalone Release Installation for Linux (P0)**
+-   **Issue 2: Create Kickstarter and Marketing Video Assets (P1)**
+-   **Issue 3: Fix Standalone Release Installation for Windows (P1)**
 
 **Issues Detail:**
--   **Issue 1: Complete Plugin Adapter Framework Backend Logic**
-    -   **Attempted fixes:** The frontend UI and backend endpoint for file uploads are now complete and tested.
+-   **Issue 1: Fix Standalone Release Installation for Linux**
+    -   **Attempted fixes:** The agent went through a long and frustrating trial-and-error process with the user:
+        1.  ** error:** Removed a private package from .
+        2.  ** not found:** Fixed  and the install process.
+        3.  ** not found:** Pydantic's  required this. The agent first tried adding , which failed. The agent then removed the dependency by changing  to  in the Pydantic models in . This was a workaround for Python 3.14 incompatibility.
+        4.  ** not found:** Identified  as a system dependency, not a pip package. Instructions to install via  failed as the user could not find the  package.
+        5.  ** as replacement:** The agent replaced the -based code with , believing it was a pure-Python alternative. This was incorrect;  also depends on , leading to the current  pip error.
     -   **Next debug checklist:**
-        1.  Implement the conversion logic within the functions in , starting with . This involves parsing the uploaded plugin's manifest ( for Kodi) and transforming its structure into the WatchNexus gadget format defined in .
-        2.  Implement similar parsing and conversion logic for Jellyfin/Emby and Plex plugins.
-        3.  Connect the conversion result to the frontend, displaying a success or failure message after the user clicks Convert.
-    -   **Why fix this issue and what will be achieved with the fix?** This will deliver a core user request to dramatically expand WatchNexus's capabilities by leveraging the vast existing library of plugins from other media ecosystems. The frontend is ready and waiting for this logic.
+        1.  Acknowledge the user's frustration. Stop the hunt and peck approach.
+        2.  Perform a web search to find a **truly pure-Python torrent client library** that has no system dependencies and is compatible with Python 3.14. Candidates might include  or other similar projects.
+        3.  Once a reliable library is identified, completely rewrite  to use the new library.
+        4.  Update  to include the new library and remove .
+        5.  Regenerate the release packages using .
+        6.  Provide the user with one final, clean set of instructions: delete the old release directory and run the start script from a freshly downloaded package.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical P0 blocker. The application is unusable for the end-user, and their confidence in the agent is low due to repeated failures. A successful fix will restore functionality and trust.
     -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** backend
+    -   **Blocked on other issue:** None.
+
+-   **Issue 2: Create Kickstarter and Marketing Video Assets**
+    -   **Attempted fixes:** The agent successfully created a script to capture UI frames with a cursor () and generated a video (). It also integrated Sora 2 and generated one video () before the user's key balance was depleted.
+    -   **Next debug checklist:**
+        1.  Once the installation issue is resolved, resume video asset creation.
+        2.  Inform the user about the Emergent LLM Key balance and ask them to top it up if they want more Sora 2 videos.
+        3.  Generate the Social Media Teasers and Kickstarter Intro Video clips as requested.
+    -   **Why fix this issue and what will be achieved with the fix?** Fulfills a key user request for marketing materials for their project.
+    -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** both
-    -   **Blocked on other issue:** None
+    -   **Should Test frontend/backend/both after fix?** N/A
+    -   **Blocked on other issue:** Issue 1. The agent should not work on this until the app is runnable for the user.
+
+-   **Issue 3: Fix Standalone Release Installation for Windows**
+    -   **Attempted fixes:** The Windows install script () was updated early in the session, but it does not include any of the dependency fixes discovered while debugging the Linux version (e.g., removing , replacing the torrent library).
+    -   **Next debug checklist:**
+        1.  After the Linux version is confirmed working, apply all the same logic and dependency changes to the Windows packaging and installation scripts.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures cross-platform compatibility for the release packages as originally requested.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** backend
+    -   **Blocked on other issue:** Issue 1.
 
 **In progress Task List**:
--   **Task 1: Implement Plugin Adapter Framework**
-    -   **Where to resume:** Implement the core conversion logic in the stub functions within .
-    -   **What will be achieved with this?** A working system for converting third-party plugins into a format WatchNexus can use.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** both
-    -   **Blocked on something:** None
+-   None. The current work is categorized as a high-priority bug fix.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Create comprehensive documentation (P1):** For all user-creatable content, including themes and plugins, as requested by the user.
--   **Implement Continue Watching & Next Up on Dashboard (P1):** Implement the per-user watch history feature on the main dashboard. The backend has foundational support; this requires frontend implementation in .
--   **Implement Sonarr-like Media Management UI (P2):** Build out the media management interface within the now-refactored  component.
--   **Connect Community & DVR Pages to Backend (P2):** The Theme Community and DVR pages still use static placeholder data and need to be connected to backend APIs.
+-   **Complete Video Asset Generation (P1):** Finish creating the Kickstarter intro, feature walkthrough, and social media video clips.
+-   **Test Usenet () and Indexer () modules (P2):** This was on the user's original action plan but was superseded.
 
 **Future Tasks:**
--   Test Usenet () and Indexer () modules.
--   Client App Planning: Document the architecture and technology choices for building client apps.
+-   Connect Community & DVR Pages to Backend.
+-   Client App Planning: Document the architecture and technology choices for building client apps (Android, iOS, Roku).
 -   Create a Roku / Universal app.
--   Create new Git repositories for the project and community content.
+-   Cloud Sync feature development.
 
 **Completed work in this session**
--   ** Fully Refactored:** Extracted all 12 tabs into separate components in , resolving chronic build instability.
--   **Plugin Converter UI Implemented:** Created a Convert Plugin tab with file upload capabilities on the Plugin Marketplace page.
--   **Backend File Upload Support:** Updated the  endpoint to accept  objects.
--   **Build Stability Achieved:** Fixed the Babel plugin crashes by refactoring  and .
--   **Full Regression Testing Passed:** Executed the  with a 100% success rate across frontend and backend tests.
+-   **Build & Release Automation:**
+    -   Created a comprehensive  for manual installation.
+    -   Created a Python script () to automate packaging the application into ZIP files for Linux and Windows.
+    -   Updated and improved install scripts (, , ).
+-   **Video Asset Generation:**
+    -   Integrated with **Sora 2** for AI video generation and produced one sample marketing video.
+    -   Created a Playwright script () to record UI interactions with a visible cursor and compiled the frames into a  video.
+-   **Dependency Debugging:**
+    -   Removed  dependency from  to ensure compatibility with Python 3.14.
+    -   Removed private/internal packages from the public .
 
 **Earlier issues found/mentioned but not fixed**
--   None.
+-   The fundamental goal of a stable, working, distributable build for end-users is not yet achieved.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Build instability due to the large size of .
--   **Recurrence count:** 2+
--   **Status:** RESOLVED
+-   **Issue recurrence in previous fork:** Build instability.
+-   **Recurrence count:** 3+
+-   **Status:** RESOLVED for component size issues, but has resurfaced as dependency/packaging instability.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Large-Scale Code Refactoring:** Successfully broke down a 2800+ line monolithic React component into 12 smaller, manageable components.
--   **Component-Based Architecture:** Re-architected the Settings page to be fully modular and component-driven.
--   **Build & Performance Debugging:** Identified and resolved complex JSX parsing issues causing Babel plugin crashes.
--   **File Upload Handling (FastAPI):** Modified a backend endpoint to accept multipart/form-data with .
+-   **Python Dependency Hell:** The session was a deep dive into troubleshooting 
+Usage:   
+  pip <command> [options]
+
+Commands:
+  install                     Install packages.
+  lock                        Generate a lock file.
+  download                    Download packages.
+  uninstall                   Uninstall packages.
+  freeze                      Output installed packages in requirements format.
+  inspect                     Inspect the python environment.
+  list                        List installed packages.
+  show                        Show information about installed packages.
+  check                       Verify installed packages have compatible 
+dependencies.
+  config                      Manage local and global configuration.
+  search                      Search PyPI for packages.
+  cache                       Inspect and manage pip's wheel cache.
+  index                       Inspect information available from package 
+indexes.
+  wheel                       Build wheels from your requirements.
+  hash                        Compute hashes of package archives.
+  completion                  A helper command used for command completion.
+  debug                       Show information useful for debugging.
+  help                        Show help for commands.
+
+General Options:
+  -h, --help                  Show help.
+  --debug                     Let unhandled exceptions propagate outside the
+                              main subroutine, instead of logging them to
+                              stderr.
+  --isolated                  Run pip in an isolated mode, ignoring
+                              environment variables and user configuration.
+  --require-virtualenv        Allow pip to only run in a virtual environment;
+                              exit with an error otherwise.
+  --python <python>           Run pip with the specified Python interpreter.
+  -v, --verbose               Give more output. Option is additive, and can be
+                              used up to 3 times.
+  -V, --version               Show version and exit.
+  -q, --quiet                 Give less output. Option is additive, and can be
+                              used up to 3 times (corresponding to WARNING,
+                              ERROR, and CRITICAL logging levels).
+  --log <path>                Path to a verbose appending log.
+  --no-input                  Disable prompting for input.
+  --keyring-provider <keyring_provider>
+                              Enable the credential lookup via the keyring
+                              library if user input is allowed. Specify which
+                              mechanism to use [auto, disabled, import,
+                              subprocess]. (default: auto)
+  --proxy <proxy>             Specify a proxy in the form
+                              scheme://[user:passwd@]proxy.server:port.
+  --retries <retries>         Maximum attempts to establish a new HTTP
+                              connection. (default: 5)
+  --timeout <sec>             Set the socket timeout (default 15 seconds).
+  --exists-action <action>    Default action when a path already exists:
+                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
+  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
+                              even though it does not have valid or any HTTPS.
+  --cert <path>               Path to PEM-encoded CA certificate bundle. If
+                              provided, overrides the default. See 'SSL
+                              Certificate Verification' in pip documentation
+                              for more information.
+  --client-cert <path>        Path to SSL client certificate, a single file
+                              containing the private key and the certificate
+                              in PEM format.
+  --cache-dir <dir>           Store the cache data in <dir>.
+  --no-cache-dir              Disable the cache.
+  --disable-pip-version-check
+                              Don't periodically check PyPI to determine
+                              whether a new version of pip is available for
+                              download. Implied with --no-
+                              index.
+  --no-color                  Suppress colored output.
+  --use-feature <feature>     Enable new functionality, that may be backward
+                              incompatible.
+  --use-deprecated <feature>  Enable deprecated functionality, that will be
+                              removed in the future.
+  --resume-retries <resume_retries>
+                              Maximum attempts to resume or restart an
+                              incomplete download. (default: 5) dependency resolution, virtual environments, and the critical difference between PyPI packages and system-level libraries ().
+-   **AI Video Generation:** Successfully used the  agent to integrate with the Sora 2 API.
+-   **UI Automation for Video Capture:** Used Playwright to script browser interactions, inject custom CSS to show a cursor, and capture frames for a video.
 
 **key DB schema**
--   No schema changes were made in this session.
+-   No changes made.
 
 **changes in tech stack**
--   None.
+-   **Sora 2:** Added for AI video generation.
+-   **torrentp:** Attempted to add as a  replacement, but it also depends on . **This must be removed.**
+-   The next agent must find a **new torrent library**.
 
 **All files of reference**
--   : **CRITICAL.** The file where the plugin conversion logic needs to be implemented.
--   : **REFACTORED.** Now a slim container for the new settings components.
--   : **CRITICAL.** Directory containing all the newly extracted and functioning settings components.
--   : The page containing the new plugin converter tab.
--   : The new, self-contained component for the plugin converter UI.
--   : Contains the updated  endpoint.
+-   : **NEEDS REPLACEMENT.** The current code is broken because  is not a pure-Python library.
+-   : Will need to be updated with the new, correct torrent library.
+-   : The startup script for the user, which is currently failing.
+-   : The script to regenerate the final ZIP packages.
+-   : Contains manual installation instructions that should be kept in sync.
 
 **Areas that need refactoring**:
--   The major technical debt associated with  has been successfully resolved. No other critical refactoring is immediately needed.
+-    MUST be rewritten to use a truly pure-Python torrent library to resolve the main blocker.
 
 **key api endpoints**
--    (POST): **[Updated]** Endpoint for the plugin adapter framework. Now accepts a file upload ().
+-   No changes made.
 
 **Critical Info for New Agent**
--   The application's frontend is now stable. The massive refactoring of  is complete and has been thoroughly tested.
--   Your highest priority (P0) is to implement the backend logic for the **Plugin Adapter Framework**. The frontend UI is already built and waiting. Focus on implementing the Python code in  to parse and convert uploaded plugin files.
--   After the adapter backend, the next priorities are user-facing features based on the user's latest feedback: creating documentation, implementing Continue Watching on the dashboard, and building the Sonarr-like UI in the  component.
+-   The user is extremely frustrated with the repeated hunt and peck failures. Do not propose another fix without high confidence. Your first response should acknowledge their frustration and lay out a clear, decisive plan.
+-   The core problem is the torrent engine.  is a system package the user cannot easily install.  was a failed attempt to replace it because it also requires .
+-   **Your P0 task is to find a *truly* pure-Python torrent library, rewrite  with it, fix , and provide the user with a single, clean command sequence to test the new release package.**
+-   The user is on Arch Linux with Python 3.14. Do not ask them to change their Python version. The solution must be compatible.
 
 **documents and test reports created in this job**
+-   
+-    (and other release packages)
+-   
 -   
 -    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** action plan: 1. create all documentation for anything that the user can create with; ie: themes, plugins, etc 2. Continue Watching & Next Up on Dashboard (per-user watch history) 3. Sonarr-like Media Management UI in Library settings 4. Test Usenet (Pulp) and Indexer (Compote) modules (PENDING)
+1.  **User:** Reports .
+2.  **Agent:** Provides fix by adding  to .
+3.  **User:** Reports the same  error, indicating the fix didn't work.
+4.  **Agent:** Proposes a more robust fix by removing the dependency on  entirely, by changing  to  in .
+5.  **User:** Reports  and expresses frustration (This is starting to piss me off).
+6.  **Agent:** Acknowledges frustration and incorrectly makes  optional.
+7.  **User:** Rejects the optional fix, stating it defeats the purpose.
+8.  **Agent:** Switches to providing  commands to install  as a system package.
+9.  **User:** Reports  commands fail and asks for an alternative to .
+10. **User:** After agent replaces  with , user reports  error because  also depends on . The user is highly frustrated, having deleted everything and started from a fresh download only to hit another wall.
 
 **Project Health Check:**
--   **Broken:** None. The app is stable and fully functional after major refactoring.
--   **Mocked/In-Progress:**
-    -   The Plugin Adapter Framework () backend logic is still a stub.
-    -   The Sonarr-like Media Management UI has not been implemented.
-    -   Continue Watching on the dashboard is not yet implemented.
-    -   Theme Community and DVR pages are still using static data.
+-   **Broken:** The primary feature of a distributable, standalone application is broken. The Linux release package fails to launch due to unresolved Python dependencies in the torrent engine. The Windows package is presumed broken for the same reasons.
+-   **Mocked:** The torrenting engine () is effectively mocked/non-functional in the release build.
 
 **3rd Party Integrations**
+-   **Sora 2:** Used for video generation via Emergent LLM Key. The user's balance is depleted.
+-   **torrentp:** (Problematic) Added to replace  but also requires it. **This must be removed and replaced.**
 -   The Movie Database (TMDB)
 -   Google OAuth
 -   BeautifulSoup4
 -   Addic7ed
--   Kodi Addon Repository
 
 **Testing status**
--   **Testing agent used after significant changes:** YES
+-   **Testing agent used after significant changes:** NO. The agent performed manual debugging with the user.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:**  was generated by the testing agent.
--   **Known regressions:** None. The testing agent confirmed a 100% pass rate.
+-   **Test files created:** None in this session.
+-   **Known regressions:** The application, which was previously runnable from source, is now failing to install/run as a standalone package for the user.
 
 **Credentials to test flow:**
 -   **Email:** 
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent performed a comprehensive and successful session, addressing the primary blockers and implementing the planned UI. No tasks were forgotten.</analysis>
+-   The agent failed to properly research the  library, leading to another failed solution and increased user frustration.
+-   The agent did not keep the Windows installation scripts in sync with the fixes being attempted on the Linux side.
+-   The full scope of the video asset creation task was abandoned due to the persistent installation bugs.</analysis>
