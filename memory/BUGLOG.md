@@ -336,6 +336,7 @@ BUG-006: Hardcoded data directory (FIXED v1.2.3)
 BUG-007: Blank home page - production (FIXED v1.2.4-patch)
 BUG-008: Libraries not populating (FIXED v1.2.4-patch)
 BUG-009: Missing browse button (FIXED v1.2.4-patch)
+BUG-010: TMDB API key missing in release (FIXED v1.2.4-patch2)
 ```
 
 ---
