@@ -1,15 +1,17 @@
 """
 Fondue - WatchNexus Torrent Engine
 Downloads come in pieces, layered together into a perfect whole.
-A fully integrated torrent download client using torrentp (pure Python).
+A fully integrated torrent download client using aiotorrent (pure Python).
 
 Features:
-- Magnet link handling
 - .torrent file support
 - Sequential download for streaming
 - Progress tracking
 - Cross-platform compatibility (Mac, Linux, Windows)
-- NO system dependencies required
+- NO system dependencies required (pure Python)
+
+Note: aiotorrent currently supports .torrent files only.
+Magnet link support is planned for future versions.
 """
 
 import asyncio
@@ -17,22 +19,21 @@ import logging
 import os
 import json
 import hashlib
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from enum import Enum
-import threading
 
 logger = logging.getLogger(__name__)
 
-# Import torrentp - pure Python torrent library
+# Import aiotorrent - pure Python torrent library
 try:
-    from torrentp import TorrentDownloader
+    from aiotorrent import Torrent, DownloadStrategy
     TORRENT_AVAILABLE = True
 except ImportError:
     TORRENT_AVAILABLE = False
-    logger.warning("torrentp not installed. Install with: pip install torrentp")
+    logger.warning("aiotorrent not installed. Install with: pip install aiotorrent")
 
 
 class TorrentState(Enum):
@@ -51,41 +52,26 @@ class TorrentState(Enum):
 @dataclass
 class EngineSettings:
     """Comprehensive torrent engine settings."""
-    # Download paths
     download_path: str = "/media/downloads"
-    move_completed_path: str = ""  # Empty = don't move
-    
-    # Queue Management
+    move_completed_path: str = ""
     max_active_downloads: int = 3
     max_active_uploads: int = 3
     max_active_torrents: int = 5
-    
-    # Speed Limits (0 = unlimited, in KB/s)
     max_download_rate: int = 0
     max_upload_rate: int = 0
-    
-    # Connection Limits
     max_connections_global: int = 200
     max_connections_per_torrent: int = 50
-    
-    # Seeding Limits
     seed_ratio_limit: float = 1.0
     seed_time_limit: int = 60
     seed_ratio_action: str = "pause"
-    
-    # Auto-cleanup
     remove_after_completion: bool = False
     remove_after_seeding: bool = False
     delete_files_on_remove: bool = False
     max_completed_torrents: int = 50
-    
-    # Network
     listen_port: int = 6881
     enable_dht: bool = True
     enable_pex: bool = True
     enable_lsd: bool = True
-    
-    # Behavior
     add_paused: bool = False
     sequential_download_default: bool = False
     prioritize_first_last_pieces: bool = True
@@ -209,14 +195,14 @@ class TorrentFile:
 
 
 class TorrentWrapper:
-    """Wrapper around torrentp TorrentDownloader for tracking."""
+    """Wrapper around aiotorrent Torrent for tracking."""
     
     def __init__(self, torrent_id: str, source: str, save_path: str, metadata: dict):
         self.torrent_id = torrent_id
         self.source = source
         self.save_path = save_path
         self.metadata = metadata
-        self.downloader: Optional[TorrentDownloader] = None
+        self.torrent: Optional[Torrent] = None
         self.state = TorrentState.QUEUED
         self.progress = 0.0
         self.download_rate = 0
@@ -229,18 +215,27 @@ class TorrentWrapper:
         self.error_message = None
         self._task: Optional[asyncio.Task] = None
         self._paused = False
-        self._stop_event = asyncio.Event()
+        self._cancelled = False
+        self._current_file = None
     
     async def start(self):
         """Start downloading the torrent."""
         if not TORRENT_AVAILABLE:
             self.state = TorrentState.ERROR
-            self.error_message = "torrentp not installed"
+            self.error_message = "aiotorrent not installed"
             return
         
         try:
             self.state = TorrentState.DOWNLOADING_METADATA
-            self.downloader = TorrentDownloader(self.source, self.save_path)
+            
+            # Initialize the torrent from .torrent file
+            self.torrent = Torrent(self.source)
+            await self.torrent.init(dht_enabled=self.metadata.get("enable_dht", False))
+            
+            # Update metadata with torrent info
+            if self.torrent.files:
+                self.total_size = sum(f.size for f in self.torrent.files)
+                self.metadata["name"] = self.torrent.files[0].path.split("/")[0] if "/" in self.torrent.files[0].path else Path(self.source).stem
             
             # Start download in background
             self._task = asyncio.create_task(self._download_loop())
@@ -255,17 +250,34 @@ class TorrentWrapper:
         try:
             self.state = TorrentState.DOWNLOADING
             
-            # torrentp callback for progress
-            def on_progress(progress):
-                self.progress = progress
-                if self.total_size > 0:
-                    self.downloaded = int(self.total_size * progress / 100)
+            if not self.torrent or not self.torrent.files:
+                self.state = TorrentState.ERROR
+                self.error_message = "No files in torrent"
+                return
             
-            await self.downloader.start_download(
-                on_progress=on_progress,
-                download_speed=self.metadata.get("max_download_rate", 0),
-                upload_speed=self.metadata.get("max_upload_rate", 0)
-            )
+            # Choose download strategy
+            strategy = DownloadStrategy.SEQUENTIAL if self.metadata.get("sequential", False) else DownloadStrategy.DEFAULT
+            
+            # Download all files in the torrent
+            for idx, file in enumerate(self.torrent.files):
+                if self._cancelled:
+                    self.state = TorrentState.PAUSED
+                    return
+                
+                self._current_file = file
+                logger.info(f"Downloading file {idx + 1}/{len(self.torrent.files)}: {file.path}")
+                
+                # Create progress tracking task
+                progress_task = asyncio.create_task(self._track_progress(file))
+                
+                try:
+                    await self.torrent.download(file, strategy=strategy)
+                finally:
+                    progress_task.cancel()
+                    try:
+                        await progress_task
+                    except asyncio.CancelledError:
+                        pass
             
             self.state = TorrentState.FINISHED
             self.progress = 100.0
@@ -279,40 +291,66 @@ class TorrentWrapper:
             self.error_message = str(e)
             logger.error(f"Download error for {self.torrent_id}: {e}")
     
+    async def _track_progress(self, file):
+        """Track download progress for a file."""
+        try:
+            while True:
+                if hasattr(file, 'get_download_progress'):
+                    self.progress = file.get_download_progress()
+                if hasattr(file, 'get_bytes_written'):
+                    self.downloaded = file.get_bytes_written()
+                await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            pass
+    
     async def pause(self):
         """Pause the download."""
+        self._cancelled = True
         if self._task and not self._task.done():
             self._task.cancel()
             self._paused = True
             self.state = TorrentState.PAUSED
             try:
-                if self.downloader:
-                    await self.downloader.pause_download()
-            except:
+                await self._task
+            except asyncio.CancelledError:
                 pass
     
     async def resume(self):
         """Resume the download."""
         if self._paused:
             self._paused = False
-            try:
-                if self.downloader:
-                    await self.downloader.resume_download()
-                    self.state = TorrentState.DOWNLOADING
-                else:
-                    await self.start()
-            except:
-                await self.start()
+            self._cancelled = False
+            await self.start()
     
     async def stop(self):
         """Stop and cleanup."""
+        self._cancelled = True
         if self._task and not self._task.done():
             self._task.cancel()
-        try:
-            if self.downloader:
-                await self.downloader.stop_download()
-        except:
-            pass
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+    
+    def get_files(self) -> List[TorrentFile]:
+        """Get list of files in the torrent."""
+        if not self.torrent or not self.torrent.files:
+            return []
+        
+        result = []
+        for idx, file in enumerate(self.torrent.files):
+            progress = 0.0
+            if hasattr(file, 'get_download_progress'):
+                progress = file.get_download_progress()
+            
+            result.append(TorrentFile(
+                index=idx,
+                path=file.path,
+                size=file.size,
+                progress=progress,
+                priority=1
+            ))
+        return result
     
     def get_status(self) -> TorrentStatus:
         """Get current status."""
@@ -348,7 +386,7 @@ class TorrentWrapper:
 class FondueEngine:
     """
     Fondue - Built-in BitTorrent download engine.
-    Uses torrentp for pure Python, cross-platform torrent downloading.
+    Uses aiotorrent for pure Python, cross-platform torrent downloading.
     """
     
     def __init__(self, settings: Optional[EngineSettings] = None):
@@ -358,7 +396,7 @@ class FondueEngine:
         self._state_file = Path(self.settings.download_path) / ".watchnexus_engine.json"
         self._settings_file = Path(self.settings.download_path) / ".watchnexus_settings.json"
         
-        logger.info(f"FondueEngine initialized (torrentp). Download path: {self.settings.download_path}")
+        logger.info(f"FondueEngine initialized (aiotorrent). Download path: {self.settings.download_path}")
     
     def update_settings(self, new_settings: Dict[str, Any]) -> EngineSettings:
         """Update engine settings."""
@@ -388,7 +426,6 @@ class FondueEngine:
         self._save_state()
         self._save_settings()
         
-        # Stop all torrents
         for wrapper in self.torrents.values():
             asyncio.create_task(wrapper.stop())
         
@@ -405,45 +442,13 @@ class FondueEngine:
         sequential: bool = None,
         category: str = "",
     ) -> Optional[str]:
-        """Add a torrent from a magnet link."""
-        if not TORRENT_AVAILABLE:
-            logger.error("torrentp not installed. Run: pip install torrentp")
-            return None
-        
-        try:
-            save_path = save_path or self.settings.download_path
-            sequential = sequential if sequential is not None else self.settings.sequential_download_default
-            
-            Path(save_path).mkdir(parents=True, exist_ok=True)
-            
-            torrent_id = self._generate_id(magnet_url)
-            
-            metadata = {
-                "id": torrent_id,
-                "info_hash": torrent_id,
-                "name": f"Torrent {torrent_id[:8]}",
-                "magnet": magnet_url,
-                "save_path": save_path,
-                "sequential": sequential,
-                "category": category,
-                "added_on": datetime.now(timezone.utc).isoformat(),
-                "completed_on": None,
-                "max_download_rate": self.settings.max_download_rate * 1024 if self.settings.max_download_rate > 0 else 0,
-                "max_upload_rate": self.settings.max_upload_rate * 1024 if self.settings.max_upload_rate > 0 else 0,
-            }
-            
-            wrapper = TorrentWrapper(torrent_id, magnet_url, save_path, metadata)
-            self.torrents[torrent_id] = wrapper
-            
-            if not self.settings.add_paused:
-                await wrapper.start()
-            
-            logger.info(f"Added magnet torrent: {torrent_id}")
-            return torrent_id
-            
-        except Exception as e:
-            logger.error(f"Failed to add magnet: {e}")
-            return None
+        """
+        Add a torrent from a magnet link.
+        Note: aiotorrent does not yet support magnet links.
+        This returns an error message explaining the limitation.
+        """
+        logger.warning("Magnet links are not yet supported by aiotorrent. Please use .torrent files.")
+        return None
     
     async def add_torrent_file(
         self,
@@ -454,7 +459,11 @@ class FondueEngine:
     ) -> Optional[str]:
         """Add a torrent from a .torrent file path."""
         if not TORRENT_AVAILABLE:
-            logger.error("torrentp not installed. Run: pip install torrentp")
+            logger.error("aiotorrent not installed. Run: pip install aiotorrent")
+            return None
+        
+        if not os.path.exists(torrent_path):
+            logger.error(f"Torrent file not found: {torrent_path}")
             return None
         
         try:
@@ -475,6 +484,7 @@ class FondueEngine:
                 "category": category,
                 "added_on": datetime.now(timezone.utc).isoformat(),
                 "completed_on": None,
+                "enable_dht": self.settings.enable_dht,
             }
             
             wrapper = TorrentWrapper(torrent_id, torrent_path, save_path, metadata)
@@ -503,8 +513,10 @@ class FondueEngine:
     
     def get_files(self, torrent_id: str) -> List[TorrentFile]:
         """Get list of files in a torrent."""
-        # torrentp doesn't expose file list easily, return empty for now
-        return []
+        wrapper = self.torrents.get(torrent_id)
+        if not wrapper:
+            return []
+        return wrapper.get_files()
     
     def pause(self, torrent_id: str) -> bool:
         """Pause a torrent."""
@@ -551,9 +563,8 @@ class FondueEngine:
         if delete_files:
             try:
                 save_path = Path(wrapper.save_path)
-                # Don't delete the entire download folder!
-                # torrentp saves to a subfolder
-                pass  # TODO: implement file deletion
+                # TODO: Implement proper file deletion
+                pass
             except Exception as e:
                 logger.error(f"Error deleting files: {e}")
         
@@ -615,7 +626,7 @@ class FondueEngine:
             "downloading": downloading,
             "seeding": seeding,
             "completed": completed,
-            "dht_nodes": 0,  # torrentp doesn't expose this
+            "dht_nodes": 0,
         }
     
     def _save_settings(self):
@@ -661,10 +672,10 @@ class FondueEngine:
                 state = json.load(f)
             
             for torrent_id, metadata in state.get("torrents", {}).items():
-                if "magnet" in metadata:
+                if "torrent_file" in metadata and os.path.exists(metadata["torrent_file"]):
                     asyncio.create_task(
-                        self.add_magnet(
-                            metadata["magnet"],
+                        self.add_torrent_file(
+                            metadata["torrent_file"],
                             save_path=metadata.get("save_path"),
                             sequential=metadata.get("sequential", False),
                             category=metadata.get("category", ""),
