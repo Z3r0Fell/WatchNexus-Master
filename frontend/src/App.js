@@ -159,6 +159,14 @@ function AppRouter() {
         }
       />
       <Route
+        path="/anime"
+        element={
+          <ProtectedRoute>
+            <AnimePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
