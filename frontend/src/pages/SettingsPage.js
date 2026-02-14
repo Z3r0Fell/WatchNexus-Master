@@ -219,6 +219,7 @@ export const SettingsPage = () => {
             <TabsTrigger value="gelatin" className="data-[state=active]:bg-violet-600">External Access</TabsTrigger>
             <TabsTrigger value="theme-forge" className="data-[state=active]:bg-violet-600">Theme Forge</TabsTrigger>
             <TabsTrigger value="plugins" className="data-[state=active]:bg-violet-600">Plugins</TabsTrigger>
+            <TabsTrigger value="maintenance" className="data-[state=active]:bg-violet-600">Maintenance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
