@@ -8,13 +8,13 @@
 
 | Metric | Count |
 |--------|-------|
-| **Total Bugs Reported** | 12 |
-| **Bugs Fixed** | 12 |
+| **Total Bugs Reported** | 13 |
+| **Bugs Fixed** | 13 |
 | **Bugs Outstanding** | 0 |
 | **Features Added** | 28 |
 | **Regressions (Breaks)** | 5 |
 | **Regressions Fixed** | 5 |
-| **Production Build Issues** | 3 |
+| **Production Build Issues** | 4 |
 | **Forks** | 11+ |
 
 ---
