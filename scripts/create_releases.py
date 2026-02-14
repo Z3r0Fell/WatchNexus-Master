@@ -420,13 +420,6 @@ Just point them to: http://your-server:8001/emby
 ─────────────────────────
 GitHub: https://github.com/watchnexus/watchnexus
 ''')
-- Configuration is stored in backend\\.env
-- Downloads go to C:\\Users\\<you>\\Downloads by default
-
-SUPPORT
--------
-GitHub: https://github.com/watchnexus/watchnexus
-''')
     
     print(f"  ✓ Windows package created: {pkg_dir}")
     return pkg_dir
