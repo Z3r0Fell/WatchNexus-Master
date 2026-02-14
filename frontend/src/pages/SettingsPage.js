@@ -297,16 +297,6 @@ export const SettingsPage = () => {
     }
   };
 
-  // Get current section info
-  const getCurrentSectionInfo = () => {
-    const item = SETTINGS_NAV.find(i => i.id === activeSection);
-    if (item) return { group: item.group, item };
-    return null;
-  };
-
-  const currentInfo = getCurrentSectionInfo();
-  const groupedSections = getGroupedSections();
-
   return (
     <Layout>
       <div data-testid="settings-page" className="min-h-screen flex">
