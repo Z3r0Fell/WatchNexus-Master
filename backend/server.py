@@ -3869,6 +3869,10 @@ async def startup_db():
     global db
     db = await init_database()
     logger.info("SQLite database initialized successfully")
+    
+    # Initialize Drizzle with database connection
+    init_drizzle(db)
+    logger.info("Drizzle playlist engine initialized")
 
 # ==================== STATIC FILE SERVING (FOR STANDALONE BUILD) ====================
 # Serve frontend build files when running as standalone application
