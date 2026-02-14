@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "1.1.0"  # SQLite - Truly self-contained, zero dependencies
+VERSION = "1.2.0"  # Added Maintenance tab, system monitoring, semantic versioning
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
