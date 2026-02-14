@@ -7,69 +7,113 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO external dependencies**.
 
-### Architecture
-- **Frontend**: React (served by FastAPI at port 8001)
-- **Backend**: FastAPI (port 8001)
-- **Database**: SQLite (self-contained, zero setup)
-  - **WAL mode**: Concurrent read/write access
-  - **Auto-backup**: Creates backup on every startup (keeps 7)
-  - **Auto-VACUUM**: Optimizes database every 24 hours
-- **Torrent Engine**: LTorrent (pure Python, v1.6.0)
+---
+
+## Current Version: 1.2.0
+
+### Versioning Scheme
+- **MAJOR** (1.x.x): Breaking changes, major architecture shifts
+- **MINOR** (x.2.x): New features, significant enhancements  
+- **PATCH** (x.x.0): Bug fixes, code changes
+
+See [CHANGELOG.md](/app/CHANGELOG.md) for full version history.
 
 ---
 
-## Current Status: v1.1.0 Release ✅
+## Architecture
 
-### What's Working
-- ✅ **SQLite Database** - Zero external dependencies, just Python
-- ✅ User registration and login working
-- ✅ Server starts and serves frontend
-- ✅ Static files (CSS, JS, images) load correctly
-- ✅ API routes are accessible
-- ✅ LTorrent (pure Python) - supports magnet links + .torrent files
-- ✅ Release packages for Linux and Windows
+### Stack
+- **Frontend**: React 18 (served by FastAPI at port 8001)
+- **Backend**: FastAPI (Python 3.10+)
+- **Database**: SQLite with WAL mode
+- **Torrent Engine**: LTorrent (pure Python)
 
-### Key Changes in v1.1.0
-- **Replaced MongoDB with SQLite** - No external database needed
-- **Database hardening**:
-  - WAL mode for concurrent read/write (no locks during reads)
-  - Automatic backup on every startup (keeps 7 rolling backups)
-  - Scheduled VACUUM every 24 hours (keeps DB optimized)
-  - 64MB cache for fast queries
-- Updated start scripts - removed MongoDB dependency
-- Simplified README - truly beginner-friendly
-- New API endpoints: `/api/db/stats`, `/api/db/vacuum`, `/api/db/backup`
+### Database Features
+- **WAL mode**: Concurrent read/write, no blocking
+- **Auto-backup**: Creates backup on every startup (keeps 7)
+- **Auto-VACUUM**: Optimizes database every 24 hours
+- **64MB cache**: Fast queries for large libraries
 
-### Release Packages
-- `/app/dist/watchnexus-v1.1.0-linux.zip`
-- `/app/dist/watchnexus-v1.1.0-windows.zip`
+### Capacity
+- Handles 1,500+ movies, 3,000+ TV shows easily
+- SQLite tested with millions of records
+- Same engine used by Jellyfin and Plex
 
 ---
 
-## Key Files Modified This Session
+## What's Working (v1.2.0)
 
-1. **`/app/backend/database.py`** - NEW: SQLite database layer mimicking MongoDB's motor interface
-2. **`/app/backend/server.py`** - Modified: Uses SQLite instead of MongoDB
-3. **`/app/backend/requirements.txt`** - Updated: Removed MongoDB, added aiosqlite
-4. **`/app/scripts/create_releases.py`** - Updated: v1.1.0, new start scripts, new README
+### Core Features
+- ✅ User registration and login
+- ✅ SQLite database (zero external dependencies)
+- ✅ Server serves frontend (single executable)
+- ✅ TMDB integration for movie/TV metadata
+- ✅ Watchlist and watch progress tracking
+- ✅ Multi-user with permissions
+- ✅ LTorrent for magnet links and .torrent files
+
+### New in v1.2.0
+- ✅ **Maintenance Tab** in Settings
+  - Server status (uptime, CPU, memory)
+  - System info (platform, Python version)
+  - Database health monitoring
+  - Backup management
+  - Cache statistics
+  - Torrent engine status
+
+---
+
+## Release Packages
+
+Current release: **v1.2.0**
+
+- `/app/dist/watchnexus-v1.2.0-linux.zip`
+- `/app/dist/watchnexus-v1.2.0-windows.zip`
+
+### Requirements
+- Python 3.10+ (that's it!)
+
+---
+
+## API Endpoints
+
+### System Maintenance
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/system/info` | GET | Basic app info (public) |
+| `/api/system/stats` | GET | Detailed system statistics |
+| `/api/db/stats` | GET | Database health info |
+| `/api/db/backups` | GET | List all backups |
+| `/api/db/vacuum` | POST | Optimize database |
+| `/api/db/backup` | POST | Create manual backup |
+| `/api/cache/stats` | GET | TMDB cache info |
+| `/api/cache/clear` | POST | Clear TMDB cache |
+| `/api/torrent/status` | GET | Torrent engine status |
+
+### Authentication
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/register` | POST | Create new user |
+| `/api/auth/login` | POST | User login |
+| `/api/auth/me` | GET | Current user info |
+| `/api/auth/logout` | POST | Logout |
 
 ---
 
 ## Backlog
 
 ### P0 - Critical
-- [x] Fix torrent library (libtorrent → LTorrent)
-- [x] Add magnet link support  
-- [x] **Switch to SQLite (zero dependencies)**
-- [ ] User testing of v1.1.0 release
+- [x] SQLite database (zero dependencies)
+- [x] Database hardening (WAL, backups, VACUUM)
+- [x] Maintenance tab in Settings
+- [ ] User testing of v1.2.0 release
 
 ### P1 - High Priority
-- [ ] Test Windows release package
+- [ ] Windows release package testing
 - [ ] Video assets for Kickstarter
-- [ ] Full end-to-end testing of standalone app
+- [ ] Full end-to-end standalone testing
 
-### P2 - Playback Playlist Feature (Future)
-User-requested features:
+### P2 - Playback Playlist Feature (User Requested)
 - [ ] Queue-based playlists (movies + TV)
 - [ ] Auto-play next on credits/end
 - [ ] Skip intro/outro/credits
@@ -84,53 +128,29 @@ User-requested features:
 
 ---
 
-## Test Commands
-
-```bash
-# Test registration
-curl -X POST http://localhost:8001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","username":"testuser","password":"password"}'
-
-# Test login
-curl -X POST http://localhost:8001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"password"}'
-
-# Check health
-curl http://localhost:8001/api/health
-```
-
----
-
 ## External Integrations
 - TMDB (The Movie Database)
-- Google OAuth
+- Google OAuth (Emergent-managed)
 - BeautifulSoup4 (scraping)
 - Addic7ed (subtitles)
-- LTorrent (torrents - pure Python, magnet + .torrent)
+- LTorrent (torrents - pure Python)
 
 ---
 
-## Session Summary (2026-02-14)
+## Files of Reference
 
-### Problem
-User reported timeout error when trying to create a user in the standalone release (v1.0.2). The error was:
-```
-pymongo.errors.ServerSelectionTimeoutError: localhost:27017: [Errno 111] Connection refused
-```
+### Backend
+- `/app/backend/server.py` - Main FastAPI server
+- `/app/backend/database.py` - SQLite database layer
+- `/app/backend/fondue.py` - Torrent engine (LTorrent)
 
-### Root Cause
-The application required MongoDB to be running externally, but for a truly self-contained application, this is unacceptable. Users shouldn't need to install Docker or MongoDB.
+### Frontend
+- `/app/frontend/src/pages/SettingsPage.js` - Settings with tabs
+- `/app/frontend/src/components/settings/MaintenanceSettings.jsx` - Maintenance tab
 
-### Solution
-Replaced MongoDB with SQLite:
-1. Created `/app/backend/database.py` - A SQLite database layer that mimics MongoDB's motor interface
-2. Modified `server.py` to use SQLite instead of MongoDB
-3. Updated `requirements.txt` to remove MongoDB dependencies and add `aiosqlite`
-4. Updated release scripts to reflect zero-dependency architecture
+### Scripts
+- `/app/scripts/create_releases.py` - Release package generator
 
-### Result
-- **v1.1.0** release packages created
-- Just Python required - no MongoDB, no Docker, no external databases
-- User registration and login tested and working
+### Documentation
+- `/app/CHANGELOG.md` - Version history
+- `/app/memory/PRD.md` - This file
