@@ -255,6 +255,7 @@ HTTP Request: GET https://api.themoviedb.org/3/trending/all/week?api_key= "HTTP/
 | PROD-001 | API calls fail in standalone | v1.2.4 | Linux/Windows | ✅ FIXED |
 | PROD-002 | Home page blank | v1.2.4 | Linux/Windows | ✅ FIXED |
 | PROD-003 | Libraries don't populate | v1.2.4 | Linux/Windows | ✅ FIXED |
+| PROD-004 | TMDB API key missing (401 errors) | v1.2.4 | Linux/Windows | ✅ FIXED |
 
 ---
 
