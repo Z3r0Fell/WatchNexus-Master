@@ -526,14 +526,6 @@ class DrizzleEngine:
         label: str = ""
     ) -> Dict:
         """Set a skip marker for a media item (stored globally for reuse)."""
-        marker = SkipMarker(
-            type=marker_type,
-            start_time=start_time,
-            end_time=end_time,
-            auto_skip=auto_skip,
-            label=label
-        )
-        
         marker_doc = {
             "media_type": media_type,
             "tmdb_id": tmdb_id,
