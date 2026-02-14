@@ -1,181 +1,182 @@
 <analysis>**original_problem_statement:**
 The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media.
 
-Recent user requests driving development:
-1.  Make the server application flawless and runnable by an absolute beginner, similar to Jellyfin.
-2.  Add a Maintenance tab to the settings for viewing database health, server health, and other system information.
-3.  Implement file-based logging and make logs accessible from the Maintenance tab.
-4.  Improve the application's startup script to gracefully handle port conflicts on the default port (8001).
+PRODUCT REQUIREMENTS:
+1.  Make the server application flawless and runnable by an absolute beginner.
+2.  The application must be cross-platform (Linux, Windows, macOS).
+3.  Implement a Maintenance tab for system and database health.
+4.  Implement file-based logging accessible from the UI.
+5.  Gracefully handle port conflicts on startup.
+6.  Core feature: Users must be able to add media libraries from their filesystem, have the system scan the media, and display it in categorized pages (Movies, TV Shows, Anime).
+7.  Add a playlist feature for back-to-back playback.
+8.  Add an Anime as a distinct media category, separate from Movies and TV Shows.
+9.  Provide a user-friendly file/folder browser when adding library paths.
+10. Add browse buttons for download folder specifications in the General Settings.
+11. Fix media posters not being fetched from the internet.
+12. Clean up the Settings tabs.
+13. Fix the download queue functionality.
+14. Implement the ability to add items to playlists.
+15. Fix the blank Plugins page and add a way to import external plugins.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack React/FastAPI project. A major architectural change was completed, migrating the database from MongoDB to SQLite to make the application truly self-contained and resolve critical startup errors. The SQLite implementation was also hardened with WAL mode, automatic backups, and optimization tasks.
+The application is a full-stack React/FastAPI project. The agent has successfully implemented several features and fixes:
+1.  **Add to Playlist**: A new  component has been created and integrated into media cards and the media details page, allowing users to add items to their playlists.
+2.  **Plugin Import**: The backend now has a  endpoint, and the frontend Plugins settings page has a UI for importing plugins from a URL.
+3.  **Settings Page Refactor**: The settings page UI was refactored from tabs into a categorized sidebar navigation for better UX, overcoming a significant Babel compiler issue in the process.
+4.  **System Tray App**: A basic cross-platform system tray application has been created in  using .
+5.  **Download Queue Investigation**: The agent determined that the download queue itself works, but the user's issue stems from a lack of properly configured indexers, preventing the search-and-grab workflow.
 
-A new Maintenance feature was added, including a frontend tab () and corresponding backend API endpoints. This feature displays system stats (CPU, RAM, Disk), database health, and provides a new file-based log viewer. The application versioning is now managed via a  scheme, with the latest generated release being .
+All implemented features were verified by the testing agent and passed.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the user's request to improve the  script. The goal is to make the script detect if port 8001 is already in use, display which process is using it, and offer the user an option to kill that process.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** manual testing by curl. The agent needs to modify the  variable within , then test the script's logic in the bash terminal.
+-   **Last item agent was working:** The agent had just finished implementing a batch of features (Add to Playlist, Plugin Import, Settings Refactor), verified them with the testing agent, and was updating the  and  files before finishing the session. The very last user message requested using an SVG for the favicon and system tray icon.
+-   **Status:** NOT STARTED
+-   **Agent Testing Done:** Y (for the features implemented in the last session)
+-   **Which testing method agent to use?** Frontend testing agent (for favicon) and manual inspection (for sys tray icon).
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Improve startup script to handle port 8001 conflicts (P0)**
--   **Issue 2: Finalize and Test Windows Release Package (P1)**
--   **Issue 3: Create and Test a macOS Release Package (P2)**
+-   **Issue 1: Use SVG for favicon and system tray icon (P0)**
+-   **Issue 2: Downloads are not added to the queue via search (P1)**
 
 **Issues Detail:**
--   **Issue 1: Improve startup script to handle port 8001 conflicts**
-    -   **Attempted fixes:** This is a new task, just started.
-    -   **Next debug checklist:**
-        1.  Edit  to modify the  variable.
-        2.  In the script, use 48
-85 or a similar command to check if a process is using port 8001.
-        3.  If a process is found, display its PID and name to the user.
-        4.  Prompt the user, asking if they want to kill the existing process.
-        5.  If the user agrees, use  to terminate the process before WatchNexus starts.
-        6.  Update the version to  in  and .
-        7.  Generate the new release packages.
-    -   **Why fix this issue and what will be achieved with the fix?** This will prevent the address already in use error and provide a user-friendly way to resolve it, improving the first-run experience for beginners.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on other issue:** None.
-
--   **Issue 2: Finalize and Test Windows Release Package**
-    -   **Attempted fixes:** The build script generates a Windows package, but it has not been tested since the migration to SQLite and the addition of the Maintenance tab.
-    -   **Next debug checklist:** Once the Linux package is stable (v1.2.2+), the Windows package must be tested end-to-end to ensure user creation, login, and the new Maintenance features work correctly.
-    -   **Why fix this issue and what will be achieved with the fix?** Fulfills the user's original request for a cross-platform application.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** both
-    -   **Blocked on other issue:** Issue 1: Improve startup script to handle port 8001 conflicts
-
--   **Issue 3: Create and Test a macOS Release Package**
+-   **Issue 1: Use SVG for favicon and system tray icon**
+    -   **Description:** The user has requested to use an SVG file for both the web application's favicon and the system tray applet's icon.
     -   **Attempted fixes:** None.
-    -   **Next debug checklist:** Research and implement a packaging solution for macOS (e.g., ). Update  to add a build target for macOS and test the resulting package.
-    -   **Why fix this issue and what will be achieved with the fix?** To achieve full cross-platform support as requested by the user.
+    -   **Next debug checklist:**
+        1.  Locate a suitable SVG icon in the project or ask the user to provide one.
+        2.  Update  to use the SVG as a favicon.
+        3.  Modify  to load the SVG icon for the  applet.
+    -   **Why fix this issue and what will be achieved with the fix?** Fulfills a direct user request and improves application branding and visual consistency.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** both
-    -   **Blocked on other issue:** Issue 1 & Issue 2.
+    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 2: Downloads are not added to the queue via search**
+    -   **Description:** The user reported that adding an item to the download queue results in nothing being added. The agent investigated and found the  endpoint works, but the  endpoint returns no results, which is the root cause. This is a configuration issue, not a code bug.
+    -   **Attempted fixes:** Investigation was performed, confirming the backend download mechanism works in isolation.
+    -   **Next debug checklist:**
+        1.  Create a UI guide or a check in the settings to help the user correctly configure an indexer (e.g., YTS).
+        2.  Verify the Indexer settings are correctly saved and used by the  module.
+        3.  Test the end-to-end flow: .
+    -   **Why fix this issue and what will be achieved with the fix?** This will make the core media acquisition feature fully functional for the user. Although not a code bug, it's a critical UX blocker.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y (in the sense that it was a primary user complaint)
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
 
 **In progress Task List**:
--   None. Current work is focused on fixing the startup script issue.
+-   None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Test Core Modules (P1):** Verify the Usenet () and Indexer () modules function correctly with the new SQLite database.
+-   **Finalize System Tray Applet (P1):** The initial  file has been created. It needs to be properly integrated into the application startup/build process and tested on Windows, macOS, and Linux.
+-   **Test Core Modules (P2):** Verify the Usenet () and Indexer () modules function correctly once the indexer configuration guidance is in place.
 -   **Connect Pages to Backend (P2):** Implement backend logic for the Community & DVR pages.
 
 **Future Tasks:**
--   **Playback Playlist Feature (P2):** Implement back-to-back media playback.
 -   **Advanced Playback Controls (P2):** Add skip intro, skip credits, etc.
 -   **Marketing Assets (P2):** Create Kickstarter and marketing videos (Sora 2).
 -   **Client App Planning (P3):** Document architecture for Roku, Android, and iOS client apps.
 -   **Cloud Sync (P3):** Develop a feature for syncing user data across devices.
 
 **Completed work in this session**
--   **Database Migration:** Successfully migrated the application from MongoDB to a self-contained SQLite database, creating a new abstraction layer in .
--   **Database Hardening:** Implemented WAL mode, automatic backups, and VACUUM scheduling for the SQLite database to ensure production-grade reliability.
--   **Fixed Critical Bug:** Resolved the user creation timeout error, which was caused by the inability to connect to an external MongoDB instance.
--   **New Feature - Maintenance Tab:** Built a comprehensive Maintenance UI and corresponding backend APIs () for monitoring server/system health, disk usage, and database stats.
--   **New Feature - Logging:** Implemented robust file-based logging with rotation () and added a log viewer to the Maintenance UI.
--   **Build & Versioning:** Updated the release script () and established a  versioning system, bringing the app to .
+-   **Feature: Add to Playlist:**
+    -   Created .
+    -   Integrated the button into  and .
+-   **Feature: External Plugin Import:**
+    -   Added  endpoint to .
+    -   Implemented frontend UI in  to install plugins from a URL.
+-   **UI/UX: Settings Page Refactor:**
+    -   Replaced the tabbed layout with a categorized sidebar in .
+    -   Resolved a Maximum call stack size exceeded error caused by a Babel plugin () by simplifying the component's data structures.
+-   **Feature: System Tray Applet (Initial):**
+    -   Created  with  for cross-platform control.
+-   **Investigation: Download Queue:**
+    -   Confirmed the download mechanism is functional but is blocked by a lack of configured indexers.
+-   **Documentation:**
+    -   Updated  and .
 
 **Earlier issues found/mentioned but not fixed**
--   None.
+-   None. All raised issues were either resolved or are documented in the pending/upcoming lists.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Build instability due to external dependencies.
--   **Recurrence count:** 4+
--   **Status:** RESOLVED. Migrating from MongoDB to an embedded SQLite database has fixed the root cause of this instability for standalone builds.
+-   **Issue recurrence in previous fork:** Production build instability.
+-   **Recurrence count:** 5+
+-   **Status:** RESOLVED (for now). The agent must remain vigilant, especially if creating new release builds.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Database Migration (MongoDB to SQLite):** A fundamental architectural shift from a server-based NoSQL DB to an embedded SQL DB to achieve true self-containment.
--   **Database Abstraction Layer:** The creation of  isolates application logic from the specific database implementation, simplifying the migration.
--   **SQLite Hardening:** The use of WAL mode, scheduled VACUUM, and automated backups to make the embedded database robust.
--   **System Monitoring:** The  library is used to gather system metrics (CPU, RAM, Disk) for the Maintenance UI.
--   **Dynamic Release Scripting:**  is the source of truth for release artifacts, including version numbers and embedded startup scripts.
+-   **Babel Plugin Debugging:** Encountered and worked around a Maximum call stack size exceeded error in . The fix involved moving a complex, nested array of objects outside the component definition, making it a static constant. This indicates the plugin has issues with analyzing deeply nested structures during compilation.
+-   **Cross-Platform System Tray:** Used the  library as a viable, Python-native solution for creating system tray applets that work on Windows, macOS, and Linux.
+-   **Problem Isolation:** Differentiated between a code bug and a configuration issue. The download queue problem was not in the code itself but in the dependency on user-configured indexers, shifting the solution from a code fix to a UX/guidance improvement.
 
 **key DB schema**
--   The schema is now defined via  statements within the  function in . Key tables include , , .
+-   No changes were made to the database schema in this session.
 
 **changes in tech stack**
--   **Added:**  (via ), , .
--   **Removed:**  (and its  driver).
+-    library introduced for the system tray applet.
 
 **All files of reference**
--   : **Primary file for the next task.** The  variable within this file needs to be modified.
--   : Contains the main application logic, API endpoints, and version information.
--   : The SQLite database layer.
--   : The frontend component for the Maintenance tab.
+-   : Heavily refactored. The source of the Babel bug.
+-   : Modified to include the plugin installation endpoint.
+-   : New component for the playlist feature.
+-   : New file for the system tray application.
+-   : Modified to add the plugin import UI.
+-    & : Updated with progress.
 
 **Areas that need refactoring**:
--   The large, multi-line shell script strings inside  could be moved to separate template files for better readability and maintenance. This is a low-priority task.
+-   The  script is standalone and needs to be integrated into the main application's lifecycle (e.g., started by a script, included in builds).
+-   The UI/UX for indexer configuration needs improvement to guide users and prevent the downloads not working issue. A setup guide or a status indicator could be beneficial.
 
 **key api endpoints**
--   : **(WORKING)**
--   : **(WORKING)**
--   : **(NEW & WORKING)**
--   : **(NEW & WORKING)**
--   : **(NEW & WORKING)**
--   : **(NEW & WORKING)**
+-   : **NEW** endpoint to download and install a plugin from a given URL.
+-   : Existing endpoint now used by the frontend to add media to playlists.
 
 **Critical Info for New Agent**
--   Your immediate priority is to finish the user's latest request: improve the startup script to handle port conflicts. This is a small but important change for user experience.
--   All release-related modifications (version number, startup script content, README updates) must be done in .
--   The application's architecture is now based on SQLite. Ignore all previous context related to MongoDB issues.
--   The current version is . The next change (port conflict handling) should increment the version to .
+-   **Immediate Priority:** The user's latest request is to use an SVG for the favicon and system tray icon. Address this first.
+-   **Download Queue:** Do not treat the download queue as a broken code feature. The problem is a lack of user-configured indexers. Your task is to make this process easier for the user, either through better UI, documentation, or in-app guidance.
+-   **System Tray App:** The file  exists but is not integrated. Plan how to run it alongside the main server and include it in future release packages.
+-   **Babel Bug:** Be cautious when editing . It is sensitive to complex, inline data structures due to . Keep static data definitions outside the component body.
 
 **documents and test reports created in this job**
 -   
--   
--   
--   
+-    (Updated)
+-    (Updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks if SQLite can handle a large media library.
-2.  **Agent:** Confirms it can and suggests hardening features (WAL, backups).
-3.  **User:** Agrees to hardening and asks why SQLite wasn't used from the start.
-4.  **Agent:** Acknowledges the initial architectural mistake and proceeds to implement the hardening features.
-5.  **User:** Requests a Maintenance tab in the UI.
-6.  **Agent:** Implements the Maintenance tab with server and DB stats ().
-7.  **User:** Runs the new version, gets an address already in use error, and requests file-based logging that is viewable in the UI.
-8.  **Agent:** Implements file-based logging and a log viewer in the Maintenance tab ().
-9.  **User:** Requests an improvement to the start script to detect and offer to kill processes already running on port 8001.
-10. **Agent:** Acknowledges the request and prepares to implement the change.
+1.  **User:** Requests confirmation of the plan. (COMPLETED)
+2.  **User:** Gives the go-ahead, expressing uncertainty about the best technology for a system tray app but trusting the agent's choice. (COMPLETED)
+3.  **User:** Asks for an SVG to be used as the favicon and system tray icon. (PENDING - HIGHEST PRIORITY)
 
 **Project Health Check:**
--   **Broken:** The startup script lacks robust error handling for port conflicts. The Windows build is untested since the major database migration.
--   **Mocked:** None.
+-   **Working with known bugs:** The application health is good. Major features have been added and validated. The most significant bug (downloads) has been identified as a configuration issue, which is a major step forward.
 
-**3rd Party Integrations**
--   **SQLite:** Embedded database.
--   **LTorrent:** Pure Python torrent client.
--   **psutil:** System monitoring library.
--   **loguru:** Logging library.
+**3rd party Integrations**
+-   SQLite (via )
+-   LTorrent (Built-in torrent client)
+-   psutil (System monitoring)
+-   loguru (Logging)
 -   The Movie Database (TMDB)
 -   Google OAuth
 -   BeautifulSoup4
 -   Addic7ed
--   **Sora 2:** (On hold) For video generation.
+-   pystray (New)
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
--   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None
--   **Known regressions:** None from the recent work.
+-   **Testing agent used after significant changes:** YES. The agent ran a comprehensive test suite which passed, validating the playlist, plugin, and settings page changes.
+-   **Test files created:** None.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
--   On a fresh launch, the user database is empty. Any new user can be created for testing. Example:
+-   On a fresh launch, create a new user for testing.
 -   **Email:** 
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent was in the process of starting the implementation for the port-conflict handling feature in the startup script when the session ended. The next step is to edit .</analysis>
+-   The agent completed all planned tasks. The user's final request to use an SVG icon came at the very end of the session and is now the top priority for the next session.</analysis>
