@@ -379,3 +379,36 @@ BUG-010: TMDB API key missing in release (FIXED v1.2.4-patch2)
 
 *Last Updated: 2026-02-14*
 *Maintained by: WatchNexus Development Team*
+
+### Day 12+ - Fork Session (v1.2.6)
+**Date:** 2026-02-14
+
+#### Features Added ✅
+1. **Add to Playlist UI** - AddToPlaylistButton component for MediaCard and MediaDetails
+2. **Plugin Import from File** - Upload .zip plugin archives
+3. **Plugin Import from URL** - Download and install plugins from URLs
+4. **Plugin Uninstall** - Delete button to remove installed plugins
+5. **Settings Page Redesign** - Categorized sidebar navigation (Core, Acquisition, Playback, Advanced)
+6. **System Tray Application** - Cross-platform tray app (pystray) for server control
+
+#### Backend Endpoints Added
+- `POST /api/gadgets/import-file` - Import plugin from uploaded .zip
+- `POST /api/gadgets/import-url` - Import plugin from URL
+- `DELETE /api/gadgets/plugins/{plugin_id}/uninstall` - Uninstall a plugin
+
+#### Bugs Fixed ✅
+1. 🟡 **MEDIUM** - No UI to add items to playlists
+   - **Root Cause:** Backend API existed but no frontend component used it
+   - **Fix:** Created AddToPlaylistButton component, integrated into MediaCard and MediaDetails
+   
+2. 🟡 **MEDIUM** - No way to import external plugins
+   - **Root Cause:** Plugin system only discovered bundled plugins
+   - **Fix:** Added file upload and URL import endpoints + frontend UI
+
+3. 🟢 **LOW** - Settings page UX with too many tabs
+   - **Root Cause:** Horizontal tabs overwhelming with 13 items
+   - **Fix:** Redesigned with categorized sidebar navigation
+
+#### Known Issue
+- 🟡 **Download queue** - Adding items via indexer search may not work if indexer is not properly configured. This is a configuration issue, not a bug.
+
