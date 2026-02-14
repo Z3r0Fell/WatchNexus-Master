@@ -1829,10 +1829,11 @@ async def qbittorrent_test(
 
 # ==================== BUILT-IN TORRENT ENGINE ====================
 # Native torrent downloading - no external applications required!
-# Note: Requires libtorrent system package (optional)
+# REQUIRES: libtorrent system package
+# Arch Linux: sudo pacman -S libtorrent-rasterbar python-libtorrent
+# Ubuntu/Debian: sudo apt install python3-libtorrent
 
-try:
-    from fondue import get_fondue_engine, shutdown_fondue_engine
+from fondue import get_fondue_engine, shutdown_fondue_engine
     TORRENT_ENGINE_AVAILABLE = True
 except ImportError:
     TORRENT_ENGINE_AVAILABLE = False
