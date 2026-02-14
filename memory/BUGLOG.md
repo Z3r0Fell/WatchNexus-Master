@@ -187,6 +187,34 @@ const API = `${BACKEND_URL}/api`;
 
 ---
 
+### Day 9 - Missing TMDB API Key (v1.2.4 Production)
+**Date:** 2026-02-14 (User Testing)
+
+#### Bugs Found: 1
+
+| # | Bug | Severity | Status | Fix |
+|---|-----|----------|--------|-----|
+| BUG-010 | 🔴 TMDB API returns 401 Unauthorized | CRITICAL | ✅ FIXED | Added TMDB key to release .env template |
+
+**Root Cause Analysis:**
+```bash
+# BROKEN: Release script had TMDB key commented out
+# TMDB_API_KEY=your_key_here
+
+# FIXED: Release script now includes working key
+TMDB_API_KEY=8c860bcb88494f598008480abfe24d13
+```
+
+**Logs showing the issue:**
+```
+HTTP Request: GET https://api.themoviedb.org/3/trending/all/week?api_key= "HTTP/1.1 401 Unauthorized"
+```
+
+**Files Changed:**
+- `/app/scripts/create_releases.py` - Added TMDB API key to both Linux and Windows .env templates
+
+---
+
 ## Bug Categories
 
 ### By Component
