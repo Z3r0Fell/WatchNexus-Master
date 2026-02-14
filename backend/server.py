@@ -2078,6 +2078,58 @@ async def torrent_engine_sequential(
 
 from marmalade_server import get_marmalade_server
 
+# Folder Browser for Library Selection
+@api_router.get("/filesystem/browse")
+async def browse_filesystem(
+    path: str = "/",
+    user: dict = Depends(require_auth)
+):
+    """Browse filesystem directories for library selection."""
+    from pathlib import Path as PathLib
+    import os
+    
+    # Sanitize path
+    try:
+        target = PathLib(path).resolve()
+    except Exception:
+        return {"error": "Invalid path", "path": path, "directories": []}
+    
+    # Check if path exists
+    if not target.exists():
+        return {"error": "Path does not exist", "path": str(target), "directories": []}
+    
+    if not target.is_dir():
+        return {"error": "Path is not a directory", "path": str(target), "directories": []}
+    
+    # List directories
+    directories = []
+    try:
+        for entry in sorted(os.listdir(target)):
+            if entry.startswith('.'):
+                continue  # Skip hidden
+            full_path = target / entry
+            if full_path.is_dir():
+                directories.append({
+                    "name": entry,
+                    "path": str(full_path),
+                    "has_children": any(
+                        (full_path / c).is_dir() 
+                        for c in os.listdir(full_path) 
+                        if not c.startswith('.')
+                    ) if os.access(full_path, os.R_OK) else False
+                })
+    except PermissionError:
+        return {"error": "Permission denied", "path": str(target), "directories": []}
+    
+    # Get parent path
+    parent = str(target.parent) if str(target) != "/" else None
+    
+    return {
+        "path": str(target),
+        "parent": parent,
+        "directories": directories
+    }
+
 @api_router.get("/marmalade/status")
 async def marmalade_status(user: dict = Depends(require_auth)):
     """Get Marmalade server status."""
