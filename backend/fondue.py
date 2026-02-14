@@ -1,17 +1,15 @@
 """
 Fondue - WatchNexus Torrent Engine
 Downloads come in pieces, layered together into a perfect whole.
-A fully integrated torrent download client using aiotorrent (pure Python).
+A fully integrated torrent download client using LTorrent (pure Python).
 
 Features:
+- Magnet link handling
 - .torrent file support
 - Sequential download for streaming
 - Progress tracking
 - Cross-platform compatibility (Mac, Linux, Windows)
 - NO system dependencies required (pure Python)
-
-Note: aiotorrent currently supports .torrent files only.
-Magnet link support is planned for future versions.
 """
 
 import asyncio
@@ -19,21 +17,25 @@ import logging
 import os
 import json
 import hashlib
+import re
 from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from enum import Enum
+import threading
 
 logger = logging.getLogger(__name__)
 
-# Import aiotorrent - pure Python torrent library
+# Import LTorrent - pure Python torrent library with magnet support
 try:
-    from aiotorrent import Torrent, DownloadStrategy
+    from ltorrent.client import Client as LTorrentClient
     TORRENT_AVAILABLE = True
+    TORRENT_LIBRARY = "ltorrent"
 except ImportError:
     TORRENT_AVAILABLE = False
-    logger.warning("aiotorrent not installed. Install with: pip install aiotorrent")
+    TORRENT_LIBRARY = None
+    logger.warning("LTorrent not installed. Install with: pip install git+https://github.com/hlf20010508/LTorrent.git@1.6.0#subdirectory=ltorrent")
 
 
 class TorrentState(Enum):
@@ -73,7 +75,7 @@ class EngineSettings:
     enable_pex: bool = True
     enable_lsd: bool = True
     add_paused: bool = False
-    sequential_download_default: bool = False
+    sequential_download_default: bool = True  # Default to sequential for streaming
     prioritize_first_last_pieces: bool = True
     
     def to_dict(self) -> Dict[str, Any]:
@@ -194,15 +196,43 @@ class TorrentFile:
         }
 
 
+def extract_info_hash(magnet: str) -> Optional[str]:
+    """Extract info hash from magnet link."""
+    match = re.search(r'btih:([a-fA-F0-9]{40})', magnet)
+    if match:
+        return match.group(1).lower()
+    # Try base32 encoded hash
+    match = re.search(r'btih:([A-Za-z2-7]{32})', magnet)
+    if match:
+        import base64
+        try:
+            decoded = base64.b32decode(match.group(1).upper())
+            return decoded.hex()
+        except:
+            pass
+    return None
+
+
+def extract_name_from_magnet(magnet: str) -> str:
+    """Extract display name from magnet link."""
+    match = re.search(r'dn=([^&]+)', magnet)
+    if match:
+        from urllib.parse import unquote
+        return unquote(match.group(1))
+    info_hash = extract_info_hash(magnet)
+    return f"Torrent {info_hash[:8]}" if info_hash else "Unknown Torrent"
+
+
 class TorrentWrapper:
-    """Wrapper around aiotorrent Torrent for tracking."""
+    """Wrapper around LTorrent Client for tracking."""
     
-    def __init__(self, torrent_id: str, source: str, save_path: str, metadata: dict):
+    def __init__(self, torrent_id: str, source: str, save_path: str, metadata: dict, settings: EngineSettings):
         self.torrent_id = torrent_id
         self.source = source
         self.save_path = save_path
         self.metadata = metadata
-        self.torrent: Optional[Torrent] = None
+        self.settings = settings
+        self.client: Optional[LTorrentClient] = None
         self.state = TorrentState.QUEUED
         self.progress = 0.0
         self.download_rate = 0
@@ -213,147 +243,99 @@ class TorrentWrapper:
         self.num_seeds = 0
         self.num_peers = 0
         self.error_message = None
-        self._task: Optional[asyncio.Task] = None
-        self._paused = False
-        self._cancelled = False
-        self._current_file = None
+        self._thread: Optional[threading.Thread] = None
+        self._stop_flag = False
+        self._files: List[TorrentFile] = []
     
-    async def start(self):
-        """Start downloading the torrent."""
+    def start(self):
+        """Start downloading the torrent in a background thread."""
         if not TORRENT_AVAILABLE:
             self.state = TorrentState.ERROR
-            self.error_message = "aiotorrent not installed"
+            self.error_message = "LTorrent not installed"
             return
         
+        self._stop_flag = False
+        self._thread = threading.Thread(target=self._download_thread, daemon=True)
+        self._thread.start()
+    
+    def _download_thread(self):
+        """Background thread for torrent download."""
         try:
             self.state = TorrentState.DOWNLOADING_METADATA
             
-            # Initialize the torrent from .torrent file
-            self.torrent = Torrent(self.source)
-            await self.torrent.init(dht_enabled=self.metadata.get("enable_dht", False))
+            # Create save directory
+            Path(self.save_path).mkdir(parents=True, exist_ok=True)
             
-            # Update metadata with torrent info
-            if self.torrent.files:
-                self.total_size = sum(f.size for f in self.torrent.files)
-                self.metadata["name"] = self.torrent.files[0].path.split("/")[0] if "/" in self.torrent.files[0].path else Path(self.source).stem
+            # Initialize LTorrent client
+            self.client = LTorrentClient(
+                port=self.settings.listen_port,
+                storage=self.save_path
+            )
             
-            # Start download in background
-            self._task = asyncio.create_task(self._download_loop())
+            # Load torrent (magnet or file)
+            is_magnet = self.source.startswith("magnet:")
+            if is_magnet:
+                self.client.load(magnet_link=self.source)
+            else:
+                self.client.load(torrent_path=self.source)
             
-        except Exception as e:
-            self.state = TorrentState.ERROR
-            self.error_message = str(e)
-            logger.error(f"Error starting torrent {self.torrent_id}: {e}")
-    
-    async def _download_loop(self):
-        """Main download loop with progress tracking."""
-        try:
+            # Get file list and select all files
+            # LTorrent requires file selection before download
+            self.client.list_file()
+            
+            # Select all files (use "0" for all or range like "0-999")
+            self.client.select_file(selection="0-9999")
+            
             self.state = TorrentState.DOWNLOADING
             
-            if not self.torrent or not self.torrent.files:
-                self.state = TorrentState.ERROR
-                self.error_message = "No files in torrent"
-                return
+            # Start download (blocking call)
+            # LTorrent's run() blocks until complete
+            self.client.run()
             
-            # Choose download strategy
-            strategy = DownloadStrategy.SEQUENTIAL if self.metadata.get("sequential", False) else DownloadStrategy.DEFAULT
+            if not self._stop_flag:
+                self.state = TorrentState.FINISHED
+                self.progress = 100.0
+                self.metadata["completed_on"] = datetime.now(timezone.utc).isoformat()
+                logger.info(f"Torrent completed: {self.torrent_id}")
             
-            # Download all files in the torrent
-            for idx, file in enumerate(self.torrent.files):
-                if self._cancelled:
-                    self.state = TorrentState.PAUSED
-                    return
-                
-                self._current_file = file
-                logger.info(f"Downloading file {idx + 1}/{len(self.torrent.files)}: {file.path}")
-                
-                # Create progress tracking task
-                progress_task = asyncio.create_task(self._track_progress(file))
-                
-                try:
-                    await self.torrent.download(file, strategy=strategy)
-                finally:
-                    progress_task.cancel()
-                    try:
-                        await progress_task
-                    except asyncio.CancelledError:
-                        pass
-            
-            self.state = TorrentState.FINISHED
-            self.progress = 100.0
-            self.metadata["completed_on"] = datetime.now(timezone.utc).isoformat()
-            logger.info(f"Torrent completed: {self.torrent_id}")
-            
-        except asyncio.CancelledError:
-            self.state = TorrentState.PAUSED
         except Exception as e:
-            self.state = TorrentState.ERROR
-            self.error_message = str(e)
-            logger.error(f"Download error for {self.torrent_id}: {e}")
+            if not self._stop_flag:
+                self.state = TorrentState.ERROR
+                self.error_message = str(e)
+                logger.error(f"Download error for {self.torrent_id}: {e}")
     
-    async def _track_progress(self, file):
-        """Track download progress for a file."""
-        try:
-            while True:
-                if hasattr(file, 'get_download_progress'):
-                    self.progress = file.get_download_progress()
-                if hasattr(file, 'get_bytes_written'):
-                    self.downloaded = file.get_bytes_written()
-                await asyncio.sleep(1)
-        except asyncio.CancelledError:
-            pass
+    def pause(self):
+        """Pause the download (stops the thread)."""
+        self._stop_flag = True
+        self.state = TorrentState.PAUSED
+        # LTorrent doesn't have native pause, so we just stop
     
-    async def pause(self):
-        """Pause the download."""
-        self._cancelled = True
-        if self._task and not self._task.done():
-            self._task.cancel()
-            self._paused = True
-            self.state = TorrentState.PAUSED
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-    
-    async def resume(self):
+    def resume(self):
         """Resume the download."""
-        if self._paused:
-            self._paused = False
-            self._cancelled = False
-            await self.start()
+        if self.state == TorrentState.PAUSED:
+            self.start()
     
-    async def stop(self):
+    def stop(self):
         """Stop and cleanup."""
-        self._cancelled = True
-        if self._task and not self._task.done():
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
+        self._stop_flag = True
+        if self._thread and self._thread.is_alive():
+            # LTorrent doesn't have a clean stop mechanism
+            # Thread will exit on next iteration check
+            pass
     
     def get_files(self) -> List[TorrentFile]:
         """Get list of files in the torrent."""
-        if not self.torrent or not self.torrent.files:
-            return []
-        
-        result = []
-        for idx, file in enumerate(self.torrent.files):
-            progress = 0.0
-            if hasattr(file, 'get_download_progress'):
-                progress = file.get_download_progress()
-            
-            result.append(TorrentFile(
-                index=idx,
-                path=file.path,
-                size=file.size,
-                progress=progress,
-                priority=1
-            ))
-        return result
+        return self._files
     
     def get_status(self) -> TorrentStatus:
         """Get current status."""
+        # Try to get progress from client
+        if self.client and hasattr(self.client, 'last_percentage_completed'):
+            try:
+                self.progress = float(self.client.last_percentage_completed or 0)
+            except:
+                pass
+        
         eta = -1
         if self.download_rate > 0 and self.total_size > 0:
             remaining = self.total_size - self.downloaded
@@ -386,7 +368,8 @@ class TorrentWrapper:
 class FondueEngine:
     """
     Fondue - Built-in BitTorrent download engine.
-    Uses aiotorrent for pure Python, cross-platform torrent downloading.
+    Uses LTorrent for pure Python, cross-platform torrent downloading.
+    Supports both magnet links and .torrent files.
     """
     
     def __init__(self, settings: Optional[EngineSettings] = None):
@@ -396,7 +379,8 @@ class FondueEngine:
         self._state_file = Path(self.settings.download_path) / ".watchnexus_engine.json"
         self._settings_file = Path(self.settings.download_path) / ".watchnexus_settings.json"
         
-        logger.info(f"FondueEngine initialized (aiotorrent). Download path: {self.settings.download_path}")
+        lib_info = f"LTorrent" if TORRENT_AVAILABLE else "NOT AVAILABLE"
+        logger.info(f"FondueEngine initialized ({lib_info}). Download path: {self.settings.download_path}")
     
     def update_settings(self, new_settings: Dict[str, Any]) -> EngineSettings:
         """Update engine settings."""
@@ -427,12 +411,17 @@ class FondueEngine:
         self._save_settings()
         
         for wrapper in self.torrents.values():
-            asyncio.create_task(wrapper.stop())
+            wrapper.stop()
         
         logger.info("FondueEngine stopped")
     
     def _generate_id(self, source: str) -> str:
         """Generate a unique ID for a torrent."""
+        # For magnets, use info hash if available
+        if source.startswith("magnet:"):
+            info_hash = extract_info_hash(source)
+            if info_hash:
+                return info_hash[:16]
         return hashlib.sha256(source.encode()).hexdigest()[:16]
     
     async def add_magnet(
@@ -442,13 +431,49 @@ class FondueEngine:
         sequential: bool = None,
         category: str = "",
     ) -> Optional[str]:
-        """
-        Add a torrent from a magnet link.
-        Note: aiotorrent does not yet support magnet links.
-        This returns an error message explaining the limitation.
-        """
-        logger.warning("Magnet links are not yet supported by aiotorrent. Please use .torrent files.")
-        return None
+        """Add a torrent from a magnet link."""
+        if not TORRENT_AVAILABLE:
+            logger.error("LTorrent not installed")
+            return None
+        
+        if not magnet_url.startswith("magnet:"):
+            logger.error("Invalid magnet link")
+            return None
+        
+        try:
+            save_path = save_path or self.settings.download_path
+            sequential = sequential if sequential is not None else self.settings.sequential_download_default
+            
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+            
+            torrent_id = self._generate_id(magnet_url)
+            info_hash = extract_info_hash(magnet_url) or torrent_id
+            name = extract_name_from_magnet(magnet_url)
+            
+            metadata = {
+                "id": torrent_id,
+                "info_hash": info_hash,
+                "name": name,
+                "magnet": magnet_url,
+                "save_path": save_path,
+                "sequential": sequential,
+                "category": category,
+                "added_on": datetime.now(timezone.utc).isoformat(),
+                "completed_on": None,
+            }
+            
+            wrapper = TorrentWrapper(torrent_id, magnet_url, save_path, metadata, self.settings)
+            self.torrents[torrent_id] = wrapper
+            
+            if not self.settings.add_paused:
+                wrapper.start()
+            
+            logger.info(f"Added magnet torrent: {torrent_id} ({name})")
+            return torrent_id
+            
+        except Exception as e:
+            logger.error(f"Failed to add magnet: {e}")
+            return None
     
     async def add_torrent_file(
         self,
@@ -459,7 +484,7 @@ class FondueEngine:
     ) -> Optional[str]:
         """Add a torrent from a .torrent file path."""
         if not TORRENT_AVAILABLE:
-            logger.error("aiotorrent not installed. Run: pip install aiotorrent")
+            logger.error("LTorrent not installed")
             return None
         
         if not os.path.exists(torrent_path):
@@ -484,14 +509,13 @@ class FondueEngine:
                 "category": category,
                 "added_on": datetime.now(timezone.utc).isoformat(),
                 "completed_on": None,
-                "enable_dht": self.settings.enable_dht,
             }
             
-            wrapper = TorrentWrapper(torrent_id, torrent_path, save_path, metadata)
+            wrapper = TorrentWrapper(torrent_id, torrent_path, save_path, metadata, self.settings)
             self.torrents[torrent_id] = wrapper
             
             if not self.settings.add_paused:
-                await wrapper.start()
+                wrapper.start()
             
             logger.info(f"Added torrent file: {torrent_id}")
             return torrent_id
@@ -522,7 +546,7 @@ class FondueEngine:
         """Pause a torrent."""
         wrapper = self.torrents.get(torrent_id)
         if wrapper:
-            asyncio.create_task(wrapper.pause())
+            wrapper.pause()
             return True
         return False
     
@@ -530,7 +554,7 @@ class FondueEngine:
         """Resume a paused torrent."""
         wrapper = self.torrents.get(torrent_id)
         if wrapper:
-            asyncio.create_task(wrapper.resume())
+            wrapper.resume()
             return True
         return False
     
@@ -539,7 +563,7 @@ class FondueEngine:
         count = 0
         for wrapper in self.torrents.values():
             if wrapper.state == TorrentState.DOWNLOADING:
-                asyncio.create_task(wrapper.pause())
+                wrapper.pause()
                 count += 1
         return count
     
@@ -548,7 +572,7 @@ class FondueEngine:
         count = 0
         for wrapper in self.torrents.values():
             if wrapper.state == TorrentState.PAUSED:
-                asyncio.create_task(wrapper.resume())
+                wrapper.resume()
                 count += 1
         return count
     
@@ -558,11 +582,10 @@ class FondueEngine:
         if not wrapper:
             return False
         
-        asyncio.create_task(wrapper.stop())
+        wrapper.stop()
         
         if delete_files:
             try:
-                save_path = Path(wrapper.save_path)
                 # TODO: Implement proper file deletion
                 pass
             except Exception as e:
@@ -672,7 +695,17 @@ class FondueEngine:
                 state = json.load(f)
             
             for torrent_id, metadata in state.get("torrents", {}).items():
-                if "torrent_file" in metadata and os.path.exists(metadata["torrent_file"]):
+                # Re-add torrents from saved state
+                if "magnet" in metadata:
+                    asyncio.create_task(
+                        self.add_magnet(
+                            metadata["magnet"],
+                            save_path=metadata.get("save_path"),
+                            sequential=metadata.get("sequential", False),
+                            category=metadata.get("category", ""),
+                        )
+                    )
+                elif "torrent_file" in metadata and os.path.exists(metadata["torrent_file"]):
                     asyncio.create_task(
                         self.add_torrent_file(
                             metadata["torrent_file"],
