@@ -2213,6 +2213,49 @@ async def marmalade_mark_watched(
     success = server.mark_watched(media_id, watched)
     return {"status": "updated" if success else "not_found"}
 
+@api_router.post("/marmalade/media/{media_id}/refresh-metadata")
+async def marmalade_refresh_metadata(
+    media_id: str,
+    user: dict = Depends(require_auth)
+):
+    """Refresh TMDB metadata for a specific media file."""
+    server = get_marmalade_server()
+    success = await server.refresh_media_metadata(media_id)
+    if success:
+        media = server.get_media(media_id)
+        return {
+            "status": "refreshed",
+            "media": media.to_dict() if media else None
+        }
+    return {"status": "no_changes", "media_id": media_id}
+
+@api_router.post("/marmalade/libraries/{library_id}/refresh-metadata")
+async def marmalade_refresh_library_metadata(
+    library_id: str,
+    user: dict = Depends(require_auth)
+):
+    """Refresh TMDB metadata for all media in a library."""
+    server = get_marmalade_server()
+    library = server.get_library(library_id)
+    if not library:
+        raise HTTPException(status_code=404, detail="Library not found")
+    
+    # Get all media in the library
+    media_list = [m for m in server.media_files.values() if m.path.startswith(library.path)]
+    
+    refreshed = 0
+    for media in media_list:
+        success = await server.refresh_media_metadata(media.id)
+        if success:
+            refreshed += 1
+    
+    return {
+        "status": "complete",
+        "library": library.name,
+        "total": len(media_list),
+        "refreshed": refreshed
+    }
+
 # Streaming
 @api_router.get("/marmalade/stream/{media_id}")
 async def marmalade_get_stream(
