@@ -8,7 +8,8 @@ import {
   GeneralSettings, UsersSettings, LibrarySettings,
   MediaHealthSettings, IndexerSettings, DownloadSettings,
   IPTVSettings, StreamingSettings, SubtitleSettings,
-  GelatinSettings, ThemeForgeSettings, PluginsSettings
+  GelatinSettings, ThemeForgeSettings, PluginsSettings,
+  MaintenanceSettings
 } from '../components/settings';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
