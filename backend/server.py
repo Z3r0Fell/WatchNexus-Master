@@ -1842,6 +1842,8 @@ except ImportError:
 @api_router.get("/downloads/engine/status")
 async def torrent_engine_status(user: dict = Depends(require_auth)):
     """Get built-in torrent engine status and transfer info."""
+    if not TORRENT_ENGINE_AVAILABLE:
+        return {"success": False, "error": "Torrent engine not available. Install libtorrent: sudo pacman -S libtorrent-rasterbar"}
     try:
         engine = get_fondue_engine()
         transfer = engine.get_transfer_info()
@@ -1861,6 +1863,8 @@ async def torrent_engine_status(user: dict = Depends(require_auth)):
 @api_router.get("/downloads/engine/torrents")
 async def torrent_engine_list(user: dict = Depends(require_auth)):
     """Get list of all torrents from built-in engine."""
+    if not TORRENT_ENGINE_AVAILABLE:
+        return []
     engine = get_fondue_engine()
     torrents = engine.get_all_torrents()
     return [t.to_dict() for t in torrents]
