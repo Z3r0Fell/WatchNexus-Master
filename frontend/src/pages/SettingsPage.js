@@ -22,7 +22,44 @@ const API_URL = BACKEND_URL;
 export const SettingsPage = () => {
   // Current active setting
   const [activeSection, setActiveSection] = useState('general');
-  const [expandedGroups, setExpandedGroups] = useState(['core', 'acquisition', 'streaming', 'advanced']);
+  const [expandedGroups, setExpandedGroups] = useState(['core', 'acquisition', 'playback', 'advanced']);
+  
+  // Grouped settings navigation
+  const groupedSections = useMemo(() => {
+    const navItems = [
+      { id: 'general', label: 'General', group: 'Core Settings', groupId: 'core' },
+      { id: 'users', label: 'Users & Access', group: 'Core Settings', groupId: 'core' },
+      { id: 'library', label: 'Media Libraries', group: 'Core Settings', groupId: 'core' },
+      { id: 'media-health', label: 'Media Health', group: 'Core Settings', groupId: 'core' },
+      { id: 'indexers', label: 'Indexers', group: 'Media Acquisition', groupId: 'acquisition' },
+      { id: 'download', label: 'Download Client', group: 'Media Acquisition', groupId: 'acquisition' },
+      { id: 'iptv', label: 'IPTV', group: 'Playback & Streaming', groupId: 'playback' },
+      { id: 'streaming', label: 'Streaming Services', group: 'Playback & Streaming', groupId: 'playback' },
+      { id: 'subtitles', label: 'Subtitles', group: 'Playback & Streaming', groupId: 'playback' },
+      { id: 'gelatin', label: 'External Access', group: 'Advanced', groupId: 'advanced' },
+      { id: 'theme-forge', label: 'Theme Forge', group: 'Advanced', groupId: 'advanced' },
+      { id: 'plugins', label: 'Plugins', group: 'Advanced', groupId: 'advanced' },
+      { id: 'maintenance', label: 'Maintenance', group: 'Advanced', groupId: 'advanced' },
+    ];
+    const groups = {};
+    navItems.forEach(item => {
+      if (!groups[item.groupId]) {
+        groups[item.groupId] = { id: item.groupId, label: item.group, items: [] };
+      }
+      groups[item.groupId].items.push(item);
+    });
+    return Object.values(groups);
+  }, []);
+  
+  // Get current section info
+  const currentInfo = useMemo(() => {
+    for (let i = 0; i < groupedSections.length; i++) {
+      const section = groupedSections[i];
+      const item = section.items.find(it => it.id === activeSection);
+      if (item) return { group: section.label, item };
+    }
+    return null;
+  }, [activeSection, groupedSections]);
   
   // General settings
   const [settings, setSettings] = useState({
