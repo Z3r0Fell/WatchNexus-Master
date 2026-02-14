@@ -559,6 +559,104 @@ const VideoPlayer = () => {
         </div>
       )}
 
+      {/* Skip Intro/Credits Button */}
+      <AnimatePresence>
+        {showSkipButton && currentSkipSegment && (
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="absolute bottom-32 right-8 pointer-events-auto z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              onClick={handleSkipSegment}
+              className="bg-white/90 text-black hover:bg-white px-6 py-3 text-base font-semibold shadow-2xl"
+              data-testid="skip-segment-btn"
+            >
+              <FastForward className="w-5 h-5 mr-2" />
+              Skip {currentSkipSegment.type === SKIP_TYPES.INTRO ? 'Intro' : 
+                    currentSkipSegment.type === SKIP_TYPES.CREDITS ? 'Credits' :
+                    currentSkipSegment.type === SKIP_TYPES.RECAP ? 'Recap' : 'Preview'}
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Next Episode Prompt */}
+      <AnimatePresence>
+        {showNextEpisode && nextEpisode && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="absolute bottom-32 left-8 right-8 md:left-auto md:right-8 md:w-96 pointer-events-auto z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs text-gray-400 uppercase tracking-wider">Up Next</span>
+                  {nextEpisodeCountdown !== null && (
+                    <span className="text-xs text-violet-400">
+                      Playing in {nextEpisodeCountdown}s
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  {nextEpisode.thumbnail && (
+                    <img 
+                      src={nextEpisode.thumbnail} 
+                      alt={nextEpisode.title}
+                      className="w-24 h-14 object-cover rounded-lg"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm truncate">{nextEpisode.title}</h4>
+                    {nextEpisode.series_name && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        S{nextEpisode.season_number?.toString().padStart(2, '0')}E{nextEpisode.episode_number?.toString().padStart(2, '0')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    onClick={playNextEpisode}
+                    className="flex-1 bg-violet-600 hover:bg-violet-700"
+                    data-testid="play-next-btn"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Play Now
+                  </Button>
+                  <Button
+                    onClick={cancelNextEpisode}
+                    variant="outline"
+                    className="border-white/20"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Progress bar for auto-play */}
+              {nextEpisodeCountdown !== null && (
+                <div className="h-1 bg-white/10">
+                  <motion.div
+                    className="h-full bg-violet-500"
+                    initial={{ width: '100%' }}
+                    animate={{ width: '0%' }}
+                    transition={{ duration: nextEpisodeCountdown, ease: 'linear' }}
+                  />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Controls overlay */}
       <motion.div
         initial={{ opacity: 0 }}
