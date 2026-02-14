@@ -82,11 +82,26 @@ export const LibraryPage = () => {
     }
     
     try {
-      await marmaladeLibrary.addLibrary(newLibrary.name, newLibrary.path, newLibrary.media_type);
+      const addRes = await marmaladeLibrary.addLibrary(newLibrary.name, newLibrary.path, newLibrary.media_type);
       toast.success(`Library "${newLibrary.name}" added`);
       setNewLibrary({ name: '', path: '', media_type: 'movies' });
       setShowAddLibrary(false);
-      fetchData();
+      await fetchData();
+      
+      // Auto-scan the new library
+      if (addRes?.data?.id) {
+        toast.info('Scanning library...');
+        setScanning(prev => ({ ...prev, [addRes.data.id]: true }));
+        try {
+          const scanRes = await marmaladeLibrary.scanLibrary(addRes.data.id);
+          toast.success(`Scan complete: ${scanRes.data.new} new files found`);
+          fetchMedia(selectedLibrary);
+        } catch (scanErr) {
+          toast.warning('Auto-scan failed. Click the refresh icon to scan manually.');
+        } finally {
+          setScanning(prev => ({ ...prev, [addRes.data.id]: false }));
+        }
+      }
     } catch (error) {
       toast.error('Failed to add library');
     }
