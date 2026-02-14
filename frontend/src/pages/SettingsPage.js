@@ -259,6 +259,21 @@ export const SettingsPage = () => {
     }
   };
 
+  // Helper to render nav button
+  const NavButton = ({ id, label }) => (
+    <button
+      onClick={() => setActiveSection(id)}
+      className={`w-full text-left px-4 py-2.5 rounded-lg transition-all ${
+        activeSection === id 
+          ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+          : 'text-gray-400 hover:bg-white/5 hover:text-white'
+      }`}
+      data-testid={`settings-nav-${id}`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <Layout>
       <div data-testid="settings-page" className="min-h-screen flex">
@@ -276,70 +291,47 @@ export const SettingsPage = () => {
             </div>
           </div>
 
-          <nav className="p-3 space-y-1">
-            {groupedSections.map((section) => {
-              const isExpanded = expandedGroups.includes(section.id);
-              const hasActiveItem = section.items.some(item => item.id === activeSection);
+          <nav className="p-3 space-y-4">
+            {/* Core Settings */}
+            <div>
+              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Core Settings</h3>
+              <div className="space-y-0.5">
+                <NavButton id="general" label="General" />
+                <NavButton id="users" label="Users & Access" />
+                <NavButton id="library" label="Media Libraries" />
+                <NavButton id="media-health" label="Media Health" />
+              </div>
+            </div>
 
-              return (
-                <div key={section.id} className="rounded-xl overflow-hidden">
-                  {/* Section Header */}
-                  <button
-                    onClick={() => toggleGroup(section.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all rounded-xl ${
-                      hasActiveItem ? 'bg-violet-500/10 text-violet-400' : 'hover:bg-white/5 text-gray-300'
-                    }`}
-                    data-testid={`settings-section-${section.id}`}
-                  >
-                    <Cog className="w-5 h-5" />
-                    <span className="flex-1 font-medium text-sm">{section.label}</span>
-                    <motion.div
-                      animate={{ rotate: isExpanded ? 180 : 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </motion.div>
-                  </button>
+            {/* Media Acquisition */}
+            <div>
+              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Media Acquisition</h3>
+              <div className="space-y-0.5">
+                <NavButton id="indexers" label="Indexers" />
+                <NavButton id="download" label="Download Client" />
+              </div>
+            </div>
 
-                  {/* Section Items */}
-                  <AnimatePresence initial={false}>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="py-1 pl-4 space-y-0.5">
-                          {section.items.map((item) => {
-                            const isActive = activeSection === item.id;
-                            
-                            return (
-                              <button
-                                key={item.id}
-                                onClick={() => setActiveSection(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-all ${
-                                  isActive 
-                                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                }`}
-                                data-testid={`settings-nav-${item.id}`}
-                              >
-                                <span className="text-sm">{item.label}</span>
-                                {isActive && (
-                                  <ChevronRight className="w-4 h-4 ml-auto" />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+            {/* Playback & Streaming */}
+            <div>
+              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Playback & Streaming</h3>
+              <div className="space-y-0.5">
+                <NavButton id="iptv" label="IPTV" />
+                <NavButton id="streaming" label="Streaming Services" />
+                <NavButton id="subtitles" label="Subtitles" />
+              </div>
+            </div>
+
+            {/* Advanced */}
+            <div>
+              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Advanced</h3>
+              <div className="space-y-0.5">
+                <NavButton id="gelatin" label="External Access" />
+                <NavButton id="theme-forge" label="Theme Forge" />
+                <NavButton id="plugins" label="Plugins" />
+                <NavButton id="maintenance" label="Maintenance" />
+              </div>
+            </div>
           </nav>
         </aside>
 
@@ -347,15 +339,7 @@ export const SettingsPage = () => {
         <main className="flex-1 min-h-screen">
           {/* Content Header */}
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
-            <div className="flex items-center gap-3">
-              {currentInfo && (
-                <>
-                  <span className="text-gray-500">{currentInfo.group}</span>
-                  <ChevronRight className="w-4 h-4 text-gray-600" />
-                  <span className="font-medium">{currentInfo.item.label}</span>
-                </>
-              )}
-            </div>
+            <h2 className="font-medium capitalize">{activeSection.replace('-', ' ')} Settings</h2>
           </div>
 
           {/* Content */}
