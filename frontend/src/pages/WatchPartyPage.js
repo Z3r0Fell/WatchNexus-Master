@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -353,7 +354,7 @@ export const WatchPartyPage = () => {
               {party?.media_id ? (
                 <video
                   ref={videoRef}
-                  src={`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/stream/${party.media_id}/file`}
+                  src={`${BACKEND_URL}/api/marmalade/stream/${party.media_id}/file`}
                   className="w-full h-full object-contain"
                   poster={party.media_poster || ''}
                   muted={isMuted}

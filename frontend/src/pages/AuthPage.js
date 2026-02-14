@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,7 +62,7 @@ export const AuthPage = () => {
     setLoadingUsers(true);
     try {
       // Fetch users without auth for local network profile selection
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/users/profiles`);
+      const res = await axios.get(`${BACKEND_URL}/api/users/profiles`);
       setLocalUsers(res.data || []);
     } catch (error) {
       // If endpoint doesn't exist or fails, fall back to regular login

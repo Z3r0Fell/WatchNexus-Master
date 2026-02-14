@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Palette, Paintbrush, Sparkles, Check, Import, FileJson } from 'lucide-react';
@@ -16,7 +17,7 @@ export const ThemeForgeSettings = () => {
 
   const fetchThemeForgeConfig = useCallback(async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/milk/theme-forge`);
+      const res = await axios.get(`${BACKEND_URL}/api/milk/theme-forge`);
       setThemeForgeConfig(res.data);
       if (res.data.current_theme) {
         setSelectedTheme(res.data.current_theme.type);
@@ -29,7 +30,7 @@ export const ThemeForgeSettings = () => {
 
   const handleSetTheme = async (themeType) => {
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/milk/set-theme?theme_type=${themeType}`);
+      await axios.post(`${BACKEND_URL}/api/milk/set-theme?theme_type=${themeType}`);
       setSelectedTheme(themeType); toast.success('Theme applied!'); fetchThemeForgeConfig();
     } catch { toast.error('Failed to apply theme'); }
   };
@@ -37,7 +38,7 @@ export const ThemeForgeSettings = () => {
   const handleSaveCustomTheme = async () => {
     setSavingTheme(true);
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/milk/custom-theme`, { name: 'My Custom Theme', type: 'custom', colors: customColors });
+      await axios.post(`${BACKEND_URL}/api/milk/custom-theme`, { name: 'My Custom Theme', type: 'custom', colors: customColors });
       toast.success('Custom theme saved!'); setSelectedTheme('custom'); fetchThemeForgeConfig();
     } catch { toast.error('Failed to save custom theme'); }
     finally { setSavingTheme(false); }
