@@ -68,6 +68,9 @@ export const IndexerSettings = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" data-testid="indexer-settings">
+      {/* Health Check Status */}
+      <IndexerHealthCheck indexers={indexers} onRefresh={fetchIndexers} />
+
       <div className="glass-card rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
