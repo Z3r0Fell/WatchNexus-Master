@@ -589,10 +589,33 @@ async def get_tv_season(tv_id: int, season_num: int):
     return data
 
 @api_router.get("/tmdb/discover/{media_type}")
-async def discover_media(media_type: str, page: int = 1, genre: int = None, sort_by: str = "popularity.desc"):
+async def discover_media(
+    media_type: str, 
+    page: int = 1, 
+    genre: int = None, 
+    sort_by: str = "popularity.desc",
+    with_genres: str = None,
+    with_original_language: str = None,
+    with_keywords: str = None,
+    year: int = None,
+    first_air_date_year: int = None,
+):
+    """Discover movies or TV shows with various filters."""
     params = {"page": page, "sort_by": sort_by}
+    
+    # Handle genre parameter (backward compatibility)
     if genre:
         params["with_genres"] = genre
+    if with_genres:
+        params["with_genres"] = with_genres
+    if with_original_language:
+        params["with_original_language"] = with_original_language
+    if with_keywords:
+        params["with_keywords"] = with_keywords
+    if year and media_type == "movie":
+        params["year"] = year
+    if first_air_date_year and media_type == "tv":
+        params["first_air_date_year"] = first_air_date_year
     
     data = await tmdb_request(f"/discover/{media_type}", params)
     if not data:
