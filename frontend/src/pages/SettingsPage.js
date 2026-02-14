@@ -254,74 +254,185 @@ export const SettingsPage = () => {
 
   useEffect(() => { fetchData(); fetchLibraries(); fetchUsers(); }, [fetchData, fetchLibraries, fetchUsers]);
 
+  // Toggle section expand/collapse
+  const toggleGroup = (groupId) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  // Render the content for the active section
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'general':
+        return (
+          <GeneralSettings 
+            settings={settings} 
+            setSettings={setSettings} 
+            onSave={handleSaveSettings} 
+            saving={saving}
+            onOpenFileBrowser={(field) => openFileBrowser(field, settings[field] || '/')}
+          />
+        );
+      case 'users':
+        return (
+          <UsersSettings users={users} loadingUsers={loadingUsers} showAddUser={showAddUser} setShowAddUser={setShowAddUser}
+            newUser={newUser} setNewUser={setNewUser} savingUser={savingUser} editingUser={editingUser}
+            setEditingUser={setEditingUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />
+        );
+      case 'library':
+        return (
+          <LibrarySettings libraries={libraries} loadingLibraries={loadingLibraries} scanningLibrary={scanningLibrary}
+            showAddLibrary={showAddLibrary} setShowAddLibrary={setShowAddLibrary} newLibrary={newLibrary}
+            setNewLibrary={setNewLibrary} onAddLibrary={handleAddLibrary} onDeleteLibrary={handleDeleteLibrary}
+            onScanLibrary={handleScanLibrary} onOpenFileBrowser={openFileBrowser} librarySubTab={librarySubTab}
+            setLibrarySubTab={setLibrarySubTab} manualImportPath={manualImportPath} setManualImportPath={setManualImportPath}
+            manualImportFiles={manualImportFiles} onManualImportScan={handleManualImportScan} onImportFiles={handleImportFiles} />
+        );
+      case 'media-health': return <MediaHealthSettings />;
+      case 'indexers': return <IndexerSettings />;
+      case 'download': return <DownloadSettings />;
+      case 'iptv': return <IPTVSettings />;
+      case 'streaming': return <StreamingSettings />;
+      case 'subtitles': return <SubtitleSettings />;
+      case 'gelatin': return <GelatinSettings />;
+      case 'theme-forge': return <ThemeForgeSettings />;
+      case 'plugins': return <PluginsSettings />;
+      case 'maintenance': return <MaintenanceSettings />;
+      default: return null;
+    }
+  };
+
+  // Get current section info
+  const getCurrentSectionInfo = () => {
+    for (const section of SETTINGS_SECTIONS) {
+      const item = section.items.find(i => i.id === activeSection);
+      if (item) return { group: section, item };
+    }
+    return null;
+  };
+
+  const currentInfo = getCurrentSectionInfo();
+
   return (
     <Layout>
-      <div data-testid="settings-page" className="min-h-screen p-8">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 flex items-center justify-center">
-              <Settings className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">Settings</h1>
-              <p className="text-gray-400">Configure WatchNexus to your preferences</p>
+      <div data-testid="settings-page" className="min-h-screen flex">
+        {/* Sidebar Navigation */}
+        <aside className="w-72 shrink-0 border-r border-white/10 bg-black/20 sticky top-0 h-screen overflow-y-auto">
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 flex items-center justify-center">
+                <Settings className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Settings</h1>
+                <p className="text-xs text-gray-400">Configure WatchNexus</p>
+              </div>
             </div>
           </div>
-        </motion.div>
 
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="bg-surface border border-white/10 flex-wrap gap-1">
-            <TabsTrigger value="general" className="data-[state=active]:bg-violet-600">General</TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-violet-600">Users</TabsTrigger>
-            <TabsTrigger value="library" className="data-[state=active]:bg-violet-600">Library</TabsTrigger>
-            <TabsTrigger value="media-health" className="data-[state=active]:bg-violet-600">Media Health</TabsTrigger>
-            <TabsTrigger value="indexers" className="data-[state=active]:bg-violet-600">Indexers</TabsTrigger>
-            <TabsTrigger value="download" className="data-[state=active]:bg-violet-600">Download Client</TabsTrigger>
-            <TabsTrigger value="iptv" className="data-[state=active]:bg-violet-600">IPTV</TabsTrigger>
-            <TabsTrigger value="streaming" className="data-[state=active]:bg-violet-600">Streaming Services</TabsTrigger>
-            <TabsTrigger value="subtitles" className="data-[state=active]:bg-violet-600">Subtitles</TabsTrigger>
-            <TabsTrigger value="gelatin" className="data-[state=active]:bg-violet-600">External Access</TabsTrigger>
-            <TabsTrigger value="theme-forge" className="data-[state=active]:bg-violet-600">Theme Forge</TabsTrigger>
-            <TabsTrigger value="plugins" className="data-[state=active]:bg-violet-600">Plugins</TabsTrigger>
-            <TabsTrigger value="maintenance" className="data-[state=active]:bg-violet-600">Maintenance</TabsTrigger>
-          </TabsList>
+          <nav className="p-3 space-y-1">
+            {SETTINGS_SECTIONS.map((section) => {
+              const SectionIcon = section.icon;
+              const isExpanded = expandedGroups.includes(section.id);
+              const hasActiveItem = section.items.some(item => item.id === activeSection);
 
-          <TabsContent value="general">
-            <GeneralSettings 
-              settings={settings} 
-              setSettings={setSettings} 
-              onSave={handleSaveSettings} 
-              saving={saving}
-              onOpenFileBrowser={(field) => openFileBrowser(field, settings[field] || '/')}
-            />
-          </TabsContent>
+              return (
+                <div key={section.id} className="rounded-xl overflow-hidden">
+                  {/* Section Header */}
+                  <button
+                    onClick={() => toggleGroup(section.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all rounded-xl ${
+                      hasActiveItem ? 'bg-violet-500/10 text-violet-400' : 'hover:bg-white/5 text-gray-300'
+                    }`}
+                    data-testid={`settings-section-${section.id}`}
+                  >
+                    <SectionIcon className="w-5 h-5" />
+                    <span className="flex-1 font-medium text-sm">{section.label}</span>
+                    <motion.div
+                      animate={{ rotate: isExpanded ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </motion.div>
+                  </button>
 
-          <TabsContent value="users">
-            <UsersSettings users={users} loadingUsers={loadingUsers} showAddUser={showAddUser} setShowAddUser={setShowAddUser}
-              newUser={newUser} setNewUser={setNewUser} savingUser={savingUser} editingUser={editingUser}
-              setEditingUser={setEditingUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />
-          </TabsContent>
+                  {/* Section Items */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="py-1 pl-4 space-y-0.5">
+                          {section.items.map((item) => {
+                            const ItemIcon = item.icon;
+                            const isActive = activeSection === item.id;
+                            
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() => setActiveSection(item.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-all ${
+                                  isActive 
+                                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                                data-testid={`settings-nav-${item.id}`}
+                              >
+                                <ItemIcon className="w-4 h-4" />
+                                <span className="text-sm">{item.label}</span>
+                                {isActive && (
+                                  <ChevronRight className="w-4 h-4 ml-auto" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
 
-          <TabsContent value="library">
-            <LibrarySettings libraries={libraries} loadingLibraries={loadingLibraries} scanningLibrary={scanningLibrary}
-              showAddLibrary={showAddLibrary} setShowAddLibrary={setShowAddLibrary} newLibrary={newLibrary}
-              setNewLibrary={setNewLibrary} onAddLibrary={handleAddLibrary} onDeleteLibrary={handleDeleteLibrary}
-              onScanLibrary={handleScanLibrary} onOpenFileBrowser={openFileBrowser} librarySubTab={librarySubTab}
-              setLibrarySubTab={setLibrarySubTab} manualImportPath={manualImportPath} setManualImportPath={setManualImportPath}
-              manualImportFiles={manualImportFiles} onManualImportScan={handleManualImportScan} onImportFiles={handleImportFiles} />
-          </TabsContent>
+        {/* Main Content Area */}
+        <main className="flex-1 min-h-screen">
+          {/* Content Header */}
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
+            <div className="flex items-center gap-3">
+              {currentInfo && (
+                <>
+                  <span className="text-gray-500">{currentInfo.group.label}</span>
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                  <span className="font-medium">{currentInfo.item.label}</span>
+                </>
+              )}
+            </div>
+          </div>
 
-          <TabsContent value="media-health"><MediaHealthSettings /></TabsContent>
-          <TabsContent value="indexers"><IndexerSettings /></TabsContent>
-          <TabsContent value="download"><DownloadSettings /></TabsContent>
-          <TabsContent value="iptv"><IPTVSettings /></TabsContent>
-          <TabsContent value="streaming"><StreamingSettings /></TabsContent>
-          <TabsContent value="subtitles"><SubtitleSettings /></TabsContent>
-          <TabsContent value="gelatin"><GelatinSettings /></TabsContent>
-          <TabsContent value="theme-forge"><ThemeForgeSettings /></TabsContent>
-          <TabsContent value="plugins"><PluginsSettings /></TabsContent>
-          <TabsContent value="maintenance"><MaintenanceSettings /></TabsContent>
-        </Tabs>
+          {/* Content */}
+          <div className="p-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
 
       {/* File Browser Modal */}
