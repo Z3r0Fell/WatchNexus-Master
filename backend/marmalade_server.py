@@ -451,6 +451,108 @@ class MarmaladeServer:
             logger.error(f"ffprobe error: {e}")
             return {}
     
+    # ==================== TMDB Metadata ====================
+    
+    async def _fetch_tmdb_metadata(self, title: str, year: Optional[int], media_type: str) -> Dict[str, Any]:
+        """Fetch metadata from TMDB for a movie or TV show."""
+        if not TMDB_API_KEY:
+            logger.warning("TMDB API key not configured, skipping metadata fetch")
+            return {}
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Determine search type
+                search_type = "tv" if media_type in ['tv', 'anime'] else "movie"
+                
+                # Build search params
+                params = {
+                    "api_key": TMDB_API_KEY,
+                    "query": title,
+                    "include_adult": "false"
+                }
+                if year:
+                    params["year" if search_type == "movie" else "first_air_date_year"] = year
+                
+                # Search TMDB
+                search_url = f"{TMDB_BASE_URL}/search/{search_type}"
+                response = await client.get(search_url, params=params)
+                
+                if response.status_code != 200:
+                    logger.warning(f"TMDB search failed: {response.status_code}")
+                    return {}
+                
+                data = response.json()
+                results = data.get("results", [])
+                
+                if not results:
+                    # Try without year
+                    if year:
+                        params.pop("year", None)
+                        params.pop("first_air_date_year", None)
+                        response = await client.get(search_url, params=params)
+                        if response.status_code == 200:
+                            data = response.json()
+                            results = data.get("results", [])
+                
+                if not results:
+                    logger.debug(f"No TMDB results for: {title}")
+                    return {}
+                
+                # Use the first result
+                result = results[0]
+                
+                # Build metadata
+                metadata = {
+                    "tmdb_id": result.get("id"),
+                    "title": result.get("title") or result.get("name") or title,
+                    "overview": result.get("overview", ""),
+                    "poster_url": f"{TMDB_IMAGE_BASE}/w500{result['poster_path']}" if result.get("poster_path") else "",
+                    "backdrop_url": f"{TMDB_IMAGE_BASE}/w1280{result['backdrop_path']}" if result.get("backdrop_path") else "",
+                    "rating": result.get("vote_average", 0),
+                    "year": None,
+                    "genres": []
+                }
+                
+                # Extract year
+                release_date = result.get("release_date") or result.get("first_air_date")
+                if release_date and len(release_date) >= 4:
+                    try:
+                        metadata["year"] = int(release_date[:4])
+                    except ValueError:
+                        pass
+                
+                logger.info(f"Found TMDB metadata for '{title}': {metadata['tmdb_id']}")
+                return metadata
+                
+        except Exception as e:
+            logger.error(f"Error fetching TMDB metadata for '{title}': {e}")
+            return {}
+    
+    async def refresh_media_metadata(self, media_id: str) -> bool:
+        """Refresh TMDB metadata for a specific media file."""
+        media = self.media_files.get(media_id)
+        if not media:
+            return False
+        
+        # Determine the title to search
+        search_title = media.series_name if media.series_name else media.title
+        media_type = "tv" if media.media_type == MediaType.EPISODE else "movies"
+        
+        metadata = await self._fetch_tmdb_metadata(search_title, media.year, media_type)
+        
+        if metadata:
+            media.tmdb_id = metadata.get("tmdb_id")
+            media.overview = metadata.get("overview", media.overview)
+            media.poster_url = metadata.get("poster_url", media.poster_url)
+            media.backdrop_url = metadata.get("backdrop_url", media.backdrop_url)
+            media.rating = metadata.get("rating", media.rating)
+            if metadata.get("year"):
+                media.year = metadata["year"]
+            self._save_data()
+            return True
+        
+        return False
+    
     # ==================== Media Retrieval ====================
     
     def get_media(self, media_id: str) -> Optional[MediaFile]:
