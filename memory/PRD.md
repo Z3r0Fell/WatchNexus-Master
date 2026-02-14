@@ -52,6 +52,11 @@ See [CHANGELOG.md](/app/CHANGELOG.md) for full version history.
 - ✅ Multi-user with permissions
 - ✅ LTorrent for magnet links and .torrent files
 
+### New in v1.2.1
+- ✅ **File-based logging** with rotation (10MB, 7 backups)
+- ✅ **Log viewer in Maintenance tab** - view, download, clear logs
+- ✅ **Better start script** - stop/status commands, port conflict handling
+
 ### New in v1.2.0
 - ✅ **Maintenance Tab** in Settings
   - Server status (uptime, CPU, memory)
