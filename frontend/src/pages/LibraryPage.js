@@ -431,13 +431,22 @@ export const LibraryPage = () => {
                 return (
                   <Link key={item.id} to={`/watch/${item.id}`}>
                     <div className="glass-card rounded-xl overflow-hidden hover:border-white/20 transition-all group">
-                      <div className="aspect-[2/3] bg-gradient-to-br from-violet-900/50 to-purple-900/50 flex items-center justify-center relative">
-                        <Icon className="w-10 h-10 text-violet-400" />
+                      <div className="aspect-[2/3] bg-gradient-to-br from-violet-900/50 to-purple-900/50 flex items-center justify-center relative overflow-hidden">
+                        {item.poster_url ? (
+                          <img 
+                            src={item.poster_url} 
+                            alt={item.title} 
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <Icon className="w-10 h-10 text-violet-400" />
+                        )}
                         {item.watched && (
                           <div className="absolute top-2 right-2">
                             <Eye className="w-4 h-4 text-green-400" />
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Play className="w-10 h-10 text-white" />
                         </div>
