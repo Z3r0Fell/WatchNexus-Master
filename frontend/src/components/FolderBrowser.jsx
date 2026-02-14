@@ -12,7 +12,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FolderBrowser = ({ onSelect, initialPath = '/', selectedPath }) => {
   const [currentPath, setCurrentPath] = useState(initialPath);
-  const [directories, setDirectories] = useState([]);
+  const [items, setItems] = useState([]);
   const [parentPath, setParentPath] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,16 +32,13 @@ const FolderBrowser = ({ onSelect, initialPath = '/', selectedPath }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      if (res.data.error) {
-        setError(res.data.error);
-        setDirectories([]);
-      } else {
-        setDirectories(res.data.directories || []);
-        setParentPath(res.data.parent);
-      }
+      // Filter only directories
+      const directories = (res.data.items || []).filter(item => item.type === 'directory');
+      setItems(directories);
+      setParentPath(res.data.parent_path);
     } catch (err) {
       setError('Failed to browse filesystem');
-      setDirectories([]);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -108,13 +105,13 @@ const FolderBrowser = ({ onSelect, initialPath = '/', selectedPath }) => {
           <div className="flex items-center justify-center h-32 text-sm text-destructive">
             {error}
           </div>
-        ) : directories.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
             No subdirectories found
           </div>
         ) : (
           <div className="p-1">
-            {directories.map(dir => (
+            {items.filter(item => !item.is_parent).map(dir => (
               <div 
                 key={dir.path}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
@@ -132,7 +129,7 @@ const FolderBrowser = ({ onSelect, initialPath = '/', selectedPath }) => {
                   <Folder className="w-4 h-4 text-muted-foreground" />
                 )}
                 <span className="flex-1 truncate text-sm">{dir.name}</span>
-                {dir.has_children && (
+                {dir.item_count > 0 && (
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 )}
               </div>
