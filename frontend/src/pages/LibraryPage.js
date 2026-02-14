@@ -136,6 +136,21 @@ export const LibraryPage = () => {
     }
   };
 
+  const handleRefreshMetadata = async (libraryId) => {
+    setRefreshingMetadata(prev => ({ ...prev, [libraryId]: true }));
+    
+    try {
+      toast.info('Fetching metadata from TMDB...');
+      const res = await marmaladeLibrary.refreshMetadata(libraryId);
+      toast.success(`Metadata refreshed: ${res.data.refreshed} of ${res.data.total} items updated`);
+      fetchMedia(selectedLibrary);
+    } catch (error) {
+      toast.error('Failed to refresh metadata');
+    } finally {
+      setRefreshingMetadata(prev => ({ ...prev, [libraryId]: false }));
+    }
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       fetchMedia(selectedLibrary);
