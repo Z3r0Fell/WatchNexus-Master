@@ -4,10 +4,15 @@
  */
 
 import React from 'react';
+import { Layout } from '../components/layout/Layout';
 import { PlaylistsManager } from '../components/drizzle/PlaylistComponents';
 
 const PlaylistsPage = () => {
-  return <PlaylistsManager />;
+  return (
+    <Layout>
+      <PlaylistsManager />
+    </Layout>
+  );
 };
 
 export default PlaylistsPage;
