@@ -133,8 +133,10 @@ export const SettingsPage = () => {
   };
 
   // File browser
-  const openFileBrowser = async (initialPath = '/') => {
-    setShowFileBrowser(true); await browsePath(initialPath);
+  const openFileBrowser = async (targetField = null, initialPath = '/') => {
+    setBrowserTargetField(targetField);
+    setShowFileBrowser(true); 
+    await browsePath(initialPath);
   };
 
   const browsePath = async (path) => {
