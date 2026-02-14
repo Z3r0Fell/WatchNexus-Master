@@ -220,37 +220,50 @@ export const LibraryPage = () => {
           {/* Add Library Form */}
           {showAddLibrary && (
             <div className="bg-white/5 rounded-xl p-4 mb-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Name</label>
-                  <Input
-                    value={newLibrary.name}
-                    onChange={(e) => setNewLibrary(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="My Movies"
-                    className="bg-white/5 border-white/10"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Name</label>
+                    <Input
+                      value={newLibrary.name}
+                      onChange={(e) => setNewLibrary(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="My Movies"
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Type</label>
+                    <select
+                      value={newLibrary.media_type}
+                      onChange={(e) => setNewLibrary(prev => ({ ...prev, media_type: e.target.value }))}
+                      className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
+                    >
+                      <option value="movies">Movies</option>
+                      <option value="tv">TV Shows</option>
+                      <option value="anime">Anime</option>
+                      <option value="music">Music</option>
+                      <option value="audiobooks">Audiobooks</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Path (or browse below)</label>
+                    <Input
+                      value={newLibrary.path}
+                      onChange={(e) => setNewLibrary(prev => ({ ...prev, path: e.target.value }))}
+                      placeholder="/media/movies"
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Path</label>
-                  <Input
-                    value={newLibrary.path}
-                    onChange={(e) => setNewLibrary(prev => ({ ...prev, path: e.target.value }))}
-                    placeholder="/media/movies"
-                    className="bg-white/5 border-white/10"
+                  <label className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                    <FolderTree className="w-4 h-4" />
+                    Browse Folders
+                  </label>
+                  <FolderBrowser 
+                    onSelect={(path) => setNewLibrary(prev => ({ ...prev, path }))}
+                    selectedPath={newLibrary.path}
                   />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Type</label>
-                  <select
-                    value={newLibrary.media_type}
-                    onChange={(e) => setNewLibrary(prev => ({ ...prev, media_type: e.target.value }))}
-                    className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white"
-                  >
-                    <option value="movies">Movies</option>
-                    <option value="tv">TV Shows</option>
-                    <option value="music">Music</option>
-                    <option value="audiobooks">Audiobooks</option>
-                  </select>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
