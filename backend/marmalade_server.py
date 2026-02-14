@@ -17,6 +17,7 @@ import hashlib
 import asyncio
 import logging
 import mimetypes
+import httpx
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field, asdict
@@ -26,6 +27,11 @@ import re
 import subprocess
 
 logger = logging.getLogger(__name__)
+
+# TMDB Configuration
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
+TMDB_BASE_URL = "https://api.themoviedb.org/3"
+TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 
 
 class MediaType(Enum):
