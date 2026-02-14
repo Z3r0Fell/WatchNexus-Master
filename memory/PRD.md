@@ -14,7 +14,7 @@ The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO ex
 ### Versioning Scheme
 - **MAJOR** (1.x.x): Breaking changes, major architecture shifts
 - **MINOR** (x.2.x): New features, significant enhancements  
-- **PATCH** (x.x.2): Bug fixes, code changes
+- **PATCH** (x.x.3): Bug fixes, code changes
 
 See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 
@@ -52,10 +52,11 @@ See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 | **Preserve** | Challenge Solver | Cloudflare bypass |
 | **Potluck** | Watch Party | Synchronized viewing |
 | **Drizzle** | Playlist Engine | Continuous playback (NEW in v1.2.2) |
+| **Marmalade** | Media Server | Library management & streaming |
 
 ---
 
-## What's Working (v1.2.2)
+## What's Working (v1.2.3)
 
 ### Core Features
 - User registration and login
@@ -65,8 +66,13 @@ See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 - Watchlist and watch progress tracking
 - Multi-user with permissions
 - LTorrent for magnet links and .torrent files
+- **Library management (FIXED in v1.2.3)**
 
-### New in v1.2.2
+### v1.2.3 Bug Fixes
+- **Auth Token Bug** - Fixed localStorage key mismatch (`auth_token` vs `token`)
+- **Data Directory Portability** - Marmalade stores in `backend/marmalade_data/`
+
+### v1.2.2
 - **Drizzle Playlist Engine**
   - Create custom playlists
   - "Play Season" - automatic TV season playlists
@@ -76,8 +82,6 @@ See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
   - Queue management with progress tracking
 - **Improved Port Conflict Handling**
   - Prompts user before killing process on port 8001
-  - Shows process name and PID
-  - Provides manual instructions if declined
 
 ### v1.2.1
 - File-based logging with rotation (10MB, 7 backups)
@@ -97,8 +101,8 @@ See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 
 Current release: **v1.2.3**
 
-- `/app/dist/watchnexus-v1.2.3-linux.zip`
-- `/app/dist/watchnexus-v1.2.3-windows.zip`
+- `/app/dist/watchnexus-v1.2.3-linux.zip` (90.1 MB)
+- `/app/dist/watchnexus-v1.2.3-windows.zip` (90.1 MB)
 
 ### Requirements
 - Python 3.10+ (that's it!)
@@ -106,6 +110,15 @@ Current release: **v1.2.3**
 ---
 
 ## API Endpoints
+
+### Marmalade (Library Management)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/marmalade/status` | GET | Library server status |
+| `/api/marmalade/libraries` | GET | List all libraries |
+| `/api/marmalade/libraries` | POST | Add new library |
+| `/api/marmalade/libraries/{id}` | DELETE | Remove library |
+| `/api/marmalade/libraries/{id}/scan` | POST | Scan library |
 
 ### Drizzle (Playlists)
 | Endpoint | Method | Description |
@@ -144,12 +157,14 @@ Current release: **v1.2.3**
 - [x] Database hardening (WAL, backups, VACUUM)
 - [x] Maintenance tab in Settings
 - [x] Drizzle playlist system
+- [x] Auth token bug fix (v1.2.3)
 - [ ] Full end-to-end standalone testing
 
 ### P1 - High Priority
 - [ ] Windows release package testing
 - [ ] Video assets for Kickstarter
 - [ ] macOS release package
+- [ ] Folder browser in Add Library form
 
 ### P2 - Enhancements
 - [ ] AI-powered intro/credits detection
@@ -175,16 +190,18 @@ Current release: **v1.2.3**
 ## Files of Reference
 
 ### Backend
-- `/app/backend/server.py` - Main FastAPI server
+- `/app/backend/server.py` - Main FastAPI server (v1.2.3)
 - `/app/backend/database.py` - SQLite database layer
-- `/app/backend/drizzle.py` - Playlist engine (NEW)
+- `/app/backend/drizzle.py` - Playlist engine
+- `/app/backend/marmalade_server.py` - Media library server
 - `/app/backend/fondue.py` - Torrent engine
 
 ### Frontend
-- `/app/frontend/src/pages/PlaylistsPage.js` - Playlists page (NEW)
-- `/app/frontend/src/components/drizzle/` - Playlist components (NEW)
-- `/app/frontend/src/pages/SettingsPage.js` - Settings with tabs
-- `/app/frontend/src/components/settings/MaintenanceSettings.jsx` - Maintenance tab
+- `/app/frontend/src/pages/LibraryPage.js` - Library management
+- `/app/frontend/src/pages/PlaylistsPage.js` - Playlists page
+- `/app/frontend/src/components/drizzle/` - Playlist components
+- `/app/frontend/src/services/marmaladeApi.js` - Library API (FIXED)
+- `/app/frontend/src/components/VideoPlayer.jsx` - Video player (FIXED)
 
 ### Scripts
 - `/app/scripts/create_releases.py` - Release package generator
@@ -192,3 +209,6 @@ Current release: **v1.2.3**
 ### Documentation
 - `/app/memory/CHANGELOG.md` - Version history
 - `/app/memory/PRD.md` - This file
+
+### Test Reports
+- `/app/test_reports/iteration_10.json` - Full test results (100% pass)
