@@ -4,7 +4,7 @@ const API = process.env.REACT_APP_BACKEND_URL;
 
 // Get auth token from localStorage
 const getAuthHeader = () => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
