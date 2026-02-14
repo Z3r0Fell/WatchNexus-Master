@@ -37,6 +37,7 @@ export const LibraryPage = () => {
   const [recentMedia, setRecentMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState({});
+  const [refreshingMetadata, setRefreshingMetadata] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLibrary, setSelectedLibrary] = useState(null);
   
