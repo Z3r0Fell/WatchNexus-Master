@@ -43,6 +43,8 @@ DEFAULT_PORT = 8001
 WATCHNEXUS_DIR = Path(__file__).parent
 BACKEND_DIR = WATCHNEXUS_DIR / "backend"
 SERVER_SCRIPT = BACKEND_DIR / "server.py"
+LOGO_SVG_PATH = WATCHNEXUS_DIR / "frontend" / "public" / "watchnexus-logo.svg"
+LOGO_PNG_PATH = WATCHNEXUS_DIR / "frontend" / "public" / "watchnexus-logo.png"
 
 class WatchNexusTray:
     """System tray application for controlling WatchNexus server."""
@@ -77,18 +79,57 @@ class WatchNexusTray:
         return image
     
     def load_custom_icon(self, running=False):
-        """Try to load custom icon or fall back to generated."""
-        # Try to load custom icons
-        icon_name = "icon_running.png" if running else "icon_stopped.png"
-        icon_path = WATCHNEXUS_DIR / "assets" / icon_name
+        """Load the WatchNexus logo as tray icon."""
+        icon_size = 64
         
-        if icon_path.exists():
+        # Try to load from SVG first (better quality)
+        if HAS_CAIROSVG and LOGO_SVG_PATH.exists():
             try:
-                return Image.open(icon_path)
+                png_data = cairosvg.svg2png(
+                    url=str(LOGO_SVG_PATH),
+                    output_width=icon_size,
+                    output_height=icon_size
+                )
+                image = Image.open(io.BytesIO(png_data))
+                # Add status indicator overlay if stopped
+                if not running:
+                    image = self._add_status_overlay(image, running)
+                return image
             except Exception:
                 pass
         
+        # Fallback to PNG if available
+        if LOGO_PNG_PATH.exists():
+            try:
+                image = Image.open(LOGO_PNG_PATH)
+                image = image.resize((icon_size, icon_size), Image.LANCZOS)
+                if not running:
+                    image = self._add_status_overlay(image, running)
+                return image
+            except Exception:
+                pass
+        
+        # Final fallback to generated icon
         return self.create_icon_image(running)
+    
+    def _add_status_overlay(self, image, running):
+        """Add a status indicator overlay to the icon."""
+        if running:
+            return image
+        # Convert to RGBA if needed
+        if image.mode != 'RGBA':
+            image = image.convert('RGBA')
+        # Create a semi-transparent overlay to indicate stopped state
+        overlay = Image.new('RGBA', image.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        # Draw a small red dot in the corner to indicate stopped
+        dot_size = 16
+        margin = 4
+        draw.ellipse(
+            [image.width - dot_size - margin, margin, image.width - margin, dot_size + margin],
+            fill=(220, 38, 38, 255)  # Red
+        )
+        return Image.alpha_composite(image, overlay)
     
     def start_server(self, icon=None, item=None):
         """Start the WatchNexus server."""
