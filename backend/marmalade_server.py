@@ -354,6 +354,16 @@ class MarmaladeServer:
             else:
                 media_type = MediaType.UNKNOWN
             
+            # Fetch TMDB metadata for movies and TV shows
+            tmdb_metadata = {}
+            if media_type in [MediaType.MOVIE, MediaType.EPISODE]:
+                search_title = parsed.get('series_name') or parsed.get('title', filename)
+                tmdb_metadata = await self._fetch_tmdb_metadata(
+                    search_title, 
+                    parsed.get('year'), 
+                    library.media_type
+                )
+            
             media_file = MediaFile(
                 id=media_id,
                 path=file_path,
@@ -370,10 +380,16 @@ class MarmaladeServer:
                 bitrate=media_info.get('bitrate', 0),
                 added_date=datetime.now(timezone.utc).isoformat(),
                 modified_date=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-                year=parsed.get('year'),
+                year=tmdb_metadata.get('year') or parsed.get('year'),
                 series_name=parsed.get('series_name', ''),
                 season_number=parsed.get('season'),
                 episode_number=parsed.get('episode'),
+                # TMDB metadata
+                tmdb_id=tmdb_metadata.get('tmdb_id'),
+                overview=tmdb_metadata.get('overview', ''),
+                poster_url=tmdb_metadata.get('poster_url', ''),
+                backdrop_url=tmdb_metadata.get('backdrop_url', ''),
+                rating=tmdb_metadata.get('rating', 0.0),
             )
             
             self.media_files[media_id] = media_file
