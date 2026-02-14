@@ -8,13 +8,21 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   SkipBack, SkipForward, Settings, ArrowLeft, Check,
   RefreshCw, AlertTriangle, Subtitles, Download, X,
-  Languages, ChevronRight
+  Languages, ChevronRight, FastForward, Film, Tv
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Slider } from '../components/ui/slider';
 import { toast } from 'sonner';
 
 const API_URL = BACKEND_URL;
+
+// Skip segment types
+const SKIP_TYPES = {
+  INTRO: 'intro',
+  CREDITS: 'credits',
+  RECAP: 'recap',
+  PREVIEW: 'preview',
+};
 
 const VideoPlayer = () => {
   const { mediaId } = useParams();
@@ -23,6 +31,7 @@ const VideoPlayer = () => {
   const containerRef = useRef(null);
   const progressInterval = useRef(null);
   const trackRef = useRef(null);
+  const skipButtonTimeout = useRef(null);
   
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +45,15 @@ const VideoPlayer = () => {
   const [showControls, setShowControls] = useState(true);
   const [buffering, setBuffering] = useState(false);
   const controlsTimeout = useRef(null);
+
+  // Advanced playback controls
+  const [skipSegments, setSkipSegments] = useState([]); // {type, start, end}
+  const [currentSkipSegment, setCurrentSkipSegment] = useState(null);
+  const [showSkipButton, setShowSkipButton] = useState(false);
+  const [nextEpisode, setNextEpisode] = useState(null);
+  const [showNextEpisode, setShowNextEpisode] = useState(false);
+  const [autoPlayNext, setAutoPlayNext] = useState(true);
+  const [nextEpisodeCountdown, setNextEpisodeCountdown] = useState(null);
 
   // Subtitle state
   const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
@@ -57,6 +75,14 @@ const VideoPlayer = () => {
         const res = await marmaladeMedia.getMediaItem(mediaId);
         setMedia(res.data);
         setCurrentTime(res.data.watch_progress || 0);
+        
+        // Fetch skip segments if available
+        fetchSkipSegments(mediaId);
+        
+        // Fetch next episode if this is a TV show
+        if (res.data.type === 'tv' || res.data.series_name) {
+          fetchNextEpisode(res.data);
+        }
       } catch (err) {
         console.error('Failed to load media:', err);
         setError('Failed to load media');
