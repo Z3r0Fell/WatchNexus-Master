@@ -3119,6 +3119,33 @@ async def install_kodi_addon(
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
+# ==================== DATABASE MAINTENANCE ====================
+
+@api_router.get("/db/stats")
+async def get_database_stats(user: dict = Depends(require_auth)):
+    """Get database statistics and health info."""
+    if db:
+        stats = await db.get_stats()
+        stats["status"] = "healthy"
+        return stats
+    return {"status": "not_initialized"}
+
+@api_router.post("/db/vacuum")
+async def vacuum_database(user: dict = Depends(require_auth)):
+    """Manually trigger database optimization."""
+    if db:
+        await db.vacuum_now()
+        return {"status": "success", "message": "Database vacuumed and optimized"}
+    return {"status": "error", "message": "Database not initialized"}
+
+@api_router.post("/db/backup")
+async def create_database_backup(user: dict = Depends(require_auth)):
+    """Manually create a database backup."""
+    if db:
+        db._create_backup()
+        return {"status": "success", "message": "Backup created"}
+    return {"status": "error", "message": "Database not initialized"}
+
 
 # ==================== RELISH (IPTV) API ====================
 
