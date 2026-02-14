@@ -1,10 +1,11 @@
+import { BACKEND_URL } from '../lib/config';
 import { useState } from 'react';
 import { ArrowRight, Upload, X, RefreshCw, Zap, Globe, Tv, Play, Shield, CheckCircle, AlertTriangle, FileArchive } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = BACKEND_URL;
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('token') || localStorage.getItem('access_token');

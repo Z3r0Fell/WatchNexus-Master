@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
@@ -13,7 +14,7 @@ export const PluginsSettings = () => {
 
   const fetchPlugins = useCallback(async () => {
     setLoadingPlugins(true);
-    try { const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/plugins`); setPlugins(res.data || []); }
+    try { const res = await axios.get(`${BACKEND_URL}/api/gadgets/plugins`); setPlugins(res.data || []); }
     catch {} finally { setLoadingPlugins(false); }
   }, []);
 
@@ -23,7 +24,7 @@ export const PluginsSettings = () => {
     setTogglingPlugin(pluginId);
     try {
       const action = currentStatus === 'active' ? 'disable' : 'enable';
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`);
+      await axios.post(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`);
       toast.success(`Plugin ${action === 'enable' ? 'enabled' : 'disabled'}!`); fetchPlugins();
     } catch { toast.error('Failed to toggle plugin'); }
     finally { setTogglingPlugin(null); }
@@ -31,7 +32,7 @@ export const PluginsSettings = () => {
 
   const handleDiscoverPlugins = async () => {
     setLoadingPlugins(true);
-    try { await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/gadgets/discover`); toast.success('Plugin discovery complete!'); fetchPlugins(); }
+    try { await axios.post(`${BACKEND_URL}/api/gadgets/discover`); toast.success('Plugin discovery complete!'); fetchPlugins(); }
     catch { toast.error('Failed to discover plugins'); }
     finally { setLoadingPlugins(false); }
   };

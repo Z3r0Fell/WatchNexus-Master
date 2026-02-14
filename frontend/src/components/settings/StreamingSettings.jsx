@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Tv, Plus, Trash2, ExternalLink, Eye, EyeOff, ChevronDown } from 'lucide-react';
@@ -29,7 +30,7 @@ export const StreamingSettings = () => {
 
   const fetchStreamingLogins = useCallback(async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins`);
+      const res = await axios.get(`${BACKEND_URL}/api/streaming-logins`);
       const transformed = (res.data || []).map(login => ({
         id: login.service_id, name: login.service_name, icon: login.icon, color: login.color,
         email: login.email, deep_link: login.deep_link, login_url: login.login_url,
@@ -50,7 +51,7 @@ export const StreamingSettings = () => {
       toast.error('Please select a service and enter credentials'); return;
     }
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins`, null, {
+      const res = await axios.post(`${BACKEND_URL}/api/streaming-logins`, null, {
         params: { service_id: selectedService, email: serviceCredentials.email, password: serviceCredentials.password }
       });
       toast.success(`${res.data.login.service_name} added successfully`);
@@ -61,7 +62,7 @@ export const StreamingSettings = () => {
 
   const handleDeleteStreamingService = async (serviceId) => {
     try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/streaming-logins/${serviceId}`);
+      await axios.delete(`${BACKEND_URL}/api/streaming-logins/${serviceId}`);
       toast.success('Streaming service removed'); fetchStreamingLogins();
     } catch { toast.error('Failed to remove service'); }
   };
