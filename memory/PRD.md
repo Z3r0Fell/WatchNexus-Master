@@ -9,10 +9,10 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 - **Frontend**: React (port 3000)
 - **Backend**: FastAPI (port 8001)
 - **Database**: MongoDB
-- **Torrent Engine**: aiotorrent (pure Python, v0.9.2+)
+- **Torrent Engine**: LTorrent (pure Python, v1.6.0)
 
 ### Key Components (Food-themed)
-- **Fondue**: Built-in torrent engine (aiotorrent-based)
+- **Fondue**: Built-in torrent engine (LTorrent-based, magnet + .torrent)
 - **Compote**: Indexer aggregation
 - **Pulp**: Usenet downloader
 - **Garnish**: Subtitle management
@@ -57,23 +57,21 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ## Recent Changes (Feb 2026)
 
-### v1.0.1 - Torrent Library Fix
-- **Problem**: `torrentp` depends on `libtorrent` system library
-- **Solution**: Switched to `aiotorrent` (pure Python)
-- **Status**: Release packages regenerated, awaiting user testing
+### v1.0.2 - LTorrent Integration (Current)
+- **Library**: LTorrent (pure Python)
+- **Magnet links**: ✅ SUPPORTED
+- **.torrent files**: ✅ SUPPORTED
+- **Dependencies**: `bcoding`, `requests`, `ipaddress` (all pure Python)
+- **No system packages required**
+
+### v1.0.1 - aiotorrent (Superseded)
+- Magnet links not supported - user rejected
 
 ### Files Modified
-- `/app/backend/fondue.py` - Complete rewrite for aiotorrent
-- `/app/backend/requirements.txt` - Updated dependencies
-- `/app/scripts/create_releases.py` - New release generator
+- `/app/backend/fondue.py` - Complete rewrite for LTorrent
+- `/app/backend/requirements.txt` - LTorrent from GitHub
+- `/app/scripts/create_releases.py` - Release generator
 - Release packages in `/app/dist/`
-
----
-
-## Known Limitations
-
-1. **Magnet Links**: aiotorrent doesn't support magnet links yet (only .torrent files)
-2. **Video Assets**: Kickstarter videos incomplete (Emergent LLM key balance depleted for Sora 2)
 
 ---
 
@@ -81,10 +79,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ### P0 - Critical
 - [x] Fix torrent library dependency issue
+- [x] Add magnet link support
 
 ### P1 - High Priority
-- [ ] Test release packages on user machines (Linux, Windows)
-- [ ] Complete Kickstarter video assets (pending key balance)
+- [ ] **Test release packages on user machines** (Linux, Windows)
+- [ ] Complete Kickstarter video assets
 - [ ] Test Usenet (Pulp) and Indexer (Compote) modules
 
 ### P2 - Medium Priority
@@ -109,4 +108,4 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 - Google OAuth
 - BeautifulSoup4 (scraping)
 - Addic7ed (subtitles)
-- aiotorrent (torrents)
+- LTorrent (torrents - pure Python)
