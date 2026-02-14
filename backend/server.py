@@ -3011,6 +3011,214 @@ async def update_plugin_settings(
     success = await manager.update_plugin_settings(plugin_id, body)
     return {"status": "updated" if success else "failed"}
 
+@api_router.post("/gadgets/import-file")
+async def import_plugin_from_file(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_auth)
+):
+    """Import a plugin from an uploaded zip file."""
+    import zipfile
+    import shutil
+    import tempfile
+    
+    manager = get_gadgets_manager()
+    
+    # Validate file type
+    if not file.filename.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="Only .zip files are supported")
+    
+    try:
+        # Save uploaded file to temp location
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        # Extract and validate
+        with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+            # Check for manifest.json in root or first subdirectory
+            manifest_path = None
+            plugin_root = None
+            
+            for name in zip_ref.namelist():
+                if name.endswith('manifest.json'):
+                    manifest_path = name
+                    # Get the directory containing manifest
+                    plugin_root = os.path.dirname(name)
+                    break
+            
+            if not manifest_path:
+                raise HTTPException(status_code=400, detail="No manifest.json found in plugin archive")
+            
+            # Read and parse manifest
+            manifest_content = zip_ref.read(manifest_path)
+            manifest_data = json.loads(manifest_content)
+            
+            # Generate plugin ID from manifest
+            plugin_id = manifest_data.get('id') or manifest_data.get('name', 'unknown').lower().replace(' ', '_')
+            
+            # Create target directory
+            target_dir = manager.plugins_dir / plugin_id
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            target_dir.mkdir(parents=True)
+            
+            # Extract files
+            for member in zip_ref.namelist():
+                # Calculate relative path
+                if plugin_root:
+                    if not member.startswith(plugin_root):
+                        continue
+                    rel_path = member[len(plugin_root):].lstrip('/')
+                else:
+                    rel_path = member
+                
+                if not rel_path:
+                    continue
+                
+                target_path = target_dir / rel_path
+                
+                if member.endswith('/'):
+                    target_path.mkdir(parents=True, exist_ok=True)
+                else:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(target_path, 'wb') as f:
+                        f.write(zip_ref.read(member))
+        
+        # Clean up temp file
+        os.unlink(tmp_path)
+        
+        # Re-discover plugins
+        await manager.discover_plugins()
+        
+        return {
+            "status": "imported",
+            "plugin_id": plugin_id,
+            "name": manifest_data.get('name', plugin_id),
+            "version": manifest_data.get('version', '1.0.0')
+        }
+        
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Invalid zip file")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid manifest.json format")
+    except Exception as e:
+        logger.error(f"Plugin import failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/gadgets/import-url")
+async def import_plugin_from_url(
+    url: str,
+    user: dict = Depends(require_auth)
+):
+    """Import a plugin from a URL (zip file)."""
+    import zipfile
+    import shutil
+    import tempfile
+    
+    manager = get_gadgets_manager()
+    
+    if not url.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="URL must point to a .zip file")
+    
+    try:
+        # Download the file
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(url, timeout=60)
+            response.raise_for_status()
+            content = response.content
+        
+        # Save to temp file and process same as file upload
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+            # Check for manifest.json
+            manifest_path = None
+            plugin_root = None
+            
+            for name in zip_ref.namelist():
+                if name.endswith('manifest.json'):
+                    manifest_path = name
+                    plugin_root = os.path.dirname(name)
+                    break
+            
+            if not manifest_path:
+                raise HTTPException(status_code=400, detail="No manifest.json found in plugin archive")
+            
+            manifest_content = zip_ref.read(manifest_path)
+            manifest_data = json.loads(manifest_content)
+            
+            plugin_id = manifest_data.get('id') or manifest_data.get('name', 'unknown').lower().replace(' ', '_')
+            
+            target_dir = manager.plugins_dir / plugin_id
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            target_dir.mkdir(parents=True)
+            
+            for member in zip_ref.namelist():
+                if plugin_root:
+                    if not member.startswith(plugin_root):
+                        continue
+                    rel_path = member[len(plugin_root):].lstrip('/')
+                else:
+                    rel_path = member
+                
+                if not rel_path:
+                    continue
+                
+                target_path = target_dir / rel_path
+                
+                if member.endswith('/'):
+                    target_path.mkdir(parents=True, exist_ok=True)
+                else:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(target_path, 'wb') as f:
+                        f.write(zip_ref.read(member))
+        
+        os.unlink(tmp_path)
+        await manager.discover_plugins()
+        
+        return {
+            "status": "imported",
+            "plugin_id": plugin_id,
+            "name": manifest_data.get('name', plugin_id),
+            "version": manifest_data.get('version', '1.0.0'),
+            "source_url": url
+        }
+        
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download: {str(e)}")
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Invalid zip file at URL")
+    except Exception as e:
+        logger.error(f"Plugin import from URL failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/gadgets/plugins/{plugin_id}/uninstall")
+async def uninstall_plugin(plugin_id: str, user: dict = Depends(require_auth)):
+    """Uninstall a plugin by removing its files."""
+    import shutil
+    
+    manager = get_gadgets_manager()
+    
+    # Unload if loaded
+    await manager.unload_plugin(plugin_id)
+    
+    # Remove plugin directory
+    plugin_dir = manager.plugins_dir / plugin_id
+    if plugin_dir.exists():
+        shutil.rmtree(plugin_dir)
+        
+        # Remove from manifests
+        if plugin_id in manager._manifests:
+            del manager._manifests[plugin_id]
+        
+        return {"status": "uninstalled", "plugin_id": plugin_id}
+    
+    raise HTTPException(status_code=404, detail="Plugin not found")
+
 @api_router.get("/gadgets/providers/{provider_type}")
 async def list_providers(provider_type: str, user: dict = Depends(require_auth)):
     """List plugins by provider type."""
