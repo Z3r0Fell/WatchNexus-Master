@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
+import re
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
