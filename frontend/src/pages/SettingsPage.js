@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, ChevronDown, Lock, Film,
   Cog, Users, BookOpen, Activity, Search, Download, Tv, Globe, Subtitles, Server, Palette, Package, Wrench } from 'lucide-react';
@@ -18,35 +18,6 @@ import { settingsApi } from '../services/api';
 import { BACKEND_URL } from '../lib/config';
 
 const API_URL = BACKEND_URL;
-
-// Settings navigation structure - simplified flat list
-const SETTINGS_NAV = [
-  { id: 'general', label: 'General', group: 'Core Settings', groupId: 'core' },
-  { id: 'users', label: 'Users & Access', group: 'Core Settings', groupId: 'core' },
-  { id: 'library', label: 'Media Libraries', group: 'Core Settings', groupId: 'core' },
-  { id: 'media-health', label: 'Media Health', group: 'Core Settings', groupId: 'core' },
-  { id: 'indexers', label: 'Indexers', group: 'Media Acquisition', groupId: 'acquisition' },
-  { id: 'download', label: 'Download Client', group: 'Media Acquisition', groupId: 'acquisition' },
-  { id: 'iptv', label: 'IPTV', group: 'Playback & Streaming', groupId: 'playback' },
-  { id: 'streaming', label: 'Streaming Services', group: 'Playback & Streaming', groupId: 'playback' },
-  { id: 'subtitles', label: 'Subtitles', group: 'Playback & Streaming', groupId: 'playback' },
-  { id: 'gelatin', label: 'External Access', group: 'Advanced', groupId: 'advanced' },
-  { id: 'theme-forge', label: 'Theme Forge', group: 'Advanced', groupId: 'advanced' },
-  { id: 'plugins', label: 'Plugins', group: 'Advanced', groupId: 'advanced' },
-  { id: 'maintenance', label: 'Maintenance', group: 'Advanced', groupId: 'advanced' },
-];
-
-// Get grouped sections
-const getGroupedSections = () => {
-  const groups = {};
-  SETTINGS_NAV.forEach(item => {
-    if (!groups[item.groupId]) {
-      groups[item.groupId] = { id: item.groupId, label: item.group, items: [] };
-    }
-    groups[item.groupId].items.push(item);
-  });
-  return Object.values(groups);
-};
 
 export const SettingsPage = () => {
   // Current active setting
