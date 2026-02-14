@@ -128,15 +128,84 @@ export const PluginsSettings = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6" data-testid="plugins-settings">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <Package className="w-5 h-5 text-violet-400" /> Plugins
           <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full">Gadgets</span>
         </h2>
-        <Button onClick={handleDiscoverPlugins} disabled={loadingPlugins} variant="outline" className="border-white/10 hover:bg-white/5">
-          <RefreshCw className={`w-4 h-4 mr-2 ${loadingPlugins ? 'animate-spin' : ''}`} /> Discover Plugins
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowImportOptions(!showImportOptions)} variant="outline" className="border-white/10 hover:bg-white/5">
+            <Upload className="w-4 h-4 mr-2" /> Import Plugin
+          </Button>
+          <Button onClick={handleDiscoverPlugins} disabled={loadingPlugins} variant="outline" className="border-white/10 hover:bg-white/5">
+            <RefreshCw className={`w-4 h-4 mr-2 ${loadingPlugins ? 'animate-spin' : ''}`} /> Discover
+          </Button>
+        </div>
       </div>
+      
+      {/* Import Options Panel */}
+      {showImportOptions && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }} 
+          animate={{ opacity: 1, height: 'auto' }} 
+          exit={{ opacity: 0, height: 0 }}
+          className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20 space-y-4"
+        >
+          <h3 className="font-medium text-violet-400 flex items-center gap-2">
+            <Upload className="w-4 h-4" /> Import Plugin
+          </h3>
+          
+          {/* File Upload */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">Upload from File</label>
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".zip"
+                onChange={handleFileImport}
+                className="hidden"
+                data-testid="plugin-file-input"
+              />
+              <Button 
+                onClick={() => fileInputRef.current?.click()} 
+                disabled={importing}
+                variant="outline" 
+                className="flex-1 border-white/10"
+              >
+                {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                Choose .zip File
+              </Button>
+            </div>
+          </div>
+          
+          {/* URL Import */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">Import from URL</label>
+            <div className="flex gap-2">
+              <Input
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder="https://example.com/plugin.zip"
+                className="flex-1 bg-white/5 border-white/10"
+                data-testid="plugin-url-input"
+              />
+              <Button 
+                onClick={handleUrlImport} 
+                disabled={importing || !importUrl}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+          
+          <p className="text-xs text-gray-500">
+            Plugin archives must contain a <code className="bg-black/30 px-1 rounded">manifest.json</code> file.
+          </p>
+        </motion.div>
+      )}
+      
       <p className="text-gray-400">Extend WatchNexus functionality with custom plugins.</p>
 
       <div className="flex flex-wrap gap-2">
@@ -152,7 +221,7 @@ export const PluginsSettings = () => {
           <div className="text-center py-12 text-gray-500">
             <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="font-medium">No plugins installed</p>
-            <p className="text-sm mt-1">Place plugins in the plugins directory and click "Discover Plugins"</p>
+            <p className="text-sm mt-1">Import a plugin or place plugins in the plugins directory</p>
           </div>
         ) : (
           plugins.map((plugin) => (
@@ -187,6 +256,20 @@ export const PluginsSettings = () => {
                   </div>
                   <Switch checked={plugin.status === 'active'} disabled={togglingPlugin === plugin.id}
                     onCheckedChange={() => handleTogglePlugin(plugin.id, plugin.status)} />
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => handleUninstallPlugin(plugin.id, plugin.name)}
+                    disabled={uninstallingPlugin === plugin.id}
+                    className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    data-testid={`uninstall-${plugin.id}`}
+                  >
+                    {uninstallingPlugin === plugin.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
               </div>
               {plugin.error_message && (
@@ -222,7 +305,7 @@ export const PluginsSettings = () => {
       <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
         <p className="text-sm text-violet-400">
           <strong>Plugin Directory:</strong> <code className="bg-black/30 px-2 py-0.5 rounded">/plugins</code><br />
-          <span className="text-gray-400 text-xs">Place plugin folders with a <code>manifest.json</code> to install them.</span>
+          <span className="text-gray-400 text-xs">Place plugin folders with a <code>manifest.json</code> to install them, or use the Import button above.</span>
         </p>
       </div>
     </motion.div>
