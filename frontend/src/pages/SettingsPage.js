@@ -63,7 +63,7 @@ export const SettingsPage = () => {
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/users`);
+      const res = await axios.get(`${API_URL}/api/users`);
       setUsers(res.data || []);
     } catch {
       setUsers([{ id: '1', username: 'admin', email: 'admin@watchnexus.local', role: 'admin', avatar: null, created_at: new Date().toISOString(),
@@ -76,7 +76,7 @@ export const SettingsPage = () => {
     if (!newUser.username || !newUser.email || !newUser.password) { toast.error('Please fill in all required fields'); return; }
     setSavingUser(true);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/users`, newUser);
+      const res = await axios.post(`${API_URL}/api/users`, newUser);
       setUsers(prev => [...prev, res.data]);
       setShowAddUser(false);
       setNewUser({ username: '', email: '', password: '', role: 'user', permissions: { can_download: true, can_delete: false, can_manage_library: false, can_manage_users: false, can_access_settings: false, max_streams: 3, allowed_libraries: [] } });
@@ -88,7 +88,7 @@ export const SettingsPage = () => {
   const handleUpdateUser = async (userId, updates) => {
     setSavingUser(true);
     try {
-      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`, updates);
+      await axios.put(`${API_URL}/api/users/${userId}`, updates);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
       setEditingUser(null); toast.success('User updated successfully');
     } catch { toast.error('Failed to update user'); }
@@ -97,35 +97,35 @@ export const SettingsPage = () => {
 
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    try { await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/users/${userId}`); setUsers(prev => prev.filter(u => u.id !== userId)); toast.success('User deleted'); }
+    try { await axios.delete(`${API_URL}/api/users/${userId}`); setUsers(prev => prev.filter(u => u.id !== userId)); toast.success('User deleted'); }
     catch { toast.error('Failed to delete user'); }
   };
 
   // Fetch libraries
   const fetchLibraries = useCallback(async () => {
     setLoadingLibraries(true);
-    try { const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`); setLibraries(res.data || []); }
+    try { const res = await axios.get(`${API_URL}/api/marmalade/libraries`); setLibraries(res.data || []); }
     catch {} finally { setLoadingLibraries(false); }
   }, []);
 
   const handleAddLibrary = async () => {
     if (!newLibrary.name || !newLibrary.path) { toast.error('Name and path are required'); return; }
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries`, null, { params: newLibrary });
+      await axios.post(`${API_URL}/api/marmalade/libraries`, null, { params: newLibrary });
       toast.success(`Library "${newLibrary.name}" added`);
       setNewLibrary({ name: '', path: '', media_type: 'movies' }); setShowAddLibrary(false); fetchLibraries();
     } catch (error) { toast.error(error.response?.data?.detail || 'Failed to add library'); }
   };
 
   const handleDeleteLibrary = async (libraryId) => {
-    try { await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}`); toast.success('Library removed'); fetchLibraries(); }
+    try { await axios.delete(`${API_URL}/api/marmalade/libraries/${libraryId}`); toast.success('Library removed'); fetchLibraries(); }
     catch { toast.error('Failed to remove library'); }
   };
 
   const handleScanLibrary = async (libraryId) => {
     setScanningLibrary(libraryId);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/marmalade/libraries/${libraryId}/scan`);
+      const res = await axios.post(`${API_URL}/api/marmalade/libraries/${libraryId}/scan`);
       toast.success(`Scan complete: ${res.data.new} new, ${res.data.updated} updated`); fetchLibraries();
     } catch { toast.error('Scan failed'); }
     finally { setScanningLibrary(null); }
@@ -139,7 +139,7 @@ export const SettingsPage = () => {
   const browsePath = async (path) => {
     setBrowserLoading(true);
     try {
-      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/filesystem/browse`, { params: { path } });
+      const res = await axios.get(`${API_URL}/api/filesystem/browse`, { params: { path } });
       setBrowserPath(res.data.current_path); setBrowserItems(res.data.items || []);
       setBrowserDrives(res.data.drives || []); setBrowserMediaCount(res.data.media_files_in_current || 0);
     } catch (error) { toast.error(error.response?.data?.detail || 'Failed to browse directory'); }
@@ -164,14 +164,14 @@ export const SettingsPage = () => {
   const handleManualImportScan = async () => {
     if (!manualImportPath) { toast.error('Please enter a path to scan'); return; }
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/scan-import`, { path: manualImportPath });
+      const res = await axios.post(`${API_URL}/api/media-management/scan-import`, { path: manualImportPath });
       setManualImportFiles(res.data.files || []); toast.success(`Found ${res.data.files?.length || 0} importable files`);
     } catch { toast.error('Failed to scan directory'); }
   };
 
   const handleImportFiles = async (files) => {
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/media-management/import`, { files });
+      await axios.post(`${API_URL}/api/media-management/import`, { files });
       toast.success('Files imported successfully'); setManualImportFiles([]); fetchLibraries();
     } catch { toast.error('Failed to import files'); }
   };
