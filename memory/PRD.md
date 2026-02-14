@@ -15,6 +15,12 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 - **Auto-Scan** - Libraries automatically scan after being added
 - **Enhanced TMDB Discover** - Backend supports language/keyword filters
 
+### Bug Fixes (v1.2.4 Patch - Feb 2026)
+- **Fixed: API URL Configuration** - Frontend now supports both development (preview URL) and production (same-origin) modes
+- **Fixed: Blank Home Page** - Root cause was hardcoded REACT_APP_BACKEND_URL in production builds
+- **Fixed: Libraries Not Populating** - Media files now scan and display correctly
+- **Fixed: Missing Browse Button** - Folder browser modal now accessible from Settings -> Library
+
 ---
 
 ## Architecture
