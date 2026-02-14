@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+// Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
+// This allows the app to work both in development (with proxy) and production (standalone)
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API = `${BACKEND_URL}/api`;
 
 // TMDB API calls
 export const tmdbApi = {
