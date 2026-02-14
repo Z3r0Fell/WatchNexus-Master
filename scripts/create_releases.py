@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "1.0.1"  # Updated version with aiotorrent fix
+VERSION = "1.0.2"  # Updated with LTorrent (pure Python, magnet + .torrent support)
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
