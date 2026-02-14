@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, ChevronDown, Lock, Film,
   Cog, Users, BookOpen, Activity, Search, Download, Tv, Globe, Subtitles, Server, Palette, Package, Wrench } from 'lucide-react';
