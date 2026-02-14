@@ -41,6 +41,10 @@ export const marmaladeLibrary = {
   // Scan a library
   scanLibrary: (libraryId) =>
     marmaladeClient.post(`/libraries/${libraryId}/scan`),
+    
+  // Refresh metadata for all media in a library
+  refreshMetadata: (libraryId) =>
+    marmaladeClient.post(`/libraries/${libraryId}/refresh-metadata`),
 };
 
 // Media Retrieval
