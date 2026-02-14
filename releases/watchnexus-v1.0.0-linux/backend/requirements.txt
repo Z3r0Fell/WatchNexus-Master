@@ -19,13 +19,13 @@ httpx>=0.25.0
 requests>=2.31.0
 aiohttp>=3.9.0
 
-# Data Processing
+# Data Validation
 pydantic>=2.5.0
+email-validator>=2.0.0
+
+# Parsing
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
-
-# Torrent (optional - comment out if not needed)
-# libtorrent>=2.0.9
 
 # Media APIs
 google-api-python-client>=2.100.0
