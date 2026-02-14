@@ -337,7 +337,7 @@ async def login(data: UserLogin):
     logger.info(f"Login successful for: {data.email}")
     return TokenResponse(access_token=token, user=user_response)
 
-@api_router.delete("/auth/clear-users")
+@api_router.post("/auth/clear-users")
 async def clear_users():
     """Development endpoint to clear all users - useful for testing"""
     result = await db.users.delete_many({})
