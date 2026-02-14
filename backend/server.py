@@ -3300,6 +3300,78 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==================== STATIC FILE SERVING (FOR STANDALONE BUILD) ====================
+# Serve frontend build files when running as standalone application
+FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend"
+FRONTEND_BUILD_FALLBACK = ROOT_DIR / "frontend_build"  # Alternative location
+
+# Determine which frontend directory exists
+frontend_dir = None
+for potential_dir in [FRONTEND_BUILD_DIR, FRONTEND_BUILD_FALLBACK]:
+    if potential_dir.exists() and (potential_dir / "index.html").exists():
+        frontend_dir = potential_dir
+        break
+
+if frontend_dir:
+    # Serve static files (JS, CSS, images) from /static
+    static_dir = frontend_dir / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    
+    # Serve other static assets (favicon, manifest, etc.)
+    @app.get("/favicon.ico")
+    async def favicon():
+        favicon_path = frontend_dir / "favicon.ico"
+        if favicon_path.exists():
+            return FileResponse(str(favicon_path))
+        raise HTTPException(status_code=404)
+    
+    @app.get("/manifest.json")
+    async def manifest():
+        manifest_path = frontend_dir / "manifest.json"
+        if manifest_path.exists():
+            return FileResponse(str(manifest_path), media_type="application/json")
+        raise HTTPException(status_code=404)
+    
+    @app.get("/watchnexus-logo.png")
+    async def logo_png():
+        logo_path = frontend_dir / "watchnexus-logo.png"
+        if logo_path.exists():
+            return FileResponse(str(logo_path), media_type="image/png")
+        raise HTTPException(status_code=404)
+    
+    @app.get("/watchnexus-logo.svg")
+    async def logo_svg():
+        logo_path = frontend_dir / "watchnexus-logo.svg"
+        if logo_path.exists():
+            return FileResponse(str(logo_path), media_type="image/svg+xml")
+        raise HTTPException(status_code=404)
+    
+    @app.get("/asset-manifest.json")
+    async def asset_manifest():
+        manifest_path = frontend_dir / "asset-manifest.json"
+        if manifest_path.exists():
+            return FileResponse(str(manifest_path), media_type="application/json")
+        raise HTTPException(status_code=404)
+    
+    # Catch-all route: serve index.html for SPA routing
+    # This must be LAST to not interfere with API routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Don't serve index.html for API routes
+        if full_path.startswith("api/") or full_path.startswith("emby/") or full_path.startswith("ws/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        
+        # Serve index.html for all other routes (SPA client-side routing)
+        index_path = frontend_dir / "index.html"
+        if index_path.exists():
+            return FileResponse(str(index_path), media_type="text/html")
+        raise HTTPException(status_code=404, detail="Frontend not found")
+    
+    logger.info(f"Frontend static files enabled from: {frontend_dir}")
+else:
+    logger.warning("No frontend build directory found. Run 'yarn build' in frontend/ to enable static serving.")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     # Shutdown torrent engine gracefully
