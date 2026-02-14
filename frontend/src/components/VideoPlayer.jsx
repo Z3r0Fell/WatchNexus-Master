@@ -990,6 +990,26 @@ const VideoPlayer = () => {
                 </div>
               </div>
 
+              {/* Auto-play next episode (TV shows only) */}
+              {(media?.type === 'tv' || media?.series_name) && (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm text-gray-400">Auto-play Next Episode</label>
+                    <p className="text-xs text-gray-500">Automatically play next episode when current one ends</p>
+                  </div>
+                  <button
+                    onClick={() => setAutoPlayNext(!autoPlayNext)}
+                    className={`w-12 h-6 rounded-full transition-colors ${
+                      autoPlayNext ? 'bg-violet-600' : 'bg-white/10'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                      autoPlayNext ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+              )}
+
               {/* Keyboard shortcuts */}
               <div>
                 <p className="text-sm text-gray-400 mb-2">Keyboard Shortcuts</p>
