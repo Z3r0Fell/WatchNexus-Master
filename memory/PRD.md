@@ -7,19 +7,22 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.2.4
+## Current Version: 1.2.6
 
-### Recent Changes (v1.2.4)
-- **Anime Section** - Dedicated anime page with Japanese animation filtering
-- **Folder Browser** - Visual directory picker for library paths
-- **Auto-Scan** - Libraries automatically scan after being added
-- **Enhanced TMDB Discover** - Backend supports language/keyword filters
+### Recent Changes (v1.2.6 - Feb 14, 2026)
+- **Add to Playlist UI** - AddToPlaylistButton component added to MediaCard and MediaDetails pages
+- **Plugin Import** - Users can now import plugins from file upload or URL
+- **Plugin Uninstall** - Delete button added to remove installed plugins
+- **Settings Page Redesign** - Converted from tabs to categorized sidebar navigation
+- **System Tray App** - Cross-platform tray application created (tray_app.py)
 
-### Bug Fixes (v1.2.4 Patch - Feb 2026)
+### Bug Fixes (v1.2.5 - Feb 2026)
 - **Fixed: API URL Configuration** - Frontend now supports both development (preview URL) and production (same-origin) modes
 - **Fixed: Blank Home Page** - Root cause was hardcoded REACT_APP_BACKEND_URL in production builds
 - **Fixed: Libraries Not Populating** - Media files now scan and display correctly
 - **Fixed: Missing Browse Button** - Folder browser modal now accessible from Settings -> Library
+- **Fixed: Playlists Page Blank** - Wrapped in Layout component
+- **Fixed: Plugins Page Blank** - Now discovers bundled plugins correctly
 
 ---
 
@@ -45,10 +48,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 | **Potluck** | Watch Party | Synchronized viewing |
 | **Drizzle** | Playlist Engine | Continuous playback |
 | **Marmalade** | Media Server | Library management & streaming |
+| **Gadgets** | Plugin System | Extensible plugin architecture |
 
 ---
 
-## What's Working (v1.2.4)
+## What's Working (v1.2.6)
 
 ### Core Features
 - User registration and login
@@ -58,6 +62,9 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 - Auto-scan on library add
 - Watchlist and progress tracking
 - Multi-user with permissions
+- **NEW: Add media to playlists from any media card**
+- **NEW: Import/uninstall plugins**
+- **NEW: Reorganized settings with sidebar navigation**
 - Built-in torrent engine (Fondue)
 - Drizzle playlist system
 
