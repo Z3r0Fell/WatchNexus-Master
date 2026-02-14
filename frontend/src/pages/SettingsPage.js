@@ -15,6 +15,9 @@ import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { settingsApi } from '../services/api';
+import { BACKEND_URL } from '../lib/config';
+
+const API_URL = BACKEND_URL;
 
 export const SettingsPage = () => {
   // General settings
