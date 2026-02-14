@@ -138,6 +138,7 @@ Current release: **v1.2.4**
 - `/app/backend/marmalade_server.py` - Media library server
 
 ### Frontend
+- `/app/frontend/src/lib/config.js` - API URL configuration (NEW - handles dev/prod modes)
 - `/app/frontend/src/pages/AnimePage.js` - Anime page (NEW)
 - `/app/frontend/src/pages/LibraryPage.js` - Library with folder browser
 - `/app/frontend/src/components/FolderBrowser.jsx` - Directory picker (NEW)
