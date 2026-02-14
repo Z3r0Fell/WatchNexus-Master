@@ -6,109 +6,93 @@
 Build a unified, self-hosted media pipeline called "WatchNexus" that replaces multiple applications (Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyfin) with a single, fully self-contained application for requesting, acquiring, organizing, and watching media.
 
 ### Architecture
-- **Frontend**: React (port 3000)
+- **Frontend**: React (served by FastAPI at port 8001)
 - **Backend**: FastAPI (port 8001)
 - **Database**: MongoDB
 - **Torrent Engine**: LTorrent (pure Python, v1.6.0)
 
-### Key Components (Food-themed)
-- **Fondue**: Built-in torrent engine (LTorrent-based, magnet + .torrent)
-- **Compote**: Indexer aggregation
-- **Pulp**: Usenet downloader
-- **Garnish**: Subtitle management
-- **Gelatin**: DLNA/UPnP streaming
-- **Marmalade**: Live TV/IPTV
-- **Milk**: Media acquisition automation
-- **Potluck**: Plugin system
-- **Relish**: Request management
-- **Sieve**: Metadata matching
-- **Syrup**: Web scrapers
-- **Gadgets**: Widget system
+---
+
+## Current Status: v1.0.2 Release
+
+### What's Working
+- ✅ Server starts and serves frontend
+- ✅ Static files (CSS, JS, images) load correctly
+- ✅ API routes are accessible
+- ✅ LTorrent (pure Python) installed - supports magnet links + .torrent files
+
+### Current Issue
+- **Timeout on user registration** - likely MongoDB connection issue on user's local machine
+- User needs to ensure MongoDB is running: `docker run -d --name mongodb -p 27017:27017 mongo:7`
+
+### Release Packages
+- `/app/dist/watchnexus-v1.0.2-linux.zip`
+- `/app/dist/watchnexus-v1.0.2-windows.zip`
 
 ---
 
-## What's Been Implemented
+## Key Files Modified This Session
 
-### Core Application ✅
-- Full-stack React + FastAPI application
-- User authentication (JWT + Google OAuth)
-- MongoDB integration
-- Jellyfin-compatible API layer
-- Complete UI with dark theme
-
-### Pages & Features ✅
-- Dashboard with continue watching, trending
-- Movies & TV Shows browsing
-- Discover page
-- Downloads management
-- Watchlist
-- Live TV (IPTV support)
-- Settings (General, Users, Library, Media, Quality, etc.)
-- Plugin Marketplace
-- Theme Forge (custom themes)
-
-### Infrastructure ✅
-- Installation scripts (Linux, Windows, Arch)
-- Release package generator
-- Build guides
-- Marketing website
+1. **`/app/backend/fondue.py`** - Rewrote to use LTorrent (pure Python, magnet + .torrent support)
+2. **`/app/backend/requirements.txt`** - Updated with LTorrent from GitHub
+3. **`/app/backend/server.py`** - Added:
+   - Static file serving for standalone mode
+   - Root `/` route for SPA
+   - Login logging for debugging
+   - `/api/auth/clear-users` endpoint
+4. **`/app/scripts/create_releases.py`** - Release package generator
 
 ---
 
-## Recent Changes (Feb 2026)
-
-### v1.0.2 - LTorrent Integration (Current)
-- **Library**: LTorrent (pure Python)
-- **Magnet links**: ✅ SUPPORTED
-- **.torrent files**: ✅ SUPPORTED
-- **Dependencies**: `bcoding`, `requests`, `ipaddress` (all pure Python)
-- **No system packages required**
-
-### v1.0.1 - aiotorrent (Superseded)
-- Magnet links not supported - user rejected
-
-### Files Modified
-- `/app/backend/fondue.py` - Complete rewrite for LTorrent
-- `/app/backend/requirements.txt` - LTorrent from GitHub
-- `/app/scripts/create_releases.py` - Release generator
-- Release packages in `/app/dist/`
+## Debug Endpoints Added
+- `POST /api/auth/clear-users` - Clears all users (for testing)
+- Login now logs: "user not found" vs "wrong password"
 
 ---
 
 ## Backlog
 
 ### P0 - Critical
-- [x] Fix torrent library dependency issue
-- [x] Add magnet link support
+- [x] Fix torrent library (libtorrent → LTorrent)
+- [x] Add magnet link support  
+- [ ] **Resolve MongoDB timeout on user creation**
 
 ### P1 - High Priority
-- [ ] **Test release packages on user machines** (Linux, Windows)
-- [ ] Complete Kickstarter video assets
-- [ ] Test Usenet (Pulp) and Indexer (Compote) modules
+- [ ] Test full login flow on user's machine
+- [ ] Test Windows release package
+- [ ] Video assets for Kickstarter
 
-### P2 - Medium Priority
-- [ ] Connect Community & DVR pages to backend
-- [ ] Client app architecture documentation
+### P2 - Playback Playlist Feature (Future)
+- [ ] Queue-based playlists (movies + TV)
+- [ ] Auto-play next on credits/end
+- [ ] Skip intro/outro/credits
+- [ ] Post-credits scene handling (MCU-style)
+- [ ] "Play All" for collections, "Play Season" for TV
+- [ ] AI-powered intro/credits detection
 
 ### P3 - Future
 - [ ] Roku/Universal app
-- [ ] Cloud sync feature
+- [ ] Cloud sync
 - [ ] Android/iOS apps
-
-### P2 - Playback Playlist Feature (Logged for Future)
-- [ ] **Playlist System**: Queue movies/episodes for back-to-back playback
-- [ ] **Auto-playlist generation**: "Play All" for collections (LOTR, MCU), "Play Season" for TV
-- [ ] **Mixed playlists**: Movies + TV episodes in one queue
-- [ ] **Skip Intro/Outro/Credits**: Manual timestamps, TMDB chapter data, or AI detection
-- [ ] **Credit roll detection**: Time-based or chapter-based auto-advance to next
-- [ ] **Post-credits handling**: Option to wait for MCU-style post-credits scenes
-- [ ] **Smart detection**: Audio/visual fingerprinting for auto-detecting intros/credits
 
 ---
 
-## Test Credentials
-- Email: `test@test.com`
-- Password: `password`
+## Test Commands
+
+```bash
+# Clear users
+curl -X POST http://localhost:8001/api/auth/clear-users
+
+# Test registration
+curl -X POST http://localhost:8001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","username":"testuser","password":"password"}'
+
+# Test login
+curl -X POST http://localhost:8001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"password"}'
+```
 
 ---
 
@@ -117,4 +101,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 - Google OAuth
 - BeautifulSoup4 (scraping)
 - Addic7ed (subtitles)
-- LTorrent (torrents - pure Python)
+- LTorrent (torrents - pure Python, magnet + .torrent)
+
+---
+
+## Notes for Next Session
+1. User got timeout on registration - check MongoDB connectivity
+2. Ensure `start-watchnexus.sh` checks if MongoDB is running
+3. Frontend loads correctly, API routes work, issue is DB connection
