@@ -652,7 +652,7 @@ STORY LAYOUT:
 ## Files You Need
 
 All files are in your screenshots ZIP:
-**Download:** `https://media-pipeline-dev.preview.emergentagent.com/watchnexus-screenshots.zip`
+**Download:** `https://unified-media-build.preview.emergentagent.com/watchnexus-screenshots.zip`
 
 ### Create These Additional Graphics
 
