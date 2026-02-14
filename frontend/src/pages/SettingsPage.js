@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, Lock, Film } from 'lucide-react';
+import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, ChevronDown, Lock, Film,
+  Cog, Users, Library, Activity, Search, Download, Tv, Globe, Subtitles, Server, Palette, Package, Wrench } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   GeneralSettings, UsersSettings, LibrarySettings,
   MediaHealthSettings, IndexerSettings, DownloadSettings,
@@ -19,7 +19,56 @@ import { BACKEND_URL } from '../lib/config';
 
 const API_URL = BACKEND_URL;
 
+// Settings navigation structure
+const SETTINGS_SECTIONS = [
+  {
+    id: 'core',
+    label: 'Core Settings',
+    icon: Cog,
+    items: [
+      { id: 'general', label: 'General', icon: Settings },
+      { id: 'users', label: 'Users & Access', icon: Users },
+      { id: 'library', label: 'Media Libraries', icon: Library },
+      { id: 'media-health', label: 'Media Health', icon: Activity },
+    ]
+  },
+  {
+    id: 'acquisition',
+    label: 'Media Acquisition',
+    icon: Download,
+    items: [
+      { id: 'indexers', label: 'Indexers', icon: Search },
+      { id: 'download', label: 'Download Client', icon: Download },
+    ]
+  },
+  {
+    id: 'streaming',
+    label: 'Playback & Streaming',
+    icon: Tv,
+    items: [
+      { id: 'iptv', label: 'IPTV', icon: Tv },
+      { id: 'streaming', label: 'Streaming Services', icon: Globe },
+      { id: 'subtitles', label: 'Subtitles', icon: Subtitles },
+    ]
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    icon: Wrench,
+    items: [
+      { id: 'gelatin', label: 'External Access', icon: Server },
+      { id: 'theme-forge', label: 'Theme Forge', icon: Palette },
+      { id: 'plugins', label: 'Plugins', icon: Package },
+      { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+    ]
+  }
+];
+
 export const SettingsPage = () => {
+  // Current active setting
+  const [activeSection, setActiveSection] = useState('general');
+  const [expandedGroups, setExpandedGroups] = useState(['core', 'acquisition', 'streaming', 'advanced']);
+  
   // General settings
   const [settings, setSettings] = useState({
     download_path: '/media/downloads',
