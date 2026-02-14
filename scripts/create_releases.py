@@ -238,12 +238,31 @@ if [ -n "$RESULT" ]; then
     echo -e "  ${CYAN}PID:${NC}     $PID"
     echo -e "  ${CYAN}Process:${NC} $PNAME"
     echo ""
-    echo -e "  Port 8001 is reserved for WatchNexus."
-    echo -e "  ${GREEN}Killing existing process...${NC}"
-    kill_port
-    sleep 1
-    echo -e "  ${GREEN}✓ Port $PORT is now free${NC}"
-    echo ""
+    
+    # Check if it's already WatchNexus running
+    if [[ "$PNAME" == *"python"* ]] || [[ "$PNAME" == *"uvicorn"* ]]; then
+        echo -e "  ${BLUE}This looks like a WatchNexus instance.${NC}"
+    fi
+    
+    echo -e "  Would you like to kill this process and start WatchNexus?"
+    echo -e "  ${CYAN}[Y/n]:${NC} "
+    read -r RESPONSE
+    
+    # Default to yes if empty or y/Y
+    if [[ -z "$RESPONSE" ]] || [[ "$RESPONSE" =~ ^[Yy]$ ]]; then
+        echo -e "  ${GREEN}Killing process...${NC}"
+        kill_port
+        sleep 1
+        echo -e "  ${GREEN}✓ Port $PORT is now free${NC}"
+        echo ""
+    else
+        echo -e "  ${RED}Aborting. Port $PORT is still in use.${NC}"
+        echo -e "  ${YELLOW}You can manually stop the process with:${NC}"
+        echo -e "    kill $PID"
+        echo -e "  ${YELLOW}Or run WatchNexus with:${NC}"
+        echo -e "    ./start-watchnexus.sh kill"
+        exit 1
+    fi
 fi
 
 # Check/create Python venv
