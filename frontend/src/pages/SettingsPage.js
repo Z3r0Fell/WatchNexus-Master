@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, ChevronDown, Lock, Film,
-  Cog, Users, Library, Activity, Search, Download, Tv, Globe, Subtitles, Server, Palette, Package, Wrench } from 'lucide-react';
+  Cog, Users, BookOpen, Activity, Search, Download, Tv, Globe, Subtitles, Server, Palette, Package, Wrench } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import {
@@ -28,7 +28,7 @@ const SETTINGS_SECTIONS = [
     items: [
       { id: 'general', label: 'General', icon: Settings },
       { id: 'users', label: 'Users & Access', icon: Users },
-      { id: 'library', label: 'Media Libraries', icon: Library },
+      { id: 'library', label: 'Media Libraries', icon: BookOpen },
       { id: 'media-health', label: 'Media Health', icon: Activity },
     ]
   },
