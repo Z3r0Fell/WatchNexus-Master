@@ -1829,8 +1829,15 @@ async def qbittorrent_test(
 
 # ==================== BUILT-IN TORRENT ENGINE ====================
 # Native torrent downloading - no external applications required!
+# Note: Requires libtorrent system package (optional)
 
-from fondue import get_fondue_engine, shutdown_fondue_engine
+try:
+    from fondue import get_fondue_engine, shutdown_fondue_engine
+    TORRENT_ENGINE_AVAILABLE = True
+except ImportError:
+    TORRENT_ENGINE_AVAILABLE = False
+    def get_fondue_engine(): return None
+    def shutdown_fondue_engine(): pass
 
 @api_router.get("/downloads/engine/status")
 async def torrent_engine_status(user: dict = Depends(require_auth)):
