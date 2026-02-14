@@ -570,7 +570,9 @@ def get_marmalade_server() -> MarmaladeServer:
     global _marmalade_server
     
     if _marmalade_server is None:
-        data_dir = os.environ.get("MARMALADE_DATA_DIR", "/var/lib/marmalade")
+        # Use backend/data directory for portability (same folder as SQLite DB)
+        default_data_dir = str(Path(__file__).parent / "marmalade_data")
+        data_dir = os.environ.get("MARMALADE_DATA_DIR", default_data_dir)
         _marmalade_server = MarmaladeServer(data_dir=data_dir)
     
     return _marmalade_server
