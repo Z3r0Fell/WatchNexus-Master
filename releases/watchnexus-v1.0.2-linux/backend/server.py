@@ -317,9 +317,14 @@ async def register(data: UserCreate):
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(data: UserLogin):
+    logger.info(f"Login attempt for email: {data.email}")
     user = await db.users.find_one({"email": data.email})
-    if not user or not verify_password(data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user:
+        logger.warning(f"User not found: {data.email}")
+        raise HTTPException(status_code=401, detail="Invalid credentials - user not found")
+    if not verify_password(data.password, user["password"]):
+        logger.warning(f"Invalid password for: {data.email}")
+        raise HTTPException(status_code=401, detail="Invalid credentials - wrong password")
     
     token = create_token(user["id"])
     user_response = UserResponse(
@@ -329,7 +334,14 @@ async def login(data: UserLogin):
         avatar=user.get("avatar"),
         created_at=user["created_at"]
     )
+    logger.info(f"Login successful for: {data.email}")
     return TokenResponse(access_token=token, user=user_response)
+
+@api_router.delete("/auth/clear-users")
+async def clear_users():
+    """Development endpoint to clear all users - useful for testing"""
+    result = await db.users.delete_many({})
+    return {"deleted": result.deleted_count, "message": "All users cleared"}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(require_auth)):
@@ -3353,6 +3365,14 @@ if frontend_dir:
         if manifest_path.exists():
             return FileResponse(str(manifest_path), media_type="application/json")
         raise HTTPException(status_code=404)
+    
+    # Serve root path explicitly
+    @app.get("/")
+    async def serve_root():
+        index_path = frontend_dir / "index.html"
+        if index_path.exists():
+            return FileResponse(str(index_path), media_type="text/html")
+        raise HTTPException(status_code=404, detail="Frontend not found")
     
     # Catch-all route: serve index.html for SPA routing
     # This must be LAST to not interfere with API routes
