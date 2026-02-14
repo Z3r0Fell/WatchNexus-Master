@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -46,12 +46,12 @@ logger = logging.getLogger(__name__)
 # ==================== MODELS ====================
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     username: str
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class UserResponse(BaseModel):
@@ -747,14 +747,14 @@ class UserPermissions(BaseModel):
 
 class UserCreate2(BaseModel):
     username: str
-    email: EmailStr
+    email: str
     password: str
     role: str = "user"
     permissions: Optional[UserPermissions] = None
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     password: Optional[str] = None
     role: Optional[str] = None
     permissions: Optional[UserPermissions] = None
