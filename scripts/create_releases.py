@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "1.2.0"  # Added Maintenance tab, system monitoring, semantic versioning
+VERSION = "1.2.1"  # Added logging, log viewer, better port handling
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
