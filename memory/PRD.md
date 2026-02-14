@@ -95,6 +95,15 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 - [ ] Cloud sync feature
 - [ ] Android/iOS apps
 
+### P2 - Playback Playlist Feature (Logged for Future)
+- [ ] **Playlist System**: Queue movies/episodes for back-to-back playback
+- [ ] **Auto-playlist generation**: "Play All" for collections (LOTR, MCU), "Play Season" for TV
+- [ ] **Mixed playlists**: Movies + TV episodes in one queue
+- [ ] **Skip Intro/Outro/Credits**: Manual timestamps, TMDB chapter data, or AI detection
+- [ ] **Credit roll detection**: Time-based or chapter-based auto-advance to next
+- [ ] **Post-credits handling**: Option to wait for MCU-style post-credits scenes
+- [ ] **Smart detection**: Audio/visual fingerprinting for auto-detecting intros/credits
+
 ---
 
 ## Test Credentials
