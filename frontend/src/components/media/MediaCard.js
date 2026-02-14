@@ -117,6 +117,25 @@ export const MediaCard = ({ item, onAddToWatchlist, isInWatchlist = false, index
           {isInWatchlist ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
         </button>
       )}
+
+      {/* Add to Playlist Button */}
+      {showPlaylistButton && (
+        <div className="absolute bottom-3 left-3 z-10" onClick={(e) => e.preventDefault()}>
+          <AddToPlaylistButton
+            mediaItem={{
+              tmdb_id: item.id,
+              title: title,
+              media_type: mediaType,
+              poster_path: item.poster_path,
+              backdrop_path: item.backdrop_path,
+              duration: item.runtime ? item.runtime * 60 : 0,
+            }}
+            variant="ghost"
+            size="icon"
+            className="bg-black/60 backdrop-blur-sm text-white hover:bg-violet-600 rounded-full p-2 h-auto w-auto"
+          />
+        </div>
+      )}
     </motion.div>
   );
 };
