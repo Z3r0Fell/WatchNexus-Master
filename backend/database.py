@@ -2,11 +2,18 @@
 WatchNexus SQLite Database Layer
 A drop-in replacement for MongoDB that requires zero external dependencies.
 Perfect for standalone, self-contained deployment.
+
+Hardened for production use:
+- WAL mode for concurrent access (read while writing)
+- Automatic backups on startup
+- Scheduled VACUUM for optimization
 """
 
 import aiosqlite
 import json
 import os
+import shutil
+import asyncio
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
@@ -16,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Database file location - in the backend folder for portability
 DB_PATH = Path(__file__).parent / "watchnexus.db"
+BACKUP_DIR = Path(__file__).parent / "backups"
+MAX_BACKUPS = 7  # Keep 7 daily backups
 
 
 class SQLiteDB:
