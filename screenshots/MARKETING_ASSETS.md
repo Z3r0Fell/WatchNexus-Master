@@ -1,7 +1,7 @@
 # WatchNexus - Marketing Assets
 
 ## Live Demo
-**URL:** https://unified-media-build.preview.emergentagent.com
+**URL:** https://media-unified-1.preview.emergentagent.com
 
 **Test Credentials:**
 - Email: test@test.com

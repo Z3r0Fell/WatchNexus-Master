@@ -1,261 +1,181 @@
 <analysis>**original_problem_statement:**
 The user wants to build a unified, self-hosted media pipeline called WatchNexus. This system should replace the need for multiple applications like Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media.
 
-The user's most recent requests were to:
-1.  Fix the broken installation scripts for Windows and Linux.
-2.  Create downloadable release packages.
-3.  Generate marketing video assets, including AI-generated clips (Sora 2) and a UI walkthrough with a visible cursor.
+Recent user requests driving development:
+1.  Make the server application flawless and runnable by an absolute beginner, similar to Jellyfin.
+2.  Add a Maintenance tab to the settings for viewing database health, server health, and other system information.
+3.  Implement file-based logging and make logs accessible from the Maintenance tab.
+4.  Improve the application's startup script to gracefully handle port conflicts on the default port (8001).
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack React/FastAPI project. In this session, the agent focused on creating distributable release packages for Linux and Windows. This involved creating build/installation guides, packaging scripts, and attempting to resolve numerous Python dependency issues reported by the user when trying to run the Linux package. The agent also created some video assets (a UI walkthrough and one Sora 2 clip) before getting blocked by the installation failures. The core of the application remains functional within the development environment, but the standalone release package is currently broken.
+The application is a full-stack React/FastAPI project. A major architectural change was completed, migrating the database from MongoDB to SQLite to make the application truly self-contained and resolve critical startup errors. The SQLite implementation was also hardened with WAL mode, automatic backups, and optimization tasks.
+
+A new Maintenance feature was added, including a frontend tab () and corresponding backend API endpoints. This feature displays system stats (CPU, RAM, Disk), database health, and provides a new file-based log viewer. The application versioning is now managed via a  scheme, with the latest generated release being .
 
 **Last working item**:
--   **Last item agent was working:** The agent was trying to find a truly pure Python torrent library to replace . The last attempt, using the  library, failed because it also has a hidden dependency on the  system package, causing a  error during .
--   **Status:** BLOCKED
+-   **Last item agent was working:** Implementing the user's request to improve the  script. The goal is to make the script detect if port 8001 is already in use, display which process is using it, and offer the user an option to kill that process.
+-   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Propose a code change (a new torrent library) and provide clear, step-by-step instructions for the user to test on their local machine. This is a user-facing build issue.
--   **User Testing Done:** Y (Failed repeatedly)
+-   **Which testing method agent to use?** manual testing by curl. The agent needs to modify the  variable within , then test the script's logic in the bash terminal.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Fix Standalone Release Installation for Linux (P0)**
--   **Issue 2: Create Kickstarter and Marketing Video Assets (P1)**
--   **Issue 3: Fix Standalone Release Installation for Windows (P1)**
+-   **Issue 1: Improve startup script to handle port 8001 conflicts (P0)**
+-   **Issue 2: Finalize and Test Windows Release Package (P1)**
+-   **Issue 3: Create and Test a macOS Release Package (P2)**
 
 **Issues Detail:**
--   **Issue 1: Fix Standalone Release Installation for Linux**
-    -   **Attempted fixes:** The agent went through a long and frustrating trial-and-error process with the user:
-        1.  ** error:** Removed a private package from .
-        2.  ** not found:** Fixed  and the install process.
-        3.  ** not found:** Pydantic's  required this. The agent first tried adding , which failed. The agent then removed the dependency by changing  to  in the Pydantic models in . This was a workaround for Python 3.14 incompatibility.
-        4.  ** not found:** Identified  as a system dependency, not a pip package. Instructions to install via  failed as the user could not find the  package.
-        5.  ** as replacement:** The agent replaced the -based code with , believing it was a pure-Python alternative. This was incorrect;  also depends on , leading to the current  pip error.
+-   **Issue 1: Improve startup script to handle port 8001 conflicts**
+    -   **Attempted fixes:** This is a new task, just started.
     -   **Next debug checklist:**
-        1.  Acknowledge the user's frustration. Stop the hunt and peck approach.
-        2.  Perform a web search to find a **truly pure-Python torrent client library** that has no system dependencies and is compatible with Python 3.14. Candidates might include  or other similar projects.
-        3.  Once a reliable library is identified, completely rewrite  to use the new library.
-        4.  Update  to include the new library and remove .
-        5.  Regenerate the release packages using .
-        6.  Provide the user with one final, clean set of instructions: delete the old release directory and run the start script from a freshly downloaded package.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical P0 blocker. The application is unusable for the end-user, and their confidence in the agent is low due to repeated failures. A successful fix will restore functionality and trust.
+        1.  Edit  to modify the  variable.
+        2.  In the script, use 48
+85 or a similar command to check if a process is using port 8001.
+        3.  If a process is found, display its PID and name to the user.
+        4.  Prompt the user, asking if they want to kill the existing process.
+        5.  If the user agrees, use  to terminate the process before WatchNexus starts.
+        6.  Update the version to  in  and .
+        7.  Generate the new release packages.
+    -   **Why fix this issue and what will be achieved with the fix?** This will prevent the address already in use error and provide a user-friendly way to resolve it, improving the first-run experience for beginners.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
+    -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** backend
     -   **Blocked on other issue:** None.
 
--   **Issue 2: Create Kickstarter and Marketing Video Assets**
-    -   **Attempted fixes:** The agent successfully created a script to capture UI frames with a cursor () and generated a video (). It also integrated Sora 2 and generated one video () before the user's key balance was depleted.
-    -   **Next debug checklist:**
-        1.  Once the installation issue is resolved, resume video asset creation.
-        2.  Inform the user about the Emergent LLM Key balance and ask them to top it up if they want more Sora 2 videos.
-        3.  Generate the Social Media Teasers and Kickstarter Intro Video clips as requested.
-    -   **Why fix this issue and what will be achieved with the fix?** Fulfills a key user request for marketing materials for their project.
-    -   **Status:** NOT STARTED
+-   **Issue 2: Finalize and Test Windows Release Package**
+    -   **Attempted fixes:** The build script generates a Windows package, but it has not been tested since the migration to SQLite and the addition of the Maintenance tab.
+    -   **Next debug checklist:** Once the Linux package is stable (v1.2.2+), the Windows package must be tested end-to-end to ensure user creation, login, and the new Maintenance features work correctly.
+    -   **Why fix this issue and what will be achieved with the fix?** Fulfills the user's original request for a cross-platform application.
+    -   **Status:** BLOCKED
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** N/A
-    -   **Blocked on other issue:** Issue 1. The agent should not work on this until the app is runnable for the user.
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on other issue:** Issue 1: Improve startup script to handle port 8001 conflicts
 
--   **Issue 3: Fix Standalone Release Installation for Windows**
-    -   **Attempted fixes:** The Windows install script () was updated early in the session, but it does not include any of the dependency fixes discovered while debugging the Linux version (e.g., removing , replacing the torrent library).
-    -   **Next debug checklist:**
-        1.  After the Linux version is confirmed working, apply all the same logic and dependency changes to the Windows packaging and installation scripts.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures cross-platform compatibility for the release packages as originally requested.
+-   **Issue 3: Create and Test a macOS Release Package**
+    -   **Attempted fixes:** None.
+    -   **Next debug checklist:** Research and implement a packaging solution for macOS (e.g., ). Update  to add a build target for macOS and test the resulting package.
+    -   **Why fix this issue and what will be achieved with the fix?** To achieve full cross-platform support as requested by the user.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on other issue:** Issue 1.
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on other issue:** Issue 1 & Issue 2.
 
 **In progress Task List**:
--   None. The current work is categorized as a high-priority bug fix.
+-   None. Current work is focused on fixing the startup script issue.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Complete Video Asset Generation (P1):** Finish creating the Kickstarter intro, feature walkthrough, and social media video clips.
--   **Test Usenet () and Indexer () modules (P2):** This was on the user's original action plan but was superseded.
+-   **Test Core Modules (P1):** Verify the Usenet () and Indexer () modules function correctly with the new SQLite database.
+-   **Connect Pages to Backend (P2):** Implement backend logic for the Community & DVR pages.
 
 **Future Tasks:**
--   Connect Community & DVR Pages to Backend.
--   Client App Planning: Document the architecture and technology choices for building client apps (Android, iOS, Roku).
--   Create a Roku / Universal app.
--   Cloud Sync feature development.
+-   **Playback Playlist Feature (P2):** Implement back-to-back media playback.
+-   **Advanced Playback Controls (P2):** Add skip intro, skip credits, etc.
+-   **Marketing Assets (P2):** Create Kickstarter and marketing videos (Sora 2).
+-   **Client App Planning (P3):** Document architecture for Roku, Android, and iOS client apps.
+-   **Cloud Sync (P3):** Develop a feature for syncing user data across devices.
 
 **Completed work in this session**
--   **Build & Release Automation:**
-    -   Created a comprehensive  for manual installation.
-    -   Created a Python script () to automate packaging the application into ZIP files for Linux and Windows.
-    -   Updated and improved install scripts (, , ).
--   **Video Asset Generation:**
-    -   Integrated with **Sora 2** for AI video generation and produced one sample marketing video.
-    -   Created a Playwright script () to record UI interactions with a visible cursor and compiled the frames into a  video.
--   **Dependency Debugging:**
-    -   Removed  dependency from  to ensure compatibility with Python 3.14.
-    -   Removed private/internal packages from the public .
+-   **Database Migration:** Successfully migrated the application from MongoDB to a self-contained SQLite database, creating a new abstraction layer in .
+-   **Database Hardening:** Implemented WAL mode, automatic backups, and VACUUM scheduling for the SQLite database to ensure production-grade reliability.
+-   **Fixed Critical Bug:** Resolved the user creation timeout error, which was caused by the inability to connect to an external MongoDB instance.
+-   **New Feature - Maintenance Tab:** Built a comprehensive Maintenance UI and corresponding backend APIs () for monitoring server/system health, disk usage, and database stats.
+-   **New Feature - Logging:** Implemented robust file-based logging with rotation () and added a log viewer to the Maintenance UI.
+-   **Build & Versioning:** Updated the release script () and established a  versioning system, bringing the app to .
 
 **Earlier issues found/mentioned but not fixed**
--   The fundamental goal of a stable, working, distributable build for end-users is not yet achieved.
+-   None.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Build instability.
--   **Recurrence count:** 3+
--   **Status:** RESOLVED for component size issues, but has resurfaced as dependency/packaging instability.
+-   **Issue recurrence in previous fork:** Build instability due to external dependencies.
+-   **Recurrence count:** 4+
+-   **Status:** RESOLVED. Migrating from MongoDB to an embedded SQLite database has fixed the root cause of this instability for standalone builds.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Python Dependency Hell:** The session was a deep dive into troubleshooting 
-Usage:   
-  pip <command> [options]
-
-Commands:
-  install                     Install packages.
-  lock                        Generate a lock file.
-  download                    Download packages.
-  uninstall                   Uninstall packages.
-  freeze                      Output installed packages in requirements format.
-  inspect                     Inspect the python environment.
-  list                        List installed packages.
-  show                        Show information about installed packages.
-  check                       Verify installed packages have compatible 
-dependencies.
-  config                      Manage local and global configuration.
-  search                      Search PyPI for packages.
-  cache                       Inspect and manage pip's wheel cache.
-  index                       Inspect information available from package 
-indexes.
-  wheel                       Build wheels from your requirements.
-  hash                        Compute hashes of package archives.
-  completion                  A helper command used for command completion.
-  debug                       Show information useful for debugging.
-  help                        Show help for commands.
-
-General Options:
-  -h, --help                  Show help.
-  --debug                     Let unhandled exceptions propagate outside the
-                              main subroutine, instead of logging them to
-                              stderr.
-  --isolated                  Run pip in an isolated mode, ignoring
-                              environment variables and user configuration.
-  --require-virtualenv        Allow pip to only run in a virtual environment;
-                              exit with an error otherwise.
-  --python <python>           Run pip with the specified Python interpreter.
-  -v, --verbose               Give more output. Option is additive, and can be
-                              used up to 3 times.
-  -V, --version               Show version and exit.
-  -q, --quiet                 Give less output. Option is additive, and can be
-                              used up to 3 times (corresponding to WARNING,
-                              ERROR, and CRITICAL logging levels).
-  --log <path>                Path to a verbose appending log.
-  --no-input                  Disable prompting for input.
-  --keyring-provider <keyring_provider>
-                              Enable the credential lookup via the keyring
-                              library if user input is allowed. Specify which
-                              mechanism to use [auto, disabled, import,
-                              subprocess]. (default: auto)
-  --proxy <proxy>             Specify a proxy in the form
-                              scheme://[user:passwd@]proxy.server:port.
-  --retries <retries>         Maximum attempts to establish a new HTTP
-                              connection. (default: 5)
-  --timeout <sec>             Set the socket timeout (default 15 seconds).
-  --exists-action <action>    Default action when a path already exists:
-                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
-  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
-                              even though it does not have valid or any HTTPS.
-  --cert <path>               Path to PEM-encoded CA certificate bundle. If
-                              provided, overrides the default. See 'SSL
-                              Certificate Verification' in pip documentation
-                              for more information.
-  --client-cert <path>        Path to SSL client certificate, a single file
-                              containing the private key and the certificate
-                              in PEM format.
-  --cache-dir <dir>           Store the cache data in <dir>.
-  --no-cache-dir              Disable the cache.
-  --disable-pip-version-check
-                              Don't periodically check PyPI to determine
-                              whether a new version of pip is available for
-                              download. Implied with --no-
-                              index.
-  --no-color                  Suppress colored output.
-  --use-feature <feature>     Enable new functionality, that may be backward
-                              incompatible.
-  --use-deprecated <feature>  Enable deprecated functionality, that will be
-                              removed in the future.
-  --resume-retries <resume_retries>
-                              Maximum attempts to resume or restart an
-                              incomplete download. (default: 5) dependency resolution, virtual environments, and the critical difference between PyPI packages and system-level libraries ().
--   **AI Video Generation:** Successfully used the  agent to integrate with the Sora 2 API.
--   **UI Automation for Video Capture:** Used Playwright to script browser interactions, inject custom CSS to show a cursor, and capture frames for a video.
+-   **Database Migration (MongoDB to SQLite):** A fundamental architectural shift from a server-based NoSQL DB to an embedded SQL DB to achieve true self-containment.
+-   **Database Abstraction Layer:** The creation of  isolates application logic from the specific database implementation, simplifying the migration.
+-   **SQLite Hardening:** The use of WAL mode, scheduled VACUUM, and automated backups to make the embedded database robust.
+-   **System Monitoring:** The  library is used to gather system metrics (CPU, RAM, Disk) for the Maintenance UI.
+-   **Dynamic Release Scripting:**  is the source of truth for release artifacts, including version numbers and embedded startup scripts.
 
 **key DB schema**
--   No changes made.
+-   The schema is now defined via  statements within the  function in . Key tables include , , .
 
 **changes in tech stack**
--   **Sora 2:** Added for AI video generation.
--   **torrentp:** Attempted to add as a  replacement, but it also depends on . **This must be removed.**
--   The next agent must find a **new torrent library**.
+-   **Added:**  (via ), , .
+-   **Removed:**  (and its  driver).
 
 **All files of reference**
--   : **NEEDS REPLACEMENT.** The current code is broken because  is not a pure-Python library.
--   : Will need to be updated with the new, correct torrent library.
--   : The startup script for the user, which is currently failing.
--   : The script to regenerate the final ZIP packages.
--   : Contains manual installation instructions that should be kept in sync.
+-   : **Primary file for the next task.** The  variable within this file needs to be modified.
+-   : Contains the main application logic, API endpoints, and version information.
+-   : The SQLite database layer.
+-   : The frontend component for the Maintenance tab.
 
 **Areas that need refactoring**:
--    MUST be rewritten to use a truly pure-Python torrent library to resolve the main blocker.
+-   The large, multi-line shell script strings inside  could be moved to separate template files for better readability and maintenance. This is a low-priority task.
 
 **key api endpoints**
--   No changes made.
+-   : **(WORKING)**
+-   : **(WORKING)**
+-   : **(NEW & WORKING)**
+-   : **(NEW & WORKING)**
+-   : **(NEW & WORKING)**
+-   : **(NEW & WORKING)**
 
 **Critical Info for New Agent**
--   The user is extremely frustrated with the repeated hunt and peck failures. Do not propose another fix without high confidence. Your first response should acknowledge their frustration and lay out a clear, decisive plan.
--   The core problem is the torrent engine.  is a system package the user cannot easily install.  was a failed attempt to replace it because it also requires .
--   **Your P0 task is to find a *truly* pure-Python torrent library, rewrite  with it, fix , and provide the user with a single, clean command sequence to test the new release package.**
--   The user is on Arch Linux with Python 3.14. Do not ask them to change their Python version. The solution must be compatible.
+-   Your immediate priority is to finish the user's latest request: improve the startup script to handle port conflicts. This is a small but important change for user experience.
+-   All release-related modifications (version number, startup script content, README updates) must be done in .
+-   The application's architecture is now based on SQLite. Ignore all previous context related to MongoDB issues.
+-   The current version is . The next change (port conflict handling) should increment the version to .
 
 **documents and test reports created in this job**
 -   
--    (and other release packages)
 -   
 -   
--    (updated)
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Reports .
-2.  **Agent:** Provides fix by adding  to .
-3.  **User:** Reports the same  error, indicating the fix didn't work.
-4.  **Agent:** Proposes a more robust fix by removing the dependency on  entirely, by changing  to  in .
-5.  **User:** Reports  and expresses frustration (This is starting to piss me off).
-6.  **Agent:** Acknowledges frustration and incorrectly makes  optional.
-7.  **User:** Rejects the optional fix, stating it defeats the purpose.
-8.  **Agent:** Switches to providing  commands to install  as a system package.
-9.  **User:** Reports  commands fail and asks for an alternative to .
-10. **User:** After agent replaces  with , user reports  error because  also depends on . The user is highly frustrated, having deleted everything and started from a fresh download only to hit another wall.
+1.  **User:** Asks if SQLite can handle a large media library.
+2.  **Agent:** Confirms it can and suggests hardening features (WAL, backups).
+3.  **User:** Agrees to hardening and asks why SQLite wasn't used from the start.
+4.  **Agent:** Acknowledges the initial architectural mistake and proceeds to implement the hardening features.
+5.  **User:** Requests a Maintenance tab in the UI.
+6.  **Agent:** Implements the Maintenance tab with server and DB stats ().
+7.  **User:** Runs the new version, gets an address already in use error, and requests file-based logging that is viewable in the UI.
+8.  **Agent:** Implements file-based logging and a log viewer in the Maintenance tab ().
+9.  **User:** Requests an improvement to the start script to detect and offer to kill processes already running on port 8001.
+10. **Agent:** Acknowledges the request and prepares to implement the change.
 
 **Project Health Check:**
--   **Broken:** The primary feature of a distributable, standalone application is broken. The Linux release package fails to launch due to unresolved Python dependencies in the torrent engine. The Windows package is presumed broken for the same reasons.
--   **Mocked:** The torrenting engine () is effectively mocked/non-functional in the release build.
+-   **Broken:** The startup script lacks robust error handling for port conflicts. The Windows build is untested since the major database migration.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Sora 2:** Used for video generation via Emergent LLM Key. The user's balance is depleted.
--   **torrentp:** (Problematic) Added to replace  but also requires it. **This must be removed and replaced.**
+-   **SQLite:** Embedded database.
+-   **LTorrent:** Pure Python torrent client.
+-   **psutil:** System monitoring library.
+-   **loguru:** Logging library.
 -   The Movie Database (TMDB)
 -   Google OAuth
 -   BeautifulSoup4
 -   Addic7ed
+-   **Sora 2:** (On hold) For video generation.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO. The agent performed manual debugging with the user.
+-   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None in this session.
--   **Known regressions:** The application, which was previously runnable from source, is now failing to install/run as a standalone package for the user.
+-   **Test files created:** None
+-   **Known regressions:** None from the recent work.
 
 **Credentials to test flow:**
+-   On a fresh launch, the user database is empty. Any new user can be created for testing. Example:
 -   **Email:** 
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent failed to properly research the  library, leading to another failed solution and increased user frustration.
--   The agent did not keep the Windows installation scripts in sync with the fixes being attempted on the Linux side.
--   The full scope of the video asset creation task was abandoned due to the persistent installation bugs.</analysis>
+-   The agent was in the process of starting the implementation for the port-conflict handling feature in the startup script when the session ended. The next step is to edit .</analysis>
