@@ -197,8 +197,9 @@ if [ ! -f "backend/.env" ]; then
     cat > backend/.env << EOF
 # WatchNexus Configuration
 # Database: SQLite (automatic, no setup needed)
-# Add your TMDB API key for movie/TV metadata:
-# TMDB_API_KEY=your_key_here
+
+# TMDB API key for movie/TV metadata (free at themoviedb.org)
+TMDB_API_KEY=8c860bcb88494f598008480abfe24d13
 EOF
 fi
 
