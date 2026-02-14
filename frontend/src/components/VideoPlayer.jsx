@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +14,7 @@ import { Button } from '../components/ui/button';
 import { Slider } from '../components/ui/slider';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = BACKEND_URL;
 
 const VideoPlayer = () => {
   const { mediaId } = useParams();

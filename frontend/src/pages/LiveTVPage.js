@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = BACKEND_URL;
 
 // EPG Guide View Component with Timeline
 const EPGGuideView = ({ channels }) => {
