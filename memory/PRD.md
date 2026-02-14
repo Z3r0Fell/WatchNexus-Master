@@ -7,9 +7,13 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.2.6
+## Current Version: 1.2.7
 
-### Recent Changes (v1.2.6 - Feb 14, 2026)
+### Recent Changes (v1.2.7 - Feb 15, 2026)
+- **SVG Favicon** - WatchNexus logo SVG now used as browser favicon
+- **System Tray Icon** - tray_app.py updated to load WatchNexus logo (SVG/PNG) with status overlay
+
+### Previous Changes (v1.2.6 - Feb 14, 2026)
 - **Add to Playlist UI** - AddToPlaylistButton component added to MediaCard and MediaDetails pages
 - **Plugin Import** - Users can now import plugins from file upload or URL
 - **Plugin Uninstall** - Delete button added to remove installed plugins
@@ -154,6 +158,7 @@ Current release: **v1.2.4**
 
 ### Scripts
 - `/app/scripts/create_releases.py` - Release package generator
+- `/app/tray_app.py` - Cross-platform system tray application
 
 ### Documentation
 - `/app/memory/CHANGELOG.md` - Version history
