@@ -18,7 +18,8 @@ import {
   Layers,
   FolderOpen,
   Compass,
-  ListVideo
+  ListVideo,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
@@ -28,6 +29,7 @@ const navItems = [
   { icon: FolderOpen, label: 'Library', path: '/library' },
   { icon: Film, label: 'Movies', path: '/movies' },
   { icon: Tv, label: 'TV Shows', path: '/tv' },
+  { icon: Sparkles, label: 'Anime', path: '/anime' },
   { icon: ListVideo, label: 'Playlists', path: '/playlists' },
   { icon: Music, label: 'Music', path: '/music' },
   { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks' },
