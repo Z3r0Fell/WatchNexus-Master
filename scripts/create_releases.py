@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "1.0.2"  # Updated with LTorrent (pure Python, magnet + .torrent support)
+VERSION = "1.1.0"  # SQLite - Truly self-contained, zero dependencies
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
@@ -27,6 +27,7 @@ EXCLUDE_PATTERNS = [
     "*.log",
     "test_reports",
     "tests",
+    "watchnexus.db",  # Don't include dev database
 ]
 
 def should_exclude(path: Path) -> bool:
