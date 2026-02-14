@@ -5,18 +5,15 @@
 ### Original Problem Statement
 Build a unified, self-hosted media pipeline called "WatchNexus" that replaces multiple applications (Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyfin) with a single, **fully self-contained application** for requesting, acquiring, organizing, and watching media.
 
-The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO external dependencies**.
-
 ---
 
-## Current Version: 1.2.3
+## Current Version: 1.2.4
 
-### Versioning Scheme
-- **MAJOR** (1.x.x): Breaking changes, major architecture shifts
-- **MINOR** (x.2.x): New features, significant enhancements  
-- **PATCH** (x.x.3): Bug fixes, code changes
-
-See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
+### Recent Changes (v1.2.4)
+- **Anime Section** - Dedicated anime page with Japanese animation filtering
+- **Folder Browser** - Visual directory picker for library paths
+- **Auto-Scan** - Libraries automatically scan after being added
+- **Enhanced TMDB Discover** - Backend supports language/keyword filters
 
 ---
 
@@ -27,17 +24,6 @@ See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 - **Backend**: FastAPI (Python 3.10+)
 - **Database**: SQLite with WAL mode
 - **Torrent Engine**: LTorrent (pure Python)
-
-### Database Features
-- **WAL mode**: Concurrent read/write, no blocking
-- **Auto-backup**: Creates backup on every startup (keeps 7)
-- **Auto-VACUUM**: Optimizes database every 24 hours
-- **64MB cache**: Fast queries for large libraries
-
-### Capacity
-- Handles 1,500+ movies, 3,000+ TV shows easily
-- SQLite tested with millions of records
-- Same engine used by Jellyfin and Plex
 
 ---
 
@@ -51,157 +37,105 @@ See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 | **Sieve** | Media Health | File health checker |
 | **Preserve** | Challenge Solver | Cloudflare bypass |
 | **Potluck** | Watch Party | Synchronized viewing |
-| **Drizzle** | Playlist Engine | Continuous playback (NEW in v1.2.2) |
+| **Drizzle** | Playlist Engine | Continuous playback |
 | **Marmalade** | Media Server | Library management & streaming |
 
 ---
 
-## What's Working (v1.2.3)
+## What's Working (v1.2.4)
 
 ### Core Features
 - User registration and login
-- SQLite database (zero external dependencies)
-- Server serves frontend (single executable)
-- TMDB integration for movie/TV metadata
-- Watchlist and watch progress tracking
+- SQLite database (zero dependencies)
+- TMDB integration for movie/TV/anime metadata
+- Library management with folder browser
+- Auto-scan on library add
+- Watchlist and progress tracking
 - Multi-user with permissions
-- LTorrent for magnet links and .torrent files
-- **Library management (FIXED in v1.2.3)**
+- Built-in torrent engine (Fondue)
+- Drizzle playlist system
 
-### v1.2.3 Bug Fixes
-- **Auth Token Bug** - Fixed localStorage key mismatch (`auth_token` vs `token`)
-- **Data Directory Portability** - Marmalade stores in `backend/marmalade_data/`
-
-### v1.2.2
-- **Drizzle Playlist Engine**
-  - Create custom playlists
-  - "Play Season" - automatic TV season playlists
-  - "Play All" - movie collection playlists
-  - Auto-play next item
-  - Skip intro/outro markers support
-  - Queue management with progress tracking
-- **Improved Port Conflict Handling**
-  - Prompts user before killing process on port 8001
-
-### v1.2.1
-- File-based logging with rotation (10MB, 7 backups)
-- Log viewer in Maintenance tab
-- Better start script commands
-
-### v1.2.0
-- **Maintenance Tab** in Settings
-  - Server status (uptime, CPU, memory)
-  - System info (platform, Python version)
-  - Database health monitoring
-  - Backup management
+### Pages
+- Home (hero + trending)
+- Movies (grid with filters)
+- TV Shows
+- Anime (Japanese animation)
+- Playlists
+- Library (with folder browser)
+- Downloads
+- Settings (with Maintenance tab)
 
 ---
 
 ## Release Packages
 
-Current release: **v1.2.3**
+Current release: **v1.2.4**
 
-- `/app/dist/watchnexus-v1.2.3-linux.zip` (90.1 MB)
-- `/app/dist/watchnexus-v1.2.3-windows.zip` (90.1 MB)
-
-### Requirements
-- Python 3.10+ (that's it!)
+- `/app/dist/watchnexus-v1.2.4-linux.zip` (90.1 MB)
+- `/app/dist/watchnexus-v1.2.4-windows.zip` (90.1 MB)
 
 ---
 
-## API Endpoints
+## Key API Endpoints
 
-### Marmalade (Library Management)
+### Library (Marmalade)
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/marmalade/status` | GET | Library server status |
-| `/api/marmalade/libraries` | GET | List all libraries |
-| `/api/marmalade/libraries` | POST | Add new library |
-| `/api/marmalade/libraries/{id}` | DELETE | Remove library |
+| `/api/marmalade/libraries` | GET/POST | List/Add libraries |
 | `/api/marmalade/libraries/{id}/scan` | POST | Scan library |
+| `/api/filesystem/browse` | GET | Browse directories |
+
+### TMDB
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/tmdb/discover/{media_type}` | GET | Discover with filters |
+| `/api/tmdb/trending/{type}/{window}` | GET | Trending content |
 
 ### Drizzle (Playlists)
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/drizzle/playlists` | GET | List user's playlists |
-| `/api/drizzle/playlists` | POST | Create new playlist |
-| `/api/drizzle/playlists/{id}` | GET/PUT/DELETE | Manage playlist |
-| `/api/drizzle/playlists/{id}/items` | POST | Add item to playlist |
-| `/api/drizzle/play-season` | POST | Create season playlist |
-| `/api/drizzle/play-collection` | POST | Create collection playlist |
-| `/api/drizzle/queue` | GET | Get active queue state |
-| `/api/drizzle/queue/set/{id}` | POST | Set active queue |
-| `/api/drizzle/markers` | GET/POST | Skip markers |
-
-### System Maintenance
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/system/info` | GET | Basic app info (public) |
-| `/api/system/stats` | GET | Detailed system statistics |
-| `/api/db/stats` | GET | Database health info |
-| `/api/db/backups` | GET | List all backups |
-
-### Authentication
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/register` | POST | Create new user |
-| `/api/auth/login` | POST | User login |
-| `/api/auth/me` | GET | Current user info |
+| `/api/drizzle/playlists` | GET/POST | List/Create playlists |
+| `/api/drizzle/queue` | GET | Active queue state |
 
 ---
 
 ## Backlog
 
 ### P0 - Critical
-- [x] SQLite database (zero dependencies)
-- [x] Database hardening (WAL, backups, VACUUM)
-- [x] Maintenance tab in Settings
-- [x] Drizzle playlist system
-- [x] Auth token bug fix (v1.2.3)
-- [ ] Full end-to-end standalone testing
+- [x] Auth token bug fix
+- [x] Folder browser
+- [x] Anime section
+- [ ] Test with actual media files
 
 ### P1 - High Priority
-- [ ] Windows release package testing
-- [ ] Video assets for Kickstarter
-- [ ] macOS release package
-- [ ] Folder browser in Add Library form
+- [ ] Windows release testing
+- [ ] Video player improvements
+- [ ] macOS release
 
 ### P2 - Enhancements
-- [ ] AI-powered intro/credits detection
-- [ ] Post-credits scene handling (MCU-style)
-- [ ] Advanced skip marker editor
+- [ ] AI intro/credits detection
+- [ ] Post-credits handling
 
 ### P3 - Future
 - [ ] Roku/Universal app
 - [ ] Cloud sync
-- [ ] Android/iOS apps
-
----
-
-## External Integrations
-- TMDB (The Movie Database)
-- Google OAuth (Emergent-managed)
-- BeautifulSoup4 (scraping)
-- Addic7ed (subtitles)
-- LTorrent (torrents - pure Python)
+- [ ] Mobile apps
 
 ---
 
 ## Files of Reference
 
 ### Backend
-- `/app/backend/server.py` - Main FastAPI server (v1.2.3)
+- `/app/backend/server.py` - Main FastAPI server (v1.2.4)
 - `/app/backend/database.py` - SQLite database layer
 - `/app/backend/drizzle.py` - Playlist engine
 - `/app/backend/marmalade_server.py` - Media library server
-- `/app/backend/fondue.py` - Torrent engine
 
 ### Frontend
-- `/app/frontend/src/pages/LibraryPage.js` - Library management
-- `/app/frontend/src/pages/PlaylistsPage.js` - Playlists page
-- `/app/frontend/src/components/drizzle/` - Playlist components
-- `/app/frontend/src/services/marmaladeApi.js` - Library API (FIXED)
-- `/app/frontend/src/components/VideoPlayer.jsx` - Video player (FIXED)
+- `/app/frontend/src/pages/AnimePage.js` - Anime page (NEW)
+- `/app/frontend/src/pages/LibraryPage.js` - Library with folder browser
+- `/app/frontend/src/components/FolderBrowser.jsx` - Directory picker (NEW)
+- `/app/frontend/src/components/layout/Sidebar.js` - Navigation with Anime link
 
 ### Scripts
 - `/app/scripts/create_releases.py` - Release package generator
@@ -209,6 +143,3 @@ Current release: **v1.2.3**
 ### Documentation
 - `/app/memory/CHANGELOG.md` - Version history
 - `/app/memory/PRD.md` - This file
-
-### Test Reports
-- `/app/test_reports/iteration_10.json` - Full test results (100% pass)
