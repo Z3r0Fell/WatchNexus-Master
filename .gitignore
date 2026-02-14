@@ -210,3 +210,5 @@ frontend/node_modules/.cache/default-development/18.pack
 # Environment files
 *.env
 *.env.*
+dist/watchnexus-v1.0.1-windows.zip
+dist/watchnexus-v1.0.1-linux.zip
