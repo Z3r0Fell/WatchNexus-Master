@@ -10,3 +10,4 @@ export { SubtitleSettings } from './SubtitleSettings';
 export { GelatinSettings } from './GelatinSettings';
 export { ThemeForgeSettings } from './ThemeForgeSettings';
 export { PluginsSettings } from './PluginsSettings';
+export { MaintenanceSettings } from './MaintenanceSettings';
