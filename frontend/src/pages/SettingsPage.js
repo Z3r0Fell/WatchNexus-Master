@@ -250,6 +250,7 @@ export const SettingsPage = () => {
           <TabsContent value="gelatin"><GelatinSettings /></TabsContent>
           <TabsContent value="theme-forge"><ThemeForgeSettings /></TabsContent>
           <TabsContent value="plugins"><PluginsSettings /></TabsContent>
+          <TabsContent value="maintenance"><MaintenanceSettings /></TabsContent>
         </Tabs>
       </div>
 
