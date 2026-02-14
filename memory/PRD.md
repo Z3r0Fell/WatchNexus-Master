@@ -111,6 +111,7 @@ Current release: **v1.2.4**
 - [x] Auth token bug fix
 - [x] Folder browser
 - [x] Anime section
+- [x] API URL configuration fix (dev/prod modes)
 - [ ] Test with actual media files
 
 ### P1 - High Priority
