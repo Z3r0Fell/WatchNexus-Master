@@ -3299,6 +3299,81 @@ async def get_torrent_engine_status(user: dict = Depends(require_auth)):
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
+@api_router.get("/logs/list")
+async def list_log_files(user: dict = Depends(require_auth)):
+    """List available log files."""
+    logs = []
+    if LOG_DIR.exists():
+        for log_file in sorted(LOG_DIR.glob("watchnexus.log*"), reverse=True):
+            stat = log_file.stat()
+            logs.append({
+                "filename": log_file.name,
+                "size_kb": round(stat.st_size / 1024, 2),
+                "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            })
+    return {"logs": logs, "log_dir": str(LOG_DIR)}
+
+@api_router.get("/logs/view")
+async def view_log_file(
+    filename: str = "watchnexus.log",
+    lines: int = 200,
+    user: dict = Depends(require_auth)
+):
+    """View last N lines of a log file."""
+    log_path = LOG_DIR / filename
+    
+    # Security: only allow files in log directory
+    if not log_path.parent.resolve() == LOG_DIR.resolve():
+        raise HTTPException(status_code=400, detail="Invalid log file")
+    
+    if not log_path.exists():
+        return {"lines": [], "total_lines": 0, "filename": filename}
+    
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            all_lines = f.readlines()
+            total_lines = len(all_lines)
+            last_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
+            return {
+                "lines": [line.rstrip() for line in last_lines],
+                "total_lines": total_lines,
+                "showing": len(last_lines),
+                "filename": filename
+            }
+    except Exception as e:
+        logger.error(f"Error reading log file: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/logs/download/{filename}")
+async def download_log_file(filename: str, user: dict = Depends(require_auth)):
+    """Download a log file."""
+    log_path = LOG_DIR / filename
+    
+    # Security: only allow files in log directory
+    if not log_path.parent.resolve() == LOG_DIR.resolve():
+        raise HTTPException(status_code=400, detail="Invalid log file")
+    
+    if not log_path.exists():
+        raise HTTPException(status_code=404, detail="Log file not found")
+    
+    return FileResponse(
+        log_path,
+        media_type="text/plain",
+        filename=filename
+    )
+
+@api_router.post("/logs/clear")
+async def clear_old_logs(user: dict = Depends(require_auth)):
+    """Clear rotated log files (keeps current log)."""
+    cleared = 0
+    for log_file in LOG_DIR.glob("watchnexus.log.*"):
+        try:
+            log_file.unlink()
+            cleared += 1
+        except Exception as e:
+            logger.error(f"Failed to delete {log_file}: {e}")
+    return {"status": "success", "cleared_files": cleared}
+
 
 # ==================== RELISH (IPTV) API ====================
 
