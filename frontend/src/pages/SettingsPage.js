@@ -291,14 +291,13 @@ export const SettingsPage = () => {
 
   // Get current section info
   const getCurrentSectionInfo = () => {
-    for (const section of SETTINGS_SECTIONS) {
-      const item = section.items.find(i => i.id === activeSection);
-      if (item) return { group: section, item };
-    }
+    const item = SETTINGS_NAV.find(i => i.id === activeSection);
+    if (item) return { group: item.group, item };
     return null;
   };
 
   const currentInfo = getCurrentSectionInfo();
+  const groupedSections = getGroupedSections();
 
   return (
     <Layout>
@@ -318,8 +317,7 @@ export const SettingsPage = () => {
           </div>
 
           <nav className="p-3 space-y-1">
-            {SETTINGS_SECTIONS.map((section) => {
-              const SectionIcon = section.icon;
+            {groupedSections.map((section) => {
               const isExpanded = expandedGroups.includes(section.id);
               const hasActiveItem = section.items.some(item => item.id === activeSection);
 
@@ -333,7 +331,7 @@ export const SettingsPage = () => {
                     }`}
                     data-testid={`settings-section-${section.id}`}
                   >
-                    <SectionIcon className="w-5 h-5" />
+                    <Cog className="w-5 h-5" />
                     <span className="flex-1 font-medium text-sm">{section.label}</span>
                     <motion.div
                       animate={{ rotate: isExpanded ? 180 : 0 }}
@@ -355,7 +353,6 @@ export const SettingsPage = () => {
                       >
                         <div className="py-1 pl-4 space-y-0.5">
                           {section.items.map((item) => {
-                            const ItemIcon = item.icon;
                             const isActive = activeSection === item.id;
                             
                             return (
@@ -369,7 +366,6 @@ export const SettingsPage = () => {
                                 }`}
                                 data-testid={`settings-nav-${item.id}`}
                               >
-                                <ItemIcon className="w-4 h-4" />
                                 <span className="text-sm">{item.label}</span>
                                 {isActive && (
                                   <ChevronRight className="w-4 h-4 ml-auto" />
@@ -394,7 +390,7 @@ export const SettingsPage = () => {
             <div className="flex items-center gap-3">
               {currentInfo && (
                 <>
-                  <span className="text-gray-500">{currentInfo.group.label}</span>
+                  <span className="text-gray-500">{currentInfo.group}</span>
                   <ChevronRight className="w-4 h-4 text-gray-600" />
                   <span className="font-medium">{currentInfo.item.label}</span>
                 </>
