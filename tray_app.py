@@ -26,9 +26,17 @@ from pathlib import Path
 try:
     import pystray
     from PIL import Image, ImageDraw
-except ImportError:
-    print("Missing dependencies. Install with: pip install pystray pillow")
-    sys.exit(1)
+    import cairosvg
+    import io
+    HAS_CAIROSVG = True
+except ImportError as e:
+    if "cairosvg" in str(e):
+        HAS_CAIROSVG = False
+        import pystray
+        from PIL import Image, ImageDraw
+    else:
+        print("Missing dependencies. Install with: pip install pystray pillow cairosvg")
+        sys.exit(1)
 
 # Configuration
 DEFAULT_PORT = 8001
