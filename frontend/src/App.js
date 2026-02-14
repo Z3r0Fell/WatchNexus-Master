@@ -23,6 +23,7 @@ import { PluginMarketplacePage } from "./pages/PluginMarketplacePage";
 import { ThemeCommunityPage } from "./pages/ThemeCommunityPage";
 import { DVRPage } from "./pages/DVRPage";
 import PlaylistsPage from "./pages/PlaylistsPage";
+import AnimePage from "./pages/AnimePage";
 
 import "./App.css";
 
