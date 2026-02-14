@@ -91,7 +91,7 @@ const AnimePage = () => {
         page: 1,
       };
       
-      const res = await api.tmdb.discoverTv(params);
+      const res = await tmdbApi.discover('tv', params);
       setAnime(res.data.results || []);
     } catch (error) {
       console.error('Failed to fetch anime:', error);
@@ -108,7 +108,7 @@ const AnimePage = () => {
     
     setLoading(true);
     try {
-      const res = await api.tmdb.searchTv(searchQuery);
+      const res = await tmdbApi.search(searchQuery, 1, 'tv');
       // Filter for anime (Japanese animation)
       const filtered = (res.data.results || []).filter(item => 
         item.origin_country?.includes('JP') && 
