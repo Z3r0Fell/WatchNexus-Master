@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { api } from '../services/api';
+import { tmdbApi } from '../services/api';
 import { Sparkles, Star, Calendar, Play, Plus, Filter, Search, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
