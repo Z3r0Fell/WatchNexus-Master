@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Folder } from 'lucide-react';
+import { Folder, FolderSearch } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 
@@ -7,7 +8,8 @@ export const GeneralSettings = ({
   settings, 
   setSettings, 
   onSave, 
-  saving 
+  saving,
+  onOpenFileBrowser
 }) => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6">
@@ -19,22 +21,44 @@ export const GeneralSettings = ({
       <div className="grid gap-4">
         <div>
           <label className="text-sm text-gray-400 mb-2 block">Download Path</label>
-          <Input
-            value={settings.download_path}
-            onChange={(e) => setSettings({ ...settings, download_path: e.target.value })}
-            placeholder="/media/downloads"
-            className="bg-white/5 border-white/10"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={settings.download_path}
+              onChange={(e) => setSettings({ ...settings, download_path: e.target.value })}
+              placeholder="/media/downloads"
+              className="bg-white/5 border-white/10 flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenFileBrowser?.('download_path')}
+              className="border-white/10 hover:bg-white/5"
+              data-testid="browse-download-path"
+            >
+              <FolderSearch className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         <div>
           <label className="text-sm text-gray-400 mb-2 block">Library Path</label>
-          <Input
-            value={settings.library_path}
-            onChange={(e) => setSettings({ ...settings, library_path: e.target.value })}
-            placeholder="/media/library"
-            className="bg-white/5 border-white/10"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={settings.library_path}
+              onChange={(e) => setSettings({ ...settings, library_path: e.target.value })}
+              placeholder="/media/library"
+              className="bg-white/5 border-white/10 flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenFileBrowser?.('library_path')}
+              className="border-white/10 hover:bg-white/5"
+              data-testid="browse-library-path"
+            >
+              <FolderSearch className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         <div>
