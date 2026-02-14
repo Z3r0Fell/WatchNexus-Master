@@ -7,9 +7,16 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.2.7
+## Current Version: 1.2.8
 
-### Recent Changes (v1.2.7 - Feb 15, 2026)
+### Recent Changes (v1.2.8 - Feb 15, 2026)
+- **Indexer Health Check** - New IndexerHealthCheck component with status overview, test all button, and setup wizard
+- **Advanced Playback Controls** - Skip intro/credits buttons, next episode auto-play with countdown
+- **System Tray Finalization** - Added launch.py launcher script for cross-platform startup
+- **Skip Segments API** - New endpoints for storing/retrieving skip segments (intro, credits, recap)
+- **Next Episode API** - Endpoint to fetch next episode in series for auto-play
+
+### Previous Changes (v1.2.7 - Feb 15, 2026)
 - **SVG Favicon** - WatchNexus logo SVG now used as browser favicon
 - **System Tray Icon** - tray_app.py updated to load WatchNexus logo (SVG/PNG) with status overlay
 
