@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Plus, Star, Check } from 'lucide-react';
+import { Play, Plus, Star, Check, ListPlus } from 'lucide-react';
 import { cn, getTitle, getReleaseYear, getMediaType } from '../../lib/utils';
+import { AddToPlaylistButton } from './AddToPlaylistButton';
 
-export const MediaCard = ({ item, onAddToWatchlist, isInWatchlist = false, index = 0 }) => {
+export const MediaCard = ({ item, onAddToWatchlist, isInWatchlist = false, index = 0, showPlaylistButton = true }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
