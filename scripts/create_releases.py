@@ -271,10 +271,15 @@ def create_windows_package():
     batch_script = pkg_dir / "START-WATCHNEXUS.bat"
     batch_script.write_text('''@echo off
 setlocal enabledelayedexpansion
+chcp 65001 >nul
+title WatchNexus v''' + VERSION + '''
 
-echo ==============================================
-echo   WatchNexus v''' + VERSION + ''' - Starting...
-echo ==============================================
+echo.
+echo ╔════════════════════════════════════════════════╗
+echo ║     WatchNexus v''' + VERSION + '''                        ║
+echo ║     Unified Media Pipeline                     ║
+echo ║     ZERO EXTERNAL DEPENDENCIES                 ║
+echo ╚════════════════════════════════════════════════╝
 echo.
 
 cd /d "%~dp0"
@@ -282,72 +287,139 @@ cd /d "%~dp0"
 REM Check for Python
 where python >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: Python not found. Please install Python 3.10+
-    echo Download from: https://www.python.org/downloads/
+    echo [ERROR] Python not found!
+    echo.
+    echo Please install Python 3.10 or higher:
+    echo   1. Go to https://www.python.org/downloads/
+    echo   2. Download Python 3.10+
+    echo   3. IMPORTANT: Check "Add Python to PATH" during install
+    echo.
     pause
     exit /b 1
 )
 
+REM Show Python version
+for /f "tokens=*" %%i in ('python --version') do echo   %%i detected
+
 REM Check/create venv
 if not exist "backend\\venv\\Scripts\\activate.bat" (
-    echo Setting up Python environment (first run)...
+    echo.
+    echo [SETUP] First run - setting up Python environment...
+    echo   This may take 1-2 minutes.
+    echo.
     cd backend
     python -m venv venv
     call venv\\Scripts\\activate.bat
-    pip install --upgrade pip
+    pip install --upgrade pip --quiet
     pip install -r requirements.txt
-    call venv\\Scripts\\deactivate.bat
+    call deactivate
     cd ..
-    echo Setup complete!
     echo.
+    echo [OK] Setup complete!
 )
 
-REM Check/create .env
+REM Create minimal .env if needed
 if not exist "backend\\.env" (
-    echo Creating default configuration...
-    (
-        echo MONGO_URL=mongodb://localhost:27017
-        echo DB_NAME=watchnexus
-    ) > backend\\.env
+    echo # WatchNexus Configuration> backend\\.env
+    echo # Database: SQLite (automatic, no setup needed)>> backend\\.env
+    echo # Add your TMDB API key for movie/TV metadata:>> backend\\.env
+    echo # TMDB_API_KEY=your_key_here>> backend\\.env
 )
 
 cd backend
 call venv\\Scripts\\activate.bat
 echo.
-echo Starting WatchNexus server...
-echo Access at: http://localhost:8001
-echo Press Ctrl+C to stop.
+echo   Starting WatchNexus server...
+echo.
+echo   Open in your browser: http://localhost:8001
+echo   Press Ctrl+C to stop
 echo.
 python -m uvicorn server:app --host 127.0.0.1 --port 8001
 ''')
     
     # Create README
     readme = pkg_dir / "README.txt"
-    readme.write_text(f'''WatchNexus v{VERSION} - Unified Media Pipeline
-============================================
+    readme.write_text(f'''
+╔════════════════════════════════════════════════════════════════════╗
+║  WatchNexus v{VERSION} - Unified Media Pipeline                      ║
+║  Your Personal Netflix, Plex & Jellyfin - All in One               ║
+╚════════════════════════════════════════════════════════════════════╝
 
-QUICK START (Windows)
----------------------
+🚀 QUICK START (Windows)
+─────────────────────────
 1. Install Python 3.10+ from https://www.python.org/downloads/
-   IMPORTANT: Check "Add Python to PATH" during installation
+   ⚠️ IMPORTANT: Check "Add Python to PATH" during installation!
+   
+2. Double-click START-WATCHNEXUS.bat
 
-2. Install MongoDB:
-   - Download from https://www.mongodb.com/try/download/community
-   - Or use Docker Desktop
+3. Open http://localhost:8001 in your browser
 
-3. Double-click START-WATCHNEXUS.bat
+4. Create your account and start watching!
 
-4. Open http://localhost:8001 in your browser
+That's it! No database setup, no Docker, no complex configuration.
 
-REQUIREMENTS
-------------
-- Python 3.10+ (add to PATH during install)
-- MongoDB 6.0+
-- ffmpeg (optional, for transcoding)
 
-NOTES
------
-- First run will install Python dependencies (may take a few minutes)
+📋 REQUIREMENTS
+─────────────────────────
+• Python 3.10 or higher (with "Add to PATH" checked)
+• That's literally it!
+
+Optional:
+• ffmpeg (for transcoding) 
+• TMDB API key (for movie/TV metadata)
+
+
+🎬 FEATURES
+─────────────────────────
+• Stream movies and TV shows
+• Built-in torrent engine (no external apps needed)
+• Automatic subtitle downloads
+• Jellyfin/Emby client compatible
+• Watch parties with friends
+• Works on your local network
+
+
+💾 DATA STORAGE
+─────────────────────────
+All your data is stored locally:
+• Database: backend\\watchnexus.db (SQLite)
+• Config: backend\\.env
+• Downloads: configurable in settings
+
+
+🔧 TORRENT ENGINE
+─────────────────────────
+WatchNexus includes Fondue, a built-in torrent engine:
+• 100% Python - no system dependencies
+• Supports magnet links and .torrent files  
+• Sequential download for instant streaming
+• No qBittorrent/Deluge required!
+
+
+📱 CLIENT APPS
+─────────────────────────
+Connect existing Jellyfin/Emby apps to WatchNexus:
+• Jellyfin iOS/Android apps
+• Emby apps
+• Kodi with Jellyfin addon
+Just point them to: http://your-server:8001/emby
+
+
+🆘 TROUBLESHOOTING
+─────────────────────────
+"Python not found": 
+  - Reinstall Python with "Add to PATH" checked
+  - Or add Python to PATH manually
+
+"Port in use": 
+  - Another app is using port 8001
+  - Close the other app or change port
+
+
+📚 MORE INFO
+─────────────────────────
+GitHub: https://github.com/watchnexus/watchnexus
+''')
 - Configuration is stored in backend\\.env
 - Downloads go to C:\\Users\\<you>\\Downloads by default
 
