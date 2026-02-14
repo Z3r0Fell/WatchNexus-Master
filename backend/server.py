@@ -3144,6 +3144,303 @@ async def install_kodi_addon(
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
+# ==================== DRIZZLE - PLAYLIST & QUEUE ENGINE ====================
+
+from drizzle import (
+    get_drizzle_engine, init_drizzle, 
+    Playlist, PlaylistItem, PlaylistType, SkipMarkerType
+)
+
+@api_router.get("/drizzle/playlists")
+async def drizzle_get_playlists(user: dict = Depends(require_auth)):
+    """Get all playlists for the current user."""
+    drizzle = get_drizzle_engine()
+    playlists = await drizzle.get_user_playlists(user["id"])
+    return {
+        "playlists": [p.to_dict() for p in playlists],
+        "count": len(playlists)
+    }
+
+@api_router.post("/drizzle/playlists")
+async def drizzle_create_playlist(
+    name: str,
+    description: str = "",
+    playlist_type: str = "custom",
+    user: dict = Depends(require_auth)
+):
+    """Create a new playlist."""
+    drizzle = get_drizzle_engine()
+    playlist = await drizzle.create_playlist(
+        user_id=user["id"],
+        name=name,
+        description=description,
+        playlist_type=PlaylistType(playlist_type)
+    )
+    return playlist.to_dict()
+
+@api_router.get("/drizzle/playlists/{playlist_id}")
+async def drizzle_get_playlist(playlist_id: str, user: dict = Depends(require_auth)):
+    """Get a specific playlist."""
+    drizzle = get_drizzle_engine()
+    playlist = await drizzle.get_playlist(playlist_id, user["id"])
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    return playlist.to_dict()
+
+@api_router.put("/drizzle/playlists/{playlist_id}")
+async def drizzle_update_playlist(
+    playlist_id: str,
+    request: Request,
+    user: dict = Depends(require_auth)
+):
+    """Update a playlist's settings."""
+    drizzle = get_drizzle_engine()
+    playlist = await drizzle.get_playlist(playlist_id, user["id"])
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    
+    try:
+        body = await request.json()
+    except:
+        body = {}
+    
+    # Update fields
+    if "name" in body:
+        playlist.name = body["name"]
+    if "description" in body:
+        playlist.description = body["description"]
+    if "shuffle" in body:
+        playlist.shuffle = body["shuffle"]
+    if "repeat" in body:
+        playlist.repeat = body["repeat"]
+    if "auto_skip_intros" in body:
+        playlist.auto_skip_intros = body["auto_skip_intros"]
+    if "auto_skip_outros" in body:
+        playlist.auto_skip_outros = body["auto_skip_outros"]
+    if "auto_play_next" in body:
+        playlist.auto_play_next = body["auto_play_next"]
+    if "credits_threshold" in body:
+        playlist.credits_threshold = body["credits_threshold"]
+    
+    await drizzle.update_playlist(playlist)
+    return playlist.to_dict()
+
+@api_router.delete("/drizzle/playlists/{playlist_id}")
+async def drizzle_delete_playlist(playlist_id: str, user: dict = Depends(require_auth)):
+    """Delete a playlist."""
+    drizzle = get_drizzle_engine()
+    success = await drizzle.delete_playlist(playlist_id, user["id"])
+    if not success:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    return {"status": "deleted", "id": playlist_id}
+
+@api_router.post("/drizzle/playlists/{playlist_id}/items")
+async def drizzle_add_item(
+    playlist_id: str,
+    request: Request,
+    position: int = None,
+    user: dict = Depends(require_auth)
+):
+    """Add an item to a playlist."""
+    drizzle = get_drizzle_engine()
+    
+    try:
+        item_data = await request.json()
+    except:
+        raise HTTPException(status_code=400, detail="Invalid item data")
+    
+    item = await drizzle.add_to_playlist(playlist_id, user["id"], item_data, position)
+    if not item:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    
+    return item.to_dict()
+
+@api_router.delete("/drizzle/playlists/{playlist_id}/items/{item_id}")
+async def drizzle_remove_item(
+    playlist_id: str,
+    item_id: str,
+    user: dict = Depends(require_auth)
+):
+    """Remove an item from a playlist."""
+    drizzle = get_drizzle_engine()
+    success = await drizzle.remove_from_playlist(playlist_id, user["id"], item_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Item or playlist not found")
+    return {"status": "removed", "item_id": item_id}
+
+@api_router.put("/drizzle/playlists/{playlist_id}/items/{item_id}/reorder")
+async def drizzle_reorder_item(
+    playlist_id: str,
+    item_id: str,
+    new_position: int,
+    user: dict = Depends(require_auth)
+):
+    """Reorder an item in a playlist."""
+    drizzle = get_drizzle_engine()
+    success = await drizzle.reorder_playlist_item(playlist_id, user["id"], item_id, new_position)
+    if not success:
+        raise HTTPException(status_code=404, detail="Item or playlist not found")
+    return {"status": "reordered", "item_id": item_id, "new_position": new_position}
+
+# ==================== DRIZZLE - Quick Playlist Creation ====================
+
+@api_router.post("/drizzle/play-season")
+async def drizzle_play_season(
+    show_tmdb_id: int,
+    show_title: str,
+    season_number: int,
+    user: dict = Depends(require_auth)
+):
+    """Create and start a playlist for a TV season."""
+    drizzle = get_drizzle_engine()
+    
+    # Fetch season episodes from TMDB
+    season_data = await tmdb_request(f"/tv/{show_tmdb_id}/season/{season_number}")
+    if not season_data:
+        raise HTTPException(status_code=404, detail="Season not found")
+    
+    episodes = season_data.get("episodes", [])
+    if not episodes:
+        raise HTTPException(status_code=404, detail="No episodes found")
+    
+    playlist = await drizzle.create_season_playlist(
+        user_id=user["id"],
+        show_tmdb_id=show_tmdb_id,
+        show_title=show_title,
+        season_number=season_number,
+        episodes=episodes
+    )
+    
+    # Set as active queue
+    await drizzle.set_active_queue(user["id"], playlist.id)
+    
+    return {
+        "playlist": playlist.to_dict(),
+        "message": f"Season {season_number} playlist created with {len(episodes)} episodes",
+        "active": True
+    }
+
+@api_router.post("/drizzle/play-collection")
+async def drizzle_play_collection(
+    collection_id: int,
+    collection_name: str,
+    user: dict = Depends(require_auth)
+):
+    """Create and start a playlist for a movie collection."""
+    drizzle = get_drizzle_engine()
+    
+    # Fetch collection from TMDB
+    collection_data = await tmdb_request(f"/collection/{collection_id}")
+    if not collection_data:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    
+    movies = collection_data.get("parts", [])
+    if not movies:
+        raise HTTPException(status_code=404, detail="No movies found in collection")
+    
+    # Sort by release date
+    movies.sort(key=lambda x: x.get("release_date", "9999"))
+    
+    playlist = await drizzle.create_collection_playlist(
+        user_id=user["id"],
+        collection_name=collection_name,
+        movies=movies
+    )
+    
+    # Set as active queue
+    await drizzle.set_active_queue(user["id"], playlist.id)
+    
+    return {
+        "playlist": playlist.to_dict(),
+        "message": f"Collection playlist created with {len(movies)} movies",
+        "active": True
+    }
+
+# ==================== DRIZZLE - Queue Management ====================
+
+@api_router.post("/drizzle/queue/set/{playlist_id}")
+async def drizzle_set_queue(playlist_id: str, user: dict = Depends(require_auth)):
+    """Set a playlist as the active queue."""
+    drizzle = get_drizzle_engine()
+    playlist = await drizzle.set_active_queue(user["id"], playlist_id)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    return {"status": "active", "playlist": playlist.to_dict()}
+
+@api_router.get("/drizzle/queue")
+async def drizzle_get_queue(user: dict = Depends(require_auth)):
+    """Get the current active queue state."""
+    drizzle = get_drizzle_engine()
+    state = await drizzle.get_queue_state(user["id"])
+    if not state:
+        return {"active": False, "queue": None}
+    return {"active": True, "queue": state}
+
+@api_router.get("/drizzle/queue/next/{current_item_id}")
+async def drizzle_get_next(current_item_id: str, user: dict = Depends(require_auth)):
+    """Get the next item in the queue."""
+    drizzle = get_drizzle_engine()
+    next_item = await drizzle.get_next_in_queue(user["id"], current_item_id)
+    if not next_item:
+        return {"has_next": False, "next": None}
+    return {"has_next": True, "next": next_item.to_dict()}
+
+@api_router.post("/drizzle/queue/progress")
+async def drizzle_update_progress(
+    item_id: str,
+    current_time: int,
+    watched: bool = False,
+    user: dict = Depends(require_auth)
+):
+    """Update playback progress for an item in the queue."""
+    drizzle = get_drizzle_engine()
+    await drizzle.update_queue_progress(user["id"], item_id, current_time, watched)
+    return {"status": "updated"}
+
+@api_router.delete("/drizzle/queue")
+async def drizzle_clear_queue(user: dict = Depends(require_auth)):
+    """Clear the active queue."""
+    drizzle = get_drizzle_engine()
+    drizzle.clear_active_queue(user["id"])
+    return {"status": "cleared"}
+
+# ==================== DRIZZLE - Skip Markers ====================
+
+@api_router.get("/drizzle/markers/{media_type}/{tmdb_id}")
+async def drizzle_get_markers(
+    media_type: str,
+    tmdb_id: int,
+    user: dict = Depends(require_auth)
+):
+    """Get skip markers for a media item."""
+    drizzle = get_drizzle_engine()
+    markers = await drizzle.get_skip_markers(media_type, tmdb_id)
+    return {"markers": markers}
+
+@api_router.post("/drizzle/markers")
+async def drizzle_set_marker(
+    media_type: str,
+    tmdb_id: int,
+    marker_type: str,
+    start_time: int,
+    end_time: int,
+    auto_skip: bool = True,
+    label: str = "",
+    user: dict = Depends(require_auth)
+):
+    """Set a skip marker for a media item."""
+    drizzle = get_drizzle_engine()
+    marker = await drizzle.set_skip_marker(
+        media_type=media_type,
+        tmdb_id=tmdb_id,
+        marker_type=SkipMarkerType(marker_type),
+        start_time=start_time,
+        end_time=end_time,
+        auto_skip=auto_skip,
+        label=label
+    )
+    return marker
+
 # ==================== SYSTEM MAINTENANCE ====================
 
 import platform
