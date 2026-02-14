@@ -11,6 +11,9 @@ The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO ex
 - **Frontend**: React (served by FastAPI at port 8001)
 - **Backend**: FastAPI (port 8001)
 - **Database**: SQLite (self-contained, zero setup)
+  - **WAL mode**: Concurrent read/write access
+  - **Auto-backup**: Creates backup on every startup (keeps 7)
+  - **Auto-VACUUM**: Optimizes database every 24 hours
 - **Torrent Engine**: LTorrent (pure Python, v1.6.0)
 
 ---
