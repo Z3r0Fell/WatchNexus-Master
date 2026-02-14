@@ -19,50 +19,34 @@ import { BACKEND_URL } from '../lib/config';
 
 const API_URL = BACKEND_URL;
 
-// Settings navigation structure
-const SETTINGS_SECTIONS = [
-  {
-    id: 'core',
-    label: 'Core Settings',
-    icon: Cog,
-    items: [
-      { id: 'general', label: 'General', icon: Settings },
-      { id: 'users', label: 'Users & Access', icon: Users },
-      { id: 'library', label: 'Media Libraries', icon: BookOpen },
-      { id: 'media-health', label: 'Media Health', icon: Activity },
-    ]
-  },
-  {
-    id: 'acquisition',
-    label: 'Media Acquisition',
-    icon: Download,
-    items: [
-      { id: 'indexers', label: 'Indexers', icon: Search },
-      { id: 'download', label: 'Download Client', icon: Download },
-    ]
-  },
-  {
-    id: 'streaming',
-    label: 'Playback & Streaming',
-    icon: Tv,
-    items: [
-      { id: 'iptv', label: 'IPTV', icon: Tv },
-      { id: 'streaming', label: 'Streaming Services', icon: Globe },
-      { id: 'subtitles', label: 'Subtitles', icon: Subtitles },
-    ]
-  },
-  {
-    id: 'advanced',
-    label: 'Advanced',
-    icon: Wrench,
-    items: [
-      { id: 'gelatin', label: 'External Access', icon: Server },
-      { id: 'theme-forge', label: 'Theme Forge', icon: Palette },
-      { id: 'plugins', label: 'Plugins', icon: Package },
-      { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    ]
-  }
+// Settings navigation structure - simplified flat list
+const SETTINGS_NAV = [
+  { id: 'general', label: 'General', group: 'Core Settings', groupId: 'core' },
+  { id: 'users', label: 'Users & Access', group: 'Core Settings', groupId: 'core' },
+  { id: 'library', label: 'Media Libraries', group: 'Core Settings', groupId: 'core' },
+  { id: 'media-health', label: 'Media Health', group: 'Core Settings', groupId: 'core' },
+  { id: 'indexers', label: 'Indexers', group: 'Media Acquisition', groupId: 'acquisition' },
+  { id: 'download', label: 'Download Client', group: 'Media Acquisition', groupId: 'acquisition' },
+  { id: 'iptv', label: 'IPTV', group: 'Playback & Streaming', groupId: 'playback' },
+  { id: 'streaming', label: 'Streaming Services', group: 'Playback & Streaming', groupId: 'playback' },
+  { id: 'subtitles', label: 'Subtitles', group: 'Playback & Streaming', groupId: 'playback' },
+  { id: 'gelatin', label: 'External Access', group: 'Advanced', groupId: 'advanced' },
+  { id: 'theme-forge', label: 'Theme Forge', group: 'Advanced', groupId: 'advanced' },
+  { id: 'plugins', label: 'Plugins', group: 'Advanced', groupId: 'advanced' },
+  { id: 'maintenance', label: 'Maintenance', group: 'Advanced', groupId: 'advanced' },
 ];
+
+// Get grouped sections
+const getGroupedSections = () => {
+  const groups = {};
+  SETTINGS_NAV.forEach(item => {
+    if (!groups[item.groupId]) {
+      groups[item.groupId] = { id: item.groupId, label: item.group, items: [] };
+    }
+    groups[item.groupId].items.push(item);
+  });
+  return Object.values(groups);
+};
 
 export const SettingsPage = () => {
   // Current active setting
