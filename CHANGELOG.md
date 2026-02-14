@@ -10,6 +10,34 @@ The format follows [Semantic Versioning](https://semver.org/):
 
 ---
 
+## [1.2.1] - 2026-02-14
+
+### Added
+- **File-based logging** with rotation (10MB max, 7 backups)
+- **Log viewer** in Maintenance tab:
+  - View last 50/100/200/500 lines
+  - Color-coded log levels (ERROR=red, WARNING=yellow, INFO=white)
+  - Download logs directly from UI
+  - Auto-refresh every 5 seconds when expanded
+  - Clear old rotated logs
+- **Better start script**:
+  - Port conflict detection with option to kill existing process
+  - Custom port support: `./start-watchnexus.sh 8002`
+  - Stop command: `./start-watchnexus.sh stop`
+  - Status command: `./start-watchnexus.sh status`
+  - PID file management for clean shutdowns
+- New API endpoints:
+  - `GET /api/logs/list` - List log files
+  - `GET /api/logs/view` - View log contents
+  - `GET /api/logs/download/{filename}` - Download log file
+  - `POST /api/logs/clear` - Clear rotated logs
+
+### Changed
+- Log output now goes to both console AND file
+- Start script shows log file location
+
+---
+
 ## [1.2.0] - 2026-02-14
 
 ### Added
