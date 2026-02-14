@@ -3310,6 +3310,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==================== DATABASE INITIALIZATION ====================
+@app.on_event("startup")
+async def startup_db():
+    """Initialize SQLite database on startup."""
+    global db
+    db = await init_database()
+    logger.info("SQLite database initialized successfully")
+
 # ==================== STATIC FILE SERVING (FOR STANDALONE BUILD) ====================
 # Serve frontend build files when running as standalone application
 FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend"
