@@ -9,7 +9,7 @@ The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO ex
 
 ---
 
-## Current Version: 1.2.0
+## Current Version: 1.2.1
 
 ### Versioning Scheme
 - **MAJOR** (1.x.x): Breaking changes, major architecture shifts
