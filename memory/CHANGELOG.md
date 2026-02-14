@@ -2,6 +2,18 @@
 
 All notable changes to WatchNexus will be documented in this file.
 
+## [1.2.3] - 2025-12-19
+
+### Fixed
+- **Critical: Authentication Token Bug** - Fixed `auth_token` vs `token` mismatch in marmaladeApi.js and VideoPlayer.jsx
+  - Library management now works correctly
+  - Subtitle search works correctly
+- **Data Directory Portability** - Marmalade now stores data in `backend/marmalade_data/` instead of `/var/lib/marmalade`
+  - Works correctly in standalone builds
+  - No special permissions required
+
+---
+
 ## [1.2.2] - 2025-12-19
 
 ### Added
