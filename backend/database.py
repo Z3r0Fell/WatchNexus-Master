@@ -414,6 +414,44 @@ class SQLiteDB:
                 expires_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_parties_code ON pending_parties(party_code);
+            
+            -- Drizzle Playlists
+            CREATE TABLE IF NOT EXISTS playlists (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                playlist_type TEXT DEFAULT 'custom',
+                items TEXT DEFAULT '[]',
+                cover_image TEXT,
+                shuffle INTEGER DEFAULT 0,
+                repeat INTEGER DEFAULT 0,
+                auto_skip_intros INTEGER DEFAULT 1,
+                auto_skip_outros INTEGER DEFAULT 0,
+                auto_play_next INTEGER DEFAULT 1,
+                credits_threshold INTEGER DEFAULT 90,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                total_duration INTEGER DEFAULT 0,
+                item_count INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_playlists_user ON playlists(user_id);
+            
+            -- Drizzle Skip Markers (global, shared across users)
+            CREATE TABLE IF NOT EXISTS skip_markers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                media_type TEXT NOT NULL,
+                tmdb_id INTEGER NOT NULL,
+                marker_type TEXT NOT NULL,
+                start_time INTEGER NOT NULL,
+                end_time INTEGER NOT NULL,
+                auto_skip INTEGER DEFAULT 1,
+                label TEXT DEFAULT '',
+                created_at TEXT NOT NULL,
+                UNIQUE(tmdb_id, media_type, marker_type)
+            );
+            CREATE INDEX IF NOT EXISTS idx_skip_markers_tmdb ON skip_markers(tmdb_id, media_type);
         ''')
         await self._connection.commit()
         
