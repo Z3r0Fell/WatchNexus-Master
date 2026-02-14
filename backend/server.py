@@ -67,10 +67,6 @@ app = FastAPI(title="WatchNexus API")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 
-# Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 # ==================== MODELS ====================
 
 class UserCreate(BaseModel):
