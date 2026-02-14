@@ -50,7 +50,7 @@ WatchNexus is a unified, self-hosted media pipeline that replaces the need for S
   - Episode Naming with format templates
   - Quality Profiles with 3 presets
 
-### Phase 5 (Feb 13, 2026) - Current Session ✅
+### Phase 5 (Feb 13-14, 2026) - Current Session ✅
 - **Plugin Adapter Framework Backend VERIFIED COMPLETE**:
   - Full implementation for Kodi, Jellyfin/Emby, and Plex plugin conversion
   - API endpoints: `/api/adapter/convert`, `/api/adapter/detect`, `/api/adapter/supported`
@@ -73,6 +73,18 @@ WatchNexus is a unified, self-hosted media pipeline that replaces the need for S
   - Ubuntu/Debian and Fedora instructions
   - Docker MongoDB setup
   - Troubleshooting section
+
+- **Downloadable Release Packages**:
+  - `watchnexus-v1.0.0-windows.zip` (6.8MB) - Pre-built Windows package with launcher
+  - `watchnexus-v1.0.0-linux.zip` (6.8MB) - Pre-built Linux package with systemd installer
+  - `watchnexus-v1.0.0-source.zip` (6.0MB) - Full source code
+  - Downloads page at `/releases.html`
+
+- **Marketing Video Assets**:
+  - `kickstarter_intro.mp4` - Sora 2 AI-generated cinematic intro (4s, 1280x720)
+  - `walkthrough_demo.mp4` - UI walkthrough with cursor (19 frames, ~30s)
+  - 19 high-res PNG frames for custom editing
+  - Video assets page at `/video-assets.html`
 
 ## File Architecture
 ```
