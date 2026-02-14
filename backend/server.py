@@ -3354,6 +3354,14 @@ if frontend_dir:
             return FileResponse(str(manifest_path), media_type="application/json")
         raise HTTPException(status_code=404)
     
+    # Serve root path explicitly
+    @app.get("/")
+    async def serve_root():
+        index_path = frontend_dir / "index.html"
+        if index_path.exists():
+            return FileResponse(str(index_path), media_type="text/html")
+        raise HTTPException(status_code=404, detail="Frontend not found")
+    
     # Catch-all route: serve index.html for SPA routing
     # This must be LAST to not interfere with API routes
     @app.get("/{full_path:path}")
