@@ -70,10 +70,10 @@ See [CHANGELOG.md](/app/CHANGELOG.md) for full version history.
 
 ## Release Packages
 
-Current release: **v1.2.0**
+Current release: **v1.2.1**
 
-- `/app/dist/watchnexus-v1.2.0-linux.zip`
-- `/app/dist/watchnexus-v1.2.0-windows.zip`
+- `/app/dist/watchnexus-v1.2.1-linux.zip`
+- `/app/dist/watchnexus-v1.2.1-windows.zip`
 
 ### Requirements
 - Python 3.10+ (that's it!)
