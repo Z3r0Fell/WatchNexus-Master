@@ -30,6 +30,9 @@ lxml>=5.0.0
 google-api-python-client>=2.100.0
 google-auth>=2.23.0
 
+# Torrent Engine (pure Python - no system deps)
+torrentp>=0.1.0
+
 # Utilities
 Pillow>=10.0.0
 python-dateutil>=2.8.0

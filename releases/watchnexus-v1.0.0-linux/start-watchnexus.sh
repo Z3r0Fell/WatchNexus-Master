@@ -16,28 +16,10 @@ echo "  WatchNexus - Starting..."
 echo "=============================================="
 echo ""
 
-# Check for system dependencies
-echo "Checking system dependencies..."
-
-# Check for libtorrent
-if ! python3 -c "import libtorrent" 2>/dev/null; then
-    echo -e "${RED}ERROR: libtorrent not found!${NC}"
-    echo ""
-    echo "WatchNexus requires libtorrent for the built-in torrent engine."
-    echo ""
-    echo "Install it with:"
-    echo -e "  ${GREEN}Arch Linux:${NC}     sudo pacman -S libtorrent-rasterbar python-libtorrent"
-    echo -e "  ${GREEN}Ubuntu/Debian:${NC}  sudo apt install python3-libtorrent"
-    echo -e "  ${GREEN}Fedora:${NC}         sudo dnf install rb_libtorrent-python3"
-    echo ""
-    exit 1
-fi
-echo -e "  libtorrent: ${GREEN}OK${NC}"
-
 # Check for MongoDB
 if ! command -v mongod &> /dev/null && ! pgrep -x mongod > /dev/null && ! docker ps 2>/dev/null | grep -q mongo; then
     echo -e "${YELLOW}WARNING: MongoDB not detected${NC}"
-    echo "  Install: sudo pacman -S mongodb-bin (AUR) or use Docker"
+    echo "  Arch:    yay -S mongodb-bin"
     echo "  Docker:  docker run -d --name mongodb -p 27017:27017 mongo:7"
     echo ""
 fi
@@ -52,7 +34,7 @@ if [ ! -f "backend/venv/bin/activate" ]; then
     pip install -r requirements.txt
     deactivate
     cd ..
-    echo "Setup complete!"
+    echo -e "${GREEN}Setup complete!${NC}"
     echo ""
 fi
 
