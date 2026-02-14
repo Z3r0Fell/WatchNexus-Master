@@ -215,6 +215,41 @@ HTTP Request: GET https://api.themoviedb.org/3/trending/all/week?api_key= "HTTP/
 
 ---
 
+### Day 10 - Feature Additions & Bug Fixes (v1.2.5)
+**Date:** 2026-02-14 (Fork 12)
+
+#### Additions ✅
+33. Browse buttons for Download/Library paths in General Settings
+34. TMDB metadata fetching during library scan
+35. Metadata refresh button per library
+36. Poster display in Library Recently Added section
+37. PlaylistsPage Layout wrapper (fixes blank page + missing sidebar)
+
+#### Bugs Found: 5
+
+| # | Bug | Severity | Status | Fix |
+|---|-----|----------|--------|-----|
+| BUG-011 | 🔴 Playlists page blank with no sidebar | CRITICAL | ✅ FIXED | Added Layout wrapper to PlaylistsPage |
+| BUG-012 | 🟠 Media posters not loading from TMDB | HIGH | ✅ FIXED | Added TMDB metadata fetch during scan |
+| BUG-013 | 🟡 No browse buttons in General Settings | MEDIUM | ✅ FIXED | Added FolderSearch buttons to path inputs |
+| BUG-014 | 🟡 Plugins page empty | MEDIUM | ✅ FIXED | Plugins discovered and loading correctly |
+| BUG-015 | 🟢 No metadata refresh option | LOW | ✅ FIXED | Added refresh button per library |
+
+#### Breaks/Regressions 💥
+| # | Break | Severity | Cause | Status |
+|---|-------|----------|-------|--------|
+| BREAK-006 | 🔴 Playlists page missing Layout | CRITICAL | PlaylistsPage didn't wrap in Layout | ✅ FIXED |
+
+**Files Changed:**
+- `/app/frontend/src/pages/PlaylistsPage.js` - Added Layout wrapper
+- `/app/frontend/src/pages/LibraryPage.js` - Added poster display, metadata refresh button
+- `/app/frontend/src/components/settings/GeneralSettings.jsx` - Added browse buttons
+- `/app/frontend/src/services/marmaladeApi.js` - Added refreshMetadata method
+- `/app/backend/marmalade_server.py` - Added TMDB metadata fetching
+- `/app/backend/server.py` - Added refresh-metadata API endpoints
+
+---
+
 ## Bug Categories
 
 ### By Component
