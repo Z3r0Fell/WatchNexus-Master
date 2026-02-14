@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import { indexersApi, compoteApi } from '../../services/api';
+import { IndexerHealthCheck } from './IndexerHealthCheck';
 
 export const IndexerSettings = () => {
   const [indexers, setIndexers] = useState([]);
