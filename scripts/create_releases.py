@@ -478,8 +478,7 @@ REM Create minimal .env if needed
 if not exist "backend\\.env" (
     echo # WatchNexus Configuration> backend\\.env
     echo # Database: SQLite (automatic, no setup needed)>> backend\\.env
-    echo # Add your TMDB API key for movie/TV metadata:>> backend\\.env
-    echo # TMDB_API_KEY=your_key_here>> backend\\.env
+    echo TMDB_API_KEY=8c860bcb88494f598008480abfe24d13>> backend\\.env
 )
 
 cd backend
