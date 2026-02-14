@@ -418,6 +418,124 @@ export const MaintenanceSettings = () => {
         </div>
       </div>
 
+      {/* Log Viewer */}
+      <div className="bg-surface border border-white/10 rounded-2xl p-6">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setLogExpanded(!logExpanded)}
+        >
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-400" />
+            Server Logs
+          </h3>
+          <div className="flex items-center gap-3">
+            {logFiles.length > 0 && (
+              <span className="text-sm text-gray-400">
+                {logFiles.length} log file{logFiles.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {logExpanded ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </div>
+        </div>
+
+        {logExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-4"
+          >
+            {/* Log Controls */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <select
+                value={selectedLogFile}
+                onChange={(e) => setSelectedLogFile(e.target.value)}
+                className="bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
+              >
+                {logFiles.map(file => (
+                  <option key={file.filename} value={file.filename}>
+                    {file.filename} ({file.size_kb} KB)
+                  </option>
+                ))}
+              </select>
+              
+              <select
+                value={logLines}
+                onChange={(e) => setLogLines(Number(e.target.value))}
+                className="bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
+              >
+                <option value={50}>Last 50 lines</option>
+                <option value={100}>Last 100 lines</option>
+                <option value={200}>Last 200 lines</option>
+                <option value={500}>Last 500 lines</option>
+              </select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchLogs}
+                className="border-white/20"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+
+              <a
+                href={`${API_URL}/api/logs/download/${selectedLogFile}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-black/30 border border-white/20 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAction('clearLogs', '/api/logs/clear', 'Old logs cleared')}
+                disabled={actionLoading.clearLogs}
+                className="border-white/20 text-red-400 hover:text-red-300"
+              >
+                {actionLoading.clearLogs ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Clear Old Logs
+              </Button>
+            </div>
+
+            {/* Log Output */}
+            <div className="bg-black/50 border border-white/10 rounded-xl p-4 font-mono text-xs overflow-x-auto max-h-96 overflow-y-auto">
+              {logs.length > 0 ? (
+                <div className="space-y-0.5">
+                  {logs.map((line, index) => (
+                    <div 
+                      key={index} 
+                      className={`whitespace-pre-wrap break-all ${
+                        line.includes('ERROR') ? 'text-red-400' :
+                        line.includes('WARNING') ? 'text-yellow-400' :
+                        line.includes('INFO') ? 'text-gray-300' :
+                        'text-gray-500'
+                      }`}
+                    >
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">No logs available</p>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-500 mt-3">
+              Logs auto-refresh every 5 seconds when expanded. 
+              Log files rotate at 10MB (keeps 7 backups).
+            </p>
+          </motion.div>
+        )}
+      </div>
+
       {/* Version Info */}
       <div className="bg-surface border border-white/10 rounded-2xl p-6">
         <div className="flex items-center justify-between">
