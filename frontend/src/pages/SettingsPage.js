@@ -238,7 +238,13 @@ export const SettingsPage = () => {
           </TabsList>
 
           <TabsContent value="general">
-            <GeneralSettings settings={settings} setSettings={setSettings} onSave={handleSaveSettings} saving={saving} />
+            <GeneralSettings 
+              settings={settings} 
+              setSettings={setSettings} 
+              onSave={handleSaveSettings} 
+              saving={saving}
+              onOpenFileBrowser={(field) => openFileBrowser(field, settings[field] || '/')}
+            />
           </TabsContent>
 
           <TabsContent value="users">
