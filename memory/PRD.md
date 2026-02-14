@@ -9,14 +9,14 @@ The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO ex
 
 ---
 
-## Current Version: 1.2.1
+## Current Version: 1.2.2
 
 ### Versioning Scheme
 - **MAJOR** (1.x.x): Breaking changes, major architecture shifts
 - **MINOR** (x.2.x): New features, significant enhancements  
-- **PATCH** (x.x.0): Bug fixes, code changes
+- **PATCH** (x.x.2): Bug fixes, code changes
 
-See [CHANGELOG.md](/app/CHANGELOG.md) for full version history.
+See [CHANGELOG.md](/app/memory/CHANGELOG.md) for full version history.
 
 ---
 
@@ -41,39 +41,64 @@ See [CHANGELOG.md](/app/CHANGELOG.md) for full version history.
 
 ---
 
-## What's Working (v1.2.0)
+## Module Codenames
+
+| Codename | Module | Description |
+|----------|--------|-------------|
+| **Fondue** | Torrent Engine | BitTorrent download engine |
+| **Compote** | Indexer Manager | Aggregates torrent indexers |
+| **Syrup** | Live Scraper | Real-time site scraping |
+| **Sieve** | Media Health | File health checker |
+| **Preserve** | Challenge Solver | Cloudflare bypass |
+| **Potluck** | Watch Party | Synchronized viewing |
+| **Drizzle** | Playlist Engine | Continuous playback (NEW in v1.2.2) |
+
+---
+
+## What's Working (v1.2.2)
 
 ### Core Features
-- ✅ User registration and login
-- ✅ SQLite database (zero external dependencies)
-- ✅ Server serves frontend (single executable)
-- ✅ TMDB integration for movie/TV metadata
-- ✅ Watchlist and watch progress tracking
-- ✅ Multi-user with permissions
-- ✅ LTorrent for magnet links and .torrent files
+- User registration and login
+- SQLite database (zero external dependencies)
+- Server serves frontend (single executable)
+- TMDB integration for movie/TV metadata
+- Watchlist and watch progress tracking
+- Multi-user with permissions
+- LTorrent for magnet links and .torrent files
 
-### New in v1.2.1
-- ✅ **File-based logging** with rotation (10MB, 7 backups)
-- ✅ **Log viewer in Maintenance tab** - view, download, clear logs
-- ✅ **Better start script** - stop/status commands, port conflict handling
+### New in v1.2.2
+- **Drizzle Playlist Engine**
+  - Create custom playlists
+  - "Play Season" - automatic TV season playlists
+  - "Play All" - movie collection playlists
+  - Auto-play next item
+  - Skip intro/outro markers support
+  - Queue management with progress tracking
+- **Improved Port Conflict Handling**
+  - Prompts user before killing process on port 8001
+  - Shows process name and PID
+  - Provides manual instructions if declined
 
-### New in v1.2.0
-- ✅ **Maintenance Tab** in Settings
+### v1.2.1
+- File-based logging with rotation (10MB, 7 backups)
+- Log viewer in Maintenance tab
+- Better start script commands
+
+### v1.2.0
+- **Maintenance Tab** in Settings
   - Server status (uptime, CPU, memory)
   - System info (platform, Python version)
   - Database health monitoring
   - Backup management
-  - Cache statistics
-  - Torrent engine status
 
 ---
 
 ## Release Packages
 
-Current release: **v1.2.1**
+Current release: **v1.2.2**
 
-- `/app/dist/watchnexus-v1.2.1-linux.zip`
-- `/app/dist/watchnexus-v1.2.1-windows.zip`
+- `/app/dist/watchnexus-v1.2.2-linux.zip`
+- `/app/dist/watchnexus-v1.2.2-windows.zip`
 
 ### Requirements
 - Python 3.10+ (that's it!)
@@ -82,6 +107,19 @@ Current release: **v1.2.1**
 
 ## API Endpoints
 
+### Drizzle (Playlists)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/drizzle/playlists` | GET | List user's playlists |
+| `/api/drizzle/playlists` | POST | Create new playlist |
+| `/api/drizzle/playlists/{id}` | GET/PUT/DELETE | Manage playlist |
+| `/api/drizzle/playlists/{id}/items` | POST | Add item to playlist |
+| `/api/drizzle/play-season` | POST | Create season playlist |
+| `/api/drizzle/play-collection` | POST | Create collection playlist |
+| `/api/drizzle/queue` | GET | Get active queue state |
+| `/api/drizzle/queue/set/{id}` | POST | Set active queue |
+| `/api/drizzle/markers` | GET/POST | Skip markers |
+
 ### System Maintenance
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -89,11 +127,6 @@ Current release: **v1.2.1**
 | `/api/system/stats` | GET | Detailed system statistics |
 | `/api/db/stats` | GET | Database health info |
 | `/api/db/backups` | GET | List all backups |
-| `/api/db/vacuum` | POST | Optimize database |
-| `/api/db/backup` | POST | Create manual backup |
-| `/api/cache/stats` | GET | TMDB cache info |
-| `/api/cache/clear` | POST | Clear TMDB cache |
-| `/api/torrent/status` | GET | Torrent engine status |
 
 ### Authentication
 | Endpoint | Method | Description |
@@ -101,7 +134,6 @@ Current release: **v1.2.1**
 | `/api/auth/register` | POST | Create new user |
 | `/api/auth/login` | POST | User login |
 | `/api/auth/me` | GET | Current user info |
-| `/api/auth/logout` | POST | Logout |
 
 ---
 
@@ -111,20 +143,18 @@ Current release: **v1.2.1**
 - [x] SQLite database (zero dependencies)
 - [x] Database hardening (WAL, backups, VACUUM)
 - [x] Maintenance tab in Settings
-- [ ] User testing of v1.2.0 release
+- [x] Drizzle playlist system
+- [ ] Full end-to-end standalone testing
 
 ### P1 - High Priority
 - [ ] Windows release package testing
 - [ ] Video assets for Kickstarter
-- [ ] Full end-to-end standalone testing
+- [ ] macOS release package
 
-### P2 - Playback Playlist Feature (User Requested)
-- [ ] Queue-based playlists (movies + TV)
-- [ ] Auto-play next on credits/end
-- [ ] Skip intro/outro/credits
-- [ ] Post-credits scene handling (MCU-style)
-- [ ] "Play All" for collections, "Play Season" for TV
+### P2 - Enhancements
 - [ ] AI-powered intro/credits detection
+- [ ] Post-credits scene handling (MCU-style)
+- [ ] Advanced skip marker editor
 
 ### P3 - Future
 - [ ] Roku/Universal app
@@ -147,9 +177,12 @@ Current release: **v1.2.1**
 ### Backend
 - `/app/backend/server.py` - Main FastAPI server
 - `/app/backend/database.py` - SQLite database layer
-- `/app/backend/fondue.py` - Torrent engine (LTorrent)
+- `/app/backend/drizzle.py` - Playlist engine (NEW)
+- `/app/backend/fondue.py` - Torrent engine
 
 ### Frontend
+- `/app/frontend/src/pages/PlaylistsPage.js` - Playlists page (NEW)
+- `/app/frontend/src/components/drizzle/` - Playlist components (NEW)
 - `/app/frontend/src/pages/SettingsPage.js` - Settings with tabs
 - `/app/frontend/src/components/settings/MaintenanceSettings.jsx` - Maintenance tab
 
@@ -157,5 +190,5 @@ Current release: **v1.2.1**
 - `/app/scripts/create_releases.py` - Release package generator
 
 ### Documentation
-- `/app/CHANGELOG.md` - Version history
+- `/app/memory/CHANGELOG.md` - Version history
 - `/app/memory/PRD.md` - This file
