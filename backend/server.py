@@ -3400,9 +3400,13 @@ else:
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Clean shutdown of database and torrent engine."""
+    global db
     # Shutdown torrent engine gracefully
     try:
         shutdown_fondue_engine()
     except:
         pass
-    client.close()
+    # Close SQLite connection
+    if db:
+        await db.close()
