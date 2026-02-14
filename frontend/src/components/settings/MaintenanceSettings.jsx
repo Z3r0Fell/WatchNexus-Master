@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import {
   Database, Server, HardDrive, Cpu, Clock, RefreshCw,
   Trash2, Download, Activity, CheckCircle2, AlertTriangle,
-  Archive, Zap, MemoryStick, Disc, Info, Shield
+  Archive, Zap, MemoryStick, Disc, Info, Shield, FileText,
+  ChevronDown, ChevronUp, ExternalLink
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
@@ -20,16 +21,24 @@ export const MaintenanceSettings = () => {
   const [torrentStatus, setTorrentStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
+  
+  // Log viewer state
+  const [logs, setLogs] = useState([]);
+  const [logFiles, setLogFiles] = useState([]);
+  const [selectedLogFile, setSelectedLogFile] = useState('watchnexus.log');
+  const [logExpanded, setLogExpanded] = useState(false);
+  const [logLines, setLogLines] = useState(100);
 
   const fetchAllStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [systemRes, dbRes, backupsRes, cacheRes, torrentRes] = await Promise.all([
+      const [systemRes, dbRes, backupsRes, cacheRes, torrentRes, logFilesRes] = await Promise.all([
         axios.get(`${API_URL}/api/system/stats`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/db/stats`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/db/backups`).catch(() => ({ data: { backups: [] } })),
         axios.get(`${API_URL}/api/cache/stats`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/torrent/status`).catch(() => ({ data: null })),
+        axios.get(`${API_URL}/api/logs/list`).catch(() => ({ data: { logs: [] } })),
       ]);
       
       setSystemStats(systemRes.data);
@@ -37,6 +46,7 @@ export const MaintenanceSettings = () => {
       setBackups(backupsRes.data?.backups || []);
       setCacheStats(cacheRes.data);
       setTorrentStatus(torrentRes.data);
+      setLogFiles(logFilesRes.data?.logs || []);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {
@@ -44,12 +54,32 @@ export const MaintenanceSettings = () => {
     }
   }, []);
 
+  const fetchLogs = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/logs/view`, {
+        params: { filename: selectedLogFile, lines: logLines }
+      });
+      setLogs(res.data?.lines || []);
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
+    }
+  }, [selectedLogFile, logLines]);
+
   useEffect(() => {
     fetchAllStats();
     // Refresh every 30 seconds
     const interval = setInterval(fetchAllStats, 30000);
     return () => clearInterval(interval);
   }, [fetchAllStats]);
+
+  useEffect(() => {
+    if (logExpanded) {
+      fetchLogs();
+      // Auto-refresh logs every 5 seconds when expanded
+      const interval = setInterval(fetchLogs, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [logExpanded, fetchLogs]);
 
   const handleAction = async (action, endpoint, successMessage) => {
     setActionLoading(prev => ({ ...prev, [action]: true }));
