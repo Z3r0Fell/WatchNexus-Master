@@ -1,9 +1,10 @@
 import { BACKEND_URL } from '../../lib/config';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle, Upload, Link2, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
+import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -11,6 +12,11 @@ export const PluginsSettings = () => {
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
   const [togglingPlugin, setTogglingPlugin] = useState(null);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [showImportOptions, setShowImportOptions] = useState(false);
+  const [uninstallingPlugin, setUninstallingPlugin] = useState(null);
+  const fileInputRef = useRef(null);
 
   const fetchPlugins = useCallback(async () => {
     setLoadingPlugins(true);
@@ -35,6 +41,80 @@ export const PluginsSettings = () => {
     try { await axios.post(`${BACKEND_URL}/api/gadgets/discover`); toast.success('Plugin discovery complete!'); fetchPlugins(); }
     catch { toast.error('Failed to discover plugins'); }
     finally { setLoadingPlugins(false); }
+  };
+
+  const handleFileImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.zip')) {
+      toast.error('Only .zip files are supported');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-file`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      toast.success(`Plugin "${res.data.name}" imported successfully!`);
+      fetchPlugins();
+      setShowImportOptions(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to import plugin');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUrlImport = async () => {
+    if (!importUrl) {
+      toast.error('Please enter a URL');
+      return;
+    }
+    
+    if (!importUrl.endsWith('.zip')) {
+      toast.error('URL must point to a .zip file');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-url`, null, {
+        params: { url: importUrl }
+      });
+      
+      toast.success(`Plugin "${res.data.name}" imported successfully!`);
+      fetchPlugins();
+      setImportUrl('');
+      setShowImportOptions(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to import plugin from URL');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleUninstallPlugin = async (pluginId, pluginName) => {
+    if (!window.confirm(`Are you sure you want to uninstall "${pluginName}"? This will delete all plugin files.`)) {
+      return;
+    }
+    
+    setUninstallingPlugin(pluginId);
+    try {
+      await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`);
+      toast.success(`Plugin "${pluginName}" uninstalled`);
+      fetchPlugins();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to uninstall plugin');
+    } finally {
+      setUninstallingPlugin(null);
+    }
   };
 
   const pluginTypeColors = {
