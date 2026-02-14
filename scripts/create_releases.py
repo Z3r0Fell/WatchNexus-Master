@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "1.2.3"  # Port conflict prompt, Drizzle playlist system, auth token fix
+VERSION = "1.2.4"  # Folder browser, auto-scan, Anime section, TMDB discover fix
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
