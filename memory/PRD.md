@@ -31,8 +31,14 @@ The goal is to be **simpler than Plex, more powerful than Jellyfin, with ZERO ex
 
 ### Key Changes in v1.1.0
 - **Replaced MongoDB with SQLite** - No external database needed
+- **Database hardening**:
+  - WAL mode for concurrent read/write (no locks during reads)
+  - Automatic backup on every startup (keeps 7 rolling backups)
+  - Scheduled VACUUM every 24 hours (keeps DB optimized)
+  - 64MB cache for fast queries
 - Updated start scripts - removed MongoDB dependency
 - Simplified README - truly beginner-friendly
+- New API endpoints: `/api/db/stats`, `/api/db/vacuum`, `/api/db/backup`
 
 ### Release Packages
 - `/app/dist/watchnexus-v1.1.0-linux.zip`
