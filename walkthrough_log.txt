@@ -2,7 +2,7 @@
   WatchNexus Walkthrough Capture
 ============================================================
 
-  Target URL: https://media-pipeline-dev.preview.emergentagent.com
+  Target URL: https://unified-media-build.preview.emergentagent.com
   Output: /app/walkthrough_frames
 
 🔐 Section 1: Login
