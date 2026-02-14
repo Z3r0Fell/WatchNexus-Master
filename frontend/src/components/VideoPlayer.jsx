@@ -96,6 +96,131 @@ const VideoPlayer = () => {
     }
   }, [mediaId]);
 
+  // Fetch skip segments (intro, credits, etc.)
+  const fetchSkipSegments = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && res.data.segments) {
+        setSkipSegments(res.data.segments);
+      }
+    } catch (err) {
+      // Skip segments are optional - generate estimates based on duration
+      console.log('No skip segments available, will estimate');
+    }
+  };
+
+  // Fetch next episode in series
+  const fetchNextEpisode = async (currentMedia) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data) {
+        setNextEpisode(res.data);
+      }
+    } catch (err) {
+      // No next episode available
+      console.log('No next episode found');
+    }
+  };
+
+  // Monitor playback position for skip segments
+  useEffect(() => {
+    if (!playing || skipSegments.length === 0) return;
+
+    const checkSkipSegment = () => {
+      const time = videoRef.current?.currentTime || 0;
+      
+      // Find if we're in a skippable segment
+      const segment = skipSegments.find(s => time >= s.start && time < s.end);
+      
+      if (segment && !currentSkipSegment) {
+        setCurrentSkipSegment(segment);
+        setShowSkipButton(true);
+        
+        // Auto-hide skip button after 5 seconds
+        if (skipButtonTimeout.current) clearTimeout(skipButtonTimeout.current);
+        skipButtonTimeout.current = setTimeout(() => {
+          setShowSkipButton(false);
+        }, 5000);
+      } else if (!segment && currentSkipSegment) {
+        setCurrentSkipSegment(null);
+        setShowSkipButton(false);
+      }
+    };
+
+    const interval = setInterval(checkSkipSegment, 500);
+    return () => clearInterval(interval);
+  }, [playing, skipSegments, currentSkipSegment]);
+
+  // Check for credits/end of video for next episode prompt
+  useEffect(() => {
+    if (!playing || !duration || !nextEpisode) return;
+
+    const checkEndCredits = () => {
+      const time = videoRef.current?.currentTime || 0;
+      const timeRemaining = duration - time;
+      
+      // Show next episode prompt when less than 30 seconds remain
+      if (timeRemaining <= 30 && timeRemaining > 0 && !showNextEpisode) {
+        setShowNextEpisode(true);
+        
+        // Start countdown if auto-play is enabled
+        if (autoPlayNext) {
+          setNextEpisodeCountdown(Math.floor(timeRemaining));
+        }
+      }
+    };
+
+    const interval = setInterval(checkEndCredits, 1000);
+    return () => clearInterval(interval);
+  }, [playing, duration, nextEpisode, showNextEpisode, autoPlayNext]);
+
+  // Countdown timer for auto-play next episode
+  useEffect(() => {
+    if (nextEpisodeCountdown === null || nextEpisodeCountdown <= 0) return;
+
+    const timer = setTimeout(() => {
+      setNextEpisodeCountdown(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [nextEpisodeCountdown]);
+
+  // Auto-play next episode when countdown reaches 0
+  useEffect(() => {
+    if (nextEpisodeCountdown === 0 && nextEpisode && autoPlayNext) {
+      playNextEpisode();
+    }
+  }, [nextEpisodeCountdown, nextEpisode, autoPlayNext]);
+
+  // Skip to end of current segment
+  const handleSkipSegment = () => {
+    if (currentSkipSegment && videoRef.current) {
+      videoRef.current.currentTime = currentSkipSegment.end;
+      setShowSkipButton(false);
+      setCurrentSkipSegment(null);
+      toast.success(`Skipped ${currentSkipSegment.type}`);
+    }
+  };
+
+  // Play next episode
+  const playNextEpisode = () => {
+    if (nextEpisode) {
+      navigate(`/watch/${nextEpisode.id}`);
+    }
+  };
+
+  // Cancel next episode auto-play
+  const cancelNextEpisode = () => {
+    setShowNextEpisode(false);
+    setNextEpisodeCountdown(null);
+  };
+
   // Search for subtitles when media loads
   useEffect(() => {
     const searchSubtitles = async () => {
