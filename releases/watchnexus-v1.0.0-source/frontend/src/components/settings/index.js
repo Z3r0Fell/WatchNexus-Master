@@ -1,0 +1,12 @@
+export { GeneralSettings } from './GeneralSettings';
+export { UsersSettings } from './UsersSettings';
+export { LibrarySettings } from './LibrarySettings';
+export { MediaHealthSettings } from './MediaHealthSettings';
+export { IndexerSettings } from './IndexerSettings';
+export { DownloadSettings } from './DownloadSettings';
+export { IPTVSettings } from './IPTVSettings';
+export { StreamingSettings } from './StreamingSettings';
+export { SubtitleSettings } from './SubtitleSettings';
+export { GelatinSettings } from './GelatinSettings';
+export { ThemeForgeSettings } from './ThemeForgeSettings';
+export { PluginsSettings } from './PluginsSettings';
