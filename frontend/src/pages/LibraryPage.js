@@ -6,12 +6,13 @@ import { toast } from 'sonner';
 import { 
   FolderOpen, Film, Tv, Music, Book, Plus, RefreshCw, 
   Trash2, Search, Play, Clock, HardDrive, Settings,
-  CheckCircle, AlertTriangle, Eye
+  CheckCircle, AlertTriangle, Eye, FolderTree
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { formatFileSize } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import FolderBrowser from '../components/FolderBrowser';
 
 const MEDIA_TYPE_ICONS = {
   movie: Film,
