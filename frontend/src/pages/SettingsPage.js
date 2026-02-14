@@ -47,6 +47,7 @@ export const SettingsPage = () => {
   const [browserDrives, setBrowserDrives] = useState([]);
   const [browserLoading, setBrowserLoading] = useState(false);
   const [browserMediaCount, setBrowserMediaCount] = useState(0);
+  const [browserTargetField, setBrowserTargetField] = useState(null); // Track which field needs the path
 
   // Users management
   const [users, setUsers] = useState([]);
