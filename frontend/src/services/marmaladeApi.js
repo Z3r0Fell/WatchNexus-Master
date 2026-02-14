@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+// Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
+const API = process.env.REACT_APP_BACKEND_URL || '';
 
 // Get auth token from localStorage
 const getAuthHeader = () => {
