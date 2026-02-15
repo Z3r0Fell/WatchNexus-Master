@@ -2,7 +2,7 @@
   WatchNexus Walkthrough Capture
 ============================================================
 
-  Target URL: https://nexus-code-review-1.preview.emergentagent.com
+  Target URL: https://unified-media-engine.preview.emergentagent.com
   Output: /app/walkthrough_frames
 
 🔐 Section 1: Login
