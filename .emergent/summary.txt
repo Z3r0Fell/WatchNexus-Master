@@ -17,147 +17,195 @@ PRODUCT REQUIREMENTS:
 13. Fix the download queue functionality.
 14. Implement the ability to add items to playlists.
 15. Fix the blank Plugins page and add a way to import external plugins.
+16. Implement advanced playback controls (skip intro/credits).
+17. Implement automatic intro detection using audio fingerprinting (Chromaprint).
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack React/FastAPI project. The agent has successfully implemented several features and fixes:
-1.  **Add to Playlist**: A new  component has been created and integrated into media cards and the media details page, allowing users to add items to their playlists.
-2.  **Plugin Import**: The backend now has a  endpoint, and the frontend Plugins settings page has a UI for importing plugins from a URL.
-3.  **Settings Page Refactor**: The settings page UI was refactored from tabs into a categorized sidebar navigation for better UX, overcoming a significant Babel compiler issue in the process.
-4.  **System Tray App**: A basic cross-platform system tray application has been created in  using .
-5.  **Download Queue Investigation**: The agent determined that the download queue itself works, but the user's issue stems from a lack of properly configured indexers, preventing the search-and-grab workflow.
-
-All implemented features were verified by the testing agent and passed.
+The application is in a buggy state. The previous agent implemented several new features, including advanced playback controls (skip intro/credits), a UI for indexer health checks, and a proof-of-concept for audio fingerprinting using Chromaprint. However, the user's latest feedback reports that several core functionalities are broken or not working as intended. Automated tests are passing, but they do not cover the user's reported issues, indicating a significant gap in test coverage. The last action taken by the previous agent was to start investigating this list of critical issues.
 
 **Last working item**:
--   **Last item agent was working:** The agent had just finished implementing a batch of features (Add to Playlist, Plugin Import, Settings Refactor), verified them with the testing agent, and was updating the  and  files before finishing the session. The very last user message requested using an SVG for the favicon and system tray icon.
--   **Status:** NOT STARTED
--   **Agent Testing Done:** Y (for the features implemented in the last session)
--   **Which testing method agent to use?** Frontend testing agent (for favicon) and manual inspection (for sys tray icon).
--   **User Testing Done:** N
+-   **Last item agent was working:** Acknowledging and starting the investigation of a critical list of 5 bugs and regressions reported by the user.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** A combination of backend testing (, ) and frontend testing () is required to validate the fixes for each of the user-reported issues. A full regression test using the  is recommended after all issues are addressed.
+-   **User Testing Done:** Y (User reported multiple failures)
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Use SVG for favicon and system tray icon (P0)**
--   **Issue 2: Downloads are not added to the queue via search (P1)**
+The user has reported a list of critical issues that have broken core functionality. These are the highest priority.
+-   **Issue 1: Indexers are not being saved (P0)**
+-   **Issue 2: General settings folder browse is not working (P0)**
+-   **Issue 3: Settings tabs not in accordion position (P0)**
+-   **Issue 4: Send to download still not working (P0)**
+-   **Issue 5: Imported episodes are listed individually, not grouped by TV show/season (P0)**
+-   **Issue 6: System tray icon is broken (P1)**
 
 **Issues Detail:**
--   **Issue 1: Use SVG for favicon and system tray icon**
-    -   **Description:** The user has requested to use an SVG file for both the web application's favicon and the system tray applet's icon.
+-   **Issue 1: Indexers are not being saved**
+    -   **Attempted fixes:** The agent created a health check UI but did not address the saving mechanism.
+    -   **Next debug checklist:**
+        1.  Examine the API endpoint responsible for saving indexer settings in .
+        2.  Inspect the frontend code in  that sends the save request.
+        3.  Verify the data is being correctly received by the backend and persisted.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical bug. Without the ability to save indexers, the core media acquisition feature ( and ) cannot function.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
+-   **Issue 2: General settings folder browse is not working**
     -   **Attempted fixes:** None.
     -   **Next debug checklist:**
-        1.  Locate a suitable SVG icon in the project or ask the user to provide one.
-        2.  Update  to use the SVG as a favicon.
-        3.  Modify  to load the SVG icon for the  applet.
-    -   **Why fix this issue and what will be achieved with the fix?** Fulfills a direct user request and improves application branding and visual consistency.
+        1.  Identify the file browser component and the API endpoint it calls.
+        2.  Test the endpoint directly to see if it returns the expected directory contents.
+        3.  Debug the frontend component to ensure it's handling the API response correctly.
+    -   **Why fix this issue and what will be achieved with the fix?** This breaks the user's ability to configure media library paths, which is a core setup requirement.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both.
+-   **Issue 3: Settings tabs not in accordion position**
+    -   **Attempted fixes:** A previous agent refactored the settings page from tabs to a sidebar.
+    -   **Next debug checklist:**
+        1.  Clarify with the user if they want an accordion layout instead of the current sidebar.
+        2.  If confirmed, refactor  and its child components to use an accordion UI pattern.
+    -   **Why fix this issue and what will be achieved with the fix?** This addresses a direct user complaint about the UI layout. It seems to be a mismatch in expectations from a previous refactor.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on other issue:** None.
-
--   **Issue 2: Downloads are not added to the queue via search**
-    -   **Description:** The user reported that adding an item to the download queue results in nothing being added. The agent investigated and found the  endpoint works, but the  endpoint returns no results, which is the root cause. This is a configuration issue, not a code bug.
-    -   **Attempted fixes:** Investigation was performed, confirming the backend download mechanism works in isolation.
+-   **Issue 4: Send to download still not working**
+    -   **Attempted fixes:** The agent added an Indexer Health Check UI.
     -   **Next debug checklist:**
-        1.  Create a UI guide or a check in the settings to help the user correctly configure an indexer (e.g., YTS).
-        2.  Verify the Indexer settings are correctly saved and used by the  module.
-        3.  Test the end-to-end flow: .
-    -   **Why fix this issue and what will be achieved with the fix?** This will make the core media acquisition feature fully functional for the user. Although not a code bug, it's a critical UX blocker.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** Y (in the sense that it was a primary user complaint)
+        1.  This is likely a symptom of Issue 1 (Indexers not saving).
+        2.  Once Issue 1 is fixed, perform an end-to-end test: Add and save an indexer, search for media, and trigger a download.
+        3.  Trace the API calls from  to  to the download queue.
+    -   **Why fix this issue and what will be achieved with the fix?** This is the primary function of the application. Fixing it is essential.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None.
+    -   **Blocked on other issue:** Issue 1: Indexers are not being saved.
+-   **Issue 5: Imported episodes are listed individually, not grouped by TV show/season**
+    -   **Attempted fixes:** None.
+    -   **Next debug checklist:**
+        1.  Investigate the library scanning/import logic in the backend.
+        2.  Review how media metadata is processed and stored. The logic needs to identify that multiple files belong to the same show and group them.
+        3.  Check the frontend pages (, etc.) to see how data is being requested and rendered. The API needs to provide grouped data.
+    -   **Why fix this issue and what will be achieved with the fix?** It will fix a major UX issue, making the media library organized and usable, similar to applications like Jellyfin or Plex.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both.
+-   **Issue 6: System tray icon is broken**
+    -   **Attempted fixes:** The agent modified  to load an SVG file.
+    -   **Next debug checklist:**
+        1.  The agent incorrectly tried to load an SVG file using , which does not support SVG.
+        2.  Modify  to use a PNG version of the icon (e.g.,  if it exists) or implement a conversion step from SVG to a compatible format.
+    -   **Why fix this issue and what will be achieved with the fix?** This fixes a latent bug introduced by the previous agent and ensures the system tray application can launch correctly.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Backend (as it's a Python script).
 
 **In progress Task List**:
--   None.
+-   **Task 1: Full-Scale Bug Bash**
+    -   **Where to resume:** Systematically address the 6 issues listed above, starting with the unblocked P0 issues.
+    -   **What will be achieved with this?** A stable, functional application that meets the user's core expectations.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on something:** The download queue fix is blocked on the indexer saving fix.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Finalize System Tray Applet (P1):** The initial  file has been created. It needs to be properly integrated into the application startup/build process and tested on Windows, macOS, and Linux.
--   **Test Core Modules (P2):** Verify the Usenet () and Indexer () modules function correctly once the indexer configuration guidance is in place.
+-   **Test Core Modules (P2):** Verify the Usenet () and Indexer () modules function correctly once the indexer configuration is fixed.
 -   **Connect Pages to Backend (P2):** Implement backend logic for the Community & DVR pages.
 
 **Future Tasks:**
--   **Advanced Playback Controls (P2):** Add skip intro, skip credits, etc.
 -   **Marketing Assets (P2):** Create Kickstarter and marketing videos (Sora 2).
 -   **Client App Planning (P3):** Document architecture for Roku, Android, and iOS client apps.
 -   **Cloud Sync (P3):** Develop a feature for syncing user data across devices.
 
 **Completed work in this session**
--   **Feature: Add to Playlist:**
-    -   Created .
-    -   Integrated the button into  and .
--   **Feature: External Plugin Import:**
-    -   Added  endpoint to .
-    -   Implemented frontend UI in  to install plugins from a URL.
--   **UI/UX: Settings Page Refactor:**
-    -   Replaced the tabbed layout with a categorized sidebar in .
-    -   Resolved a Maximum call stack size exceeded error caused by a Babel plugin () by simplifying the component's data structures.
--   **Feature: System Tray Applet (Initial):**
-    -   Created  with  for cross-platform control.
--   **Investigation: Download Queue:**
-    -   Confirmed the download mechanism is functional but is blocked by a lack of configured indexers.
--   **Documentation:**
-    -   Updated  and .
+The following features were implemented but require verification and likely bug fixing based on recent user feedback.
+-   **Feature: Favicon Icon:** Added an SVG favicon to .
+-   **Feature: Advanced Playback Controls:** Added Skip Intro/Credits buttons and an Auto-play next toggle to the video player UI () and corresponding backend endpoints in .
+-   **Feature: Indexer Health Check UI:** Created and integrated a new component () to guide users in setting up indexers.
+-   **Feature: Chromaprint Intro Detection (POC):** Installed dependencies and created a backend module () and API endpoint to perform audio fingerprinting for automatic intro detection. A button was added to the  to trigger it.
+-   **Infra: System Tray App Integration:** Created a  script to launch the app and updated  with menu items (but introduced an icon bug).
 
 **Earlier issues found/mentioned but not fixed**
--   None. All raised issues were either resolved or are documented in the pending/upcoming lists.
+-   **Issue 1: System tray app cannot load SVG icon.**
+    -   **Debug checklist:** The agent tried to use  on an SVG file in . This is incorrect. The code must be changed to use a compatible format like PNG or ICO.
+    -   **Why to solve this issue and what will be achieved with this?** The system tray application will fail to launch with the current code. Fixing it makes the feature functional.
+    -   **Should Test frontend/backend/both after fix:** Backend (Python script).
+    -   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Production build instability.
--   **Recurrence count:** 5+
--   **Status:** RESOLVED (for now). The agent must remain vigilant, especially if creating new release builds.
+-   None specific to this session, but the download queue not working issue persists from the user's perspective.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Babel Plugin Debugging:** Encountered and worked around a Maximum call stack size exceeded error in . The fix involved moving a complex, nested array of objects outside the component definition, making it a static constant. This indicates the plugin has issues with analyzing deeply nested structures during compilation.
--   **Cross-Platform System Tray:** Used the  library as a viable, Python-native solution for creating system tray applets that work on Windows, macOS, and Linux.
--   **Problem Isolation:** Differentiated between a code bug and a configuration issue. The download queue problem was not in the code itself but in the dependency on user-configured indexers, shifting the solution from a code fix to a UX/guidance improvement.
+-   **Audio Fingerprinting:** Introduced  and  for local, token-free analysis of audio files to detect repeated segments like intros.
+-   **Background Tasks:** Used FastAPI's  to trigger long-running analysis jobs (like Chromaprint) without blocking the API response.
+-   **Testing Gap:** The passing automated tests alongside critical user-reported failures highlight a major gap. The tests verify endpoint existence but not the full-loop functionality (e.g., saving data and seeing the result).
 
 **key DB schema**
--   No changes were made to the database schema in this session.
+-   No schema was explicitly migrated, but the Chromaprint implementation () implies a future need for tables to store audio fingerprints and detected time segments for intros/credits. The current implementation uses an in-memory dictionary, which is not persistent.
 
 **changes in tech stack**
--    library introduced for the system tray applet.
+-   : Python library for Chromaprint audio fingerprinting.
+-   : Required command-line tool for audio processing.
 
 **All files of reference**
--   : Heavily refactored. The source of the Babel bug.
--   : Modified to include the plugin installation endpoint.
--   : New component for the playlist feature.
--   : New file for the system tray application.
--   : Modified to add the plugin import UI.
--    & : Updated with progress.
+-   : Modified to add multiple new endpoints.
+-   : Heavily modified with new playback control logic.
+-   : Where the  was added.
+-   : New module for audio analysis.
+-   : Contains a latent bug with icon loading.
+-   The user's last message is the most important reference, detailing the 5 critical bugs.
 
 **Areas that need refactoring**:
--   The  script is standalone and needs to be integrated into the main application's lifecycle (e.g., started by a script, included in builds).
--   The UI/UX for indexer configuration needs improvement to guide users and prevent the downloads not working issue. A setup guide or a status indicator could be beneficial.
+-   The settings persistence logic needs a complete review and fix.
+-   The media library import and data modeling logic needs to be refactored to support grouping of episodes by show/season.
+-   The settings page UI needs to be revisited based on user feedback (accordion vs. sidebar).
 
 **key api endpoints**
--   : **NEW** endpoint to download and install a plugin from a given URL.
--   : Existing endpoint now used by the frontend to add media to playlists.
+-   : **NEW** endpoint to trigger intro detection for a series.
+-   : **NEW** endpoint to fetch intro/credit timestamps.
+-   : **NEW** endpoint to find the next episode in a series.
 
 **Critical Info for New Agent**
--   **Immediate Priority:** The user's latest request is to use an SVG for the favicon and system tray icon. Address this first.
--   **Download Queue:** Do not treat the download queue as a broken code feature. The problem is a lack of user-configured indexers. Your task is to make this process easier for the user, either through better UI, documentation, or in-app guidance.
--   **System Tray App:** The file  exists but is not integrated. Plan how to run it alongside the main server and include it in future release packages.
--   **Babel Bug:** Be cautious when editing . It is sensitive to complex, inline data structures due to . Keep static data definitions outside the component body.
+-   **STOP ALL NEW DEVELOPMENT.** Your sole focus must be on the 5 critical issues reported by the user in their last message. They have rendered the application unusable from the user's perspective.
+-   **Address issues in this order:**
+    1.  **Issue 1 (Indexer Saving):** This is a blocker for the download functionality.
+    2.  **Issue 2 (Folder Browse):** Core setup functionality.
+    3.  **Issue 5 (Episode Grouping):** Major UX problem.
+    4.  **Issue 3 (Settings Layout):** UI fix, clarify with user first.
+    5.  **Issue 4 (Downloads):** Test this *after* fixing Issue 1.
+-   **Latent Bug:** Fix the  icon loading issue (Issue 6). It's a simple fix that will prevent future errors.
+-   **Testing:** Do not trust the existing automated tests. Manually verify each fix end-to-end. After fixing the bug list, recommend creating new, more comprehensive tests for the testing agent to run.
 
 **documents and test reports created in this job**
 -   
--    (Updated)
+-   
 -    (Updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests confirmation of the plan. (COMPLETED)
-2.  **User:** Gives the go-ahead, expressing uncertainty about the best technology for a system tray app but trusting the agent's choice. (COMPLETED)
-3.  **User:** Asks for an SVG to be used as the favicon and system tray icon. (PENDING - HIGHEST PRIORITY)
+-   **User:** Finishes previous tasks and asks to proceed with playback controls. (COMPLETED)
+-   **User:** Asks about token usage for the intro detection feature. (COMPLETED)
+-   **Agent:** Explains the zero-token local processing approach with Chromaprint. (COMPLETED)
+-   **User:** Approves the Chromaprint approach. (COMPLETED)
+-   **Agent:** Implements Chromaprint and finishes the task, claiming all features are working and tested. (COMPLETED)
+-   **User:** Reports a list of 5 critical bugs and regressions, indicating the app is broken. (PENDING - HIGHEST PRIORITY)
+    1.  Indexers are not being saved.
+    2.  Folder browse is not working.
+    3.  Settings UI is not the desired accordion layout.
+    4.  Downloads are still not working.
+    5.  Episodes are not grouped by show/season.
 
 **Project Health Check:**
--   **Working with known bugs:** The application health is good. Major features have been added and validated. The most significant bug (downloads) has been identified as a configuration issue, which is a major step forward.
+-   **Broken:** Multiple critical, user-facing features are confirmed to be non-functional or broken. The application is not in a usable state.
 
-**3rd party Integrations**
+**3rd Party Integrations**
+-   pyacoustid / Chromaprint (New)
+-   ffmpeg (New dependency)
 -   SQLite (via )
 -   LTorrent (Built-in torrent client)
 -   psutil (System monitoring)
@@ -166,12 +214,12 @@ All implemented features were verified by the testing agent and passed.
 -   Google OAuth
 -   BeautifulSoup4
 -   Addic7ed
--   pystray (New)
+-   pystray
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. The agent ran a comprehensive test suite which passed, validating the playlist, plugin, and settings page changes.
+-   **Testing agent used after significant changes:** YES. However, the tests were insufficient and produced a false positive result. The agent confirmed 15/15 tests passed right before the user reported that the core functionality was broken.
 -   **Test files created:** None.
--   **Known regressions:** None.
+-   **Known regressions:** Indexer saving, settings UI, media grouping.
 
 **Credentials to test flow:**
 -   On a fresh launch, create a new user for testing.
@@ -179,4 +227,6 @@ All implemented features were verified by the testing agent and passed.
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent completed all planned tasks. The user's final request to use an SVG icon came at the very end of the session and is now the top priority for the next session.</analysis>
+-   The agent failed to adequately test its implementations, leading to multiple regressions and bugs.
+-   It did not fix the SVG icon loading bug it introduced in .
+-   It did not verify that core features (like saving settings) worked after making significant changes to the UI and backend.</analysis>
