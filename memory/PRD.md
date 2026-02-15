@@ -7,22 +7,26 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.3.1
+## Current Version: 1.4.0
 
-### Recent Changes (v1.3.1 - Feb 15, 2026)
+### Recent Changes (v1.4.0 - Feb 15, 2026)
+- **NEW: Quality Profiles** - Full Sonarr/Radarr-style quality profile system
+  - Backend API: GET/POST/PUT/DELETE at `/api/quality-profiles`
+  - 15 quality definitions (Bluray-2160p Remux → CAM)
+  - 3 default profiles auto-created: Any, HD-720p/1080p, Ultra-HD
+  - Cutoff settings for automatic upgrade limits
+  - UI at Settings > Media Libraries > Quality Profiles tab
+  - Profile editor modal with quality toggle selection
+- **Verified: Anime Page** - /anime route with TMDB Japanese animation
+- **Verified: Playlists** - Full CRUD with Add to Playlist button on media details
+- **Verified: Settings Organization** - Sidebar with Core/Acquisition/Streaming/Advanced sections
+
+### Previous Changes (v1.3.1 - Feb 15, 2026)
 - **Verified: Send to Download** - End-to-end download flow working (search → grab → download queue)
 - **Verified: TV Series Grouping** - Episodes properly grouped by series and season with TMDB metadata
 - **Bug Fix: tv_shows media type** - Updated `_parse_filename` and scanner to recognize `tv_shows` alongside `tv`
 - **Test Data: Breaking Bad** - Added 5 test episodes (2 seasons) to verify series grouping
 - **Note: Visual Edits Plugin** - Remains disabled due to Babel recursion issue in complex components
-
-### Previous Changes (v1.3.0 - Feb 15, 2026)
-- **Bug Fix: Indexer Saving** - Fixed indexers not persisting by changing to use `/api/compote/indexers` endpoint
-- **Bug Fix: Folder Browser** - Added auth token to browse requests and 404 fallback to root
-- **Bug Fix: TV Series Grouping** - Added "Series" view toggle in Library page to group episodes by show/season
-- **New API: `/api/marmalade/tv-series`** - Returns TV episodes grouped by series and season
-- **Updated: LibraryPage.js** - Added viewMode toggle (All/Series), expandable series cards with season lists
-- **Infra Fix: Visual Edits Plugin** - Temporarily disabled due to Babel compilation issues
 
 ### Previous Changes (v1.2.9 - Feb 15, 2026)
 - **Chromaprint Audio Fingerprinting** - New `fprint.py` module for detecting intro/credits via audio analysis
