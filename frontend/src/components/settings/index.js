@@ -13,3 +13,4 @@ export { ThemeForgeSettings } from './ThemeForgeSettings';
 export { PluginsSettings } from './PluginsSettings';
 export { MaintenanceSettings } from './MaintenanceSettings';
 export { PlaybackSettings } from './PlaybackSettings';
+export { AboutSettings } from './AboutSettings';

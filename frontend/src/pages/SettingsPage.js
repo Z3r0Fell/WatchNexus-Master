@@ -8,7 +8,7 @@ import {
   MediaHealthSettings, IndexerSettings, DownloadSettings,
   IPTVSettings, StreamingSettings, SubtitleSettings,
   GelatinSettings, ThemeForgeSettings, PluginsSettings,
-  MaintenanceSettings, PlaybackSettings
+  MaintenanceSettings, PlaybackSettings, AboutSettings
 } from '../components/settings';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
@@ -265,6 +265,7 @@ export const SettingsPage = () => {
       case 'theme-forge': return <ThemeForgeSettings />;
       case 'plugins': return <PluginsSettings />;
       case 'maintenance': return <MaintenanceSettings />;
+      case 'about': return <AboutSettings />;
       default: return null;
     }
   };
@@ -341,6 +342,14 @@ export const SettingsPage = () => {
                 <NavButton id="theme-forge" label="Theme Forge" />
                 <NavButton id="plugins" label="Plugins" />
                 <NavButton id="maintenance" label="Maintenance" />
+              </div>
+            </div>
+
+            {/* About & Help */}
+            <div>
+              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">About</h3>
+              <div className="space-y-0.5">
+                <NavButton id="about" label="About & Releases" />
               </div>
             </div>
           </nav>
