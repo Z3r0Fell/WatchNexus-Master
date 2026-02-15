@@ -144,7 +144,11 @@ export const SettingsPage = () => {
   const browsePath = async (path) => {
     setBrowserLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/api/filesystem/browse`, { params: { path } });
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/filesystem/browse`, { 
+        params: { path },
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       setBrowserPath(res.data.current_path); setBrowserItems(res.data.items || []);
       setBrowserDrives(res.data.drives || []); setBrowserMediaCount(res.data.media_files_in_current || 0);
     } catch (error) { toast.error(error.response?.data?.detail || 'Failed to browse directory'); }
