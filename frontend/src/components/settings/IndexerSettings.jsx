@@ -17,7 +17,7 @@ export const IndexerSettings = () => {
   });
 
   const fetchIndexers = useCallback(async () => {
-    try { const res = await indexersApi.getAll(); setIndexers(res.data || []); } catch {}
+    try { const res = await compoteApi.getIndexers(); setIndexers(res.data || []); } catch {}
   }, []);
 
   useEffect(() => { fetchIndexers(); }, [fetchIndexers]);
