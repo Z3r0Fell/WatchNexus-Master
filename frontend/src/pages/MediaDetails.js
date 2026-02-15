@@ -261,6 +261,13 @@ export const MediaDetails = () => {
                     <Download className="w-5 h-5 mr-2" />
                     Download
                   </Button>
+                  {/* Intro Detection for TV Shows */}
+                  {type === 'tv' && (
+                    <IntroDetector 
+                      seriesName={media.name || media.title} 
+                      onDetectionComplete={() => toast.success('Skip segments saved for this series!')}
+                    />
+                  )}
                 </div>
               </motion.div>
             </div>
