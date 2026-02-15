@@ -281,11 +281,6 @@ const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
   );
 };
 
-import { Check, CheckCircle, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
-
 export const QualityProfilesSubTab = () => {
   const [profiles, setProfiles] = useState([]);
   const [definitions, setDefinitions] = useState([]);
