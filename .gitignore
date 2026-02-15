@@ -328,3 +328,5 @@ dist/watchnexus-v1.2.5-windows.zip
 # Environment files
 *.env
 *.env.*
+dist/watchnexus-v2.0.1-linux.zip
+dist/watchnexus-v2.0.1-windows.zip
