@@ -273,7 +273,7 @@ class MarmaladeServer:
         found_paths = set()
         
         # Scan for media files
-        extensions = self.VIDEO_EXTENSIONS if library.media_type in ['movies', 'tv'] else self.AUDIO_EXTENSIONS
+        extensions = self.VIDEO_EXTENSIONS if library.media_type in ['movies', 'tv', 'tv_shows', 'anime'] else self.AUDIO_EXTENSIONS
         
         for root, dirs, files in os.walk(library.path):
             # Skip hidden directories
