@@ -344,3 +344,8 @@ releases/watchnexus-v2.0.1-windows.zip
 # Allow v2.0.1 release zips
 !releases/watchnexus-v2.0.1-linux.zip
 !releases/watchnexus-v2.0.1-windows.zip
+-e 
+# Environment files
+*.env
+*.env.*
+releases/zips/watchnexus-v2.0.1-linux.zip
