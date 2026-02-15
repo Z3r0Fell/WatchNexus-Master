@@ -7,9 +7,18 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.2.8
+## Current Version: 1.2.9
 
-### Recent Changes (v1.2.8 - Feb 15, 2026)
+### Recent Changes (v1.2.9 - Feb 15, 2026)
+- **Chromaprint Audio Fingerprinting** - New `fprint.py` module for detecting intro/credits via audio analysis
+- **IntroDetector Component** - UI button to trigger intro detection on TV show pages
+- **Series Analysis APIs**:
+  - `POST /api/marmalade/series/{name}/analyze-intros` - Trigger background analysis
+  - `GET /api/marmalade/series/{name}/intro-status` - Check detection status
+  - `POST /api/marmalade/media/{id}/detect-segments` - Single episode detection
+- **Dependencies** - Added pyacoustid, audioread, libchromaprint-tools
+
+### Previous Changes (v1.2.8 - Feb 15, 2026)
 - **Indexer Health Check** - New IndexerHealthCheck component with status overview, test all button, and setup wizard
 - **Advanced Playback Controls** - Skip intro/credits buttons, next episode auto-play with countdown
 - **System Tray Finalization** - Added launch.py launcher script for cross-platform startup
