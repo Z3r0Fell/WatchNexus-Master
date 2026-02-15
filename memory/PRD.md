@@ -7,22 +7,33 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.1.0
+## Current Version: 2.0.1
 
-### Recent Changes (v2.1.0 - Feb 15, 2026)
-- **Fixed Plugins Page**
+### Recent Changes (v2.0.1 - Feb 15, 2026)
+- **NEW: About & Releases Section**
+  - Added "About & Releases" page in Settings
+  - Complete version history from v1.2.0 to v2.0.1
+  - Expandable release details with highlights and changes
+  - Version displayed correctly from backend API
+  - Technology stack information
+  
+- **Backend Version Update**
+  - Updated `APP_VERSION` from "1.2.4" to "2.0.1"
+  - `/api/system/info` and `/api/system/stats` now return correct version
+
+- **Previous: Fixed Plugins Page**
   - Auto-discovery of plugins now works correctly
   - Added Import Plugin modal (file upload and URL import)
   - Added Enable/Disable plugin functionality
   - Shows 2 built-in plugins: AniDB Metadata Provider, Discord Notifications
   
-- **Competitive Analysis Document Created**
+- **Previous: Competitive Analysis Document Created**
   - Location: `/app/docs/COMPETITIVE_ANALYSIS.md`
   - Comprehensive comparison with Jellyfin, Plex, Sonarr/Radarr
   - Feature matrix with priority roadmap (P0/P1/P2/P3)
   - Implementation recommendations and quick wins identified
   
-- **Playback Settings (Skip Intro/Credits Controls)**
+- **Previous: Playback Settings (Skip Intro/Credits Controls)**
   - New Settings > Playback section
   - Auto-skip intro/credits toggles
   - Skip button display duration configuration
@@ -35,7 +46,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
   - Added `playback_settings` table to SQLite schema
   - Fixed `analyze_all_intros` endpoint for SQLite compatibility
 
-### Previous Changes (v2.0.1 - Feb 15, 2026)
+### Previous Changes (v2.0.0 - Feb 14, 2026)
 - **CODE AUDIT COMPLETE** - Comprehensive review of all routes and endpoints
   - Verified all 24 frontend routes are functional
   - All backend API endpoints tested (30 tests, 100% pass rate)
@@ -156,7 +167,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ## Release Packages
 
-Current release: **v1.2.4**
+Current release: **v2.0.1**
 
 - `/app/dist/watchnexus-v1.2.4-linux.zip` (90.1 MB)
 - `/app/dist/watchnexus-v1.2.4-windows.zip` (90.1 MB)
