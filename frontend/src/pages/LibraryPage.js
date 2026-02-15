@@ -337,8 +337,10 @@ export const LibraryPage = () => {
                         : 'border-white/10 bg-surface hover:border-white/20'
                     }`}
                     onClick={() => {
-                      setSelectedLibrary(selectedLibrary === library.id ? null : library.id);
-                      fetchMedia(selectedLibrary === library.id ? null : library.id);
+                      const newLibraryId = selectedLibrary === library.id ? null : library.id;
+                      setSelectedLibrary(newLibraryId);
+                      fetchMedia(newLibraryId);
+                      fetchTvSeries(newLibraryId);
                     }}
                   >
                     <div className="flex items-center justify-between mb-2">
