@@ -375,7 +375,6 @@ class FprintAnalyzer:
                 other_segments = all_segments[other_id]
                 
                 # Find best matching segment in similar time position
-                best_match = None
                 best_score = 0
                 
                 for other_seg in other_segments:
@@ -391,7 +390,6 @@ class FprintAnalyzer:
                     
                     if score > best_score:
                         best_score = score
-                        best_match = other_seg
                 
                 if best_score >= SIMILARITY_THRESHOLD:
                     match_count += 1
