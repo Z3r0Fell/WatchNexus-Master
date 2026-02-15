@@ -2518,6 +2518,86 @@ async def marmalade_refresh_library_metadata(
         "refreshed": refreshed
     }
 
+# ==================== MEDIA MANAGEMENT (Manual Import) ====================
+
+@api_router.post("/media-management/scan-import")
+async def scan_for_import(
+    body: dict = Body(...),
+    user: dict = Depends(require_auth)
+):
+    """Scan a directory for importable media files."""
+    path = body.get("path", "")
+    if not path or not os.path.isdir(path):
+        raise HTTPException(status_code=400, detail="Invalid directory path")
+    
+    # Video file extensions to look for
+    video_extensions = {'.mkv', '.mp4', '.avi', '.m4v', '.mov', '.wmv', '.flv', '.webm', '.ts', '.m2ts'}
+    
+    files = []
+    try:
+        for root, dirs, filenames in os.walk(path):
+            # Skip hidden directories
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            
+            for filename in filenames:
+                ext = os.path.splitext(filename)[1].lower()
+                if ext in video_extensions:
+                    file_path = os.path.join(root, filename)
+                    try:
+                        size = os.path.getsize(file_path)
+                        files.append({
+                            "path": file_path,
+                            "filename": filename,
+                            "size": size,
+                            "size_formatted": f"{size / (1024*1024*1024):.2f} GB" if size > 1024*1024*1024 else f"{size / (1024*1024):.1f} MB"
+                        })
+                    except OSError:
+                        continue
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Permission denied to access directory")
+    
+    return {"files": files, "count": len(files)}
+
+@api_router.post("/media-management/import")
+async def import_media_files(
+    body: dict = Body(...),
+    user: dict = Depends(require_auth)
+):
+    """Import selected media files into a library."""
+    files = body.get("files", [])
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+    
+    server = get_marmalade_server()
+    imported = 0
+    failed = 0
+    
+    for file_info in files:
+        file_path = file_info.get("path")
+        target_library = file_info.get("library_id")
+        
+        if not file_path or not os.path.exists(file_path):
+            failed += 1
+            continue
+        
+        try:
+            # Add to marmalade media library
+            success = await server.import_file(file_path, target_library)
+            if success:
+                imported += 1
+            else:
+                failed += 1
+        except Exception as e:
+            logger.error(f"Failed to import {file_path}: {e}")
+            failed += 1
+    
+    return {
+        "status": "complete",
+        "imported": imported,
+        "failed": failed,
+        "total": len(files)
+    }
+
 # Streaming
 @api_router.get("/marmalade/stream/{media_id}")
 async def marmalade_get_stream(
