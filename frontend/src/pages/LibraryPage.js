@@ -449,8 +449,8 @@ export const LibraryPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          {/* Search Bar */}
-          <div className="flex gap-4 mb-4">
+          {/* Search Bar and View Toggle */}
+          <div className="flex gap-4 mb-4 items-center">
             <div className="flex-1">
               <Input
                 value={searchQuery}
@@ -464,58 +464,171 @@ export const LibraryPage = () => {
               <Search className="w-4 h-4 mr-2" />
               Search
             </Button>
+            
+            {/* View Mode Toggle */}
+            <div className="flex bg-white/5 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('all')}
+                className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                  viewMode === 'all' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+                title="All Files"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                All
+              </button>
+              <button
+                onClick={() => setViewMode('grouped')}
+                className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                  viewMode === 'grouped' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Group by Series"
+              >
+                <List className="w-4 h-4" />
+                Series
+              </button>
+            </div>
           </div>
 
-          {/* Media Grid */}
-          {media.length === 0 ? (
-            <div className="glass-card rounded-xl p-12 text-center">
-              <Film className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-              <h3 className="text-xl font-bold mb-2">No Media Found</h3>
-              <p className="text-gray-400">
-                {libraries.length === 0
-                  ? 'Add a library and scan to see your media here.'
-                  : 'Scan your libraries to discover media files.'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {media.map((item) => {
-                const Icon = MEDIA_TYPE_ICONS[item.media_type] || Film;
-                return (
-                  <Link key={item.id} to={`/watch/${item.id}`}>
-                    <div className="glass-card rounded-xl overflow-hidden hover:border-white/20 transition-all group">
-                      <div className="aspect-[2/3] bg-gradient-to-br from-violet-900/50 to-purple-900/50 flex items-center justify-center relative overflow-hidden">
-                        {item.poster_url ? (
-                          <img 
-                            src={item.poster_url} 
-                            alt={item.title} 
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <Icon className="w-10 h-10 text-violet-400" />
-                        )}
-                        {item.watched && (
-                          <div className="absolute top-2 right-2">
-                            <Eye className="w-4 h-4 text-green-400" />
+          {/* All Files View */}
+          {viewMode === 'all' && (
+            <>
+              {media.length === 0 ? (
+                <div className="glass-card rounded-xl p-12 text-center">
+                  <Film className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                  <h3 className="text-xl font-bold mb-2">No Media Found</h3>
+                  <p className="text-gray-400">
+                    {libraries.length === 0
+                      ? 'Add a library and scan to see your media here.'
+                      : 'Scan your libraries to discover media files.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                  {media.map((item) => {
+                    const Icon = MEDIA_TYPE_ICONS[item.media_type] || Film;
+                    return (
+                      <Link key={item.id} to={`/watch/${item.id}`}>
+                        <div className="glass-card rounded-xl overflow-hidden hover:border-white/20 transition-all group">
+                          <div className="aspect-[2/3] bg-gradient-to-br from-violet-900/50 to-purple-900/50 flex items-center justify-center relative overflow-hidden">
+                            {item.poster_url ? (
+                              <img 
+                                src={item.poster_url} 
+                                alt={item.title} 
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              />
+                            ) : (
+                              <Icon className="w-10 h-10 text-violet-400" />
+                            )}
+                            {item.watched && (
+                              <div className="absolute top-2 right-2">
+                                <Eye className="w-4 h-4 text-green-400" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Play className="w-10 h-10 text-white" />
+                            </div>
+                          </div>
+                          <div className="p-2">
+                            <h3 className="font-medium text-xs truncate">{item.title}</h3>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-xs text-gray-500">{item.year || ''}</span>
+                              <span className="text-xs text-gray-500">{formatFileSize(item.size)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Grouped by Series View */}
+          {viewMode === 'grouped' && (
+            <>
+              {tvSeries.length === 0 ? (
+                <div className="glass-card rounded-xl p-12 text-center">
+                  <Tv className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                  <h3 className="text-xl font-bold mb-2">No TV Series Found</h3>
+                  <p className="text-gray-400">
+                    TV shows will be grouped by series and season here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {tvSeries.map((series) => {
+                    const isExpanded = expandedSeries[series.series_name];
+                    return (
+                      <div key={series.series_name} className="glass-card rounded-xl overflow-hidden">
+                        {/* Series Header */}
+                        <button
+                          onClick={() => toggleSeriesExpand(series.series_name)}
+                          className="w-full p-4 flex items-center gap-4 hover:bg-white/5 transition-colors"
+                        >
+                          <div className="w-16 h-24 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-blue-900/50 to-cyan-900/50 flex items-center justify-center">
+                            {series.poster_url ? (
+                              <img src={series.poster_url} alt={series.series_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Tv className="w-8 h-8 text-blue-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 text-left">
+                            <h3 className="font-bold text-lg">{series.series_name}</h3>
+                            <p className="text-sm text-gray-400">
+                              {series.seasons.length} {series.seasons.length === 1 ? 'Season' : 'Seasons'} • {series.total_episodes} {series.total_episodes === 1 ? 'Episode' : 'Episodes'}
+                            </p>
+                            {series.overview && (
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{series.overview}</p>
+                            )}
+                          </div>
+                          {isExpanded ? (
+                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+
+                        {/* Seasons and Episodes */}
+                        {isExpanded && (
+                          <div className="border-t border-white/10 p-4 space-y-4">
+                            {series.seasons.map((season) => (
+                              <div key={season.season_number} className="space-y-2">
+                                <h4 className="text-sm font-semibold text-violet-400">
+                                  {season.season_number === 0 ? 'Specials' : `Season ${season.season_number}`}
+                                  <span className="text-gray-500 font-normal ml-2">({season.episode_count} episodes)</span>
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                  {season.episodes.map((ep) => (
+                                    <Link
+                                      key={ep.id}
+                                      to={`/watch/${ep.id}`}
+                                      className="flex items-center gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
+                                    >
+                                      <div className="w-8 h-8 rounded flex items-center justify-center bg-violet-500/20 text-violet-400 text-sm font-bold shrink-0">
+                                        {ep.episode_number || '?'}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm truncate">{ep.title}</p>
+                                        <p className="text-xs text-gray-500">{formatFileSize(ep.size)}</p>
+                                      </div>
+                                      {ep.watched && <Eye className="w-4 h-4 text-green-400 shrink-0" />}
+                                      <Play className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Play className="w-10 h-10 text-white" />
-                        </div>
                       </div>
-                      <div className="p-2">
-                        <h3 className="font-medium text-xs truncate">{item.title}</h3>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-xs text-gray-500">{item.year || ''}</span>
-                          <span className="text-xs text-gray-500">{formatFileSize(item.size)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </motion.div>
       </div>
