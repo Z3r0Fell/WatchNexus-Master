@@ -7,7 +7,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.4.0
+## Current Version: 2.0.1
 
 ### Recent Changes (v1.4.0 - Feb 15, 2026)
 - **NEW: Quality Profiles** - Full Sonarr/Radarr-style quality profile system
