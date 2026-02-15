@@ -328,6 +328,7 @@ export const PluginMarketplacePage = () => {
   const InstalledPluginCard = ({ plugin }) => {
     const config = pluginTypeConfig[plugin.plugin_type] || pluginTypeConfig.metadata_provider;
     const Icon = config.icon;
+    const isActive = plugin.status === 'active';
     
     return (
       <div className="glass-card rounded-xl p-4 flex items-center gap-4">
@@ -344,11 +345,19 @@ export const PluginMarketplacePage = () => {
         </div>
         <div className="flex items-center gap-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            plugin.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+            isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
           }`}>
-            {plugin.enabled ? 'Enabled' : 'Disabled'}
+            {isActive ? 'Active' : plugin.status || 'Installed'}
           </span>
           <span className="text-xs text-gray-500">v{plugin.version}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleTogglePlugin(plugin)}
+            className={isActive ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'}
+          >
+            {isActive ? 'Disable' : 'Enable'}
+          </Button>
         </div>
       </div>
     );
