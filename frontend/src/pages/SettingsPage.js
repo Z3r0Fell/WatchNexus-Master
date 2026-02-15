@@ -255,6 +255,7 @@ export const SettingsPage = () => {
             manualImportFiles={manualImportFiles} onManualImportScan={handleManualImportScan} onImportFiles={handleImportFiles} />
         );
       case 'media-health': return <MediaHealthSettings />;
+      case 'playback': return <PlaybackSettings />;
       case 'indexers': return <IndexerSettings />;
       case 'download': return <DownloadSettings />;
       case 'iptv': return <IPTVSettings />;
