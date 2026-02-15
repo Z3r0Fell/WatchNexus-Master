@@ -160,6 +160,14 @@ function AppRouter() {
         }
       />
       <Route
+        path="/watch/:mediaId"
+        element={
+          <ProtectedRoute>
+            <VideoPlayer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/anime"
         element={
           <ProtectedRoute>
