@@ -121,7 +121,7 @@ export const WatchHistoryPage = () => {
                         </p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">
-                        {formatDate(item.last_watched)}
+                        {formatDate(item.updated_at)}
                       </p>
                     </div>
 
