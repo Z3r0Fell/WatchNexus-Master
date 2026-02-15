@@ -326,6 +326,7 @@ export const SettingsPage = () => {
             <div>
               <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Playback & Streaming</h3>
               <div className="space-y-0.5">
+                <NavButton id="playback" label="Playback" />
                 <NavButton id="iptv" label="IPTV" />
                 <NavButton id="streaming" label="Streaming Services" />
                 <NavButton id="subtitles" label="Subtitles" />
