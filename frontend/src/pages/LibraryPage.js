@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { 
   FolderOpen, Film, Tv, Music, Book, Plus, RefreshCw, 
   Trash2, Search, Play, Clock, HardDrive, Settings,
-  CheckCircle, AlertTriangle, Eye, FolderTree, ImageIcon
+  CheckCircle, AlertTriangle, Eye, FolderTree, ImageIcon,
+  ChevronDown, ChevronRight, List, LayoutGrid
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
