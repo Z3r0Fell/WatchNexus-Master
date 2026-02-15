@@ -142,6 +142,7 @@ export const LibraryPage = () => {
       toast.success(`Scan complete: ${res.data.new} new, ${res.data.updated} updated, ${res.data.removed} removed`);
       fetchData();
       fetchMedia(selectedLibrary);
+      fetchTvSeries(selectedLibrary);
     } catch (error) {
       toast.error('Scan failed');
     } finally {
@@ -157,6 +158,7 @@ export const LibraryPage = () => {
       const res = await marmaladeLibrary.refreshMetadata(libraryId);
       toast.success(`Metadata refreshed: ${res.data.refreshed} of ${res.data.total} items updated`);
       fetchMedia(selectedLibrary);
+      fetchTvSeries(selectedLibrary);
     } catch (error) {
       toast.error('Failed to refresh metadata');
     } finally {
@@ -176,6 +178,13 @@ export const LibraryPage = () => {
     } catch (error) {
       toast.error('Search failed');
     }
+  };
+
+  const toggleSeriesExpand = (seriesName) => {
+    setExpandedSeries(prev => ({
+      ...prev,
+      [seriesName]: !prev[seriesName]
+    }));
   };
 
   const handleKeyPress = (e) => {
