@@ -257,13 +257,13 @@ class TestPlaylistsPage:
         print(f"Playlists: {data['count']} playlists found")
     
     def test_create_and_delete_playlist(self):
-        """Test playlist CRUD operations (Drizzle API)"""
-        # Create playlist
-        create_response = self.session.post(f"{BASE_URL}/api/drizzle/playlists", json={
-            "name": "TEST_Audit_Playlist",
-            "description": "Test playlist for code audit"
-        })
-        assert create_response.status_code in [200, 201]
+        """Test playlist CRUD operations (Drizzle API) - uses query params"""
+        # Create playlist - endpoint uses query params
+        create_response = self.session.post(
+            f"{BASE_URL}/api/drizzle/playlists",
+            params={"name": "TEST_Audit_Playlist", "description": "Test playlist for code audit"}
+        )
+        assert create_response.status_code in [200, 201], f"Create failed: {create_response.text}"
         playlist = create_response.json()
         playlist_id = playlist.get("id")
         print(f"Created playlist: {playlist['name']}")
