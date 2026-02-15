@@ -177,6 +177,82 @@ export const PluginMarketplacePage = () => {
     setSearchQuery('');
   };
 
+  // Import plugin from file
+  const handleImportFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.zip')) {
+      toast.error('Only .zip files are supported');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await axios.post(`${API_URL}/api/gadgets/import-file`, formData, {
+        headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' }
+      });
+      
+      toast.success(`Plugin "${res.data.name}" imported successfully!`);
+      fetchInstalledPlugins();
+      setShowImportModal(false);
+    } catch (err) {
+      console.error('Import failed:', err);
+      toast.error(err.response?.data?.detail || 'Failed to import plugin');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Import plugin from URL
+  const handleImportUrl = async () => {
+    if (!importUrl) {
+      toast.error('Please enter a URL');
+      return;
+    }
+    
+    if (!importUrl.endsWith('.zip')) {
+      toast.error('URL must point to a .zip file');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/gadgets/import-url`, null, {
+        params: { url: importUrl },
+        headers: getAuthHeader()
+      });
+      
+      toast.success(`Plugin "${res.data.name}" imported successfully!`);
+      fetchInstalledPlugins();
+      setShowImportModal(false);
+      setImportUrl('');
+    } catch (err) {
+      console.error('Import failed:', err);
+      toast.error(err.response?.data?.detail || 'Failed to import plugin from URL');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Enable/disable plugin
+  const handleTogglePlugin = async (plugin) => {
+    try {
+      const endpoint = plugin.status === 'active' 
+        ? `/api/gadgets/plugins/${plugin.id}/disable`
+        : `/api/gadgets/plugins/${plugin.id}/enable`;
+      
+      await axios.post(`${API_URL}${endpoint}`, {}, { headers: getAuthHeader() });
+      toast.success(`Plugin ${plugin.status === 'active' ? 'disabled' : 'enabled'}`);
+      fetchInstalledPlugins();
+    } catch (err) {
+      toast.error('Failed to toggle plugin');
+    }
+  };
+
   // Kodi Addon Card
   const KodiAddonCard = ({ addon }) => {
     const categoryConfig = kodiCategoryConfig[addon.category] || kodiCategoryConfig.other;
