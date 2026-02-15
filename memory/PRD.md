@@ -7,9 +7,35 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.0.1
+## Current Version: 2.1.0
 
-### Recent Changes (v2.0.1 - Feb 15, 2026)
+### Recent Changes (v2.1.0 - Feb 15, 2026)
+- **Fixed Plugins Page**
+  - Auto-discovery of plugins now works correctly
+  - Added Import Plugin modal (file upload and URL import)
+  - Added Enable/Disable plugin functionality
+  - Shows 2 built-in plugins: AniDB Metadata Provider, Discord Notifications
+  
+- **Competitive Analysis Document Created**
+  - Location: `/app/docs/COMPETITIVE_ANALYSIS.md`
+  - Comprehensive comparison with Jellyfin, Plex, Sonarr/Radarr
+  - Feature matrix with priority roadmap (P0/P1/P2/P3)
+  - Implementation recommendations and quick wins identified
+  
+- **Playback Settings (Skip Intro/Credits Controls)**
+  - New Settings > Playback section
+  - Auto-skip intro/credits toggles
+  - Skip button display duration configuration
+  - Auto-play next episode with countdown timer
+  - Chromaprint status detection
+  - Default segment timing configuration
+  - Backend: `/api/settings/playback` endpoints
+  
+- **Bug Fixes**
+  - Added `playback_settings` table to SQLite schema
+  - Fixed `analyze_all_intros` endpoint for SQLite compatibility
+
+### Previous Changes (v2.0.1 - Feb 15, 2026)
 - **CODE AUDIT COMPLETE** - Comprehensive review of all routes and endpoints
   - Verified all 24 frontend routes are functional
   - All backend API endpoints tested (30 tests, 100% pass rate)
