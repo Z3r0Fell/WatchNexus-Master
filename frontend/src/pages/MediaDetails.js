@@ -6,7 +6,7 @@ import { tmdbApi, watchlistApi, downloadsApi, progressApi } from '../services/ap
 import { toast } from 'sonner';
 import { 
   Play, Plus, Check, Download, Star, Calendar, Clock, 
-  ChevronDown, ExternalLink, ArrowLeft, Users, ListPlus
+  ChevronDown, ExternalLink, ArrowLeft, Users, ListPlus, Fingerprint
 } from 'lucide-react';
 import { formatDuration, getTitle } from '../lib/utils';
 import { Button } from '../components/ui/button';
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { AddToPlaylistButton } from '../components/media/AddToPlaylistButton';
+import { IntroDetector } from '../components/media/IntroDetector';
 
 export const MediaDetails = () => {
   const { type, id } = useParams();
