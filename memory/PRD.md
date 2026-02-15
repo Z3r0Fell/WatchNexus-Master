@@ -137,6 +137,15 @@ Current release: **v1.2.4**
 | `/api/marmalade/libraries/{id}/scan` | POST | Scan library |
 | `/api/filesystem/browse` | GET | Browse directories |
 
+### Quality Profiles (NEW)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/quality-profiles` | GET | List profiles with definitions |
+| `/api/quality-profiles` | POST | Create new profile |
+| `/api/quality-profiles/{id}` | PUT | Update profile |
+| `/api/quality-profiles/{id}` | DELETE | Delete profile |
+| `/api/quality-definitions` | GET | List all quality tiers |
+
 ### TMDB
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -147,6 +156,7 @@ Current release: **v1.2.4**
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/drizzle/playlists` | GET/POST | List/Create playlists |
+| `/api/drizzle/playlists/{id}/items` | POST | Add item to playlist |
 | `/api/drizzle/queue` | GET | Active queue state |
 
 ---
