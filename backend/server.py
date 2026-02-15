@@ -865,14 +865,15 @@ async def get_chromaprint_status(user: dict = Depends(require_auth)):
 @api_router.post("/marmalade/analyze-all-intros")
 async def analyze_all_intros(user: dict = Depends(require_auth)):
     """Queue all TV series for intro analysis."""
-    # Get all unique series
-    series_list = await db.media.distinct("series_name", {"type": "tv"})
-    queued = 0
-    
-    for series_name in series_list:
-        if series_name:
-            # Queue for background analysis (in production, use a task queue)
-            queued += 1
+    # Get all unique series from the media table
+    try:
+        # Use a query to get distinct series names
+        all_media = await db.media.find({"type": "tv"}).to_list(1000)
+        series_names = set(m.get("series_name") for m in all_media if m.get("series_name"))
+        queued = len(series_names)
+    except Exception as e:
+        logger.error(f"Failed to query media for intro analysis: {e}")
+        queued = 0
             
     return {
         "status": "queued",
