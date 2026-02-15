@@ -4478,7 +4478,7 @@ import sys
 
 # Server start time for uptime calculation
 SERVER_START_TIME = datetime.now(timezone.utc)
-APP_VERSION = "1.2.4"
+APP_VERSION = "2.0.1"
 
 @api_router.get("/system/info")
 async def get_system_info():
