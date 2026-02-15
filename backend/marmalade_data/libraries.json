@@ -8,5 +8,15 @@
     "scan_interval": 3600,
     "last_scan": "2026-02-14T18:54:12.735613+00:00",
     "item_count": 3
+  },
+  {
+    "id": "8215c671235d01b7",
+    "name": "Test TV Shows",
+    "path": "/tmp/testepisodes",
+    "media_type": "tv_shows",
+    "enabled": true,
+    "scan_interval": 3600,
+    "last_scan": null,
+    "item_count": 0
   }
 ]
