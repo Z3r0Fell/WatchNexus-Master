@@ -68,6 +68,10 @@ export const marmaladeMedia = {
   // Get continue watching list
   getContinueWatching: (limit = 10) =>
     marmaladeClient.get('/continue-watching', { params: { limit } }),
+    
+  // Get TV series grouped by show and season
+  getTVSeriesGrouped: (libraryId = null) =>
+    marmaladeClient.get('/tv-series', { params: libraryId ? { library_id: libraryId } : {} }),
 };
 
 // Watch Progress
