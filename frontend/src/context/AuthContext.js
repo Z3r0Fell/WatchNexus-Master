@@ -73,9 +73,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`, null, { withCredentials: true });
+      await axios.post(`${API}/auth/logout`);
     } catch (error) {
-      console.error('Logout error:', error);
+      // Ignore logout errors - we're clearing local state anyway
     }
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
