@@ -645,6 +645,18 @@ export const PluginMarketplacePage = () => {
 
           {/* Installed Plugins Tab */}
           <TabsContent value="installed" className="mt-6">
+            {/* Import button header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Installed Plugins</h2>
+              <Button 
+                onClick={() => setShowImportModal(true)}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Import Plugin
+              </Button>
+            </div>
+            
             {loadingPlugins ? (
               <div className="flex items-center justify-center py-12">
                 <RefreshCw className="w-8 h-8 animate-spin text-violet-400" />
@@ -653,7 +665,15 @@ export const PluginMarketplacePage = () => {
               <div className="text-center py-12 text-gray-500">
                 <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No plugins installed</p>
-                <p className="text-sm mt-2">Browse the Kodi repository to find add-ons</p>
+                <p className="text-sm mt-2">Import a plugin ZIP file or browse the Kodi repository</p>
+                <Button 
+                  onClick={() => setShowImportModal(true)}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Plugin
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
