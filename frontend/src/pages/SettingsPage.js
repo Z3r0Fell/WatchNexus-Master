@@ -151,7 +151,13 @@ export const SettingsPage = () => {
       });
       setBrowserPath(res.data.current_path); setBrowserItems(res.data.items || []);
       setBrowserDrives(res.data.drives || []); setBrowserMediaCount(res.data.media_files_in_current || 0);
-    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to browse directory'); }
+    } catch (error) {
+      // If path doesn't exist, fall back to root
+      if (error.response?.status === 404 && path !== '/') {
+        return browsePath('/');
+      }
+      toast.error(error.response?.data?.detail || 'Failed to browse directory'); 
+    }
     finally { setBrowserLoading(false); }
   };
 
