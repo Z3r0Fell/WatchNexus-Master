@@ -9,7 +9,10 @@ const isDevServer = process.env.NODE_ENV !== "production";
 // Environment variable overrides
 const config = {
   enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === "true",
-  enableVisualEdits: false, // Temporarily disabled due to babel plugin issues
+  // Visual edits disabled: Babel plugin causes "Maximum call stack exceeded" on complex components
+  // like JuiceColorPicker.jsx. This is a non-critical design feature, app functions normally without it.
+  // TODO: Debug babel-metadata-plugin.js recursion issue for complex component patterns
+  enableVisualEdits: false,
 };
 
 // Conditionally load visual edits modules only in dev mode
