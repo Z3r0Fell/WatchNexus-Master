@@ -624,6 +624,81 @@ class MarmaladeServer:
         media.sort(key=lambda m: m.last_watched or '', reverse=True)
         return media[:limit]
     
+    def get_tv_series_grouped(self, library_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get TV episodes grouped by series and season.
+        Returns a list of shows with their seasons and episodes nested.
+        """
+        from collections import defaultdict
+        
+        # Filter to episodes only
+        episodes = [
+            m for m in self.media_files.values()
+            if m.media_type == MediaType.EPISODE
+        ]
+        
+        if library_id:
+            library = self.libraries.get(library_id)
+            if library:
+                episodes = [e for e in episodes if e.path.startswith(library.path)]
+        
+        # Group by series_name, then by season
+        series_dict = defaultdict(lambda: {
+            'series_name': '',
+            'poster_url': '',
+            'backdrop_url': '',
+            'tmdb_id': None,
+            'overview': '',
+            'seasons': defaultdict(list)
+        })
+        
+        for ep in episodes:
+            series_name = ep.series_name or 'Unknown Series'
+            series = series_dict[series_name]
+            
+            # Update series info from episode (take from first episode or one with most data)
+            if not series['series_name']:
+                series['series_name'] = series_name
+            if ep.poster_url and not series['poster_url']:
+                series['poster_url'] = ep.poster_url
+            if ep.backdrop_url and not series['backdrop_url']:
+                series['backdrop_url'] = ep.backdrop_url
+            if ep.tmdb_id and not series['tmdb_id']:
+                series['tmdb_id'] = ep.tmdb_id
+            if ep.overview and not series['overview']:
+                series['overview'] = ep.overview
+            
+            # Add episode to appropriate season
+            season_num = ep.season_number or 0
+            series['seasons'][season_num].append(ep.to_dict())
+        
+        # Convert to list format
+        result = []
+        for series_name, series_data in sorted(series_dict.items()):
+            # Convert seasons from dict to sorted list
+            seasons = []
+            for season_num in sorted(series_data['seasons'].keys()):
+                eps = series_data['seasons'][season_num]
+                # Sort episodes by episode number
+                eps.sort(key=lambda e: e.get('episode_number') or 0)
+                seasons.append({
+                    'season_number': season_num,
+                    'episode_count': len(eps),
+                    'episodes': eps
+                })
+            
+            result.append({
+                'series_name': series_data['series_name'],
+                'poster_url': series_data['poster_url'],
+                'backdrop_url': series_data['backdrop_url'],
+                'tmdb_id': series_data['tmdb_id'],
+                'overview': series_data['overview'],
+                'total_episodes': sum(len(s['episodes']) for s in seasons),
+                'seasons': seasons
+            })
+        
+        return result
+    
     # ==================== Watch Progress ====================
     
     def update_watch_progress(
