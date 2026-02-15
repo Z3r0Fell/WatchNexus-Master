@@ -3635,6 +3635,9 @@ from gadgets import get_gadgets_manager
 async def list_plugins(user: dict = Depends(require_auth)):
     """List all discovered plugins."""
     manager = get_gadgets_manager()
+    # Auto-discover plugins if none found
+    if not manager._manifests:
+        await manager.discover_plugins()
     return manager.get_all_plugins()
 
 @api_router.post("/gadgets/discover")
