@@ -7,9 +7,16 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.3.0
+## Current Version: 1.3.1
 
-### Recent Changes (v1.3.0 - Feb 15, 2026)
+### Recent Changes (v1.3.1 - Feb 15, 2026)
+- **Verified: Send to Download** - End-to-end download flow working (search → grab → download queue)
+- **Verified: TV Series Grouping** - Episodes properly grouped by series and season with TMDB metadata
+- **Bug Fix: tv_shows media type** - Updated `_parse_filename` and scanner to recognize `tv_shows` alongside `tv`
+- **Test Data: Breaking Bad** - Added 5 test episodes (2 seasons) to verify series grouping
+- **Note: Visual Edits Plugin** - Remains disabled due to Babel recursion issue in complex components
+
+### Previous Changes (v1.3.0 - Feb 15, 2026)
 - **Bug Fix: Indexer Saving** - Fixed indexers not persisting by changing to use `/api/compote/indexers` endpoint
 - **Bug Fix: Folder Browser** - Added auth token to browse requests and 404 fallback to root
 - **Bug Fix: TV Series Grouping** - Added "Series" view toggle in Library page to group episodes by show/season
