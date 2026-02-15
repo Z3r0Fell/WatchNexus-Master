@@ -403,7 +403,7 @@ class MarmaladeServer:
         """Parse a filename to extract metadata."""
         result = {'title': Path(filename).stem}
         
-        if media_type == 'tv':
+        if media_type in ['tv', 'tv_shows', 'anime']:
             for pattern in self.TV_PATTERNS:
                 match = pattern.match(filename)
                 if match:
