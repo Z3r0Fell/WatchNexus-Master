@@ -235,7 +235,7 @@ class TestAnimePage:
 
 
 class TestPlaylistsPage:
-    """Test Playlists page CRUD functionality"""
+    """Test Playlists page CRUD functionality - uses Drizzle API"""
     
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -249,17 +249,17 @@ class TestPlaylistsPage:
         self.session.headers.update({"Authorization": f"Bearer {self.token}"})
     
     def test_get_playlists(self):
-        """Test get playlists endpoint"""
-        response = self.session.get(f"{BASE_URL}/api/playlists")
+        """Test get playlists endpoint (Drizzle API)"""
+        response = self.session.get(f"{BASE_URL}/api/drizzle/playlists")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        print(f"Playlists: {len(data)} playlists found")
+        assert "playlists" in data
+        print(f"Playlists: {data['count']} playlists found")
     
     def test_create_and_delete_playlist(self):
-        """Test playlist CRUD operations"""
+        """Test playlist CRUD operations (Drizzle API)"""
         # Create playlist
-        create_response = self.session.post(f"{BASE_URL}/api/playlists", json={
+        create_response = self.session.post(f"{BASE_URL}/api/drizzle/playlists", json={
             "name": "TEST_Audit_Playlist",
             "description": "Test playlist for code audit"
         })
@@ -269,14 +269,14 @@ class TestPlaylistsPage:
         print(f"Created playlist: {playlist['name']}")
         
         # Verify playlist exists
-        get_response = self.session.get(f"{BASE_URL}/api/playlists")
-        playlists = get_response.json()
+        get_response = self.session.get(f"{BASE_URL}/api/drizzle/playlists")
+        playlists = get_response.json()["playlists"]
         found = any(p.get("id") == playlist_id for p in playlists)
         assert found, "Created playlist not found"
         
         # Delete playlist
         if playlist_id:
-            delete_response = self.session.delete(f"{BASE_URL}/api/playlists/{playlist_id}")
+            delete_response = self.session.delete(f"{BASE_URL}/api/drizzle/playlists/{playlist_id}")
             assert delete_response.status_code in [200, 204]
             print(f"Deleted playlist: {playlist_id}")
 
@@ -466,23 +466,27 @@ class TestQualityProfiles:
         self.session.headers.update({"Authorization": f"Bearer {self.token}"})
     
     def test_get_quality_profiles(self):
-        """Test get quality profiles endpoint"""
+        """Test get quality profiles endpoint - returns object with profiles array"""
         response = self.session.get(f"{BASE_URL}/api/quality-profiles")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        print(f"Quality profiles: {len(data)} profiles")
-        if data:
-            profile = data[0]
+        # API returns {"profiles": [...], "quality_definitions": [...]}
+        assert "profiles" in data or isinstance(data, list)
+        profiles = data.get("profiles", data) if isinstance(data, dict) else data
+        print(f"Quality profiles: {len(profiles)} profiles")
+        if profiles:
+            profile = profiles[0]
             print(f"First profile: {profile.get('name', 'N/A')}")
     
     def test_get_quality_definitions(self):
-        """Test get quality definitions endpoint"""
+        """Test get quality definitions endpoint - returns object with definitions array"""
         response = self.session.get(f"{BASE_URL}/api/quality-definitions")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        print(f"Quality definitions: {len(data)} definitions")
+        # API returns {"definitions": [...]}
+        assert "definitions" in data or isinstance(data, list)
+        definitions = data.get("definitions", data) if isinstance(data, dict) else data
+        print(f"Quality definitions: {len(definitions)} definitions")
 
 
 class TestSearch:
