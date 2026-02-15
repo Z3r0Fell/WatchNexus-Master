@@ -2161,6 +2161,15 @@ async def marmalade_get_media(
     media = server.get_all_media(library_id, media_type, limit, offset)
     return [m.to_dict() for m in media]
 
+@api_router.get("/marmalade/tv-series")
+async def marmalade_get_tv_series(
+    library_id: Optional[str] = None,
+    user: dict = Depends(require_auth)
+):
+    """Get TV episodes grouped by series and season."""
+    server = get_marmalade_server()
+    return server.get_tv_series_grouped(library_id)
+
 @api_router.get("/marmalade/media/recent")
 async def marmalade_get_recent(limit: int = 20, user: dict = Depends(require_auth)):
     """Get recently added media."""
