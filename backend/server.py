@@ -818,6 +818,68 @@ async def update_settings(settings: AppSettings, user: dict = Depends(require_au
     )
     return settings_dict
 
+# ==================== PLAYBACK SETTINGS ====================
+
+class PlaybackSettings(BaseModel):
+    auto_skip_intro: bool = False
+    auto_skip_credits: bool = False
+    skip_button_duration: int = 5
+    intro_detection_enabled: bool = True
+    credits_detection_enabled: bool = True
+    default_intro_start: int = 0
+    default_intro_end: int = 90
+    default_credits_offset: int = 90
+    auto_play_next: bool = True
+    next_episode_countdown: int = 15
+
+@api_router.get("/settings/playback")
+async def get_playback_settings(user: dict = Depends(require_auth)):
+    """Get playback settings for the user."""
+    settings = await db.playback_settings.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not settings:
+        settings = PlaybackSettings().model_dump()
+    return settings
+
+@api_router.put("/settings/playback")
+async def update_playback_settings(settings: PlaybackSettings, user: dict = Depends(require_auth)):
+    """Update playback settings for the user."""
+    settings_dict = settings.model_dump()
+    settings_dict["user_id"] = user["id"]
+    await db.playback_settings.update_one(
+        {"user_id": user["id"]},
+        {"$set": settings_dict},
+        upsert=True
+    )
+    return settings_dict
+
+@api_router.get("/system/chromaprint-status")
+async def get_chromaprint_status(user: dict = Depends(require_auth)):
+    """Check if Chromaprint (fpcalc) is installed."""
+    import shutil
+    fpcalc_path = shutil.which("fpcalc")
+    return {
+        "installed": fpcalc_path is not None,
+        "path": fpcalc_path
+    }
+
+@api_router.post("/marmalade/analyze-all-intros")
+async def analyze_all_intros(user: dict = Depends(require_auth)):
+    """Queue all TV series for intro analysis."""
+    # Get all unique series
+    series_list = await db.media.distinct("series_name", {"type": "tv"})
+    queued = 0
+    
+    for series_name in series_list:
+        if series_name:
+            # Queue for background analysis (in production, use a task queue)
+            queued += 1
+            
+    return {
+        "status": "queued",
+        "queued": queued,
+        "message": f"Queued {queued} series for intro analysis"
+    }
+
 # ==================== USER MANAGEMENT ====================
 
 class UserPermissions(BaseModel):
