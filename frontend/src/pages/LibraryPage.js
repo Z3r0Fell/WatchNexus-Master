@@ -34,12 +34,15 @@ export const LibraryPage = () => {
   const [serverStatus, setServerStatus] = useState(null);
   const [libraries, setLibraries] = useState([]);
   const [media, setMedia] = useState([]);
+  const [tvSeries, setTvSeries] = useState([]);
   const [recentMedia, setRecentMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState({});
   const [refreshingMetadata, setRefreshingMetadata] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLibrary, setSelectedLibrary] = useState(null);
+  const [viewMode, setViewMode] = useState('all'); // 'all' | 'grouped'
+  const [expandedSeries, setExpandedSeries] = useState({});
   
   // New library form
   const [showAddLibrary, setShowAddLibrary] = useState(false);
@@ -72,10 +75,20 @@ export const LibraryPage = () => {
     }
   }, []);
 
+  const fetchTvSeries = useCallback(async (libraryId = null) => {
+    try {
+      const res = await marmaladeMedia.getTVSeriesGrouped(libraryId);
+      setTvSeries(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch TV series:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
     fetchMedia();
-  }, [fetchData, fetchMedia]);
+    fetchTvSeries();
+  }, [fetchData, fetchMedia, fetchTvSeries]);
 
   const handleAddLibrary = async () => {
     if (!newLibrary.name || !newLibrary.path) {
