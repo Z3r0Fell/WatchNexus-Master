@@ -17,9 +17,9 @@ export const WatchHistoryPage = () => {
   const fetchHistory = async () => {
     try {
       const res = await progressApi.get();
-      // Sort by last_watched descending
+      // Sort by updated_at descending (matches API response field)
       const sorted = (res.data || []).sort((a, b) => 
-        new Date(b.last_watched) - new Date(a.last_watched)
+        new Date(b.updated_at) - new Date(a.updated_at)
       );
       setHistory(sorted);
     } catch (error) {

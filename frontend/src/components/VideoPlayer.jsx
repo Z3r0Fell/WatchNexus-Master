@@ -349,7 +349,26 @@ const VideoPlayer = () => {
   
   const handleError = (e) => {
     console.error('Video error:', e);
-    setError('Failed to play video');
+    // Try to determine specific error type
+    const videoElement = videoRef.current;
+    if (videoElement?.error) {
+      const errorCode = videoElement.error.code;
+      switch (errorCode) {
+        case MediaError.MEDIA_ERR_NETWORK:
+          setError('Network error - media file may not exist or server is unreachable');
+          break;
+        case MediaError.MEDIA_ERR_DECODE:
+          setError('Media decoding error - file may be corrupted');
+          break;
+        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          setError('Media format not supported');
+          break;
+        default:
+          setError('Failed to play video - please verify the file exists');
+      }
+    } else {
+      setError('Failed to play video - media file not found');
+    }
     setBuffering(false);
   };
 
