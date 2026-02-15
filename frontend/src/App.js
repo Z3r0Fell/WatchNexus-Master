@@ -25,6 +25,9 @@ import { DVRPage } from "./pages/DVRPage";
 import PlaylistsPage from "./pages/PlaylistsPage";
 import AnimePage from "./pages/AnimePage";
 import VideoPlayer from "./components/VideoPlayer";
+import { WatchHistoryPage } from "./pages/WatchHistoryPage";
+import { WatchlistPage } from "./pages/WatchlistPage";
+import { DiscoverPage } from "./pages/DiscoverPage";
 
 import "./App.css";
 
