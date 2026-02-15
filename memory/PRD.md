@@ -158,16 +158,19 @@ Current release: **v1.2.4**
 - [x] Folder browser
 - [x] Anime section
 - [x] API URL configuration fix (dev/prod modes)
+- [x] **Quality Profiles** - Sonarr/Radarr-style quality management
 - [ ] Test with actual media files
 
 ### P1 - High Priority
 - [ ] Windows release testing
 - [ ] Video player improvements
 - [ ] macOS release
+- [ ] Integrate Quality Profiles into search/grab logic (filter results by profile)
 
 ### P2 - Enhancements
 - [ ] AI intro/credits detection
 - [ ] Post-credits handling
+- [ ] Custom formats (like Radarr v3)
 
 ### P3 - Future
 - [ ] Roku/Universal app
