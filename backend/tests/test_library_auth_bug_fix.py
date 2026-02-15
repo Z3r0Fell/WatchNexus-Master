@@ -18,7 +18,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://watchnexus-quality.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nexus-code-review-1.preview.emergentagent.com').rstrip('/')
 
 class TestAuthFlow:
     """Test authentication flow - the core bug fix area"""
