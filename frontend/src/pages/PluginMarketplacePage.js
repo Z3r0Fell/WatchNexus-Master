@@ -7,7 +7,7 @@ import {
   RefreshCw, Filter, Grid, List, Shield, Code, Globe, Tv,
   MessageSquare, Palette, Calendar, Database, Bell, ChevronRight,
   Music, Image, Settings, Gamepad2, Monitor, Zap, Box, Layers,
-  Play, Radio, Cloud, Sun, Eye, ArrowRight
+  Play, Radio, Cloud, Sun, Eye, ArrowRight, Upload, Link
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
