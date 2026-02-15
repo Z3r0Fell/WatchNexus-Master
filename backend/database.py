@@ -467,6 +467,37 @@ class SQLiteDB:
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
             CREATE INDEX IF NOT EXISTS idx_quality_profiles_user ON quality_profiles(user_id);
+            
+            -- Playback Settings (Skip Intro/Credits, Auto-play)
+            CREATE TABLE IF NOT EXISTS playback_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT UNIQUE NOT NULL,
+                auto_skip_intro INTEGER DEFAULT 0,
+                auto_skip_credits INTEGER DEFAULT 0,
+                skip_button_duration INTEGER DEFAULT 5,
+                intro_detection_enabled INTEGER DEFAULT 1,
+                credits_detection_enabled INTEGER DEFAULT 1,
+                default_intro_start INTEGER DEFAULT 0,
+                default_intro_end INTEGER DEFAULT 90,
+                default_credits_offset INTEGER DEFAULT 90,
+                auto_play_next INTEGER DEFAULT 1,
+                next_episode_countdown INTEGER DEFAULT 15,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            
+            -- Media table for Marmalade library
+            CREATE TABLE IF NOT EXISTS media (
+                id TEXT PRIMARY KEY,
+                user_id TEXT,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                series_name TEXT,
+                season_number INTEGER,
+                episode_number INTEGER,
+                local_path TEXT,
+                added_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
         ''')
         await self._connection.commit()
         
