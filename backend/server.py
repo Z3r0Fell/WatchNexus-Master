@@ -2515,6 +2515,168 @@ async def get_next_episode(media_id: str, user: dict = Depends(require_auth)):
     
     return None
 
+# ==================== AUDIO FINGERPRINT DETECTION ====================
+from fprint import get_fprint_analyzer, analyze_series_for_intros
+
+@api_router.post("/marmalade/series/{series_name}/analyze-intros")
+async def analyze_series_intros(
+    series_name: str,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_auth)
+):
+    """
+    Trigger audio fingerprint analysis to detect intro/credits segments for a series.
+    
+    This analyzes audio across all episodes of a series to find repeated segments
+    (like opening themes) and automatically creates skip segments for them.
+    """
+    server = get_marmalade_server()
+    
+    # Get all episodes from this series
+    all_media = server.get_all_media(media_type="episode")
+    series_episodes = [
+        m for m in all_media 
+        if (m.series_name or "").lower() == series_name.lower()
+    ]
+    
+    if len(series_episodes) < 2:
+        return {
+            "success": False, 
+            "message": f"Need at least 2 episodes to detect intros. Found {len(series_episodes)}."
+        }
+    
+    # Prepare episode data for analysis
+    episode_data = [
+        {
+            "media_id": ep.id,
+            "file_path": ep.path,
+            "duration": ep.duration or 0
+        }
+        for ep in series_episodes
+        if ep.path and os.path.exists(ep.path)
+    ]
+    
+    if len(episode_data) < 2:
+        return {
+            "success": False,
+            "message": "Not enough episodes with valid file paths found."
+        }
+    
+    # Run analysis in background
+    async def run_analysis():
+        try:
+            from database import get_database
+            db = get_database()
+            
+            detected = await analyze_series_for_intros(episode_data)
+            
+            if detected:
+                # Save detected segments for each episode
+                for ep_data in episode_data:
+                    await db.skip_segments.update_one(
+                        {"media_id": ep_data["media_id"]},
+                        {
+                            "$set": {
+                                "media_id": ep_data["media_id"],
+                                "segments": detected,
+                                "detected_at": datetime.utcnow().isoformat(),
+                                "series_name": series_name
+                            }
+                        },
+                        upsert=True
+                    )
+                
+                logger.info(f"Detected {len(detected)} skip segments for series: {series_name}")
+            else:
+                logger.info(f"No intro/credits detected for series: {series_name}")
+                
+        except Exception as e:
+            logger.error(f"Error analyzing series {series_name}: {e}")
+    
+    background_tasks.add_task(run_analysis)
+    
+    return {
+        "success": True,
+        "message": f"Analysis started for {len(episode_data)} episodes. Skip segments will be auto-saved when detected.",
+        "episodes_queued": len(episode_data)
+    }
+
+
+@api_router.get("/marmalade/series/{series_name}/intro-status")
+async def get_series_intro_status(
+    series_name: str,
+    user: dict = Depends(require_auth)
+):
+    """
+    Get the intro/credits detection status for a series.
+    Shows which episodes have detected skip segments.
+    """
+    from database import get_database
+    db = get_database()
+    server = get_marmalade_server()
+    
+    # Get all episodes from this series
+    all_media = server.get_all_media(media_type="episode")
+    series_episodes = [
+        m for m in all_media 
+        if (m.series_name or "").lower() == series_name.lower()
+    ]
+    
+    # Check which have skip segments
+    episodes_with_segments = []
+    episodes_without_segments = []
+    
+    for ep in series_episodes:
+        skip_data = await db.skip_segments.find_one({"media_id": ep.id})
+        if skip_data and skip_data.get("segments"):
+            episodes_with_segments.append({
+                "id": ep.id,
+                "title": ep.title,
+                "season": ep.season_number,
+                "episode": ep.episode_number,
+                "segments": skip_data.get("segments", [])
+            })
+        else:
+            episodes_without_segments.append({
+                "id": ep.id,
+                "title": ep.title,
+                "season": ep.season_number,
+                "episode": ep.episode_number
+            })
+    
+    return {
+        "series_name": series_name,
+        "total_episodes": len(series_episodes),
+        "with_segments": len(episodes_with_segments),
+        "without_segments": len(episodes_without_segments),
+        "episodes_with_segments": episodes_with_segments,
+        "episodes_without_segments": episodes_without_segments
+    }
+
+
+@api_router.post("/marmalade/media/{media_id}/detect-segments")
+async def detect_single_media_segments(
+    media_id: str,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_auth)
+):
+    """
+    Trigger audio fingerprint analysis for a single media item.
+    Compares against other episodes from the same series.
+    """
+    server = get_marmalade_server()
+    media = server.get_media(media_id)
+    
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    
+    if not media.series_name:
+        return {"success": False, "message": "This feature only works for TV series episodes"}
+    
+    # Redirect to series analysis
+    return await analyze_series_intros(media.series_name, background_tasks, user)
+
+
 # ==================== SUBTITLE SERVICE ====================
 from garnish import get_garnish_service
 
