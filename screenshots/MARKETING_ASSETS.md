@@ -1,7 +1,7 @@
 # WatchNexus - Marketing Assets
 
 ## Live Demo
-**URL:** https://watchnexus-stable.preview.emergentagent.com
+**URL:** https://watchnexus-quality.preview.emergentagent.com
 
 **Test Credentials:**
 - Email: test@test.com
