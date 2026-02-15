@@ -340,3 +340,7 @@ dist/watchnexus-v2.0.1-windows.zip
 *.env.*
 releases/watchnexus-v2.0.1-linux.zip
 releases/watchnexus-v2.0.1-windows.zip
+
+# Allow v2.0.1 release zips
+!releases/watchnexus-v2.0.1-linux.zip
+!releases/watchnexus-v2.0.1-windows.zip
