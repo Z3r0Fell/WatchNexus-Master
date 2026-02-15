@@ -452,6 +452,21 @@ class SQLiteDB:
                 UNIQUE(tmdb_id, media_type, marker_type)
             );
             CREATE INDEX IF NOT EXISTS idx_skip_markers_tmdb ON skip_markers(tmdb_id, media_type);
+            
+            -- Quality Profiles (Sonarr/Radarr-style)
+            CREATE TABLE IF NOT EXISTS quality_profiles (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                upgrade_allowed INTEGER DEFAULT 1,
+                cutoff TEXT NOT NULL,
+                qualities TEXT NOT NULL DEFAULT '[]',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                is_default INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_quality_profiles_user ON quality_profiles(user_id);
         ''')
         await self._connection.commit()
         
