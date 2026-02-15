@@ -68,6 +68,11 @@ export const PluginMarketplacePage = () => {
   // UI state
   const [selectedAddon, setSelectedAddon] = useState(null);
   const [installing, setInstalling] = useState(null);
+  
+  // Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
 
   const getToken = () => localStorage.getItem('token');
   const getAuthHeader = () => ({ Authorization: `Bearer ${getToken()}` });
