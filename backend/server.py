@@ -179,6 +179,30 @@ class AppSettings(BaseModel):
     oauth_client_id: Optional[str] = None
     oauth_client_secret: Optional[str] = None
 
+class QualityDefinition(BaseModel):
+    """Definition of a quality tier with ranking."""
+    model_config = ConfigDict(extra="ignore")
+    name: str  # e.g., "Bluray-1080p", "WEB-720p"
+    resolution: str  # "2160p", "1080p", "720p", "480p"
+    source: str  # "Bluray", "WEB", "HDTV", "DVD", "CAM"
+    rank: int  # Higher = better quality
+    min_size: Optional[int] = None  # Min size in MB (optional)
+    max_size: Optional[int] = None  # Max size in MB (optional)
+    enabled: bool = True
+
+class QualityProfile(BaseModel):
+    """Quality profile like Sonarr/Radarr."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
+    name: str
+    upgrade_allowed: bool = True
+    cutoff: str  # Quality name at which to stop upgrading
+    qualities: List[QualityDefinition] = []
+    is_default: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class ScheduledScan(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
