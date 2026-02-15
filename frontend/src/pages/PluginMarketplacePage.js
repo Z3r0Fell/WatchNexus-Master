@@ -699,6 +699,101 @@ export const PluginMarketplacePage = () => {
             />
           )}
         </AnimatePresence>
+
+        {/* Import Plugin Modal */}
+        <AnimatePresence>
+          {showImportModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              onClick={() => setShowImportModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="glass-card rounded-2xl max-w-md w-full p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-violet-400" />
+                    Import Plugin
+                  </h2>
+                  <button
+                    onClick={() => setShowImportModal(false)}
+                    className="p-1 rounded-full hover:bg-white/10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Import from file */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Import from ZIP file
+                  </label>
+                  <label className="flex items-center justify-center gap-2 p-8 border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-violet-500/50 transition-colors">
+                    <Upload className="w-6 h-6 text-gray-400" />
+                    <span className="text-gray-400">Click to select a .zip file</span>
+                    <input
+                      type="file"
+                      accept=".zip"
+                      className="hidden"
+                      onChange={handleImportFile}
+                      disabled={importing}
+                    />
+                  </label>
+                </div>
+
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10"></div>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-2 bg-gray-900 text-gray-500 text-sm">or</span>
+                  </div>
+                </div>
+
+                {/* Import from URL */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Import from URL
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        placeholder="https://example.com/plugin.zip"
+                        value={importUrl}
+                        onChange={(e) => setImportUrl(e.target.value)}
+                        className="pl-10 bg-white/5 border-white/10"
+                        disabled={importing}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleImportUrl}
+                      disabled={!importUrl || importing}
+                      className="bg-violet-600 hover:bg-violet-700"
+                    >
+                      {importing ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Plugins must have a valid manifest.json file in the root of the ZIP archive.
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </Layout>
   );
