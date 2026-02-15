@@ -4,7 +4,35 @@ This document tracks all issues found during the comprehensive code audit.
 
 ## Audit Progress
 - **Started**: Current session
-- **Version**: 1.4.0 → 2.0.1 (upon completion)
+- **Version**: 2.0.1 → 2.1.0 (new features added)
+
+---
+
+## New Features Implemented (v2.1.0)
+
+### Feature 1: Fixed Plugins Page
+- **Issue**: Plugins were not being discovered/displayed
+- **Fix**: Modified `/api/gadgets/plugins` endpoint to auto-discover plugins if none found
+- **Added**: Import Plugin modal (file upload and URL import)
+- **Added**: Enable/Disable functionality for plugins
+- **Status**: COMPLETE
+
+### Feature 2: Competitive Analysis Document
+- **Location**: `/app/docs/COMPETITIVE_ANALYSIS.md`
+- **Content**: Comprehensive comparison with Jellyfin, Plex, and *arr suite
+- **Includes**: Feature matrix, priority roadmap, implementation recommendations
+- **Status**: COMPLETE
+
+### Feature 3: Playback Settings (Skip Intro/Credits)
+- **Location**: `frontend/src/components/settings/PlaybackSettings.jsx`
+- **Backend**: Added `/api/settings/playback` endpoints
+- **Features**:
+  - Auto-skip intro/credits toggles
+  - Skip button display duration
+  - Auto-play next episode with countdown
+  - Chromaprint status detection
+  - Default segment timing configuration
+- **Status**: COMPLETE
 
 ---
 
