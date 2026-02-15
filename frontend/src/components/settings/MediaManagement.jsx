@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { FolderCog, Layers, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FolderCog, Layers, Plus, Trash2, Check, CheckCircle, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { toast } from 'sonner';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const Toggle = ({ checked, onChange }) => (
   <label className="relative inline-flex items-center cursor-pointer">
