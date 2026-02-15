@@ -329,6 +329,36 @@ class MarmaladeServer:
         logger.info(f"Scan complete: {result}")
         return result
     
+    async def import_file(self, file_path: str, library_id: str = None) -> bool:
+        """Import a single file into a library."""
+        if not os.path.exists(file_path):
+            return False
+        
+        # Find target library based on path or use the specified library
+        target_library = None
+        if library_id:
+            target_library = self.libraries.get(library_id)
+        else:
+            # Try to find a library that matches the file path
+            for lib in self.libraries.values():
+                if file_path.startswith(lib.path):
+                    target_library = lib
+                    break
+        
+        if not target_library:
+            # No matching library, pick the first one or create a default
+            if self.libraries:
+                target_library = list(self.libraries.values())[0]
+            else:
+                return False
+        
+        # Process the file
+        media = await self._process_file(file_path, target_library)
+        if media:
+            self._save_data()
+            return True
+        return False
+    
     async def _process_file(self, file_path: str, library: Library) -> Optional[MediaFile]:
         """Process a media file and add to database."""
         try:
