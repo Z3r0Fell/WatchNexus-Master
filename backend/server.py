@@ -1571,6 +1571,234 @@ async def compote_test_indexer(indexer_id: str, user: dict = Depends(require_aut
     result = await compote.test_indexer(indexer_id)
     return result
 
+
+# ==================== QUALITY PROFILES (SONARR/RADARR-STYLE) ====================
+
+# Default quality definitions that mirror Sonarr/Radarr
+DEFAULT_QUALITY_DEFINITIONS = [
+    {"name": "Bluray-2160p Remux", "resolution": "2160p", "source": "Bluray", "rank": 100, "enabled": True},
+    {"name": "Bluray-2160p", "resolution": "2160p", "source": "Bluray", "rank": 95, "enabled": True},
+    {"name": "WEB-2160p", "resolution": "2160p", "source": "WEB", "rank": 90, "enabled": True},
+    {"name": "HDTV-2160p", "resolution": "2160p", "source": "HDTV", "rank": 85, "enabled": True},
+    {"name": "Bluray-1080p Remux", "resolution": "1080p", "source": "Bluray", "rank": 80, "enabled": True},
+    {"name": "Bluray-1080p", "resolution": "1080p", "source": "Bluray", "rank": 75, "enabled": True},
+    {"name": "WEB-1080p", "resolution": "1080p", "source": "WEB", "rank": 70, "enabled": True},
+    {"name": "HDTV-1080p", "resolution": "1080p", "source": "HDTV", "rank": 65, "enabled": True},
+    {"name": "Bluray-720p", "resolution": "720p", "source": "Bluray", "rank": 60, "enabled": True},
+    {"name": "WEB-720p", "resolution": "720p", "source": "WEB", "rank": 55, "enabled": True},
+    {"name": "HDTV-720p", "resolution": "720p", "source": "HDTV", "rank": 50, "enabled": True},
+    {"name": "DVD-R", "resolution": "480p", "source": "DVD", "rank": 40, "enabled": False},
+    {"name": "WEB-480p", "resolution": "480p", "source": "WEB", "rank": 35, "enabled": False},
+    {"name": "SDTV", "resolution": "480p", "source": "HDTV", "rank": 30, "enabled": False},
+    {"name": "CAM", "resolution": "Unknown", "source": "CAM", "rank": 10, "enabled": False},
+]
+
+@api_router.get("/quality-profiles")
+async def get_quality_profiles(user: dict = Depends(require_auth)):
+    """Get all quality profiles for the current user."""
+    profiles = await db.quality_profiles.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # If no profiles exist, create default ones
+    if not profiles:
+        now = datetime.now(timezone.utc).isoformat()
+        default_profiles = [
+            {
+                "id": str(uuid.uuid4()),
+                "user_id": user["id"],
+                "name": "Any",
+                "upgrade_allowed": True,
+                "cutoff": "Bluray-1080p",
+                "qualities": json.dumps([
+                    {"name": "Bluray-2160p", "resolution": "2160p", "source": "Bluray", "rank": 95, "enabled": True},
+                    {"name": "WEB-2160p", "resolution": "2160p", "source": "WEB", "rank": 90, "enabled": True},
+                    {"name": "Bluray-1080p", "resolution": "1080p", "source": "Bluray", "rank": 75, "enabled": True},
+                    {"name": "WEB-1080p", "resolution": "1080p", "source": "WEB", "rank": 70, "enabled": True},
+                    {"name": "Bluray-720p", "resolution": "720p", "source": "Bluray", "rank": 60, "enabled": True},
+                    {"name": "WEB-720p", "resolution": "720p", "source": "WEB", "rank": 55, "enabled": True},
+                ]),
+                "is_default": 1,
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "user_id": user["id"],
+                "name": "HD - 720p/1080p",
+                "upgrade_allowed": True,
+                "cutoff": "Bluray-1080p",
+                "qualities": json.dumps([
+                    {"name": "Bluray-1080p", "resolution": "1080p", "source": "Bluray", "rank": 75, "enabled": True},
+                    {"name": "WEB-1080p", "resolution": "1080p", "source": "WEB", "rank": 70, "enabled": True},
+                    {"name": "HDTV-1080p", "resolution": "1080p", "source": "HDTV", "rank": 65, "enabled": True},
+                    {"name": "Bluray-720p", "resolution": "720p", "source": "Bluray", "rank": 60, "enabled": True},
+                    {"name": "WEB-720p", "resolution": "720p", "source": "WEB", "rank": 55, "enabled": True},
+                ]),
+                "is_default": 0,
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "user_id": user["id"],
+                "name": "Ultra-HD",
+                "upgrade_allowed": True,
+                "cutoff": "Bluray-2160p",
+                "qualities": json.dumps([
+                    {"name": "Bluray-2160p Remux", "resolution": "2160p", "source": "Bluray", "rank": 100, "enabled": True},
+                    {"name": "Bluray-2160p", "resolution": "2160p", "source": "Bluray", "rank": 95, "enabled": True},
+                    {"name": "WEB-2160p", "resolution": "2160p", "source": "WEB", "rank": 90, "enabled": True},
+                ]),
+                "is_default": 0,
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+        
+        for profile in default_profiles:
+            await db.quality_profiles.insert_one(profile)
+        
+        # Fetch the created profiles
+        profiles = await db.quality_profiles.find(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        ).to_list(100)
+    
+    # Parse qualities JSON string
+    for profile in profiles:
+        if isinstance(profile.get("qualities"), str):
+            profile["qualities"] = json.loads(profile["qualities"])
+    
+    return {
+        "profiles": profiles,
+        "quality_definitions": DEFAULT_QUALITY_DEFINITIONS
+    }
+
+@api_router.post("/quality-profiles")
+async def create_quality_profile(
+    name: str,
+    cutoff: str = "Bluray-1080p",
+    qualities: str = None,  # JSON string of quality definitions
+    upgrade_allowed: bool = True,
+    user: dict = Depends(require_auth)
+):
+    """Create a new quality profile."""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Parse qualities or use defaults
+    if qualities:
+        qualities_list = json.loads(qualities)
+    else:
+        # Default: HD qualities enabled
+        qualities_list = [q for q in DEFAULT_QUALITY_DEFINITIONS if q["resolution"] in ["1080p", "720p"]]
+    
+    profile = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "name": name,
+        "upgrade_allowed": 1 if upgrade_allowed else 0,
+        "cutoff": cutoff,
+        "qualities": json.dumps(qualities_list),
+        "is_default": 0,
+        "created_at": now,
+        "updated_at": now,
+    }
+    
+    await db.quality_profiles.insert_one(profile)
+    
+    # Return with parsed qualities
+    profile["qualities"] = qualities_list
+    return profile
+
+@api_router.put("/quality-profiles/{profile_id}")
+async def update_quality_profile(
+    profile_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(require_auth)
+):
+    """Update a quality profile."""
+    # Check ownership
+    existing = await db.quality_profiles.find_one(
+        {"id": profile_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Build update
+    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if "name" in body:
+        updates["name"] = body["name"]
+    if "cutoff" in body:
+        updates["cutoff"] = body["cutoff"]
+    if "upgrade_allowed" in body:
+        updates["upgrade_allowed"] = 1 if body["upgrade_allowed"] else 0
+    if "qualities" in body:
+        if isinstance(body["qualities"], list):
+            updates["qualities"] = json.dumps(body["qualities"])
+        else:
+            updates["qualities"] = body["qualities"]
+    if "is_default" in body:
+        # If setting as default, unset other defaults first
+        if body["is_default"]:
+            await db.quality_profiles.update_many(
+                {"user_id": user["id"]},
+                {"is_default": 0}
+            )
+        updates["is_default"] = 1 if body["is_default"] else 0
+    
+    await db.quality_profiles.update_one(
+        {"id": profile_id},
+        updates
+    )
+    
+    # Return updated profile
+    updated = await db.quality_profiles.find_one(
+        {"id": profile_id},
+        {"_id": 0}
+    )
+    if isinstance(updated.get("qualities"), str):
+        updated["qualities"] = json.loads(updated["qualities"])
+    
+    return updated
+
+@api_router.delete("/quality-profiles/{profile_id}")
+async def delete_quality_profile(profile_id: str, user: dict = Depends(require_auth)):
+    """Delete a quality profile."""
+    # Check ownership
+    existing = await db.quality_profiles.find_one(
+        {"id": profile_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    await db.quality_profiles.delete_one({"id": profile_id})
+    return {"status": "deleted", "id": profile_id}
+
+@api_router.get("/quality-profiles/{profile_id}")
+async def get_quality_profile(profile_id: str, user: dict = Depends(require_auth)):
+    """Get a specific quality profile."""
+    profile = await db.quality_profiles.find_one(
+        {"id": profile_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    if isinstance(profile.get("qualities"), str):
+        profile["qualities"] = json.loads(profile["qualities"])
+    
+    return profile
+
+@api_router.get("/quality-definitions")
+async def get_quality_definitions(user: dict = Depends(require_auth)):
+    """Get all available quality definitions."""
+    return {"definitions": DEFAULT_QUALITY_DEFINITIONS}
+
 @api_router.get("/compote/search")
 async def compote_search(
     query: str,
