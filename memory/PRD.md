@@ -178,6 +178,7 @@ Current release: **v1.2.4**
 - [x] Anime section
 - [x] API URL configuration fix (dev/prod modes)
 - [x] **Quality Profiles** - Sonarr/Radarr-style quality management
+- [x] **Code Audit v2.0.1** - Comprehensive route and endpoint verification
 - [ ] Test with actual media files
 
 ### P1 - High Priority
