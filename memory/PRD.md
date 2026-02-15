@@ -9,7 +9,16 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ## Current Version: 2.0.1
 
-### Recent Changes (v1.4.0 - Feb 15, 2026)
+### Recent Changes (v2.0.1 - Feb 15, 2026)
+- **CODE AUDIT COMPLETE** - Comprehensive review of all routes and endpoints
+  - Verified all 24 frontend routes are functional
+  - All backend API endpoints tested (30 tests, 100% pass rate)
+  - Fixed: VideoPlayer now shows specific error messages for playback failures
+  - Fixed: WatchHistoryPage now sorts by `updated_at` field correctly
+  - Created `/app/bug_log.md` to document audit findings
+  - Version bumped from 1.4.0 to 2.0.1
+
+### Previous Changes (v1.4.0 - Feb 15, 2026)
 - **NEW: Quality Profiles** - Full Sonarr/Radarr-style quality profile system
   - Backend API: GET/POST/PUT/DELETE at `/api/quality-profiles`
   - 15 quality definitions (Bluray-2160p Remux → CAM)
