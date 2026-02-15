@@ -7,9 +7,17 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 1.2.9
+## Current Version: 1.3.0
 
-### Recent Changes (v1.2.9 - Feb 15, 2026)
+### Recent Changes (v1.3.0 - Feb 15, 2026)
+- **Bug Fix: Indexer Saving** - Fixed indexers not persisting by changing to use `/api/compote/indexers` endpoint
+- **Bug Fix: Folder Browser** - Added auth token to browse requests and 404 fallback to root
+- **Bug Fix: TV Series Grouping** - Added "Series" view toggle in Library page to group episodes by show/season
+- **New API: `/api/marmalade/tv-series`** - Returns TV episodes grouped by series and season
+- **Updated: LibraryPage.js** - Added viewMode toggle (All/Series), expandable series cards with season lists
+- **Infra Fix: Visual Edits Plugin** - Temporarily disabled due to Babel compilation issues
+
+### Previous Changes (v1.2.9 - Feb 15, 2026)
 - **Chromaprint Audio Fingerprinting** - New `fprint.py` module for detecting intro/credits via audio analysis
 - **IntroDetector Component** - UI button to trigger intro detection on TV show pages
 - **Series Analysis APIs**:
