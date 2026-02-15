@@ -258,6 +258,30 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute>
+            <WatchHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/watchlist"
+        element={
+          <ProtectedRoute>
+            <WatchlistPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/discover"
+        element={
+          <ProtectedRoute>
+            <DiscoverPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
