@@ -345,7 +345,7 @@ class MarmaladeServer:
             media_info = await self._get_media_info(file_path)
             
             # Determine media type
-            if library.media_type == 'tv':
+            if library.media_type in ['tv', 'tv_shows', 'anime']:
                 media_type = MediaType.EPISODE
             elif library.media_type == 'movies':
                 media_type = MediaType.MOVIE
