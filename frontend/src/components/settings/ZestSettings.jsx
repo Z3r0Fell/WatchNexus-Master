@@ -249,6 +249,7 @@ export const ZestSettings = () => {
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+              data-testid="log-search-input"
             />
             {filters.search && (
               <button
