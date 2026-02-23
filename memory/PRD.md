@@ -7,7 +7,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.4.0
+## Current Version: 2.5.0
 
 ### Code Name Legend
 | Code Name | Feature | Description |
@@ -27,6 +27,11 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 | 🍲 **Potluck** | qBittorrent | Torrent client integration |
 | 🧀 **Fondue** | Fingerprinting | Audio fingerprinting for intro detection |
 | 📦 **Preserve** | Quality Profiles | Sonarr/Radarr-style download quality preferences |
+| 💎 **Ruby** | Android TV Client | Leanback interface for Android TV/Google TV |
+| 💎 **Sapphire** | Android Mobile Client | Material Design 3 for phones/tablets |
+| 🔥 **Ember** | Fire TV Client | Optimized for Amazon Fire TV devices |
+| 💎 **Diamond** | Kodi Addon | Native Kodi integration with library sync |
+| 💜 **Tanzanite** | Roku Client | BrighterScript Roku channel |
 
 ---
 
