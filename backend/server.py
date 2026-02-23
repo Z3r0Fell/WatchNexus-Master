@@ -1566,7 +1566,7 @@ async def compote_update_indexer(
     
     try:
         body = await request.json()
-    except:
+    except Exception:
         body = {}
     
     # Get existing config
