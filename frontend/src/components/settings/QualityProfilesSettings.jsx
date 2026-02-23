@@ -101,13 +101,25 @@ export const QualityProfilesSettings = () => {
       if (!Array.isArray(data)) {
         data = data.profiles || [];
       }
-      // Parse qualities if it's a JSON string
-      const parsed = data.map(profile => ({
-        ...profile,
-        qualities: typeof profile.qualities === 'string' 
-          ? JSON.parse(profile.qualities).map(q => q.name || q.id || q)
-          : (profile.qualities || [])
-      }));
+      // Parse qualities and extract just the names/IDs
+      const parsed = data.map(profile => {
+        let qualities = profile.qualities;
+        if (typeof qualities === 'string') {
+          try {
+            qualities = JSON.parse(qualities);
+          } catch {
+            qualities = [];
+          }
+        }
+        // Convert object qualities to simple string array
+        if (Array.isArray(qualities) && qualities.length > 0 && typeof qualities[0] === 'object') {
+          qualities = qualities.filter(q => q.enabled !== false).map(q => q.name || q.id || String(q));
+        }
+        return {
+          ...profile,
+          qualities: qualities || []
+        };
+      });
       setProfiles(parsed);
     } catch (err) {
       console.error('Failed to fetch profiles:', err);
