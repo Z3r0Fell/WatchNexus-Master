@@ -1387,17 +1387,17 @@ async def add_to_library(item: MediaItem, user: dict = Depends(require_auth)):
 from sieve import check_media_health, repair_media_file, scan_library
 
 @api_router.post("/media/health-check")
-async def check_file_health(file_path: str, compute_hash: bool = False):
+async def check_file_health(file_path: str, compute_hash: bool = False, user: dict = Depends(require_auth)):
     """Check health of a single media file."""
     return check_media_health(file_path, compute_hash)
 
 @api_router.post("/media/repair")
-async def repair_file(file_path: str, output_path: str = None):
+async def repair_file(file_path: str, output_path: str = None, user: dict = Depends(require_auth)):
     """Attempt to repair a media file."""
     return repair_media_file(file_path, output_path)
 
 @api_router.post("/media/scan-library")
-async def scan_media_library(directory: str):
+async def scan_media_library(directory: str, user: dict = Depends(require_auth)):
     """Scan a directory for media health issues."""
     return scan_library(directory)
 
