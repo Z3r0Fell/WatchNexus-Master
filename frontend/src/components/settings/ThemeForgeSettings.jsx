@@ -117,7 +117,7 @@ export const ThemeForgeSettings = () => {
               <Eye className="w-4 h-4 mr-1" />
               {previewMode ? 'Stop Preview' : 'Preview'}
             </Button>
-            <Button onClick={handleSaveCustomTheme} disabled={savingTheme} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={handleSaveCustomTheme} disabled={savingTheme} className="bg-violet-600 hover:bg-violet-700" data-testid="save-custom-theme-btn">
               {savingTheme ? 'Saving...' : 'Save & Apply'}
             </Button>
           </div>
