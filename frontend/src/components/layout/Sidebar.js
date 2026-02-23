@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,21 +24,38 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 
-const navItems = [
-  { icon: Home, label: 'Home', path: '/' },
-  { icon: FolderOpen, label: 'Library', path: '/library' },
-  { icon: Film, label: 'Movies', path: '/movies' },
-  { icon: Tv, label: 'TV Shows', path: '/tv' },
-  { icon: Sparkles, label: 'Anime', path: '/anime' },
-  { icon: ListVideo, label: 'Playlists', path: '/playlists' },
-  { icon: Music, label: 'Music', path: '/music' },
-  { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks' },
-  { icon: Radio, label: 'Live TV', path: '/live' },
-  { icon: Layers, label: 'Streaming', path: '/streaming' },
-  { icon: Compass, label: 'Indexers', path: '/indexers' },
-  { icon: Download, label: 'Downloads', path: '/downloads' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
+// All navigation items - Home, Downloads, Settings are always visible (not hideable)
+const allNavItems = [
+  { icon: Home, label: 'Home', path: '/', alwaysVisible: true },
+  { icon: FolderOpen, label: 'Library', path: '/library', hideable: true },
+  { icon: Film, label: 'Movies', path: '/movies', hideable: true },
+  { icon: Tv, label: 'TV Shows', path: '/tv', hideable: true },
+  { icon: Sparkles, label: 'Anime', path: '/anime', hideable: true },
+  { icon: ListVideo, label: 'Playlists', path: '/playlists', hideable: true },
+  { icon: Music, label: 'Music', path: '/music', hideable: true },
+  { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks', hideable: true },
+  { icon: Radio, label: 'Live TV', path: '/live', hideable: true },
+  { icon: Layers, label: 'Streaming', path: '/streaming', hideable: true },
+  { icon: Compass, label: 'Indexers', path: '/indexers', hideable: true },
+  { icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true },
+  { icon: Settings, label: 'Settings', path: '/settings', alwaysVisible: true },
 ];
+
+// Default visible tabs (all except Live TV which users often don't use)
+const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers'];
+
+// Get visible tabs from localStorage
+const getVisibleTabs = () => {
+  try {
+    const saved = localStorage.getItem('watchnexus_visible_tabs');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error loading visible tabs:', e);
+  }
+  return defaultVisibleTabs;
+};
 
 export const Sidebar = () => {
   const [expanded, setExpanded] = useState(true);
