@@ -94,3 +94,5 @@ frontend/node_modules/.cache/default-development/6.pack
 *.env.*
 frontend/node_modules/.cache/default-development/0.pack
 frontend/node_modules/.cache/default-development/7.pack
+dist/watchnexus-v2.2.0-linux.zip
+dist/watchnexus-v2.2.0-windows.zip
