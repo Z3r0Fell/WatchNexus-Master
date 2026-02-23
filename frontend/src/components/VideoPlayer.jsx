@@ -509,7 +509,7 @@ const VideoPlayer = () => {
         <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
         <h2 className="text-xl font-bold mb-2">Playback Error</h2>
         <p className="text-gray-400 mb-4">{error || 'Media not found'}</p>
-        <Button onClick={() => navigate(-1)} variant="outline">
+        <Button data-testid="video-error-back-btn" onClick={() => navigate(-1)} variant="outline">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Go Back
         </Button>
