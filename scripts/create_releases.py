@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "2.2.0"  # Enhanced logging for library scanning, user deletion verified
+VERSION = "2.3.0"  # Zest Log Viewer, Theme Forge fix, Garnish Subtitles UI, Kodi addon import
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
