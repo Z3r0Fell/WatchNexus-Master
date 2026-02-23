@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ffdaa390663d627b",
+    "name": "Movies",
+    "path": "/home/auz/Downloads/2. Movies to watch",
+    "media_type": "movies",
+    "enabled": true,
+    "scan_interval": 3600,
+    "last_scan": null,
+    "item_count": 0
+  }
+]
