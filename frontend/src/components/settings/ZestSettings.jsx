@@ -172,7 +172,7 @@ export const ZestSettings = () => {
             <Activity className={`w-4 h-4 mr-1 ${autoRefresh ? 'animate-pulse' : ''}`} />
             {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh'}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="border-white/10">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="border-white/10" data-testid="refresh-logs-btn">
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
