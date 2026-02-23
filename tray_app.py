@@ -552,7 +552,7 @@ class WatchNexusTray:
     
     def create_menu(self):
         """Create the system tray context menu."""
-        return pystray.Menu(
+        menu_items = [
             # Status section
             pystray.MenuItem(
                 lambda item: self.get_status_text(),
@@ -614,9 +614,41 @@ class WatchNexusTray:
                     pystray.MenuItem("📄 Open Log File", self.open_log_file),
                 )
             ),
+        ]
+        
+        # Add Tiramisu (Updates) section if available
+        if self.check_updates:
+            menu_items.extend([
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    lambda item: self.get_update_status_text(),
+                    None,
+                    enabled=False
+                ),
+                pystray.MenuItem(
+                    "🍰 Updates",
+                    pystray.Menu(
+                        pystray.MenuItem(
+                            "Check for Updates",
+                            self.check_for_updates_now
+                        ),
+                        pystray.MenuItem(
+                            "Install Update",
+                            self.install_update,
+                            enabled=lambda item: self.available_update is not None
+                        ),
+                        pystray.MenuItem(
+                            "Update Info",
+                            self.show_update_info,
+                            enabled=lambda item: self.available_update is not None
+                        ),
+                    )
+                ),
+            ])
+        
+        # About & Quit
+        menu_items.extend([
             pystray.Menu.SEPARATOR,
-            
-            # About & Quit
             pystray.MenuItem(
                 f"WatchNexus Beacon v{TRAY_VERSION}",
                 None,
@@ -626,7 +658,9 @@ class WatchNexusTray:
                 "Quit",
                 self.quit_app
             )
-        )
+        ])
+        
+        return pystray.Menu(*menu_items)
     
     def quit_app(self, icon=None, item=None):
         """Quit the tray application."""
