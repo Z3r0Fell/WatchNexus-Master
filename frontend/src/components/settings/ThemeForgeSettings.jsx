@@ -1,19 +1,22 @@
 import { BACKEND_URL } from '../../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Palette, Paintbrush, Sparkles, Check, Import, FileJson } from 'lucide-react';
+import { Palette, Paintbrush, Sparkles, Check, Import, FileJson, Eye } from 'lucide-react';
 import { Button } from '../ui/button';
 import { JuiceColorPicker } from '../juice/JuiceColorPicker';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useTheme } from '../../context/ThemeContext';
 
 export const ThemeForgeSettings = () => {
+  const { themeType, applyBuiltInTheme, applyCustomColors, previewColors, resetToSaved } = useTheme();
   const [themeForgeConfig, setThemeForgeConfig] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [selectedTheme, setSelectedTheme] = useState(themeType);
   const [customColors, setCustomColors] = useState({
     primary: '#8B5CF6', secondary: '#EC4899', background: '#0F0F0F', surface: '#1A1A1A', text_primary: '#FFFFFF',
   });
   const [savingTheme, setSavingTheme] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   const fetchThemeForgeConfig = useCallback(async () => {
     try {
@@ -29,19 +32,46 @@ export const ThemeForgeSettings = () => {
   useEffect(() => { fetchThemeForgeConfig(); }, [fetchThemeForgeConfig]);
 
   const handleSetTheme = async (themeType) => {
-    try {
-      await axios.post(`${BACKEND_URL}/api/milk/set-theme?theme_type=${themeType}`);
-      setSelectedTheme(themeType); toast.success('Theme applied!'); fetchThemeForgeConfig();
-    } catch { toast.error('Failed to apply theme'); }
+    const success = await applyBuiltInTheme(themeType);
+    if (success) {
+      setSelectedTheme(themeType);
+      toast.success('Theme applied!');
+      fetchThemeForgeConfig();
+    } else {
+      toast.error('Failed to apply theme');
+    }
   };
 
   const handleSaveCustomTheme = async () => {
     setSavingTheme(true);
-    try {
-      await axios.post(`${BACKEND_URL}/api/milk/custom-theme`, { name: 'My Custom Theme', type: 'custom', colors: customColors });
-      toast.success('Custom theme saved!'); setSelectedTheme('custom'); fetchThemeForgeConfig();
-    } catch { toast.error('Failed to save custom theme'); }
-    finally { setSavingTheme(false); }
+    const success = await applyCustomColors(customColors);
+    if (success) {
+      toast.success('Custom theme saved!');
+      setSelectedTheme('custom');
+      setPreviewMode(false);
+      fetchThemeForgeConfig();
+    } else {
+      toast.error('Failed to save custom theme');
+    }
+    setSavingTheme(false);
+  };
+
+  const handleColorChange = (key, color) => {
+    const newColors = { ...customColors, [key]: color };
+    setCustomColors(newColors);
+    if (previewMode) {
+      previewColors(newColors);
+    }
+  };
+
+  const togglePreview = () => {
+    if (previewMode) {
+      resetToSaved();
+      setPreviewMode(false);
+    } else {
+      previewColors(customColors);
+      setPreviewMode(true);
+    }
   };
 
   return (
@@ -77,15 +107,26 @@ export const ThemeForgeSettings = () => {
       <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-medium flex items-center gap-2"><Paintbrush className="w-4 h-4 text-gray-400" /> Custom Theme</h3>
-          <Button onClick={handleSaveCustomTheme} disabled={savingTheme} className="bg-violet-600 hover:bg-violet-700">
-            {savingTheme ? 'Saving...' : 'Save & Apply'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={togglePreview} 
+              className={previewMode ? 'border-yellow-500 text-yellow-400' : 'border-white/10'}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              {previewMode ? 'Stop Preview' : 'Preview'}
+            </Button>
+            <Button onClick={handleSaveCustomTheme} disabled={savingTheme} className="bg-violet-600 hover:bg-violet-700">
+              {savingTheme ? 'Saving...' : 'Save & Apply'}
+            </Button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <JuiceColorPicker label="Primary Color" color={customColors.primary} onChange={(color) => setCustomColors(prev => ({ ...prev, primary: color }))} />
-          <JuiceColorPicker label="Secondary Color" color={customColors.secondary} onChange={(color) => setCustomColors(prev => ({ ...prev, secondary: color }))} />
-          <JuiceColorPicker label="Background" color={customColors.background} onChange={(color) => setCustomColors(prev => ({ ...prev, background: color }))} />
-          <JuiceColorPicker label="Surface" color={customColors.surface} onChange={(color) => setCustomColors(prev => ({ ...prev, surface: color }))} />
+          <JuiceColorPicker label="Primary Color" color={customColors.primary} onChange={(color) => handleColorChange('primary', color)} />
+          <JuiceColorPicker label="Secondary Color" color={customColors.secondary} onChange={(color) => handleColorChange('secondary', color)} />
+          <JuiceColorPicker label="Background" color={customColors.background} onChange={(color) => handleColorChange('background', color)} />
+          <JuiceColorPicker label="Surface" color={customColors.surface} onChange={(color) => handleColorChange('surface', color)} />
         </div>
         <div className="p-4 rounded-lg" style={{ backgroundColor: customColors.background }}>
           <p className="text-sm text-gray-500 mb-2">Preview</p>
@@ -112,7 +153,7 @@ export const ThemeForgeSettings = () => {
 
       <div className="p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
         <p className="text-sm text-pink-400">
-          <strong>Tip:</strong> Changes are applied instantly. Use the preview to see how colors look together before saving.
+          <strong>Tip:</strong> Use Preview mode to see how colors look together before saving. Changes are applied instantly to the entire app.
         </p>
       </div>
     </motion.div>
