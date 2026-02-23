@@ -98,3 +98,11 @@ dist/watchnexus-v2.2.0-linux.zip
 dist/watchnexus-v2.2.0-windows.zip
 releases/zips/watchnexus-v2.2.0-linux.zip
 releases/zips/watchnexus-v2.2.0-windows.zip
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
