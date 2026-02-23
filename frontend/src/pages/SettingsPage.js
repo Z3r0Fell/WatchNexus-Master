@@ -347,6 +347,7 @@ export const SettingsPage = () => {
                 <NavButton id="gelatin" label="External Access" />
                 <NavButton id="theme-forge" label="Theme Forge" />
                 <NavButton id="plugins" label="Plugins" />
+                <NavButton id="logs" label="Logs & Health" />
                 <NavButton id="maintenance" label="Maintenance" />
               </div>
             </div>
