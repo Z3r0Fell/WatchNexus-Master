@@ -70,7 +70,8 @@ export const StreamingSettings = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6" data-testid="streaming-settings">
       <h2 className="text-xl font-bold flex items-center gap-2">
-        <Tv className="w-5 h-5 text-violet-400" /> Streaming Service Logins
+        <Tv className="w-5 h-5 text-blue-400" /> Streaming Service Logins
+        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Cream</span>
       </h2>
       <p className="text-gray-400">Save your streaming service credentials for quick access tracking.</p>
 
