@@ -361,7 +361,7 @@ class SieveChecker:
                     warnings.append("Very low frame rate")
                 elif fps > 120:
                     warnings.append("Very high frame rate may cause playback issues")
-        except:
+        except Exception:
             warnings.append("Could not parse frame rate")
     
     def _check_audio_stream(self, stream: Optional[Dict], issues: List, warnings: List, repairs: List):

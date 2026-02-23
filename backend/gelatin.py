@@ -287,7 +287,7 @@ class GelatinServer:
         finally:
             try:
                 sock.close()
-            except:
+            except Exception:
                 pass
     
     async def discover_servers(self, timeout: float = 3.0) -> List[dict]:
