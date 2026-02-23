@@ -251,61 +251,116 @@ class MarmaladeServer:
     
     async def scan_library(self, library_id: str) -> Dict[str, Any]:
         """Scan a library for new media files."""
+        logger.info(f"[SCAN] Starting scan for library_id: {library_id}")
+        
         library = self.libraries.get(library_id)
         if not library:
-            return {"error": "Library not found"}
+            logger.error(f"[SCAN] Library not found: {library_id}")
+            logger.error(f"[SCAN] Available libraries: {list(self.libraries.keys())}")
+            return {"error": "Library not found", "library_id": library_id, "available": list(self.libraries.keys())}
         
-        if not Path(library.path).exists():
-            return {"error": f"Library path does not exist: {library.path}"}
+        logger.info(f"[SCAN] Found library: name='{library.name}', path='{library.path}', type='{library.media_type}'")
         
-        logger.info(f"Scanning library: {library.name}")
+        lib_path = Path(library.path)
+        if not lib_path.exists():
+            logger.error(f"[SCAN] Library path does not exist: {library.path}")
+            return {"error": f"Library path does not exist: {library.path}", "path": library.path}
+        
+        if not lib_path.is_dir():
+            logger.error(f"[SCAN] Library path is not a directory: {library.path}")
+            return {"error": f"Library path is not a directory: {library.path}", "path": library.path}
+        
+        # Check read permissions
+        if not os.access(library.path, os.R_OK):
+            logger.error(f"[SCAN] No read permission for library path: {library.path}")
+            return {"error": f"No read permission for: {library.path}", "path": library.path}
+        
+        logger.info(f"[SCAN] Scanning library: {library.name} at {library.path}")
         
         new_files = 0
         updated_files = 0
         removed_files = 0
+        skipped_files = 0
+        errors = []
         
         # Get existing files in this library
         existing_paths = {
             m.path for m in self.media_files.values()
             if m.path.startswith(library.path)
         }
+        logger.info(f"[SCAN] Existing media files in this library: {len(existing_paths)}")
         
         found_paths = set()
         
         # Scan for media files
         extensions = self.VIDEO_EXTENSIONS if library.media_type in ['movies', 'tv', 'tv_shows', 'anime'] else self.AUDIO_EXTENSIONS
+        logger.info(f"[SCAN] Looking for file extensions: {extensions}")
         
-        for root, dirs, files in os.walk(library.path):
-            # Skip hidden directories
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
-            
-            for filename in files:
-                ext = Path(filename).suffix.lower()
-                if ext not in extensions:
-                    continue
+        try:
+            for root, dirs, files in os.walk(library.path):
+                # Skip hidden directories
+                original_dirs = list(dirs)
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                skipped_dirs = set(original_dirs) - set(dirs)
+                if skipped_dirs:
+                    logger.debug(f"[SCAN] Skipped hidden directories in {root}: {skipped_dirs}")
                 
-                file_path = os.path.join(root, filename)
-                found_paths.add(file_path)
+                logger.debug(f"[SCAN] Scanning directory: {root} ({len(files)} files, {len(dirs)} subdirs)")
                 
-                if file_path in existing_paths:
-                    # Check if file was modified
-                    media_id = self._generate_id(file_path)
-                    if media_id in self.media_files:
-                        stat = os.stat(file_path)
-                        current_mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
-                        if self.media_files[media_id].modified_date != current_mtime:
-                            # File was modified, update it
-                            await self._process_file(file_path, library)
-                            updated_files += 1
-                else:
-                    # New file
-                    await self._process_file(file_path, library)
-                    new_files += 1
+                for filename in files:
+                    ext = Path(filename).suffix.lower()
+                    if ext not in extensions:
+                        skipped_files += 1
+                        continue
+                    
+                    file_path = os.path.join(root, filename)
+                    found_paths.add(file_path)
+                    logger.info(f"[SCAN] Found media file: {file_path}")
+                    
+                    if file_path in existing_paths:
+                        # Check if file was modified
+                        media_id = self._generate_id(file_path)
+                        if media_id in self.media_files:
+                            try:
+                                stat = os.stat(file_path)
+                                current_mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+                                if self.media_files[media_id].modified_date != current_mtime:
+                                    # File was modified, update it
+                                    logger.info(f"[SCAN] Updating modified file: {filename}")
+                                    result = await self._process_file(file_path, library)
+                                    if result:
+                                        updated_files += 1
+                                    else:
+                                        errors.append(f"Failed to update: {filename}")
+                            except Exception as e:
+                                logger.error(f"[SCAN] Error checking file modification: {filename} - {e}")
+                                errors.append(f"Error checking: {filename} - {str(e)}")
+                    else:
+                        # New file
+                        logger.info(f"[SCAN] Processing new file: {filename}")
+                        try:
+                            result = await self._process_file(file_path, library)
+                            if result:
+                                new_files += 1
+                                logger.info(f"[SCAN] Successfully added: {filename} (tmdb_id={result.tmdb_id}, poster={bool(result.poster_url)})")
+                            else:
+                                errors.append(f"Failed to process: {filename}")
+                                logger.error(f"[SCAN] Failed to process file: {filename}")
+                        except Exception as e:
+                            logger.error(f"[SCAN] Exception processing file {filename}: {e}")
+                            errors.append(f"Exception: {filename} - {str(e)}")
+        except PermissionError as e:
+            logger.error(f"[SCAN] Permission denied during scan: {e}")
+            return {"error": f"Permission denied: {str(e)}", "path": library.path}
+        except Exception as e:
+            logger.error(f"[SCAN] Unexpected error during scan: {e}")
+            return {"error": f"Scan error: {str(e)}", "path": library.path}
         
         # Remove files that no longer exist
         for path in existing_paths - found_paths:
             media_id = self._generate_id(path)
             if media_id in self.media_files:
+                logger.info(f"[SCAN] Removing missing file: {path}")
                 del self.media_files[media_id]
                 removed_files += 1
         
@@ -320,13 +375,21 @@ class MarmaladeServer:
         
         result = {
             "library": library.name,
+            "library_id": library_id,
+            "path": library.path,
             "new": new_files,
             "updated": updated_files,
             "removed": removed_files,
+            "skipped_non_media": skipped_files,
             "total": library.item_count,
+            "errors": errors[:10] if errors else [],  # Limit errors in response
+            "error_count": len(errors),
         }
         
-        logger.info(f"Scan complete: {result}")
+        logger.info(f"[SCAN] Scan complete: new={new_files}, updated={updated_files}, removed={removed_files}, total={library.item_count}")
+        if errors:
+            logger.warning(f"[SCAN] {len(errors)} errors occurred during scan")
+        
         return result
     
     async def import_file(self, file_path: str, library_id: str = None) -> bool:
