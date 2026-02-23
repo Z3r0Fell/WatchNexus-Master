@@ -37,6 +37,35 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
+### Recent Changes (v2.5.4 - Feb 23, 2026)
+
+#### User-Reported Bug Fixes (v2.4.0 Arch Linux Testing):
+
+- **🗂️ Directory Browser Enhancement**
+  - Fixed: User directories not visible when browsing for media folders
+  - Now automatically includes all user directories from `/home` in quick access
+  - Improved handling of /home browsing for library path selection
+
+- **📊 Show/Hide Sidebar Tabs**
+  - New: Settings > General now has "Sidebar Tabs" section
+  - Toggle visibility of: Library, Movies, TV Shows, Anime, Playlists, Music, Audiobooks, Live TV, Streaming, Indexers
+  - Home, Downloads, and Settings are always visible (cannot be hidden)
+  - Changes persist via localStorage (`watchnexus_visible_tabs`)
+
+- **📝 Log Files Section (Zest)**
+  - Fixed: Logs & Health section now properly accessible in Settings
+  - Shows real-time system metrics: CPU, Memory, Disk, Process Memory
+  - Log viewer with search, level filtering, download, and clear functions
+
+- **🔄 Database Version Detection & Reset**
+  - New: `/api/db/stats` returns `db_version`, `app_version`, `version_mismatch`
+  - New: `/api/db/reset` endpoint to clear all tables and start fresh
+  - New: "Reset Database" button in Settings > Maintenance
+  - Database version tracked in `db_meta` table
+  - Creates backup before any reset operation
+
+---
+
 ### Recent Changes (v2.5.3 - Feb 23, 2026)
 
 #### CRITICAL Security Fixes:
