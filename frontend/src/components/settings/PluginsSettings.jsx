@@ -1,7 +1,7 @@
 import { BACKEND_URL } from '../../lib/config';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle, Upload, Link2, Trash2, Loader2 } from 'lucide-react';
+import { Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle, Upload, Link2, Trash2, Loader2, Tv } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Input } from '../ui/input';
@@ -13,6 +13,7 @@ export const PluginsSettings = () => {
   const [loadingPlugins, setLoadingPlugins] = useState(false);
   const [togglingPlugin, setTogglingPlugin] = useState(null);
   const [importUrl, setImportUrl] = useState('');
+  const [kodiAddonUrl, setKodiAddonUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [showImportOptions, setShowImportOptions] = useState(false);
   const [uninstallingPlugin, setUninstallingPlugin] = useState(null);
