@@ -154,6 +154,7 @@ export const SubtitleSettings = () => {
             onClick={() => setShowAddProvider(!showAddProvider)}
             className="border-white/10"
             disabled={availableProviders.length === 0}
+            data-testid="add-provider-btn"
           >
             <Plus className="w-4 h-4 mr-1" /> Add Provider
           </Button>
