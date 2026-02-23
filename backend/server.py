@@ -2983,7 +2983,7 @@ async def analyze_series_intros(
                             "$set": {
                                 "media_id": ep_data["media_id"],
                                 "segments": detected,
-                                "detected_at": datetime.utcnow().isoformat(),
+                                "detected_at": datetime.now(timezone.utc).isoformat(),
                                 "series_name": series_name
                             }
                         },
