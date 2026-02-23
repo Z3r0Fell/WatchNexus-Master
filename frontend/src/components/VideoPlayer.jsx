@@ -654,6 +654,7 @@ const VideoPlayer = () => {
                     onClick={cancelNextEpisode}
                     variant="outline"
                     className="border-white/20"
+                    data-testid="cancel-next-btn"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -696,6 +697,7 @@ const VideoPlayer = () => {
             size="icon"
             onClick={() => navigate(-1)}
             className="text-white hover:bg-white/20"
+            data-testid="video-back-btn"
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
