@@ -7,9 +7,34 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.0.1
+## Current Version: 2.2.0
 
-### Recent Changes (v2.0.1 - Feb 15, 2026)
+### Recent Changes (v2.2.0 - Feb 23, 2026)
+- **Enhanced Library Scanning Logging**
+  - Added detailed `[SCAN]` and `[PROCESS]` logging throughout `marmalade_server.py`
+  - Logs now show: path validation, file discovery, metadata fetching, TMDB lookups, errors
+  - Error tracking with specific error messages for troubleshooting
+  - Scan results now include `errors` array and `error_count` for debugging
+  - Permission checks added before scanning begins
+
+- **User Deletion Verified**
+  - Tested and confirmed `DELETE /api/users/{user_id}` endpoint works correctly
+  - Users can be created and deleted through the API
+  - Prevention of self-deletion implemented
+
+- **Release Package v2.2.0 Created**
+  - Linux and Windows packages available in `/app/releases/zips/`
+  - Packages include enhanced logging for user debugging
+  - Download via `/app/dist/` directory
+
+- **Previous v2.1.0 Fixes Applied**
+  - Folder browser modal fixed (parameter mismatch resolved)
+  - User management UX improved (edit panel no longer closes on updates)
+  - Login loop fixed (removed aggressive `withCredentials: true` handling)
+
+---
+
+### Previous Changes (v2.0.1 - Feb 15, 2026)
 - **NEW: About & Releases Section**
   - Added "About & Releases" page in Settings
   - Complete version history from v1.2.0 to v2.0.1
