@@ -13,6 +13,26 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 // Release history with all versions
 const RELEASES = [
   {
+    version: '2.1.0',
+    date: '2025-02-23',
+    type: 'minor',
+    title: 'Critical Fixes Release',
+    highlights: [
+      'Folder browser now working',
+      'User management UX improved',
+      'Authentication loop fixed',
+      'Release packaging improved'
+    ],
+    changes: [
+      { type: 'fix', text: 'Fixed folder browser modal not appearing when clicking browse button' },
+      { type: 'fix', text: 'Fixed user edit panel closing after every permission toggle' },
+      { type: 'fix', text: 'Fixed authentication loop caused by aggressive logout on transient errors' },
+      { type: 'fix', text: 'Removed withCredentials causing cookie issues on same-origin requests' },
+      { type: 'improvement', text: 'Edit panel now stays open when toggling user permissions' },
+      { type: 'improvement', text: 'Added data-testid attributes for better testing' },
+    ]
+  },
+  {
     version: '2.0.1',
     date: '2025-02-15',
     type: 'major',
