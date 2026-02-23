@@ -15,7 +15,7 @@ import os
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import Dict, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum

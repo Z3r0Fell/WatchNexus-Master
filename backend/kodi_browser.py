@@ -3,16 +3,14 @@ Kodi Repository Browser - WatchNexus Integration
 Fetches and parses Kodi addon repositories for the Gadgets system.
 """
 
-import asyncio
 import aiohttp
 import xml.etree.ElementTree as ET
 import gzip
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timezone
-import re
 
 logger = logging.getLogger(__name__)
 

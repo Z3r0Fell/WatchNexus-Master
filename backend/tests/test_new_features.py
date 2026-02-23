@@ -113,8 +113,8 @@ class TestScheduledScansAPI:
         assert data["directory"] == scan_data["directory"]
         assert data["schedule_type"] == "daily"
         assert data["schedule_time"] == "03:00"
-        assert data["enabled"] == True
-        assert data["notify_on_issues"] == True
+        assert data["enabled"]
+        assert data["notify_on_issues"]
         assert "next_scan" in data
         
         # Store scan_id for cleanup
@@ -138,7 +138,7 @@ class TestScheduledScansAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["schedule_type"] == "weekly"
-        assert data["auto_repair"] == True
+        assert data["auto_repair"]
     
     def test_run_scheduled_scan_now(self, auth_headers):
         """Test POST /api/media/scheduled-scans/{id}/run executes scan immediately"""
@@ -259,7 +259,7 @@ class TestNotificationsAPI:
         assert isinstance(data, list)
         # All returned notifications should be unread
         for notification in data:
-            assert notification.get("read") == False
+            assert not notification.get("read")
     
     def test_get_notifications_unauthenticated(self):
         """Test notifications requires authentication"""
@@ -425,4 +425,4 @@ class TestUpdateScheduledScan:
         data = update_response.json()
         assert data["schedule_type"] == "weekly"
         assert data["schedule_time"] == "07:00"
-        assert data["enabled"] == False
+        assert not data["enabled"]

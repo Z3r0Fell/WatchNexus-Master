@@ -150,7 +150,7 @@ class TestMarmaladeLibraries:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
         data = response.json()
-        assert data.get("status") == "removed" or data.get("removed") == True, "Should confirm removal"
+        assert data.get("status") == "removed" or data.get("removed"), "Should confirm removal"
         
         print(f"✓ DELETE /api/marmalade/libraries/{library_id} removed library")
 
@@ -209,7 +209,7 @@ class TestMarmaladeScanning:
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
-        print(f"✓ TV library scan completed")
+        print("✓ TV library scan completed")
 
 
 class TestMarmaladeMedia:
@@ -339,7 +339,7 @@ class TestCompoteSetupGuide:
         for section_name, section_info in data.items():
             assert "title" in section_info, f"Section {section_name} should have 'title'"
             assert "steps" in section_info, f"Section {section_name} should have 'steps'"
-            assert isinstance(section_info["steps"], list), f"Steps should be a list"
+            assert isinstance(section_info["steps"], list), "Steps should be a list"
         
         print(f"✓ GET /api/compote/setup-guide returned {len(data)} sections: {list(data.keys())}")
 
@@ -496,9 +496,9 @@ class TestCompoteTestIndexer:
         if response.status_code == 200:
             data = response.json()
             # If 200, should indicate failure
-            assert data.get("success") == False or "error" in data, "Should indicate test failure"
+            assert not data.get("success") or "error" in data, "Should indicate test failure"
         
-        print(f"✓ POST /api/compote/indexers/nonexistent/test handled correctly")
+        print("✓ POST /api/compote/indexers/nonexistent/test handled correctly")
 
 
 class TestCompoteSearchWithDemoResults:
@@ -537,7 +537,7 @@ class TestCompoteSearchWithDemoResults:
             else:
                 print(f"✓ Search returned {data['total_results']} results")
         else:
-            print(f"✓ Search returned 0 results (no indexers configured)")
+            print("✓ Search returned 0 results (no indexers configured)")
     
     def test_search_tv_shows(self, authenticated_client):
         """GET /api/compote/search - should search for TV shows"""
@@ -589,7 +589,7 @@ class TestCompoteIntegrationWorkflow:
             }
         )
         assert update_response.status_code == 200, f"Update failed: {update_response.text}"
-        print(f"  Step 2: Updated indexer")
+        print("  Step 2: Updated indexer")
         
         # Step 3: Test indexer
         test_response = authenticated_client.post(f"{BASE_URL}/api/compote/indexers/{indexer_id}/test")
@@ -599,7 +599,7 @@ class TestCompoteIntegrationWorkflow:
         # Step 4: Delete indexer
         delete_response = authenticated_client.delete(f"{BASE_URL}/api/compote/indexers/{indexer_id}")
         assert delete_response.status_code == 200, f"Delete failed: {delete_response.text}"
-        print(f"  Step 4: Deleted indexer")
+        print("  Step 4: Deleted indexer")
         
         print("✓ Full indexer lifecycle completed successfully")
 

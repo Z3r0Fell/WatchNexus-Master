@@ -12,7 +12,6 @@ When the same audio segment appears in multiple episodes, it's likely an intro.
 """
 
 import os
-import subprocess
 import hashlib
 import asyncio
 import logging

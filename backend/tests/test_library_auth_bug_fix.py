@@ -240,7 +240,7 @@ class TestDownloadEngine:
         assert "success" in data or "message" in data or "engine" in data, f"Unexpected response: {data}"
         # The engine should be running
         if "success" in data:
-            assert data["success"] == True, f"Engine not successful: {data}"
+            assert data["success"], f"Engine not successful: {data}"
         if "message" in data:
             assert "running" in data["message"].lower() or "Engine" in data.get("engine", ""), f"Engine not running: {data}"
 

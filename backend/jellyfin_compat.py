@@ -16,8 +16,8 @@ Enable by connecting any Jellyfin client to: http://server:8096/emby
 API Compatibility: Jellyfin 10.8+ / Emby 4.x
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
-from fastapi.responses import JSONResponse, Response, RedirectResponse
+from fastapi import APIRouter, HTTPException, Depends, Header, Query
+from fastapi.responses import Response, RedirectResponse
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from pydantic import BaseModel
@@ -152,7 +152,7 @@ async def get_system_info():
     """Return server information - used by clients to identify server"""
     return JellyfinSystemInfo(
         Id=SERVER_ID,
-        LocalAddress=f"http://localhost:8096"
+        LocalAddress="http://localhost:8096"
     )
 
 @jellyfin_router.get("/System/Endpoint")

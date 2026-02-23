@@ -204,7 +204,7 @@ class TestSettings:
         assert response.status_code == 200
         data = response.json()
         assert "download_path" in data or "quality_preference" in data
-        print(f"SUCCESS: Settings retrieved")
+        print("SUCCESS: Settings retrieved")
 
 
 if __name__ == "__main__":

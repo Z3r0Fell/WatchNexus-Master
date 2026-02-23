@@ -116,7 +116,7 @@ class TestZestLogViewer:
         assert "WARNING" in level_counts
         assert "ERROR" in level_counts
         
-        print(f"✓ Zest stats endpoint working")
+        print("✓ Zest stats endpoint working")
         print(f"  Total lines: {data.get('total_lines')}")
         print(f"  File size: {data.get('file_size_formatted')}")
         print(f"  Level counts: {level_counts}")
@@ -151,7 +151,7 @@ class TestZestLogViewer:
         assert "percent" in disk
         assert "free_formatted" in disk
         
-        print(f"✓ Zest health endpoint working")
+        print("✓ Zest health endpoint working")
         print(f"  CPU: {cpu.get('percent')}% ({cpu.get('count')} cores)")
         print(f"  Memory: {memory.get('percent')}% ({memory.get('used_formatted')} / {memory.get('total_formatted')})")
         print(f"  Disk: {disk.get('percent')}% ({disk.get('free_formatted')} free)")
@@ -185,7 +185,7 @@ class TestGarnishSubtitles:
         assert "providers" in data
         assert "provider_configs" in data
         
-        print(f"✓ Garnish settings endpoint working")
+        print("✓ Garnish settings endpoint working")
         print(f"  Auto-subtitles: {data.get('auto_subtitles')}")
         print(f"  Languages: {data.get('subtitle_languages')}")
         print(f"  Providers: {data.get('providers')}")
@@ -196,7 +196,7 @@ class TestGarnishSubtitles:
         
         # First get current settings
         get_response = requests.get(f"{BASE_URL}/api/garnish/settings", headers=headers)
-        current_settings = get_response.json()
+        get_response.json()
         
         # Update settings with new providers order and languages
         new_settings = {
@@ -215,7 +215,7 @@ class TestGarnishSubtitles:
         # Accept either "saved" or "success" status
         assert data.get("status") in ["saved", "success"] or "subtitle_languages" in data
         
-        print(f"✓ Garnish settings save endpoint working")
+        print("✓ Garnish settings save endpoint working")
         
         # Verify settings were saved by fetching again
         verify_response = requests.get(f"{BASE_URL}/api/garnish/settings", headers=headers)
@@ -224,7 +224,7 @@ class TestGarnishSubtitles:
         
         # Check languages were updated
         assert "en" in verified_data.get("subtitle_languages", [])
-        print(f"✓ Garnish settings persisted correctly")
+        print("✓ Garnish settings persisted correctly")
 
 
 class TestThemeForge:
@@ -263,7 +263,7 @@ class TestThemeForge:
             assert "name" in theme
             assert "preview_colors" in theme
         
-        print(f"✓ Theme Forge config endpoint working")
+        print("✓ Theme Forge config endpoint working")
         print(f"  Built-in themes: {[t.get('name') for t in built_in]}")
         print(f"  Current theme: {data.get('current_theme', {}).get('type', 'default')}")
     
@@ -288,7 +288,7 @@ class TestThemeForge:
         # Verify response contains theme data (can be nested in 'theme' key)
         assert data.get("status") == "success" or "type" in data or "colors" in data or "name" in data or "theme" in data
         
-        print(f"✓ Theme Forge set theme endpoint working")
+        print("✓ Theme Forge set theme endpoint working")
         print(f"  Applied theme: {theme_to_apply}")
     
     def test_theme_forge_custom_theme(self, auth_token):
@@ -315,7 +315,7 @@ class TestThemeForge:
         # Verify custom theme was saved - response has status and theme object
         assert data.get("status") == "success" or "type" in data or "colors" in data or "theme" in data
         
-        print(f"✓ Theme Forge custom theme endpoint working")
+        print("✓ Theme Forge custom theme endpoint working")
 
 
 class TestPluginsAndKodiImport:
@@ -349,7 +349,7 @@ class TestPluginsAndKodiImport:
             assert "name" in plugin
             assert "status" in plugin
         
-        print(f"✓ Plugins list endpoint working")
+        print("✓ Plugins list endpoint working")
         print(f"  Installed plugins: {[p.get('name') for p in data]}")
     
     def test_plugin_discover(self, auth_token):
@@ -363,7 +363,7 @@ class TestPluginsAndKodiImport:
         # Should return status or list
         assert isinstance(data, (list, dict))
         
-        print(f"✓ Plugin discover endpoint working")
+        print("✓ Plugin discover endpoint working")
     
     def test_import_plugin_from_url_validation(self, auth_token):
         """Test POST /api/gadgets/import-url - URL validation."""
@@ -378,7 +378,7 @@ class TestPluginsAndKodiImport:
         
         # Should return error, not crash
         assert response.status_code in [400, 404, 500, 422]
-        print(f"✓ Plugin import URL validation works (properly handles invalid URLs)")
+        print("✓ Plugin import URL validation works (properly handles invalid URLs)")
     
     def test_import_kodi_addon_validation(self, auth_token):
         """Test POST /api/gadgets/import-kodi - Kodi addon import validation."""
@@ -393,7 +393,7 @@ class TestPluginsAndKodiImport:
         
         # Should return error, not crash
         assert response.status_code in [400, 404, 500, 422]
-        print(f"✓ Kodi addon import validation works (properly handles invalid URLs)")
+        print("✓ Kodi addon import validation works (properly handles invalid URLs)")
 
 
 class TestUserManagement:
@@ -443,7 +443,7 @@ class TestUserManagement:
         assert response.status_code == 400
         assert "Cannot delete yourself" in response.json().get("detail", "")
         
-        print(f"✓ User deletion validation works (cannot delete self)")
+        print("✓ User deletion validation works (cannot delete self)")
     
     def test_delete_nonexistent_user(self, auth_token):
         """Test DELETE /api/users/{user_id} - nonexistent user."""
@@ -454,7 +454,7 @@ class TestUserManagement:
         
         assert response.status_code == 404
         
-        print(f"✓ User deletion returns 404 for nonexistent users")
+        print("✓ User deletion returns 404 for nonexistent users")
 
 
 if __name__ == "__main__":

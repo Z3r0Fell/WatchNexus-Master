@@ -12,7 +12,6 @@ Features:
 
 import asyncio
 import socket
-import hashlib
 import secrets
 import uuid
 import json
@@ -20,7 +19,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, List
 from dataclasses import dataclass, field
-import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -280,7 +278,7 @@ class GelatinServer:
                         await loop.sock_sendto(sock, response, addr)
                         logger.debug(f"Discovery response sent to {addr}")
                         
-                except Exception as e:
+                except Exception:
                     if self.discovery_running:
                         await asyncio.sleep(0.1)
                         

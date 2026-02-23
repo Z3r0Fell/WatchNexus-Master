@@ -5,14 +5,13 @@ Sends notifications to Discord channels via webhooks.
 
 import httpx
 import logging
-from typing import Dict, Any
 import sys
 import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from gadgets import NotificationProvider, PluginType
+from gadgets import NotificationProvider
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,6 @@ Handles communication with qBittorrent Web API for torrent management.
 """
 
 import httpx
-import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
@@ -340,7 +339,7 @@ class QBittorrentClient:
             )
             
             if response.status_code == 200:
-                logger.info(f"Added torrent(s) successfully")
+                logger.info("Added torrent(s) successfully")
                 return True
             else:
                 logger.error(f"Failed to add torrent: {response.text}")

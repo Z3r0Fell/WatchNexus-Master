@@ -7,15 +7,11 @@ Supports Addic7ed and OpenSubtitles search and download.
 import httpx
 import asyncio
 import re
-import hashlib
 import os
-import gzip
-import io
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime
 import logging
-from urllib.parse import urljoin, quote_plus
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)

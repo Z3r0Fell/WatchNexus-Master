@@ -103,7 +103,7 @@ class TestAnalyzeIntrosAPI:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] == False
+        assert not data["success"]
         assert "Need at least 2 episodes" in data["message"]
         print(f"PASS: Returns expected 'not enough episodes' message: {data['message']}")
     
@@ -128,7 +128,7 @@ class TestAnalyzeIntrosAPI:
         assert response.status_code == 200
         data = response.json()
         assert "success" in data
-        print(f"PASS: URL-encoded series name handled correctly")
+        print("PASS: URL-encoded series name handled correctly")
 
 
 class TestIntroStatusAPI:
@@ -189,7 +189,7 @@ class TestIntroStatusAPI:
         assert isinstance(data["episodes_with_segments"], list)
         assert isinstance(data["episodes_without_segments"], list)
         
-        print(f"PASS: intro-status response structure is correct with all required fields")
+        print("PASS: intro-status response structure is correct with all required fields")
     
     def test_intro_status_requires_auth(self):
         """Test that intro-status endpoint requires authentication"""
@@ -212,7 +212,7 @@ class TestIntroStatusAPI:
         assert data["total_episodes"] == 0
         assert data["with_segments"] == 0
         assert data["without_segments"] == 0
-        print(f"PASS: Non-existent series returns zero counts as expected")
+        print("PASS: Non-existent series returns zero counts as expected")
 
 
 class TestFpcalcBinary:
@@ -265,7 +265,7 @@ class TestZeroLLMUsage:
         for llm_import in llm_imports:
             assert llm_import not in imports, f"Found LLM import: {llm_import}"
         
-        print(f"PASS: fprint.py contains no LLM imports - pure audio fingerprinting implementation")
+        print("PASS: fprint.py contains no LLM imports - pure audio fingerprinting implementation")
     
     def test_analyze_endpoint_no_emergent_key(self, ):
         """Verify analyze-intros doesn't require EMERGENT_LLM_KEY"""

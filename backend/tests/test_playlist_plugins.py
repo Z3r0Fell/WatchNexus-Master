@@ -26,7 +26,7 @@ class TestAuthentication:
         data = response.json()
         assert "access_token" in data, "No access token in response"
         assert "user" in data, "No user in response"
-        print(f"Login successful, token received")
+        print("Login successful, token received")
         return data["access_token"]
 
 
@@ -103,7 +103,7 @@ class TestPlaylistAPI:
         assert response.status_code == 200, f"Failed to add item to playlist: {response.text}"
         data = response.json()
         assert "id" in data, "No id in added item"
-        assert data["title"] == item_data["title"], f"Item title mismatch"
+        assert data["title"] == item_data["title"], "Item title mismatch"
         print(f"Added item '{data['title']}' to playlist {playlist_id}")
         
         # Clean up - delete playlist
@@ -154,7 +154,7 @@ class TestPluginAPI:
         assert response.status_code in [400, 500], f"Unexpected status: {response.status_code}"
         if response.status_code == 400:
             assert "zip" in response.text.lower(), "Expected error about zip file"
-        print(f"Import URL endpoint verified - returns proper validation error")
+        print("Import URL endpoint verified - returns proper validation error")
     
     def test_uninstall_endpoint_exists(self, auth_token):
         """DELETE /api/gadgets/plugins/{id}/uninstall - Verify endpoint exists"""
@@ -195,7 +195,7 @@ class TestSettingsAPI:
         assert response.status_code == 200, f"Failed to get settings: {response.text}"
         data = response.json()
         assert "download_path" in data or "library_path" in data, "Expected settings fields missing"
-        print(f"Got settings successfully")
+        print("Got settings successfully")
 
 
 class TestMediaEndpoints:

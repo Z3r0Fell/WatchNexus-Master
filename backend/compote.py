@@ -17,10 +17,8 @@ from datetime import datetime, timezone
 import hashlib
 import logging
 import re
-import base64
-import json
 import time
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import urlparse, urlencode
 
 logger = logging.getLogger(__name__)
 

@@ -4,14 +4,11 @@ Real-time synchronized playback with chat for group watching.
 Everyone brings something to share - the ultimate viewing experience together.
 """
 
-import asyncio
-import json
-import hashlib
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field, asdict
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 import logging
 
 logger = logging.getLogger(__name__)
@@ -138,7 +135,7 @@ class PotluckManager:
         """Create a new watch party."""
         # Check if user is already in a party
         if host_id in self.user_party_map:
-            old_party_id = self.user_party_map[host_id]
+            self.user_party_map[host_id]
             await self.leave_party(host_id)
         
         party_id = self.generate_party_code()
