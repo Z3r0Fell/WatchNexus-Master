@@ -3,6 +3,7 @@ WatchNexus System Tray Application
 Cross-platform system tray controller for WatchNexus server.
 
 Codename: Beacon 🔦
+Includes: Tiramisu 🍰 (Auto-Updater)
 
 Works on:
 - Windows (requires pystray with win32 backend)
@@ -16,11 +17,13 @@ Features:
 - System resource display
 - Auto-start on launch
 - Notifications
+- Auto-update checking (Tiramisu)
 
 Usage:
     python tray_app.py
     python tray_app.py --port 8001
     python tray_app.py --no-auto-start
+    python tray_app.py --no-update-check
 
 Requirements:
     pip install pystray pillow requests psutil
@@ -47,6 +50,15 @@ except ImportError as e:
     print(f"Missing dependency: {missing}")
     print("Install with: pip install pystray pillow requests psutil")
     sys.exit(1)
+
+# Import Tiramisu updater
+try:
+    from tiramisu import TiramisuUpdater, UpdateInfo
+    HAS_TIRAMISU = True
+except ImportError:
+    HAS_TIRAMISU = False
+    TiramisuUpdater = None
+    UpdateInfo = None
 
 # Optional: cairosvg for SVG icon support
 try:
