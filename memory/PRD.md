@@ -37,6 +37,23 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
+### Recent Changes (v2.5.3 - Feb 23, 2026)
+
+#### CRITICAL Security Fixes:
+
+- **🔒 `/api/auth/clear-users`** - Was completely unprotected! Added admin-only authentication
+- **🔒 `/api/media/health-check`** - Allowed arbitrary file access without auth. Fixed.
+- **🔒 `/api/media/repair`** - Same issue. Fixed.
+- **🔒 `/api/media/scan-library`** - Same issue. Fixed.
+- **🔒 `/api/downloads` (POST/PATCH/DELETE)** - Missing auth. Fixed.
+
+#### Bug Fixes:
+
+- **🐛 Token storage inconsistency** - Quick login was saving to `watchnexus_token` but all other code reads `token`. Fixed.
+- **🐛 `/api/users/profiles`** - Was returning password hashes! Now manually filters to safe fields only.
+
+---
+
 ### Recent Changes (v2.5.2 - Feb 23, 2026)
 
 #### "Who's Watching?" Quick Login Feature:
