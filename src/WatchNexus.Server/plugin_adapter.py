@@ -1,0 +1,1 @@
+/app/backend/plugin_adapter.py
