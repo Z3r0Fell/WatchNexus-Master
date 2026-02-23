@@ -269,6 +269,7 @@ export const SettingsPage = () => {
       case 'gelatin': return <GelatinSettings />;
       case 'theme-forge': return <ThemeForgeSettings />;
       case 'plugins': return <PluginsSettings />;
+      case 'logs': return <ZestSettings />;
       case 'maintenance': return <MaintenanceSettings />;
       case 'about': return <AboutSettings />;
       default: return null;
