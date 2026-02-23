@@ -87,7 +87,7 @@ class FprintAnalyzer:
         try:
             data = {
                 'media_id': media_id,
-                'analyzed_at': datetime.utcnow().isoformat(),
+                'analyzed_at': datetime.now(timezone.utc).isoformat(),
                 'segments': [
                     {
                         'start_time': seg.start_time,
