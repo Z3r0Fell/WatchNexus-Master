@@ -193,7 +193,7 @@ export const AboutSettings = () => {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-2xl font-bold text-white">
-                WatchNexus v{systemInfo?.version || '2.0.1'}
+                WatchNexus v{systemInfo?.version || '2.1.0'}
               </h3>
               <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getTypeBadge('major')}`}>
                 Latest
