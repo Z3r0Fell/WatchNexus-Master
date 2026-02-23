@@ -937,17 +937,19 @@ async def get_user_profiles(request: Request):
     # For security, we could restrict this to local only
     # For now, we allow it but return minimal data
     
-    users = await db.users.find(
-        {},
-        {
-            "_id": 0,
-            "id": 1,
-            "username": 1,
-            "email": 1,
-            "avatar": 1,
-            "avatar_color": 1,
-        }
-    ).to_list(20)
+    users_cursor = db.users.find({})
+    users_raw = await users_cursor.to_list(20)
+    
+    # Manually filter to only include safe fields
+    users = []
+    for u in users_raw:
+        users.append({
+            "id": u.get("id"),
+            "username": u.get("username", ""),
+            "email": u.get("email", ""),
+            "avatar": u.get("avatar"),
+            "avatar_color": u.get("avatar_color"),
+        })
     
     return users
 
