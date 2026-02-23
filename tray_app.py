@@ -553,109 +553,86 @@ class WatchNexusTray:
     def create_menu(self):
         """Create the system tray context menu."""
         menu_items = [
-            # Status section
+            # Status header
             pystray.MenuItem(
                 lambda item: self.get_status_text(),
                 None,
                 enabled=False
             ),
+            pystray.Menu.SEPARATOR,
+            
+            # Primary action - double-click opens interface
             pystray.MenuItem(
-                lambda item: self.get_resource_text(),
-                None,
-                enabled=False
+                "🌐 Open Interface",
+                self.open_browser,
+                default=True,  # Left-click / double-click action
+                enabled=lambda item: self.server_running
             ),
             pystray.Menu.SEPARATOR,
             
             # Server controls
             pystray.MenuItem(
-                "▶ Start Server",
+                "▶️ Start Server",
                 self.start_server,
                 enabled=lambda item: not self.server_running
             ),
             pystray.MenuItem(
-                "■ Stop Server",
+                "⏹️ Stop Server",
                 self.stop_server,
                 enabled=lambda item: self.server_running
             ),
             pystray.MenuItem(
-                "↻ Restart Server",
+                "🔄 Restart Server",
                 self.restart_server,
                 enabled=lambda item: self.server_running
             ),
             pystray.Menu.SEPARATOR,
             
-            # Quick access (default double-click action)
+            # View Logs
             pystray.MenuItem(
-                "Open WatchNexus",
-                self.open_browser,
-                default=True,
-                enabled=lambda item: self.server_running
+                "📋 View Logs",
+                self.open_log_file
             ),
             
-            # Browser submenu
+            # Check for Updates
             pystray.MenuItem(
-                "Open in Browser",
-                pystray.Menu(
-                    pystray.MenuItem("🏠 Home", self.open_browser),
-                    pystray.MenuItem("📚 Library", self.open_library),
-                    pystray.MenuItem("📥 Downloads", self.open_downloads),
-                    pystray.MenuItem("⚙️ Settings", self.open_settings),
-                    pystray.MenuItem("📋 Logs & Health", self.open_logs),
-                ),
-                enabled=lambda item: self.server_running
+                "🍰 Check for Updates",
+                self.check_for_updates_now if self.check_updates else None,
+                enabled=lambda item: self.check_updates
             ),
             pystray.Menu.SEPARATOR,
             
-            # Tools
+            # More options submenu
             pystray.MenuItem(
-                "Tools",
+                "More",
                 pystray.Menu(
+                    pystray.MenuItem("📚 Library", self.open_library),
+                    pystray.MenuItem("📥 Downloads", self.open_downloads),
+                    pystray.MenuItem("⚙️ Settings", self.open_settings),
+                    pystray.MenuItem("🩺 Health & Logs (Web)", self.open_logs),
+                    pystray.Menu.SEPARATOR,
                     pystray.MenuItem("📋 Copy Server URL", self.copy_url),
-                    pystray.MenuItem("📄 Open Log File", self.open_log_file),
+                    pystray.MenuItem(
+                        f"💻 {self.get_resource_text()}",
+                        None,
+                        enabled=False
+                    ),
                 )
             ),
         ]
         
-        # Add Tiramisu (Updates) section if available
-        if self.check_updates:
-            menu_items.extend([
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem(
-                    lambda item: self.get_update_status_text(),
-                    None,
-                    enabled=False
-                ),
-                pystray.MenuItem(
-                    "🍰 Updates",
-                    pystray.Menu(
-                        pystray.MenuItem(
-                            "Check for Updates",
-                            self.check_for_updates_now
-                        ),
-                        pystray.MenuItem(
-                            "Install Update",
-                            self.install_update,
-                            enabled=lambda item: self.available_update is not None
-                        ),
-                        pystray.MenuItem(
-                            "Update Info",
-                            self.show_update_info,
-                            enabled=lambda item: self.available_update is not None
-                        ),
-                    )
-                ),
-            ])
+        # Add update install option if update available
+        if self.check_updates and self.available_update:
+            menu_items.insert(8, pystray.MenuItem(
+                f"⬆️ Install v{self.available_update.version}",
+                self.install_update
+            ))
         
-        # About & Quit
+        # Quit
         menu_items.extend([
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                f"WatchNexus Beacon v{TRAY_VERSION}",
-                None,
-                enabled=False
-            ),
-            pystray.MenuItem(
-                "Quit",
+                "❌ Quit",
                 self.quit_app
             )
         ])
