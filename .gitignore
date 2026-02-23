@@ -107,3 +107,4 @@ releases/zips/watchnexus-v2.2.0-windows.zip
 *.env
 *.env.*
 frontend/node_modules/.cache/default-development/1.pack
+frontend/node_modules/.cache/default-development/4.pack
