@@ -75,3 +75,5 @@ releases/watchnexus-v2.0.1-windows.zip
 *.env
 *.env.*
 frontend/node_modules/.cache/default-development/3.pack
+dist/watchnexus-v2.1.0-linux.zip
+dist/watchnexus-v2.1.0-windows.zip
