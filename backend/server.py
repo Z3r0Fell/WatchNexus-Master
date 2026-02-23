@@ -1337,6 +1337,19 @@ async def browse_filesystem(
             home = os.path.expanduser("~")
             if home not in common_mounts:
                 drives.append({"name": "Home", "path": home})
+            
+            # Add all user directories from /home (Linux)
+            home_dir = FilePath("/home")
+            if home_dir.exists() and home_dir.is_dir():
+                try:
+                    for user_dir in home_dir.iterdir():
+                        if user_dir.is_dir() and not user_dir.name.startswith('.'):
+                            user_path = str(user_dir)
+                            # Don't add if already in drives list
+                            if not any(d["path"] == user_path for d in drives):
+                                drives.append({"name": f"/home/{user_dir.name}", "path": user_path})
+                except PermissionError:
+                    pass
         
         # Count media files in current directory
         media_count = 0
