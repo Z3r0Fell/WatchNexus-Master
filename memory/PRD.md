@@ -7,9 +7,54 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.2.0
+## Current Version: 2.3.0
 
-### Recent Changes (v2.2.0 - Feb 23, 2026)
+### Recent Changes (v2.3.0 - Feb 23, 2026)
+
+#### New Features with Code Names:
+
+- **🍋 Zest - Log Viewer & System Health** (NEW)
+  - View application logs in real-time with filtering (level, search, pagination)
+  - System health metrics: CPU, Memory, Disk, Process info
+  - Log statistics with level counts (DEBUG, INFO, WARNING, ERROR)
+  - Download logs, clear logs with backup
+  - Auto-refresh mode for live monitoring
+  - Location: Settings → Logs & Health
+
+- **🥛 Milk - Theme Forge (FIXED)**
+  - Built-in themes now apply correctly via CSS variables
+  - Custom theme colors properly save and apply to entire app
+  - Preview mode to test colors before saving
+  - Theme persistence via ThemeContext
+  - CSS variables for consistent theming: `--color-primary`, `--color-background`, etc.
+
+- **🌿 Garnish - Subtitle Settings (UPGRADED)**
+  - Provider Priority with drag-to-reorder (OpenSubtitles, Addic7ed, etc.)
+  - Add/remove providers dynamically
+  - Per-provider authentication (username, API key)
+  - Test provider connectivity
+  - Language preferences with multi-select
+  - Auto-download toggle
+
+- **🍨 Cream - Streaming Services**
+  - Code name added to existing streaming credential storage
+  - Secure local storage for streaming service logins
+
+- **🔧 Gadgets - Plugin System (UPGRADED)**
+  - Import plugins from file (.zip)
+  - Import plugins from URL
+  - **NEW: Import Kodi addons** - Converts Kodi video addons to WatchNexus plugins
+  - Plugin uninstall with confirmation
+  - Plugin type badges (metadata, indexer, subtitle, notification, theme, scheduled)
+
+#### Bug Fixes:
+- Library scanning now has extensive `[SCAN]` and `[PROCESS]` logging
+- User deletion verified working
+- Theme colors now properly apply to the entire application
+
+---
+
+### Previous Changes (v2.2.0 - Feb 23, 2026)
 - **Enhanced Library Scanning Logging**
   - Added detailed `[SCAN]` and `[PROCESS]` logging throughout `marmalade_server.py`
   - Logs now show: path validation, file discovery, metadata fetching, TMDB lookups, errors
