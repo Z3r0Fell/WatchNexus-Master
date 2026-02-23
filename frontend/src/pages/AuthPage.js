@@ -308,32 +308,66 @@ export const AuthPage = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
+                data-testid="whos-watching"
               >
                 <h1 className="text-2xl font-bold text-center mb-2">Who's Watching?</h1>
                 <p className="text-gray-400 text-center mb-6">Select your profile to continue</p>
                 
                 <div className="space-y-3 mb-6">
-                  {localUsers.map((user) => (
-                    <UserProfileCard 
-                      key={user.id} 
-                      user={user} 
-                      onClick={handleLocalUserLogin}
-                    />
-                  ))}
+                  {loadingUsers ? (
+                    <div className="text-center py-8">
+                      <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-gray-400 text-sm">Loading profiles...</p>
+                    </div>
+                  ) : (
+                    localUsers.map((user) => (
+                      <UserProfileCard 
+                        key={user.id} 
+                        user={user} 
+                        onClick={handleLocalUserLogin}
+                      />
+                    ))
+                  )}
                 </div>
 
                 {/* Switch to manual login */}
                 <button
                   onClick={() => setSelectedUser({ manual: true })}
                   className="w-full text-center text-sm text-gray-500 hover:text-gray-300 transition-colors"
+                  data-testid="manual-login-btn"
                 >
                   Sign in with different account
                 </button>
               </motion.div>
             )}
 
+            {/* PIN Entry Mode */}
+            {selectedUser?.requiresPin && (
+              <motion.div
+                key="pin-entry"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                data-testid="pin-entry-screen"
+              >
+                <PinEntry
+                  username={selectedUser.username}
+                  onSubmit={handlePinSubmit}
+                  onCancel={() => {
+                    setSelectedUser({ ...selectedUser, requiresPin: false });
+                    setEmail(selectedUser.email);
+                  }}
+                />
+                {loading && (
+                  <div className="text-center mt-4">
+                    <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
             {/* Password Entry for Selected User OR Standard Login */}
-            {(selectedUser || !isLocal || localUsers.length === 0) && (
+            {((selectedUser && !selectedUser.requiresPin) || !isLocal || localUsers.length === 0) && !selectedUser?.requiresPin && (
               <motion.div
                 key="login-form"
                 initial={{ opacity: 0, y: 10 }}
