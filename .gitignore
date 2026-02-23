@@ -70,3 +70,8 @@ releases/zips/watchnexus-v2.0.1-linux.zip
 releases/zips/watchnexus-v2.0.1-windows.zip
 releases/watchnexus-v2.0.1-linux.zip
 releases/watchnexus-v2.0.1-windows.zip
+-e 
+# Environment files
+*.env
+*.env.*
+frontend/node_modules/.cache/default-development/3.pack
