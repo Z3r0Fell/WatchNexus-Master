@@ -60,7 +60,15 @@ const DEFAULT_PROFILES = [
 ];
 
 const QualityBadge = ({ quality }) => {
-  const def = QUALITY_DEFINITIONS.find(q => q.id === quality);
+  // Handle both our new format and existing backend format
+  const qualityName = typeof quality === 'string' ? quality : (quality?.name || quality?.id || 'Unknown');
+  const def = QUALITY_DEFINITIONS.find(q => q.id === qualityName || q.name === qualityName);
+  
+  // Determine color based on resolution in name
+  let group = 'SD';
+  if (qualityName.includes('2160') || qualityName.includes('4K')) group = 'UHD';
+  else if (qualityName.includes('1080') || qualityName.includes('720')) group = 'HD';
+  
   const colors = {
     UHD: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
     HD: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -68,8 +76,8 @@ const QualityBadge = ({ quality }) => {
   };
   
   return (
-    <span className={`px-2 py-0.5 text-xs rounded border ${colors[def?.group] || colors.SD}`}>
-      {def?.name || quality}
+    <span className={`px-2 py-0.5 text-xs rounded border ${colors[def?.group || group]}`}>
+      {def?.name || qualityName}
     </span>
   );
 };
