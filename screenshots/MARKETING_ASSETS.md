@@ -1,7 +1,7 @@
 # WatchNexus - Marketing Assets
 
 ## Live Demo
-**URL:** https://nexus-pipeline-1.preview.emergentagent.com
+**URL:** https://nexus-all-in-one.preview.emergentagent.com
 
 **Test Credentials:**
 - Email: test@test.com
