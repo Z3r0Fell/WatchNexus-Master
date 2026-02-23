@@ -821,6 +821,7 @@ const VideoPlayer = () => {
               size="icon"
               onClick={() => setShowSettings(!showSettings)}
               className="text-white hover:bg-white/20"
+              data-testid="settings-btn"
             >
               <Settings className="w-5 h-5" />
             </Button>
@@ -831,6 +832,7 @@ const VideoPlayer = () => {
               size="icon"
               onClick={toggleFullscreen}
               className="text-white hover:bg-white/20"
+              data-testid="fullscreen-btn"
             >
               {fullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
             </Button>
