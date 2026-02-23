@@ -285,7 +285,7 @@ export const SubtitleSettings = () => {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
+        <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700" data-testid="save-subtitle-settings-btn">
           {saving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
