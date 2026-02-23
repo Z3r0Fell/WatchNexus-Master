@@ -1,0 +1,38 @@
+{
+  "name": "watchnexus-tanzanite",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Official Roku app for WatchNexus media server",
+  "dependencies": {
+    "@rokucommunity/bslib": "0.1.1",
+    "brighterscript-formatter": "1.7.19"
+  },
+  "devDependencies": {
+    "@rokucommunity/bslint": "0.8.38",
+    "brighterscript": "0.70.3",
+    "jshint": "2.13.6",
+    "rimraf": "6.1.3",
+    "roku-deploy": "3.16.1",
+    "undent": "1.0.0"
+  },
+  "scripts": {
+    "build": "npx rimraf build/ out/ && npx bsc --project bsconfig.json",
+    "package": "npx roku-deploy --retainStagingFolder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/watchnexus/watchnexus-roku.git"
+  },
+  "keywords": [
+    "watchnexus",
+    "roku",
+    "music",
+    "movies"
+  ],
+  "author": "WatchNexus",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/watchnexus/watchnexus-roku"
+  },
+  "homepage": "https://github.com/watchnexus/watchnexus-roku"
+}
