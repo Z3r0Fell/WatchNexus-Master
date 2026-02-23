@@ -289,7 +289,7 @@ async def get_current_user(
             payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
             user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "password": 0})
             return user
-        except:
+        except Exception:
             pass
     
     return None
@@ -3094,7 +3094,7 @@ async def search_tv_subtitles(
 ):
     """Search for TV show subtitles."""
     service = get_garnish_service()
-    lang_list = [l.strip() for l in languages.split(",")]
+    lang_list = [lang.strip() for lang in languages.split(",")]
     results = await service.search_tv(show_name, season, episode, lang_list)
     return {"results": results, "count": len(results)}
 
@@ -3108,7 +3108,7 @@ async def search_movie_subtitles(
 ):
     """Search for movie subtitles."""
     service = get_garnish_service()
-    lang_list = [l.strip() for l in languages.split(",")]
+    lang_list = [lang.strip() for lang in languages.split(",")]
     results = await service.search_movie(movie_name, year, imdb_id, lang_list)
     return {"results": results, "count": len(results)}
 
