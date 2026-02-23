@@ -64,6 +64,15 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
   - Works with Kodi 19 (Matrix) and 20 (Nexus)
   - Located at `/app/WatchNexus-Kodi/`
 
+- **🔦 Beacon - System Tray App** (NEW)
+  - Cross-platform tray app (Windows/macOS/Linux)
+  - Start/Stop/Restart server from system tray
+  - Server health monitoring with notifications
+  - Quick access to all web UI sections
+  - System resource display (CPU/RAM)
+  - Auto-start server option
+  - Launchers: `START-WATCHNEXUS-TRAY.bat` (Windows) / `start-watchnexus-tray.sh` (Unix)
+
 - **💜 Tanzanite - Roku Client** (BUILT ✅)
   - Ready-to-sideload: `watchnexus-tanzanite-1.0.0.zip`
   - BrighterScript compiled
