@@ -27,7 +27,7 @@ class TestAuthentication:
         assert "access_token" in data
         assert "user" in data
         assert data["user"]["email"] == "test@test.com"
-        print(f"✓ Login successful for test@test.com")
+        print("✓ Login successful for test@test.com")
         return data["access_token"]
     
     def test_login_invalid_credentials(self):
@@ -37,7 +37,7 @@ class TestAuthentication:
             "password": "wrongpassword"
         })
         assert response.status_code == 401, f"Expected 401, got {response.status_code}"
-        print(f"✓ Invalid credentials properly rejected with 401")
+        print("✓ Invalid credentials properly rejected with 401")
 
 
 class TestPluginsEndpoints:
@@ -145,7 +145,7 @@ class TestPlaybackSettings:
         for field in expected_fields:
             assert field in data, f"Missing field: {field}"
         
-        print(f"✓ Playback settings retrieved with all expected fields")
+        print("✓ Playback settings retrieved with all expected fields")
         print(f"  - auto_skip_intro: {data.get('auto_skip_intro')}")
         print(f"  - auto_skip_credits: {data.get('auto_skip_credits')}")
         print(f"  - auto_play_next: {data.get('auto_play_next')}")
@@ -181,7 +181,7 @@ class TestPlaybackSettings:
         # Verify update was applied
         assert data.get('skip_button_duration') == 7, "Skip button duration not updated"
         assert data.get('next_episode_countdown') == 10, "Countdown not updated"
-        print(f"✓ Playback settings updated successfully")
+        print("✓ Playback settings updated successfully")
         
         # Reset to original
         original_settings = {

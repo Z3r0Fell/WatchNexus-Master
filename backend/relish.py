@@ -14,12 +14,11 @@ import httpx
 import asyncio
 import re
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import logging
 import hashlib
-from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
 

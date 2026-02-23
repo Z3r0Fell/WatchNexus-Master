@@ -11,12 +11,11 @@ Hardened for production use:
 
 import aiosqlite
 import json
-import os
 import shutil
 import asyncio
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)

@@ -6,9 +6,8 @@ Each scraper handles a specific site's HTML structure and extracts torrent data.
 import httpx
 import re
 import asyncio
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass
-from datetime import datetime
 import logging
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, quote_plus

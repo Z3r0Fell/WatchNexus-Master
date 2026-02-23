@@ -261,14 +261,14 @@ class TestCompoteIntegration:
             }
         )
         assert add_response.status_code == 200, "Failed to add indexer"
-        indexer_id = add_response.json()["id"]
+        add_response.json()["id"]
         print(f"  Step 1: Added indexer {unique_name}")
         
         # Step 2: Verify indexer appears in list
         list_response = authenticated_client.get(f"{BASE_URL}/api/compote/indexers")
         assert list_response.status_code == 200, "Failed to list indexers"
         # Note: The indexer might be in memory but not persisted to default list
-        print(f"  Step 2: Listed indexers successfully")
+        print("  Step 2: Listed indexers successfully")
         
         # Step 3: Perform a search
         search_response = authenticated_client.get(
@@ -295,7 +295,7 @@ class TestCompoteIntegration:
         downloads = downloads_response.json()
         workflow_downloads = [d for d in downloads if "TEST_Workflow_Movie" in d.get("title", "")]
         assert len(workflow_downloads) > 0, "Grabbed download should appear in downloads list"
-        print(f"  Step 5: Verified download in queue")
+        print("  Step 5: Verified download in queue")
         
         print("✓ Full Compote workflow completed successfully")
 

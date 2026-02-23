@@ -379,7 +379,7 @@ class FondueEngine:
         self._state_file = Path(self.settings.download_path) / ".watchnexus_engine.json"
         self._settings_file = Path(self.settings.download_path) / ".watchnexus_settings.json"
         
-        lib_info = f"LTorrent" if TORRENT_AVAILABLE else "NOT AVAILABLE"
+        lib_info = "LTorrent" if TORRENT_AVAILABLE else "NOT AVAILABLE"
         logger.info(f"FondueEngine initialized ({lib_info}). Download path: {self.settings.download_path}")
     
     def update_settings(self, new_settings: Dict[str, Any]) -> EngineSettings:

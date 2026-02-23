@@ -1,5 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, Cookie, UploadFile, File, Form, BackgroundTasks, Body
-from fastapi.responses import Response, JSONResponse, FileResponse, PlainTextResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File, Form, BackgroundTasks, Body
+from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -10,7 +10,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
@@ -919,7 +919,7 @@ async def get_user_profiles(request: Request):
     ip = forwarded if forwarded else client_ip
     
     # Check if local network (allow in development/preview)
-    is_local = (
+    (
         ip.startswith("10.") or
         ip.startswith("192.168.") or
         ip.startswith("172.16.") or ip.startswith("172.17.") or ip.startswith("172.18.") or
@@ -2920,7 +2920,7 @@ async def get_next_episode(media_id: str, user: dict = Depends(require_auth)):
     return None
 
 # ==================== AUDIO FINGERPRINT DETECTION ====================
-from fprint import get_fprint_analyzer, analyze_series_for_intros
+from fprint import analyze_series_for_intros
 
 @api_router.post("/marmalade/series/{series_name}/analyze-intros")
 async def analyze_series_intros(
@@ -3367,7 +3367,7 @@ async def get_streaming_credentials(service_id: str, user: dict = Depends(requir
     }
 
 # ==================== WATCH PARTY ====================
-from potluck import get_potluck_manager, Potluck
+from potluck import get_potluck_manager
 from fastapi import WebSocket, WebSocketDisconnect
 
 @api_router.get("/watch-party/list")
@@ -3456,7 +3456,7 @@ async def watch_party_websocket(websocket: WebSocket, party_code: str):
             return
         
         # Validate token or session
-        token = auth_msg.get("token")
+        auth_msg.get("token")
         user_id = auth_msg.get("user_id")
         username = auth_msg.get("username", "Guest")
         action = auth_msg.get("action", "join")  # create or join
@@ -4308,7 +4308,7 @@ async def health_check():
 
 from drizzle import (
     get_drizzle_engine, init_drizzle, 
-    Playlist, PlaylistItem, PlaylistType, SkipMarkerType
+    PlaylistType, SkipMarkerType
 )
 
 @api_router.get("/drizzle/playlists")
@@ -4888,7 +4888,6 @@ async def zest_clear_logs(user: dict = Depends(require_auth)):
 # ==================== GARNISH (SUBTITLES) SETTINGS API ====================
 # 🌿 Garnish - The finishing touch for subtitles
 
-from garnish import get_garnish_service
 
 @api_router.get("/garnish/settings")
 async def garnish_get_settings(user: dict = Depends(require_auth)):

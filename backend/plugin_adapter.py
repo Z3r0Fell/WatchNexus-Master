@@ -23,8 +23,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -1064,7 +1062,7 @@ class PlexAdapter(PluginAdapter):
             dict_elem = root.find("dict")
             if dict_elem is not None:
                 keys = dict_elem.findall("key")
-                values = list(dict_elem)
+                list(dict_elem)
                 
                 for i, key in enumerate(keys):
                     key_name = key.text

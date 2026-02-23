@@ -14,7 +14,6 @@ Features:
 import os
 import json
 import hashlib
-import asyncio
 import logging
 import mimetypes
 import httpx
@@ -502,10 +501,10 @@ class MarmaladeServer:
             logger.info(f"[PROCESS] Successfully processed: {filename} -> title='{media_file.title}'")
             return media_file
             
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             logger.error(f"[PROCESS] File not found: {file_path}")
             return None
-        except PermissionError as e:
+        except PermissionError:
             logger.error(f"[PROCESS] Permission denied: {file_path}")
             return None
         except Exception as e:

@@ -6,14 +6,14 @@ Fetches anime metadata from AniDB (Anime Database).
 import httpx
 import logging
 import xml.etree.ElementTree as ET
-from typing import List, Dict, Optional, Any
+from typing import List, Optional
 import sys
 import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from gadgets import MetadataProvider, PluginType
+from gadgets import MetadataProvider
 
 logger = logging.getLogger(__name__)
 
