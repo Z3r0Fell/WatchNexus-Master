@@ -149,7 +149,7 @@ class ServerMonitor:
 class WatchNexusTray:
     """System tray application for controlling WatchNexus server."""
     
-    def __init__(self, port: int = DEFAULT_PORT):
+    def __init__(self, port: int = DEFAULT_PORT, check_updates: bool = True):
         self.server_process = None
         self.server_running = False
         self.port = port
@@ -158,6 +158,14 @@ class WatchNexusTray:
         self.monitor = ServerMonitor(port)
         self._health_thread = None
         self._last_notification = None
+        
+        # Tiramisu updater
+        self.check_updates = check_updates and HAS_TIRAMISU
+        self.updater = None
+        self.available_update = None
+        
+        if self.check_updates:
+            self._init_updater()
         
     def create_icon_image(self, running=False, warning=False):
         """Create a tray icon image programmatically."""
