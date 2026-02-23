@@ -118,6 +118,29 @@ export const PluginsSettings = () => {
     }
   };
 
+  const handleKodiAddonImport = async () => {
+    if (!kodiAddonUrl) {
+      toast.error('Please enter a Kodi addon URL');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-kodi`, null, {
+        params: { url: kodiAddonUrl }
+      });
+      
+      toast.success(`Kodi addon "${res.data.name}" imported successfully!`);
+      fetchPlugins();
+      setKodiAddonUrl('');
+      setShowImportOptions(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to import Kodi addon');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const pluginTypeColors = {
     metadata_provider: 'bg-blue-500/20 text-blue-400',
     indexer_provider: 'bg-green-500/20 text-green-400',
