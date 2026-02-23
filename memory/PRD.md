@@ -9,9 +9,29 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ## Current Version: 2.3.0
 
+### Code Name Legend
+| Code Name | Feature | Description |
+|-----------|---------|-------------|
+| 🍋 **Zest** | Log Viewer | Adds flavor to debugging - real-time log viewing and system health |
+| 🥛 **Milk** | Theme Engine | Smooth, consistent theming across the entire application |
+| 🌿 **Garnish** | Subtitles | The finishing touch for media - subtitle provider management |
+| 🍨 **Cream** | Streaming Services | Smooth integration with streaming service credentials |
+| 🔧 **Gadgets** | Plugins | Extensible plugin system with Kodi addon support |
+| 🍯 **Marmalade** | Media Server | Core media library management and scanning |
+| 🍮 **Compote** | Indexers | Sweet media discovery through indexer integration |
+| 💧 **Drizzle** | Playlists | Playlist and queue management |
+| 🧪 **Sieve** | Media Health | Media file health checking and validation |
+| 🧈 **Gelatin** | External Access | Jellyfin-compatible API layer |
+| 🍭 **Relish** | IPTV | Live TV and IPTV integration |
+| 🥣 **Syrup** | Scrapers | Web scraping utilities |
+| 🍲 **Potluck** | qBittorrent | Torrent client integration |
+| 🧀 **Fondue** | Fingerprinting | Audio fingerprinting for intro detection |
+
+---
+
 ### Recent Changes (v2.3.0 - Feb 23, 2026)
 
-#### New Features with Code Names:
+#### New Features:
 
 - **🍋 Zest - Log Viewer & System Health** (NEW)
   - View application logs in real-time with filtering (level, search, pagination)
@@ -26,19 +46,15 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
   - Custom theme colors properly save and apply to entire app
   - Preview mode to test colors before saving
   - Theme persistence via ThemeContext
-  - CSS variables for consistent theming: `--color-primary`, `--color-background`, etc.
+  - 6 built-in themes: Living Room, Cinema, Anime Pop, Audio Waves, Minimal, Streaming Service
 
 - **🌿 Garnish - Subtitle Settings (UPGRADED)**
   - Provider Priority with drag-to-reorder (OpenSubtitles, Addic7ed, etc.)
   - Add/remove providers dynamically
   - Per-provider authentication (username, API key)
   - Test provider connectivity
-  - Language preferences with multi-select
+  - Language preferences with multi-select (15 languages)
   - Auto-download toggle
-
-- **🍨 Cream - Streaming Services**
-  - Code name added to existing streaming credential storage
-  - Secure local storage for streaming service logins
 
 - **🔧 Gadgets - Plugin System (UPGRADED)**
   - Import plugins from file (.zip)
@@ -49,282 +65,127 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 #### Bug Fixes:
 - Library scanning now has extensive `[SCAN]` and `[PROCESS]` logging
-- User deletion verified working
+- User deletion verified working via API
 - Theme colors now properly apply to the entire application
 
 ---
 
 ### Previous Changes (v2.2.0 - Feb 23, 2026)
-- **Enhanced Library Scanning Logging**
-  - Added detailed `[SCAN]` and `[PROCESS]` logging throughout `marmalade_server.py`
-  - Logs now show: path validation, file discovery, metadata fetching, TMDB lookups, errors
-  - Error tracking with specific error messages for troubleshooting
-  - Scan results now include `errors` array and `error_count` for debugging
-  - Permission checks added before scanning begins
+- Enhanced Library Scanning Logging with `[SCAN]` and `[PROCESS]` prefixes
+- User Deletion verified working
+- Permission checks added before scanning begins
 
-- **User Deletion Verified**
-  - Tested and confirmed `DELETE /api/users/{user_id}` endpoint works correctly
-  - Users can be created and deleted through the API
-  - Prevention of self-deletion implemented
-
-- **Release Package v2.2.0 Created**
-  - Linux and Windows packages available in `/app/releases/zips/`
-  - Packages include enhanced logging for user debugging
-  - Download via `/app/dist/` directory
-
-- **Previous v2.1.0 Fixes Applied**
-  - Folder browser modal fixed (parameter mismatch resolved)
-  - User management UX improved (edit panel no longer closes on updates)
-  - Login loop fixed (removed aggressive `withCredentials: true` handling)
-
----
+### Previous Changes (v2.1.0 - Feb 23, 2026)
+- Folder browser modal fixed
+- User management UX improved
+- Login loop fixed
 
 ### Previous Changes (v2.0.1 - Feb 15, 2026)
-- **NEW: About & Releases Section**
-  - Added "About & Releases" page in Settings
-  - Complete version history from v1.2.0 to v2.0.1
-  - Expandable release details with highlights and changes
-  - Version displayed correctly from backend API
-  - Technology stack information
-  
-- **Backend Version Update**
-  - Updated `APP_VERSION` from "1.2.4" to "2.0.1"
-  - `/api/system/info` and `/api/system/stats` now return correct version
-
-- **Previous: Fixed Plugins Page**
-  - Auto-discovery of plugins now works correctly
-  - Added Import Plugin modal (file upload and URL import)
-  - Added Enable/Disable plugin functionality
-  - Shows 2 built-in plugins: AniDB Metadata Provider, Discord Notifications
-  
-- **Previous: Competitive Analysis Document Created**
-  - Location: `/app/docs/COMPETITIVE_ANALYSIS.md`
-  - Comprehensive comparison with Jellyfin, Plex, Sonarr/Radarr
-  - Feature matrix with priority roadmap (P0/P1/P2/P3)
-  - Implementation recommendations and quick wins identified
-  
-- **Previous: Playback Settings (Skip Intro/Credits Controls)**
-  - New Settings > Playback section
-  - Auto-skip intro/credits toggles
-  - Skip button display duration configuration
-  - Auto-play next episode with countdown timer
-  - Chromaprint status detection
-  - Default segment timing configuration
-  - Backend: `/api/settings/playback` endpoints
-  
-- **Bug Fixes**
-  - Added `playback_settings` table to SQLite schema
-  - Fixed `analyze_all_intros` endpoint for SQLite compatibility
-
-### Previous Changes (v2.0.0 - Feb 14, 2026)
-- **CODE AUDIT COMPLETE** - Comprehensive review of all routes and endpoints
-  - Verified all 24 frontend routes are functional
-  - All backend API endpoints tested (30 tests, 100% pass rate)
-  - Fixed: VideoPlayer now shows specific error messages for playback failures
-  - Fixed: WatchHistoryPage now sorts by `updated_at` field correctly
-  - Created `/app/bug_log.md` to document audit findings
-  - Version bumped from 1.4.0 to 2.0.1
-
-### Previous Changes (v1.4.0 - Feb 15, 2026)
-- **NEW: Quality Profiles** - Full Sonarr/Radarr-style quality profile system
-  - Backend API: GET/POST/PUT/DELETE at `/api/quality-profiles`
-  - 15 quality definitions (Bluray-2160p Remux → CAM)
-  - 3 default profiles auto-created: Any, HD-720p/1080p, Ultra-HD
-  - Cutoff settings for automatic upgrade limits
-  - UI at Settings > Media Libraries > Quality Profiles tab
-  - Profile editor modal with quality toggle selection
-- **Verified: Anime Page** - /anime route with TMDB Japanese animation
-- **Verified: Playlists** - Full CRUD with Add to Playlist button on media details
-- **Verified: Settings Organization** - Sidebar with Core/Acquisition/Streaming/Advanced sections
-
-### Previous Changes (v1.3.1 - Feb 15, 2026)
-- **Verified: Send to Download** - End-to-end download flow working (search → grab → download queue)
-- **Verified: TV Series Grouping** - Episodes properly grouped by series and season with TMDB metadata
-- **Bug Fix: tv_shows media type** - Updated `_parse_filename` and scanner to recognize `tv_shows` alongside `tv`
-- **Test Data: Breaking Bad** - Added 5 test episodes (2 seasons) to verify series grouping
-- **Note: Visual Edits Plugin** - Remains disabled due to Babel recursion issue in complex components
-
-### Previous Changes (v1.2.9 - Feb 15, 2026)
-- **Chromaprint Audio Fingerprinting** - New `fprint.py` module for detecting intro/credits via audio analysis
-- **IntroDetector Component** - UI button to trigger intro detection on TV show pages
-- **Series Analysis APIs**:
-  - `POST /api/marmalade/series/{name}/analyze-intros` - Trigger background analysis
-  - `GET /api/marmalade/series/{name}/intro-status` - Check detection status
-  - `POST /api/marmalade/media/{id}/detect-segments` - Single episode detection
-- **Dependencies** - Added pyacoustid, audioread, libchromaprint-tools
-
-### Previous Changes (v1.2.8 - Feb 15, 2026)
-- **Indexer Health Check** - New IndexerHealthCheck component with status overview, test all button, and setup wizard
-- **Advanced Playback Controls** - Skip intro/credits buttons, next episode auto-play with countdown
-- **System Tray Finalization** - Added launch.py launcher script for cross-platform startup
-- **Skip Segments API** - New endpoints for storing/retrieving skip segments (intro, credits, recap)
-- **Next Episode API** - Endpoint to fetch next episode in series for auto-play
-
-### Previous Changes (v1.2.7 - Feb 15, 2026)
-- **SVG Favicon** - WatchNexus logo SVG now used as browser favicon
-- **System Tray Icon** - tray_app.py updated to load WatchNexus logo (SVG/PNG) with status overlay
-
-### Previous Changes (v1.2.6 - Feb 14, 2026)
-- **Add to Playlist UI** - AddToPlaylistButton component added to MediaCard and MediaDetails pages
-- **Plugin Import** - Users can now import plugins from file upload or URL
-- **Plugin Uninstall** - Delete button added to remove installed plugins
-- **Settings Page Redesign** - Converted from tabs to categorized sidebar navigation
-- **System Tray App** - Cross-platform tray application created (tray_app.py)
-
-### Bug Fixes (v1.2.5 - Feb 2026)
-- **Fixed: API URL Configuration** - Frontend now supports both development (preview URL) and production (same-origin) modes
-- **Fixed: Blank Home Page** - Root cause was hardcoded REACT_APP_BACKEND_URL in production builds
-- **Fixed: Libraries Not Populating** - Media files now scan and display correctly
-- **Fixed: Missing Browse Button** - Folder browser modal now accessible from Settings -> Library
-- **Fixed: Playlists Page Blank** - Wrapped in Layout component
-- **Fixed: Plugins Page Blank** - Now discovers bundled plugins correctly
+- About & Releases page added
+- Backend version updated to 2.0.1
+- Plugin discovery fixed
 
 ---
 
 ## Architecture
 
-### Stack
-- **Frontend**: React 18 (served by FastAPI at port 8001)
-- **Backend**: FastAPI (Python 3.10+)
-- **Database**: SQLite with WAL mode
-- **Torrent Engine**: LTorrent (pure Python)
+### Backend (FastAPI + Python)
+```
+/app/backend/
+├── server.py          # Main FastAPI application
+├── marmalade_server.py # 🍯 Media library management
+├── compote.py         # 🍮 Indexer integration
+├── garnish.py         # 🌿 Subtitle services
+├── milk.py            # 🥛 Theme engine
+├── zest.py            # 🍋 Log viewer (NEW)
+├── drizzle.py         # 💧 Playlist engine
+├── sieve.py           # 🧪 Media health checker
+├── gelatin.py         # 🧈 Jellyfin compatibility
+├── relish.py          # 🍭 IPTV integration
+├── gadgets.py         # 🔧 Plugin system
+├── fondue.py          # 🧀 Audio fingerprinting
+├── potluck.py         # 🍲 qBittorrent client
+└── database.py        # SQLite database
+```
+
+### Frontend (React + Tailwind)
+```
+/app/frontend/src/
+├── pages/
+│   └── SettingsPage.js
+├── components/settings/
+│   ├── ZestSettings.jsx      # 🍋 Log viewer UI
+│   ├── ThemeForgeSettings.jsx # 🥛 Theme customization
+│   ├── SubtitleSettings.jsx   # 🌿 Subtitle configuration
+│   ├── PluginsSettings.jsx    # 🔧 Plugin management
+│   └── ...
+├── context/
+│   ├── AuthContext.js
+│   └── ThemeContext.js        # 🥛 Theme provider
+└── App.js
+```
 
 ---
 
-## Module Codenames
+## API Endpoints
 
-| Codename | Module | Description |
-|----------|--------|-------------|
-| **Fondue** | Torrent Engine | BitTorrent download engine |
-| **Compote** | Indexer Manager | Aggregates torrent indexers |
-| **Syrup** | Live Scraper | Real-time site scraping |
-| **Sieve** | Media Health | File health checker |
-| **Preserve** | Challenge Solver | Cloudflare bypass |
-| **Potluck** | Watch Party | Synchronized viewing |
-| **Drizzle** | Playlist Engine | Continuous playback |
-| **Marmalade** | Media Server | Library management & streaming |
-| **Gadgets** | Plugin System | Extensible plugin architecture |
+### Zest (Log Viewer)
+- `GET /api/zest/logs` - Get parsed log entries with filtering
+- `GET /api/zest/stats` - Get log file statistics
+- `GET /api/zest/health` - Get system health metrics
+- `POST /api/zest/logs/clear` - Clear logs with backup
+
+### Garnish (Subtitles)
+- `GET /api/garnish/settings` - Get subtitle provider settings
+- `POST /api/garnish/settings` - Save provider order and configs
+- `POST /api/garnish/test/{provider_id}` - Test provider connectivity
+
+### Milk (Themes)
+- `GET /api/milk/theme-forge` - Get theme configuration
+- `POST /api/milk/set-theme` - Apply built-in theme
+- `POST /api/milk/custom-theme` - Save custom theme
+
+### Gadgets (Plugins)
+- `GET /api/gadgets/plugins` - List installed plugins
+- `POST /api/gadgets/import-file` - Import plugin from file
+- `POST /api/gadgets/import-url` - Import plugin from URL
+- `POST /api/gadgets/import-kodi` - Import Kodi addon
 
 ---
 
-## What's Working (v1.2.6)
+## Remaining Tasks
 
-### Core Features
-- User registration and login
-- SQLite database (zero dependencies)
-- TMDB integration for movie/TV/anime metadata
-- Library management with folder browser
-- Auto-scan on library add
-- Watchlist and progress tracking
-- Multi-user with permissions
-- **NEW: Add media to playlists from any media card**
-- **NEW: Import/uninstall plugins**
-- **NEW: Reorganized settings with sidebar navigation**
-- Built-in torrent engine (Fondue)
-- Drizzle playlist system
+### High Priority (P0-P1)
+- [ ] Project reorganization to Jellyfin-style structure
+- [ ] User verification of library scanning on local machine
+- [ ] Real-world indexer/downloader testing
 
-### Pages
-- Home (hero + trending)
-- Movies (grid with filters)
-- TV Shows
-- Anime (Japanese animation)
-- Playlists
-- Library (with folder browser)
-- Downloads
-- Settings (with Maintenance tab)
+### Medium Priority (P2)
+- [ ] Advanced playback controls (skip intro/credits)
+- [ ] Quality Profiles implementation
+- [ ] Automatic intro detection using Chromaprint
+
+### Low Priority (P3)
+- [ ] visual-edits babel plugin fix
+- [ ] Additional Kodi addon compatibility
+- [ ] Enhanced streaming service integrations
+
+---
+
+## Testing
+
+- **Backend Tests:** `/app/backend/tests/test_v230_zest_garnish_plugins.py`
+- **Test Reports:** `/app/test_reports/iteration_19.json`
+- **Test Credentials:** test@test.com / password
 
 ---
 
 ## Release Packages
 
-Current release: **v2.0.1**
-
-- `/app/dist/watchnexus-v1.2.4-linux.zip` (90.1 MB)
-- `/app/dist/watchnexus-v1.2.4-windows.zip` (90.1 MB)
-
----
-
-## Key API Endpoints
-
-### Library (Marmalade)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/marmalade/libraries` | GET/POST | List/Add libraries |
-| `/api/marmalade/libraries/{id}/scan` | POST | Scan library |
-| `/api/filesystem/browse` | GET | Browse directories |
-
-### Quality Profiles (NEW)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/quality-profiles` | GET | List profiles with definitions |
-| `/api/quality-profiles` | POST | Create new profile |
-| `/api/quality-profiles/{id}` | PUT | Update profile |
-| `/api/quality-profiles/{id}` | DELETE | Delete profile |
-| `/api/quality-definitions` | GET | List all quality tiers |
-
-### TMDB
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/tmdb/discover/{media_type}` | GET | Discover with filters |
-| `/api/tmdb/trending/{type}/{window}` | GET | Trending content |
-
-### Drizzle (Playlists)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/drizzle/playlists` | GET/POST | List/Create playlists |
-| `/api/drizzle/playlists/{id}/items` | POST | Add item to playlist |
-| `/api/drizzle/queue` | GET | Active queue state |
+Available at `/app/releases/zips/`:
+- `watchnexus-v2.3.0-linux.zip` (90.2 MB)
+- `watchnexus-v2.3.0-windows.zip` (90.2 MB)
 
 ---
 
-## Backlog
-
-### P0 - Critical
-- [x] Auth token bug fix
-- [x] Folder browser
-- [x] Anime section
-- [x] API URL configuration fix (dev/prod modes)
-- [x] **Quality Profiles** - Sonarr/Radarr-style quality management
-- [x] **Code Audit v2.0.1** - Comprehensive route and endpoint verification
-- [ ] Test with actual media files
-
-### P1 - High Priority
-- [ ] Windows release testing
-- [ ] Video player improvements
-- [ ] macOS release
-- [ ] Integrate Quality Profiles into search/grab logic (filter results by profile)
-
-### P2 - Enhancements
-- [ ] AI intro/credits detection
-- [ ] Post-credits handling
-- [ ] Custom formats (like Radarr v3)
-
-### P3 - Future
-- [ ] Roku/Universal app
-- [ ] Cloud sync
-- [ ] Mobile apps
-
----
-
-## Files of Reference
-
-### Backend
-- `/app/backend/server.py` - Main FastAPI server (v1.2.4)
-- `/app/backend/database.py` - SQLite database layer
-- `/app/backend/drizzle.py` - Playlist engine
-- `/app/backend/marmalade_server.py` - Media library server
-
-### Frontend
-- `/app/frontend/src/lib/config.js` - API URL configuration (NEW - handles dev/prod modes)
-- `/app/frontend/src/pages/AnimePage.js` - Anime page (NEW)
-- `/app/frontend/src/pages/LibraryPage.js` - Library with folder browser
-- `/app/frontend/src/components/FolderBrowser.jsx` - Directory picker (NEW)
-- `/app/frontend/src/components/layout/Sidebar.js` - Navigation with Anime link
-
-### Scripts
-- `/app/scripts/create_releases.py` - Release package generator
-- `/app/tray_app.py` - Cross-platform system tray application
-
-### Documentation
-- `/app/memory/CHANGELOG.md` - Version history
-- `/app/memory/PRD.md` - This file
+*Last Updated: Feb 23, 2026*
