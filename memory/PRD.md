@@ -37,6 +37,40 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
+### Recent Changes (v2.5.1 - Feb 23, 2026)
+
+#### Code Audit & Quality Improvements:
+
+- **🔧 Python Code Quality**
+  - Fixed 111 linting issues across all backend files
+  - Replaced all bare `except:` with `except Exception:`
+  - Fixed ambiguous variable names (e.g., `l` → `lang`, `login`)
+  - Updated deprecated datetime usage
+  - All backend files pass ruff linting
+
+- **🎯 Frontend Testing Attributes**
+  - Added `data-testid` to VideoPlayer controls:
+    - `video-back-btn`, `play-pause-btn`, `skip-back-btn`, `skip-forward-btn`
+    - `mute-btn`, `subtitles-btn`, `settings-btn`, `fullscreen-btn`
+    - `skip-segment-btn`, `play-next-btn`, `cancel-next-btn`
+  - MediaCard, Sidebar, HeroBanner already had proper test IDs
+
+- **📦 macOS Server Package v1.0.0**
+  - Created distributable macOS package with:
+    - Double-click launcher (`start-watchnexus.command`)
+    - launchd service for auto-start
+    - Virtual environment isolation
+    - DMG creation script
+
+- **🍰 Tiramisu Auto-Updater**
+  - Standalone CLI and tray app integration
+  - GitHub release checking
+  - One-click update installation
+  - Automatic backup before updates
+  - Rollback capability
+
+---
+
 ### Recent Changes (v2.5.0 - Feb 23, 2026)
 
 #### Client Applications Released:
