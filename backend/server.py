@@ -4831,6 +4831,25 @@ async def get_database_stats(user: dict = Depends(require_auth)):
         stats["status"] = "healthy"
         stats["engine"] = "SQLite"
         stats["mode"] = "WAL"
+        
+        # Add version info
+        db_version = await db.get_db_version()
+        stats["db_version"] = db_version
+        
+        # Read current app version
+        version_file = ROOT_DIR.parent / "VERSION"
+        app_version = version_file.read_text().strip() if version_file.exists() else "2.5.0"
+        stats["app_version"] = app_version
+        
+        # Check for version mismatch (old database with new app)
+        if db_version and app_version:
+            # Compare major.minor versions
+            db_major_minor = '.'.join(db_version.split('.')[:2])
+            app_major_minor = '.'.join(app_version.split('.')[:2])
+            stats["version_mismatch"] = db_major_minor != app_major_minor
+        else:
+            stats["version_mismatch"] = db_version is None
+        
         return stats
     return {"status": "not_initialized"}
 
