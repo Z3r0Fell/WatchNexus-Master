@@ -8,7 +8,8 @@ import {
   MediaHealthSettings, IndexerSettings, DownloadSettings,
   IPTVSettings, StreamingSettings, SubtitleSettings,
   GelatinSettings, ThemeForgeSettings, PluginsSettings,
-  MaintenanceSettings, PlaybackSettings, AboutSettings
+  MaintenanceSettings, PlaybackSettings, AboutSettings,
+  QualityProfilesSettings
 } from '../components/settings';
 import { ZestSettings } from '../components/settings/ZestSettings';
 import { Layout } from '../components/layout/Layout';
