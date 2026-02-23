@@ -729,12 +729,14 @@ Examples:
   python tray_app.py                    # Start with defaults
   python tray_app.py --port 9000        # Use custom port
   python tray_app.py --no-auto-start    # Don't auto-start server
+  python tray_app.py --no-update-check  # Disable auto-update checks
 
 The tray app will:
   - Show in your system tray
   - Auto-start the WatchNexus server
   - Provide quick access to all features
   - Monitor server health
+  - Check for updates (Tiramisu)
         """
     )
     
@@ -750,15 +752,23 @@ The tray app will:
         help="Don't auto-start the server on launch"
     )
     parser.add_argument(
+        "--no-update-check",
+        action="store_true",
+        help="Disable automatic update checking"
+    )
+    parser.add_argument(
         "--version", "-v",
         action="version",
-        version=f"WatchNexus Beacon v{TRAY_VERSION} ({CODENAME})"
+        version=f"WatchNexus Beacon v{TRAY_VERSION} ({CODENAME}) + Tiramisu"
     )
     
     args = parser.parse_args()
     
     # Create and run tray app
-    tray = WatchNexusTray(port=args.port)
+    tray = WatchNexusTray(
+        port=args.port,
+        check_updates=not args.no_update_check
+    )
     
     try:
         tray.run(auto_start=not args.no_auto_start)
