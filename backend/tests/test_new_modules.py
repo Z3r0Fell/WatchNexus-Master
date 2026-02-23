@@ -285,7 +285,7 @@ class TestStreamingLogins:
             headers={"Authorization": f"Bearer {auth_token}"}
         )
         logins = get_response.json()
-        hulu_logins = [l for l in logins if l["service_id"] == "hulu"]
+        hulu_logins = [login for login in logins if login["service_id"] == "hulu"]
         assert len(hulu_logins) == 0
 
 
@@ -403,5 +403,5 @@ def cleanup_test_data(auth_token):
                         f"{BASE_URL}/api/streaming-logins/{login['service_id']}",
                         headers={"Authorization": f"Bearer {auth_token}"}
                     )
-    except:
+    except Exception:
         pass
