@@ -245,8 +245,9 @@ const ManualImportTab = ({
             />
             <Button
               type="button"
-              onClick={() => onOpenFileBrowser(manualImportPath || '/')}
+              onClick={() => onOpenFileBrowser(null, manualImportPath || '/')}
               className="bg-violet-600 hover:bg-violet-700 px-3"
+              data-testid="browse-import-folder-btn"
             >
               <FolderSearch className="w-4 h-4" />
             </Button>
