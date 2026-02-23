@@ -2842,7 +2842,7 @@ async def set_skip_segments(
     # Save to database
     await db.skip_segments.update_one(
         {"media_id": media_id},
-        {"$set": {"media_id": media_id, "segments": segments, "updated_at": datetime.utcnow().isoformat()}},
+        {"$set": {"media_id": media_id, "segments": segments, "updated_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True
     )
     
