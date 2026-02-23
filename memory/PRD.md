@@ -74,6 +74,14 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
   - Auto-start server option
   - Launchers: `START-WATCHNEXUS-TRAY.bat` (Windows) / `start-watchnexus-tray.sh` (Unix)
 
+- **🍰 Tiramisu - Auto-Updater** (NEW)
+  - Checks GitHub releases for updates
+  - One-click download and install
+  - Automatic backup before updates
+  - Rollback capability
+  - CLI: `python tiramisu.py check|update|rollback|backups`
+  - Integrated into Beacon tray app
+
 - **💜 Tanzanite - Roku Client** (BUILT ✅)
   - Ready-to-sideload: `watchnexus-tanzanite-1.0.0.zip`
   - BrighterScript compiled
