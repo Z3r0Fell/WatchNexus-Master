@@ -200,8 +200,35 @@ export const PluginsSettings = () => {
             </div>
           </div>
           
+          {/* Kodi Addon Import */}
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <label className="text-sm text-gray-400 flex items-center gap-2">
+              <span className="text-orange-400">🎬</span> Import Kodi Addon
+            </label>
+            <p className="text-xs text-gray-500">
+              Import Kodi video addons to extend streaming sources. Supports addon.xml format.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={kodiAddonUrl}
+                onChange={(e) => setKodiAddonUrl(e.target.value)}
+                placeholder="https://example.com/kodi-addon.zip or repository URL"
+                className="flex-1 bg-white/5 border-white/10"
+                data-testid="kodi-addon-url-input"
+              />
+              <Button 
+                onClick={handleKodiAddonImport} 
+                disabled={importing || !kodiAddonUrl}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Tv className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+          
           <p className="text-xs text-gray-500">
             Plugin archives must contain a <code className="bg-black/30 px-1 rounded">manifest.json</code> file.
+            Kodi addons must contain <code className="bg-black/30 px-1 rounded">addon.xml</code>.
           </p>
         </motion.div>
       )}
