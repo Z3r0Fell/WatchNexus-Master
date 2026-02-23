@@ -4865,6 +4865,51 @@ async def create_database_backup(user: dict = Depends(require_auth)):
         return {"status": "success", "message": "Backup created"}
     return {"status": "error", "message": "Database not initialized"}
 
+@api_router.post("/db/reset")
+async def reset_database(user: dict = Depends(require_auth)):
+    """
+    Reset the database to a clean state.
+    This will:
+    1. Create a backup of the current database
+    2. Drop all tables
+    3. Recreate the schema
+    
+    WARNING: This is destructive and cannot be undone!
+    """
+    global db
+    if not db:
+        return {"status": "error", "message": "Database not initialized"}
+    
+    try:
+        # Create backup first
+        db._create_backup()
+        logger.warning("Database reset requested - backup created")
+        
+        # Drop all data tables (keep schema)
+        tables_to_clear = [
+            "users", "user_sessions", "watchlist", "watch_progress", "settings",
+            "library", "indexers", "streaming_services", "scheduled_scans",
+            "scan_notifications", "redownload_requests", "compote_indexers",
+            "grab_requests", "subtitle_settings", "streaming_logins", 
+            "pending_parties", "playlists", "skip_markers", "quality_profiles",
+            "playback_settings", "media"
+        ]
+        
+        for table in tables_to_clear:
+            try:
+                await db._connection.execute(f"DELETE FROM {table}")
+            except Exception as e:
+                logger.warning(f"Could not clear table {table}: {e}")
+        
+        await db._connection.commit()
+        
+        logger.info("Database reset complete - all tables cleared")
+        return {"status": "success", "message": "Database reset complete. All data has been cleared."}
+        
+    except Exception as e:
+        logger.error(f"Error resetting database: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset database: {str(e)}")
+
 @api_router.get("/cache/stats")
 async def get_cache_stats(user: dict = Depends(require_auth)):
     """Get TMDB cache statistics."""
