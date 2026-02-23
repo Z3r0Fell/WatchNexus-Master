@@ -95,9 +95,59 @@ export const AuthPage = () => {
   };
 
   const handleLocalUserLogin = async (user) => {
-    setSelectedUser(user);
-    setShowUserSelect(false);
-    setEmail(user.email);
+    // Check if user has a PIN
+    try {
+      const pinCheck = await axios.get(`${BACKEND_URL}/api/users/${user.id}/has-pin`);
+      
+      if (pinCheck.data.has_pin) {
+        // User has PIN - show PIN entry
+        setSelectedUser({ ...user, requiresPin: true });
+        setShowUserSelect(false);
+      } else {
+        // No PIN - quick login directly
+        await performQuickLogin(user.id);
+      }
+    } catch (error) {
+      // If PIN check fails, fall back to password login
+      setSelectedUser(user);
+      setShowUserSelect(false);
+      setEmail(user.email);
+    }
+  };
+
+  const performQuickLogin = async (userId, pin = null) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${BACKEND_URL}/api/users/quick-login`, {
+        user_id: userId,
+        pin: pin
+      });
+      
+      // Store token and login
+      localStorage.setItem('watchnexus_token', res.data.token);
+      login(res.data.user, res.data.token);
+      toast.success(`Welcome back, ${res.data.user.username || 'User'}!`);
+      navigate('/');
+    } catch (error) {
+      if (error.response?.status === 401) {
+        toast.error('Invalid PIN');
+      } else if (error.response?.status === 403) {
+        // Not on home network - fall back to password
+        toast.error('Quick login only available on home network');
+        setSelectedUser(prev => ({ ...prev, requiresPin: false }));
+      } else {
+        toast.error('Login failed. Please try with password.');
+        setSelectedUser(prev => ({ ...prev, requiresPin: false }));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePinSubmit = async (pin) => {
+    if (selectedUser?.id) {
+      await performQuickLogin(selectedUser.id, pin);
+    }
   };
 
   const handleGoogleLogin = () => {
