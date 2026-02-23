@@ -96,9 +96,22 @@ export const QualityProfilesSettings = () => {
       const res = await axios.get(`${BACKEND_URL}/api/quality-profiles`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setProfiles(res.data || []);
+      // Handle both array and object responses
+      let data = res.data;
+      if (!Array.isArray(data)) {
+        data = data.profiles || [];
+      }
+      // Parse qualities if it's a JSON string
+      const parsed = data.map(profile => ({
+        ...profile,
+        qualities: typeof profile.qualities === 'string' 
+          ? JSON.parse(profile.qualities).map(q => q.name || q.id || q)
+          : (profile.qualities || [])
+      }));
+      setProfiles(parsed);
     } catch (err) {
       console.error('Failed to fetch profiles:', err);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
