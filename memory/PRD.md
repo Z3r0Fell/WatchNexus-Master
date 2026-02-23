@@ -7,7 +7,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.5.0
+## Current Version: 2.5.1
 
 ### Code Name Legend
 | Code Name | Feature | Description |
