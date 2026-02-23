@@ -35,6 +35,42 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
+### Recent Changes (v2.5.0 - Feb 23, 2026)
+
+#### Client Applications Released:
+
+- **💎 Ruby - Android TV Client** (Source Package)
+  - Native Leanback interface
+  - Voice search, gamepad navigation
+  - Skip intro/credits support
+  - Located at `/app/WatchNexus-AndroidTV/`
+
+- **💎 Sapphire - Android Mobile Client** (Source Package)
+  - Material Design 3 interface
+  - Offline downloads, background playback
+  - Chromecast support
+  - Located at `/app/WatchNexus-Android/`
+
+- **🔥 Ember - Fire TV Client** (Source Package)
+  - Optimized for Fire TV Stick/Cube
+  - Amazon remote optimized
+  - Uses Ruby (Android TV) codebase
+  - Located at `/app/releases/firestick/`
+
+- **💎 Diamond - Kodi Addon** (BUILT ✅)
+  - Ready-to-install ZIP: `watchnexus-diamond-1.0.0.zip`
+  - Full library sync with Kodi
+  - Works with Kodi 19 (Matrix) and 20 (Nexus)
+  - Located at `/app/WatchNexus-Kodi/`
+
+- **💜 Tanzanite - Roku Client** (BUILT ✅)
+  - Ready-to-sideload: `watchnexus-tanzanite-1.0.0.zip`
+  - BrighterScript compiled
+  - Full library browsing
+  - Located at `/app/WatchNexus-Roku/`
+
+---
+
 ### Recent Changes (v2.4.0 - Feb 23, 2026)
 
 #### New Features:
