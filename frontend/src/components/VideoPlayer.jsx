@@ -754,6 +754,7 @@ const VideoPlayer = () => {
               size="icon"
               onClick={() => skip(-10)}
               className="text-white hover:bg-white/20"
+              data-testid="skip-back-btn"
             >
               <SkipBack className="w-5 h-5" />
             </Button>
@@ -762,6 +763,7 @@ const VideoPlayer = () => {
               size="icon"
               onClick={() => skip(10)}
               className="text-white hover:bg-white/20"
+              data-testid="skip-forward-btn"
             >
               <SkipForward className="w-5 h-5" />
             </Button>
@@ -773,6 +775,7 @@ const VideoPlayer = () => {
                 size="icon"
                 onClick={toggleMute}
                 className="text-white hover:bg-white/20"
+                data-testid="mute-btn"
               >
                 {muted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
               </Button>
