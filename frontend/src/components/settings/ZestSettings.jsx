@@ -43,7 +43,7 @@ const LevelBadge = ({ level }) => {
 };
 
 const SystemMetricCard = ({ icon: Icon, label, value, subValue, color = 'violet' }) => (
-  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+  <div className="p-4 rounded-xl bg-white/5 border border-white/10" data-testid={`system-metric-${label.toLowerCase().replace(/\s+/g, '-')}`}>
     <div className="flex items-center gap-3">
       <div className={`p-2 rounded-lg bg-${color}-500/20`}>
         <Icon className={`w-5 h-5 text-${color}-400`} />
