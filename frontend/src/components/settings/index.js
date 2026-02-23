@@ -14,3 +14,4 @@ export { PluginsSettings } from './PluginsSettings';
 export { MaintenanceSettings } from './MaintenanceSettings';
 export { PlaybackSettings } from './PlaybackSettings';
 export { AboutSettings } from './AboutSettings';
+export { QualityProfilesSettings } from './QualityProfilesSettings';
