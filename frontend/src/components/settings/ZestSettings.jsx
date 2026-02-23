@@ -167,6 +167,7 @@ export const ZestSettings = () => {
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={autoRefresh ? 'border-green-500 text-green-400' : 'border-white/10'}
+            data-testid="auto-refresh-toggle"
           >
             <Activity className={`w-4 h-4 mr-1 ${autoRefresh ? 'animate-pulse' : ''}`} />
             {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh'}
