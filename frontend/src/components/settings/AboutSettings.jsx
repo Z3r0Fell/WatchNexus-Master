@@ -132,7 +132,7 @@ const RELEASES = [
 
 export const AboutSettings = () => {
   const [systemInfo, setSystemInfo] = useState(null);
-  const [expandedVersion, setExpandedVersion] = useState('2.0.1');
+  const [expandedVersion, setExpandedVersion] = useState('2.1.0');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
