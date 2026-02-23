@@ -182,6 +182,13 @@ class SQLiteDB:
     async def _create_tables(self):
         """Create all required tables if they don't exist."""
         await self._connection.executescript('''
+            -- Database metadata for version tracking
+            CREATE TABLE IF NOT EXISTS db_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT
+            );
+            
             -- Users table
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
