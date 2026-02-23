@@ -821,7 +821,7 @@ class JellyfinAdapter(PluginAdapter):
                             "dependencies": [],
                             "source_path": source_path,
                         }
-                except:
+                except Exception:
                     continue
         
         # Fallback to directory name
@@ -1233,7 +1233,7 @@ class PlexAdapter(PluginAdapter):
                         "type": "string",
                         "default": pref.get("default", "")
                     }
-        except:
+        except Exception:
             pass
         
         return schema

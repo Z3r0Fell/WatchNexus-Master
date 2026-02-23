@@ -208,7 +208,7 @@ def extract_info_hash(magnet: str) -> Optional[str]:
         try:
             decoded = base64.b32decode(match.group(1).upper())
             return decoded.hex()
-        except:
+        except Exception:
             pass
     return None
 
@@ -333,7 +333,7 @@ class TorrentWrapper:
         if self.client and hasattr(self.client, 'last_percentage_completed'):
             try:
                 self.progress = float(self.client.last_percentage_completed or 0)
-            except:
+            except Exception:
                 pass
         
         eta = -1

@@ -156,7 +156,7 @@ class SQLiteDB:
                     async with self._connection.execute(f"SELECT COUNT(*) FROM {table}") as cursor:
                         row = await cursor.fetchone()
                         stats[f"{table}_count"] = row[0] if row else 0
-                except:
+                except Exception:
                     stats[f"{table}_count"] = 0
                     
         return stats
@@ -174,7 +174,7 @@ class SQLiteDB:
             # Checkpoint WAL before closing for clean shutdown
             try:
                 await self._connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            except:
+            except Exception:
                 pass
             await self._connection.close()
             logger.info("Database connection closed")
@@ -671,7 +671,7 @@ class Collection:
             if field in result and result[field]:
                 try:
                     result[field] = json.loads(result[field])
-                except:
+                except Exception:
                     pass
                     
         # Convert integer booleans back to bool
