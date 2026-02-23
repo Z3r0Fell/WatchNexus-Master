@@ -3951,6 +3951,137 @@ async def import_plugin_from_url(
         logger.error(f"Plugin import from URL failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@api_router.post("/gadgets/import-kodi")
+async def import_kodi_addon(
+    url: str,
+    user: dict = Depends(require_auth)
+):
+    """
+    Import a Kodi addon and convert it to a WatchNexus plugin.
+    Supports Kodi video addons with addon.xml manifest.
+    """
+    import zipfile
+    import shutil
+    import tempfile
+    import xml.etree.ElementTree as ET
+    
+    manager = get_gadgets_manager()
+    
+    try:
+        # Download the addon
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(url, timeout=60)
+            response.raise_for_status()
+            content = response.content
+        
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        addon_id = None
+        addon_name = None
+        addon_version = "1.0.0"
+        addon_author = "Unknown"
+        addon_description = ""
+        
+        with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+            # Find addon.xml
+            addon_xml_path = None
+            addon_root = None
+            
+            for name in zip_ref.namelist():
+                if name.endswith('addon.xml'):
+                    addon_xml_path = name
+                    addon_root = os.path.dirname(name)
+                    break
+            
+            if not addon_xml_path:
+                raise HTTPException(status_code=400, detail="No addon.xml found - not a valid Kodi addon")
+            
+            # Parse addon.xml
+            addon_xml_content = zip_ref.read(addon_xml_path).decode('utf-8')
+            root = ET.fromstring(addon_xml_content)
+            
+            addon_id = root.attrib.get('id', 'unknown_addon')
+            addon_name = root.attrib.get('name', addon_id)
+            addon_version = root.attrib.get('version', '1.0.0')
+            addon_author = root.attrib.get('provider-name', 'Unknown')
+            
+            # Get description
+            for ext in root.findall('.//extension[@point="xbmc.addon.metadata"]'):
+                summary = ext.find('summary')
+                if summary is not None:
+                    addon_description = summary.text or ""
+                    break
+            
+            # Create plugin directory
+            plugin_id = f"kodi_{addon_id.replace('.', '_')}"
+            target_dir = manager.plugins_dir / plugin_id
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            target_dir.mkdir(parents=True)
+            
+            # Extract addon files
+            for member in zip_ref.namelist():
+                if addon_root and not member.startswith(addon_root):
+                    continue
+                    
+                rel_path = member[len(addon_root):].lstrip('/') if addon_root else member
+                if not rel_path:
+                    continue
+                    
+                target_path = target_dir / rel_path
+                if member.endswith('/'):
+                    target_path.mkdir(parents=True, exist_ok=True)
+                else:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(target_path, 'wb') as f:
+                        f.write(zip_ref.read(member))
+            
+            # Create WatchNexus manifest.json for the Kodi addon
+            manifest = {
+                "id": plugin_id,
+                "name": f"[Kodi] {addon_name}",
+                "description": addon_description or f"Kodi addon: {addon_name}",
+                "version": addon_version,
+                "author": addon_author,
+                "plugin_type": "indexer_provider",
+                "kodi_addon": True,
+                "kodi_addon_id": addon_id,
+                "entry_point": None,
+                "tags": ["kodi", "addon", "external"]
+            }
+            
+            with open(target_dir / "manifest.json", 'w') as f:
+                json.dump(manifest, f, indent=2)
+        
+        os.unlink(tmp_path)
+        await manager.discover_plugins()
+        
+        return {
+            "status": "imported",
+            "plugin_id": plugin_id,
+            "name": f"[Kodi] {addon_name}",
+            "version": addon_version,
+            "source_url": url,
+            "kodi_addon_id": addon_id
+        }
+        
+    except HTTPException:
+        raise
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download Kodi addon: {str(e)}")
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Invalid zip file")
+    except ET.ParseError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid addon.xml: {str(e)}")
+    except Exception as e:
+        logger.error(f"Kodi addon import failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.delete("/gadgets/plugins/{plugin_id}/uninstall")
 async def uninstall_plugin(plugin_id: str, user: dict = Depends(require_auth)):
     """Uninstall a plugin by removing its files."""
