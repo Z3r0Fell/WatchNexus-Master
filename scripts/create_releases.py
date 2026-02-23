@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from datetime import datetime
 
-VERSION = "2.1.0"  # About & Releases, Plugin fixes, Playback settings, Code audit
+VERSION = "2.2.0"  # Enhanced logging for library scanning, user deletion verified
 PROJECT_ROOT = Path("/app")
 RELEASES_DIR = PROJECT_ROOT / "releases"
 DIST_DIR = PROJECT_ROOT / "dist"
