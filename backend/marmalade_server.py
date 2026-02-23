@@ -424,18 +424,24 @@ class MarmaladeServer:
     
     async def _process_file(self, file_path: str, library: Library) -> Optional[MediaFile]:
         """Process a media file and add to database."""
+        filename = os.path.basename(file_path)
+        logger.debug(f"[PROCESS] Starting to process: {filename}")
+        
         try:
             stat = os.stat(file_path)
-            filename = os.path.basename(file_path)
+            logger.debug(f"[PROCESS] File size: {stat.st_size} bytes")
             
             # Generate ID
             media_id = self._generate_id(file_path)
+            logger.debug(f"[PROCESS] Generated ID: {media_id}")
             
             # Parse filename for metadata
             parsed = self._parse_filename(filename, library.media_type)
+            logger.debug(f"[PROCESS] Parsed filename: {parsed}")
             
             # Get media info using ffprobe
             media_info = await self._get_media_info(file_path)
+            logger.debug(f"[PROCESS] Media info from ffprobe: {media_info}")
             
             # Determine media type
             if library.media_type in ['tv', 'tv_shows', 'anime']:
@@ -447,15 +453,22 @@ class MarmaladeServer:
             else:
                 media_type = MediaType.UNKNOWN
             
+            logger.debug(f"[PROCESS] Determined media type: {media_type.value}")
+            
             # Fetch TMDB metadata for movies and TV shows
             tmdb_metadata = {}
             if media_type in [MediaType.MOVIE, MediaType.EPISODE]:
                 search_title = parsed.get('series_name') or parsed.get('title', filename)
+                logger.info(f"[PROCESS] Fetching TMDB metadata for: '{search_title}' (year={parsed.get('year')})")
                 tmdb_metadata = await self._fetch_tmdb_metadata(
                     search_title, 
                     parsed.get('year'), 
                     library.media_type
                 )
+                if tmdb_metadata:
+                    logger.info(f"[PROCESS] TMDB metadata found: id={tmdb_metadata.get('tmdb_id')}, poster={bool(tmdb_metadata.get('poster_url'))}")
+                else:
+                    logger.warning(f"[PROCESS] No TMDB metadata found for: '{search_title}'")
             
             media_file = MediaFile(
                 id=media_id,
@@ -486,10 +499,19 @@ class MarmaladeServer:
             )
             
             self.media_files[media_id] = media_file
+            logger.info(f"[PROCESS] Successfully processed: {filename} -> title='{media_file.title}'")
             return media_file
             
+        except FileNotFoundError as e:
+            logger.error(f"[PROCESS] File not found: {file_path}")
+            return None
+        except PermissionError as e:
+            logger.error(f"[PROCESS] Permission denied: {file_path}")
+            return None
         except Exception as e:
-            logger.error(f"Error processing file {file_path}: {e}")
+            logger.error(f"[PROCESS] Error processing file {file_path}: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(f"[PROCESS] Traceback: {traceback.format_exc()}")
             return None
     
     def _parse_filename(self, filename: str, media_type: str) -> Dict[str, Any]:
