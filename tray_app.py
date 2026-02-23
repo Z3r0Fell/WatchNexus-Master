@@ -677,11 +677,13 @@ class WatchNexusTray:
         print(f"╔══════════════════════════════════════════╗")
         print(f"║   WatchNexus Beacon - System Tray App    ║")
         print(f"║   Version: {TRAY_VERSION}                          ║")
+        print(f"║   + Tiramisu Auto-Updater                ║")
         print(f"╚══════════════════════════════════════════╝")
         print(f"")
         print(f"Server Port: {self.port}")
         print(f"Backend Dir: {BACKEND_DIR}")
         print(f"Auto-start:  {auto_start}")
+        print(f"Updates:     {'Enabled' if self.check_updates else 'Disabled'}")
         print(f"")
         print("Right-click the tray icon for options.")
         print("Press Ctrl+C to quit.")
@@ -698,6 +700,10 @@ class WatchNexusTray:
         # Auto-start server if enabled
         if auto_start:
             threading.Thread(target=self._delayed_start, daemon=True).start()
+        
+        # Start update checker if enabled
+        if self.check_updates:
+            self._start_update_checker()
         
         # Run (blocks until quit)
         try:
