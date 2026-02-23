@@ -10,6 +10,7 @@ import {
   GelatinSettings, ThemeForgeSettings, PluginsSettings,
   MaintenanceSettings, PlaybackSettings, AboutSettings
 } from '../components/settings';
+import { ZestSettings } from '../components/settings/ZestSettings';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { toast } from 'sonner';
