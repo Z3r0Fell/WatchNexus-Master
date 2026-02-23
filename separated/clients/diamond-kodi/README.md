@@ -1,55 +1,64 @@
 # WatchNexus Diamond - Kodi Addon 💎
 
-The official WatchNexus addon for Kodi media center.
-
 **Codename:** Diamond  
 **Version:** 1.0.0  
 **Platform:** Kodi 19+ (Matrix/Nexus)
 
+## About
+
+Diamond is the official WatchNexus addon for Kodi media center. It integrates your WatchNexus library directly into Kodi.
+
 ## Features
 
-- Native Kodi integration
-- Full library sync with Kodi database
+- Full library browsing
 - Watch state sync
 - Artwork integration
 - Skip intro/credits
 - Direct play and transcoding
 - Multiple user support
 - Music and audiobook support
+- Native or Addon mode
 
 ## Installation
 
 ### From ZIP
 
-1. Download `plugin.video.watchnexus-1.0.0.zip`
+1. Download `watchnexus-diamond-1.0.0.zip`
 2. In Kodi: Settings → Add-ons → Install from zip file
 3. Select the downloaded file
+4. Wait for "Add-on installed" notification
 
-### From Repository (Recommended)
+### From Repository (Coming Soon)
 
-1. Add WatchNexus repository:
-   - Settings → File Manager → Add Source
-   - Enter: `https://repo.watchnexus.local/kodi`
-2. Install from repository:
-   - Add-ons → Install from repository → WatchNexus → Video add-ons
+Add WatchNexus repository for automatic updates.
 
 ## Configuration
 
-1. Go to Add-ons → WatchNexus
+1. Go to Add-ons → WatchNexus Diamond
 2. Open Settings (context menu)
 3. Enter server URL: `http://your-server:8001`
 4. Enter username and password
+5. Select sync mode
 
 ## Sync Modes
 
-- **Addon Mode**: Browse WatchNexus library within addon
-- **Native Mode**: Sync to Kodi library for native browsing
+### Addon Mode (Default)
+Browse WatchNexus library within the addon.
 
-## Requirements
+### Native Mode
+Sync to Kodi library for native browsing.
 
-- Kodi 19 (Matrix) or Kodi 20 (Nexus)
+## Building from Source
+
+```bash
+cd watchnexus-diamond
+pip install pyyaml
+python build.py --target ./dist/
+```
+
+## Server Requirements
+
 - WatchNexus Server 2.4.0+
-- Python 3.8+
 
 ## License
 

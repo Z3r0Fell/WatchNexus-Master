@@ -1,10 +1,12 @@
 # WatchNexus Sapphire - Android Mobile Client 💎
 
-The official WatchNexus client for Android phones and tablets.
-
 **Codename:** Sapphire  
 **Version:** 1.0.0  
-**Platform:** Android (API 21+)
+**Platform:** Android 5.0+ (Lollipop)
+
+## About
+
+Sapphire is the official WatchNexus client for Android phones and tablets. It features a modern Material Design 3 interface optimized for touch.
 
 ## Features
 
@@ -15,48 +17,47 @@ The official WatchNexus client for Android phones and tablets.
 - Chromecast support
 - Skip intro/credits
 - Multiple audio/subtitle tracks
-- Music playback with lyrics
-- Quick connect via QR code
-
-## Installation
-
-### APK Download
-
-Download `watchnexus-sapphire-1.0.0.apk` and install.
-
-### Google Play (Coming Soon)
-
-Search for "WatchNexus Sapphire" on Google Play.
-
-### F-Droid (Coming Soon)
-
-Available in the WatchNexus F-Droid repository.
+- Swipe gestures
 
 ## Building
 
+### Requirements
+
+- Android Studio (Electric Eel+)
+- JDK 21
+- Android SDK 34+
+
+### Build Steps
+
 ```bash
-cd WatchNexus-Android
+# Clone repository
+git clone https://github.com/watchnexus/watchnexus-sapphire.git
+cd watchnexus-sapphire
+
+# Build release APK
 ./gradlew assembleRelease
+
+# APK location
+ls app/build/outputs/apk/release/
 ```
 
-APK will be in `app/build/outputs/apk/release/`
+## Installation
+
+### Google Play (Coming Soon)
+Search for "WatchNexus Sapphire" on Google Play.
+
+### Direct Download
+Download APK and enable "Unknown Sources" to install.
 
 ## Configuration
 
-1. Launch the app
+1. Launch WatchNexus Sapphire
 2. Tap "Add Server"
 3. Enter: `http://your-server:8001`
-4. Login with your credentials
+4. Login with credentials
 
-## Permissions
+## Server Requirements
 
-- Storage (for downloads)
-- Network (for streaming)
-- Notifications (for background playback)
-
-## Requirements
-
-- Android 5.0+ (Lollipop)
 - WatchNexus Server 2.4.0+
 
 ## License

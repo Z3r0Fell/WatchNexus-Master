@@ -1,54 +1,71 @@
 # WatchNexus Tanzanite - Roku Client 💜
 
-The official WatchNexus Roku client.
-
 **Codename:** Tanzanite  
 **Version:** 1.0.0  
-**Platform:** Roku OS
+**Platform:** Roku OS 9.0+
+
+## About
+
+Tanzanite is the official WatchNexus channel for Roku devices. Built with BrighterScript for optimal performance.
 
 ## Features
 
-- Stream movies, TV shows, anime from your WatchNexus server
 - Full library browsing with artwork
+- Continue watching
+- Search functionality
 - Skip intro/credits support
 - Subtitle selection
 - Quality selection
-- Continue watching
-- Search functionality
+- Multiple user profiles
 
 ## Installation
 
-### Sideloading (Development)
+### Sideloading (Development Mode)
 
-1. Enable Developer Mode on your Roku:
+1. Enable Developer Mode on Roku:
    - Go to Settings → System → About
-   - Press Home 3x, Up 2x, Right, Left, Right, Left, Right
-   - Enable Developer Mode and note your IP
+   - Press: Home 3x, Up 2x, Right, Left, Right, Left, Right
+   - Note your Roku's IP
 
-2. Package the app:
-   ```bash
-   cd WatchNexus-Roku
-   npm install
-   npm run build
-   npm run package
-   ```
+2. Upload the Package:
+   - Open browser: `http://<roku-ip>`
+   - Login with developer credentials
+   - Upload `watchnexus-tanzanite-1.0.0.zip`
+   - Click "Install"
 
-3. Upload the .zip to your Roku via the Developer Application Installer
-
-### Channel Store (Coming Soon)
+### Roku Channel Store (Coming Soon)
 
 Search for "WatchNexus" in the Roku Channel Store.
 
+## Building from Source
+
+```bash
+cd watchnexus-tanzanite
+npm install
+npm run build
+
+# Package at: out/WatchNexus-Roku.zip
+```
+
 ## Configuration
 
-On first launch, enter your WatchNexus server URL:
-- Example: `http://192.168.1.100:8001`
-- Use the `/api/emby` endpoint for Jellyfin compatibility
+1. Launch WatchNexus Tanzanite
+2. Enter server URL: `http://your-server:8001`
+3. Login with credentials
 
-## Requirements
+## Remote Controls
 
-- Roku OS 9.0 or higher
-- WatchNexus Server 2.4.0 or higher
+| Button | Action |
+|--------|--------|
+| OK | Select / Play/Pause |
+| Back | Go back / Exit |
+| * | Options menu |
+| Play/Pause | Toggle playback |
+| Rewind/FF | Seek 10s |
+
+## Server Requirements
+
+- WatchNexus Server 2.4.0+
 
 ## License
 

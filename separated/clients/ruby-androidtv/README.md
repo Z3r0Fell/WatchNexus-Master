@@ -1,53 +1,64 @@
 # WatchNexus Ruby - Android TV Client 💎
 
-The official WatchNexus Android TV client.
-
 **Codename:** Ruby  
 **Version:** 1.0.0  
 **Platform:** Android TV (API 21+)
 
+## About
+
+Ruby is the official WatchNexus client for Android TV and Google TV devices. It provides a native Leanback interface optimized for TV screens and remote controls.
+
 ## Features
 
-- Native Android TV interface with Leanback
+- Native Android TV Leanback UI
 - Voice search support
 - Gamepad/remote navigation
-- Picture-in-Picture mode
 - Skip intro/credits
 - Multiple audio/subtitle tracks
 - Live TV support
 - Continue watching row
-- Recommendations integration
-
-## Installation
-
-### APK Sideloading
-
-1. Download `watchnexus-ruby-1.0.0.apk`
-2. Enable "Unknown Sources" on your Android TV
-3. Install via USB, ADB, or file manager
-
-### Google Play (Coming Soon)
-
-Search for "WatchNexus Ruby" on Google Play for Android TV.
+- User profiles
 
 ## Building
 
+### Requirements
+
+- Android Studio (Electric Eel+)
+- JDK 21
+- Android SDK 34+
+
+### Build Steps
+
 ```bash
-cd WatchNexus-AndroidTV
+# Clone repository
+git clone https://github.com/watchnexus/watchnexus-ruby.git
+cd watchnexus-ruby
+
+# Build release APK
 ./gradlew assembleRelease
+
+# APK location
+ls app/build/outputs/apk/release/
 ```
 
-APK will be in `app/build/outputs/apk/release/`
+## Installation
+
+### Google Play (Coming Soon)
+Search for "WatchNexus Ruby" on Google Play for Android TV.
+
+### Sideload
+```bash
+adb install watchnexus-ruby-1.0.0.apk
+```
 
 ## Configuration
 
-1. Launch the app
-2. Enter your server URL: `http://your-server:8001`
-3. Login with your WatchNexus credentials
+1. Launch WatchNexus Ruby
+2. Enter server URL: `http://your-server:8001`
+3. Login or select profile
 
-## Requirements
+## Server Requirements
 
-- Android TV with API 21+ (Lollipop)
 - WatchNexus Server 2.4.0+
 
 ## License
