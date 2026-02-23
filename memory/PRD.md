@@ -281,9 +281,20 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ## Release Packages
 
-Available at `/app/releases/zips/`:
-- `watchnexus-v2.3.0-linux.zip` (90.2 MB)
-- `watchnexus-v2.3.0-windows.zip` (90.2 MB)
+### Server Releases
+Available at `/app/releases/`:
+- `watchnexus-v2.3.0-linux/` (Latest stable)
+- `watchnexus-v2.3.0-windows/`
+- `watchnexus-v2.4.0-linux/`
+- `watchnexus-v2.4.0-windows/`
+
+### Client Releases
+Available at `/app/releases/`:
+- `kodi/v1.0.0/watchnexus-diamond-1.0.0.zip` - **Ready to install**
+- `roku/v1.0.0/watchnexus-tanzanite-1.0.0.zip` - **Ready to sideload**
+- `androidtv/v1.0.0/watchnexus-ruby-1.0.0-source.zip` - Source
+- `android/v1.0.0/watchnexus-sapphire-1.0.0-source.zip` - Source
+- `firestick/v1.0.0/watchnexus-ember-1.0.0-source.zip` - Source
 
 ---
 
