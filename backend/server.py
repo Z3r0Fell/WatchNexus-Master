@@ -951,6 +951,126 @@ async def get_user_profiles(request: Request):
     
     return users
 
+def is_local_network_request(request: Request) -> bool:
+    """Check if request comes from local/private network."""
+    client_ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    ip = forwarded if forwarded else client_ip
+    
+    # Check for local/private IP ranges
+    return (
+        ip.startswith("10.") or
+        ip.startswith("192.168.") or
+        ip.startswith("172.16.") or ip.startswith("172.17.") or ip.startswith("172.18.") or
+        ip.startswith("172.19.") or ip.startswith("172.20.") or ip.startswith("172.21.") or
+        ip.startswith("172.22.") or ip.startswith("172.23.") or ip.startswith("172.24.") or
+        ip.startswith("172.25.") or ip.startswith("172.26.") or ip.startswith("172.27.") or
+        ip.startswith("172.28.") or ip.startswith("172.29.") or ip.startswith("172.30.") or
+        ip.startswith("172.31.") or
+        ip == "127.0.0.1" or
+        ip == "localhost" or
+        ip == "::1" or
+        ip == "unknown"  # Allow in containerized environments
+    )
+
+class QuickLoginRequest(BaseModel):
+    user_id: str
+    pin: Optional[str] = None  # Optional PIN for extra security
+
+@api_router.post("/users/quick-login")
+async def quick_login(request: Request, login_data: QuickLoginRequest):
+    """
+    Quick login for home network users - no password required.
+    Similar to Netflix's 'Who's Watching?' feature.
+    Only works from local/private network IPs.
+    """
+    # Verify request is from local network
+    if not is_local_network_request(request):
+        raise HTTPException(
+            status_code=403, 
+            detail="Quick login only available on home network"
+        )
+    
+    # Find user
+    user = await db.users.find_one({"id": login_data.user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check PIN if user has one set
+    user_pin = user.get("quick_login_pin")
+    if user_pin:
+        if not login_data.pin:
+            raise HTTPException(status_code=401, detail="PIN required")
+        if login_data.pin != user_pin:
+            raise HTTPException(status_code=401, detail="Invalid PIN")
+    
+    # Generate JWT token
+    token_data = {
+        "sub": user["id"],
+        "email": user["email"],
+        "exp": datetime.now(timezone.utc) + timedelta(days=30),
+        "iat": datetime.now(timezone.utc),
+        "type": "quick_login"
+    }
+    token = jwt.encode(token_data, JWT_SECRET, algorithm="HS256")
+    
+    # Update last login
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Return user data without sensitive info
+    user_response = {
+        "id": user["id"],
+        "email": user["email"],
+        "username": user.get("username", ""),
+        "role": user.get("role", "user"),
+        "permissions": user.get("permissions", UserPermissions().model_dump()),
+        "avatar": user.get("avatar"),
+        "avatar_color": user.get("avatar_color")
+    }
+    
+    return {
+        "token": token,
+        "user": user_response
+    }
+
+@api_router.post("/users/{user_id}/set-pin")
+async def set_quick_login_pin(user_id: str, pin_data: dict, current_user: dict = Depends(require_auth)):
+    """Set or remove quick login PIN for a user."""
+    # User can only set their own PIN (or admin can set any)
+    if current_user["id"] != user_id:
+        user_doc = await db.users.find_one({"id": current_user["id"]})
+        if not user_doc or user_doc.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Can only modify your own PIN")
+    
+    pin = pin_data.get("pin")
+    
+    if pin:
+        # Validate PIN (4-6 digits)
+        if not pin.isdigit() or len(pin) < 4 or len(pin) > 6:
+            raise HTTPException(status_code=400, detail="PIN must be 4-6 digits")
+        await db.users.update_one({"id": user_id}, {"$set": {"quick_login_pin": pin}})
+    else:
+        # Remove PIN
+        await db.users.update_one({"id": user_id}, {"$unset": {"quick_login_pin": ""}})
+    
+    return {"message": "PIN updated successfully"}
+
+@api_router.get("/users/{user_id}/has-pin")
+async def check_user_has_pin(user_id: str, request: Request):
+    """Check if a user has a quick login PIN set (for UI to show PIN input)."""
+    # Only allow from local network
+    if not is_local_network_request(request):
+        raise HTTPException(status_code=403, detail="Only available on home network")
+    
+    user = await db.users.find_one({"id": user_id}, {"quick_login_pin": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"has_pin": bool(user.get("quick_login_pin"))}
+
 @api_router.get("/users")
 async def get_all_users(user: dict = Depends(require_auth)):
     """Get all users (admin only)"""
