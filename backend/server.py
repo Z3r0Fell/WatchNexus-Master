@@ -4361,7 +4361,7 @@ async def drizzle_update_playlist(
     
     try:
         body = await request.json()
-    except:
+    except Exception:
         body = {}
     
     # Update fields
@@ -4406,7 +4406,7 @@ async def drizzle_add_item(
     
     try:
         item_data = await request.json()
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid item data")
     
     item = await drizzle.add_to_playlist(playlist_id, user["id"], item_data, position)
@@ -5251,7 +5251,7 @@ async def shutdown_db_client():
     # Shutdown torrent engine gracefully
     try:
         shutdown_fondue_engine()
-    except:
+    except Exception:
         pass
     # Close SQLite connection
     if db:
