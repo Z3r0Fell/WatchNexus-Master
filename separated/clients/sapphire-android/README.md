@@ -4,6 +4,10 @@
 **Version:** 1.0.0  
 **Platform:** Android 5.0+ (Lollipop)
 
+## Screenshots
+
+![Home Screen](screenshots/home-screen.png)
+
 ## About
 
 Sapphire is the official WatchNexus client for Android phones and tablets. It features a modern Material Design 3 interface optimized for touch.
@@ -18,6 +22,7 @@ Sapphire is the official WatchNexus client for Android phones and tablets. It fe
 - Skip intro/credits
 - Multiple audio/subtitle tracks
 - Swipe gestures
+- Quick login on home network
 
 ## Building
 
@@ -54,7 +59,7 @@ Download APK and enable "Unknown Sources" to install.
 1. Launch WatchNexus Sapphire
 2. Tap "Add Server"
 3. Enter: `http://your-server:8001`
-4. Login with credentials
+4. Select profile or login
 
 ## Server Requirements
 

@@ -4,6 +4,10 @@
 **Version:** 1.0.0  
 **Platform:** Roku OS 9.0+
 
+## Screenshots
+
+![Home Screen](screenshots/home-screen.png)
+
 ## About
 
 Tanzanite is the official WatchNexus channel for Roku devices. Built with BrighterScript for optimal performance.
@@ -17,6 +21,7 @@ Tanzanite is the official WatchNexus channel for Roku devices. Built with Bright
 - Subtitle selection
 - Quality selection
 - Multiple user profiles
+- Quick login on home network
 
 ## Installation
 
@@ -30,12 +35,19 @@ Tanzanite is the official WatchNexus channel for Roku devices. Built with Bright
 2. Upload the Package:
    - Open browser: `http://<roku-ip>`
    - Login with developer credentials
-   - Upload `watchnexus-tanzanite-1.0.0.zip`
+   - Upload `tanzanite-roku.zip`
    - Click "Install"
 
 ### Roku Channel Store (Coming Soon)
 
 Search for "WatchNexus" in the Roku Channel Store.
+
+## Pre-built Package
+
+The channel is pre-built and ready to sideload:
+```
+out/tanzanite-roku.zip
+```
 
 ## Building from Source
 
@@ -43,15 +55,14 @@ Search for "WatchNexus" in the Roku Channel Store.
 cd watchnexus-tanzanite
 npm install
 npm run build
-
-# Package at: out/WatchNexus-Roku.zip
+# Output: out/tanzanite-roku.zip
 ```
 
 ## Configuration
 
 1. Launch WatchNexus Tanzanite
 2. Enter server URL: `http://your-server:8001`
-3. Login with credentials
+3. Select profile or login
 
 ## Remote Controls
 

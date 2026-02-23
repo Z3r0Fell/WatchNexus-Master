@@ -4,6 +4,10 @@
 **Version:** 1.0.0  
 **Platform:** Kodi 19+ (Matrix/Nexus)
 
+## Screenshots
+
+![Library View](screenshots/library-view.png)
+
 ## About
 
 Diamond is the official WatchNexus addon for Kodi media center. It integrates your WatchNexus library directly into Kodi.
@@ -21,9 +25,9 @@ Diamond is the official WatchNexus addon for Kodi media center. It integrates yo
 
 ## Installation
 
-### From ZIP
+### From ZIP (Recommended)
 
-1. Download `watchnexus-diamond-1.0.0.zip`
+1. Download `plugin.video.watchnexus+py3.zip`
 2. In Kodi: Settings → Add-ons → Install from zip file
 3. Select the downloaded file
 4. Wait for "Add-on installed" notification
@@ -31,6 +35,13 @@ Diamond is the official WatchNexus addon for Kodi media center. It integrates yo
 ### From Repository (Coming Soon)
 
 Add WatchNexus repository for automatic updates.
+
+## Pre-built Package
+
+The addon is pre-built and ready to install:
+```
+plugin.video.watchnexus+py3.zip
+```
 
 ## Configuration
 
@@ -53,7 +64,8 @@ Sync to Kodi library for native browsing.
 ```bash
 cd watchnexus-diamond
 pip install pyyaml
-python build.py --target ./dist/
+python build.py
+# Output: plugin.video.watchnexus+py3.zip
 ```
 
 ## Server Requirements
