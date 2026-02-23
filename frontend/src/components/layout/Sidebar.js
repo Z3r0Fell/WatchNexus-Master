@@ -59,8 +59,36 @@ const getVisibleTabs = () => {
 
 export const Sidebar = () => {
   const [expanded, setExpanded] = useState(true);
+  const [visibleTabs, setVisibleTabs] = useState(getVisibleTabs);
   const location = useLocation();
   const { logout, user } = useAuth();
+
+  // Listen for changes from settings page
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'watchnexus_visible_tabs') {
+        setVisibleTabs(getVisibleTabs());
+      }
+    };
+    
+    // Also listen for custom event from settings
+    const handleTabsUpdate = () => {
+      setVisibleTabs(getVisibleTabs());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('watchnexus_tabs_updated', handleTabsUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('watchnexus_tabs_updated', handleTabsUpdate);
+    };
+  }, []);
+
+  // Filter nav items based on visibility settings
+  const navItems = allNavItems.filter(item => 
+    item.alwaysVisible || visibleTabs.includes(item.label)
+  );
 
   return (
     <motion.aside
