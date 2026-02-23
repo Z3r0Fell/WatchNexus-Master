@@ -37,6 +37,34 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
+### Recent Changes (v2.5.2 - Feb 23, 2026)
+
+#### "Who's Watching?" Quick Login Feature:
+
+- **🏠 Home Network Detection**
+  - Automatic detection of local/private network access
+  - Shows "Home Network" badge when on LAN (10.x, 192.168.x, 172.16-31.x)
+  - Shows "Remote Access" badge when accessing from internet
+
+- **👥 Quick Profile Selection**
+  - Netflix-style "Who's Watching?" screen for home network users
+  - Click profile to login instantly (no password required)
+  - Optional 4-6 digit PIN for extra security
+
+- **🔐 New Backend Endpoints**
+  - `POST /api/users/quick-login` - Password-free login for local network
+  - `GET /api/users/{id}/has-pin` - Check if user has PIN set
+  - `POST /api/users/{id}/set-pin` - Set/remove quick login PIN
+  - `GET /api/users/profiles` - Get profiles for "Who's Watching" screen (safe data only)
+
+- **🛡️ Security**
+  - Quick login only works from local/private IPs
+  - Remote access always requires full password
+  - Optional PIN adds extra security layer
+  - Profiles endpoint returns only safe fields (no password hashes)
+
+---
+
 ### Recent Changes (v2.5.1 - Feb 23, 2026)
 
 #### Code Audit & Quality Improvements:
