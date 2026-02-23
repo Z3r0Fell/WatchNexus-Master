@@ -146,8 +146,9 @@ const LibrariesTab = ({
                     />
                     <Button
                       type="button"
-                      onClick={() => onOpenFileBrowser(newLibrary.path || '/')}
+                      onClick={() => onOpenFileBrowser(null, newLibrary.path || '/')}
                       className="bg-violet-600 hover:bg-violet-700 px-3"
+                      data-testid="browse-folder-btn"
                     >
                       <FolderSearch className="w-4 h-4" />
                     </Button>
