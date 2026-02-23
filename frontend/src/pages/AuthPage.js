@@ -155,12 +155,82 @@ export const AuthPage = () => {
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
+  // PIN Entry Component
+  const PinEntry = ({ onSubmit, onCancel, username }) => {
+    const [pin, setPin] = useState(['', '', '', '']);
+    const inputRefs = [null, null, null, null];
+    
+    const handlePinChange = (index, value) => {
+      if (!/^\d*$/.test(value)) return; // Only digits
+      
+      const newPin = [...pin];
+      newPin[index] = value.slice(-1); // Only last character
+      setPin(newPin);
+      
+      // Auto-focus next input
+      if (value && index < 3) {
+        inputRefs[index + 1]?.focus();
+      }
+      
+      // Auto-submit when complete
+      if (index === 3 && value) {
+        const fullPin = newPin.join('');
+        if (fullPin.length === 4) {
+          onSubmit(fullPin);
+        }
+      }
+    };
+    
+    const handleKeyDown = (index, e) => {
+      if (e.key === 'Backspace' && !pin[index] && index > 0) {
+        inputRefs[index - 1]?.focus();
+      }
+    };
+    
+    return (
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-500/30 flex items-center justify-center text-2xl">
+          {username?.charAt(0).toUpperCase() || '👤'}
+        </div>
+        <h2 className="text-xl font-bold mb-2">Enter PIN</h2>
+        <p className="text-gray-400 text-sm mb-6">Enter your 4-digit PIN to continue</p>
+        
+        <div className="flex justify-center gap-3 mb-6">
+          {pin.map((digit, index) => (
+            <input
+              key={index}
+              ref={el => inputRefs[index] = el}
+              type="password"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handlePinChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              className="w-12 h-14 text-center text-2xl font-bold rounded-xl bg-white/10 border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
+              autoFocus={index === 0}
+              data-testid={`pin-input-${index}`}
+            />
+          ))}
+        </div>
+        
+        <button
+          onClick={onCancel}
+          className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          data-testid="pin-cancel-btn"
+        >
+          Use password instead
+        </button>
+      </div>
+    );
+  };
+
   // User Profile Card Component
   const UserProfileCard = ({ user, onClick }) => (
     <motion.button
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onClick(user)}
+      data-testid={`user-profile-${user.id}`}
       className="w-full p-4 rounded-xl bg-white/5 border border-white/10 hover:border-violet-500/50 transition-all flex items-center gap-4 text-left"
     >
       <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${
