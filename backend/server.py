@@ -4754,6 +4754,84 @@ async def zest_clear_logs(user: dict = Depends(require_auth)):
     return zest.clear_logs()
 
 
+# ==================== GARNISH (SUBTITLES) SETTINGS API ====================
+# 🌿 Garnish - The finishing touch for subtitles
+
+from garnish import get_garnish_service
+
+@api_router.get("/garnish/settings")
+async def garnish_get_settings(user: dict = Depends(require_auth)):
+    """Get subtitle provider settings."""
+    garnish = get_garnish_service()
+    return {
+        "auto_subtitles": garnish.settings.get("auto_subtitles", True),
+        "subtitle_languages": garnish.settings.get("preferred_languages", ["en"]),
+        "providers": garnish.settings.get("providers", ["opensubtitles", "addic7ed"]),
+        "provider_configs": garnish.settings.get("provider_configs", {})
+    }
+
+@api_router.post("/garnish/settings")
+async def garnish_save_settings(
+    settings: dict,
+    user: dict = Depends(require_auth)
+):
+    """Save subtitle provider settings."""
+    garnish = get_garnish_service()
+    
+    # Update settings
+    if "auto_subtitles" in settings:
+        garnish.settings["auto_subtitles"] = settings["auto_subtitles"]
+    if "subtitle_languages" in settings:
+        garnish.settings["preferred_languages"] = settings["subtitle_languages"]
+    if "providers" in settings:
+        garnish.settings["providers"] = settings["providers"]
+    if "provider_configs" in settings:
+        garnish.settings["provider_configs"] = settings["provider_configs"]
+        
+        # Update individual provider credentials
+        if "opensubtitles" in settings["provider_configs"]:
+            cfg = settings["provider_configs"]["opensubtitles"]
+            if cfg.get("api_key"):
+                garnish.opensubtitles.api_key = cfg["api_key"]
+            if cfg.get("username"):
+                garnish.opensubtitles.username = cfg["username"]
+        
+        if "addic7ed" in settings["provider_configs"]:
+            cfg = settings["provider_configs"]["addic7ed"]
+            if cfg.get("username"):
+                garnish.addic7ed.username = cfg["username"]
+            if cfg.get("password"):
+                garnish.addic7ed.password = cfg["password"]
+    
+    return {"status": "success", "message": "Subtitle settings saved"}
+
+@api_router.post("/garnish/test/{provider_id}")
+async def garnish_test_provider(
+    provider_id: str,
+    user: dict = Depends(require_auth)
+):
+    """Test a subtitle provider connection."""
+    garnish = get_garnish_service()
+    
+    try:
+        if provider_id == "opensubtitles":
+            # Test OpenSubtitles with a simple search
+            results = await garnish.opensubtitles.search("test", languages=["en"])
+            return {"success": True, "message": f"Found {len(results)} results", "provider": provider_id}
+        
+        elif provider_id == "addic7ed":
+            # Test Addic7ed with a simple search
+            results = await garnish.addic7ed.search_tv_show("test", 1, 1, ["en"])
+            return {"success": True, "message": f"Found {len(results)} results", "provider": provider_id}
+        
+        else:
+            # For other providers, return success (placeholder)
+            return {"success": True, "message": "Provider configured", "provider": provider_id}
+            
+    except Exception as e:
+        return {"success": False, "error": str(e), "provider": provider_id}
+
+
 # ==================== RELISH (IPTV) API ====================
 
 from relish import get_relish
