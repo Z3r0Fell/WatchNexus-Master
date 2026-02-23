@@ -123,8 +123,8 @@ export const AuthPage = () => {
         pin: pin
       });
       
-      // Store token and login
-      localStorage.setItem('watchnexus_token', res.data.token);
+      // Store token and login - use 'token' key for consistency
+      localStorage.setItem('token', res.data.token);
       login(res.data.user, res.data.token);
       toast.success(`Welcome back, ${res.data.user.username || 'User'}!`);
       navigate('/');
