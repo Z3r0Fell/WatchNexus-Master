@@ -262,6 +262,7 @@ export const SettingsPage = () => {
         );
       case 'media-health': return <MediaHealthSettings />;
       case 'playback': return <PlaybackSettings />;
+      case 'quality-profiles': return <QualityProfilesSettings />;
       case 'indexers': return <IndexerSettings />;
       case 'download': return <DownloadSettings />;
       case 'iptv': return <IPTVSettings />;
