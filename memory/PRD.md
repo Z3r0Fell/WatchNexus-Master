@@ -189,19 +189,44 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 ## Remaining Tasks
 
 ### High Priority (P0-P1)
-- [ ] Project reorganization to Jellyfin-style structure
+- [x] Client application builds (Ruby, Sapphire, Ember, Diamond, Tanzanite)
 - [ ] User verification of library scanning on local machine
 - [ ] Real-world indexer/downloader testing
 
 ### Medium Priority (P2)
 - [ ] Advanced playback controls (skip intro/credits)
-- [ ] Quality Profiles implementation
+- [x] Quality Profiles implementation
 - [ ] Automatic intro detection using Chromaprint
 
 ### Low Priority (P3)
 - [ ] visual-edits babel plugin fix
 - [ ] Additional Kodi addon compatibility
 - [ ] Enhanced streaming service integrations
+
+---
+
+## Client Applications (v2.5.0 - Feb 23, 2026)
+
+### Released Clients
+
+| Client | Codename | Platform | Status |
+|--------|----------|----------|--------|
+| Android TV | **Ruby** 💎 | Android TV, Google TV | Source Package |
+| Android Mobile | **Sapphire** 💎 | Android phones/tablets | Source Package |
+| Fire TV | **Ember** 🔥 | Fire TV Stick, Fire TV | Source Package |
+| Kodi | **Diamond** 💎 | Kodi 19+/20+ | **BUILT** |
+| Roku | **Tanzanite** 💜 | Roku OS 9+ | **BUILT** |
+
+### Client Downloads
+
+**Ready-to-Install:**
+- `/app/releases/kodi/v1.0.0/watchnexus-diamond-1.0.0.zip`
+- `/app/releases/roku/v1.0.0/watchnexus-tanzanite-1.0.0.zip`
+
+**Build from Source (requires Android Studio + JDK 21):**
+- `/app/releases/androidtv/v1.0.0/watchnexus-ruby-1.0.0-source.zip`
+- `/app/releases/android/v1.0.0/watchnexus-sapphire-1.0.0-source.zip`
+- `/app/releases/firestick/v1.0.0/watchnexus-ember-1.0.0-source.zip`
 
 ---
 
