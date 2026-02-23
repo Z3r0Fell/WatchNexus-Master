@@ -33,6 +33,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 | 💎 **Diamond** | Kodi Addon | Native Kodi integration with library sync |
 | 💜 **Tanzanite** | Roku Client | BrighterScript Roku channel |
 | 🔦 **Beacon** | System Tray | Desktop tray app for server control |
+| 🍰 **Tiramisu** | Auto-Updater | Check, download, and install updates |
 
 ---
 
