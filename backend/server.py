@@ -4701,6 +4701,59 @@ async def clear_old_logs(user: dict = Depends(require_auth)):
     return {"status": "success", "cleared_files": cleared}
 
 
+# ==================== ZEST (LOG VIEWER) API ====================
+# 🍋 Zest - Adds flavor to debugging
+
+from zest import get_zest_viewer
+
+@api_router.get("/zest/logs")
+async def zest_get_logs(
+    lines: int = 100,
+    level: str = None,
+    search: str = None,
+    offset: int = 0,
+    user: dict = Depends(require_auth)
+):
+    """
+    Get parsed log entries with filtering.
+    
+    Query params:
+    - lines: Max number of entries (default 100)
+    - level: Filter by level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    - search: Search text in messages
+    - offset: Skip entries for pagination
+    """
+    zest = get_zest_viewer()
+    return zest.get_logs(lines=lines, level=level, search=search, offset=offset)
+
+@api_router.get("/zest/logs/raw")
+async def zest_get_raw_logs(
+    tail_lines: int = 500,
+    user: dict = Depends(require_auth)
+):
+    """Get raw log file content (last N lines)."""
+    zest = get_zest_viewer()
+    return PlainTextResponse(zest.get_log_file_raw(tail_lines=tail_lines))
+
+@api_router.get("/zest/stats")
+async def zest_get_log_stats(user: dict = Depends(require_auth)):
+    """Get log file statistics and level counts."""
+    zest = get_zest_viewer()
+    return zest.get_log_stats()
+
+@api_router.get("/zest/health")
+async def zest_get_system_health(user: dict = Depends(require_auth)):
+    """Get system health metrics (CPU, memory, disk, process)."""
+    zest = get_zest_viewer()
+    return zest.get_system_health()
+
+@api_router.post("/zest/logs/clear")
+async def zest_clear_logs(user: dict = Depends(require_auth)):
+    """Clear log file (creates backup first)."""
+    zest = get_zest_viewer()
+    return zest.clear_logs()
+
+
 # ==================== RELISH (IPTV) API ====================
 
 from relish import get_relish
