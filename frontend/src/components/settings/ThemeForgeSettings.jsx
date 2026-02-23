@@ -113,6 +113,7 @@ export const ThemeForgeSettings = () => {
               size="sm"
               onClick={togglePreview} 
               className={previewMode ? 'border-yellow-500 text-yellow-400' : 'border-white/10'}
+              data-testid="preview-theme-btn"
             >
               <Eye className="w-4 h-4 mr-1" />
               {previewMode ? 'Stop Preview' : 'Preview'}
