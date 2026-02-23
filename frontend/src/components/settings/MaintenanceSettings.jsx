@@ -314,6 +314,26 @@ export const MaintenanceSettings = () => {
             {actionLoading.backup ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
             Create Backup
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (window.confirm('WARNING: This will delete ALL data (users, libraries, watch history) and start fresh. This cannot be undone!\n\nAre you sure you want to reset the database?')) {
+                handleAction('reset', '/api/db/reset', 'Database reset complete. Please log in again.');
+                // Force logout after reset
+                setTimeout(() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  window.location.href = '/login';
+                }, 1500);
+              }
+            }}
+            disabled={actionLoading.reset}
+            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+            data-testid="reset-database-btn"
+          >
+            {actionLoading.reset ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+            Reset Database
+          </Button>
         </div>
 
         {/* Backup List */}
