@@ -386,8 +386,13 @@ async def login(data: UserLogin):
     return TokenResponse(access_token=token, user=user_response)
 
 @api_router.post("/auth/clear-users")
-async def clear_users():
-    """Development endpoint to clear all users - useful for testing"""
+async def clear_users(current_user: dict = Depends(require_auth)):
+    """Development endpoint to clear all users - requires admin authentication"""
+    # Only allow admin users
+    user_doc = await db.users.find_one({"id": current_user["id"]})
+    if not user_doc or user_doc.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     result = await db.users.delete_many({})
     return {"deleted": result.deleted_count, "message": "All users cleared"}
 
