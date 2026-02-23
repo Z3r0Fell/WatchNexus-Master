@@ -80,3 +80,17 @@ dist/watchnexus-v2.1.0-windows.zip
 releases/zips/watchnexus-v2.1.0-linux.zip
 releases/zips/watchnexus-v2.1.0-windows.zip
 frontend/node_modules/.cache/default-development/6.pack
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+frontend/node_modules/.cache/default-development/0.pack
+frontend/node_modules/.cache/default-development/7.pack
