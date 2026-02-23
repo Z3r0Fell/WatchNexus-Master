@@ -7,7 +7,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ---
 
-## Current Version: 2.3.0
+## Current Version: 2.4.0
 
 ### Code Name Legend
 | Code Name | Feature | Description |
@@ -26,6 +26,39 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 | 🥣 **Syrup** | Scrapers | Web scraping utilities |
 | 🍲 **Potluck** | qBittorrent | Torrent client integration |
 | 🧀 **Fondue** | Fingerprinting | Audio fingerprinting for intro detection |
+| 📦 **Preserve** | Quality Profiles | Sonarr/Radarr-style download quality preferences |
+
+---
+
+### Recent Changes (v2.4.0 - Feb 23, 2026)
+
+#### New Features:
+
+- **📁 Jellyfin-style Source Structure** (REORGANIZED)
+  - Created `/app/src/` directory with modular organization:
+    - `WatchNexus.Server/` - Backend symlinks
+    - `WatchNexus.Web/` - Frontend symlinks
+    - `WatchNexus.Plugins/` - Plugin system with core, builtin, installed
+    - `WatchNexus.Common/` - Shared utilities (config, logging, auth, database)
+
+- **📦 Preserve - Quality Profiles** (NEW)
+  - Full Sonarr/Radarr-style quality profile management
+  - Define cutoff quality, allowed qualities, and upgrade behavior
+  - 15 quality definitions from SDTV to 4K Remux
+  - Import default profiles (Ultra-HD, HD-1080p, HD-720p, Any)
+  - Settings → Playback & Streaming → Quality Profiles
+
+- **⏭️ Skip Intro/Credits** (VERIFIED WORKING)
+  - VideoPlayer has full skip segment support
+  - Segments fetched from `/api/skip-segments/{media_id}`
+  - Auto-skip credits at end of media
+
+- **📺 WatchNexus Roku Client** (FORKED)
+  - Forked from jellyfin-roku (GPL-2.0)
+  - Rebranded to WatchNexus throughout
+  - Uses existing Gelatin (Jellyfin-compatible) API layer
+  - Located at `/app/WatchNexus-Roku/`
+  - Ready for BrighterScript build
 
 ---
 
