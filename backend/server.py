@@ -773,7 +773,7 @@ async def get_downloads():
     return mock_downloads
 
 @api_router.post("/downloads")
-async def add_download(title: str, media_type: str, tmdb_id: int = None, size: int = 0):
+async def add_download(title: str, media_type: str, tmdb_id: int = None, size: int = 0, user: dict = Depends(require_auth)):
     download = DownloadItem(
         title=title,
         media_type=media_type,
@@ -785,7 +785,7 @@ async def add_download(title: str, media_type: str, tmdb_id: int = None, size: i
     return download
 
 @api_router.patch("/downloads/{download_id}")
-async def update_download(download_id: str, status: str = None, progress: float = None):
+async def update_download(download_id: str, status: str = None, progress: float = None, user: dict = Depends(require_auth)):
     for dl in mock_downloads:
         if dl.id == download_id:
             if status:
@@ -797,7 +797,7 @@ async def update_download(download_id: str, status: str = None, progress: float 
     raise HTTPException(status_code=404, detail="Download not found")
 
 @api_router.delete("/downloads/{download_id}")
-async def delete_download(download_id: str):
+async def delete_download(download_id: str, user: dict = Depends(require_auth)):
     global mock_downloads
     mock_downloads = [d for d in mock_downloads if d.id != download_id]
     return {"status": "deleted"}
