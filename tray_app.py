@@ -377,6 +377,119 @@ class WatchNexusTray:
         except:
             self.show_notification("URL", url)
     
+    # ========== Tiramisu (Auto-Updater) Methods ==========
+    
+    def _init_updater(self):
+        """Initialize the Tiramisu updater."""
+        if not HAS_TIRAMISU:
+            return
+        
+        self.updater = TiramisuUpdater(
+            check_interval_hours=24,
+            on_update_available=self._on_update_available,
+            on_download_progress=self._on_download_progress,
+            on_update_complete=self._on_update_complete,
+            on_error=self._on_update_error
+        )
+    
+    def _on_update_available(self, update: 'UpdateInfo'):
+        """Callback when update is available."""
+        self.available_update = update
+        self.show_notification(
+            "Update Available",
+            f"WatchNexus v{update.version} is available!"
+        )
+    
+    def _on_download_progress(self, percent: int, bytes_downloaded: int):
+        """Callback for download progress."""
+        # Could update icon or show progress
+        pass
+    
+    def _on_update_complete(self, version: str):
+        """Callback when update is installed."""
+        self.available_update = None
+        self.show_notification(
+            "Update Complete",
+            f"Updated to v{version}. Please restart."
+        )
+    
+    def _on_update_error(self, error: str):
+        """Callback for update errors."""
+        self.show_notification("Update Error", error[:50])
+    
+    def check_for_updates_now(self, icon=None, item=None):
+        """Manually check for updates."""
+        if not self.updater:
+            self.show_notification("Updater", "Auto-updater not available")
+            return
+        
+        self.show_notification("Checking", "Looking for updates...")
+        
+        def _check():
+            update = self.updater.check_for_updates(force=True)
+            if not update:
+                self.show_notification("Up to Date", f"You're on the latest version")
+        
+        threading.Thread(target=_check, daemon=True).start()
+    
+    def install_update(self, icon=None, item=None):
+        """Install the available update."""
+        if not self.updater or not self.available_update:
+            return
+        
+        # Stop server first
+        was_running = self.server_running
+        if was_running:
+            self.show_notification("Updating", "Stopping server for update...")
+            self.stop_server()
+            time.sleep(2)
+        
+        def _install():
+            self.show_notification("Updating", "Downloading update...")
+            success = self.updater.download_and_install(self.available_update)
+            
+            if success and was_running:
+                time.sleep(1)
+                self.start_server()
+        
+        threading.Thread(target=_install, daemon=True).start()
+    
+    def show_update_info(self, icon=None, item=None):
+        """Show information about available update."""
+        if not self.available_update:
+            self.show_notification("No Update", "No updates available")
+            return
+        
+        update = self.available_update
+        info = f"v{update.version} ({update.release_date})"
+        if update.size_bytes > 0:
+            info += f" - {update.size_mb:.1f} MB"
+        self.show_notification("Update Available", info)
+    
+    def get_update_status_text(self):
+        """Get update status for menu."""
+        if not self.check_updates:
+            return "Updates: Disabled"
+        if self.available_update:
+            return f"⬆ Update: v{self.available_update.version}"
+        if self.updater:
+            return f"✓ v{self.updater.current_version} (latest)"
+        return "Updates: N/A"
+    
+    def _start_update_checker(self):
+        """Start background update checking."""
+        if not self.updater:
+            return
+        
+        def _check_loop():
+            time.sleep(10)  # Initial delay
+            while not self._stop_event.is_set():
+                if self.updater.should_check():
+                    self.updater.check_for_updates()
+                time.sleep(3600)  # Check hourly
+        
+        threading.Thread(target=_check_loop, daemon=True).start()
+    
     def show_notification(self, title, message):
         """Show system notification (with rate limiting)."""
         now = time.time()
