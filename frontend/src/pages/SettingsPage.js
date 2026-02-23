@@ -93,7 +93,11 @@ export const SettingsPage = () => {
     try {
       await axios.put(`${API_URL}/api/users/${userId}`, updates);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-      setEditingUser(null); toast.success('User updated successfully');
+      // Don't close edit panel for permission updates - only show success for major changes
+      if (updates.username || updates.email || updates.role) {
+        setEditingUser(null);
+        toast.success('User updated successfully');
+      }
     } catch { toast.error('Failed to update user'); }
     finally { setSavingUser(false); }
   };
