@@ -1180,7 +1180,7 @@ async def browse_filesystem(
                                                '.jpg', '.jpeg', '.png', '.gif', '.bmp'}
                             if entry.suffix.lower() in media_extensions:
                                 item["is_media"] = True
-                        except:
+                        except Exception:
                             item["size"] = 0
                         
                         # Only include directories for library selection
@@ -1220,7 +1220,7 @@ async def browse_filesystem(
                                        '.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg'}
                     if entry.suffix.lower() in media_extensions:
                         media_count += 1
-        except:
+        except Exception:
             pass
         
         return {
