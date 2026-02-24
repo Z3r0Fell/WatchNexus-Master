@@ -3,12 +3,72 @@ import { motion } from 'framer-motion';
 import {
   Info, Tag, Calendar, CheckCircle2, Bug, Sparkles,
   ChevronDown, ChevronUp, ExternalLink, Github, Heart,
-  Zap, Shield, Wrench, Code
+  Zap, Shield, Wrench, Code, Users, Crown, Star, 
+  Gem, Award, Trophy, Coffee, Rocket
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+// Credits data - Contributors and supporters
+const CREDITS = {
+  foundingMembers: {
+    title: "Founding Members",
+    icon: Crown,
+    color: "from-yellow-500 to-amber-600",
+    description: "The visionaries who believed from day one",
+    members: [
+      // Add founding members here
+      // { name: "Name", avatar: "URL", title: "Title" }
+    ]
+  },
+  superSponsors: {
+    title: "Super Sponsors",
+    icon: Gem,
+    color: "from-violet-500 to-purple-600",
+    description: "Extraordinary supporters who made this possible",
+    members: [
+      // Add super sponsors here
+    ]
+  },
+  codeContributors: {
+    title: "Code Contributors",
+    icon: Code,
+    color: "from-blue-500 to-cyan-600",
+    description: "The developers who shaped WatchNexus",
+    members: [
+      // Add code contributors here
+    ]
+  },
+  backers: {
+    title: "Backers",
+    icon: Heart,
+    color: "from-pink-500 to-rose-600",
+    description: "Our amazing crowdfunding supporters",
+    members: [
+      // Add backers here
+    ]
+  },
+  superFans: {
+    title: "Super Fans",
+    icon: Star,
+    color: "from-orange-500 to-red-600",
+    description: "Community champions and early adopters",
+    members: [
+      // Add super fans here
+    ]
+  }
+};
+
+// Tier badge colors
+const TIER_BADGES = {
+  founding: { bg: 'bg-gradient-to-r from-yellow-500 to-amber-600', text: 'text-yellow-100' },
+  superSponsor: { bg: 'bg-gradient-to-r from-violet-500 to-purple-600', text: 'text-violet-100' },
+  contributor: { bg: 'bg-gradient-to-r from-blue-500 to-cyan-600', text: 'text-blue-100' },
+  backer: { bg: 'bg-gradient-to-r from-pink-500 to-rose-600', text: 'text-pink-100' },
+  superFan: { bg: 'bg-gradient-to-r from-orange-500 to-red-600', text: 'text-orange-100' },
+};
 
 // Release history with all versions
 const RELEASES = [
