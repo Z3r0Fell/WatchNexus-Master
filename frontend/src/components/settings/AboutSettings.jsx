@@ -385,12 +385,187 @@ export const AboutSettings = () => {
         </div>
       </div>
 
+      {/* Credits Section */}
+      <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden" data-testid="credits-section">
+        <div className="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-violet-500/10 to-purple-500/10">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-400" />
+            Credits & Acknowledgements
+          </h3>
+          <p className="text-sm text-gray-400 mt-1">
+            WatchNexus exists thanks to these amazing people
+          </p>
+        </div>
+
+        <div className="p-6 space-y-8">
+          {/* Founding Members */}
+          <CreditTier 
+            tier={CREDITS.foundingMembers}
+            badge={TIER_BADGES.founding}
+          />
+
+          {/* Super Sponsors */}
+          <CreditTier 
+            tier={CREDITS.superSponsors}
+            badge={TIER_BADGES.superSponsor}
+          />
+
+          {/* Code Contributors */}
+          <CreditTier 
+            tier={CREDITS.codeContributors}
+            badge={TIER_BADGES.contributor}
+          />
+
+          {/* Backers */}
+          <CreditTier 
+            tier={CREDITS.backers}
+            badge={TIER_BADGES.backer}
+          />
+
+          {/* Super Fans */}
+          <CreditTier 
+            tier={CREDITS.superFans}
+            badge={TIER_BADGES.superFan}
+          />
+
+          {/* Become a Supporter CTA */}
+          <div className="mt-8 p-6 bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30 rounded-xl text-center">
+            <Rocket className="w-8 h-8 text-violet-400 mx-auto mb-3" />
+            <h4 className="text-lg font-bold text-white mb-2">Want to see your name here?</h4>
+            <p className="text-gray-300 text-sm mb-4">
+              Support WatchNexus development and join our community of contributors
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Button 
+                className="bg-violet-600 hover:bg-violet-700"
+                onClick={() => window.open('https://github.com/sponsors/watchnexus', '_blank')}
+              >
+                <Heart className="w-4 h-4 mr-2" /> Become a Sponsor
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-white/20 hover:bg-white/10"
+                onClick={() => window.open('https://github.com/watchnexus/watchnexus', '_blank')}
+              >
+                <Github className="w-4 h-4 mr-2" /> Contribute Code
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Special Thanks */}
+      <div className="bg-surface border border-white/10 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Coffee className="w-5 h-5 text-amber-400" />
+          Special Thanks
+        </h3>
+        <div className="text-gray-300 text-sm space-y-2">
+          <p>
+            <strong>Open Source Projects:</strong> FFmpeg, LTorrent, FastAPI, React, Tailwind CSS, 
+            and all the amazing open source tools that make WatchNexus possible.
+          </p>
+          <p>
+            <strong>Communities:</strong> The Jellyfin community, r/selfhosted, r/homelab, 
+            and all the passionate self-hosters who inspired this project.
+          </p>
+          <p>
+            <strong>APIs:</strong> The Movie Database (TMDB), Addic7ed, OpenSubtitles, 
+            and all the indexer providers.
+          </p>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="text-center text-xs text-gray-500 py-4">
         <p>WatchNexus is open source and self-hosted.</p>
         <p className="mt-1">Your media, your server, your rules.</p>
       </div>
     </motion.div>
+  );
+};
+
+// Credit Tier Component
+const CreditTier = ({ tier, badge }) => {
+  const Icon = tier.icon;
+  const hasMembers = tier.members && tier.members.length > 0;
+
+  return (
+    <div className="space-y-3">
+      {/* Tier Header */}
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tier.color} flex items-center justify-center shadow-lg`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h4 className="font-bold text-white flex items-center gap-2">
+            {tier.title}
+            {hasMembers && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-400">
+                {tier.members.length}
+              </span>
+            )}
+          </h4>
+          <p className="text-xs text-gray-400">{tier.description}</p>
+        </div>
+      </div>
+
+      {/* Members Grid */}
+      {hasMembers ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pl-13">
+          {tier.members.map((member, idx) => (
+            <div 
+              key={idx}
+              className="group relative bg-black/30 border border-white/10 rounded-xl p-3 hover:bg-white/5 hover:border-white/20 transition-all"
+            >
+              {/* Avatar */}
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800">
+                {member.avatar ? (
+                  <img 
+                    src={member.avatar} 
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              
+              {/* Name */}
+              <p className="text-sm font-medium text-white text-center truncate">
+                {member.name}
+              </p>
+              
+              {/* Title/Role */}
+              {member.title && (
+                <p className="text-xs text-gray-500 text-center truncate">
+                  {member.title}
+                </p>
+              )}
+              
+              {/* Tier Badge */}
+              <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full ${badge.bg} flex items-center justify-center shadow-lg`}>
+                <Icon className="w-3 h-3 text-white" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="pl-13">
+          <div className="bg-black/20 border border-dashed border-white/10 rounded-xl p-6 text-center">
+            <Icon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">
+              Be the first {tier.title.toLowerCase().slice(0, -1)}!
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Support WatchNexus to appear here
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
