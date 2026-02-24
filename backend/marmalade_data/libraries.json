@@ -38,5 +38,35 @@
     "scan_interval": 3600,
     "last_scan": null,
     "item_count": 0
+  },
+  {
+    "id": "d42b9c57d24cf5db",
+    "name": "Test Scan Tmp",
+    "path": "/tmp",
+    "media_type": "movies",
+    "enabled": true,
+    "scan_interval": 3600,
+    "last_scan": "2026-02-24T01:21:45.088617+00:00",
+    "item_count": 0
+  },
+  {
+    "id": "614122fb99f3c53d",
+    "name": "Test Music 1771896110",
+    "path": "/tmp/test_music_1771896110",
+    "media_type": "music",
+    "enabled": true,
+    "scan_interval": 3600,
+    "last_scan": null,
+    "item_count": 0
+  },
+  {
+    "id": "2468d5442ec91423",
+    "name": "Test Audiobooks 1771896111",
+    "path": "/tmp/test_audiobooks_1771896111",
+    "media_type": "audiobooks",
+    "enabled": true,
+    "scan_interval": 3600,
+    "last_scan": null,
+    "item_count": 0
   }
 ]
