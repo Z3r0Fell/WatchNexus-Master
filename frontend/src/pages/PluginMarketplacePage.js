@@ -49,11 +49,57 @@ const pluginTypeConfig = {
   scheduled_task: { icon: Calendar, color: 'orange', label: 'Scheduled' },
 };
 
+// Catalogue category icon mapping
+const catalogueCategoryIcons = {
+  metadata: Database,
+  subtitle: MessageSquare,
+  notification: Bell,
+  theme: Palette,
+  video: Tv,
+  audio: Music,
+  indexer: Globe,
+  system: Settings,
+  image: Image,
+  game: Gamepad2,
+  screensaver: Monitor,
+  weather: Sun,
+  program: Zap,
+  service: Shield,
+  context: Layers,
+  resource: Box,
+};
+
+const catalogueCategoryColors = {
+  metadata: 'from-indigo-500 to-blue-600',
+  subtitle: 'from-teal-500 to-emerald-600',
+  notification: 'from-pink-500 to-rose-600',
+  theme: 'from-violet-500 to-purple-600',
+  video: 'from-blue-500 to-cyan-600',
+  audio: 'from-green-500 to-lime-600',
+  indexer: 'from-amber-500 to-orange-600',
+  system: 'from-slate-500 to-gray-600',
+  image: 'from-fuchsia-500 to-pink-600',
+  game: 'from-red-500 to-orange-600',
+  screensaver: 'from-sky-500 to-blue-600',
+  weather: 'from-yellow-500 to-amber-600',
+  program: 'from-cyan-500 to-teal-600',
+  service: 'from-emerald-500 to-green-600',
+  context: 'from-rose-500 to-red-600',
+  resource: 'from-orange-500 to-yellow-600',
+};
+
 export const PluginMarketplacePage = () => {
-  const [activeTab, setActiveTab] = useState('kodi');
+  const [activeTab, setActiveTab] = useState('catalogue');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
+  
+  // Catalogue state
+  const [catalogueItems, setCatalogueItems] = useState([]);
+  const [catalogueCategories, setCatalogueCategories] = useState({});
+  const [loadingCatalogue, setLoadingCatalogue] = useState(false);
+  const [catalogueSearch, setCatalogueSearch] = useState('');
+  const [selectedCatCategory, setSelectedCatCategory] = useState(null);
   
   // Kodi addons state
   const [kodiAddons, setKodiAddons] = useState([]);
