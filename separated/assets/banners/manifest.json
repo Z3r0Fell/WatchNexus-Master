@@ -1,0 +1,68 @@
+{
+  "generated_from": "watchnexus-logo-small.jpg",
+  "banners": {
+    "wn": {
+      "extension": ".wn",
+      "files": [
+        "watchnexus_wn_docker_unraid_banner_1600x600.png",
+        "watchnexus_wn_docker_hub_social_1200x630.png",
+        "watchnexus_wn_dashboard_banner_1024x512.png",
+        "watchnexus_wn_stack_preview_1280x720.png"
+      ]
+    },
+    "wnf": {
+      "extension": ".wnf",
+      "files": [
+        "watchnexus_wnf_docker_unraid_banner_1600x600.png",
+        "watchnexus_wnf_docker_hub_social_1200x630.png",
+        "watchnexus_wnf_dashboard_banner_1024x512.png",
+        "watchnexus_wnf_stack_preview_1280x720.png"
+      ]
+    },
+    "wnc": {
+      "extension": ".wnc",
+      "files": [
+        "watchnexus_wnc_docker_unraid_banner_1600x600.png",
+        "watchnexus_wnc_docker_hub_social_1200x630.png",
+        "watchnexus_wnc_dashboard_banner_1024x512.png",
+        "watchnexus_wnc_stack_preview_1280x720.png"
+      ]
+    },
+    "wnd": {
+      "extension": ".wnd",
+      "files": [
+        "watchnexus_wnd_docker_unraid_banner_1600x600.png",
+        "watchnexus_wnd_docker_hub_social_1200x630.png",
+        "watchnexus_wnd_dashboard_banner_1024x512.png",
+        "watchnexus_wnd_stack_preview_1280x720.png"
+      ]
+    },
+    "wnp": {
+      "extension": ".wnp",
+      "files": [
+        "watchnexus_wnp_docker_unraid_banner_1600x600.png",
+        "watchnexus_wnp_docker_hub_social_1200x630.png",
+        "watchnexus_wnp_dashboard_banner_1024x512.png",
+        "watchnexus_wnp_stack_preview_1280x720.png"
+      ]
+    },
+    "wnt": {
+      "extension": ".wnt",
+      "files": [
+        "watchnexus_wnt_docker_unraid_banner_1600x600.png",
+        "watchnexus_wnt_docker_hub_social_1200x630.png",
+        "watchnexus_wnt_dashboard_banner_1024x512.png",
+        "watchnexus_wnt_stack_preview_1280x720.png"
+      ]
+    },
+    "suite": {
+      "extension": "suite",
+      "files": [
+        "watchnexus_suite_docker_unraid_banner_1600x600.png",
+        "watchnexus_suite_docker_hub_social_1200x630.png",
+        "watchnexus_suite_dashboard_banner_1024x512.png",
+        "watchnexus_suite_stack_preview_1280x720.png"
+      ]
+    }
+  }
+}
