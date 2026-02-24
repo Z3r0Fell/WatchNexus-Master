@@ -2816,8 +2816,12 @@ async def marmalade_get_stream(
     raise HTTPException(status_code=404, detail="Media not found")
 
 @api_router.get("/marmalade/stream/{media_id}/file")
-async def marmalade_stream_file(media_id: str, request: Request):
-    """Stream a media file (supports range requests)."""
+async def marmalade_stream_file(media_id: str, request: Request, user: dict = Depends(get_current_user)):
+    """Stream a media file (supports range requests). Authentication optional for local network."""
+    # Note: We use get_current_user instead of require_auth to allow streaming
+    # even without full authentication (e.g., for local network users using Who's Watching)
+    # The media_id itself acts as a form of authorization since it's not predictable
+    
     server = get_marmalade_server()
     media = server.get_media(media_id)
     
