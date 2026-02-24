@@ -5402,8 +5402,7 @@ async def startup_db():
     init_drizzle(db)
     logger.info("Drizzle playlist engine initialized")
 
-# Include router and middleware
-app.include_router(api_router)
+# ==================== STATIC FILE SERVING (FOR STANDALONE BUILD) ====================
 # Serve frontend build files when running as standalone application
 FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend"
 FRONTEND_BUILD_FALLBACK = ROOT_DIR / "frontend_build"  # Alternative location
