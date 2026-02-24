@@ -159,11 +159,11 @@ export const ThemeProvider = ({ children }) => {
   const applyBuiltInTheme = useCallback(async (type) => {
     try {
       const res = await axios.post(`${BACKEND_URL}/api/milk/set-theme?theme_type=${type}`);
-      if (res.data) {
-        setTheme(res.data);
+      if (res.data && res.data.theme) {
+        setTheme(res.data.theme);
         setThemeType(type);
-        if (res.data.colors) {
-          applyThemeToDOM(res.data.colors, mode);
+        if (res.data.theme.colors) {
+          applyThemeToDOM(res.data.theme.colors, mode);
         }
       }
       return true;
