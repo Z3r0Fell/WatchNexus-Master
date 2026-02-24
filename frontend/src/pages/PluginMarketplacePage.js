@@ -219,10 +219,12 @@ export const PluginMarketplacePage = () => {
 
   // Initial load
   useEffect(() => {
+    fetchCatalogue();
+    fetchCatalogueCategories();
     fetchKodiCategories();
     fetchPopularAddons();
     fetchInstalledPlugins();
-  }, [fetchKodiCategories, fetchPopularAddons, fetchInstalledPlugins]);
+  }, [fetchCatalogue, fetchCatalogueCategories, fetchKodiCategories, fetchPopularAddons, fetchInstalledPlugins]);
 
   // Search handler
   useEffect(() => {
