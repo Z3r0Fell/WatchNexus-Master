@@ -85,6 +85,55 @@ body.light-mode .border-white\/20,
     border-color: rgba(0, 0, 0, 0.15);
 }
 
+/* Theme-aware gradients and accents */
+.theme-gradient {
+    background: linear-gradient(135deg, var(--primary, #8B5CF6), var(--secondary, #EC4899));
+}
+
+.theme-text-gradient {
+    background: linear-gradient(90deg, var(--primary, #8B5CF6), var(--secondary, #EC4899));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.theme-border-primary {
+    border-color: var(--primary, #8B5CF6);
+}
+
+.theme-bg-primary {
+    background-color: var(--primary, #8B5CF6);
+}
+
+.theme-bg-primary-soft {
+    background-color: color-mix(in srgb, var(--primary, #8B5CF6) 20%, transparent);
+}
+
+.theme-text-primary {
+    color: var(--primary, #8B5CF6);
+}
+
+.theme-shadow-primary {
+    box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--primary, #8B5CF6) 30%, transparent);
+}
+
+/* Override Tailwind violet colors with theme primary */
+.bg-violet-600 { background-color: var(--primary, #8B5CF6) !important; }
+.bg-violet-500 { background-color: var(--primary, #8B5CF6) !important; }
+.bg-violet-400 { background-color: color-mix(in srgb, var(--primary, #8B5CF6) 80%, white) !important; }
+.text-violet-400 { color: var(--primary, #8B5CF6) !important; }
+.text-violet-500 { color: var(--primary, #8B5CF6) !important; }
+.text-violet-600 { color: var(--primary, #8B5CF6) !important; }
+.border-violet-500 { border-color: var(--primary, #8B5CF6) !important; }
+.border-violet-600 { border-color: var(--primary, #8B5CF6) !important; }
+
+/* Override pink with theme secondary */
+.bg-pink-600 { background-color: var(--secondary, #EC4899) !important; }
+.bg-pink-500 { background-color: var(--secondary, #EC4899) !important; }
+.text-pink-400 { color: var(--secondary, #EC4899) !important; }
+.text-pink-500 { color: var(--secondary, #EC4899) !important; }
+.border-pink-500 { border-color: var(--secondary, #EC4899) !important; }
+
 * {
     margin: 0;
     padding: 0;
