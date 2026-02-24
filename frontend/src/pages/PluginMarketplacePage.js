@@ -618,6 +618,139 @@ export const PluginMarketplacePage = () => {
             </TabsTrigger>
           </TabsList>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-white/5 p-1 rounded-xl">
+            <TabsTrigger value="catalogue" className="data-[state=active]:bg-violet-600" data-testid="catalogue-tab">
+              <Package className="w-4 h-4 mr-2" />
+              Gadgets Catalogue
+            </TabsTrigger>
+            <TabsTrigger value="kodi" className="data-[state=active]:bg-violet-600" data-testid="kodi-tab">
+              <Globe className="w-4 h-4 mr-2" />
+              Kodi Repository
+            </TabsTrigger>
+            <TabsTrigger value="installed" className="data-[state=active]:bg-violet-600" data-testid="installed-tab">
+              <Check className="w-4 h-4 mr-2" />
+              Installed ({installedPlugins.length})
+            </TabsTrigger>
+            <TabsTrigger value="convert" className="data-[state=active]:bg-violet-600" data-testid="convert-tab">
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Convert Plugin
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Gadgets Catalogue Tab */}
+          <TabsContent value="catalogue" className="mt-6" data-testid="catalogue-content">
+            {/* Search */}
+            <div className="flex gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Input
+                  placeholder="Search gadgets catalogue..."
+                  value={catalogueSearch}
+                  onChange={(e) => {
+                    setCatalogueSearch(e.target.value);
+                    fetchCatalogue(selectedCatCategory, e.target.value);
+                  }}
+                  className="pl-10 bg-white/5 border-white/10"
+                  data-testid="catalogue-search"
+                />
+              </div>
+              {selectedCatCategory && (
+                <Button variant="outline" onClick={() => { setSelectedCatCategory(null); fetchCatalogue(null, catalogueSearch); }} data-testid="clear-cat-filter">
+                  <X className="w-4 h-4 mr-2" /> Clear Filter
+                </Button>
+              )}
+            </div>
+
+            {/* Category Cards */}
+            {!selectedCatCategory && !catalogueSearch && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+                {Object.entries(catalogueCategories).map(([key, cat]) => {
+                  const Icon = catalogueCategoryIcons[key] || Package;
+                  const gradient = catalogueCategoryColors[key] || 'from-gray-500 to-gray-600';
+                  return (
+                    <motion.button
+                      key={key}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => { setSelectedCatCategory(key); fetchCatalogue(key, ''); }}
+                      className="rounded-xl bg-white/5 hover:bg-white/10 p-4 text-left transition-all"
+                      data-testid={`cat-${key}`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center mb-3`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-sm">{cat.label}</h3>
+                      <p className="text-xs text-gray-400 mt-1">{cat.count} gadgets</p>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Gadgets Grid */}
+            {loadingCatalogue ? (
+              <div className="flex justify-center py-16">
+                <RefreshCw className="w-8 h-8 animate-spin text-violet-500" />
+              </div>
+            ) : catalogueItems.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No gadgets found</p>
+                <p className="text-sm mt-1">Try a different search or category</p>
+              </div>
+            ) : (
+              <>
+                {selectedCatCategory && (
+                  <h2 className="text-lg font-semibold mb-4">
+                    {catalogueCategories[selectedCatCategory]?.label || selectedCatCategory} ({catalogueItems.length})
+                  </h2>
+                )}
+                <motion.div
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } }}
+                >
+                  {catalogueItems.map((gadget) => {
+                    const catConfig = catalogueCategoryIcons[gadget.category] ? { icon: catalogueCategoryIcons[gadget.category] } : { icon: Package };
+                    const CatIcon = catConfig.icon;
+                    const gradient = catalogueCategoryColors[gadget.category] || 'from-gray-500 to-gray-600';
+                    return (
+                      <motion.div
+                        key={gadget.id}
+                        variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                        className="glass-card rounded-xl p-5 hover:bg-white/10 transition-all"
+                        data-testid={`gadget-${gadget.id}`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+                            <CatIcon className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm">{gadget.name}</h3>
+                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{gadget.description}</p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {gadget.tags?.slice(0, 3).map(tag => (
+                                <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-gray-400">{tag}</span>
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-[10px] text-gray-500">v{gadget.version} by {gadget.author}</span>
+                              <Button size="sm" variant="outline" className="text-xs h-7" data-testid={`install-${gadget.id}`}>
+                                {gadget.status === 'installed' ? <><Check className="w-3 h-3 mr-1" /> Installed</> : <><Download className="w-3 h-3 mr-1" /> Install</>}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </>
+            )}
+          </TabsContent>
+
           {/* Kodi Repository Tab */}
           <TabsContent value="kodi" className="mt-6">
             {/* Search bar */}
