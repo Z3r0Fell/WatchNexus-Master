@@ -9,6 +9,16 @@ Build a unified, self-hosted media pipeline called "WatchNexus" that replaces mu
 
 ## Current Version: 2.5.5
 
+### Strategic Planning Documents
+
+| Document | Codename | Purpose |
+|----------|----------|---------|
+| `/app/docs/Fortress-CodeProtection-Plan.md` | **Fortress** | Dual licensing (AGPL + Commercial) + Cython compilation |
+| `/app/docs/Constellation-Distribution-Plan.md` | **Constellation** | Multi-platform distribution (Win, Mac, Linux, ARM) |
+| `/app/docs/Harbor-Docker-RaspberryPi-Plan.md` | **Harbor** | Docker images, Raspberry Pi, NAS integration |
+| `/app/docs/Crucible-FFmpeg-Replacement-Investigation.md` | **Crucible** | Proprietary media engine investigation |
+| `/app/docs/Marshmallow-CloudSync-Plan.md` | **Marshmallow** | Cloud sync research |
+
 ### Code Name Legend
 | Code Name | Feature | Description |
 |-----------|---------|-------------|
