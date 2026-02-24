@@ -1,459 +1,541 @@
-# WatchNexus Cross-Platform Build Guide
+# WatchNexus Build & Installation Guide
 
-This guide explains how to package WatchNexus as a standalone desktop application for Mac, Linux (AppImage), and Windows.
+Complete guide for building and installing WatchNexus on Windows, Arch Linux, and other systems. Includes direct download links and commands for all dependencies.
 
-## Architecture
+---
 
-WatchNexus uses a hybrid architecture:
-1. **Frontend**: React app (can be packaged with Electron)
-2. **Backend**: FastAPI Python server (packaged with PyInstaller)
-3. **Built-in Torrent Engine**: libtorrent-based (part of backend)
+## Table of Contents
 
-## Option 1: Electron + PyInstaller (Recommended)
+1. [Quick Start](#quick-start)
+2. [Windows Installation](#windows-installation)
+3. [Arch Linux Installation](#arch-linux-installation)
+4. [Other Linux Distributions](#other-linux-distributions)
+5. [macOS Installation](#macos-installation)
+6. [Non-Git Installation (Release Downloads)](#non-git-installation)
+7. [MongoDB Setup](#mongodb-setup)
+8. [Troubleshooting](#troubleshooting)
 
-### Prerequisites
+---
 
-```bash
-# Node.js & Yarn
-node --version  # v18+
-yarn --version  # v1.22+
+## Quick Start
 
-# Python
-python --version  # v3.10+
-pip install pyinstaller
+**Minimum Requirements:**
+- 4GB RAM (8GB recommended)
+- 2GB disk space (plus media storage)
+- Node.js 18+ / Python 3.10+ / MongoDB 6+
+
+---
+
+## Windows Installation
+
+### Option A: Automated Script (Recommended)
+
+```powershell
+# Run as Administrator
+Set-ExecutionPolicy Bypass -Scope Process -Force
+.\scripts\install-windows.ps1
 ```
 
-### Step 1: Package Backend with PyInstaller
+### Option B: Manual Installation
 
-```bash
-cd /app/backend
+#### Step 1: Install Dependencies
 
-# Install dependencies
-pip install -r requirements.txt
+Download and install these components:
 
-# Create spec file
-cat > watchnexus.spec << 'EOF'
-# -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_submodules
+| Component | Download Link | Notes |
+|-----------|--------------|-------|
+| **Node.js 20 LTS** | [https://nodejs.org/dist/v20.11.0/node-v20.11.0-x64.msi](https://nodejs.org/dist/v20.11.0/node-v20.11.0-x64.msi) | Run installer with defaults |
+| **Python 3.11** | [https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe](https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe) | Check "Add to PATH" during install |
+| **Git** | [https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe](https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe) | Use defaults |
+| **MongoDB 7** | [https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-7.0.5-signed.msi](https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-7.0.5-signed.msi) | Install as service |
+| **FFmpeg** | [https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip) | Extract to `C:\ffmpeg`, add to PATH |
+| **Visual C++ Redistributable** | [https://aka.ms/vs/17/release/vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe) | Required for some dependencies |
 
-hiddenimports = collect_submodules('libtorrent') + collect_submodules('uvicorn')
-
-a = Analysis(
-    ['server.py'],
-    pathex=[],
-    binaries=[],
-    datas=[
-        ('torrent_engine.py', '.'),
-        ('compote.py', '.'),
-        ('media_health_checker.py', '.'),
-        ('qbittorrent_client.py', '.'),
-    ],
-    hiddenimports=hiddenimports,
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    noarchive=False,
-)
-pyz = PYZ(a.pure)
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
-    name='watchnexus-server',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    console=True,
-    icon='../assets/watchnexus.ico',
-)
-EOF
-
-# Build
-pyinstaller watchnexus.spec
+**Install Yarn:**
+```powershell
+npm install -g yarn
 ```
 
-### Step 2: Setup Electron for Frontend
+#### Step 2: Build WatchNexus
 
-```bash
-cd /app/frontend
+```powershell
+# Clone or download repository
+cd C:\Projects
+git clone https://github.com/your-org/watchnexus.git
+cd watchnexus
 
-# Install Electron Builder
-yarn add electron electron-builder --dev
-
-# Create electron main process
-cat > electron/main.js << 'EOF'
-const { app, BrowserWindow, shell } = require('electron');
-const path = require('path');
-const { spawn } = require('child_process');
-
-let mainWindow;
-let backendProcess;
-
-function getBackendPath() {
-  const isDev = process.env.NODE_ENV === 'development';
-  if (isDev) {
-    return null; // Backend runs separately in dev
-  }
-  
-  const platform = process.platform;
-  const basePath = app.isPackaged 
-    ? path.join(process.resourcesPath, 'backend')
-    : path.join(__dirname, '..', 'backend');
-  
-  switch (platform) {
-    case 'win32':
-      return path.join(basePath, 'watchnexus-server.exe');
-    case 'darwin':
-      return path.join(basePath, 'watchnexus-server');
-    case 'linux':
-      return path.join(basePath, 'watchnexus-server');
-    default:
-      return null;
-  }
-}
-
-function startBackend() {
-  const backendPath = getBackendPath();
-  if (!backendPath) return;
-  
-  backendProcess = spawn(backendPath, [], {
-    env: {
-      ...process.env,
-      MONGO_URL: 'mongodb://localhost:27017',
-      DB_NAME: 'watchnexus',
-      JWT_SECRET: 'watchnexus_secret_' + Date.now(),
-    }
-  });
-  
-  backendProcess.stdout.on('data', (data) => {
-    console.log(`Backend: ${data}`);
-  });
-  
-  backendProcess.stderr.on('data', (data) => {
-    console.error(`Backend Error: ${data}`);
-  });
-}
-
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 768,
-    title: 'WatchNexus',
-    icon: path.join(__dirname, '..', 'assets', 'watchnexus.png'),
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 15, y: 15 },
-    backgroundColor: '#0a0a0f',
-  });
-  
-  const isDev = process.env.NODE_ENV === 'development';
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'build', 'index.html'));
-  }
-  
-  // Open external links in browser
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
-  
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-}
-
-app.whenReady().then(() => {
-  startBackend();
-  
-  // Wait for backend to start
-  setTimeout(createWindow, 2000);
-  
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
-app.on('window-all-closed', () => {
-  if (backendProcess) {
-    backendProcess.kill();
-  }
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('before-quit', () => {
-  if (backendProcess) {
-    backendProcess.kill();
-  }
-});
-EOF
-
-# Create electron-builder config
-cat > electron-builder.yml << 'EOF'
-appId: com.watchnexus.app
-productName: WatchNexus
-directories:
-  output: dist
-  buildResources: assets
-
-files:
-  - build/**/*
-  - electron/**/*
-  - package.json
-
-extraResources:
-  - from: ../backend/dist/watchnexus-server
-    to: backend
-
-mac:
-  category: public.app-category.entertainment
-  icon: assets/watchnexus.icns
-  target:
-    - target: dmg
-      arch: [x64, arm64]
-    - target: zip
-      arch: [x64, arm64]
-  hardenedRuntime: true
-  gatekeeperAssess: false
-
-win:
-  icon: assets/watchnexus.ico
-  target:
-    - target: nsis
-      arch: [x64]
-    - target: portable
-      arch: [x64]
-
-nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
-  installerIcon: assets/watchnexus.ico
-  uninstallerIcon: assets/watchnexus.ico
-
-linux:
-  icon: assets/watchnexus.png
-  category: AudioVideo
-  target:
-    - target: AppImage
-      arch: [x64]
-    - target: deb
-      arch: [x64]
-    - target: rpm
-      arch: [x64]
-
-appImage:
-  artifactName: WatchNexus-${version}.AppImage
-EOF
-```
-
-### Step 3: Build for All Platforms
-
-```bash
 # Build frontend
-cd /app/frontend
+cd frontend
+yarn install
 yarn build
-
-# Build for Mac (on Mac)
-yarn electron-builder --mac
-
-# Build for Windows (on Windows or with Wine)
-yarn electron-builder --win
-
-# Build for Linux (on Linux)
-yarn electron-builder --linux
-```
-
-## Option 2: Tauri (Lighter Weight Alternative)
-
-Tauri uses the system's native webview instead of bundling Chromium, resulting in much smaller binaries.
-
-### Setup Tauri
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Install Tauri CLI
-cargo install tauri-cli
-
-# Initialize Tauri in frontend
-cd /app/frontend
-yarn add @tauri-apps/api @tauri-apps/cli
-npx tauri init
-```
-
-### Tauri Configuration
-
-```json
-// src-tauri/tauri.conf.json
-{
-  "build": {
-    "beforeBuildCommand": "yarn build",
-    "beforeDevCommand": "yarn start",
-    "devPath": "http://localhost:3000",
-    "distDir": "../build"
-  },
-  "package": {
-    "productName": "WatchNexus",
-    "version": "1.0.0"
-  },
-  "tauri": {
-    "bundle": {
-      "active": true,
-      "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png"],
-      "identifier": "com.watchnexus.app",
-      "targets": "all",
-      "resources": ["../backend/dist/*"],
-      "macOS": {
-        "minimumSystemVersion": "10.15"
-      },
-      "windows": {
-        "wix": null,
-        "nsis": null
-      },
-      "linux": {
-        "appimage": {
-          "bundleMediaFramework": true
-        }
-      }
-    }
-  }
-}
-```
-
-## MongoDB Options
-
-### Option A: Embedded MongoDB (SQLite Alternative)
-
-For true portability, use **TinyDB** or **SQLite** instead of MongoDB:
-
-```python
-# backend/database.py - Alternative using TinyDB
-from tinydb import TinyDB, Query
-import os
-
-db_path = os.path.join(os.path.dirname(__file__), 'data', 'watchnexus.json')
-os.makedirs(os.path.dirname(db_path), exist_ok=True)
-db = TinyDB(db_path)
-
-users = db.table('users')
-settings = db.table('settings')
-```
-
-### Option B: MongoDB Bundled
-
-Bundle MongoDB with the application:
-
-- **Mac**: Use `mongodb-community` from Homebrew, extract binaries
-- **Windows**: Bundle `mongod.exe` from MongoDB Community Server
-- **Linux**: Include `mongod` binary in AppImage
-
-## Cross-Platform Build Script
-
-```bash
-#!/bin/bash
-# build-all.sh
-
-set -e
-
-VERSION="1.0.0"
-BUILD_DIR="./release"
-
-echo "🔧 Building WatchNexus v${VERSION}"
-
-# Clean
-rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR"
-
-# Build backend
-echo "📦 Building backend..."
-cd backend
-pip install -r requirements.txt
-pyinstaller watchnexus.spec --clean --noconfirm
-cp dist/watchnexus-server "../$BUILD_DIR/"
 cd ..
 
+# Build backend
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
+deactivate
+```
+
+#### Step 3: Configure Environment
+
+Create `backend\.env`:
+```env
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=watchnexus
+WATCHNEXUS_PLUGINS_DIR=C:\ProgramData\WatchNexus\plugins
+WATCHNEXUS_THEMES_DIR=C:\ProgramData\WatchNexus\themes
+```
+
+#### Step 4: Run WatchNexus
+
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1
+python -m uvicorn server:app --host 127.0.0.1 --port 8001
+```
+
+Open: http://localhost:8001
+
+---
+
+## Arch Linux Installation
+
+### Option A: Automated Script (Recommended)
+
+```bash
+chmod +x scripts/build-arch.sh
+./scripts/build-arch.sh
+```
+
+### Option B: Manual Installation with pacman
+
+#### Step 1: Install Dependencies
+
+```bash
+# Update system
+sudo pacman -Syu
+
+# Install core dependencies
+sudo pacman -S --needed \
+    base-devel \
+    git \
+    nodejs \
+    npm \
+    yarn \
+    python \
+    python-pip \
+    python-virtualenv \
+    ffmpeg \
+    libvips
+
+# Optional: Install MongoDB from AUR
+# Using yay (install yay first if needed)
+yay -S mongodb-bin
+
+# OR using paru
+paru -S mongodb-bin
+
+# OR install yay first if you don't have an AUR helper
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si
+cd ..
+rm -rf yay
+yay -S mongodb-bin
+```
+
+**If you don't want to use AUR for MongoDB:**
+```bash
+# Use Docker instead
+sudo pacman -S docker
+sudo systemctl enable --now docker
+sudo docker run -d --name mongodb -p 27017:27017 mongo:7
+```
+
+#### Step 2: Build WatchNexus
+
+```bash
+# Clone repository
+git clone https://github.com/your-org/watchnexus.git
+cd watchnexus
+
 # Build frontend
-echo "🎨 Building frontend..."
 cd frontend
 yarn install
 yarn build
 
-# Build Electron apps
-echo "💻 Building desktop apps..."
-
-# Mac
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    yarn electron-builder --mac --x64 --arm64
-    cp dist/*.dmg "../$BUILD_DIR/"
-fi
-
-# Linux
-if [[ "$OSTYPE" == "linux"* ]]; then
-    yarn electron-builder --linux
-    cp dist/*.AppImage "../$BUILD_DIR/"
-fi
-
-# Windows (requires Wine on Linux/Mac)
-if command -v wine &> /dev/null; then
-    yarn electron-builder --win
-    cp dist/*.exe "../$BUILD_DIR/"
-fi
-
-cd ..
-
-echo "✅ Build complete! Files in $BUILD_DIR/"
-ls -la "$BUILD_DIR/"
+# Build backend
+cd ../backend
+python -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+deactivate
 ```
 
-## Notes
+#### Step 3: Install to System
 
-### Windows 10/11 Compatibility
+```bash
+# Create directories
+sudo mkdir -p /opt/watchnexus
+sudo mkdir -p /var/lib/watchnexus/{themes,plugins,downloads,media}
 
-- Ensure NSIS installer requests admin privileges only when needed
-- Bundle Visual C++ Redistributable for libtorrent
-- Test on both Windows 10 and 11
+# Copy files (determine frontend build dir first)
+FRONTEND_DIR=$([ -d frontend/build ] && echo "build" || echo "dist")
+sudo cp -r frontend/$FRONTEND_DIR /opt/watchnexus/frontend
+sudo cp -r backend /opt/watchnexus/
 
-### Mac Compatibility
+# Create system user
+sudo useradd -r -s /usr/bin/nologin -d /opt/watchnexus watchnexus
 
-- Sign the app with an Apple Developer certificate for distribution
-- Notarize the app for Gatekeeper
-- Support both Intel (x64) and Apple Silicon (arm64)
-
-### Linux Compatibility
-
-- AppImage is the most portable format
-- Test on Ubuntu 20.04+, Fedora 35+, Arch Linux
-- Ensure all dependencies are bundled
-
-## File Structure After Build
-
+# Set permissions
+sudo chown -R watchnexus:watchnexus /opt/watchnexus
+sudo chown -R watchnexus:watchnexus /var/lib/watchnexus
 ```
-WatchNexus/
-├── WatchNexus.app/              # Mac
-│   └── Contents/
-│       ├── MacOS/
-│       │   └── WatchNexus
-│       └── Resources/
-│           └── backend/
-│               └── watchnexus-server
-├── WatchNexus-1.0.0.AppImage    # Linux
-├── WatchNexus-1.0.0.exe         # Windows Installer
-├── WatchNexus-1.0.0-portable.exe # Windows Portable
-└── WatchNexus-1.0.0.dmg         # Mac Installer
+
+#### Step 4: Create systemd Service
+
+```bash
+sudo tee /etc/systemd/system/watchnexus.service > /dev/null << 'EOF'
+[Unit]
+Description=WatchNexus Media Server
+After=network.target mongodb.service
+Wants=mongodb.service
+
+[Service]
+Type=simple
+User=watchnexus
+WorkingDirectory=/opt/watchnexus/backend
+Environment=MONGO_URL=mongodb://localhost:27017
+Environment=DB_NAME=watchnexus
+Environment=WATCHNEXUS_PLUGINS_DIR=/var/lib/watchnexus/plugins
+Environment=WATCHNEXUS_THEMES_DIR=/var/lib/watchnexus/themes
+ExecStart=/opt/watchnexus/backend/venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8001
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable --now watchnexus
+
+# Check status
+sudo systemctl status watchnexus
 ```
+
+#### Step 5: Create Desktop Entry (Optional)
+
+```bash
+sudo tee /usr/share/applications/watchnexus.desktop > /dev/null << 'EOF'
+[Desktop Entry]
+Name=WatchNexus
+Comment=Unified Media Pipeline
+Exec=xdg-open http://localhost:8001
+Icon=video-x-generic
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Player;
+EOF
+```
+
+Open: http://localhost:8001
+
+---
+
+## Other Linux Distributions
+
+### Ubuntu/Debian
+
+```bash
+# Install dependencies
+sudo apt update
+sudo apt install -y \
+    build-essential \
+    git \
+    curl \
+    ffmpeg \
+    libvips-dev
+
+# Install Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install Yarn
+npm install -g yarn
+
+# Install Python
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install MongoDB
+curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt update
+sudo apt install -y mongodb-org
+sudo systemctl enable --now mongod
+```
+
+### Fedora/RHEL
+
+```bash
+# Install dependencies
+sudo dnf install -y \
+    gcc gcc-c++ make \
+    git \
+    curl \
+    ffmpeg \
+    vips-devel
+
+# Install Node.js 20
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
+
+# Install Yarn
+npm install -g yarn
+
+# Install Python
+sudo dnf install -y python3 python3-pip python3-virtualenv
+
+# MongoDB (use Docker on Fedora)
+sudo dnf install -y docker
+sudo systemctl enable --now docker
+sudo docker run -d --name mongodb -p 27017:27017 mongo:7
+```
+
+---
+
+## macOS Installation
+
+### Using the Automated Script
+
+```bash
+chmod +x scripts/install-mac.sh
+./scripts/install-mac.sh
+```
+
+### Manual Installation
+
+```bash
+# Install Homebrew if needed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install node yarn python@3.11 ffmpeg vips mongodb-community
+
+# Start MongoDB
+brew services start mongodb-community
+
+# Build and run (same as Linux)
+cd frontend && yarn install && yarn build && cd ..
+cd backend && python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn server:app --host 127.0.0.1 --port 8001
+```
+
+---
+
+## Non-Git Installation
+
+For users who cannot or prefer not to clone the repository.
+
+### Method 1: Download Release ZIP
+
+1. Go to: `https://github.com/your-org/watchnexus/releases`
+2. Download the latest `watchnexus-vX.X.X.zip`
+3. Extract to your desired location
+4. Follow the manual installation steps for your OS
+
+### Method 2: Download via curl/wget
+
+**Windows (PowerShell):**
+```powershell
+# Download latest release
+$releaseUrl = "https://github.com/your-org/watchnexus/archive/refs/heads/main.zip"
+$downloadPath = "$env:TEMP\watchnexus.zip"
+$extractPath = "C:\Projects\watchnexus"
+
+Invoke-WebRequest -Uri $releaseUrl -OutFile $downloadPath
+Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+Remove-Item $downloadPath
+
+cd "$extractPath\watchnexus-main"
+# Continue with manual installation steps...
+```
+
+**Linux/macOS:**
+```bash
+# Download latest release
+curl -L https://github.com/your-org/watchnexus/archive/refs/heads/main.tar.gz -o watchnexus.tar.gz
+tar -xzf watchnexus.tar.gz
+cd watchnexus-main
+
+# Continue with manual installation steps...
+```
+
+### Method 3: Pre-built Binaries (Coming Soon)
+
+We plan to provide pre-built binaries for:
+- Windows: `.exe` installer and portable version
+- Linux: `.AppImage` universal binary
+- macOS: `.dmg` disk image
+
+Check the releases page for availability.
+
+---
+
+## MongoDB Setup
+
+### Quick Setup Options
+
+**Option 1: Local Installation (Recommended)**
+- Windows: Use the MSI installer linked above
+- Arch Linux: `yay -S mongodb-bin`
+- Ubuntu: Follow the apt instructions above
+- macOS: `brew install mongodb-community`
+
+**Option 2: Docker (Cross-platform)**
+```bash
+docker run -d \
+  --name mongodb \
+  -p 27017:27017 \
+  -v mongodb_data:/data/db \
+  --restart unless-stopped \
+  mongo:7
+```
+
+**Option 3: MongoDB Atlas (Cloud)**
+1. Sign up at https://www.mongodb.com/cloud/atlas
+2. Create a free M0 cluster
+3. Get connection string: `mongodb+srv://user:pass@cluster.mongodb.net/watchnexus`
+4. Update your `.env` file with the connection string
+
+### Verify MongoDB is Running
+
+```bash
+# Check if MongoDB is accepting connections
+mongosh --eval "db.runCommand({ ping: 1 })"
+
+# Or using curl
+curl -s http://localhost:27017 | head -c 100
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**"yarn: command not found"**
+```bash
+npm install -g yarn
+# Or on Arch: sudo pacman -S yarn
+```
+
+**"python: command not found" (Windows)**
+- Reinstall Python and check "Add Python to PATH"
+- Or use `py` instead of `python`
+
+**"EACCES: permission denied" (Linux/macOS)**
+```bash
+# Fix npm permissions
+mkdir -p ~/.npm-global
+npm config set prefix '~/.npm-global'
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**MongoDB connection refused**
+```bash
+# Check if MongoDB is running
+sudo systemctl status mongodb  # or mongod
+
+# Start if not running
+sudo systemctl start mongodb
+```
+
+**"Module not found" Python errors**
+```bash
+cd backend
+source venv/bin/activate  # or .\venv\Scripts\Activate.ps1 on Windows
+pip install -r requirements.txt
+```
+
+**Frontend build fails with memory error**
+```bash
+# Increase Node.js memory
+export NODE_OPTIONS="--max-old-space-size=4096"
+yarn build
+```
+
+**Port 8001 already in use**
+```bash
+# Find and kill process using port
+# Linux/macOS:
+lsof -i :8001 | grep LISTEN | awk '{print $2}' | xargs kill
+
+# Windows:
+netstat -ano | findstr :8001
+taskkill /PID <PID> /F
+```
+
+### Getting Help
+
+- GitHub Issues: `https://github.com/your-org/watchnexus/issues`
+- Discord: `https://discord.gg/watchnexus`
+- Documentation: `https://docs.watchnexus.ca`
+
+---
+
+## Appendix: Complete Dependency List
+
+### Windows Direct Downloads
+
+| Package | Version | Direct Link |
+|---------|---------|-------------|
+| Node.js LTS | 20.11.0 | https://nodejs.org/dist/v20.11.0/node-v20.11.0-x64.msi |
+| Python | 3.11.7 | https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe |
+| Git | 2.43.0 | https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe |
+| MongoDB | 7.0.5 | https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-7.0.5-signed.msi |
+| FFmpeg | Latest | https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip |
+| VC++ Redist | 2022 | https://aka.ms/vs/17/release/vc_redist.x64.exe |
+
+### Arch Linux pacman Packages
+
+```bash
+# All required packages in one command
+sudo pacman -S --needed \
+    base-devel \
+    git \
+    nodejs \
+    npm \
+    yarn \
+    python \
+    python-pip \
+    python-virtualenv \
+    ffmpeg \
+    libvips \
+    docker
+```
+
+### Ubuntu/Debian apt Packages
+
+```bash
+sudo apt install -y \
+    build-essential \
+    git \
+    curl \
+    ffmpeg \
+    libvips-dev \
+    python3 \
+    python3-pip \
+    python3-venv
+```
+
+---
+
+*Last Updated: February 2026*
