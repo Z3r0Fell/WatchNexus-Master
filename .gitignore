@@ -144,3 +144,7 @@ releases/zips/watchnexus-v2.4.0-linux.zip
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
