@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,26 +24,71 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 
-const navItems = [
-  { icon: Home, label: 'Home', path: '/' },
-  { icon: FolderOpen, label: 'Library', path: '/library' },
-  { icon: Film, label: 'Movies', path: '/movies' },
-  { icon: Tv, label: 'TV Shows', path: '/tv' },
-  { icon: Sparkles, label: 'Anime', path: '/anime' },
-  { icon: ListVideo, label: 'Playlists', path: '/playlists' },
-  { icon: Music, label: 'Music', path: '/music' },
-  { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks' },
-  { icon: Radio, label: 'Live TV', path: '/live' },
-  { icon: Layers, label: 'Streaming', path: '/streaming' },
-  { icon: Compass, label: 'Indexers', path: '/indexers' },
-  { icon: Download, label: 'Downloads', path: '/downloads' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
+// All navigation items - Home, Downloads, Settings are always visible (not hideable)
+const allNavItems = [
+  { icon: Home, label: 'Home', path: '/', alwaysVisible: true },
+  { icon: FolderOpen, label: 'Library', path: '/library', hideable: true },
+  { icon: Film, label: 'Movies', path: '/movies', hideable: true },
+  { icon: Tv, label: 'TV Shows', path: '/tv', hideable: true },
+  { icon: Sparkles, label: 'Anime', path: '/anime', hideable: true },
+  { icon: ListVideo, label: 'Playlists', path: '/playlists', hideable: true },
+  { icon: Music, label: 'Music', path: '/music', hideable: true },
+  { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks', hideable: true },
+  { icon: Radio, label: 'Live TV', path: '/live', hideable: true },
+  { icon: Layers, label: 'Streaming', path: '/streaming', hideable: true },
+  { icon: Compass, label: 'Indexers', path: '/indexers', hideable: true },
+  { icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true },
+  { icon: Settings, label: 'Settings', path: '/settings', alwaysVisible: true },
 ];
+
+// Default visible tabs (all except Live TV which users often don't use)
+const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers'];
+
+// Get visible tabs from localStorage
+const getVisibleTabs = () => {
+  try {
+    const saved = localStorage.getItem('watchnexus_visible_tabs');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error loading visible tabs:', e);
+  }
+  return defaultVisibleTabs;
+};
 
 export const Sidebar = () => {
   const [expanded, setExpanded] = useState(true);
+  const [visibleTabs, setVisibleTabs] = useState(getVisibleTabs);
   const location = useLocation();
   const { logout, user } = useAuth();
+
+  // Listen for changes from settings page
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'watchnexus_visible_tabs') {
+        setVisibleTabs(getVisibleTabs());
+      }
+    };
+    
+    // Also listen for custom event from settings
+    const handleTabsUpdate = () => {
+      setVisibleTabs(getVisibleTabs());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('watchnexus_tabs_updated', handleTabsUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('watchnexus_tabs_updated', handleTabsUpdate);
+    };
+  }, []);
+
+  // Filter nav items based on visibility settings
+  const navItems = allNavItems.filter(item => 
+    item.alwaysVisible || visibleTabs.includes(item.label)
+  );
 
   return (
     <motion.aside
@@ -67,7 +112,13 @@ export const Sidebar = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="font-bold text-xl tracking-tight bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent"
+                className="font-bold text-xl tracking-tight"
+                style={{
+                  background: `linear-gradient(90deg, var(--primary, #8B5CF6), var(--secondary, #EC4899))`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
               >
                 WatchNexus
               </motion.span>
@@ -119,11 +170,18 @@ export const Sidebar = () => {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-violet-600/20 text-violet-400"
+                      ? "text-white"
                       : "text-gray-400 hover:text-white hover:bg-white/5"
                   )}
+                  style={isActive ? {
+                    backgroundColor: 'color-mix(in srgb, var(--primary, #8B5CF6) 20%, transparent)',
+                    color: 'var(--primary, #8B5CF6)'
+                  } : {}}
                 >
-                  <Icon className={cn("w-5 h-5", isActive && "text-violet-400")} />
+                  <Icon 
+                    className="w-5 h-5" 
+                    style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}}
+                  />
                   <AnimatePresence>
                     {expanded && (
                       <motion.span
@@ -139,7 +197,8 @@ export const Sidebar = () => {
                   {isActive && expanded && (
                     <motion.div
                       layoutId="activeIndicator"
-                      className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400"
+                      className="ml-auto w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: 'var(--primary, #8B5CF6)' }}
                     />
                   )}
                 </Link>
