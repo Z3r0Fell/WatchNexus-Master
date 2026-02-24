@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-APP_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nexus-build-4.preview.emergentagent.com')
+APP_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://marmalade-preview.preview.emergentagent.com')
 OUTPUT_DIR = Path("/app/walkthrough_frames")
 OUTPUT_DIR.mkdir(exist_ok=True)
 

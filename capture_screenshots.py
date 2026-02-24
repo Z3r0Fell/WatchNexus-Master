@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 import os
 
 SCREENSHOT_DIR = "/app/screenshots"
-BASE_URL = "https://nexus-build-4.preview.emergentagent.com"
+BASE_URL = "https://marmalade-preview.preview.emergentagent.com"
 
 async def capture_screenshots():
     os.makedirs(SCREENSHOT_DIR, exist_ok=True)

@@ -1,7 +1,7 @@
 # WatchNexus - Marketing Assets
 
 ## Live Demo
-**URL:** https://nexus-build-4.preview.emergentagent.com
+**URL:** https://marmalade-preview.preview.emergentagent.com
 
 **Test Credentials:**
 - Email: test@test.com
