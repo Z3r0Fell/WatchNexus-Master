@@ -43,6 +43,30 @@ WatchNexus uses a dual-layer protection strategy combining **legal protection** 
 
 ---
 
+## Container & Distribution Banner Assets
+
+All official banners for Docker Hub, Unraid, and dashboard previews are located in `/assets/banners/`. Each variant corresponds to a WatchNexus package format:
+
+| Variant | Extension | Purpose | Banners |
+|---------|-----------|---------|---------|
+| **WN** | `.wn` | WatchNexus Core (standard) | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+| **WNF** | `.wnf` | WatchNexus Fortress (protected) | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+| **WNC** | `.wnc` | WatchNexus Compiled | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+| **WND** | `.wnd` | WatchNexus Docker | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+| **WNP** | `.wnp` | WatchNexus Portable | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+| **WNT** | `.wnt` | WatchNexus Tray | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+| **Suite** | suite | WatchNexus Full Suite | Docker/Unraid 1600x600, Hub Social 1200x630, Dashboard 1024x512, Stack Preview 1280x720 |
+
+**Usage Guidelines:**
+- Docker Hub: Use `*_docker_hub_social_1200x630.png` as the repository social preview
+- Unraid Community Apps: Use `*_docker_unraid_banner_1600x600.png` for the app banner
+- Dashboard/Portainer: Use `*_dashboard_banner_1024x512.png` for stack previews
+- Documentation/README: Use `*_stack_preview_1280x720.png` for feature screenshots
+
+**Manifest:** See `/assets/banners/manifest.json` for structured metadata.
+
+---
+
 ## 1. Dual Licensing Model
 
 ### Open Source License: AGPL v3 (GNU Affero General Public License)
