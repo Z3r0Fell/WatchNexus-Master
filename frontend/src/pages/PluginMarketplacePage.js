@@ -123,6 +123,31 @@ export const PluginMarketplacePage = () => {
   const getToken = () => localStorage.getItem('token');
   const getAuthHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 
+  // Fetch Gadgets Catalogue
+  const fetchCatalogue = useCallback(async (category = null, query = '') => {
+    setLoadingCatalogue(true);
+    try {
+      let url = `${API_URL}/api/gadgets/catalogue/search?`;
+      if (query) url += `q=${encodeURIComponent(query)}&`;
+      if (category) url += `category=${category}&`;
+      const res = await axios.get(url, { headers: getAuthHeader() });
+      setCatalogueItems(res.data.items || []);
+    } catch (err) {
+      console.error('Failed to fetch catalogue:', err);
+    } finally {
+      setLoadingCatalogue(false);
+    }
+  }, []);
+
+  const fetchCatalogueCategories = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/gadgets/catalogue/categories`, { headers: getAuthHeader() });
+      setCatalogueCategories(res.data || {});
+    } catch (err) {
+      console.error('Failed to fetch catalogue categories:', err);
+    }
+  }, []);
+
   // Fetch Kodi categories
   const fetchKodiCategories = useCallback(async () => {
     try {
