@@ -164,11 +164,18 @@ export const Sidebar = () => {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-violet-600/20 text-violet-400"
+                      ? "text-white"
                       : "text-gray-400 hover:text-white hover:bg-white/5"
                   )}
+                  style={isActive ? {
+                    backgroundColor: 'color-mix(in srgb, var(--primary, #8B5CF6) 20%, transparent)',
+                    color: 'var(--primary, #8B5CF6)'
+                  } : {}}
                 >
-                  <Icon className={cn("w-5 h-5", isActive && "text-violet-400")} />
+                  <Icon 
+                    className="w-5 h-5" 
+                    style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}}
+                  />
                   <AnimatePresence>
                     {expanded && (
                       <motion.span
@@ -184,7 +191,8 @@ export const Sidebar = () => {
                   {isActive && expanded && (
                     <motion.div
                       layoutId="activeIndicator"
-                      className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400"
+                      className="ml-auto w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: 'var(--primary, #8B5CF6)' }}
                     />
                   )}
                 </Link>
