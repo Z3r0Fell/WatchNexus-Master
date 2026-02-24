@@ -1,0 +1,7 @@
+extension,full_name,purpose,platform,label,badge_rgb,folder,ico,icns
+.wn,WatchNexus Module,Compiled core module,All,MOD,"(255, 173, 32)",/mnt/data/wn_icon_pack/wn,/mnt/data/wn_icon_pack/wn/watchnexus_wn.ico,/mnt/data/wn_icon_pack/wn/watchnexus_wn.icns
+.wnf,WatchNexus Framework,Framework/library bundle,All,FW,"(82, 168, 255)",/mnt/data/wn_icon_pack/wnf,/mnt/data/wn_icon_pack/wnf/watchnexus_wnf.ico,/mnt/data/wn_icon_pack/wnf/watchnexus_wnf.icns
+.wnc,WatchNexus Config,Encrypted configuration,All,CFG,"(196, 92, 255)",/mnt/data/wn_icon_pack/wnc,/mnt/data/wn_icon_pack/wnc/watchnexus_wnc.ico,/mnt/data/wn_icon_pack/wnc/watchnexus_wnc.icns
+.wnd,WatchNexus Data,Encrypted data cache,All,DATA,"(66, 224, 160)",/mnt/data/wn_icon_pack/wnd,/mnt/data/wn_icon_pack/wnd/watchnexus_wnd.ico,/mnt/data/wn_icon_pack/wnd/watchnexus_wnd.icns
+.wnp,WatchNexus Plugin,Plugin package,All,PLG,"(255, 92, 153)",/mnt/data/wn_icon_pack/wnp,/mnt/data/wn_icon_pack/wnp/watchnexus_wnp.ico,/mnt/data/wn_icon_pack/wnp/watchnexus_wnp.icns
+.wnt,WatchNexus Theme,Theme package,All,THM,"(255, 116, 64)",/mnt/data/wn_icon_pack/wnt,/mnt/data/wn_icon_pack/wnt/watchnexus_wnt.ico,/mnt/data/wn_icon_pack/wnt/watchnexus_wnt.icns
