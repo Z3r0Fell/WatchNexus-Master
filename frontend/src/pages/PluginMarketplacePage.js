@@ -604,22 +604,6 @@ export const PluginMarketplacePage = () => {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-white/5 p-1 rounded-xl">
-            <TabsTrigger value="kodi" className="data-[state=active]:bg-violet-600">
-              <Globe className="w-4 h-4 mr-2" />
-              Kodi Repository
-            </TabsTrigger>
-            <TabsTrigger value="installed" className="data-[state=active]:bg-violet-600">
-              <Check className="w-4 h-4 mr-2" />
-              Installed ({installedPlugins.length})
-            </TabsTrigger>
-            <TabsTrigger value="convert" className="data-[state=active]:bg-violet-600">
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Convert Plugin
-            </TabsTrigger>
-          </TabsList>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-white/5 p-1 rounded-xl">
             <TabsTrigger value="catalogue" className="data-[state=active]:bg-violet-600" data-testid="catalogue-tab">
               <Package className="w-4 h-4 mr-2" />
               Gadgets Catalogue
