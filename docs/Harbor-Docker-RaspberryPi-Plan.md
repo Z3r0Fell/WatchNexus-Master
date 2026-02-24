@@ -7,6 +7,20 @@ This document outlines containerization and embedded device deployment strategie
 
 ---
 
+## Container Banner Assets
+
+Official container banners are available at `/assets/banners/` for Docker Hub, Unraid, and dashboard integrations. Use the variant matching your deployment:
+
+- **WND** (`/assets/banners/wnd/`): Docker-specific banners
+- **Suite** (`/assets/banners/suite/`): Full suite banners for multi-container stacks
+- **WN** (`/assets/banners/wn/`): Standard WatchNexus branding
+
+Banner sizes: Unraid (1600x600), Docker Hub Social (1200x630), Dashboard (1024x512), Stack Preview (1280x720).
+
+See `/assets/banners/manifest.json` for the complete asset inventory.
+
+---
+
 ## Part 1: Docker Deployment
 
 ### 1.1 Docker Images
