@@ -862,7 +862,7 @@ WatchNexus.app/
 
 ## 10. Professional Polish Checklist
 
-- [ ] Custom file icons for .wn, .wnp, .wnt files
+- [x] Custom file icons for .wn, .wnf, .wnc, .wnd, .wnp, .wnt files ✅ **READY**
 - [ ] Version info embedded in all binaries
 - [ ] Digital signatures on all executables
 - [ ] File association for double-click install of plugins/themes
@@ -872,3 +872,59 @@ WatchNexus.app/
 - [ ] Help → Check for Updates integration
 - [ ] Crash reporter with automatic submission
 - [ ] Telemetry (opt-in) for usage analytics
+
+---
+
+## 11. Icon Asset Reference
+
+Icons are stored at: `/app/assets/icons/wn_icon_pack/`
+
+### Icon Pack Contents
+
+| Extension | Label | Badge Color | Purpose |
+|-----------|-------|-------------|---------|
+| `.wn` | MOD | Gold `#FFAD20` | Compiled core module |
+| `.wnf` | FW | Blue `#52A8FF` | Framework/library bundle |
+| `.wnc` | CFG | Purple `#C45CFF` | Encrypted configuration |
+| `.wnd` | DATA | Teal `#42E0A0` | Encrypted data cache |
+| `.wnp` | PLG | Pink `#FF5C99` | Plugin package |
+| `.wnt` | THM | Orange `#FF7440` | Theme package |
+
+### Sizes Included (per extension)
+
+| Size | Use Case |
+|------|----------|
+| 16x16 | Taskbar, file lists |
+| 24x24 | Small icons |
+| 32x32 | Standard desktop icons |
+| 48x48 | Medium icons |
+| 64x64 | Large icons |
+| 96x96 | High-DPI small |
+| 128x128 | App icons, thumbnails |
+| 256x256 | High-DPI icons |
+| 512x512 | Very high-DPI, stores |
+| 1024x1024 | macOS retina, promotional |
+
+### Platform-Specific Formats
+
+| Platform | Format | Location |
+|----------|--------|----------|
+| **Windows** | `.ico` | `wn_icon_pack/{ext}/watchnexus_{ext}.ico` |
+| **macOS** | `.icns` | `wn_icon_pack/{ext}/watchnexus_{ext}.icns` |
+| **macOS Xcode** | `.appiconset` | `wn_icon_pack/{ext}/macOS_AppIcon.appiconset/` |
+| **Linux** | `.png` | `wn_icon_pack/{ext}/watchnexus_{ext}_{size}.png` |
+
+### Usage in Build Scripts
+
+```bash
+# Windows installer (Inno Setup / NSIS)
+[Icons]
+Name: "{group}\WatchNexus"; Filename: "{app}\WatchNexus.exe"; IconFilename: "{app}\icons\watchnexus_wn.ico"
+
+# macOS Info.plist
+<key>CFBundleIconFile</key>
+<string>watchnexus_wn.icns</string>
+
+# Linux .desktop file
+Icon=/usr/share/icons/hicolor/256x256/apps/watchnexus.png
+```
