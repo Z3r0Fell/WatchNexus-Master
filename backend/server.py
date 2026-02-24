@@ -5372,36 +5372,8 @@ async def startup_db():
     init_drizzle(db)
     logger.info("Drizzle playlist engine initialized")
 
-# ==================== GADGETS CATALOGUE ====================
-
-from gadgets_catalogue import get_catalogue, get_catalogue_categories, search_catalogue
-
-@api_router.get("/gadgets/catalogue")
-async def gadgets_catalogue(user: dict = Depends(require_auth)):
-    """Get the full built-in gadgets catalogue."""
-    return {
-        "items": get_catalogue(),
-        "categories": get_catalogue_categories(),
-        "total": len(get_catalogue()),
-    }
-
-@api_router.get("/gadgets/catalogue/search")
-async def gadgets_catalogue_search(
-    q: str = "",
-    category: str = None,
-    plugin_type: str = None,
-    user: dict = Depends(require_auth)
-):
-    """Search the gadgets catalogue."""
-    results = search_catalogue(query=q, category=category, plugin_type=plugin_type)
-    return {"items": results, "total": len(results)}
-
-@api_router.get("/gadgets/catalogue/categories")
-async def gadgets_catalogue_categories(user: dict = Depends(require_auth)):
-    """Get catalogue categories with item counts."""
-    return get_catalogue_categories()
-
-# ==================== STATIC FILE SERVING (FOR STANDALONE BUILD) ====================
+# Include router and middleware
+app.include_router(api_router)
 # Serve frontend build files when running as standalone application
 FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend"
 FRONTEND_BUILD_FALLBACK = ROOT_DIR / "frontend_build"  # Alternative location
