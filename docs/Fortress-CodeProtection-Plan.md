@@ -5,6 +5,42 @@
 
 WatchNexus uses a dual-layer protection strategy combining **legal protection** (dual licensing) with **technical protection** (Cython compilation) to ensure the codebase remains protected while staying open source.
 
+**Related Plans:**
+- **Constellation** - Distribution & Packaging (Windows, macOS, Linux)
+- **Harbor** - Docker & Raspberry Pi Deployment
+- **Crucible** - FFmpeg Replacement Investigation
+
+---
+
+## Distribution Targets (Cross-Reference: Constellation)
+
+### Compiled Binary Releases
+
+| Platform | Format | Architectures |
+|----------|--------|---------------|
+| **Windows** | .exe installer, .zip portable | x64, x86 |
+| **macOS Sequoia** (15) | .dmg | arm64, x64, universal |
+| **macOS Sonoma** (14) | .dmg | arm64, x64, universal |
+| **macOS Ventura** (13) | .dmg | arm64, x64, universal |
+| **macOS Monterey** (12) | .dmg (legacy) | arm64, x64 |
+| **Linux AppImage** | .AppImage | x64, arm64, armhf |
+| **Debian/Ubuntu** | .deb | x64, arm64, armhf |
+| **Fedora/RHEL** | .rpm | x64, arm64 |
+| **Arch Linux** | AUR (PKGBUILD) | any |
+| **Docker** | Multi-arch image | amd64, arm64, arm/v7 |
+| **Raspberry Pi** | Native + Docker | arm64, armhf |
+
+### Architecture Compatibility
+
+| Processor | Status | Notes |
+|-----------|--------|-------|
+| Intel (x86_64) | ✅ Ready | All desktop/laptop |
+| AMD (x86_64) | ✅ Ready | All desktop/server |
+| Apple M1/M2/M3 | ✅ Ready | ARM64 native |
+| ARM64 (aarch64) | ✅ Ready | Pi 4/5, AWS Graviton |
+| ARMv7 (armhf) | ✅ Ready | Pi 3, older ARM |
+| NVIDIA GPU | ⚠️ Optional | NVENC acceleration |
+
 ---
 
 ## 1. Dual Licensing Model
