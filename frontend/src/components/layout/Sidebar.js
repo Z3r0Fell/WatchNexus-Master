@@ -112,7 +112,13 @@ export const Sidebar = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="font-bold text-xl tracking-tight bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent"
+                className="font-bold text-xl tracking-tight"
+                style={{
+                  background: `linear-gradient(90deg, var(--primary, #8B5CF6), var(--secondary, #EC4899))`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
               >
                 WatchNexus
               </motion.span>
