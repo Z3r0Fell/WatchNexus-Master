@@ -278,15 +278,19 @@ export const SettingsPage = () => {
     }
   };
 
-  // Helper to render nav button
+  // Helper to render nav button - uses theme primary color
   const NavButton = ({ id, label }) => (
     <button
       onClick={() => setActiveSection(id)}
       className={`w-full text-left px-4 py-2.5 rounded-lg transition-all ${
         activeSection === id 
-          ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+          ? 'text-white shadow-lg'
           : 'text-gray-400 hover:bg-white/5 hover:text-white'
       }`}
+      style={activeSection === id ? {
+        backgroundColor: 'var(--primary, #8B5CF6)',
+        boxShadow: '0 10px 15px -3px color-mix(in srgb, var(--primary, #8B5CF6) 30%, transparent)'
+      } : {}}
       data-testid={`settings-nav-${id}`}
     >
       {label}
@@ -300,7 +304,12 @@ export const SettingsPage = () => {
         <aside className="w-72 shrink-0 border-r border-white/10 bg-black/20 sticky top-0 h-screen overflow-y-auto">
           <div className="p-6 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 flex items-center justify-center">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, var(--primary, #8B5CF6), var(--secondary, #EC4899))`
+                }}
+              >
                 <Settings className="w-5 h-5 text-white" />
               </div>
               <div>
