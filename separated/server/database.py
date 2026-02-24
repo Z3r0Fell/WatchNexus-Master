@@ -61,10 +61,61 @@ class SQLiteDB:
         
         await self._create_tables()
         
+        # Set/update database version
+        await self._update_db_version()
+        
         # Start periodic VACUUM task (runs every 24 hours)
         self._vacuum_task = asyncio.create_task(self._periodic_vacuum())
         
         logger.info(f"SQLite database connected (WAL mode): {self.db_path}")
+        
+    async def _update_db_version(self):
+        """Update the database version metadata."""
+        try:
+            # Read current version from VERSION file
+            version_file = Path(__file__).parent.parent / "VERSION"
+            if version_file.exists():
+                current_version = version_file.read_text().strip()
+            else:
+                current_version = "2.5.0"  # Default version
+            
+            now = datetime.now().isoformat()
+            
+            # Check if version exists
+            async with self._connection.execute(
+                "SELECT value FROM db_meta WHERE key = 'db_version'"
+            ) as cursor:
+                row = await cursor.fetchone()
+            
+            if row:
+                # Update existing version
+                await self._connection.execute(
+                    "UPDATE db_meta SET value = ?, updated_at = ? WHERE key = 'db_version'",
+                    [current_version, now]
+                )
+            else:
+                # Insert new version
+                await self._connection.execute(
+                    "INSERT INTO db_meta (key, value, updated_at) VALUES (?, ?, ?)",
+                    ["db_version", current_version, now]
+                )
+            
+            await self._connection.commit()
+            logger.info(f"Database version set to {current_version}")
+            
+        except Exception as e:
+            logger.warning(f"Could not update database version: {e}")
+    
+    async def get_db_version(self) -> Optional[str]:
+        """Get the stored database version."""
+        try:
+            async with self._connection.execute(
+                "SELECT value FROM db_meta WHERE key = 'db_version'"
+            ) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else None
+        except Exception:
+            return None
         
     def _create_backup(self):
         """Create a backup of the database file."""
@@ -182,6 +233,13 @@ class SQLiteDB:
     async def _create_tables(self):
         """Create all required tables if they don't exist."""
         await self._connection.executescript('''
+            -- Database metadata for version tracking
+            CREATE TABLE IF NOT EXISTS db_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT
+            );
+            
             -- Users table
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,

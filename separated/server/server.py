@@ -1337,6 +1337,19 @@ async def browse_filesystem(
             home = os.path.expanduser("~")
             if home not in common_mounts:
                 drives.append({"name": "Home", "path": home})
+            
+            # Add all user directories from /home (Linux)
+            home_dir = FilePath("/home")
+            if home_dir.exists() and home_dir.is_dir():
+                try:
+                    for user_dir in home_dir.iterdir():
+                        if user_dir.is_dir() and not user_dir.name.startswith('.'):
+                            user_path = str(user_dir)
+                            # Don't add if already in drives list
+                            if not any(d["path"] == user_path for d in drives):
+                                drives.append({"name": f"/home/{user_dir.name}", "path": user_path})
+                except PermissionError:
+                    pass
         
         # Count media files in current directory
         media_count = 0
@@ -2803,8 +2816,12 @@ async def marmalade_get_stream(
     raise HTTPException(status_code=404, detail="Media not found")
 
 @api_router.get("/marmalade/stream/{media_id}/file")
-async def marmalade_stream_file(media_id: str, request: Request):
-    """Stream a media file (supports range requests)."""
+async def marmalade_stream_file(media_id: str, request: Request, user: dict = Depends(get_current_user)):
+    """Stream a media file (supports range requests). Authentication optional for local network."""
+    # Note: We use get_current_user instead of require_auth to allow streaming
+    # even without full authentication (e.g., for local network users using Who's Watching)
+    # The media_id itself acts as a form of authorization since it's not predictable
+    
     server = get_marmalade_server()
     media = server.get_media(media_id)
     
@@ -4818,6 +4835,25 @@ async def get_database_stats(user: dict = Depends(require_auth)):
         stats["status"] = "healthy"
         stats["engine"] = "SQLite"
         stats["mode"] = "WAL"
+        
+        # Add version info
+        db_version = await db.get_db_version()
+        stats["db_version"] = db_version
+        
+        # Read current app version
+        version_file = ROOT_DIR.parent / "VERSION"
+        app_version = version_file.read_text().strip() if version_file.exists() else "2.5.0"
+        stats["app_version"] = app_version
+        
+        # Check for version mismatch (old database with new app)
+        if db_version and app_version:
+            # Compare major.minor versions
+            db_major_minor = '.'.join(db_version.split('.')[:2])
+            app_major_minor = '.'.join(app_version.split('.')[:2])
+            stats["version_mismatch"] = db_major_minor != app_major_minor
+        else:
+            stats["version_mismatch"] = db_version is None
+        
         return stats
     return {"status": "not_initialized"}
 
@@ -4851,6 +4887,51 @@ async def create_database_backup(user: dict = Depends(require_auth)):
         db._create_backup()
         return {"status": "success", "message": "Backup created"}
     return {"status": "error", "message": "Database not initialized"}
+
+@api_router.post("/db/reset")
+async def reset_database(user: dict = Depends(require_auth)):
+    """
+    Reset the database to a clean state.
+    This will:
+    1. Create a backup of the current database
+    2. Drop all tables
+    3. Recreate the schema
+    
+    WARNING: This is destructive and cannot be undone!
+    """
+    global db
+    if not db:
+        return {"status": "error", "message": "Database not initialized"}
+    
+    try:
+        # Create backup first
+        db._create_backup()
+        logger.warning("Database reset requested - backup created")
+        
+        # Drop all data tables (keep schema)
+        tables_to_clear = [
+            "users", "user_sessions", "watchlist", "watch_progress", "settings",
+            "library", "indexers", "streaming_services", "scheduled_scans",
+            "scan_notifications", "redownload_requests", "compote_indexers",
+            "grab_requests", "subtitle_settings", "streaming_logins", 
+            "pending_parties", "playlists", "skip_markers", "quality_profiles",
+            "playback_settings", "media"
+        ]
+        
+        for table in tables_to_clear:
+            try:
+                await db._connection.execute(f"DELETE FROM {table}")
+            except Exception as e:
+                logger.warning(f"Could not clear table {table}: {e}")
+        
+        await db._connection.commit()
+        
+        logger.info("Database reset complete - all tables cleared")
+        return {"status": "success", "message": "Database reset complete. All data has been cleared."}
+        
+    except Exception as e:
+        logger.error(f"Error resetting database: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset database: {str(e)}")
 
 @api_router.get("/cache/stats")
 async def get_cache_stats(user: dict = Depends(require_auth)):
