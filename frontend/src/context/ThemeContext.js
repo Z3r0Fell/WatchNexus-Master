@@ -181,8 +181,8 @@ export const ThemeProvider = ({ children }) => {
         type: 'custom',
         colors
       });
-      if (res.data) {
-        setTheme({ ...res.data, colors });
+      if (res.data && res.data.theme) {
+        setTheme({ ...res.data.theme, colors });
         setThemeType('custom');
         applyThemeToDOM(colors, mode);
       }
