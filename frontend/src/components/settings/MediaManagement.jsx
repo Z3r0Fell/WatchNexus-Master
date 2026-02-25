@@ -210,7 +210,7 @@ const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
             <select
               value={cutoff}
               onChange={e => setCutoff(e.target.value)}
-              className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:bg-[#1a1a1a] [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:text-white"
+              className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white"
               data-testid="profile-cutoff-select"
             >
               {enabledQualityNames.map(q => (
