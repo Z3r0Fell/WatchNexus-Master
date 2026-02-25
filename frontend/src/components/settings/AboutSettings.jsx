@@ -263,7 +263,7 @@ const RELEASES = [
 
 export const AboutSettings = () => {
   const [systemInfo, setSystemInfo] = useState(null);
-  const [expandedVersion, setExpandedVersion] = useState('2.1.0');
+  const [expandedVersion, setExpandedVersion] = useState('2.5.6');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -324,7 +324,7 @@ export const AboutSettings = () => {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-2xl font-bold text-white">
-                WatchNexus v{systemInfo?.version || '2.1.0'}
+                WatchNexus v{systemInfo?.version || '2.5.6'}
               </h3>
               <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getTypeBadge('major')}`}>
                 Latest
