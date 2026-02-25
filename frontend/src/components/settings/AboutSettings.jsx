@@ -41,6 +41,15 @@ const TIER_BADGES = {
 const RELEASES = [
   // 2.5.x Series - Current
   {
+    version: '2.5.13', date: '2025-02-25', type: 'patch', title: 'Theme Mode Sync',
+    highlights: ['Dark/Light mode syncs across devices', 'Complete settings sync'],
+    changes: [
+      { type: 'feature', text: 'Theme mode (dark/light) now syncs to your account across all devices' },
+      { type: 'improvement', text: 'ThemeContext loads preference from backend on startup' },
+      { type: 'improvement', text: 'All user preferences now sync: IPTV, sidebar tabs, download mode, theme mode' },
+    ]
+  },
+  {
     version: '2.5.12', date: '2025-02-25', type: 'patch', title: 'Cross-Device Settings Sync',
     highlights: ['IPTV sources saved to database', 'User preferences sync across devices', 'All localStorage settings migrated to backend'],
     changes: [
