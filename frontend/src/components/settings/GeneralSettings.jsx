@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Folder, FolderSearch, LayoutDashboard, Eye, EyeOff, Check,
-  Settings, Sliders, Palette, Bell
+  Settings, Sliders, Palette, Bell, Loader2
 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
+import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 
 // Tabs for General Settings
 const GENERAL_TABS = [
@@ -40,14 +42,34 @@ export const GeneralSettings = ({
   onOpenFileBrowser
 }) => {
   const [activeTab, setActiveTab] = useState('paths');
-  const [visibleTabs, setVisibleTabs] = useState(() => {
-    try {
-      const saved = localStorage.getItem('watchnexus_visible_tabs');
-      return saved ? JSON.parse(saved) : defaultVisibleTabs;
-    } catch {
-      return defaultVisibleTabs;
-    }
-  });
+  const [visibleTabs, setVisibleTabs] = useState(defaultVisibleTabs);
+  const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [savingTabs, setSavingTabs] = useState(false);
+
+  // Load preferences from backend on mount
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BACKEND_URL}/api/user/preferences`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.visible_tabs && response.data.visible_tabs.length > 0) {
+          setVisibleTabs(response.data.visible_tabs);
+        }
+      } catch (error) {
+        console.error('Failed to fetch preferences:', error);
+        // Fall back to localStorage for backwards compatibility
+        try {
+          const saved = localStorage.getItem('watchnexus_visible_tabs');
+          if (saved) setVisibleTabs(JSON.parse(saved));
+        } catch {}
+      } finally {
+        setLoadingPrefs(false);
+      }
+    };
+    fetchPreferences();
+  }, []);
 
   const toggleTab = (tabLabel) => {
     setVisibleTabs(prev => {
