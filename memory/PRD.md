@@ -3,24 +3,26 @@
 ## Product Overview
 WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
-## Current Version: 2.5.12
+## Current Version: 2.5.13
 **Last Updated:** Feb 25, 2025
 
-## Session Summary (Feb 25, 2025) - Code Audit CONTINUED
+## Session Summary (Feb 25, 2025) - Code Audit COMPLETE
+
+### Theme Mode Sync (v2.5.13)
+- ✅ **Theme Mode** - Dark/Light preference now syncs to backend across all devices
 
 ### Cross-Device Settings Sync (v2.5.12)
-- ✅ **IPTV Sources** - Now persist to database, sync across devices
+- ✅ **IPTV Sources** - Persist to database, sync across devices
 - ✅ **Sidebar Tab Visibility** - Syncs to user account
 - ✅ **Download Client Mode** - Syncs across devices
-- ✅ **New Tables:** `iptv_sources`, `user_preferences`
-- ✅ **New APIs:** `/api/iptv/sources`, `/api/user/preferences`
-- ✅ **User Delete Cascade** - Updated to include new tables
 
-### Previous Fixes (v2.5.11)
-- ✅ User Delete Cascade - Properly deletes from 16+ related tables
-- ✅ Current User Protection - Delete button hidden, "You" badge added
-- ✅ Skip Markers Table Fix - Corrected table name reference
-- ✅ Unsupported Gadgets Hidden - Photos, Radio, Podcasts filtered from sidebar
+### All Synced Settings:
+| Setting | API Endpoint | Status |
+|---------|-------------|--------|
+| IPTV Sources | `/api/iptv/sources` | ✅ Synced |
+| Sidebar Tabs | `/api/user/preferences` | ✅ Synced |
+| Download Mode | `/api/user/preferences` | ✅ Synced |
+| Theme Mode | `/api/user/preferences` | ✅ Synced |
 
 ### Audit Coverage:
 | Feature | Status | Notes |
