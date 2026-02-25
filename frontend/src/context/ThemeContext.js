@@ -248,8 +248,11 @@ export const ThemeProvider = ({ children }) => {
   }, [theme, mode]);
 
   useEffect(() => {
-    fetchTheme();
-  }, [fetchTheme]);
+    // Only fetch theme after mode is loaded from backend
+    if (modeLoaded) {
+      fetchTheme();
+    }
+  }, [fetchTheme, modeLoaded]);
 
   return (
     <ThemeContext.Provider value={{
