@@ -36,14 +36,12 @@ import "./App.css";
 
 // Gadget Pages (lazy loaded - only loaded when gadget is installed)
 const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
-const GamesPage = lazy(() => import("./pages/gadgets/GamesPage"));
 const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
 const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
 const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
 
 const GADGET_PAGE_MAP = {
   photos: PhotosPage,
-  games: GamesPage,
   radio: RadioPage,
   podcasts: PodcastsPage,
   web_video: WebVideoPage,
