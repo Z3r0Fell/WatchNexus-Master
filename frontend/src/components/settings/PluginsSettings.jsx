@@ -439,14 +439,20 @@ export const PluginsSettings = () => {
                                   <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-500">{tag}</span>
                                 ))}
                               </div>
-                              <Button size="sm" variant={isInstalled(gadget.id) ? "default" : "outline"} 
-                                className={`text-xs h-6 px-2 ${isInstalled(gadget.id) ? 'bg-green-600 hover:bg-red-600' : 'border-white/10'}`}
-                                disabled={installingGadget === gadget.id}
-                                onClick={() => handleInstallGadget(gadget.id, gadget.name)}
-                                data-testid={`install-${gadget.id}`}>
-                                {installingGadget === gadget.id ? <Loader2 className="w-3 h-3 animate-spin" /> :
-                                  isInstalled(gadget.id) ? <><Check className="w-3 h-3 mr-1" /> Installed</> : <><Download className="w-3 h-3 mr-1" /> Get</>}
-                              </Button>
+                              {gadget.supported === false ? (
+                                <span className="text-[10px] px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30" title={gadget.compatibility_note}>
+                                  Coming Soon
+                                </span>
+                              ) : (
+                                <Button size="sm" variant={isInstalled(gadget.id) ? "default" : "outline"} 
+                                  className={`text-xs h-6 px-2 ${isInstalled(gadget.id) ? 'bg-green-600 hover:bg-red-600' : 'border-white/10'}`}
+                                  disabled={installingGadget === gadget.id}
+                                  onClick={() => handleInstallGadget(gadget.id, gadget.name, gadget.supported, gadget.compatibility_note)}
+                                  data-testid={`install-${gadget.id}`}>
+                                  {installingGadget === gadget.id ? <Loader2 className="w-3 h-3 animate-spin" /> :
+                                    isInstalled(gadget.id) ? <><Check className="w-3 h-3 mr-1" /> Installed</> : <><Download className="w-3 h-3 mr-1" /> Get</>}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
