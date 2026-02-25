@@ -42,6 +42,7 @@ const categoryColors = {
 };
 
 export const PluginsSettings = () => {
+  const { installed, isInstalled, isActive, install, uninstall, activate, deactivate, refresh: refreshGadgets } = useGadgets();
   const [activeView, setActiveView] = useState('catalogue');
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
@@ -51,6 +52,7 @@ export const PluginsSettings = () => {
   const [kodiAddonUrl, setKodiAddonUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [uninstallingPlugin, setUninstallingPlugin] = useState(null);
+  const [installingGadget, setInstallingGadget] = useState(null);
   const fileInputRef = useRef(null);
 
   // Catalogue state
