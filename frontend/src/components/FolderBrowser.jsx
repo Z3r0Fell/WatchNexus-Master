@@ -180,8 +180,7 @@ const FolderBrowser = ({ onSelect, initialPath, selectedPath }) => {
                     ? 'bg-violet-500/20 text-violet-300' 
                     : 'hover:bg-white/10 text-gray-300'
                 }`}
-                onClick={() => handleSelect(dir)}
-                onDoubleClick={() => handleNavigate(dir.path)}
+                onClick={() => handleNavigate(dir.path)}
                 data-testid={`folder-${dir.name}`}
               >
                 {expandedPath === dir.path ? (
