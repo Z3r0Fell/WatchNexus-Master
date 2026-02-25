@@ -50,6 +50,7 @@ export const UsersSettings = ({
             onAddUser={onAddUser}
             onUpdateUser={onUpdateUser}
             onDeleteUser={onDeleteUser}
+            currentUserId={currentUserId}
           />
         );
       case 'access':
