@@ -307,7 +307,6 @@ function AppRouter() {
 
       {/* Dynamic Gadget Routes */}
       <Route path="/photos" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><PhotosPage /></Suspense></ProtectedRoute>} />
-      <Route path="/games" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><GamesPage /></Suspense></ProtectedRoute>} />
       <Route path="/radio" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><RadioPage /></Suspense></ProtectedRoute>} />
       <Route path="/podcasts" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><PodcastsPage /></Suspense></ProtectedRoute>} />
       <Route path="/web-video" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><WebVideoPage /></Suspense></ProtectedRoute>} />
