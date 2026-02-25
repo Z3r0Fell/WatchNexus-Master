@@ -583,10 +583,10 @@ export const PluginMarketplacePage = () => {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <Package className="w-8 h-8 text-violet-400" />
-              Add-ons & Plugins
+              Gadgets Marketplace
             </h1>
             <p className="text-gray-400 mt-1">
-              Extend WatchNexus with add-ons from Kodi and the community
+              Extend WatchNexus with gadgets from the catalogue and community
             </p>
           </div>
           <div className="flex items-center gap-3">
