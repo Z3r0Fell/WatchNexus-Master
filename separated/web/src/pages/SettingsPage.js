@@ -358,7 +358,7 @@ export const SettingsPage = () => {
               <div className="space-y-0.5">
                 <NavButton id="gelatin" label="External Access" />
                 <NavButton id="theme-forge" label="Theme Forge" />
-                <NavButton id="plugins" label="Plugins" />
+                <NavButton id="plugins" label="Gadgets" />
                 <NavButton id="logs" label="Logs & Health" />
                 <NavButton id="maintenance" label="Maintenance" />
               </div>
@@ -378,7 +378,7 @@ export const SettingsPage = () => {
         <main className="flex-1 min-h-screen">
           {/* Content Header */}
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
-            <h2 className="font-medium capitalize">{activeSection.replace('-', ' ')} Settings</h2>
+            <h2 className="font-medium capitalize">{activeSection === 'plugins' ? 'Gadgets' : activeSection.replace('-', ' ')} Settings</h2>
           </div>
 
           {/* Content */}
