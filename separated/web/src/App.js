@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { GadgetProvider, useGadgets } from "./context/GadgetContext";
+import { lazy, Suspense } from "react";
 
 // Pages
 import { Dashboard } from "./pages/Dashboard";
@@ -31,6 +33,27 @@ import { WatchlistPage } from "./pages/WatchlistPage";
 import { DiscoverPage } from "./pages/DiscoverPage";
 
 import "./App.css";
+
+// Gadget Pages (lazy loaded - only loaded when gadget is installed)
+const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
+const GamesPage = lazy(() => import("./pages/gadgets/GamesPage"));
+const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
+const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
+const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+
+const GADGET_PAGE_MAP = {
+  photos: PhotosPage,
+  games: GamesPage,
+  radio: RadioPage,
+  podcasts: PodcastsPage,
+  web_video: WebVideoPage,
+};
+
+const GadgetPageLoader = () => (
+  <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+    <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -284,6 +307,13 @@ function AppRouter() {
         }
       />
 
+      {/* Dynamic Gadget Routes */}
+      <Route path="/photos" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><PhotosPage /></Suspense></ProtectedRoute>} />
+      <Route path="/games" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><GamesPage /></Suspense></ProtectedRoute>} />
+      <Route path="/radio" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><RadioPage /></Suspense></ProtectedRoute>} />
+      <Route path="/podcasts" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><PodcastsPage /></Suspense></ProtectedRoute>} />
+      <Route path="/web-video" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><WebVideoPage /></Suspense></ProtectedRoute>} />
+
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -296,17 +326,19 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <ThemeProvider>
-            <AppRouter />
-            <Toaster 
-              position="bottom-right" 
-              toastOptions={{
-                style: {
-                  background: '#1E1E1E',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#F3F4F6',
-                },
-              }}
-            />
+            <GadgetProvider>
+              <AppRouter />
+              <Toaster 
+                position="bottom-right" 
+                toastOptions={{
+                  style: {
+                    background: '#1E1E1E',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#F3F4F6',
+                  },
+                }}
+              />
+            </GadgetProvider>
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>

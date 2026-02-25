@@ -5369,6 +5369,67 @@ async def gadgets_catalogue_categories(user: dict = Depends(require_auth)):
     return get_catalogue_categories()
 
 
+# ==================== RIPEN - GADGET LIFECYCLE ENGINE ====================
+
+from ripen_lifecycle import get_ripen_engine
+
+@api_router.get("/ripen/installed")
+async def ripen_get_installed(user: dict = Depends(require_auth)):
+    """Get all installed gadgets with their hooks."""
+    engine = get_ripen_engine()
+    installed = await engine.get_installed()
+    return {"gadgets": installed, "count": len(installed)}
+
+@api_router.get("/ripen/hooks")
+async def ripen_get_hooks(user: dict = Depends(require_auth)):
+    """Get aggregated UI hooks from all active gadgets."""
+    engine = get_ripen_engine()
+    return await engine.get_active_hooks()
+
+@api_router.post("/ripen/install/{gadget_id}")
+async def ripen_install(gadget_id: str, user: dict = Depends(require_auth)):
+    """Install a gadget from the catalogue."""
+    engine = get_ripen_engine()
+    try:
+        result = await engine.install(gadget_id)
+        return {"success": True, **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.delete("/ripen/uninstall/{gadget_id}")
+async def ripen_uninstall(gadget_id: str, user: dict = Depends(require_auth)):
+    """Uninstall a gadget."""
+    engine = get_ripen_engine()
+    removed = await engine.uninstall(gadget_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Gadget not installed")
+    return {"success": True, "gadget_id": gadget_id}
+
+@api_router.post("/ripen/activate/{gadget_id}")
+async def ripen_activate(gadget_id: str, user: dict = Depends(require_auth)):
+    """Activate an installed gadget."""
+    engine = get_ripen_engine()
+    if not await engine.activate(gadget_id):
+        raise HTTPException(status_code=404, detail="Gadget not found")
+    return {"success": True, "status": "active"}
+
+@api_router.post("/ripen/deactivate/{gadget_id}")
+async def ripen_deactivate(gadget_id: str, user: dict = Depends(require_auth)):
+    """Deactivate an installed gadget."""
+    engine = get_ripen_engine()
+    if not await engine.deactivate(gadget_id):
+        raise HTTPException(status_code=404, detail="Gadget not found")
+    return {"success": True, "status": "inactive"}
+
+@api_router.put("/ripen/config/{gadget_id}")
+async def ripen_update_config(gadget_id: str, config: dict, user: dict = Depends(require_auth)):
+    """Update a gadget's configuration."""
+    engine = get_ripen_engine()
+    if not await engine.update_config(gadget_id, config):
+        raise HTTPException(status_code=404, detail="Gadget not found")
+    return {"success": True}
+
+
 # Include router and middleware
 app.include_router(api_router)
 
