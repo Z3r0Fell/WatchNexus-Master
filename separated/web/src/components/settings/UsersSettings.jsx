@@ -28,7 +28,8 @@ export const UsersSettings = ({
   setEditingUser,
   onAddUser,
   onUpdateUser,
-  onDeleteUser
+  onDeleteUser,
+  currentUserId
 }) => {
   const [activeTab, setActiveTab] = useState('users');
 
@@ -49,6 +50,7 @@ export const UsersSettings = ({
             onAddUser={onAddUser}
             onUpdateUser={onUpdateUser}
             onDeleteUser={onDeleteUser}
+            currentUserId={currentUserId}
           />
         );
       case 'access':
@@ -82,7 +84,7 @@ export const UsersSettings = ({
 // Users Tab
 const UsersTab = ({
   users, loadingUsers, showAddUser, setShowAddUser, newUser, setNewUser,
-  savingUser, editingUser, setEditingUser, onAddUser, onUpdateUser, onDeleteUser
+  savingUser, editingUser, setEditingUser, onAddUser, onUpdateUser, onDeleteUser, currentUserId
 }) => (
   <div className="space-y-6">
     <div className="bg-surface border border-white/10 rounded-2xl p-6">
@@ -237,6 +239,7 @@ const UsersTab = ({
               setEditingUser={setEditingUser}
               onUpdate={onUpdateUser}
               onDelete={onDeleteUser}
+              currentUserId={currentUserId}
             />
           ))}
         </div>
@@ -307,7 +310,9 @@ const ActivityTab = () => (
 );
 
 // User Card Component
-const UserCard = ({ user, editingUser, setEditingUser, onUpdate, onDelete }) => {
+const UserCard = ({ user, editingUser, setEditingUser, onUpdate, onDelete, currentUserId }) => {
+  const isCurrentUser = user.id === currentUserId;
+  
   return (
     <div className="p-4 rounded-xl bg-black/30 border border-white/10 hover:border-violet-500/30 transition-colors">
       <div className="flex items-center justify-between">
@@ -322,6 +327,11 @@ const UserCard = ({ user, editingUser, setEditingUser, onUpdate, onDelete }) => 
           <div>
             <div className="flex items-center gap-2">
               <span className="font-medium">{user.username}</span>
+              {isCurrentUser && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                  You
+                </span>
+              )}
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 user.role === 'admin' ? 'bg-amber-500/20 text-amber-400' : 
                 user.role === 'guest' ? 'bg-gray-500/20 text-gray-400' : 
@@ -348,12 +358,13 @@ const UserCard = ({ user, editingUser, setEditingUser, onUpdate, onDelete }) => 
             >
               <Edit2 className="w-4 h-4" />
             </Button>
-            {user.role !== 'admin' && (
+            {!isCurrentUser && user.role !== 'admin' && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(user.id)}
                 className="hover:bg-red-500/20 text-red-400"
+                data-testid={`delete-user-${user.id}`}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
