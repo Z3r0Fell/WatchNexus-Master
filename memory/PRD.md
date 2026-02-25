@@ -1,7 +1,7 @@
 # WatchNexus - Unified Media Pipeline
 
 ## Product Overview
-WatchNexus is a self-hosted, unified media pipeline that replaces multiple applications (Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyfin) with a single application handling requesting, acquiring, organizing, and streaming media.
+WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
 ## Current Version: 2.5.6
 
@@ -10,30 +10,33 @@ WatchNexus is a self-hosted, unified media pipeline that replaces multiple appli
 - **Frontend:** React + Tailwind CSS + shadcn/ui
 - **Media Engine:** Marmalade (library scanning/streaming)
 - **Download Engine:** Fondue (built-in torrent engine)
-- **Plugins:** Gadgets system (extensible plugin architecture)
+- **Extensions:** Gadgets system (45 built-in + extensible)
 - **Clients:** Android, AndroidTV, Firestick, Roku, Kodi
 - **Tray App:** Beacon (system tray server management)
 - **Updater:** Tiramisu (auto-update system)
 
 ## Completed Features (v2.5.6)
-- [x] Movies page - Dual Library/Discover view with local + TMDB content
+- [x] Movies page - Dual Library/Discover view (local + TMDB)
 - [x] TV Shows page - Dual Library/Discover view with series grouping
-- [x] Anime page - Distinct category with anime-specific styling
-- [x] Gadgets Catalogue - 45 built-in extensions across 16 categories
-- [x] Banner pack integration for Docker/Unraid/dashboard
+- [x] Anime page - Distinct category with anime styling + Library/Discover
+- [x] Gadgets Catalogue - 45 unique extensions across 16 categories
+  - Metadata Providers (6): Atlas, Chronicle, Sakura, Vinyl, Almanac, Lexicon
+  - Subtitle Services (4): Babel, Quill, Verse, Echo
+  - Notification Services (5): Herald, Courier, Signal, Dispatch, Beacon
+  - Visual Themes (4): Obsidian, Arctic, Sakura Bloom, Retro CRT
+  - Video Extensions (4): Prism IPTV, Mosaic, Meridian, Archive
+  - Audio Extensions (3): Cadence Radio, Rhythm Podcast, Sonata Lyrics
+  - Indexer Connectors (3): Compass, Scope, Rover
+  - System Tools (4): Sentinel, Vault, Curator, Warden
+  - + 8 more categories (Image, Game, Screensaver, Weather, Program, Service, Context, Resource)
+- [x] "Plugins" renamed to "Gadgets" throughout the app
+- [x] Banner pack integrated for Docker/Unraid/dashboard
 - [x] Full theming system (light/dark modes + custom themes)
-- [x] Credits section
-- [x] Security hardening (auth on streaming endpoints)
 - [x] Music & Audiobooks library pages
 - [x] Download queue with built-in torrent engine
-- [x] Plugin marketplace with Kodi addon converter
-- [x] Quality profiles
-- [x] Playback controls (skip intro/credits)
-- [x] Who's Watching profile selector
-- [x] System tray app
-- [x] Auto-updater
-- [x] Cloud sync plan (Marshmallow)
-- [x] v2.5.6 release packages (12 zips)
+- [x] Quality profiles, Playback controls, Who's Watching
+- [x] System tray app, Auto-updater
+- [x] v2.5.6 release packages (12 zips in /app/separated/releases/v2.5.6/)
 
 ## Pending Issues
 - P0: Library scanning returns no results (needs user testing on local machine)
@@ -50,20 +53,23 @@ WatchNexus is a self-hosted, unified media pipeline that replaces multiple appli
 ## Key API Endpoints
 - `/api/auth/login` - JWT authentication
 - `/api/marmalade/*` - Media library operations
-- `/api/gadgets/*` - Plugin management
-- `/api/gadgets/catalogue/*` - Built-in gadgets catalogue
+- `/api/gadgets/*` - Extension management
+- `/api/gadgets/catalogue/*` - Built-in gadgets catalogue (search, categories)
 - `/api/downloads/engine/*` - Download engine operations
 - `/api/compote/*` - Indexer search
-- `/api/kodi/*` - Kodi addon browser
 
 ## File Structure
 ```
-/app/separated/          # Canonical source
-  server/                # Backend (FastAPI)
-  web/                   # Frontend (React)
-  clients/               # Platform clients
-  tools/                 # Tray app + updater
-  docs/                  # Documentation
-  assets/banners/        # Container banners
-  releases/v2.5.6/       # Release packages
+/app/separated/
+  server/               # Backend (FastAPI)
+  web/                  # Frontend (React)
+  clients/              # Platform clients
+  tools/                # Tray app + updater
+  docs/                 # Documentation
+  assets/banners/       # Container banners
+  releases/v2.5.6/      # Release packages (12 zips)
 ```
+
+## Test Credentials
+- Email: test@test.com
+- Password: password
