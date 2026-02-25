@@ -3026,7 +3026,8 @@ async def get_skip_segments_from_db(media_id: str) -> list:
     db = get_database()
     
     try:
-        segments = await db.skip_segments.find_one({"media_id": media_id})
+        # Note: Using skip_markers table (schema uses this name)
+        segments = await db.skip_markers.find_one({"media_id": media_id})
         if segments:
             return segments.get("segments", [])
     except Exception:
