@@ -19,10 +19,22 @@ import {
   FolderOpen,
   Compass,
   ListVideo,
-  Sparkles
+  Sparkles,
+  Image,
+  Gamepad2,
+  Podcast,
+  MonitorPlay
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useGadgets } from '../../context/GadgetContext';
 import { cn } from '../../lib/utils';
+
+// Icon mapping for dynamic gadget sidebar entries
+const ICON_MAP = {
+  Image, Gamepad2, Radio, Podcast, MonitorPlay,
+  Home, Film, Tv, Music, BookOpen, Download, Settings,
+  Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
+};
 
 // All navigation items - Home, Downloads, Settings are always visible (not hideable)
 const allNavItems = [
