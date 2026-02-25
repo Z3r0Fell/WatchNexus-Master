@@ -1,0 +1,64 @@
+/* WatchNexus Custom Styles */
+
+/* Theme CSS Variables - Applied by ThemeContext */
+:root {
+    --color-primary: #8B5CF6;
+    --color-primary-hover: #7C3AED;
+    --color-secondary: #EC4899;
+    --color-secondary-hover: #DB2777;
+    --color-background: #0F0F0F;
+    --color-surface: #1A1A1A;
+    --color-surface-hover: #252525;
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: #A1A1AA;
+    --color-text-muted: #71717A;
+    --color-border: rgba(255,255,255,0.1);
+    --color-border-hover: rgba(255,255,255,0.2);
+    --color-success: #22C55E;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+    --color-info: #3B82F6;
+    --gradient-start: #8B5CF6;
+    --gradient-end: #EC4899;
+}
+
+.App {
+    min-height: 100vh;
+    background-color: var(--color-background, #0A0A0A);
+    color: var(--color-text-primary, #FFFFFF);
+}
+
+/* Override default link styles */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Ensure proper dark mode */
+html {
+    color-scheme: dark;
+}
+
+/* Glass card using theme variables */
+.glass-card {
+    background: var(--color-surface, #1A1A1A);
+    border: 1px solid var(--color-border, rgba(255,255,255,0.1));
+}
+
+.glass-card:hover {
+    border-color: var(--color-border-hover, rgba(255,255,255,0.2));
+}
+
+/* Primary button using theme */
+.btn-primary {
+    background-color: var(--color-primary, #8B5CF6);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover, #7C3AED);
+}
+
+/* Gradient using theme */
+.gradient-primary {
+    background: linear-gradient(135deg, var(--gradient-start, #8B5CF6), var(--gradient-end, #EC4899));
+}
