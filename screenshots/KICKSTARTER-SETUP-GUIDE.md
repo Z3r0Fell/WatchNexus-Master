@@ -652,7 +652,7 @@ STORY LAYOUT:
 ## Files You Need
 
 All files are in your screenshots ZIP:
-**Download:** `https://marmalade-preview.preview.emergentagent.com/watchnexus-screenshots.zip`
+**Download:** `https://gadget-lifecycle.preview.emergentagent.com/watchnexus-screenshots.zip`
 
 ### Create These Additional Graphics
 
