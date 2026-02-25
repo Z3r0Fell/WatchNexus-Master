@@ -40,6 +40,19 @@ const TIER_BADGES = {
 // Release history
 const RELEASES = [
   {
+    version: '2.5.10', date: '2025-02-25', type: 'minor', title: 'Critical Fixes - OS-Aware Browsing & Dark Mode',
+    highlights: ['OS-aware file browsing (Windows/Linux/Mac)', 'Dark mode dropdown fixes', 'Folder browse buttons added', 'Indexer preset fixes'],
+    changes: [
+      { type: 'fix', text: 'File browser now shows correct paths for Windows (C:\\), Linux (/home), and macOS (/Users)' },
+      { type: 'fix', text: 'Streaming services dropdown now has dark background for options' },
+      { type: 'fix', text: 'All select dropdowns throughout Settings have proper dark mode styling' },
+      { type: 'feature', text: 'Added Browse button to Media Health scan path input' },
+      { type: 'feature', text: 'Added Browse button to Scheduled Scans directory input' },
+      { type: 'fix', text: 'Preconfigured indexers now auto-add with correct URL when clicked' },
+      { type: 'fix', text: 'Indexer toggle now handles broken entries by recreating from preset' },
+    ]
+  },
+  {
     version: '2.5.9', date: '2025-02-25', type: 'minor', title: 'Watch History Management',
     highlights: ['X button on Continue Watching cards', 'Watch History tab in Playback Settings', 'Clear all history with confirmation dialog'],
     changes: [
