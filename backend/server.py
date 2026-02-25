@@ -1184,14 +1184,35 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
 
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(require_auth)):
-    """Delete a user"""
+    """Delete a user and all their associated data"""
     # Prevent deleting self
     if user_id == current_user["id"]:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
-    result = await db.users.delete_one({"id": user_id})
-    if result.deleted_count == 0:
+    # Check if user exists first
+    user = await db.users.find_one({"id": user_id})
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete all user-related data first (to avoid foreign key constraints)
+    try:
+        # Delete user sessions
+        await db.user_sessions.delete_many({"user_id": user_id})
+        # Delete watchlist entries
+        await db.watchlist.delete_many({"user_id": user_id})
+        # Delete watch progress
+        await db.watch_progress.delete_many({"user_id": user_id})
+        # Delete scheduled scans
+        await db.scheduled_scans.delete_many({"user_id": user_id})
+        # Delete scan notifications
+        await db.scan_notifications.delete_many({"user_id": user_id})
+        # Finally delete the user
+        result = await db.users.delete_one({"id": user_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
     
     return {"message": "User deleted"}
 
