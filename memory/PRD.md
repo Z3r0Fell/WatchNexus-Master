@@ -54,7 +54,16 @@ WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Pr
 - P2: Fortress Code Protection
 - P2: Docker/RPi distribution (Harbor)
 
-## Key Files Modified
+## Code Architecture
+
+### Directory Structure (RESOLVED)
+The application runs from the platform-managed directories:
+- **Active/Running:** `/app/backend` and `/app/frontend` (supervisor-managed, hot-reload enabled)
+- **Canonical/Release Source:** `/app/separated/server` and `/app/separated/web` (synced, used for release packaging)
+
+**Note:** The supervisor config is READ-ONLY and managed by the Emergent platform. All development happens in `/app/backend` and `/app/frontend`, and is synced to `/app/separated/` for release builds.
+
+### Key Files Modified
 - `/app/backend/server.py` - OS detection in filesystem/browse endpoint
 - `/app/frontend/src/components/FolderBrowser.jsx` - OS-aware path display
 - `/app/frontend/src/components/settings/StreamingSettings.jsx` - Dropdown fix
