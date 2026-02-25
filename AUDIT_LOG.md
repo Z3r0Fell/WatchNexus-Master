@@ -68,5 +68,18 @@ Status: PENDING
 ## ISSUES FOUND & FIXES APPLIED
 
 ### 2.5.11 Fixes (This Audit)
-(To be documented as issues are found and fixed)
+
+#### FIX #1: skip_segments table name mismatch
+- **File:** `/app/backend/server.py`
+- **Issue:** Code used `db.skip_segments` but table is `skip_markers`
+- **Fix:** Changed to `db.skip_markers` in `get_skip_segments_from_db()` and save function
+- **Status:** FIXED
+
+#### NOTED #1: IPTV localStorage-only storage
+- **File:** `/app/frontend/src/components/settings/IPTVSettings.jsx`
+- **Issue:** IPTV sources stored in localStorage, not database
+- **Impact:** Settings lost on browser clear, not synced across devices
+- **Status:** BY DESIGN (noted for future improvement)
+
+#### IN PROGRESS: Continue auditing remaining features...
 
