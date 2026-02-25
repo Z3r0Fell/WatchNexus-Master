@@ -1,72 +1,154 @@
 import { BACKEND_URL } from '../../lib/config';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle, Upload, Link2, Trash2, Loader2, Tv } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Package, RefreshCw, ExternalLink, Sparkles, CheckCircle, AlertTriangle, 
+  Upload, Link2, Trash2, Loader2, Tv, Search, Download, X, 
+  Database, MessageSquare, Bell, Palette, Globe, Settings, 
+  Image, Gamepad2, Monitor, Sun, Zap, Shield, Layers, Box, Music,
+  ChevronRight, ArrowLeft, Check
+} from 'lucide-react';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
 
+const categoryIcons = {
+  metadata: Database, subtitle: MessageSquare, notification: Bell,
+  theme: Palette, video: Tv, audio: Music, indexer: Globe,
+  system: Settings, image: Image, game: Gamepad2, screensaver: Monitor,
+  weather: Sun, program: Zap, service: Shield, context: Layers, resource: Box,
+};
+
+const categoryColors = {
+  metadata: 'from-indigo-500 to-blue-600',
+  subtitle: 'from-teal-500 to-emerald-600',
+  notification: 'from-pink-500 to-rose-600',
+  theme: 'from-violet-500 to-purple-600',
+  video: 'from-blue-500 to-cyan-600',
+  audio: 'from-green-500 to-lime-600',
+  indexer: 'from-amber-500 to-orange-600',
+  system: 'from-slate-500 to-gray-600',
+  image: 'from-fuchsia-500 to-pink-600',
+  game: 'from-red-500 to-orange-600',
+  screensaver: 'from-sky-500 to-blue-600',
+  weather: 'from-yellow-500 to-amber-600',
+  program: 'from-cyan-500 to-teal-600',
+  service: 'from-emerald-500 to-green-600',
+  context: 'from-rose-500 to-red-600',
+  resource: 'from-orange-500 to-yellow-600',
+};
+
 export const PluginsSettings = () => {
+  const [activeView, setActiveView] = useState('catalogue');
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
   const [togglingPlugin, setTogglingPlugin] = useState(null);
+  const [showImportOptions, setShowImportOptions] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [kodiAddonUrl, setKodiAddonUrl] = useState('');
   const [importing, setImporting] = useState(false);
-  const [showImportOptions, setShowImportOptions] = useState(false);
   const [uninstallingPlugin, setUninstallingPlugin] = useState(null);
   const fileInputRef = useRef(null);
 
-  const fetchPlugins = useCallback(async () => {
-    setLoadingPlugins(true);
-    try { const res = await axios.get(`${BACKEND_URL}/api/gadgets/plugins`); setPlugins(res.data || []); }
-    catch {} finally { setLoadingPlugins(false); }
+  // Catalogue state
+  const [catalogueItems, setCatalogueItems] = useState([]);
+  const [catalogueCategories, setCatalogueCategories] = useState({});
+  const [loadingCatalogue, setLoadingCatalogue] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [catalogueSearch, setCatalogueSearch] = useState('');
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  // ==================== CATALOGUE ====================
+  const fetchCatalogue = useCallback(async (category = null, query = '') => {
+    setLoadingCatalogue(true);
+    try {
+      let url = `${BACKEND_URL}/api/gadgets/catalogue/search?`;
+      if (query) url += `q=${encodeURIComponent(query)}&`;
+      if (category) url += `category=${category}&`;
+      const res = await axios.get(url, { headers: getAuthHeader() });
+      setCatalogueItems(res.data.items || []);
+    } catch (err) {
+      console.error('Failed to fetch catalogue:', err);
+    } finally {
+      setLoadingCatalogue(false);
+    }
   }, []);
 
-  useEffect(() => { fetchPlugins(); }, [fetchPlugins]);
+  const fetchCatalogueCategories = useCallback(async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/gadgets/catalogue/categories`, { headers: getAuthHeader() });
+      setCatalogueCategories(res.data || {});
+    } catch (err) {
+      console.error('Failed to fetch catalogue categories:', err);
+    }
+  }, []);
+
+  // ==================== INSTALLED GADGETS ====================
+  const fetchPlugins = useCallback(async () => {
+    setLoadingPlugins(true);
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/gadgets/plugins`, { headers: getAuthHeader() });
+      setPlugins(res.data || []);
+    } catch {} finally {
+      setLoadingPlugins(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPlugins();
+    fetchCatalogue();
+    fetchCatalogueCategories();
+  }, [fetchPlugins, fetchCatalogue, fetchCatalogueCategories]);
 
   const handleTogglePlugin = async (pluginId, currentStatus) => {
     setTogglingPlugin(pluginId);
     try {
       const action = currentStatus === 'active' ? 'disable' : 'enable';
-      await axios.post(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`);
-      toast.success(`Plugin ${action === 'enable' ? 'enabled' : 'disabled'}!`); fetchPlugins();
-    } catch { toast.error('Failed to toggle plugin'); }
-    finally { setTogglingPlugin(null); }
+      await axios.post(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`, {}, { headers: getAuthHeader() });
+      toast.success(`Gadget ${action === 'enable' ? 'enabled' : 'disabled'}!`);
+      fetchPlugins();
+    } catch {
+      toast.error('Failed to toggle gadget');
+    } finally {
+      setTogglingPlugin(null);
+    }
   };
 
   const handleDiscoverPlugins = async () => {
     setLoadingPlugins(true);
-    try { await axios.post(`${BACKEND_URL}/api/gadgets/discover`); toast.success('Plugin discovery complete!'); fetchPlugins(); }
-    catch { toast.error('Failed to discover plugins'); }
-    finally { setLoadingPlugins(false); }
+    try {
+      await axios.post(`${BACKEND_URL}/api/gadgets/discover`, {}, { headers: getAuthHeader() });
+      toast.success('Gadget discovery complete!');
+      fetchPlugins();
+    } catch {
+      toast.error('Failed to discover gadgets');
+    } finally {
+      setLoadingPlugins(false);
+    }
   };
 
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
-    if (!file.name.endsWith('.zip')) {
-      toast.error('Only .zip files are supported');
-      return;
-    }
-    
+    if (!file.name.endsWith('.zip')) { toast.error('Only .zip files are supported'); return; }
     setImporting(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
       const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-file`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' }
       });
-      
-      toast.success(`Plugin "${res.data.name}" imported successfully!`);
+      toast.success(`Gadget "${res.data.name}" imported!`);
       fetchPlugins();
       setShowImportOptions(false);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to import plugin');
+      toast.error(error.response?.data?.detail || 'Failed to import gadget');
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -74,71 +156,46 @@ export const PluginsSettings = () => {
   };
 
   const handleUrlImport = async () => {
-    if (!importUrl) {
-      toast.error('Please enter a URL');
-      return;
-    }
-    
-    if (!importUrl.endsWith('.zip')) {
-      toast.error('URL must point to a .zip file');
-      return;
-    }
-    
+    if (!importUrl || !importUrl.endsWith('.zip')) { toast.error('Enter a valid .zip URL'); return; }
     setImporting(true);
     try {
       const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-url`, null, {
-        params: { url: importUrl }
+        params: { url: importUrl }, headers: getAuthHeader()
       });
-      
-      toast.success(`Plugin "${res.data.name}" imported successfully!`);
+      toast.success(`Gadget "${res.data.name}" imported!`);
       fetchPlugins();
       setImportUrl('');
       setShowImportOptions(false);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to import plugin from URL');
+      toast.error(error.response?.data?.detail || 'Import failed');
     } finally {
       setImporting(false);
     }
   };
 
   const handleUninstallPlugin = async (pluginId, pluginName) => {
-    if (!window.confirm(`Are you sure you want to uninstall "${pluginName}"? This will delete all plugin files.`)) {
-      return;
-    }
-    
+    if (!window.confirm(`Uninstall "${pluginName}"? This will delete all gadget files.`)) return;
     setUninstallingPlugin(pluginId);
     try {
-      await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`);
-      toast.success(`Plugin "${pluginName}" uninstalled`);
+      await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`, { headers: getAuthHeader() });
+      toast.success(`"${pluginName}" uninstalled`);
       fetchPlugins();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to uninstall plugin');
+      toast.error(error.response?.data?.detail || 'Uninstall failed');
     } finally {
       setUninstallingPlugin(null);
     }
   };
 
-  const handleKodiAddonImport = async () => {
-    if (!kodiAddonUrl) {
-      toast.error('Please enter a Kodi addon URL');
-      return;
-    }
-    
-    setImporting(true);
-    try {
-      const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-kodi`, null, {
-        params: { url: kodiAddonUrl }
-      });
-      
-      toast.success(`Kodi addon "${res.data.name}" imported successfully!`);
-      fetchPlugins();
-      setKodiAddonUrl('');
-      setShowImportOptions(false);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to import Kodi addon');
-    } finally {
-      setImporting(false);
-    }
+  const handleCategorySelect = (catKey) => {
+    setSelectedCategory(catKey);
+    fetchCatalogue(catKey, '');
+    setCatalogueSearch('');
+  };
+
+  const handleCatalogueSearch = (query) => {
+    setCatalogueSearch(query);
+    fetchCatalogue(selectedCategory, query);
   };
 
   const pluginTypeColors = {
@@ -148,217 +205,350 @@ export const PluginsSettings = () => {
     notification_provider: 'bg-pink-500/20 text-pink-400',
     theme_provider: 'bg-purple-500/20 text-purple-400',
     scheduled_task: 'bg-orange-500/20 text-orange-400',
+    stream_provider: 'bg-cyan-500/20 text-cyan-400',
+    auth_provider: 'bg-emerald-500/20 text-emerald-400',
+    general: 'bg-gray-500/20 text-gray-400',
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 space-y-6" data-testid="plugins-settings">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Package className="w-5 h-5 text-violet-400" /> Plugins
-          <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full">Gadgets</span>
-        </h2>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowImportOptions(!showImportOptions)} variant="outline" className="border-white/10 hover:bg-white/5">
-            <Upload className="w-4 h-4 mr-2" /> Import Plugin
-          </Button>
-          <Button onClick={handleDiscoverPlugins} disabled={loadingPlugins} variant="outline" className="border-white/10 hover:bg-white/5">
-            <RefreshCw className={`w-4 h-4 mr-2 ${loadingPlugins ? 'animate-spin' : ''}`} /> Discover
-          </Button>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" data-testid="gadgets-settings">
+      {/* Header */}
+      <div className="glass-card rounded-xl p-6">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold" data-testid="gadgets-title">Gadgets</h2>
+              <p className="text-sm text-gray-400">Extend WatchNexus with powerful add-ons</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowImportOptions(!showImportOptions)} variant="outline" className="border-white/10 hover:bg-white/5" data-testid="import-gadget-btn">
+              <Upload className="w-4 h-4 mr-2" /> Import
+            </Button>
+            <Button onClick={handleDiscoverPlugins} disabled={loadingPlugins} variant="outline" className="border-white/10 hover:bg-white/5" data-testid="discover-gadgets-btn">
+              <RefreshCw className={`w-4 h-4 mr-2 ${loadingPlugins ? 'animate-spin' : ''}`} /> Discover
+            </Button>
+          </div>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex rounded-lg bg-white/5 p-1 w-fit" data-testid="gadgets-view-toggle">
+          <button
+            onClick={() => setActiveView('catalogue')}
+            data-testid="gadgets-catalogue-tab"
+            className={`px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${
+              activeView === 'catalogue' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Package className="w-4 h-4" /> Browse Catalogue
+          </button>
+          <button
+            onClick={() => setActiveView('installed')}
+            data-testid="gadgets-installed-tab"
+            className={`px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${
+              activeView === 'installed' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Check className="w-4 h-4" /> Installed ({plugins.length})
+          </button>
         </div>
       </div>
-      
+
       {/* Import Options Panel */}
-      {showImportOptions && (
-        <motion.div 
-          initial={{ opacity: 0, height: 0 }} 
-          animate={{ opacity: 1, height: 'auto' }} 
-          exit={{ opacity: 0, height: 0 }}
-          className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20 space-y-4"
-        >
-          <h3 className="font-medium text-violet-400 flex items-center gap-2">
-            <Upload className="w-4 h-4" /> Import Plugin
-          </h3>
-          
-          {/* File Upload */}
-          <div className="space-y-2">
-            <label className="text-sm text-gray-400">Upload from File</label>
-            <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip"
-                onChange={handleFileImport}
-                className="hidden"
-                data-testid="plugin-file-input"
-              />
-              <Button 
-                onClick={() => fileInputRef.current?.click()} 
-                disabled={importing}
-                variant="outline" 
-                className="flex-1 border-white/10"
-              >
-                {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                Choose .zip File
+      <AnimatePresence>
+        {showImportOptions && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="glass-card rounded-xl p-5 space-y-4 border border-violet-500/20"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-violet-400 flex items-center gap-2">
+                <Upload className="w-4 h-4" /> Import Gadget
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowImportOptions(false)} className="h-7 w-7">
+                <X className="w-4 h-4" />
               </Button>
             </div>
-          </div>
-          
-          {/* URL Import */}
-          <div className="space-y-2">
-            <label className="text-sm text-gray-400">Import from URL</label>
-            <div className="flex gap-2">
-              <Input
-                value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
-                placeholder="https://example.com/plugin.zip"
-                className="flex-1 bg-white/5 border-white/10"
-                data-testid="plugin-url-input"
-              />
-              <Button 
-                onClick={handleUrlImport} 
-                disabled={importing || !importUrl}
-                className="bg-violet-600 hover:bg-violet-700"
-              >
-                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-          
-          {/* Kodi Addon Import */}
-          <div className="space-y-2 pt-2 border-t border-white/10">
-            <label className="text-sm text-gray-400 flex items-center gap-2">
-              <span className="text-orange-400">🎬</span> Import Kodi Addon
-            </label>
-            <p className="text-xs text-gray-500">
-              Import Kodi video addons to extend streaming sources. Supports addon.xml format.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={kodiAddonUrl}
-                onChange={(e) => setKodiAddonUrl(e.target.value)}
-                placeholder="https://example.com/kodi-addon.zip or repository URL"
-                className="flex-1 bg-white/5 border-white/10"
-                data-testid="kodi-addon-url-input"
-              />
-              <Button 
-                onClick={handleKodiAddonImport} 
-                disabled={importing || !kodiAddonUrl}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Tv className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-          
-          <p className="text-xs text-gray-500">
-            Plugin archives must contain a <code className="bg-black/30 px-1 rounded">manifest.json</code> file.
-            Kodi addons must contain <code className="bg-black/30 px-1 rounded">addon.xml</code>.
-          </p>
-        </motion.div>
-      )}
-      
-      <p className="text-gray-400">Extend WatchNexus functionality with custom plugins.</p>
-
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(pluginTypeColors).map(([type, color]) => (
-          <span key={type} className={`px-2 py-1 rounded-full text-xs ${color}`}>{type.replace('_', ' ')}</span>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        {loadingPlugins && plugins.length === 0 ? (
-          <div className="text-center py-8 text-gray-500"><RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" /> Loading plugins...</div>
-        ) : plugins.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="font-medium">No plugins installed</p>
-            <p className="text-sm mt-1">Import a plugin or place plugins in the plugins directory</p>
-          </div>
-        ) : (
-          plugins.map((plugin) => (
-            <motion.div key={plugin.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-xl bg-surface border border-white/5 hover:border-white/10 transition-all">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium">{plugin.name}</h3>
-                    <span className="text-xs text-gray-500">v{plugin.version}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${pluginTypeColors[plugin.plugin_type] || 'bg-gray-500/20 text-gray-400'}`}>
-                      {plugin.plugin_type?.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-2">{plugin.description}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <span>by {plugin.author}</span>
-                    {plugin.homepage && (
-                      <a href={plugin.homepage} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" /> Homepage
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className={`px-2 py-1 rounded-full text-xs ${
-                    plugin.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                    plugin.status === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {plugin.status === 'active' ? <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span> :
-                     plugin.status === 'error' ? <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Error</span> : <span>Disabled</span>}
-                  </div>
-                  <Switch checked={plugin.status === 'active'} disabled={togglingPlugin === plugin.id}
-                    onCheckedChange={() => handleTogglePlugin(plugin.id, plugin.status)} />
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleUninstallPlugin(plugin.id, plugin.name)}
-                    disabled={uninstallingPlugin === plugin.id}
-                    className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    data-testid={`uninstall-${plugin.id}`}
-                  >
-                    {uninstallingPlugin === plugin.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400">Upload .zip File</label>
+                <input ref={fileInputRef} type="file" accept=".zip" onChange={handleFileImport} className="hidden" data-testid="gadget-file-input" />
+                <Button onClick={() => fileInputRef.current?.click()} disabled={importing} variant="outline" className="w-full border-white/10">
+                  {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                  Choose .zip File
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400">Import from URL</label>
+                <div className="flex gap-2">
+                  <Input value={importUrl} onChange={(e) => setImportUrl(e.target.value)}
+                    placeholder="https://example.com/gadget.zip" className="bg-white/5 border-white/10" data-testid="gadget-url-input" />
+                  <Button onClick={handleUrlImport} disabled={importing || !importUrl} className="bg-violet-600 hover:bg-violet-700">
+                    {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
-              {plugin.error_message && (
-                <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{plugin.error_message}</div>
-              )}
-            </motion.div>
-          ))
+            </div>
+            <p className="text-xs text-gray-500">
+              Gadget archives must contain a <code className="bg-black/30 px-1 rounded">manifest.json</code> file.
+            </p>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-        <h3 className="font-medium mb-3 flex items-center gap-2"><Sparkles className="w-4 h-4 text-violet-400" /> Example Plugins (Bundled)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-3 rounded-lg bg-black/20">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
-                <Package className="w-4 h-4" />
-              </div>
-              <div><p className="font-medium text-sm">AniDB Metadata</p><p className="text-xs text-gray-500">Anime metadata from AniDB</p></div>
+      {/* ==================== CATALOGUE VIEW ==================== */}
+      {activeView === 'catalogue' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+          {/* Search */}
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Input
+                placeholder="Search gadgets..."
+                value={catalogueSearch}
+                onChange={(e) => handleCatalogueSearch(e.target.value)}
+                className="pl-10 bg-white/5 border-white/10"
+                data-testid="catalogue-search"
+              />
             </div>
+            {selectedCategory && (
+              <Button variant="outline" onClick={() => { setSelectedCategory(null); fetchCatalogue(null, catalogueSearch); }} className="border-white/10" data-testid="clear-category-btn">
+                <ArrowLeft className="w-4 h-4 mr-2" /> All Categories
+              </Button>
+            )}
           </div>
-          <div className="p-3 rounded-lg bg-black/20">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                <Package className="w-4 h-4" />
-              </div>
-              <div><p className="font-medium text-sm">Discord Notifications</p><p className="text-xs text-gray-500">Send alerts to Discord</p></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
-        <p className="text-sm text-violet-400">
-          <strong>Plugin Directory:</strong> <code className="bg-black/30 px-2 py-0.5 rounded">/plugins</code><br />
-          <span className="text-gray-400 text-xs">Place plugin folders with a <code>manifest.json</code> to install them, or use the Import button above.</span>
-        </p>
-      </div>
+          {/* Category Grid */}
+          {!selectedCategory && !catalogueSearch && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" data-testid="category-grid">
+              {Object.entries(catalogueCategories).map(([key, cat]) => {
+                const Icon = categoryIcons[key] || Package;
+                const gradient = categoryColors[key] || 'from-gray-500 to-gray-600';
+                return (
+                  <motion.button
+                    key={key}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleCategorySelect(key)}
+                    className="rounded-xl bg-white/5 hover:bg-white/10 p-4 text-left transition-all border border-transparent hover:border-white/10"
+                    data-testid={`category-${key}`}
+                  >
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center mb-3`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-sm">{cat.label}</h3>
+                    <p className="text-xs text-gray-400 mt-1">{cat.count} {cat.count === 1 ? 'gadget' : 'gadgets'}</p>
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Gadgets List */}
+          {(selectedCategory || catalogueSearch) && (
+            <>
+              {selectedCategory && (
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  {(() => { const Icon = categoryIcons[selectedCategory] || Package; return <Icon className="w-5 h-5 text-violet-400" />; })()}
+                  {catalogueCategories[selectedCategory]?.label || selectedCategory}
+                  <span className="text-sm font-normal text-gray-400">({catalogueItems.length})</span>
+                </h3>
+              )}
+              {loadingCatalogue ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                </div>
+              ) : catalogueItems.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">No gadgets found</p>
+                  <p className="text-sm mt-1">Try a different search or category</p>
+                </div>
+              ) : (
+                <motion.div
+                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                  initial="hidden" animate="show"
+                  variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.03 } } }}
+                >
+                  {catalogueItems.map((gadget) => {
+                    const CatIcon = categoryIcons[gadget.category] || Package;
+                    const gradient = categoryColors[gadget.category] || 'from-gray-500 to-gray-600';
+                    return (
+                      <motion.div
+                        key={gadget.id}
+                        variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                        className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all border border-transparent hover:border-white/10"
+                        data-testid={`gadget-${gadget.id}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+                            <CatIcon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="font-semibold text-sm truncate">{gadget.name}</h4>
+                              <span className="text-[10px] text-gray-500 flex-shrink-0">v{gadget.version}</span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{gadget.description}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <div className="flex flex-wrap gap-1">
+                                {gadget.tags?.slice(0, 3).map(tag => (
+                                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-500">{tag}</span>
+                                ))}
+                              </div>
+                              <Button size="sm" variant="outline" className="text-xs h-6 px-2 border-white/10" data-testid={`install-${gadget.id}`}>
+                                <Download className="w-3 h-3 mr-1" /> Get
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </>
+          )}
+
+          {/* Show all gadgets when no category and no search */}
+          {!selectedCategory && !catalogueSearch && catalogueItems.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-violet-400" /> All Gadgets ({catalogueItems.length})
+              </h3>
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                initial="hidden" animate="show"
+                variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.02 } } }}
+              >
+                {catalogueItems.map((gadget) => {
+                  const CatIcon = categoryIcons[gadget.category] || Package;
+                  const gradient = categoryColors[gadget.category] || 'from-gray-500 to-gray-600';
+                  return (
+                    <motion.div
+                      key={gadget.id}
+                      variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
+                      className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all border border-transparent hover:border-white/10"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+                          <CatIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-semibold text-sm truncate">{gadget.name}</h4>
+                            <span className="text-[10px] text-gray-500 flex-shrink-0">v{gadget.version}</span>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1 line-clamp-2">{gadget.description}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex flex-wrap gap-1">
+                              {gadget.tags?.slice(0, 3).map(tag => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-500">{tag}</span>
+                              ))}
+                            </div>
+                            <Button size="sm" variant="outline" className="text-xs h-6 px-2 border-white/10">
+                              <Download className="w-3 h-3 mr-1" /> Get
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ==================== INSTALLED VIEW ==================== */}
+      {activeView === 'installed' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+          {loadingPlugins && plugins.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
+              Loading gadgets...
+            </div>
+          ) : plugins.length === 0 ? (
+            <div className="glass-card rounded-xl p-8 text-center">
+              <Package className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+              <h3 className="text-lg font-semibold mb-2">No Gadgets Installed</h3>
+              <p className="text-sm text-gray-400 mb-4 max-w-md mx-auto">
+                Browse the catalogue to find gadgets, or import your own.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => setActiveView('catalogue')} className="bg-violet-600 hover:bg-violet-700">
+                  <Package className="w-4 h-4 mr-2" /> Browse Catalogue
+                </Button>
+                <Button variant="outline" onClick={() => setShowImportOptions(true)} className="border-white/10">
+                  <Upload className="w-4 h-4 mr-2" /> Import
+                </Button>
+              </div>
+            </div>
+          ) : (
+            plugins.map((plugin) => (
+              <motion.div key={plugin.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`installed-${plugin.id}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium">{plugin.name}</h3>
+                      <span className="text-xs text-gray-500">v{plugin.version}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${pluginTypeColors[plugin.plugin_type] || 'bg-gray-500/20 text-gray-400'}`}>
+                        {plugin.plugin_type?.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-2">{plugin.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span>by {plugin.author}</span>
+                      {plugin.homepage && (
+                        <a href={plugin.homepage} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> Homepage
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`px-2 py-1 rounded-full text-xs ${
+                      plugin.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                      plugin.status === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {plugin.status === 'active' ? <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span> :
+                       plugin.status === 'error' ? <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Error</span> : <span>Disabled</span>}
+                    </div>
+                    <Switch checked={plugin.status === 'active'} disabled={togglingPlugin === plugin.id}
+                      onCheckedChange={() => handleTogglePlugin(plugin.id, plugin.status)} />
+                    <Button variant="ghost" size="icon"
+                      onClick={() => handleUninstallPlugin(plugin.id, plugin.name)}
+                      disabled={uninstallingPlugin === plugin.id}
+                      className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      data-testid={`uninstall-${plugin.id}`}
+                    >
+                      {uninstallingPlugin === plugin.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+                {plugin.error_message && (
+                  <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{plugin.error_message}</div>
+                )}
+              </motion.div>
+            ))
+          )}
+
+          {/* Directory Info */}
+          <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
+            <p className="text-sm text-violet-400">
+              <strong>Gadget Directory:</strong> <code className="bg-black/30 px-2 py-0.5 rounded">/plugins</code><br />
+              <span className="text-gray-400 text-xs">Place gadget folders with a <code>manifest.json</code> to install them, or use the Import button.</span>
+            </p>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
