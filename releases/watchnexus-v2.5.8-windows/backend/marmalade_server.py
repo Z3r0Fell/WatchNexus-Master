@@ -1,0 +1,891 @@
+"""
+Marmalade - WatchNexus Media Server
+A Python-based media server that replaces Jellyfin functionality.
+
+Features:
+- Library scanning and metadata management
+- Video streaming with transcoding support
+- Integration with TMDB for metadata
+- Subtitle management
+- Watch history tracking
+- Multi-library support
+"""
+
+import os
+import json
+import hashlib
+import logging
+import mimetypes
+import httpx
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
+from enum import Enum
+import re
+import subprocess
+
+logger = logging.getLogger(__name__)
+
+# TMDB Configuration
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
+TMDB_BASE_URL = "https://api.themoviedb.org/3"
+TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
+
+
+class MediaType(Enum):
+    MOVIE = "movie"
+    EPISODE = "episode"
+    MUSIC = "music"
+    AUDIOBOOK = "audiobook"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class MediaFile:
+    """Represents a media file in the library."""
+    id: str
+    path: str
+    filename: str
+    media_type: MediaType
+    title: str
+    size: int
+    duration: float = 0  # seconds
+    width: int = 0
+    height: int = 0
+    codec_video: str = ""
+    codec_audio: str = ""
+    container: str = ""
+    bitrate: int = 0
+    added_date: str = ""
+    modified_date: str = ""
+    # Metadata from TMDB/manual
+    tmdb_id: Optional[int] = None
+    imdb_id: Optional[str] = None
+    overview: str = ""
+    poster_url: str = ""
+    backdrop_url: str = ""
+    year: Optional[int] = None
+    rating: float = 0.0
+    genres: List[str] = field(default_factory=list)
+    # TV specific
+    series_name: str = ""
+    season_number: Optional[int] = None
+    episode_number: Optional[int] = None
+    # Watch status
+    watched: bool = False
+    watch_progress: float = 0  # seconds
+    last_watched: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        result = asdict(self)
+        result["media_type"] = self.media_type.value
+        return result
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'MediaFile':
+        data["media_type"] = MediaType(data.get("media_type", "unknown"))
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+@dataclass
+class Library:
+    """Represents a media library."""
+    id: str
+    name: str
+    path: str
+    media_type: str  # movies, tv, music, audiobooks
+    enabled: bool = True
+    scan_interval: int = 3600  # seconds
+    last_scan: Optional[str] = None
+    item_count: int = 0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+class MarmaladeServer:
+    """
+    Python-based media server for WatchNexus.
+    Handles library management, streaming, and metadata.
+    """
+    
+    # Video file extensions
+    VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg', '.ts'}
+    AUDIO_EXTENSIONS = {'.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.wma'}
+    
+    # Regex patterns for parsing filenames
+    MOVIE_PATTERNS = [
+        # Movie.Name.2020.1080p.BluRay.x264
+        re.compile(r'^(.+?)[\.\s](\d{4})[\.\s]', re.IGNORECASE),
+        # Movie Name (2020)
+        re.compile(r'^(.+?)\s*\((\d{4})\)', re.IGNORECASE),
+    ]
+    
+    TV_PATTERNS = [
+        # Show.Name.S01E01 or Show Name - S01E01
+        re.compile(r'^(.+?)[\.\s\-]+S(\d{1,2})E(\d{1,2})', re.IGNORECASE),
+        # Show Name - 1x01
+        re.compile(r'^(.+?)[\.\s\-]+(\d{1,2})x(\d{2})', re.IGNORECASE),
+    ]
+    
+    def __init__(
+        self,
+        data_dir: str = "/var/lib/marmalade",
+        ffprobe_path: str = "ffprobe",
+        ffmpeg_path: str = "ffmpeg",
+    ):
+        self.data_dir = Path(data_dir)
+        self.ffprobe_path = ffprobe_path
+        self.ffmpeg_path = ffmpeg_path
+        
+        # Create data directories
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        (self.data_dir / "cache").mkdir(exist_ok=True)
+        (self.data_dir / "transcodes").mkdir(exist_ok=True)
+        
+        # Storage
+        self.libraries: Dict[str, Library] = {}
+        self.media_files: Dict[str, MediaFile] = {}
+        
+        # Persistence files
+        self._libraries_file = self.data_dir / "libraries.json"
+        self._media_file = self.data_dir / "media.json"
+        
+        # Load existing data
+        self._load_data()
+        
+        logger.info(f"MarmaladeServer initialized. Data dir: {data_dir}")
+    
+    def _load_data(self):
+        """Load persisted data from disk."""
+        try:
+            if self._libraries_file.exists():
+                with open(self._libraries_file, 'r') as f:
+                    data = json.load(f)
+                    self.libraries = {lib['id']: Library(**lib) for lib in data}
+                    logger.info(f"Loaded {len(self.libraries)} libraries")
+            
+            if self._media_file.exists():
+                with open(self._media_file, 'r') as f:
+                    data = json.load(f)
+                    self.media_files = {m['id']: MediaFile.from_dict(m) for m in data}
+                    logger.info(f"Loaded {len(self.media_files)} media files")
+        except Exception as e:
+            logger.error(f"Error loading data: {e}")
+    
+    def _save_data(self):
+        """Save data to disk."""
+        try:
+            with open(self._libraries_file, 'w') as f:
+                json.dump([lib.to_dict() for lib in self.libraries.values()], f, indent=2)
+            
+            with open(self._media_file, 'w') as f:
+                json.dump([m.to_dict() for m in self.media_files.values()], f, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving data: {e}")
+    
+    def _generate_id(self, path: str) -> str:
+        """Generate a unique ID from a path."""
+        return hashlib.md5(path.encode()).hexdigest()[:16]
+    
+    # ==================== Library Management ====================
+    
+    def add_library(
+        self,
+        name: str,
+        path: str,
+        media_type: str = "movies",
+        enabled: bool = True,
+        scan_interval: int = 3600,
+    ) -> Library:
+        """Add a new library."""
+        lib_id = self._generate_id(path)
+        
+        library = Library(
+            id=lib_id,
+            name=name,
+            path=path,
+            media_type=media_type,
+            enabled=enabled,
+            scan_interval=scan_interval,
+        )
+        
+        self.libraries[lib_id] = library
+        self._save_data()
+        
+        logger.info(f"Added library: {name} ({path})")
+        return library
+    
+    def remove_library(self, library_id: str) -> bool:
+        """Remove a library and its media entries."""
+        if library_id not in self.libraries:
+            return False
+        
+        library = self.libraries[library_id]
+        
+        # Remove all media from this library
+        to_remove = [
+            mid for mid, media in self.media_files.items()
+            if media.path.startswith(library.path)
+        ]
+        for mid in to_remove:
+            del self.media_files[mid]
+        
+        del self.libraries[library_id]
+        self._save_data()
+        
+        logger.info(f"Removed library: {library.name}")
+        return True
+    
+    def get_libraries(self) -> List[Library]:
+        """Get all libraries."""
+        return list(self.libraries.values())
+    
+    def get_library(self, library_id: str) -> Optional[Library]:
+        """Get a specific library."""
+        return self.libraries.get(library_id)
+    
+    # ==================== Library Scanning ====================
+    
+    async def scan_library(self, library_id: str) -> Dict[str, Any]:
+        """Scan a library for new media files."""
+        logger.info(f"[SCAN] Starting scan for library_id: {library_id}")
+        
+        library = self.libraries.get(library_id)
+        if not library:
+            logger.error(f"[SCAN] Library not found: {library_id}")
+            logger.error(f"[SCAN] Available libraries: {list(self.libraries.keys())}")
+            return {"error": "Library not found", "library_id": library_id, "available": list(self.libraries.keys())}
+        
+        logger.info(f"[SCAN] Found library: name='{library.name}', path='{library.path}', type='{library.media_type}'")
+        
+        lib_path = Path(library.path)
+        if not lib_path.exists():
+            logger.error(f"[SCAN] Library path does not exist: {library.path}")
+            return {"error": f"Library path does not exist: {library.path}", "path": library.path}
+        
+        if not lib_path.is_dir():
+            logger.error(f"[SCAN] Library path is not a directory: {library.path}")
+            return {"error": f"Library path is not a directory: {library.path}", "path": library.path}
+        
+        # Check read permissions
+        if not os.access(library.path, os.R_OK):
+            logger.error(f"[SCAN] No read permission for library path: {library.path}")
+            return {"error": f"No read permission for: {library.path}", "path": library.path}
+        
+        logger.info(f"[SCAN] Scanning library: {library.name} at {library.path}")
+        
+        new_files = 0
+        updated_files = 0
+        removed_files = 0
+        skipped_files = 0
+        errors = []
+        
+        # Get existing files in this library
+        existing_paths = {
+            m.path for m in self.media_files.values()
+            if m.path.startswith(library.path)
+        }
+        logger.info(f"[SCAN] Existing media files in this library: {len(existing_paths)}")
+        
+        found_paths = set()
+        
+        # Scan for media files
+        extensions = self.VIDEO_EXTENSIONS if library.media_type in ['movies', 'tv', 'tv_shows', 'anime'] else self.AUDIO_EXTENSIONS
+        logger.info(f"[SCAN] Looking for file extensions: {extensions}")
+        
+        try:
+            for root, dirs, files in os.walk(library.path):
+                # Skip hidden directories
+                original_dirs = list(dirs)
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                skipped_dirs = set(original_dirs) - set(dirs)
+                if skipped_dirs:
+                    logger.debug(f"[SCAN] Skipped hidden directories in {root}: {skipped_dirs}")
+                
+                logger.debug(f"[SCAN] Scanning directory: {root} ({len(files)} files, {len(dirs)} subdirs)")
+                
+                for filename in files:
+                    ext = Path(filename).suffix.lower()
+                    if ext not in extensions:
+                        skipped_files += 1
+                        continue
+                    
+                    file_path = os.path.join(root, filename)
+                    found_paths.add(file_path)
+                    logger.info(f"[SCAN] Found media file: {file_path}")
+                    
+                    if file_path in existing_paths:
+                        # Check if file was modified
+                        media_id = self._generate_id(file_path)
+                        if media_id in self.media_files:
+                            try:
+                                stat = os.stat(file_path)
+                                current_mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+                                if self.media_files[media_id].modified_date != current_mtime:
+                                    # File was modified, update it
+                                    logger.info(f"[SCAN] Updating modified file: {filename}")
+                                    result = await self._process_file(file_path, library)
+                                    if result:
+                                        updated_files += 1
+                                    else:
+                                        errors.append(f"Failed to update: {filename}")
+                            except Exception as e:
+                                logger.error(f"[SCAN] Error checking file modification: {filename} - {e}")
+                                errors.append(f"Error checking: {filename} - {str(e)}")
+                    else:
+                        # New file
+                        logger.info(f"[SCAN] Processing new file: {filename}")
+                        try:
+                            result = await self._process_file(file_path, library)
+                            if result:
+                                new_files += 1
+                                logger.info(f"[SCAN] Successfully added: {filename} (tmdb_id={result.tmdb_id}, poster={bool(result.poster_url)})")
+                            else:
+                                errors.append(f"Failed to process: {filename}")
+                                logger.error(f"[SCAN] Failed to process file: {filename}")
+                        except Exception as e:
+                            logger.error(f"[SCAN] Exception processing file {filename}: {e}")
+                            errors.append(f"Exception: {filename} - {str(e)}")
+        except PermissionError as e:
+            logger.error(f"[SCAN] Permission denied during scan: {e}")
+            return {"error": f"Permission denied: {str(e)}", "path": library.path}
+        except Exception as e:
+            logger.error(f"[SCAN] Unexpected error during scan: {e}")
+            return {"error": f"Scan error: {str(e)}", "path": library.path}
+        
+        # Remove files that no longer exist
+        for path in existing_paths - found_paths:
+            media_id = self._generate_id(path)
+            if media_id in self.media_files:
+                logger.info(f"[SCAN] Removing missing file: {path}")
+                del self.media_files[media_id]
+                removed_files += 1
+        
+        # Update library stats
+        library.last_scan = datetime.now(timezone.utc).isoformat()
+        library.item_count = len([
+            m for m in self.media_files.values()
+            if m.path.startswith(library.path)
+        ])
+        
+        self._save_data()
+        
+        result = {
+            "library": library.name,
+            "library_id": library_id,
+            "path": library.path,
+            "new": new_files,
+            "updated": updated_files,
+            "removed": removed_files,
+            "skipped_non_media": skipped_files,
+            "total": library.item_count,
+            "errors": errors[:10] if errors else [],  # Limit errors in response
+            "error_count": len(errors),
+        }
+        
+        logger.info(f"[SCAN] Scan complete: new={new_files}, updated={updated_files}, removed={removed_files}, total={library.item_count}")
+        if errors:
+            logger.warning(f"[SCAN] {len(errors)} errors occurred during scan")
+        
+        return result
+    
+    async def import_file(self, file_path: str, library_id: str = None) -> bool:
+        """Import a single file into a library."""
+        if not os.path.exists(file_path):
+            return False
+        
+        # Find target library based on path or use the specified library
+        target_library = None
+        if library_id:
+            target_library = self.libraries.get(library_id)
+        else:
+            # Try to find a library that matches the file path
+            for lib in self.libraries.values():
+                if file_path.startswith(lib.path):
+                    target_library = lib
+                    break
+        
+        if not target_library:
+            # No matching library, pick the first one or create a default
+            if self.libraries:
+                target_library = list(self.libraries.values())[0]
+            else:
+                return False
+        
+        # Process the file
+        media = await self._process_file(file_path, target_library)
+        if media:
+            self._save_data()
+            return True
+        return False
+    
+    async def _process_file(self, file_path: str, library: Library) -> Optional[MediaFile]:
+        """Process a media file and add to database."""
+        filename = os.path.basename(file_path)
+        logger.debug(f"[PROCESS] Starting to process: {filename}")
+        
+        try:
+            stat = os.stat(file_path)
+            logger.debug(f"[PROCESS] File size: {stat.st_size} bytes")
+            
+            # Generate ID
+            media_id = self._generate_id(file_path)
+            logger.debug(f"[PROCESS] Generated ID: {media_id}")
+            
+            # Parse filename for metadata
+            parsed = self._parse_filename(filename, library.media_type)
+            logger.debug(f"[PROCESS] Parsed filename: {parsed}")
+            
+            # Get media info using ffprobe
+            media_info = await self._get_media_info(file_path)
+            logger.debug(f"[PROCESS] Media info from ffprobe: {media_info}")
+            
+            # Determine media type
+            if library.media_type in ['tv', 'tv_shows', 'anime']:
+                media_type = MediaType.EPISODE
+            elif library.media_type == 'movies':
+                media_type = MediaType.MOVIE
+            elif library.media_type == 'music':
+                media_type = MediaType.MUSIC
+            else:
+                media_type = MediaType.UNKNOWN
+            
+            logger.debug(f"[PROCESS] Determined media type: {media_type.value}")
+            
+            # Fetch TMDB metadata for movies and TV shows
+            tmdb_metadata = {}
+            if media_type in [MediaType.MOVIE, MediaType.EPISODE]:
+                search_title = parsed.get('series_name') or parsed.get('title', filename)
+                logger.info(f"[PROCESS] Fetching TMDB metadata for: '{search_title}' (year={parsed.get('year')})")
+                tmdb_metadata = await self._fetch_tmdb_metadata(
+                    search_title, 
+                    parsed.get('year'), 
+                    library.media_type
+                )
+                if tmdb_metadata:
+                    logger.info(f"[PROCESS] TMDB metadata found: id={tmdb_metadata.get('tmdb_id')}, poster={bool(tmdb_metadata.get('poster_url'))}")
+                else:
+                    logger.warning(f"[PROCESS] No TMDB metadata found for: '{search_title}'")
+            
+            media_file = MediaFile(
+                id=media_id,
+                path=file_path,
+                filename=filename,
+                media_type=media_type,
+                title=parsed.get('title', filename),
+                size=stat.st_size,
+                duration=media_info.get('duration', 0),
+                width=media_info.get('width', 0),
+                height=media_info.get('height', 0),
+                codec_video=media_info.get('codec_video', ''),
+                codec_audio=media_info.get('codec_audio', ''),
+                container=media_info.get('container', ''),
+                bitrate=media_info.get('bitrate', 0),
+                added_date=datetime.now(timezone.utc).isoformat(),
+                modified_date=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+                year=tmdb_metadata.get('year') or parsed.get('year'),
+                series_name=parsed.get('series_name', ''),
+                season_number=parsed.get('season'),
+                episode_number=parsed.get('episode'),
+                # TMDB metadata
+                tmdb_id=tmdb_metadata.get('tmdb_id'),
+                overview=tmdb_metadata.get('overview', ''),
+                poster_url=tmdb_metadata.get('poster_url', ''),
+                backdrop_url=tmdb_metadata.get('backdrop_url', ''),
+                rating=tmdb_metadata.get('rating', 0.0),
+            )
+            
+            self.media_files[media_id] = media_file
+            logger.info(f"[PROCESS] Successfully processed: {filename} -> title='{media_file.title}'")
+            return media_file
+            
+        except FileNotFoundError:
+            logger.error(f"[PROCESS] File not found: {file_path}")
+            return None
+        except PermissionError:
+            logger.error(f"[PROCESS] Permission denied: {file_path}")
+            return None
+        except Exception as e:
+            logger.error(f"[PROCESS] Error processing file {file_path}: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(f"[PROCESS] Traceback: {traceback.format_exc()}")
+            return None
+    
+    def _parse_filename(self, filename: str, media_type: str) -> Dict[str, Any]:
+        """Parse a filename to extract metadata."""
+        result = {'title': Path(filename).stem}
+        
+        if media_type in ['tv', 'tv_shows', 'anime']:
+            for pattern in self.TV_PATTERNS:
+                match = pattern.match(filename)
+                if match:
+                    groups = match.groups()
+                    result['series_name'] = groups[0].replace('.', ' ').strip()
+                    result['season'] = int(groups[1])
+                    result['episode'] = int(groups[2])
+                    result['title'] = f"{result['series_name']} S{result['season']:02d}E{result['episode']:02d}"
+                    break
+        else:
+            for pattern in self.MOVIE_PATTERNS:
+                match = pattern.match(filename)
+                if match:
+                    groups = match.groups()
+                    result['title'] = groups[0].replace('.', ' ').strip()
+                    result['year'] = int(groups[1])
+                    break
+        
+        return result
+    
+    async def _get_media_info(self, file_path: str) -> Dict[str, Any]:
+        """Get media information using ffprobe."""
+        try:
+            cmd = [
+                self.ffprobe_path,
+                '-v', 'quiet',
+                '-print_format', 'json',
+                '-show_format',
+                '-show_streams',
+                file_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                return {}
+            
+            data = json.loads(result.stdout)
+            
+            info = {
+                'container': Path(file_path).suffix.lower().lstrip('.'),
+            }
+            
+            # Get format info
+            fmt = data.get('format', {})
+            info['duration'] = float(fmt.get('duration', 0))
+            info['bitrate'] = int(fmt.get('bit_rate', 0))
+            
+            # Get stream info
+            for stream in data.get('streams', []):
+                if stream.get('codec_type') == 'video' and not info.get('codec_video'):
+                    info['codec_video'] = stream.get('codec_name', '')
+                    info['width'] = stream.get('width', 0)
+                    info['height'] = stream.get('height', 0)
+                elif stream.get('codec_type') == 'audio' and not info.get('codec_audio'):
+                    info['codec_audio'] = stream.get('codec_name', '')
+            
+            return info
+            
+        except Exception as e:
+            logger.error(f"ffprobe error: {e}")
+            return {}
+    
+    # ==================== TMDB Metadata ====================
+    
+    async def _fetch_tmdb_metadata(self, title: str, year: Optional[int], media_type: str) -> Dict[str, Any]:
+        """Fetch metadata from TMDB for a movie or TV show."""
+        if not TMDB_API_KEY:
+            logger.warning("TMDB API key not configured, skipping metadata fetch")
+            return {}
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Determine search type
+                search_type = "tv" if media_type in ['tv', 'anime'] else "movie"
+                
+                # Build search params
+                params = {
+                    "api_key": TMDB_API_KEY,
+                    "query": title,
+                    "include_adult": "false"
+                }
+                if year:
+                    params["year" if search_type == "movie" else "first_air_date_year"] = year
+                
+                # Search TMDB
+                search_url = f"{TMDB_BASE_URL}/search/{search_type}"
+                response = await client.get(search_url, params=params)
+                
+                if response.status_code != 200:
+                    logger.warning(f"TMDB search failed: {response.status_code}")
+                    return {}
+                
+                data = response.json()
+                results = data.get("results", [])
+                
+                if not results:
+                    # Try without year
+                    if year:
+                        params.pop("year", None)
+                        params.pop("first_air_date_year", None)
+                        response = await client.get(search_url, params=params)
+                        if response.status_code == 200:
+                            data = response.json()
+                            results = data.get("results", [])
+                
+                if not results:
+                    logger.debug(f"No TMDB results for: {title}")
+                    return {}
+                
+                # Use the first result
+                result = results[0]
+                
+                # Build metadata
+                metadata = {
+                    "tmdb_id": result.get("id"),
+                    "title": result.get("title") or result.get("name") or title,
+                    "overview": result.get("overview", ""),
+                    "poster_url": f"{TMDB_IMAGE_BASE}/w500{result['poster_path']}" if result.get("poster_path") else "",
+                    "backdrop_url": f"{TMDB_IMAGE_BASE}/w1280{result['backdrop_path']}" if result.get("backdrop_path") else "",
+                    "rating": result.get("vote_average", 0),
+                    "year": None,
+                    "genres": []
+                }
+                
+                # Extract year
+                release_date = result.get("release_date") or result.get("first_air_date")
+                if release_date and len(release_date) >= 4:
+                    try:
+                        metadata["year"] = int(release_date[:4])
+                    except ValueError:
+                        pass
+                
+                logger.info(f"Found TMDB metadata for '{title}': {metadata['tmdb_id']}")
+                return metadata
+                
+        except Exception as e:
+            logger.error(f"Error fetching TMDB metadata for '{title}': {e}")
+            return {}
+    
+    async def refresh_media_metadata(self, media_id: str) -> bool:
+        """Refresh TMDB metadata for a specific media file."""
+        media = self.media_files.get(media_id)
+        if not media:
+            return False
+        
+        # Determine the title to search
+        search_title = media.series_name if media.series_name else media.title
+        media_type = "tv" if media.media_type == MediaType.EPISODE else "movies"
+        
+        metadata = await self._fetch_tmdb_metadata(search_title, media.year, media_type)
+        
+        if metadata:
+            media.tmdb_id = metadata.get("tmdb_id")
+            media.overview = metadata.get("overview", media.overview)
+            media.poster_url = metadata.get("poster_url", media.poster_url)
+            media.backdrop_url = metadata.get("backdrop_url", media.backdrop_url)
+            media.rating = metadata.get("rating", media.rating)
+            if metadata.get("year"):
+                media.year = metadata["year"]
+            self._save_data()
+            return True
+        
+        return False
+    
+    # ==================== Media Retrieval ====================
+    
+    def get_media(self, media_id: str) -> Optional[MediaFile]:
+        """Get a specific media file."""
+        return self.media_files.get(media_id)
+    
+    def get_all_media(
+        self,
+        library_id: Optional[str] = None,
+        media_type: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[MediaFile]:
+        """Get media files with optional filtering."""
+        media = list(self.media_files.values())
+        
+        if library_id:
+            library = self.libraries.get(library_id)
+            if library:
+                media = [m for m in media if m.path.startswith(library.path)]
+        
+        if media_type:
+            type_enum = MediaType(media_type)
+            media = [m for m in media if m.media_type == type_enum]
+        
+        # Sort by title
+        media.sort(key=lambda m: m.title.lower())
+        
+        return media[offset:offset + limit]
+    
+    def search_media(self, query: str, limit: int = 50) -> List[MediaFile]:
+        """Search for media by title."""
+        query_lower = query.lower()
+        results = [
+            m for m in self.media_files.values()
+            if query_lower in m.title.lower() or query_lower in m.series_name.lower()
+        ]
+        results.sort(key=lambda m: m.title.lower())
+        return results[:limit]
+    
+    def get_recent_media(self, limit: int = 20) -> List[MediaFile]:
+        """Get recently added media."""
+        media = list(self.media_files.values())
+        media.sort(key=lambda m: m.added_date, reverse=True)
+        return media[:limit]
+    
+    def get_continue_watching(self, limit: int = 10) -> List[MediaFile]:
+        """Get media that was partially watched."""
+        media = [
+            m for m in self.media_files.values()
+            if m.watch_progress > 0 and not m.watched
+        ]
+        media.sort(key=lambda m: m.last_watched or '', reverse=True)
+        return media[:limit]
+    
+    def get_tv_series_grouped(self, library_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get TV episodes grouped by series and season.
+        Returns a list of shows with their seasons and episodes nested.
+        """
+        from collections import defaultdict
+        
+        # Filter to episodes only
+        episodes = [
+            m for m in self.media_files.values()
+            if m.media_type == MediaType.EPISODE
+        ]
+        
+        if library_id:
+            library = self.libraries.get(library_id)
+            if library:
+                episodes = [e for e in episodes if e.path.startswith(library.path)]
+        
+        # Group by series_name, then by season
+        series_dict = defaultdict(lambda: {
+            'series_name': '',
+            'poster_url': '',
+            'backdrop_url': '',
+            'tmdb_id': None,
+            'overview': '',
+            'seasons': defaultdict(list)
+        })
+        
+        for ep in episodes:
+            series_name = ep.series_name or 'Unknown Series'
+            series = series_dict[series_name]
+            
+            # Update series info from episode (take from first episode or one with most data)
+            if not series['series_name']:
+                series['series_name'] = series_name
+            if ep.poster_url and not series['poster_url']:
+                series['poster_url'] = ep.poster_url
+            if ep.backdrop_url and not series['backdrop_url']:
+                series['backdrop_url'] = ep.backdrop_url
+            if ep.tmdb_id and not series['tmdb_id']:
+                series['tmdb_id'] = ep.tmdb_id
+            if ep.overview and not series['overview']:
+                series['overview'] = ep.overview
+            
+            # Add episode to appropriate season
+            season_num = ep.season_number or 0
+            series['seasons'][season_num].append(ep.to_dict())
+        
+        # Convert to list format
+        result = []
+        for series_name, series_data in sorted(series_dict.items()):
+            # Convert seasons from dict to sorted list
+            seasons = []
+            for season_num in sorted(series_data['seasons'].keys()):
+                eps = series_data['seasons'][season_num]
+                # Sort episodes by episode number
+                eps.sort(key=lambda e: e.get('episode_number') or 0)
+                seasons.append({
+                    'season_number': season_num,
+                    'episode_count': len(eps),
+                    'episodes': eps
+                })
+            
+            result.append({
+                'series_name': series_data['series_name'],
+                'poster_url': series_data['poster_url'],
+                'backdrop_url': series_data['backdrop_url'],
+                'tmdb_id': series_data['tmdb_id'],
+                'overview': series_data['overview'],
+                'total_episodes': sum(len(s['episodes']) for s in seasons),
+                'seasons': seasons
+            })
+        
+        return result
+    
+    # ==================== Watch Progress ====================
+    
+    def update_watch_progress(
+        self,
+        media_id: str,
+        progress: float,
+        mark_watched: bool = False,
+    ) -> bool:
+        """Update watch progress for a media file."""
+        media = self.media_files.get(media_id)
+        if not media:
+            return False
+        
+        media.watch_progress = progress
+        media.last_watched = datetime.now(timezone.utc).isoformat()
+        
+        # Auto-mark as watched if > 90% complete
+        if mark_watched or (media.duration > 0 and progress / media.duration > 0.9):
+            media.watched = True
+        
+        self._save_data()
+        return True
+    
+    def mark_watched(self, media_id: str, watched: bool = True) -> bool:
+        """Mark a media file as watched/unwatched."""
+        media = self.media_files.get(media_id)
+        if not media:
+            return False
+        
+        media.watched = watched
+        if watched:
+            media.watch_progress = media.duration
+        
+        self._save_data()
+        return True
+    
+    # ==================== Streaming ====================
+    
+    def get_stream_url(self, media_id: str, quality: str = "original") -> Optional[Dict[str, Any]]:
+        """Get streaming URL for a media file."""
+        media = self.media_files.get(media_id)
+        if not media or not Path(media.path).exists():
+            return None
+        
+        # For original quality, return direct path
+        # For transcoded, would generate HLS playlist
+        
+        return {
+            "id": media_id,
+            "path": media.path,
+            "mime_type": self._get_mime_type(media.path),
+            "quality": quality,
+            "duration": media.duration,
+        }
+    
+    def _get_mime_type(self, path: str) -> str:
+        """Get MIME type for a file."""
+        mime, _ = mimetypes.guess_type(path)
+        return mime or 'application/octet-stream'
+
+
+# Singleton instance
+_marmalade_server: Optional[MarmaladeServer] = None
+
+
+def get_marmalade_server() -> MarmaladeServer:
+    """Get or create the Marmalade server instance."""
+    global _marmalade_server
+    
+    if _marmalade_server is None:
+        # Use backend/data directory for portability (same folder as SQLite DB)
+        default_data_dir = str(Path(__file__).parent / "marmalade_data")
+        data_dir = os.environ.get("MARMALADE_DATA_DIR", default_data_dir)
+        _marmalade_server = MarmaladeServer(data_dir=data_dir)
+    
+    return _marmalade_server
