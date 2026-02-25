@@ -29,7 +29,6 @@ const getAuthHeader = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
-};
 
 export const PlaybackSettings = () => {
   const [activeTab, setActiveTab] = useState('skip');
