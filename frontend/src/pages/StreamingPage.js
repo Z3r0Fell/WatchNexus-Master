@@ -234,13 +234,13 @@ export const StreamingPage = () => {
             className="text-center py-12"
           >
             <div className="flex justify-center gap-4 mb-6">
-              {Object.entries(streamingLogos).slice(0, 4).map(([id, info]) => (
+              {Object.entries(streamingServices).slice(0, 4).map(([id, info]) => (
                 <div
                   key={id}
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl opacity-50"
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center opacity-50"
                   style={{ backgroundColor: info.color }}
                 >
-                  {info.name.charAt(0)}
+                  <Play className="w-6 h-6 text-white fill-white" />
                 </div>
               ))}
             </div>
