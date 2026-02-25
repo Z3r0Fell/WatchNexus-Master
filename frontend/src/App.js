@@ -34,17 +34,11 @@ import { DiscoverPage } from "./pages/DiscoverPage";
 
 import "./App.css";
 
-// Gadget Pages (lazy loaded - only loaded when gadget is installed)
-const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
-const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
-const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
-const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+// Gadget Pages - Currently none are functional
+// When gadgets are properly implemented, they will be registered here dynamically
 
 const GADGET_PAGE_MAP = {
-  photos: PhotosPage,
-  radio: RadioPage,
-  podcasts: PodcastsPage,
-  web_video: WebVideoPage,
+  // Gadget pages will be added here when they become functional
 };
 
 const GadgetPageLoader = () => (
