@@ -100,12 +100,37 @@ const applyThemeToDOM = (colors, mode = 'dark') => {
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(null);
   const [themeType, setThemeType] = useState('default');
-  const [mode, setMode] = useState(() => {
-    // Check localStorage for saved preference
-    const saved = localStorage.getItem('watchnexus_theme_mode');
-    return saved || 'dark';
-  });
+  const [mode, setMode] = useState('dark'); // Default, will be updated from backend
   const [loading, setLoading] = useState(true);
+  const [modeLoaded, setModeLoaded] = useState(false);
+
+  // Load theme mode from backend on mount
+  useEffect(() => {
+    const loadThemeMode = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await axios.get(`${BACKEND_URL}/api/user/preferences`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.data.theme_mode) {
+            setMode(response.data.theme_mode);
+          }
+        } else {
+          // Fall back to localStorage if not logged in
+          const saved = localStorage.getItem('watchnexus_theme_mode');
+          if (saved) setMode(saved);
+        }
+      } catch (error) {
+        // Fall back to localStorage
+        const saved = localStorage.getItem('watchnexus_theme_mode');
+        if (saved) setMode(saved);
+      } finally {
+        setModeLoaded(true);
+      }
+    };
+    loadThemeMode();
+  }, []);
 
   // Fetch current theme from backend
   const fetchTheme = useCallback(async () => {
