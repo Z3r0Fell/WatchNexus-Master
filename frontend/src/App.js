@@ -326,17 +326,19 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <ThemeProvider>
-            <AppRouter />
-            <Toaster 
-              position="bottom-right" 
-              toastOptions={{
-                style: {
-                  background: '#1E1E1E',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#F3F4F6',
-                },
-              }}
-            />
+            <GadgetProvider>
+              <AppRouter />
+              <Toaster 
+                position="bottom-right" 
+                toastOptions={{
+                  style: {
+                    background: '#1E1E1E',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#F3F4F6',
+                  },
+                }}
+              />
+            </GadgetProvider>
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>
