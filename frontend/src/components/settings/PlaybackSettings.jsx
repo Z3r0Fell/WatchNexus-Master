@@ -453,4 +453,220 @@ const PlayerTab = ({ settings, setSettings }) => (
   </div>
 );
 
+// History Tab - Watch History Management
+const HistoryTab = () => {
+  const [watchHistory, setWatchHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const fetchWatchHistory = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await progressApi.get();
+      setWatchHistory(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch watch history:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWatchHistory();
+  }, [fetchWatchHistory]);
+
+  const handleRemoveItem = async (item) => {
+    try {
+      await progressApi.delete(item.tmdb_id, item.media_type, item.season, item.episode);
+      setWatchHistory(prev => prev.filter(h => 
+        !(h.tmdb_id === item.tmdb_id && h.season === item.season && h.episode === item.episode)
+      ));
+      toast.success(`Removed "${item.title}" from history`);
+    } catch (err) {
+      toast.error('Failed to remove item');
+    }
+  };
+
+  const handleClearAll = async () => {
+    setClearing(true);
+    try {
+      await progressApi.clearAll();
+      setWatchHistory([]);
+      setShowClearAllConfirm(false);
+      toast.success('Watch history cleared');
+    } catch (err) {
+      toast.error('Failed to clear watch history');
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-surface border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <History className="w-5 h-5 text-violet-400" />
+              Watch History
+            </h3>
+            <p className="text-sm text-gray-400 mt-1">
+              {watchHistory.length} item{watchHistory.length !== 1 ? 's' : ''} in your watch history
+            </p>
+          </div>
+          <Button 
+            onClick={() => setShowClearAllConfirm(true)} 
+            variant="outline" 
+            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+            disabled={watchHistory.length === 0}
+            data-testid="clear-all-history-btn"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear All History
+          </Button>
+        </div>
+
+        {/* Clear All Confirmation Dialog */}
+        <AnimatePresence>
+          {showClearAllConfirm && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 overflow-hidden"
+            >
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-red-400">Clear All Watch History?</h4>
+                    <p className="text-sm text-gray-400 mt-1">
+                      This will permanently delete your entire watch history including all progress for movies and TV shows. 
+                      This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3 mt-4">
+                      <Button 
+                        onClick={handleClearAll}
+                        disabled={clearing}
+                        className="bg-red-600 hover:bg-red-700"
+                        data-testid="confirm-clear-all-btn"
+                      >
+                        {clearing ? (
+                          <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Clearing...</>
+                        ) : (
+                          <><Trash2 className="w-4 h-4 mr-2" />Yes, Clear Everything</>
+                        )}
+                      </Button>
+                      <Button 
+                        onClick={() => setShowClearAllConfirm(false)}
+                        variant="outline"
+                        className="border-white/20"
+                        data-testid="cancel-clear-all-btn"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* History List */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="w-6 h-6 animate-spin text-violet-400" />
+          </div>
+        ) : watchHistory.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No watch history</p>
+            <p className="text-sm text-gray-500">Items you watch will appear here</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+            {watchHistory.map((item, index) => (
+              <motion.div 
+                key={`${item.tmdb_id}-${item.season || ''}-${item.episode || ''}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.02 }}
+                className="p-3 rounded-xl bg-black/30 border border-white/5 hover:border-white/10 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  {/* Thumbnail */}
+                  <div className="w-16 h-10 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
+                    {item.backdrop_path ? (
+                      <img 
+                        src={`https://image.tmdb.org/t/p/w200${item.backdrop_path}`} 
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {item.media_type === 'tv' ? <Tv className="w-5 h-5 text-gray-600" /> : <Film className="w-5 h-5 text-gray-600" />}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">{item.title}</p>
+                      <span className={`px-1.5 py-0.5 rounded text-xs ${item.media_type === 'tv' ? 'bg-blue-500/20 text-blue-400' : 'bg-violet-500/20 text-violet-400'}`}>
+                        {item.media_type === 'tv' ? 'TV' : 'Movie'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      {item.season && item.episode && (
+                        <span>S{item.season} E{item.episode}</span>
+                      )}
+                      <span>{formatTime(item.current_time)} / {formatTime(item.duration)}</span>
+                      <span className="text-violet-400">{item.progress?.toFixed(0) || 0}%</span>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden hidden sm:block">
+                    <div 
+                      className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full"
+                      style={{ width: `${item.progress || 0}%` }}
+                    />
+                  </div>
+
+                  {/* Remove button */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleRemoveItem(item)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:bg-red-500/10 p-2"
+                    data-testid={`remove-history-${item.tmdb_id}`}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+        <p className="text-sm text-blue-400">
+          <strong>Tip:</strong> You can also remove items from the Continue Watching section on your dashboard by hovering and clicking the X.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 export default PlaybackSettings;
