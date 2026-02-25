@@ -73,6 +73,77 @@ const TIER_BADGES = {
 // Release history with all versions
 const RELEASES = [
   {
+    version: '2.5.6',
+    date: '2025-02-25',
+    type: 'minor',
+    title: 'Gadgets Catalogue & Library Overhaul',
+    highlights: [
+      'Gadgets Catalogue with 45 extensions',
+      'Movies & TV Shows now show local library',
+      'Anime as distinct media category',
+      'Container banner assets for Docker/Unraid',
+      '12 release packages'
+    ],
+    changes: [
+      { type: 'feature', text: 'Gadgets Catalogue: 45 built-in extensions across 16 categories (Metadata, Subtitles, Notifications, Themes, Video, Audio, Indexers, System, etc.)' },
+      { type: 'feature', text: 'Movies page: Dual Library/Discover view showing local media + TMDB discovery' },
+      { type: 'feature', text: 'TV Shows page: Dual Library/Discover view with automatic series grouping' },
+      { type: 'feature', text: 'Anime page: Fully distinct category with dedicated library support and anime-specific discovery filters' },
+      { type: 'feature', text: 'Container banner pack integrated for Docker Hub, Unraid, and dashboard previews' },
+      { type: 'improvement', text: 'Renamed "Plugins" to "Gadgets" throughout the application' },
+      { type: 'improvement', text: 'Gadgets settings page redesigned with Browse Catalogue and Installed views' },
+      { type: 'improvement', text: 'All 12 application components packaged as distributable zip archives' },
+    ]
+  },
+  {
+    version: '2.5.5',
+    date: '2025-02-24',
+    type: 'minor',
+    title: 'Theming, Security & Code Audit',
+    highlights: [
+      'Complete theming system overhaul',
+      'Critical security patch',
+      'Credits section added',
+      'Comprehensive code audit'
+    ],
+    changes: [
+      { type: 'feature', text: 'Full light/dark mode system with user-selectable color themes via Theme Forge' },
+      { type: 'feature', text: 'Credits & Acknowledgements section for contributors, backers, and sponsors' },
+      { type: 'feature', text: 'Music library page: Browse and stream local music collections' },
+      { type: 'feature', text: 'Audiobooks library page: Browse and listen to local audiobook files' },
+      { type: 'feature', text: 'Database reset with schema version tracking' },
+      { type: 'feature', text: 'Customizable sidebar with show/hide tab settings' },
+      { type: 'security', text: 'Patched unauthenticated media streaming endpoint (critical vulnerability)' },
+      { type: 'fix', text: 'Fixed CSS variable mismatches causing invisible UI elements in dark mode' },
+      { type: 'fix', text: 'Fixed file browser to correctly show user home directories' },
+      { type: 'improvement', text: 'All UI components refactored to respect selected theme colors' },
+      { type: 'docs', text: 'Created Fortress Code Protection Plan, Harbor Docker/RPi Plan, Project Echo FFmpeg Investigation' },
+    ]
+  },
+  {
+    version: '2.5.0',
+    date: '2025-02-22',
+    type: 'major',
+    title: 'Multi-Platform Client Release',
+    highlights: [
+      'Client apps for 5 platforms',
+      'System tray application',
+      'Auto-updater system',
+      'Who\'s Watching profiles'
+    ],
+    changes: [
+      { type: 'feature', text: 'Android client (Sapphire): Native mobile media browser and player' },
+      { type: 'feature', text: 'Android TV client (Emerald): 10-foot UI optimized for remote control' },
+      { type: 'feature', text: 'Fire TV client (Ruby): Amazon Firestick optimized interface' },
+      { type: 'feature', text: 'Roku client (Topaz): BrightScript channel for Roku devices' },
+      { type: 'feature', text: 'Kodi addon (Diamond): Full WatchNexus integration for Kodi' },
+      { type: 'feature', text: 'Beacon system tray app for server management (start/stop/config)' },
+      { type: 'feature', text: 'Tiramisu auto-updater for seamless version updates' },
+      { type: 'feature', text: 'Who\'s Watching profile selector for password-less home network login' },
+      { type: 'feature', text: 'Cloud sync planning (Marshmallow) completed' },
+    ]
+  },
+  {
     version: '2.1.0',
     date: '2025-02-23',
     type: 'minor',
