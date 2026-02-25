@@ -62,7 +62,11 @@ export const PluginsSettings = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [catalogueSearch, setCatalogueSearch] = useState('');
 
-  const handleInstallGadget = async (gadgetId, gadgetName) => {
+  const handleInstallGadget = async (gadgetId, gadgetName, gadgetSupported, compatNote) => {
+    if (!gadgetSupported) {
+      toast.error(compatNote || `"${gadgetName}" requires a feature not yet available in WatchNexus.`, { duration: 5000 });
+      return;
+    }
     setInstallingGadget(gadgetId);
     try {
       if (isInstalled(gadgetId)) {
