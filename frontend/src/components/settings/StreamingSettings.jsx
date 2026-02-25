@@ -114,8 +114,10 @@ export const StreamingSettings = () => {
               <div key={`${service.id}-${index}`} className="p-4 rounded-xl border border-white/5 flex items-center justify-between"
                 style={{ backgroundColor: `${service.color}15` }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                    style={{ backgroundColor: `${service.color}30` }}>{service.icon}</div>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${service.color}30` }}>
+                    <Tv className="w-5 h-5" style={{ color: service.color }} />
+                  </div>
                   <div>
                     <p className="font-medium">{service.name}</p>
                     <p className="text-xs text-gray-400">{service.email}</p>
