@@ -243,7 +243,12 @@ export const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {continueWatching.slice(0, 5).map((item, index) => (
-                <ContinueWatchingCard key={`continue-${item.tmdb_id}-${item.season || ''}-${item.episode || ''}`} item={item} index={index} />
+                <ContinueWatchingCard 
+                  key={`continue-${item.tmdb_id}-${item.season || ''}-${item.episode || ''}`} 
+                  item={item} 
+                  index={index}
+                  onRemove={handleRemoveFromContinueWatching}
+                />
               ))}
             </div>
           </section>
