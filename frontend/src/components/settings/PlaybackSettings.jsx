@@ -121,6 +121,8 @@ export const PlaybackSettings = () => {
         );
       case 'player':
         return <PlayerTab settings={settings} setSettings={setSettings} />;
+      case 'history':
+        return <HistoryTab />;
       default:
         return null;
     }
