@@ -209,6 +209,19 @@ export const Dashboard = () => {
     }
   };
 
+  const handleRemoveFromContinueWatching = async (item) => {
+    try {
+      await progressApi.delete(item.tmdb_id, item.media_type, item.season, item.episode);
+      setContinueWatching(prev => prev.filter(p => 
+        !(p.tmdb_id === item.tmdb_id && p.season === item.season && p.episode === item.episode)
+      ));
+      toast.success(`Removed "${item.title}" from Continue Watching`);
+    } catch (error) {
+      console.error('Failed to remove from continue watching:', error);
+      toast.error('Failed to remove from Continue Watching');
+    }
+  };
+
   return (
     <Layout>
       <div data-testid="dashboard" className="min-h-screen">
