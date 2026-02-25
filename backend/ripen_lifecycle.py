@@ -254,6 +254,13 @@ class RipenEngine:
             if gadget["status"] != "active":
                 continue
             gid = gadget["gadget_id"]
+            
+            # Check if gadget is supported in the catalogue
+            cat_item = next((g for g in GADGETS_CATALOGUE if g["id"] == gid), None)
+            if cat_item and not cat_item.get("supported", False):
+                # Skip unsupported gadgets - don't show them in UI
+                continue
+            
             gh = GADGET_HOOKS.get(gid, {})
 
             if "sidebar" in gh:
