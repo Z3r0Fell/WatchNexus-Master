@@ -1287,6 +1287,81 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
     )
     return {"id": service_id, "enabled": enabled, "username": username}
 
+# ==================== IPTV SOURCES ====================
+
+@api_router.get("/iptv/sources")
+async def get_iptv_sources(user: dict = Depends(require_auth)):
+    """Get all IPTV sources for the current user."""
+    sources = await db.iptv_sources.find({"user_id": user["id"]}, {"_id": 0})
+    return {"sources": sources, "count": len(sources)}
+
+@api_router.post("/iptv/sources")
+async def add_iptv_source(name: str, url: str, type: str = "m3u", epg_url: str = None, user: dict = Depends(require_auth)):
+    """Add a new IPTV source."""
+    source = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "name": name,
+        "url": url,
+        "type": type,
+        "epg_url": epg_url,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.iptv_sources.insert_one(source)
+    del source["user_id"]  # Don't return user_id
+    return source
+
+@api_router.delete("/iptv/sources/{source_id}")
+async def delete_iptv_source(source_id: str, user: dict = Depends(require_auth)):
+    """Delete an IPTV source."""
+    result = await db.iptv_sources.delete_one({"id": source_id, "user_id": user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="IPTV source not found")
+    return {"message": "IPTV source deleted"}
+
+# ==================== USER PREFERENCES (Synced Settings) ====================
+
+@api_router.get("/user/preferences")
+async def get_user_preferences(user: dict = Depends(require_auth)):
+    """Get user preferences (synced across devices)."""
+    prefs = await db.user_preferences.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not prefs:
+        # Return defaults
+        return {
+            "visible_tabs": [],
+            "download_mode": "builtin",
+            "theme_mode": "dark"
+        }
+    return {
+        "visible_tabs": json.loads(prefs.get("visible_tabs", "[]")) if isinstance(prefs.get("visible_tabs"), str) else prefs.get("visible_tabs", []),
+        "download_mode": prefs.get("download_mode", "builtin"),
+        "theme_mode": prefs.get("theme_mode", "dark")
+    }
+
+@api_router.put("/user/preferences")
+async def update_user_preferences(
+    visible_tabs: list = None,
+    download_mode: str = None,
+    theme_mode: str = None,
+    user: dict = Depends(require_auth)
+):
+    """Update user preferences."""
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if visible_tabs is not None:
+        update_data["visible_tabs"] = json.dumps(visible_tabs)
+    if download_mode is not None:
+        update_data["download_mode"] = download_mode
+    if theme_mode is not None:
+        update_data["theme_mode"] = theme_mode
+    
+    await db.user_preferences.update_one(
+        {"user_id": user["id"]},
+        {"$set": {**update_data, "user_id": user["id"]}},
+        upsert=True
+    )
+    return {"message": "Preferences updated"}
+
 # ==================== FILE BROWSER ====================
 
 @api_router.get("/filesystem/browse")
