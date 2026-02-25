@@ -28,7 +28,8 @@ export const UsersSettings = ({
   setEditingUser,
   onAddUser,
   onUpdateUser,
-  onDeleteUser
+  onDeleteUser,
+  currentUserId
 }) => {
   const [activeTab, setActiveTab] = useState('users');
 
