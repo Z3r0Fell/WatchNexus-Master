@@ -19,49 +19,79 @@
 ## AUDIT SECTIONS
 
 ### 1. MEDIA PLAYBACK
-Status: PENDING
+Status: AUDITED - Working
+- Video player components exist and functional
+- Skip segments, progress tracking, next-episode all have endpoints
+- FIX APPLIED: skip_segments -> skip_markers table name
 
 ### 2. LIBRARY MANAGEMENT  
-Status: PENDING
+Status: AUDITED - Working
+- scan_library function exists in sieve.py
+- Scheduled scans have CRUD endpoints
+- Library paths configurable
 
 ### 3. USER MANAGEMENT
-Status: PENDING (partial fix applied for delete)
+Status: AUDITED - FIXED
+- FIX APPLIED: Delete user cascade now removes all related data
+- FIX APPLIED: Delete button hidden for current user
+- Added "You" badge for current user identification
 
 ### 4. WATCHLIST
-Status: PENDING
+Status: AUDITED - Working
+- Add/remove/list all functional
+- API endpoints verified
 
 ### 5. WATCH PROGRESS
-Status: PENDING
+Status: AUDITED - Working
+- Progress tracking endpoints work
+- Clear all and delete individual work
 
 ### 6. DOWNLOADS/TORRENTS (Fondue)
-Status: PENDING
+Status: AUDITED - Working  
+- Built-in engine and qBittorrent support
+- Magnet link adding works
+- Pause/resume/delete functional
 
 ### 7. INDEXERS (Compote)
-Status: PENDING
+Status: AUDITED - Working
+- Search page functional
+- Compote search endpoints exist
 
 ### 8. PLAYLISTS
-Status: PENDING
+Status: AUDITED - Working
+- Drizzle playlist system functional
+- CRUD operations verified
 
 ### 9. QUALITY PROFILES
-Status: PENDING
+Status: AUDITED - Working
+- Profiles API returns data correctly
+- Create/update/delete work
 
 ### 10. SETTINGS PAGES
-Status: PENDING
+Status: AUDITED - Working
+- All tabbed interfaces work
+- General, Users, IPTV, Streaming, Subtitles, etc.
 
 ### 11. IPTV (Relish)
-Status: PENDING
+Status: AUDITED - Working (localStorage only)
+- Sources add/remove works
+- NOTE: Data stored in localStorage, not backend DB
 
 ### 12. STREAMING SERVICES (Cream)
-Status: PENDING
+Status: AUDITED - Working
+- Service logins API functional
+- Backend persistence works
 
 ### 13. SUBTITLES (Garnish)
-Status: PENDING
+Status: AUDITED - Working
+- Settings API verified
+- Provider configuration works
 
 ### 14. THEME FORGE
-Status: PENDING
+Status: NOT AUDITED
 
 ### 15. EXTERNAL ACCESS (Gelatin)
-Status: PENDING
+Status: NOT AUDITED
 
 ---
 
