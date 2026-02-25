@@ -8,18 +8,18 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 const STREAMING_SERVICES = [
-  { id: 'netflix', name: 'Netflix', icon: 'N', color: '#E50914' },
-  { id: 'disney', name: 'Disney+', icon: 'D+', color: '#113CCF' },
-  { id: 'prime', name: 'Prime Video', icon: 'P', color: '#00A8E1' },
-  { id: 'hbo', name: 'HBO Max', icon: 'H', color: '#B535F6' },
-  { id: 'hulu', name: 'Hulu', icon: 'h', color: '#1CE783' },
-  { id: 'apple', name: 'Apple TV+', icon: '', color: '#000000' },
-  { id: 'peacock', name: 'Peacock', icon: 'P', color: '#FDB927' },
-  { id: 'paramount', name: 'Paramount+', icon: 'P+', color: '#0064FF' },
-  { id: 'crunchyroll', name: 'Crunchyroll', icon: 'CR', color: '#F47521' },
-  { id: 'funimation', name: 'Funimation', icon: 'F', color: '#5B0BB5' },
-  { id: 'mubi', name: 'MUBI', icon: 'M', color: '#00B4E4' },
-  { id: 'criterion', name: 'Criterion Channel', icon: 'C', color: '#000000' },
+  { id: 'netflix', name: 'Netflix', color: '#E50914' },
+  { id: 'disney', name: 'Disney+', color: '#113CCF' },
+  { id: 'prime', name: 'Prime Video', color: '#00A8E1' },
+  { id: 'hbo', name: 'HBO Max', color: '#B535F6' },
+  { id: 'hulu', name: 'Hulu', color: '#1CE783' },
+  { id: 'apple', name: 'Apple TV+', color: '#555555' },
+  { id: 'peacock', name: 'Peacock', color: '#000000' },
+  { id: 'paramount', name: 'Paramount+', color: '#0064FF' },
+  { id: 'crunchyroll', name: 'Crunchyroll', color: '#F47521' },
+  { id: 'funimation', name: 'Funimation', color: '#5B0BB5' },
+  { id: 'mubi', name: 'MUBI', color: '#00B4E4' },
+  { id: 'criterion', name: 'Criterion Channel', color: '#333333' },
 ];
 
 export const StreamingSettings = () => {
