@@ -75,6 +75,12 @@ Status: PENDING
 - **Fix:** Changed to `db.skip_markers` in `get_skip_segments_from_db()` and save function
 - **Status:** FIXED
 
+#### FIX #2: Unsupported gadgets showing in sidebar
+- **File:** `/app/backend/ripen_lifecycle.py`
+- **Issue:** Gadgets marked `supported: false` still appeared in sidebar after being installed
+- **Fix:** Modified `get_active_hooks()` to filter out gadgets that are not supported
+- **Status:** FIXED
+
 #### NOTED #1: IPTV localStorage-only storage
 - **File:** `/app/frontend/src/components/settings/IPTVSettings.jsx`
 - **Issue:** IPTV sources stored in localStorage, not database
