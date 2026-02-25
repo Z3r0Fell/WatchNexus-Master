@@ -512,28 +512,64 @@ export const PluginsSettings = () => {
       {/* ==================== INSTALLED VIEW ==================== */}
       {activeView === 'installed' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-          {loadingPlugins && plugins.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
-              Loading gadgets...
-            </div>
-          ) : plugins.length === 0 ? (
-            <div className="glass-card rounded-xl p-8 text-center">
-              <Package className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-              <h3 className="text-lg font-semibold mb-2">No Gadgets Installed</h3>
-              <p className="text-sm text-gray-400 mb-4 max-w-md mx-auto">
-                Browse the catalogue to find gadgets, or import your own.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={() => setActiveView('catalogue')} className="bg-violet-600 hover:bg-violet-700">
-                  <Package className="w-4 h-4 mr-2" /> Browse Catalogue
-                </Button>
-                <Button variant="outline" onClick={() => setShowImportOptions(true)} className="border-white/10">
-                  <Upload className="w-4 h-4 mr-2" /> Import
-                </Button>
-              </div>
-            </div>
-          ) : (
+          {/* Ripen-installed gadgets */}
+          {installed.length > 0 && (
+            <>
+              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Catalogue Gadgets ({installed.length})</h3>
+              {installed.map((gadget) => {
+                const CatIcon = categoryIcons[gadget.category] || Package;
+                const gradient = categoryColors[gadget.category] || 'from-gray-500 to-gray-600';
+                return (
+                  <motion.div key={gadget.gadget_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`ripen-${gadget.gadget_id}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+                          <CatIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium">{gadget.name}</h3>
+                            <span className="text-xs text-gray-500">v{gadget.version}</span>
+                            {gadget.hooks?.sidebar && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400">+ sidebar</span>
+                            )}
+                            {gadget.hooks?.route && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">+ page</span>
+                            )}
+                            {gadget.hooks?.settings_panel && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">+ settings</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-400 line-clamp-1">{gadget.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`px-2 py-1 rounded-full text-xs ${
+                          gadget.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {gadget.status === 'active' ? <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span> : <span>Inactive</span>}
+                        </div>
+                        <Switch checked={gadget.status === 'active'}
+                          onCheckedChange={() => handleToggleGadget(gadget.gadget_id, gadget.status === 'active')} />
+                        <Button variant="ghost" size="icon"
+                          onClick={() => handleInstallGadget(gadget.gadget_id, gadget.name)}
+                          disabled={installingGadget === gadget.gadget_id}
+                          className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10">
+                          {installingGadget === gadget.gadget_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Legacy plugins (from filesystem) */}
+          {plugins.length > 0 && (
+            <>
+              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mt-6">Custom Gadgets ({plugins.length})</h3>
             plugins.map((plugin) => (
               <motion.div key={plugin.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`installed-${plugin.id}`}>
