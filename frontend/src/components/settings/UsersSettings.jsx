@@ -84,7 +84,7 @@ export const UsersSettings = ({
 // Users Tab
 const UsersTab = ({
   users, loadingUsers, showAddUser, setShowAddUser, newUser, setNewUser,
-  savingUser, editingUser, setEditingUser, onAddUser, onUpdateUser, onDeleteUser
+  savingUser, editingUser, setEditingUser, onAddUser, onUpdateUser, onDeleteUser, currentUserId
 }) => (
   <div className="space-y-6">
     <div className="bg-surface border border-white/10 rounded-2xl p-6">
