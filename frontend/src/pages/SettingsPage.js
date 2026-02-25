@@ -17,10 +17,12 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { settingsApi } from '../services/api';
 import { BACKEND_URL } from '../lib/config';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = BACKEND_URL;
 
 export const SettingsPage = () => {
+  const { user: currentUser } = useAuth();
   // Current active setting
   const [activeSection, setActiveSection] = useState('general');
   
