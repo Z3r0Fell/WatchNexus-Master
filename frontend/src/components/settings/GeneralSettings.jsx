@@ -231,7 +231,7 @@ const PathsTab = ({ settings, setSettings, onSave, saving, onOpenFileBrowser }) 
 );
 
 // Sidebar Tab
-const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabVisibility }) => (
+const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabVisibility, savingTabs, loadingPrefs }) => (
   <div className="space-y-6">
     <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -254,37 +254,55 @@ const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabV
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-        {hideableTabs.map(tab => {
-          const isVisible = visibleTabs.includes(tab.label);
-          return (
-            <button
-              key={tab.label}
-              onClick={() => toggleTab(tab.label)}
-              className={`p-3 rounded-lg border transition-all text-left ${
-                isVisible 
-                  ? 'bg-violet-600/20 border-violet-500/50 text-white' 
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-              }`}
-              data-testid={`toggle-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{tab.label}</span>
-                {isVisible && <Check className="w-4 h-4 text-violet-400" />}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {loadingPrefs ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+          {hideableTabs.map(tab => {
+            const isVisible = visibleTabs.includes(tab.label);
+            return (
+              <button
+                key={tab.label}
+                onClick={() => toggleTab(tab.label)}
+                className={`p-3 rounded-lg border transition-all text-left ${
+                  isVisible 
+                    ? 'bg-violet-600/20 border-violet-500/50 text-white' 
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+                data-testid={`toggle-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{tab.label}</span>
+                  {isVisible && <Check className="w-4 h-4 text-violet-400" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex justify-between items-center pt-2">
         <span className="text-xs text-gray-500">
           {visibleTabs.length} of {hideableTabs.length} tabs visible
         </span>
-        <Button onClick={saveTabVisibility} className="bg-pink-600 hover:bg-pink-700" data-testid="save-tab-visibility">
-          <Check className="w-4 h-4 mr-2" /> Apply Changes
+        <Button 
+          onClick={saveTabVisibility} 
+          className="bg-pink-600 hover:bg-pink-700" 
+          disabled={savingTabs}
+          data-testid="save-tab-visibility"
+        >
+          {savingTabs ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+          {savingTabs ? 'Saving...' : 'Apply Changes'}
         </Button>
       </div>
+    </div>
+    
+    <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+      <p className="text-sm text-green-400">
+        <strong>Sync enabled:</strong> Your sidebar preferences are saved to your account and will sync across all your devices.
+      </p>
     </div>
   </div>
 );
