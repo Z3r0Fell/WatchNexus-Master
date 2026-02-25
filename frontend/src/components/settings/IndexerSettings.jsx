@@ -106,10 +106,25 @@ export const IndexerSettings = () => {
 
         <div className="flex flex-wrap gap-2 mb-4">
           <span className="text-sm text-gray-400 py-1">Quick Add:</span>
-          {presets.map((preset) => (
-            <button key={preset.name} onClick={() => {
-              setNewIndexer({ name: preset.name, type: preset.type, url: preset.url, api_key: '', cloudflare_protected: preset.cf, search_path: '', cookie: '' });
-              setShowAddIndexer(true);
+          {presets.filter(p => !indexers.some(i => i.name === p.name)).map((preset) => (
+            <button key={preset.name} onClick={async () => {
+              if (preset.url) {
+                // Auto-add preset with URL
+                try {
+                  await compoteApi.addIndexer(preset.name, preset.type, preset.url, '', true, 50, {
+                    cloudflare_protected: preset.cf, search_path: '', cookie: '',
+                  });
+                  toast.success(`Added ${preset.name}`);
+                  const res = await compoteApi.getIndexers();
+                  setIndexers(res.data || []);
+                } catch (err) {
+                  toast.error(`Failed to add ${preset.name}`);
+                }
+              } else {
+                // Open form for custom
+                setNewIndexer({ name: preset.name, type: preset.type, url: preset.url, api_key: '', cloudflare_protected: preset.cf, search_path: '', cookie: '' });
+                setShowAddIndexer(true);
+              }
             }} className="px-3 py-1 text-xs rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">
               + {preset.name}
             </button>
