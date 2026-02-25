@@ -137,7 +137,7 @@ const LoginsTab = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="relative">
           <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white appearance-none h-10">
+            className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white appearance-none h-10 [&>option]:bg-[#1a1a1a] [&>option]:text-white">
             <option value="">Select Service...</option>
             {availableServices.map((service) => (
               <option key={service.id} value={service.id}>{service.name}</option>
