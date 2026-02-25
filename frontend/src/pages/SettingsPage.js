@@ -251,7 +251,8 @@ export const SettingsPage = () => {
         return (
           <UsersSettings users={users} loadingUsers={loadingUsers} showAddUser={showAddUser} setShowAddUser={setShowAddUser}
             newUser={newUser} setNewUser={setNewUser} savingUser={savingUser} editingUser={editingUser}
-            setEditingUser={setEditingUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />
+            setEditingUser={setEditingUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser}
+            currentUserId={currentUser?.id} />
         );
       case 'library':
         return (
