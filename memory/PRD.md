@@ -3,21 +3,40 @@
 ## Product Overview
 WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
-## Current Version: 2.5.10
+## Current Version: 2.5.11
 **Last Updated:** Feb 25, 2025
 
-## Session Summary (Feb 25, 2025)
-- ✅ Release History verified (22 releases, v1.0.0 to v2.5.10)
-- ✅ Project Source Unification resolved (synced to /app/separated/)
-- ✅ **User Management Delete Fix** - Trash button now hidden for current user, cascade delete handles all foreign key constraints
-- Architecture documented: supervisor config is platform-managed, development in /app/backend & /app/frontend
+## Session Summary (Feb 25, 2025) - Code Audit
+- ✅ **Comprehensive Code Audit** - Line-by-line review of all major features
+- ✅ **User Delete Cascade Fix** - Properly deletes from 16+ related tables
+- ✅ **Current User Identification** - "You" badge + hidden delete button for self
+- ✅ **Skip Markers Table Fix** - Corrected table name reference
+- ✅ **Unsupported Gadgets Hidden** - Photos, Radio, Podcasts no longer in sidebar
+- ✅ **Version bumped to 2.5.11** with release notes added
 
-## Recent Changes (v2.5.10 - Feb 25, 2025)
-### Critical Fixes - OS-Aware Browsing & Dark Mode
-- **OS-aware file browsing:** Shows correct paths for Windows (C:\), Linux (/home), and macOS (/Users)
-- **Dark mode dropdown fixes:** All select dropdowns now have proper dark backgrounds
-- **Folder browse buttons:** Added to Media Health scan path and Scheduled Scans
-- **Indexer preset fixes:** Quick Add now auto-adds indexers directly; toggle handles broken entries
+### Audit Coverage:
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Media Playback | ✅ Working | Video player, skip segments fixed |
+| Library Management | ✅ Working | Scan functions exist |
+| User Management | ✅ Fixed | Cascade delete, current user protection |
+| Watchlist | ✅ Working | CRUD verified |
+| Watch Progress | ✅ Working | Clear all works |
+| Downloads (Fondue) | ✅ Working | Engine + qBit support |
+| Indexers (Compote) | ✅ Working | Search functional |
+| Playlists (Drizzle) | ✅ Working | CRUD verified |
+| Quality Profiles | ✅ Working | API functional |
+| Settings Pages | ✅ Working | All tabs work |
+| IPTV (Relish) | ✅ Working | localStorage storage |
+| Streaming (Cream) | ✅ Working | Backend persistence |
+| Subtitles (Garnish) | ✅ Working | Settings API works |
+
+## Recent Changes (v2.5.11 - Feb 25, 2025)
+### Code Audit & Bug Fixes
+- **User deletion cascade:** Now deletes from all related tables (sessions, watchlist, progress, etc.)
+- **Current user protection:** Delete button hidden for self, "You" badge added
+- **skip_markers fix:** Corrected table reference in skip segments code
+- **Unsupported gadgets:** Photos, Radio, Podcasts filtered from sidebar hooks
 
 ### Previous Changes (v2.5.9):
 - X button on Continue Watching cards
