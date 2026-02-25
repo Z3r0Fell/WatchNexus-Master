@@ -358,7 +358,7 @@ export const SettingsPage = () => {
               <div className="space-y-0.5">
                 <NavButton id="gelatin" label="External Access" />
                 <NavButton id="theme-forge" label="Theme Forge" />
-                <NavButton id="plugins" label="Plugins" />
+                <NavButton id="plugins" label="Gadgets" />
                 <NavButton id="logs" label="Logs & Health" />
                 <NavButton id="maintenance" label="Maintenance" />
               </div>
