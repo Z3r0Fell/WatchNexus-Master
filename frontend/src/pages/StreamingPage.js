@@ -96,7 +96,7 @@ export const StreamingPage = () => {
           <h2 className="text-lg font-bold mb-4">Connected Services</h2>
           <div className="flex flex-wrap gap-3">
             {services.map((service) => {
-              const info = streamingLogos[service.id] || { color: '#666', name: service.name };
+              const info = streamingServices[service.id] || { color: '#666', name: service.name };
               return (
                 <div
                   key={service.id}
@@ -107,10 +107,10 @@ export const StreamingPage = () => {
                   }`}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: info.color }}
                   >
-                    {info.name.charAt(0)}
+                    <Play className="w-4 h-4 text-white fill-white" />
                   </div>
                   <span className="font-medium">{info.name}</span>
                   {service.enabled && (
