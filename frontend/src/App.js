@@ -34,6 +34,27 @@ import { DiscoverPage } from "./pages/DiscoverPage";
 
 import "./App.css";
 
+// Gadget Pages (lazy loaded - only loaded when gadget is installed)
+const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
+const GamesPage = lazy(() => import("./pages/gadgets/GamesPage"));
+const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
+const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
+const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+
+const GADGET_PAGE_MAP = {
+  photos: PhotosPage,
+  games: GamesPage,
+  radio: RadioPage,
+  podcasts: PodcastsPage,
+  web_video: WebVideoPage,
+};
+
+const GadgetPageLoader = () => (
+  <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+    <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
