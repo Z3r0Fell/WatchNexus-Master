@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { HardDrive, RefreshCw, FileSearch, Wrench, Clock, Calendar, Plus, Trash2, DownloadCloud, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HardDrive, RefreshCw, FileSearch, Wrench, Clock, Calendar, Plus, Trash2, DownloadCloud, CheckCircle, AlertTriangle, X, FolderSearch } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { mediaHealthApi } from '../../services/api';
+import FolderBrowser from '../FolderBrowser';
 
 export const MediaHealthSettings = () => {
   const [healthScanPath, setHealthScanPath] = useState('');
@@ -14,6 +15,8 @@ export const MediaHealthSettings = () => {
   const [redownloading, setRedownloading] = useState(null);
   const [scheduledScans, setScheduledScans] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [showHealthBrowser, setShowHealthBrowser] = useState(false);
+  const [showScheduledBrowser, setShowScheduledBrowser] = useState(false);
   const [newScanForm, setNewScanForm] = useState({
     directory: '', schedule_type: 'daily', schedule_time: '03:00', notify_on_issues: true, auto_repair: false,
   });
