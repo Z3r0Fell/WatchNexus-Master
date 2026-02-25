@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Layout } from '../components/layout/Layout';
-import { marmaladeLibrary, marmaladeMedia } from '../services/marmaladeApi';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Layout } from '../../components/layout/Layout';
+import { marmaladeLibrary, marmaladeMedia } from '../../services/marmaladeApi';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Image, FolderOpen, Plus, Search, RefreshCw, Grid, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 

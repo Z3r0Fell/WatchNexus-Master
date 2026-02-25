@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Layout } from '../components/layout/Layout';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Layout } from '../../components/layout/Layout';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Gamepad2, FolderOpen, Plus, Search, Play, RefreshCw } from 'lucide-react';
-import { marmaladeLibrary } from '../services/marmaladeApi';
+import { marmaladeLibrary } from '../../services/marmaladeApi';
 import { toast } from 'sonner';
 
 const GamesPage = () => {
