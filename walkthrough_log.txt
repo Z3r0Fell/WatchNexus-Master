@@ -2,7 +2,7 @@
   WatchNexus Walkthrough Capture
 ============================================================
 
-  Target URL: https://marmalade-preview.preview.emergentagent.com
+  Target URL: https://gadget-lifecycle.preview.emergentagent.com
   Output: /app/walkthrough_frames
 
 🔐 Section 1: Login
