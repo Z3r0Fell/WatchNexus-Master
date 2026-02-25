@@ -570,7 +570,7 @@ export const PluginsSettings = () => {
           {plugins.length > 0 && (
             <>
               <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mt-6">Custom Gadgets ({plugins.length})</h3>
-            plugins.map((plugin) => (
+              {plugins.map((plugin) => (
               <motion.div key={plugin.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`installed-${plugin.id}`}>
                 <div className="flex items-start justify-between gap-4">
@@ -616,9 +616,8 @@ export const PluginsSettings = () => {
                   <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{plugin.error_message}</div>
                 )}
               </motion.div>
-            ))
-          )}
-          </>
+              ))}
+            </>
           )}
 
           {/* Empty state when nothing installed */}
