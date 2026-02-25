@@ -9,6 +9,8 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import { torrentEngineApi, qbittorrentApi } from '../../services/api';
+import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 
 export const DownloadSettings = () => {
   const [downloadClientMode, setDownloadClientMode] = useState('builtin');
@@ -39,9 +41,40 @@ export const DownloadSettings = () => {
 
   useEffect(() => {
     fetchEngineStatus(); fetchEngineSettings();
-    const savedMode = localStorage.getItem('watchnexus_download_mode');
-    if (savedMode) setDownloadClientMode(savedMode);
+    // Load download mode from backend
+    const loadPreferences = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BACKEND_URL}/api/user/preferences`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.download_mode) {
+          setDownloadClientMode(response.data.download_mode);
+        }
+      } catch {
+        // Fall back to localStorage
+        const savedMode = localStorage.getItem('watchnexus_download_mode');
+        if (savedMode) setDownloadClientMode(savedMode);
+      }
+    };
+    loadPreferences();
   }, [fetchEngineStatus, fetchEngineSettings]);
+
+  const handleSetDownloadMode = async (mode) => {
+    setDownloadClientMode(mode);
+    // Save to backend
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { download_mode: mode }
+      });
+      // Also save to localStorage for backwards compatibility
+      localStorage.setItem('watchnexus_download_mode', mode);
+    } catch (error) {
+      console.error('Failed to save download mode:', error);
+    }
+  };
 
   const saveEngineSettings = async () => {
     setSavingEngineSettings(true);
@@ -66,7 +99,7 @@ export const DownloadSettings = () => {
       <div className="glass-card rounded-xl p-6">
         <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Download className="w-5 h-5 text-violet-400" /> Download Client</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <button onClick={() => { setDownloadClientMode('builtin'); localStorage.setItem('watchnexus_download_mode', 'builtin'); }}
+          <button onClick={() => handleSetDownloadMode('builtin')}
             className={`p-4 rounded-xl border-2 text-left transition-all ${downloadClientMode === 'builtin' ? 'border-violet-500 bg-violet-500/10' : 'border-white/10 bg-surface hover:border-white/20'}`}>
             <div className="flex items-center gap-3 mb-2">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${downloadClientMode === 'builtin' ? 'bg-violet-500' : 'bg-white/10'}`}>
@@ -76,7 +109,7 @@ export const DownloadSettings = () => {
             </div>
             <p className="text-sm text-gray-400">No external apps required! Fully integrated torrent engine with streaming support.</p>
           </button>
-          <button onClick={() => { setDownloadClientMode('qbittorrent'); localStorage.setItem('watchnexus_download_mode', 'qbittorrent'); }}
+          <button onClick={() => handleSetDownloadMode('qbittorrent')}
             className={`p-4 rounded-xl border-2 text-left transition-all ${downloadClientMode === 'qbittorrent' ? 'border-violet-500 bg-violet-500/10' : 'border-white/10 bg-surface hover:border-white/20'}`}>
             <div className="flex items-center gap-3 mb-2">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${downloadClientMode === 'qbittorrent' ? 'bg-violet-500' : 'bg-white/10'}`}>
