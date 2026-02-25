@@ -138,7 +138,31 @@ Status: AUDITED - Working
 
 ## ISSUES FOUND & FIXES APPLIED
 
-### 2.5.11 Fixes (This Audit)
+### 2.5.12 Fixes (Cross-Device Settings Sync)
+
+#### FIX #3: IPTV localStorage-only storage
+- **Files:** `/app/backend/server.py`, `/app/backend/database.py`, `/app/frontend/src/components/settings/IPTVSettings.jsx`
+- **Issue:** IPTV sources were stored in localStorage, lost on browser clear, not synced across devices
+- **Fix:** Created `iptv_sources` database table with full CRUD API endpoints. Frontend now uses backend API instead of localStorage.
+- **Status:** FIXED
+
+#### FIX #4: Sidebar tabs localStorage-only
+- **Files:** `/app/frontend/src/components/settings/GeneralSettings.jsx`
+- **Issue:** Sidebar visibility preferences not synced across devices
+- **Fix:** Created `user_preferences` table and API endpoints. Frontend syncs to backend with localStorage fallback.
+- **Status:** FIXED
+
+#### FIX #5: Download mode localStorage-only
+- **Files:** `/app/frontend/src/components/settings/DownloadSettings.jsx`
+- **Issue:** Download client preference (builtin vs qBittorrent) not synced
+- **Fix:** Uses user_preferences API to persist choice to database
+- **Status:** FIXED
+
+#### FIX #6: User delete cascade updated
+- **File:** `/app/backend/server.py`
+- **Issue:** New tables not included in user deletion cascade
+- **Fix:** Added `iptv_sources` and `user_preferences` to delete cascade
+- **Status:** FIXED
 
 #### FIX #1: skip_segments table name mismatch
 - **File:** `/app/backend/server.py`
