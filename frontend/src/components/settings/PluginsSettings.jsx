@@ -62,6 +62,37 @@ export const PluginsSettings = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [catalogueSearch, setCatalogueSearch] = useState('');
 
+  const handleInstallGadget = async (gadgetId, gadgetName) => {
+    setInstallingGadget(gadgetId);
+    try {
+      if (isInstalled(gadgetId)) {
+        await uninstall(gadgetId);
+        toast.success(`"${gadgetName}" uninstalled`);
+      } else {
+        await install(gadgetId);
+        toast.success(`"${gadgetName}" installed and activated!`);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || `Failed to ${isInstalled(gadgetId) ? 'uninstall' : 'install'}`);
+    } finally {
+      setInstallingGadget(null);
+    }
+  };
+
+  const handleToggleGadget = async (gadgetId, currentlyActive) => {
+    try {
+      if (currentlyActive) {
+        await deactivate(gadgetId);
+        toast.success('Gadget deactivated');
+      } else {
+        await activate(gadgetId);
+        toast.success('Gadget activated');
+      }
+    } catch {
+      toast.error('Failed to toggle gadget');
+    }
+  };
+
   const getAuthHeader = () => {
     const token = localStorage.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
