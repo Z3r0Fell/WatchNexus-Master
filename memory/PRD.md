@@ -10,7 +10,11 @@ WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Pr
 - **Gadget Compatibility UI:** Unsupported gadgets show "Coming Soon" badge instead of Install button
 - **Legal & Trademarks:** Added comprehensive legal disclaimer with tabbed UI
 - **Streaming Service Icons:** Replaced fake letter logos with generic Play icons to avoid copyright issues
-- **About Page Redesign:** Split into tabbed interface (Overview, Release History, Credits, Legal)
+- **Settings UX Overhaul:** All Settings pages now use consistent tabbed submenus:
+  - General Settings: Paths & Storage | Sidebar Tabs | Preferences
+  - Playback Settings: Skip Intro/Credits | Auto-Play | Detection Engine | Player Options
+  - Users & Access: User Management | Access & API | Activity Log
+  - About & Releases: Overview | Release History | Credits | Legal & Trademarks
 
 ## Core Architecture
 - **Backend:** FastAPI + SQLite (aiosqlite)
