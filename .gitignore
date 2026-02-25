@@ -169,3 +169,7 @@ releases/zips/watchnexus-v2.4.0-linux.zip
 *.env
 *.env.*
 frontend/node_modules/.cache/default-development/9.pack
+-e 
+# Environment files
+*.env
+*.env.*
