@@ -1213,6 +1213,8 @@ async def delete_user(user_id: str, current_user: dict = Depends(require_auth)):
         await db.streaming_logins.delete_many({"user_id": user_id})
         await db.playlists.delete_many({"user_id": user_id})
         await db.quality_profiles.delete_many({"user_id": user_id})
+        await db.iptv_sources.delete_many({"user_id": user_id})
+        await db.user_preferences.delete_many({"user_id": user_id})
         
         # Finally delete the user
         result = await db.users.delete_one({"id": user_id})
