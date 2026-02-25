@@ -80,10 +80,24 @@ export const GeneralSettings = ({
     });
   };
 
-  const saveTabVisibility = () => {
-    localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));
-    window.dispatchEvent(new Event('watchnexus_tabs_updated'));
-    toast.success('Sidebar tabs updated');
+  const saveTabVisibility = async () => {
+    try {
+      setSavingTabs(true);
+      const token = localStorage.getItem('token');
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { visible_tabs: JSON.stringify(visibleTabs) }
+      });
+      // Also update localStorage for backwards compatibility and immediate sidebar update
+      localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));
+      window.dispatchEvent(new Event('watchnexus_tabs_updated'));
+      toast.success('Sidebar tabs updated and synced to your account');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      toast.error('Failed to save tab preferences');
+    } finally {
+      setSavingTabs(false);
+    }
   };
 
   const showAllTabs = () => setVisibleTabs(hideableTabs.map(t => t.label));
