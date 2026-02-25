@@ -5555,3 +5555,24 @@ async def shutdown_db_client():
     # Close SQLite connection
     if db:
         await db.close()
+
+
+# ==================== STANDALONE STARTUP ====================
+if __name__ == "__main__":
+    import uvicorn
+    import sys
+    
+    # Get port from environment or default to 8001
+    port = int(os.environ.get("PORT", 8001))
+    host = os.environ.get("HOST", "0.0.0.0")
+    
+    logger.info(f"Starting WatchNexus server on {host}:{port}")
+    
+    # Run uvicorn server
+    uvicorn.run(
+        "server:app",
+        host=host,
+        port=port,
+        reload=False,
+        log_level="info"
+    )
