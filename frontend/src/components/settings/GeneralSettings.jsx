@@ -123,6 +123,8 @@ export const GeneralSettings = ({
             showAllTabs={showAllTabs}
             hideAllTabs={hideAllTabs}
             saveTabVisibility={saveTabVisibility}
+            savingTabs={savingTabs}
+            loadingPrefs={loadingPrefs}
           />
         );
       case 'preferences':
