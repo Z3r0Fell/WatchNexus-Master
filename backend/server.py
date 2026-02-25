@@ -1416,11 +1416,12 @@ async def browse_filesystem(
         
         return {
             "current_path": str(target_path),
-            "parent_path": str(target_path.parent) if str(target_path) != "/" else None,
+            "parent_path": str(target_path.parent) if not is_root else None,
             "items": items,
             "drives": drives,
             "media_files_in_current": media_count,
-            "is_root": str(target_path) == "/"
+            "is_root": is_root,
+            "os_type": os_type
         }
         
     except HTTPException:
