@@ -6,16 +6,22 @@ import { MediaRow } from '../components/media/MediaRow';
 import { tmdbApi, watchlistApi, progressApi, libraryApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Play, Clock, TrendingUp, Tv, ChevronRight, Film, Sparkles, FolderPlus } from 'lucide-react';
+import { Play, Clock, TrendingUp, Tv, ChevronRight, Film, Sparkles, FolderPlus, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatTime, getTitle, getMediaType } from '../lib/utils';
 
-const ContinueWatchingCard = ({ item, index }) => {
+const ContinueWatchingCard = ({ item, index, onRemove }) => {
   const getRemainingTime = () => {
     const remaining = item.duration - item.current_time;
     if (remaining < 60) return `${remaining}s left`;
     if (remaining < 3600) return `${Math.floor(remaining / 60)}m left`;
     return `${Math.floor(remaining / 3600)}h ${Math.floor((remaining % 3600) / 60)}m left`;
+  };
+
+  const handleRemove = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onRemove?.(item);
   };
 
   return (
@@ -48,6 +54,16 @@ const ContinueWatchingCard = ({ item, index }) => {
               {item.media_type === 'tv' ? 'TV' : 'Movie'}
             </span>
           </div>
+
+          {/* Remove button - X in top right */}
+          <button
+            onClick={handleRemove}
+            data-testid={`remove-continue-${item.tmdb_id}`}
+            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"
+            title="Remove from Continue Watching"
+          >
+            <X className="w-3.5 h-3.5 text-white" />
+          </button>
           
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="font-semibold text-sm line-clamp-1">{item.title}</p>
@@ -193,6 +209,19 @@ export const Dashboard = () => {
     }
   };
 
+  const handleRemoveFromContinueWatching = async (item) => {
+    try {
+      await progressApi.delete(item.tmdb_id, item.media_type, item.season, item.episode);
+      setContinueWatching(prev => prev.filter(p => 
+        !(p.tmdb_id === item.tmdb_id && p.season === item.season && p.episode === item.episode)
+      ));
+      toast.success(`Removed "${item.title}" from Continue Watching`);
+    } catch (error) {
+      console.error('Failed to remove from continue watching:', error);
+      toast.error('Failed to remove from Continue Watching');
+    }
+  };
+
   return (
     <Layout>
       <div data-testid="dashboard" className="min-h-screen">
@@ -214,7 +243,12 @@ export const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {continueWatching.slice(0, 5).map((item, index) => (
-                <ContinueWatchingCard key={`continue-${item.tmdb_id}-${item.season || ''}-${item.episode || ''}`} item={item} index={index} />
+                <ContinueWatchingCard 
+                  key={`continue-${item.tmdb_id}-${item.season || ''}-${item.episode || ''}`} 
+                  item={item} 
+                  index={index}
+                  onRemove={handleRemoveFromContinueWatching}
+                />
               ))}
             </div>
           </section>

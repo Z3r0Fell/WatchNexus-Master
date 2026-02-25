@@ -10,13 +10,13 @@ import { Link } from 'react-router-dom';
 import { Input } from '../components/ui/input';
 import { getTitle } from '../lib/utils';
 
-const streamingLogos = {
+const streamingServices = {
   netflix: { color: '#E50914', name: 'Netflix' },
   disney: { color: '#113CCF', name: 'Disney+' },
   prime: { color: '#00A8E1', name: 'Prime Video' },
   hulu: { color: '#1CE783', name: 'Hulu' },
   hbo: { color: '#B000FF', name: 'HBO Max' },
-  apple: { color: '#000000', name: 'Apple TV+' },
+  apple: { color: '#555555', name: 'Apple TV+' },
   peacock: { color: '#000000', name: 'Peacock' },
   paramount: { color: '#0064FF', name: 'Paramount+' },
 };
@@ -96,7 +96,7 @@ export const StreamingPage = () => {
           <h2 className="text-lg font-bold mb-4">Connected Services</h2>
           <div className="flex flex-wrap gap-3">
             {services.map((service) => {
-              const info = streamingLogos[service.id] || { color: '#666', name: service.name };
+              const info = streamingServices[service.id] || { color: '#666', name: service.name };
               return (
                 <div
                   key={service.id}
@@ -107,10 +107,10 @@ export const StreamingPage = () => {
                   }`}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: info.color }}
                   >
-                    {info.name.charAt(0)}
+                    <Play className="w-4 h-4 text-white fill-white" />
                   </div>
                   <span className="font-medium">{info.name}</span>
                   {service.enabled && (
@@ -197,7 +197,7 @@ export const StreamingPage = () => {
                         {/* Service Links */}
                         <div className="flex flex-wrap gap-2">
                           {enabledServices.map((service) => {
-                            const info = streamingLogos[service.id] || { color: '#666', name: service.name };
+                            const info = streamingServices[service.id] || { color: '#666', name: service.name };
                             return (
                               <button
                                 key={service.id}
@@ -234,13 +234,13 @@ export const StreamingPage = () => {
             className="text-center py-12"
           >
             <div className="flex justify-center gap-4 mb-6">
-              {Object.entries(streamingLogos).slice(0, 4).map(([id, info]) => (
+              {Object.entries(streamingServices).slice(0, 4).map(([id, info]) => (
                 <div
                   key={id}
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl opacity-50"
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center opacity-50"
                   style={{ backgroundColor: info.color }}
                 >
-                  {info.name.charAt(0)}
+                  <Play className="w-6 h-6 text-white fill-white" />
                 </div>
               ))}
             </div>

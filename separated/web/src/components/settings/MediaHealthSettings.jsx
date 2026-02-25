@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { HardDrive, RefreshCw, FileSearch, Wrench, Clock, Calendar, Plus, Trash2, DownloadCloud, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HardDrive, RefreshCw, FileSearch, Wrench, Clock, Calendar, Plus, Trash2, DownloadCloud, CheckCircle, AlertTriangle, X, FolderSearch } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { mediaHealthApi } from '../../services/api';
+import FolderBrowser from '../FolderBrowser';
 
 export const MediaHealthSettings = () => {
   const [healthScanPath, setHealthScanPath] = useState('');
@@ -14,6 +15,8 @@ export const MediaHealthSettings = () => {
   const [redownloading, setRedownloading] = useState(null);
   const [scheduledScans, setScheduledScans] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [showHealthBrowser, setShowHealthBrowser] = useState(false);
+  const [showScheduledBrowser, setShowScheduledBrowser] = useState(false);
   const [newScanForm, setNewScanForm] = useState({
     directory: '', schedule_type: 'daily', schedule_time: '03:00', notify_on_issues: true, auto_repair: false,
   });
@@ -116,13 +119,37 @@ export const MediaHealthSettings = () => {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Input value={healthScanPath} onChange={(e) => setHealthScanPath(e.target.value)}
-          placeholder="/media/library or /path/to/movies" className="bg-white/5 border-white/10 flex-1" />
-        <Button onClick={handleHealthScan} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
-          {scanning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4" />}
-          <span className="ml-2">{scanning ? 'Scanning...' : 'Scan'}</span>
-        </Button>
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          <Input value={healthScanPath} onChange={(e) => setHealthScanPath(e.target.value)}
+            placeholder="/media/library or C:\Media\Movies" className="bg-white/5 border-white/10 flex-1" />
+          <Button variant="outline" onClick={() => setShowHealthBrowser(!showHealthBrowser)} className="border-white/10 hover:bg-white/5" data-testid="browse-health-path">
+            <FolderSearch className="w-4 h-4" />
+          </Button>
+          <Button onClick={handleHealthScan} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
+            {scanning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4" />}
+            <span className="ml-2">{scanning ? 'Scanning...' : 'Scan'}</span>
+          </Button>
+        </div>
+        
+        <AnimatePresence>
+          {showHealthBrowser && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <FolderBrowser
+                selectedPath={healthScanPath}
+                onSelect={(path) => {
+                  setHealthScanPath(path);
+                  setShowHealthBrowser(false);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {healthResults.length > 0 && (
@@ -170,18 +197,45 @@ export const MediaHealthSettings = () => {
             <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-xs ml-2">{notifications.length} alerts</span>
           )}
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Input value={newScanForm.directory} onChange={(e) => setNewScanForm(p => ({ ...p, directory: e.target.value }))}
-            placeholder="/media/movies" className="bg-white/5 border-white/10" />
-          <select value={newScanForm.schedule_type} onChange={(e) => setNewScanForm(p => ({ ...p, schedule_type: e.target.value }))}
-            className="bg-white/5 border border-white/10 rounded-md px-3 text-white">
-            <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
-          </select>
-          <Input type="time" value={newScanForm.schedule_time}
-            onChange={(e) => setNewScanForm(p => ({ ...p, schedule_time: e.target.value }))} className="bg-white/5 border-white/10" />
-          <Button onClick={handleCreateScheduledScan} className="bg-violet-600 hover:bg-violet-700">
-            <Plus className="w-4 h-4 mr-2" /> Add
-          </Button>
+        
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div className="md:col-span-2 flex gap-2">
+              <Input value={newScanForm.directory} onChange={(e) => setNewScanForm(p => ({ ...p, directory: e.target.value }))}
+                placeholder="/media/movies or C:\Media" className="bg-white/5 border-white/10 flex-1" />
+              <Button variant="outline" onClick={() => setShowScheduledBrowser(!showScheduledBrowser)} className="border-white/10 hover:bg-white/5" data-testid="browse-scheduled-path">
+                <FolderSearch className="w-4 h-4" />
+              </Button>
+            </div>
+            <select value={newScanForm.schedule_type} onChange={(e) => setNewScanForm(p => ({ ...p, schedule_type: e.target.value }))}
+              className="bg-black/50 border border-white/10 rounded-md px-3 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white">
+              <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+            </select>
+            <Input type="time" value={newScanForm.schedule_time}
+              onChange={(e) => setNewScanForm(p => ({ ...p, schedule_time: e.target.value }))} className="bg-white/5 border-white/10" />
+            <Button onClick={handleCreateScheduledScan} className="bg-violet-600 hover:bg-violet-700">
+              <Plus className="w-4 h-4 mr-2" /> Add
+            </Button>
+          </div>
+          
+          <AnimatePresence>
+            {showScheduledBrowser && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <FolderBrowser
+                  selectedPath={newScanForm.directory}
+                  onSelect={(path) => {
+                    setNewScanForm(p => ({ ...p, directory: path }));
+                    setShowScheduledBrowser(false);
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         {scheduledScans.length > 0 && (
           <div className="space-y-2">

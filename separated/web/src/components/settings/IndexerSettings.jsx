@@ -24,10 +24,30 @@ export const IndexerSettings = () => {
 
   const handleIndexerToggle = async (indexer) => {
     try {
+      // If the indexer doesn't have required fields, recreate it properly first
+      if (!indexer.url && indexer.name) {
+        // Find matching preset
+        const preset = presets.find(p => p.name === indexer.name);
+        if (preset) {
+          // Delete the broken indexer and add a proper one
+          await compoteApi.removeIndexer(indexer.id);
+          await compoteApi.addIndexer(preset.name, preset.type, preset.url, '', true, 50, {
+            cloudflare_protected: preset.cf, search_path: '', cookie: '',
+          });
+          toast.success(`Fixed and enabled ${indexer.name}`);
+          const res = await compoteApi.getIndexers();
+          setIndexers(res.data || []);
+          return;
+        }
+      }
+      
       await compoteApi.updateIndexer(indexer.id, { enabled: !indexer.enabled });
       setIndexers(prev => prev.map(i => i.id === indexer.id ? { ...i, enabled: !i.enabled } : i));
       toast.success(`${indexer.name} ${indexer.enabled ? 'disabled' : 'enabled'}`);
-    } catch { toast.error('Failed to update indexer'); }
+    } catch (error) {
+      console.error('Failed to toggle indexer:', error);
+      toast.error('Failed to update indexer. Try removing and re-adding it.');
+    }
   };
 
   const handleAddNewIndexer = async () => {
@@ -86,10 +106,25 @@ export const IndexerSettings = () => {
 
         <div className="flex flex-wrap gap-2 mb-4">
           <span className="text-sm text-gray-400 py-1">Quick Add:</span>
-          {presets.map((preset) => (
-            <button key={preset.name} onClick={() => {
-              setNewIndexer({ name: preset.name, type: preset.type, url: preset.url, api_key: '', cloudflare_protected: preset.cf, search_path: '', cookie: '' });
-              setShowAddIndexer(true);
+          {presets.filter(p => !indexers.some(i => i.name === p.name)).map((preset) => (
+            <button key={preset.name} onClick={async () => {
+              if (preset.url) {
+                // Auto-add preset with URL
+                try {
+                  await compoteApi.addIndexer(preset.name, preset.type, preset.url, '', true, 50, {
+                    cloudflare_protected: preset.cf, search_path: '', cookie: '',
+                  });
+                  toast.success(`Added ${preset.name}`);
+                  const res = await compoteApi.getIndexers();
+                  setIndexers(res.data || []);
+                } catch (err) {
+                  toast.error(`Failed to add ${preset.name}`);
+                }
+              } else {
+                // Open form for custom
+                setNewIndexer({ name: preset.name, type: preset.type, url: preset.url, api_key: '', cloudflare_protected: preset.cf, search_path: '', cookie: '' });
+                setShowAddIndexer(true);
+              }
             }} className="px-3 py-1 text-xs rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">
               + {preset.name}
             </button>
@@ -108,7 +143,7 @@ export const IndexerSettings = () => {
               <div>
                 <label className="text-sm text-gray-400 mb-2 block">Type *</label>
                 <select value={newIndexer.type} onChange={(e) => setNewIndexer(p => ({ ...p, type: e.target.value }))}
-                  className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">
+                  className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white">
                   <option value="torznab">Torrent (via Syrup)</option>
                   <option value="newznab">NZB (via Pulp)</option>
                   <option value="rss">RSS Feed</option>

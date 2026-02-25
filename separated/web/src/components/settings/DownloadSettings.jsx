@@ -173,7 +173,7 @@ export const DownloadSettings = () => {
                 <label className="text-sm text-gray-400 mb-2 block">When Limit Reached</label>
                 <select value={engineSettings.seed_ratio_action}
                   onChange={(e) => setEngineSettings(p => ({ ...p, seed_ratio_action: e.target.value }))}
-                  className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">
+                  className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white">
                   <option value="pause">Pause Torrent</option><option value="remove">Remove Torrent</option>
                   <option value="remove_with_data">Remove + Delete Files</option>
                 </select>

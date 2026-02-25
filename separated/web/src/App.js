@@ -34,19 +34,11 @@ import { DiscoverPage } from "./pages/DiscoverPage";
 
 import "./App.css";
 
-// Gadget Pages (lazy loaded - only loaded when gadget is installed)
-const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
-const GamesPage = lazy(() => import("./pages/gadgets/GamesPage"));
-const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
-const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
-const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+// Gadget Pages - Currently none are functional
+// When gadgets are properly implemented, they will be registered here dynamically
 
 const GADGET_PAGE_MAP = {
-  photos: PhotosPage,
-  games: GamesPage,
-  radio: RadioPage,
-  podcasts: PodcastsPage,
-  web_video: WebVideoPage,
+  // Gadget pages will be added here when they become functional
 };
 
 const GadgetPageLoader = () => (
@@ -306,13 +298,6 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-
-      {/* Dynamic Gadget Routes */}
-      <Route path="/photos" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><PhotosPage /></Suspense></ProtectedRoute>} />
-      <Route path="/games" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><GamesPage /></Suspense></ProtectedRoute>} />
-      <Route path="/radio" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><RadioPage /></Suspense></ProtectedRoute>} />
-      <Route path="/podcasts" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><PodcastsPage /></Suspense></ProtectedRoute>} />
-      <Route path="/web-video" element={<ProtectedRoute><Suspense fallback={<GadgetPageLoader />}><WebVideoPage /></Suspense></ProtectedRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
