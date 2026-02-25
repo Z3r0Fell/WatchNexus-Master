@@ -1196,16 +1196,24 @@ async def delete_user(user_id: str, current_user: dict = Depends(require_auth)):
     
     # Delete all user-related data first (to avoid foreign key constraints)
     try:
-        # Delete user sessions
+        # Delete from all tables with user_id foreign key
         await db.user_sessions.delete_many({"user_id": user_id})
-        # Delete watchlist entries
         await db.watchlist.delete_many({"user_id": user_id})
-        # Delete watch progress
         await db.watch_progress.delete_many({"user_id": user_id})
-        # Delete scheduled scans
+        await db.settings.delete_many({"user_id": user_id})
+        await db.library.delete_many({"user_id": user_id})
+        await db.indexers.delete_many({"user_id": user_id})
+        await db.streaming_services.delete_many({"user_id": user_id})
         await db.scheduled_scans.delete_many({"user_id": user_id})
-        # Delete scan notifications
         await db.scan_notifications.delete_many({"user_id": user_id})
+        await db.redownload_requests.delete_many({"user_id": user_id})
+        await db.compote_indexers.delete_many({"user_id": user_id})
+        await db.grab_requests.delete_many({"user_id": user_id})
+        await db.subtitle_settings.delete_many({"user_id": user_id})
+        await db.streaming_logins.delete_many({"user_id": user_id})
+        await db.playlists.delete_many({"user_id": user_id})
+        await db.quality_profiles.delete_many({"user_id": user_id})
+        
         # Finally delete the user
         result = await db.users.delete_one({"id": user_id})
         if result.deleted_count == 0:
