@@ -119,13 +119,37 @@ export const MediaHealthSettings = () => {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Input value={healthScanPath} onChange={(e) => setHealthScanPath(e.target.value)}
-          placeholder="/media/library or /path/to/movies" className="bg-white/5 border-white/10 flex-1" />
-        <Button onClick={handleHealthScan} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
-          {scanning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4" />}
-          <span className="ml-2">{scanning ? 'Scanning...' : 'Scan'}</span>
-        </Button>
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          <Input value={healthScanPath} onChange={(e) => setHealthScanPath(e.target.value)}
+            placeholder="/media/library or C:\Media\Movies" className="bg-white/5 border-white/10 flex-1" />
+          <Button variant="outline" onClick={() => setShowHealthBrowser(!showHealthBrowser)} className="border-white/10 hover:bg-white/5" data-testid="browse-health-path">
+            <FolderSearch className="w-4 h-4" />
+          </Button>
+          <Button onClick={handleHealthScan} disabled={scanning} className="bg-violet-600 hover:bg-violet-700">
+            {scanning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4" />}
+            <span className="ml-2">{scanning ? 'Scanning...' : 'Scan'}</span>
+          </Button>
+        </div>
+        
+        <AnimatePresence>
+          {showHealthBrowser && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <FolderBrowser
+                selectedPath={healthScanPath}
+                onSelect={(path) => {
+                  setHealthScanPath(path);
+                  setShowHealthBrowser(false);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {healthResults.length > 0 && (
