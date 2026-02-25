@@ -3,16 +3,24 @@
 ## Product Overview
 WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
-## Current Version: 2.5.11
+## Current Version: 2.5.12
 **Last Updated:** Feb 25, 2025
 
-## Session Summary (Feb 25, 2025) - Code Audit
-- ✅ **Comprehensive Code Audit** - Line-by-line review of all major features
-- ✅ **User Delete Cascade Fix** - Properly deletes from 16+ related tables
-- ✅ **Current User Identification** - "You" badge + hidden delete button for self
-- ✅ **Skip Markers Table Fix** - Corrected table name reference
-- ✅ **Unsupported Gadgets Hidden** - Photos, Radio, Podcasts no longer in sidebar
-- ✅ **Version bumped to 2.5.11** with release notes added
+## Session Summary (Feb 25, 2025) - Code Audit CONTINUED
+
+### Cross-Device Settings Sync (v2.5.12)
+- ✅ **IPTV Sources** - Now persist to database, sync across devices
+- ✅ **Sidebar Tab Visibility** - Syncs to user account
+- ✅ **Download Client Mode** - Syncs across devices
+- ✅ **New Tables:** `iptv_sources`, `user_preferences`
+- ✅ **New APIs:** `/api/iptv/sources`, `/api/user/preferences`
+- ✅ **User Delete Cascade** - Updated to include new tables
+
+### Previous Fixes (v2.5.11)
+- ✅ User Delete Cascade - Properly deletes from 16+ related tables
+- ✅ Current User Protection - Delete button hidden, "You" badge added
+- ✅ Skip Markers Table Fix - Corrected table name reference
+- ✅ Unsupported Gadgets Hidden - Photos, Radio, Podcasts filtered from sidebar
 
 ### Audit Coverage:
 | Feature | Status | Notes |
