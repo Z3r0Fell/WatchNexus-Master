@@ -164,7 +164,7 @@ Status: AUDITED - Working
 - **Fix:** Added `iptv_sources` and `user_preferences` to delete cascade
 - **Status:** FIXED
 
-#### FIX #1: skip_segments table name mismatch
+### 2.5.11 Fixes (Code Audit)
 - **File:** `/app/backend/server.py`
 - **Issue:** Code used `db.skip_segments` but table is `skip_markers`
 - **Fix:** Changed to `db.skip_markers` in `get_skip_segments_from_db()` and save function
