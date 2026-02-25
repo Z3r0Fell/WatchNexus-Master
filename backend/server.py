@@ -1391,7 +1391,22 @@ async def browse_filesystem(
         elif os_type == 'darwin':
             path = os.path.expanduser("~")
         else:
-            path = "/home"
+            # Linux: Start at user's home directory if available
+            home_dir = os.path.expanduser("~")
+            if os.path.exists(home_dir) and home_dir != "~":
+                path = home_dir
+            elif os.path.exists("/home"):
+                # Try to find a user directory
+                try:
+                    users = [d for d in os.listdir("/home") if os.path.isdir(os.path.join("/home", d)) and not d.startswith('.')]
+                    if users:
+                        path = os.path.join("/home", users[0])
+                    else:
+                        path = "/home"
+                except:
+                    path = "/home"
+            else:
+                path = "/"
     
     try:
         # Normalize and validate path
