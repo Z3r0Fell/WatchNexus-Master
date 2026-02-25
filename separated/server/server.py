@@ -3026,7 +3026,8 @@ async def get_skip_segments_from_db(media_id: str) -> list:
     db = get_database()
     
     try:
-        segments = await db.skip_segments.find_one({"media_id": media_id})
+        # Note: Using skip_markers table (schema uses this name)
+        segments = await db.skip_markers.find_one({"media_id": media_id})
         if segments:
             return segments.get("segments", [])
     except Exception:
@@ -3064,8 +3065,8 @@ async def set_skip_segments(
         if segment["start"] >= segment["end"]:
             raise HTTPException(status_code=400, detail="Segment start must be before end")
     
-    # Save to database
-    await db.skip_segments.update_one(
+    # Save to database (using skip_markers table)
+    await db.skip_markers.update_one(
         {"media_id": media_id},
         {"$set": {"media_id": media_id, "segments": segments, "updated_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True
@@ -4834,7 +4835,7 @@ import sys
 
 # Server start time for uptime calculation
 SERVER_START_TIME = datetime.now(timezone.utc)
-APP_VERSION = "2.5.6"
+APP_VERSION = "2.5.11"
 
 @api_router.get("/system/info")
 async def get_system_info():
