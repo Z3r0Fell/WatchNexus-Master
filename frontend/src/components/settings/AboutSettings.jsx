@@ -41,6 +41,18 @@ const TIER_BADGES = {
 const RELEASES = [
   // 2.5.x Series - Current
   {
+    version: '2.5.11', date: '2025-02-25', type: 'patch', title: 'Code Audit & Bug Fixes',
+    highlights: ['Deep code audit with fixes', 'User delete cascade fix', 'Unsupported gadgets hidden'],
+    changes: [
+      { type: 'fix', text: 'User deletion now properly cascades to all related tables (sessions, watchlist, progress, etc.)' },
+      { type: 'fix', text: 'Fixed "Cannot delete yourself" button - delete button now hidden for current user' },
+      { type: 'fix', text: 'Added "You" badge to identify current user in Users & Access' },
+      { type: 'fix', text: 'skip_segments table renamed to skip_markers to match database schema' },
+      { type: 'fix', text: 'Unsupported gadgets (Photos, Radio, Podcasts) no longer show in sidebar' },
+      { type: 'improvement', text: 'Comprehensive code audit ensuring all features work as intended' },
+    ]
+  },
+  {
     version: '2.5.10', date: '2025-02-25', type: 'patch', title: 'OS-Aware File Browsing & Dark Mode Fixes',
     highlights: ['OS-aware file browser (Win/Linux/Mac)', 'Dark mode dropdown fixes', 'Browse buttons for Media Health'],
     changes: [
