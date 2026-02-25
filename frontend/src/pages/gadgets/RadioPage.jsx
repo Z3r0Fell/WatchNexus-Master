@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Layout } from '../components/layout/Layout';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Layout } from '../../components/layout/Layout';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Radio, Search, Play, Pause, Volume2, Heart, Globe } from 'lucide-react';
 
 const PRESET_STATIONS = [

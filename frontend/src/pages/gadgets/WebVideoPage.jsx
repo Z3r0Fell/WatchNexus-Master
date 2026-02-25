@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Layout } from '../components/layout/Layout';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Layout } from '../../components/layout/Layout';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { MonitorPlay, Search, Play, ExternalLink, FolderOpen, Plus, Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
 
