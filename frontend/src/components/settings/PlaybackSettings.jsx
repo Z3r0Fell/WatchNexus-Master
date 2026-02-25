@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BACKEND_URL } from '../../lib/config';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, FastForward, SkipForward, Clock, Zap, 
-  Settings2, RefreshCw, Check, AlertTriangle, Volume2, Maximize
+  Settings2, RefreshCw, Check, AlertTriangle, Volume2, Maximize,
+  History, Trash2, Film, Tv, X, AlertCircle
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -11,6 +12,7 @@ import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
+import { progressApi } from '../../services/api';
 
 const API_URL = BACKEND_URL;
 
@@ -20,11 +22,13 @@ const PLAYBACK_TABS = [
   { id: 'autoplay', label: 'Auto-Play', icon: SkipForward },
   { id: 'detection', label: 'Detection Engine', icon: Zap },
   { id: 'player', label: 'Player Options', icon: Play },
+  { id: 'history', label: 'Watch History', icon: History },
 ];
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
+};
 };
 
 export const PlaybackSettings = () => {
