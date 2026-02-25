@@ -1262,22 +1262,39 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
 
 @api_router.get("/filesystem/browse")
 async def browse_filesystem(
-    path: str = "/",
+    path: str = "",
     user: dict = Depends(require_auth)
 ):
     """
     Browse the local filesystem to find media folders.
     Returns directories and basic info for folder selection.
+    OS-aware: Returns appropriate paths for Windows, Linux, or macOS.
     """
     import os
+    import platform
     from pathlib import Path as FilePath
+    
+    os_type = platform.system().lower()  # 'windows', 'linux', 'darwin'
+    
+    # Determine default path based on OS
+    if not path:
+        if os_type == 'windows':
+            path = "C:\\"
+        elif os_type == 'darwin':
+            path = os.path.expanduser("~")
+        else:
+            path = "/home"
     
     try:
         # Normalize and validate path
         target_path = FilePath(path).resolve()
         
         # Security: Prevent accessing sensitive system directories
-        blocked_paths = ['/proc', '/sys', '/dev', '/boot', '/etc/shadow']
+        if os_type == 'windows':
+            blocked_paths = ['C:\\Windows', 'C:\\Program Files', 'C:\\ProgramData']
+        else:
+            blocked_paths = ['/proc', '/sys', '/dev', '/boot', '/etc/shadow']
+        
         if any(str(target_path).startswith(bp) for bp in blocked_paths):
             raise HTTPException(status_code=403, detail="Access denied to system directory")
         
@@ -1289,8 +1306,16 @@ async def browse_filesystem(
         
         items = []
         
+        # Determine if we're at root
+        is_root = False
+        if os_type == 'windows':
+            # Check if at drive root (e.g., C:\)
+            is_root = len(str(target_path)) <= 3
+        else:
+            is_root = str(target_path) == "/"
+        
         # Add parent directory option (unless at root)
-        if str(target_path) != "/":
+        if not is_root:
             items.append({
                 "name": "..",
                 "path": str(target_path.parent),
