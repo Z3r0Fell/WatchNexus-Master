@@ -10,12 +10,18 @@ import { Play, Clock, TrendingUp, Tv, ChevronRight, Film, Sparkles, FolderPlus }
 import { Link } from 'react-router-dom';
 import { formatTime, getTitle, getMediaType } from '../lib/utils';
 
-const ContinueWatchingCard = ({ item, index }) => {
+const ContinueWatchingCard = ({ item, index, onRemove }) => {
   const getRemainingTime = () => {
     const remaining = item.duration - item.current_time;
     if (remaining < 60) return `${remaining}s left`;
     if (remaining < 3600) return `${Math.floor(remaining / 60)}m left`;
     return `${Math.floor(remaining / 3600)}h ${Math.floor((remaining % 3600) / 60)}m left`;
+  };
+
+  const handleRemove = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onRemove?.(item);
   };
 
   return (
@@ -48,6 +54,16 @@ const ContinueWatchingCard = ({ item, index }) => {
               {item.media_type === 'tv' ? 'TV' : 'Movie'}
             </span>
           </div>
+
+          {/* Remove button - X in top right */}
+          <button
+            onClick={handleRemove}
+            data-testid={`remove-continue-${item.tmdb_id}`}
+            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"
+            title="Remove from Continue Watching"
+          >
+            <X className="w-3.5 h-3.5 text-white" />
+          </button>
           
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="font-semibold text-sm line-clamp-1">{item.title}</p>
