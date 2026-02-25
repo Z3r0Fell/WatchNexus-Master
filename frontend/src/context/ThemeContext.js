@@ -158,9 +158,24 @@ export const ThemeProvider = ({ children }) => {
   }, [mode]);
 
   // Toggle between light and dark mode
-  const toggleMode = useCallback(() => {
+  const toggleMode = useCallback(async () => {
     const newMode = mode === 'dark' ? 'light' : 'dark';
     setMode(newMode);
+    
+    // Save to backend
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { theme_mode: newMode }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save theme mode:', error);
+    }
+    
+    // Also save to localStorage for backwards compatibility
     localStorage.setItem('watchnexus_theme_mode', newMode);
     
     // Apply current theme colors with new mode
