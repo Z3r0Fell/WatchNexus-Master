@@ -47,6 +47,13 @@ export const progressApi = {
   get: () => axios.get(`${API}/watch-progress`),
   update: (progress) => axios.post(`${API}/watch-progress`, progress),
   getNextUp: () => axios.get(`${API}/next-up`),
+  delete: (tmdbId, mediaType, season = null, episode = null) => {
+    const params = { tmdb_id: tmdbId, media_type: mediaType };
+    if (season) params.season = season;
+    if (episode) params.episode = episode;
+    return axios.delete(`${API}/watch-progress`, { params });
+  },
+  clearAll: () => axios.delete(`${API}/watch-progress/all`),
 };
 
 // Downloads API calls
