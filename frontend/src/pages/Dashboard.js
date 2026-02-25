@@ -6,7 +6,7 @@ import { MediaRow } from '../components/media/MediaRow';
 import { tmdbApi, watchlistApi, progressApi, libraryApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Play, Clock, TrendingUp, Tv, ChevronRight, Film, Sparkles, FolderPlus } from 'lucide-react';
+import { Play, Clock, TrendingUp, Tv, ChevronRight, Film, Sparkles, FolderPlus, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatTime, getTitle, getMediaType } from '../lib/utils';
 
