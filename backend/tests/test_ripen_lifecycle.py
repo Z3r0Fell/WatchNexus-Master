@@ -198,16 +198,14 @@ class TestRipenUninstall(TestRipenAuth):
         response = requests.delete(f"{BASE_URL}/api/ripen/uninstall/{NEW_GADGET}")
         assert response.status_code in [401, 403]
     
-    def test_uninstall_nonexistent_returns_false(self, headers):
-        """Uninstalling non-installed gadget returns success=false"""
+    def test_uninstall_nonexistent_returns_not_found(self, headers):
+        """Uninstalling non-installed gadget returns 404"""
         response = requests.delete(
             f"{BASE_URL}/api/ripen/uninstall/nonexistent-gadget",
             headers=headers
         )
-        # Endpoint returns success: false for not found
-        assert response.status_code == 200
-        data = response.json()
-        assert data.get("success") == False or data.get("removed") == False
+        # Endpoint returns 404 for not found (proper REST behavior)
+        assert response.status_code == 404
     
     def test_uninstall_installed_gadget(self, headers):
         """Uninstalling an installed gadget should remove it"""
