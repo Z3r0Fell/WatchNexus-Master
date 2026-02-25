@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Info, Tag, Calendar, CheckCircle2, Bug, Sparkles,
@@ -37,112 +37,240 @@ const TIER_BADGES = {
   superFan: { bg: 'bg-gradient-to-r from-orange-500 to-red-600', text: 'text-orange-100' },
 };
 
-// Release history
+// Complete Release History
 const RELEASES = [
+  // 2.5.x Series - Current
   {
-    version: '2.5.10', date: '2025-02-25', type: 'minor', title: 'Critical Fixes - OS-Aware Browsing & Dark Mode',
-    highlights: ['OS-aware file browsing (Windows/Linux/Mac)', 'Dark mode dropdown fixes', 'Folder browse buttons added', 'Indexer preset fixes'],
+    version: '2.5.10', date: '2025-02-25', type: 'patch', title: 'OS-Aware File Browsing & Dark Mode Fixes',
+    highlights: ['OS-aware file browser (Win/Linux/Mac)', 'Dark mode dropdown fixes', 'Browse buttons for Media Health'],
     changes: [
-      { type: 'fix', text: 'File browser now shows correct paths for Windows (C:\\), Linux (/home), and macOS (/Users)' },
-      { type: 'fix', text: 'Streaming services dropdown now has dark background for options' },
-      { type: 'fix', text: 'All select dropdowns throughout Settings have proper dark mode styling' },
+      { type: 'fix', text: 'File browser now detects OS and shows correct paths (C:\\ for Windows, /home for Linux, /Users for macOS)' },
+      { type: 'fix', text: 'All select dropdowns now have proper dark backgrounds in dark mode' },
       { type: 'feature', text: 'Added Browse button to Media Health scan path input' },
       { type: 'feature', text: 'Added Browse button to Scheduled Scans directory input' },
       { type: 'fix', text: 'Preconfigured indexers now auto-add with correct URL when clicked' },
-      { type: 'fix', text: 'Indexer toggle now handles broken entries by recreating from preset' },
+      { type: 'fix', text: 'Indexer toggle handles broken entries by recreating from preset' },
     ]
   },
   {
     version: '2.5.9', date: '2025-02-25', type: 'minor', title: 'Watch History Management',
-    highlights: ['X button on Continue Watching cards', 'Watch History tab in Playback Settings', 'Clear all history with confirmation dialog'],
+    highlights: ['X button on Continue Watching cards', 'Watch History tab in Settings', 'Clear all with confirmation'],
     changes: [
       { type: 'feature', text: 'Added X button (top-right) on Continue Watching cards to remove items' },
       { type: 'feature', text: 'New "Watch History" tab in Playback Settings' },
       { type: 'feature', text: 'Clear individual items or entire watch history' },
-      { type: 'feature', text: 'Confirmation dialog with warning before clearing all history (like Crunchyroll)' },
-      { type: 'feature', text: 'Backend API: DELETE /watch-progress and /watch-progress/all endpoints' },
-      { type: 'fix', text: 'Fixed server.py to include uvicorn startup for standalone execution' },
+      { type: 'feature', text: 'Confirmation dialog before clearing all history (Crunchyroll-style)' },
+      { type: 'feature', text: 'Backend API: DELETE /watch-progress endpoints' },
+      { type: 'fix', text: 'Fixed server.py uvicorn startup for standalone execution' },
     ]
   },
   {
     version: '2.5.8', date: '2025-02-25', type: 'minor', title: 'Settings UX Overhaul - Tabbed Navigation',
-    highlights: ['Tabbed submenus for ALL Settings pages', 'Consistent UI across entire Settings section', 'Improved navigation and discoverability'],
+    highlights: ['Tabbed submenus for ALL Settings pages', 'Consistent navigation', 'Better discoverability'],
     changes: [
-      { type: 'feature', text: 'General Settings: Paths & Storage | Sidebar Tabs | Preferences' },
-      { type: 'feature', text: 'Playback Settings: Skip Intro/Credits | Auto-Play | Detection Engine | Player Options' },
-      { type: 'feature', text: 'Users & Access: User Management | Access & API | Activity Log' },
-      { type: 'feature', text: 'IPTV: IPTV Sources | EPG Guide | Recording' },
-      { type: 'feature', text: 'Streaming Services: Service Logins | Deep Links | Watch Tracking' },
-      { type: 'feature', text: 'Theme Forge: Light/Dark Mode | Theme Presets | Custom Theme' },
-      { type: 'feature', text: 'External Access (Gelatin): Server Status | Network Tunnels | Access Tokens' },
-      { type: 'feature', text: 'Maintenance: System Status | Database | Cache & Services | Server Logs' },
-      { type: 'feature', text: 'Subtitles (Garnish): Providers | Languages | Preferences' },
+      { type: 'feature', text: 'Tabbed interface: General, Playback, Users, IPTV, Streaming, Theme Forge, Gelatin, Maintenance, Subtitles, About' },
       { type: 'improvement', text: 'Reusable SettingsTabHeader component for consistent styling' },
+      { type: 'improvement', text: 'Each settings page now has 3-5 organized sub-tabs' },
     ]
   },
   {
     version: '2.5.7', date: '2025-02-25', type: 'patch', title: 'Scaffolding Cleanup & Legal Compliance',
-    highlights: ['Removed dummy gadget pages', 'Added Legal & Trademarks section', 'Gadget compatibility UI'],
+    highlights: ['Removed dummy pages', 'Legal section', 'Copyright-safe icons'],
     changes: [
       { type: 'improvement', text: 'Removed non-functional gadget pages (Radio, Photos, Podcasts, WebVideo)' },
-      { type: 'feature', text: 'Unsupported gadgets now show "Coming Soon" badge instead of Install button' },
-      { type: 'feature', text: 'Added comprehensive Legal & Trademarks section with trademark notices' },
-      { type: 'fix', text: 'Replaced fake logo icons with generic TV icons for streaming services' },
+      { type: 'feature', text: 'Gadgets show "Coming Soon" badge for unsupported items' },
+      { type: 'feature', text: 'Added Legal & Trademarks section with full disclaimers' },
+      { type: 'fix', text: 'Replaced streaming service letter logos with generic Play icons' },
     ]
   },
   {
-    version: '2.5.6', date: '2025-02-25', type: 'minor', title: 'Gadgets Catalogue & Library Overhaul',
-    highlights: ['Gadgets Catalogue with 45 extensions', 'Movies & TV Shows now show local library', 'Anime as distinct media category', '12 release packages'],
+    version: '2.5.6', date: '2025-02-25', type: 'minor', title: 'Gadgets Catalogue & Library Views',
+    highlights: ['45 Gadgets catalogue', 'Library/Discover views', 'Anime category'],
     changes: [
-      { type: 'feature', text: 'Gadgets Catalogue: 45 built-in extensions across 16 categories' },
-      { type: 'feature', text: 'Movies page: Dual Library/Discover view showing local media + TMDB discovery' },
-      { type: 'feature', text: 'TV Shows page: Dual Library/Discover view with automatic series grouping' },
-      { type: 'feature', text: 'Anime page: Fully distinct category with dedicated library support' },
-      { type: 'improvement', text: 'Renamed "Plugins" to "Gadgets" throughout the application' },
+      { type: 'feature', text: 'Gadgets Catalogue: 45 extensions across 16 categories' },
+      { type: 'feature', text: 'Movies/TV Shows: Dual Library + TMDB Discover view' },
+      { type: 'feature', text: 'Anime: Distinct category with dedicated library' },
+      { type: 'improvement', text: 'Renamed "Plugins" to "Gadgets" throughout app' },
+      { type: 'feature', text: 'Ripen lifecycle engine for gadget management' },
     ]
   },
   {
-    version: '2.5.5', date: '2025-02-24', type: 'minor', title: 'Theming, Security & Code Audit',
-    highlights: ['Complete theming system overhaul', 'Critical security patch', 'Credits section added'],
+    version: '2.5.5', date: '2025-02-24', type: 'minor', title: 'Theming System & Security Patch',
+    highlights: ['Full theme customization', 'Security fix', 'Credits section'],
     changes: [
-      { type: 'feature', text: 'Full light/dark mode system with user-selectable color themes' },
+      { type: 'feature', text: 'Theme Forge: Light/dark mode with custom color themes' },
       { type: 'security', text: 'Patched unauthenticated media streaming endpoint' },
-      { type: 'fix', text: 'Fixed CSS variable mismatches causing invisible UI elements' },
+      { type: 'fix', text: 'Fixed CSS variable mismatches causing invisible elements' },
+      { type: 'feature', text: 'Added Credits section to About page' },
     ]
   },
   {
-    version: '2.5.0', date: '2025-02-22', type: 'major', title: 'Multi-Platform Client Release',
-    highlights: ['Client apps for 5 platforms', 'System tray application', 'Auto-updater system'],
+    version: '2.5.4', date: '2025-02-23', type: 'patch', title: 'Quality Profiles & Download Fixes',
+    highlights: ['Quality profile system', 'Download queue fixes', 'Better error handling'],
     changes: [
-      { type: 'feature', text: 'Android, Android TV, Fire TV, Roku, and Kodi clients' },
-      { type: 'feature', text: 'Beacon system tray app for server management' },
-      { type: 'feature', text: 'Tiramisu auto-updater for seamless version updates' },
+      { type: 'feature', text: 'Quality Profiles: Create custom quality preferences like Sonarr/Radarr' },
+      { type: 'fix', text: 'Fixed download queue not updating in real-time' },
+      { type: 'improvement', text: 'Better error messages for failed downloads' },
     ]
   },
   {
-    version: '2.0.0', date: '2025-02-14', type: 'major', title: 'Major Architecture Update',
-    highlights: ['Complete UI/UX redesign', 'New plugin architecture', 'Quality profiles system'],
+    version: '2.5.3', date: '2025-02-22', type: 'patch', title: 'Subtitle Provider Improvements',
+    highlights: ['Multiple subtitle providers', 'Provider priority', 'Auto-download'],
     changes: [
-      { type: 'feature', text: 'New dark theme with glass-morphism design' },
-      { type: 'feature', text: 'Quality profiles for downloads (like Sonarr/Radarr)' },
-      { type: 'feature', text: 'File browser for library path selection' },
+      { type: 'feature', text: 'Garnish: OpenSubtitles, Addic7ed, Podnapisi support' },
+      { type: 'feature', text: 'Drag-to-reorder provider priority' },
+      { type: 'feature', text: 'Auto-download subtitles on media import' },
     ]
   },
   {
-    version: '1.2.0', date: '2025-02-01', type: 'minor', title: 'Initial Public Release',
-    highlights: ['Core media pipeline', 'TMDB integration', 'Built-in torrent client'],
+    version: '2.5.2', date: '2025-02-21', type: 'patch', title: 'IPTV & Live TV Enhancements',
+    highlights: ['M3U playlist support', 'EPG guide', 'Xtream Codes'],
     changes: [
-      { type: 'feature', text: 'Media library management with automatic metadata fetching' },
-      { type: 'feature', text: 'TMDB integration for movies and TV shows' },
-      { type: 'feature', text: 'LTorrent - built-in pure Python torrent client' },
+      { type: 'feature', text: 'Relish IPTV: M3U playlist import' },
+      { type: 'feature', text: 'Xtream Codes API support' },
+      { type: 'feature', text: 'Electronic Program Guide (EPG) integration' },
     ]
-  }
+  },
+  {
+    version: '2.5.1', date: '2025-02-20', type: 'patch', title: 'External Access & Tunneling',
+    highlights: ['Gelatin tunnels', 'Remote access', 'Guest tokens'],
+    changes: [
+      { type: 'feature', text: 'Gelatin: Create secure tunnels for external access' },
+      { type: 'feature', text: 'Guest access tokens with configurable permissions' },
+      { type: 'feature', text: 'Server status dashboard with connection info' },
+    ]
+  },
+  {
+    version: '2.5.0', date: '2025-02-19', type: 'major', title: 'Multi-Platform Client Release',
+    highlights: ['5 client apps', 'System tray', 'Auto-updater'],
+    changes: [
+      { type: 'feature', text: 'Android, Android TV, Fire TV, Roku, Kodi clients' },
+      { type: 'feature', text: 'Beacon: System tray application for server management' },
+      { type: 'feature', text: 'Tiramisu: Auto-update system for seamless upgrades' },
+      { type: 'feature', text: 'Client sync across devices' },
+    ]
+  },
+  // 2.4.x Series
+  {
+    version: '2.4.0', date: '2025-02-18', type: 'minor', title: 'Indexer Management Overhaul',
+    highlights: ['Compote indexer system', 'Preset indexers', 'Health checks'],
+    changes: [
+      { type: 'feature', text: 'Compote: Unified indexer management (Torznab, Newznab, RSS)' },
+      { type: 'feature', text: 'Preset indexers: 1337x, RARBG, YTS, EZTV, Nyaa, and more' },
+      { type: 'feature', text: 'Indexer health checks and status monitoring' },
+      { type: 'feature', text: 'Priority ordering for search results' },
+    ]
+  },
+  // 2.3.x Series
+  {
+    version: '2.3.0', date: '2025-02-17', type: 'minor', title: 'Media Health & Maintenance',
+    highlights: ['Sieve health checker', 'Scheduled scans', 'Auto-repair'],
+    changes: [
+      { type: 'feature', text: 'Sieve: Media health checker for corrupt/incomplete files' },
+      { type: 'feature', text: 'Scheduled health scans (daily, weekly, monthly)' },
+      { type: 'feature', text: 'Auto-repair with redownload option' },
+      { type: 'feature', text: 'Email/Discord notifications for issues' },
+    ]
+  },
+  // 2.2.x Series
+  {
+    version: '2.2.0', date: '2025-02-16', type: 'minor', title: 'Streaming Service Integration',
+    highlights: ['Cream streaming hub', 'Deep links', 'Service tracking'],
+    changes: [
+      { type: 'feature', text: 'Cream: Streaming service credential management' },
+      { type: 'feature', text: 'Deep link integration for one-click playback' },
+      { type: 'feature', text: 'Track content availability across services' },
+      { type: 'feature', text: 'Netflix, Disney+, Prime, HBO Max, Hulu support' },
+    ]
+  },
+  // 2.1.x Series
+  {
+    version: '2.1.0', date: '2025-02-15', type: 'minor', title: 'Download Engine Improvements',
+    highlights: ['Fondue torrent engine', 'Seeding controls', 'Queue management'],
+    changes: [
+      { type: 'feature', text: 'Fondue: Built-in Python torrent engine (no dependencies)' },
+      { type: 'feature', text: 'Seeding ratio limits and actions' },
+      { type: 'feature', text: 'Download queue with priority management' },
+      { type: 'feature', text: 'Sequential downloading for instant playback' },
+    ]
+  },
+  // 2.0.x Series
+  {
+    version: '2.0.0', date: '2025-02-14', type: 'major', title: 'Major UI/UX Redesign',
+    highlights: ['Glass-morphism design', 'New navigation', 'Dashboard overhaul'],
+    changes: [
+      { type: 'feature', text: 'Complete UI redesign with glass-morphism aesthetic' },
+      { type: 'feature', text: 'New sidebar navigation with collapsible sections' },
+      { type: 'feature', text: 'Dashboard with Continue Watching, Trending, Recently Added' },
+      { type: 'feature', text: 'Responsive design for mobile/tablet/desktop' },
+    ]
+  },
+  // 1.x Series
+  {
+    version: '1.2.1', date: '2025-02-14', type: 'patch', title: 'Logging & Start Script Improvements',
+    highlights: ['File logging', 'Log viewer', 'Better start scripts'],
+    changes: [
+      { type: 'feature', text: 'File-based logging with rotation (10MB, 7 backups)' },
+      { type: 'feature', text: 'Log viewer in Maintenance tab with color-coded levels' },
+      { type: 'feature', text: 'Port conflict detection in start script' },
+      { type: 'feature', text: 'Stop/status commands for server management' },
+    ]
+  },
+  {
+    version: '1.2.0', date: '2025-02-14', type: 'minor', title: 'Maintenance Dashboard',
+    highlights: ['System monitoring', 'Database backups', 'Cache management'],
+    changes: [
+      { type: 'feature', text: 'Server status: uptime, CPU, memory, disk usage' },
+      { type: 'feature', text: 'Database health with WAL mode indicator' },
+      { type: 'feature', text: 'Backup management with rolling backups' },
+      { type: 'feature', text: 'TMDB cache statistics and clear option' },
+    ]
+  },
+  {
+    version: '1.1.0', date: '2025-02-14', type: 'minor', title: 'SQLite Migration - Zero Dependencies',
+    highlights: ['SQLite database', 'No MongoDB', 'Auto backups'],
+    changes: [
+      { type: 'feature', text: 'Migrated from MongoDB to SQLite - zero external dependencies!' },
+      { type: 'feature', text: 'WAL mode for concurrent access' },
+      { type: 'feature', text: 'Automatic backups on startup (7 rolling)' },
+      { type: 'feature', text: 'Scheduled VACUUM every 24 hours' },
+    ]
+  },
+  {
+    version: '1.0.2', date: '2025-02-14', type: 'patch', title: 'LTorrent Integration',
+    highlights: ['Pure Python torrent', 'Magnet links', 'Sequential download'],
+    changes: [
+      { type: 'feature', text: 'LTorrent: Pure Python torrent library (no system deps)' },
+      { type: 'feature', text: 'Magnet link and .torrent file support' },
+      { type: 'feature', text: 'Sequential download for streaming while downloading' },
+    ]
+  },
+  {
+    version: '1.0.1', date: '2025-02-13', type: 'patch', title: 'Self-Contained Server',
+    highlights: ['Static file serving', 'Standalone deployment', 'Release packages'],
+    changes: [
+      { type: 'feature', text: 'Frontend served by FastAPI backend' },
+      { type: 'feature', text: 'Single server for API and UI' },
+      { type: 'feature', text: 'Release package generator script' },
+    ]
+  },
+  {
+    version: '1.0.0', date: '2025-02-12', type: 'major', title: 'Initial Release',
+    highlights: ['Core media browsing', 'TMDB integration', 'Multi-user support'],
+    changes: [
+      { type: 'feature', text: 'Media discovery with TMDB integration' },
+      { type: 'feature', text: 'User authentication (local + Google OAuth)' },
+      { type: 'feature', text: 'Watchlist and watch progress tracking' },
+      { type: 'feature', text: 'Library management with media scanning' },
+      { type: 'feature', text: 'Jellyfin/Emby API compatibility layer' },
+    ]
+  },
 ];
 
 export const AboutSettings = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [systemInfo, setSystemInfo] = useState(null);
-  const [expandedVersion, setExpandedVersion] = useState('2.5.7');
+  const [expandedVersion, setExpandedVersion] = useState('2.5.10');
 
   useEffect(() => {
     const fetchSystemInfo = async () => {
@@ -198,7 +326,7 @@ export const AboutSettings = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold">About WatchNexus</h2>
-            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.5.7'}</p>
+            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.5.10'}</p>
           </div>
         </div>
 
@@ -245,7 +373,7 @@ const OverviewTab = ({ systemInfo }) => (
     <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-2xl p-6">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.5.7'}</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.5.10'}</h3>
           <p className="text-gray-300">Unified Media Pipeline - Your Personal Netflix, Plex & Jellyfin in One</p>
           <p className="text-sm text-gray-400 mt-2">A self-hosted media server that replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin.</p>
         </div>
@@ -253,6 +381,26 @@ const OverviewTab = ({ systemInfo }) => (
           <Heart className="w-5 h-5 text-red-400" />
           <span className="text-sm text-gray-400">Made with love</span>
         </div>
+      </div>
+    </div>
+
+    {/* Stats */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-surface border border-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-violet-400">{RELEASES.length}</p>
+        <p className="text-sm text-gray-400">Releases</p>
+      </div>
+      <div className="bg-surface border border-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-pink-400">45+</p>
+        <p className="text-sm text-gray-400">Gadgets</p>
+      </div>
+      <div className="bg-surface border border-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-cyan-400">5</p>
+        <p className="text-sm text-gray-400">Client Apps</p>
+      </div>
+      <div className="bg-surface border border-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-amber-400">0</p>
+        <p className="text-sm text-gray-400">Dependencies</p>
       </div>
     </div>
 
@@ -301,13 +449,14 @@ const OverviewTab = ({ systemInfo }) => (
 // Releases Tab
 const ReleasesTab = ({ releases, expandedVersion, setExpandedVersion, getTypeIcon, getTypeBadge }) => (
   <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden">
-    <div className="px-6 py-4 border-b border-white/10">
+    <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Tag className="w-5 h-5 text-violet-400" />
         Release History
       </h3>
+      <span className="text-sm text-gray-400">{releases.length} releases</span>
     </div>
-    <div className="divide-y divide-white/10">
+    <div className="divide-y divide-white/10 max-h-[600px] overflow-y-auto">
       {releases.map((release) => (
         <div key={release.version} className="group">
           <div
