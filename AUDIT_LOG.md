@@ -88,10 +88,51 @@ Status: AUDITED - Working
 - Provider configuration works
 
 ### 14. THEME FORGE
-Status: NOT AUDITED
+Status: AUDITED - Working
+- Milk themes API functional
+- Current theme returned correctly
+- Theme presets available
 
 ### 15. EXTERNAL ACCESS (Gelatin)
-Status: NOT AUDITED
+Status: AUDITED - Working
+- Status endpoint returns server info
+- Tunnel functionality ready
+- Features list provided
+
+---
+
+## AUDIT SUMMARY
+
+### Fixes Applied in v2.5.11:
+1. **User Delete Cascade** - Deletes from 16+ related tables
+2. **Current User Protection** - Delete button hidden, "You" badge added
+3. **Skip Markers Table** - Fixed table name reference
+4. **Unsupported Gadgets Filter** - Hidden from sidebar
+
+### Features Verified Working:
+- Media Playback (VideoPlayer, controls, progress)
+- Library Management (scan functions)
+- User Management (CRUD, roles)
+- Watchlist (add/remove/list)
+- Watch Progress (tracking, clear)
+- Downloads/Torrents (Fondue engine)
+- Indexers/Search (Compote)
+- Playlists (Drizzle)
+- Quality Profiles
+- All Settings Pages
+- IPTV (Relish)
+- Streaming Services (Cream)
+- Subtitles (Garnish)
+- Theme Forge (Milk)
+- External Access (Gelatin)
+
+### Known Limitations (By Design):
+- IPTV sources stored in localStorage only
+- Some gadgets not yet implemented (supported: false)
+
+### Version History Updated:
+- v2.5.11 release notes added to AboutSettings.jsx
+- 23 releases now documented (1.0.0 through 2.5.11)
 
 ---
 
