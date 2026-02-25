@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { GadgetProvider, useGadgets } from "./context/GadgetContext";
+import { lazy, Suspense } from "react";
 
 // Pages
 import { Dashboard } from "./pages/Dashboard";
