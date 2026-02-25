@@ -618,6 +618,27 @@ export const PluginsSettings = () => {
               </motion.div>
             ))
           )}
+          </>
+          )}
+
+          {/* Empty state when nothing installed */}
+          {installed.length === 0 && plugins.length === 0 && !loadingPlugins && (
+            <div className="glass-card rounded-xl p-8 text-center">
+              <Package className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+              <h3 className="text-lg font-semibold mb-2">No Gadgets Installed</h3>
+              <p className="text-sm text-gray-400 mb-4 max-w-md mx-auto">
+                Browse the catalogue to find and install gadgets. Installed gadgets can add new pages, sidebar entries, and settings.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => setActiveView('catalogue')} className="bg-violet-600 hover:bg-violet-700">
+                  <Package className="w-4 h-4 mr-2" /> Browse Catalogue
+                </Button>
+                <Button variant="outline" onClick={() => setShowImportOptions(true)} className="border-white/10">
+                  <Upload className="w-4 h-4 mr-2" /> Import
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Directory Info */}
           <div className="p-4 rounded-xl bg-violet-500/10 border border-violet-500/20">
