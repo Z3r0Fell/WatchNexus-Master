@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Folder, FolderSearch, LayoutDashboard, Eye, EyeOff, Check,
-  Settings, Sliders, Palette, Bell
+  Settings, Sliders, Palette, Bell, Loader2
 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
+import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 
 // Tabs for General Settings
 const GENERAL_TABS = [
@@ -40,14 +42,34 @@ export const GeneralSettings = ({
   onOpenFileBrowser
 }) => {
   const [activeTab, setActiveTab] = useState('paths');
-  const [visibleTabs, setVisibleTabs] = useState(() => {
-    try {
-      const saved = localStorage.getItem('watchnexus_visible_tabs');
-      return saved ? JSON.parse(saved) : defaultVisibleTabs;
-    } catch {
-      return defaultVisibleTabs;
-    }
-  });
+  const [visibleTabs, setVisibleTabs] = useState(defaultVisibleTabs);
+  const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [savingTabs, setSavingTabs] = useState(false);
+
+  // Load preferences from backend on mount
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BACKEND_URL}/api/user/preferences`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.visible_tabs && response.data.visible_tabs.length > 0) {
+          setVisibleTabs(response.data.visible_tabs);
+        }
+      } catch (error) {
+        console.error('Failed to fetch preferences:', error);
+        // Fall back to localStorage for backwards compatibility
+        try {
+          const saved = localStorage.getItem('watchnexus_visible_tabs');
+          if (saved) setVisibleTabs(JSON.parse(saved));
+        } catch {}
+      } finally {
+        setLoadingPrefs(false);
+      }
+    };
+    fetchPreferences();
+  }, []);
 
   const toggleTab = (tabLabel) => {
     setVisibleTabs(prev => {
@@ -58,10 +80,24 @@ export const GeneralSettings = ({
     });
   };
 
-  const saveTabVisibility = () => {
-    localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));
-    window.dispatchEvent(new Event('watchnexus_tabs_updated'));
-    toast.success('Sidebar tabs updated');
+  const saveTabVisibility = async () => {
+    try {
+      setSavingTabs(true);
+      const token = localStorage.getItem('token');
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { visible_tabs: JSON.stringify(visibleTabs) }
+      });
+      // Also update localStorage for backwards compatibility and immediate sidebar update
+      localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));
+      window.dispatchEvent(new Event('watchnexus_tabs_updated'));
+      toast.success('Sidebar tabs updated and synced to your account');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      toast.error('Failed to save tab preferences');
+    } finally {
+      setSavingTabs(false);
+    }
   };
 
   const showAllTabs = () => setVisibleTabs(hideableTabs.map(t => t.label));
@@ -87,6 +123,8 @@ export const GeneralSettings = ({
             showAllTabs={showAllTabs}
             hideAllTabs={hideAllTabs}
             saveTabVisibility={saveTabVisibility}
+            savingTabs={savingTabs}
+            loadingPrefs={loadingPrefs}
           />
         );
       case 'preferences':
@@ -193,7 +231,7 @@ const PathsTab = ({ settings, setSettings, onSave, saving, onOpenFileBrowser }) 
 );
 
 // Sidebar Tab
-const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabVisibility }) => (
+const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabVisibility, savingTabs, loadingPrefs }) => (
   <div className="space-y-6">
     <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -216,37 +254,55 @@ const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabV
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-        {hideableTabs.map(tab => {
-          const isVisible = visibleTabs.includes(tab.label);
-          return (
-            <button
-              key={tab.label}
-              onClick={() => toggleTab(tab.label)}
-              className={`p-3 rounded-lg border transition-all text-left ${
-                isVisible 
-                  ? 'bg-violet-600/20 border-violet-500/50 text-white' 
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-              }`}
-              data-testid={`toggle-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{tab.label}</span>
-                {isVisible && <Check className="w-4 h-4 text-violet-400" />}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {loadingPrefs ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+          {hideableTabs.map(tab => {
+            const isVisible = visibleTabs.includes(tab.label);
+            return (
+              <button
+                key={tab.label}
+                onClick={() => toggleTab(tab.label)}
+                className={`p-3 rounded-lg border transition-all text-left ${
+                  isVisible 
+                    ? 'bg-violet-600/20 border-violet-500/50 text-white' 
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+                data-testid={`toggle-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{tab.label}</span>
+                  {isVisible && <Check className="w-4 h-4 text-violet-400" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex justify-between items-center pt-2">
         <span className="text-xs text-gray-500">
           {visibleTabs.length} of {hideableTabs.length} tabs visible
         </span>
-        <Button onClick={saveTabVisibility} className="bg-pink-600 hover:bg-pink-700" data-testid="save-tab-visibility">
-          <Check className="w-4 h-4 mr-2" /> Apply Changes
+        <Button 
+          onClick={saveTabVisibility} 
+          className="bg-pink-600 hover:bg-pink-700" 
+          disabled={savingTabs}
+          data-testid="save-tab-visibility"
+        >
+          {savingTabs ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+          {savingTabs ? 'Saving...' : 'Apply Changes'}
         </Button>
       </div>
+    </div>
+    
+    <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+      <p className="text-sm text-green-400">
+        <strong>Sync enabled:</strong> Your sidebar preferences are saved to your account and will sync across all your devices.
+      </p>
     </div>
   </div>
 );

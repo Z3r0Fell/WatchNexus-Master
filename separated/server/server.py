@@ -1213,6 +1213,8 @@ async def delete_user(user_id: str, current_user: dict = Depends(require_auth)):
         await db.streaming_logins.delete_many({"user_id": user_id})
         await db.playlists.delete_many({"user_id": user_id})
         await db.quality_profiles.delete_many({"user_id": user_id})
+        await db.iptv_sources.delete_many({"user_id": user_id})
+        await db.user_preferences.delete_many({"user_id": user_id})
         
         # Finally delete the user
         result = await db.users.delete_one({"id": user_id})
@@ -1286,6 +1288,83 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
         upsert=True
     )
     return {"id": service_id, "enabled": enabled, "username": username}
+
+# ==================== IPTV SOURCES ====================
+
+@api_router.get("/iptv/sources")
+async def get_iptv_sources(user: dict = Depends(require_auth)):
+    """Get all IPTV sources for the current user."""
+    sources = await db.iptv_sources.find({"user_id": user["id"]}).to_list(100)
+    # Remove user_id from results
+    clean_sources = [{k: v for k, v in s.items() if k != "user_id"} for s in sources]
+    return {"sources": clean_sources, "count": len(clean_sources)}
+
+@api_router.post("/iptv/sources")
+async def add_iptv_source(name: str, url: str, type: str = "m3u", epg_url: str = None, user: dict = Depends(require_auth)):
+    """Add a new IPTV source."""
+    source = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "name": name,
+        "url": url,
+        "type": type,
+        "epg_url": epg_url,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.iptv_sources.insert_one(source)
+    # Return without user_id
+    return {k: v for k, v in source.items() if k != "user_id"}
+
+@api_router.delete("/iptv/sources/{source_id}")
+async def delete_iptv_source(source_id: str, user: dict = Depends(require_auth)):
+    """Delete an IPTV source."""
+    result = await db.iptv_sources.delete_one({"id": source_id, "user_id": user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="IPTV source not found")
+    return {"message": "IPTV source deleted"}
+
+# ==================== USER PREFERENCES (Synced Settings) ====================
+
+@api_router.get("/user/preferences")
+async def get_user_preferences(user: dict = Depends(require_auth)):
+    """Get user preferences (synced across devices)."""
+    prefs = await db.user_preferences.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not prefs:
+        # Return defaults
+        return {
+            "visible_tabs": [],
+            "download_mode": "builtin",
+            "theme_mode": "dark"
+        }
+    return {
+        "visible_tabs": json.loads(prefs.get("visible_tabs", "[]")) if isinstance(prefs.get("visible_tabs"), str) else prefs.get("visible_tabs", []),
+        "download_mode": prefs.get("download_mode", "builtin"),
+        "theme_mode": prefs.get("theme_mode", "dark")
+    }
+
+@api_router.put("/user/preferences")
+async def update_user_preferences(
+    visible_tabs: list = None,
+    download_mode: str = None,
+    theme_mode: str = None,
+    user: dict = Depends(require_auth)
+):
+    """Update user preferences."""
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if visible_tabs is not None:
+        update_data["visible_tabs"] = json.dumps(visible_tabs)
+    if download_mode is not None:
+        update_data["download_mode"] = download_mode
+    if theme_mode is not None:
+        update_data["theme_mode"] = theme_mode
+    
+    await db.user_preferences.update_one(
+        {"user_id": user["id"]},
+        {"$set": {**update_data, "user_id": user["id"]}},
+        upsert=True
+    )
+    return {"message": "Preferences updated"}
 
 # ==================== FILE BROWSER ====================
 
@@ -4835,7 +4914,7 @@ import sys
 
 # Server start time for uptime calculation
 SERVER_START_TIME = datetime.now(timezone.utc)
-APP_VERSION = "2.5.11"
+APP_VERSION = "2.5.12"
 
 @api_router.get("/system/info")
 async def get_system_info():

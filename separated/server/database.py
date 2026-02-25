@@ -555,6 +555,30 @@ class SQLiteDB:
                 added_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
+            
+            -- IPTV Sources (per-user)
+            CREATE TABLE IF NOT EXISTS iptv_sources (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL,
+                epg_url TEXT,
+                type TEXT DEFAULT 'm3u',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_iptv_user ON iptv_sources(user_id);
+            
+            -- User Preferences (synced across devices)
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT UNIQUE NOT NULL,
+                visible_tabs TEXT DEFAULT '[]',
+                download_mode TEXT DEFAULT 'builtin',
+                theme_mode TEXT DEFAULT 'dark',
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
         ''')
         await self._connection.commit()
         

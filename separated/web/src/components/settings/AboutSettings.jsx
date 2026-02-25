@@ -41,6 +41,19 @@ const TIER_BADGES = {
 const RELEASES = [
   // 2.5.x Series - Current
   {
+    version: '2.5.12', date: '2025-02-25', type: 'patch', title: 'Cross-Device Settings Sync',
+    highlights: ['IPTV sources saved to database', 'User preferences sync across devices', 'All localStorage settings migrated to backend'],
+    changes: [
+      { type: 'feature', text: 'IPTV sources now persist to database - sync across all your devices' },
+      { type: 'feature', text: 'Sidebar tab visibility settings sync to your account' },
+      { type: 'feature', text: 'Download client mode (builtin vs qBittorrent) syncs across devices' },
+      { type: 'feature', text: 'New database tables: iptv_sources, user_preferences' },
+      { type: 'feature', text: 'New API endpoints: /iptv/sources, /user/preferences' },
+      { type: 'fix', text: 'User delete cascade now includes iptv_sources and user_preferences' },
+      { type: 'improvement', text: 'Green "Sync enabled" badges on settings pages indicate cloud-synced data' },
+    ]
+  },
+  {
     version: '2.5.11', date: '2025-02-25', type: 'patch', title: 'Code Audit & Bug Fixes',
     highlights: ['Deep code audit with fixes', 'User delete cascade fix', 'Unsupported gadgets hidden'],
     changes: [
