@@ -547,6 +547,41 @@ export const AboutSettings = () => {
         </div>
       </div>
 
+      {/* Legal & Trademarks Notice */}
+      <div className="bg-surface border border-white/10 rounded-2xl p-6" data-testid="legal-section">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-amber-400" />
+          Legal & Trademarks
+        </h3>
+        <div className="text-gray-400 text-sm space-y-3">
+          <p>
+            <strong className="text-gray-300">Trademark Notice:</strong> All product names, logos, and brands mentioned 
+            in WatchNexus are property of their respective owners. This includes but is not limited to: 
+            TMDB, Jellyfin, Plex, Kodi, Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Discord, Telegram, 
+            Slack, Trakt, OpenSubtitles, and any other third-party services referenced.
+          </p>
+          <p>
+            <strong className="text-gray-300">Usage Disclaimer:</strong> Any use of third-party trademarks, 
+            service marks, or logos is for identification and reference purposes only and does not imply 
+            endorsement, affiliation, or sponsorship by the respective trademark holders.
+          </p>
+          <p>
+            <strong className="text-gray-300">API Data:</strong> Media metadata, images, and information 
+            are provided by third-party APIs (such as TMDB) under their respective terms of service. 
+            WatchNexus does not claim ownership of this content.
+          </p>
+          <p>
+            <strong className="text-gray-300">User Responsibility:</strong> Users are solely responsible 
+            for ensuring their use of WatchNexus complies with all applicable laws and the terms of 
+            service of any integrated third-party services.
+          </p>
+          <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-white/10">
+            WatchNexus is provided "as is" without warranty of any kind. The developers are not 
+            responsible for how users choose to use this software.
+          </p>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="text-center text-xs text-gray-500 py-4">
         <p>WatchNexus is open source and self-hosted.</p>
