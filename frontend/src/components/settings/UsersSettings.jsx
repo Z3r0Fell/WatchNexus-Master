@@ -239,6 +239,7 @@ const UsersTab = ({
               setEditingUser={setEditingUser}
               onUpdate={onUpdateUser}
               onDelete={onDeleteUser}
+              currentUserId={currentUserId}
             />
           ))}
         </div>
