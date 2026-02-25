@@ -24,10 +24,30 @@ export const IndexerSettings = () => {
 
   const handleIndexerToggle = async (indexer) => {
     try {
+      // If the indexer doesn't have required fields, recreate it properly first
+      if (!indexer.url && indexer.name) {
+        // Find matching preset
+        const preset = presets.find(p => p.name === indexer.name);
+        if (preset) {
+          // Delete the broken indexer and add a proper one
+          await compoteApi.removeIndexer(indexer.id);
+          await compoteApi.addIndexer(preset.name, preset.type, preset.url, '', true, 50, {
+            cloudflare_protected: preset.cf, search_path: '', cookie: '',
+          });
+          toast.success(`Fixed and enabled ${indexer.name}`);
+          const res = await compoteApi.getIndexers();
+          setIndexers(res.data || []);
+          return;
+        }
+      }
+      
       await compoteApi.updateIndexer(indexer.id, { enabled: !indexer.enabled });
       setIndexers(prev => prev.map(i => i.id === indexer.id ? { ...i, enabled: !i.enabled } : i));
       toast.success(`${indexer.name} ${indexer.enabled ? 'disabled' : 'enabled'}`);
-    } catch { toast.error('Failed to update indexer'); }
+    } catch (error) {
+      console.error('Failed to toggle indexer:', error);
+      toast.error('Failed to update indexer. Try removing and re-adding it.');
+    }
   };
 
   const handleAddNewIndexer = async () => {
