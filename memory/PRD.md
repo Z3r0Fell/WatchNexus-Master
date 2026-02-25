@@ -9,6 +9,7 @@ WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Pr
 ## Session Summary (Feb 25, 2025)
 - ✅ Release History verified (22 releases, v1.0.0 to v2.5.10)
 - ✅ Project Source Unification resolved (synced to /app/separated/)
+- ✅ **User Management Delete Fix** - Trash button now hidden for current user, cascade delete handles all foreign key constraints
 - Architecture documented: supervisor config is platform-managed, development in /app/backend & /app/frontend
 
 ## Recent Changes (v2.5.10 - Feb 25, 2025)
