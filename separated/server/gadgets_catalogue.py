@@ -1,11 +1,16 @@
 """
 WatchNexus Gadgets Catalogue
-Built-in catalogue of extensions inspired by popular media center ecosystems.
+Built-in catalogue of extensions for the WatchNexus media pipeline.
 All items have unique names and descriptions original to WatchNexus.
+
+Each gadget has a `supported` flag:
+  - True: Backend integration exists, gadget is fully functional
+  - False: No backend integration yet, install blocked with explanation
 """
 
 GADGETS_CATALOGUE = [
     # ==================== METADATA PROVIDERS ====================
+    # These hook into the existing Marmalade library scanner
     {
         "id": "wn-atlas-metadata",
         "name": "Atlas Metadata Engine",
@@ -18,6 +23,8 @@ GADGETS_CATALOGUE = [
         "tags": ["metadata", "movies", "tv", "tmdb"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-chronicle-nfo",
@@ -31,6 +38,8 @@ GADGETS_CATALOGUE = [
         "tags": ["metadata", "nfo", "local", "xml"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-sakura-anidb",
@@ -44,6 +53,8 @@ GADGETS_CATALOGUE = [
         "tags": ["metadata", "anime", "anidb", "japanese"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-vinyl-musicbrainz",
@@ -57,6 +68,8 @@ GADGETS_CATALOGUE = [
         "tags": ["metadata", "music", "musicbrainz", "fingerprint"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-almanac-fanart",
@@ -70,6 +83,8 @@ GADGETS_CATALOGUE = [
         "tags": ["metadata", "artwork", "fanart", "posters"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-lexicon-omdb",
@@ -83,9 +98,12 @@ GADGETS_CATALOGUE = [
         "tags": ["metadata", "ratings", "omdb", "reviews"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== SUBTITLE PROVIDERS ====================
+    # These integrate with existing subtitle settings
     {
         "id": "wn-babel-opensubtitles",
         "name": "Babel Subtitle Finder",
@@ -98,6 +116,8 @@ GADGETS_CATALOGUE = [
         "tags": ["subtitles", "opensubtitles", "multi-language"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-quill-subscene",
@@ -111,6 +131,8 @@ GADGETS_CATALOGUE = [
         "tags": ["subtitles", "subscene", "community"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-verse-addic7ed",
@@ -124,6 +146,8 @@ GADGETS_CATALOGUE = [
         "tags": ["subtitles", "tv-shows", "addic7ed"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-echo-subtitle-sync",
@@ -137,6 +161,8 @@ GADGETS_CATALOGUE = [
         "tags": ["subtitles", "sync", "timing", "audio-analysis"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== NOTIFICATION PROVIDERS ====================
@@ -152,6 +178,8 @@ GADGETS_CATALOGUE = [
         "tags": ["notification", "discord", "webhook"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Notification dispatch engine not yet implemented. This gadget will become functional in a future update.",
     },
     {
         "id": "wn-courier-telegram",
@@ -165,6 +193,8 @@ GADGETS_CATALOGUE = [
         "tags": ["notification", "telegram", "bot"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Notification dispatch engine not yet implemented. This gadget will become functional in a future update.",
     },
     {
         "id": "wn-signal-pushover",
@@ -178,6 +208,8 @@ GADGETS_CATALOGUE = [
         "tags": ["notification", "pushover", "mobile"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Notification dispatch engine not yet implemented. This gadget will become functional in a future update.",
     },
     {
         "id": "wn-dispatch-email",
@@ -191,6 +223,8 @@ GADGETS_CATALOGUE = [
         "tags": ["notification", "email", "smtp", "digest"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Notification dispatch engine not yet implemented. This gadget will become functional in a future update.",
     },
     {
         "id": "wn-beacon-slack",
@@ -204,9 +238,12 @@ GADGETS_CATALOGUE = [
         "tags": ["notification", "slack", "workspace"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Notification dispatch engine not yet implemented. This gadget will become functional in a future update.",
     },
 
     # ==================== THEME PROVIDERS ====================
+    # These hook into the existing ThemeContext
     {
         "id": "wn-obsidian-theme",
         "name": "Obsidian Dark Suite",
@@ -219,6 +256,8 @@ GADGETS_CATALOGUE = [
         "tags": ["theme", "dark", "amoled", "cinema"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-arctic-theme",
@@ -232,6 +271,8 @@ GADGETS_CATALOGUE = [
         "tags": ["theme", "light", "clean", "minimal"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-sakura-bloom-theme",
@@ -245,6 +286,8 @@ GADGETS_CATALOGUE = [
         "tags": ["theme", "anime", "japanese", "pink"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-retro-crt-theme",
@@ -258,6 +301,8 @@ GADGETS_CATALOGUE = [
         "tags": ["theme", "retro", "terminal", "green"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== VIDEO ADD-ONS ====================
@@ -273,6 +318,8 @@ GADGETS_CATALOGUE = [
         "tags": ["video", "iptv", "live-tv", "m3u", "epg"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-mosaic-youtube",
@@ -283,9 +330,11 @@ GADGETS_CATALOGUE = [
         "plugin_type": "stream_provider",
         "category": "video",
         "icon": "",
-        "tags": ["video", "streaming", "web", "youtube"],
+        "tags": ["video", "streaming", "web"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Web video streaming engine not yet implemented. Requires backend integration with video extraction services.",
     },
     {
         "id": "wn-meridian-upnp",
@@ -299,6 +348,8 @@ GADGETS_CATALOGUE = [
         "tags": ["video", "upnp", "dlna", "network", "streaming"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "DLNA/UPnP server not yet integrated. Requires system-level network service implementation.",
     },
     {
         "id": "wn-archive-trakt",
@@ -312,6 +363,8 @@ GADGETS_CATALOGUE = [
         "tags": ["video", "trakt", "history", "sync", "ratings"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Trakt.tv API integration not yet implemented. Requires OAuth setup and sync engine.",
     },
 
     # ==================== AUDIO ADD-ONS ====================
@@ -327,6 +380,8 @@ GADGETS_CATALOGUE = [
         "tags": ["audio", "radio", "streaming", "internet-radio"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Internet radio streaming requires integration with a radio directory API (e.g., Radio Browser). Coming in a future update.",
     },
     {
         "id": "wn-rhythm-podcast",
@@ -340,6 +395,8 @@ GADGETS_CATALOGUE = [
         "tags": ["audio", "podcast", "rss", "subscription"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Podcast RSS parser and episode manager not yet implemented. Coming in a future update.",
     },
     {
         "id": "wn-sonata-lyrics",
@@ -353,9 +410,12 @@ GADGETS_CATALOGUE = [
         "tags": ["audio", "lyrics", "music", "karaoke"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Lyrics API integration not yet implemented. Requires connection to a lyrics database service.",
     },
 
     # ==================== INDEXER PROVIDERS ====================
+    # These hook into the existing Compote indexer system
     {
         "id": "wn-compass-torznab",
         "name": "Compass Torznab Gateway",
@@ -368,6 +428,8 @@ GADGETS_CATALOGUE = [
         "tags": ["indexer", "torznab", "api", "search"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-scope-newznab",
@@ -381,6 +443,8 @@ GADGETS_CATALOGUE = [
         "tags": ["indexer", "newznab", "usenet", "nzb"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-rover-rss",
@@ -394,6 +458,8 @@ GADGETS_CATALOGUE = [
         "tags": ["indexer", "rss", "atom", "feed", "monitor"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== SYSTEM TOOLS ====================
@@ -409,6 +475,8 @@ GADGETS_CATALOGUE = [
         "tags": ["system", "health", "monitor", "dashboard"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-vault-backup",
@@ -422,6 +490,8 @@ GADGETS_CATALOGUE = [
         "tags": ["system", "backup", "database", "scheduler"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-curator-cleanup",
@@ -435,6 +505,8 @@ GADGETS_CATALOGUE = [
         "tags": ["system", "cleanup", "maintenance", "optimization"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-warden-auth-ldap",
@@ -448,6 +520,8 @@ GADGETS_CATALOGUE = [
         "tags": ["system", "auth", "ldap", "active-directory", "enterprise"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "LDAP authentication engine not yet implemented. Requires directory service connector.",
     },
 
     # ==================== PICTURE/GALLERY ====================
@@ -463,6 +537,8 @@ GADGETS_CATALOGUE = [
         "tags": ["image", "gallery", "photos", "slideshow"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Photo scanning and thumbnail generation engine not yet implemented. Requires image processing backend.",
     },
 
     # ==================== GAME INTEGRATIONS ====================
@@ -478,6 +554,8 @@ GADGETS_CATALOGUE = [
         "tags": ["game", "retro", "emulation", "retroarch"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "WatchNexus does not include a game emulation engine. RetroArch integration requires RetroArch to be installed separately on the host system, which is outside the scope of this media server.",
     },
 
     # ==================== SCREENSAVER ====================
@@ -493,6 +571,8 @@ GADGETS_CATALOGUE = [
         "tags": ["screensaver", "ambient", "artwork", "display"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Screensaver rendering engine not yet implemented. Requires idle detection and fullscreen artwork rotation.",
     },
 
     # ==================== WEATHER ====================
@@ -508,6 +588,8 @@ GADGETS_CATALOGUE = [
         "tags": ["weather", "widget", "dashboard", "forecast"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Weather API integration not yet implemented. Requires connection to a weather data provider.",
     },
 
     # ==================== PROGRAM/UTILITY ====================
@@ -523,6 +605,8 @@ GADGETS_CATALOGUE = [
         "tags": ["program", "transcoding", "ffmpeg", "conversion"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-matrix-remote",
@@ -536,6 +620,8 @@ GADGETS_CATALOGUE = [
         "tags": ["program", "remote", "control", "mobile"],
         "source": "builtin",
         "status": "available",
+        "supported": False,
+        "compatibility_note": "Remote control WebSocket server not yet implemented. Requires real-time communication layer.",
     },
     {
         "id": "wn-nexus-api-bridge",
@@ -549,6 +635,8 @@ GADGETS_CATALOGUE = [
         "tags": ["program", "api", "compatibility", "jellyfin"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== SERVICE/AUTOMATION ====================
@@ -564,6 +652,8 @@ GADGETS_CATALOGUE = [
         "tags": ["service", "watchdog", "monitoring", "auto-restart"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-cron-scheduler",
@@ -577,6 +667,8 @@ GADGETS_CATALOGUE = [
         "tags": ["service", "scheduler", "cron", "automation"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== CONTEXT MENU ====================
@@ -592,6 +684,8 @@ GADGETS_CATALOGUE = [
         "tags": ["context", "menu", "shortcuts", "actions"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 
     # ==================== RESOURCE PACKS ====================
@@ -607,6 +701,8 @@ GADGETS_CATALOGUE = [
         "tags": ["resource", "language", "translation", "i18n"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
     {
         "id": "wn-icon-pack-neon",
@@ -620,6 +716,8 @@ GADGETS_CATALOGUE = [
         "tags": ["resource", "icons", "neon", "visual"],
         "source": "builtin",
         "status": "available",
+        "supported": True,
+        "compatibility_note": "",
     },
 ]
 

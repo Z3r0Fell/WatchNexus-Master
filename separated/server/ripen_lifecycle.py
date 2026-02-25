@@ -284,6 +284,11 @@ class RipenEngine:
         if not cat_item:
             raise ValueError(f"Gadget '{gadget_id}' not found in catalogue")
 
+        # Block installation of unsupported gadgets
+        if not cat_item.get("supported", False):
+            note = cat_item.get("compatibility_note", "This gadget requires a feature that is not yet available in WatchNexus.")
+            raise ValueError(f"Cannot install: {note}")
+
         now = datetime.now(timezone.utc).isoformat()
         async with aiosqlite.connect(self.db_path) as db:
             # Check if already installed

@@ -764,6 +764,32 @@ async def get_next_up(user: dict = Depends(require_auth)):
     
     return next_up[:10]  # Limit to 10 items
 
+@api_router.delete("/watch-progress")
+async def delete_watch_progress(
+    tmdb_id: int,
+    media_type: str,
+    season: int = None,
+    episode: int = None,
+    user: dict = Depends(require_auth)
+):
+    """Delete a specific watch progress entry."""
+    query = {"user_id": user["id"], "tmdb_id": tmdb_id, "media_type": media_type}
+    if season is not None:
+        query["season"] = season
+    if episode is not None:
+        query["episode"] = episode
+    
+    result = await db.watch_progress.delete_one(query)
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Watch progress not found")
+    return {"message": "Watch progress deleted", "deleted_count": result.deleted_count}
+
+@api_router.delete("/watch-progress/all")
+async def clear_all_watch_progress(user: dict = Depends(require_auth)):
+    """Clear all watch progress for the current user."""
+    result = await db.watch_progress.delete_many({"user_id": user["id"]})
+    return {"message": "All watch history cleared", "deleted_count": result.deleted_count}
+
 # ==================== DOWNLOADS (MOCK) ====================
 
 mock_downloads = []
@@ -1236,22 +1262,39 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
 
 @api_router.get("/filesystem/browse")
 async def browse_filesystem(
-    path: str = "/",
+    path: str = "",
     user: dict = Depends(require_auth)
 ):
     """
     Browse the local filesystem to find media folders.
     Returns directories and basic info for folder selection.
+    OS-aware: Returns appropriate paths for Windows, Linux, or macOS.
     """
     import os
+    import platform
     from pathlib import Path as FilePath
+    
+    os_type = platform.system().lower()  # 'windows', 'linux', 'darwin'
+    
+    # Determine default path based on OS
+    if not path:
+        if os_type == 'windows':
+            path = "C:\\"
+        elif os_type == 'darwin':
+            path = os.path.expanduser("~")
+        else:
+            path = "/home"
     
     try:
         # Normalize and validate path
         target_path = FilePath(path).resolve()
         
         # Security: Prevent accessing sensitive system directories
-        blocked_paths = ['/proc', '/sys', '/dev', '/boot', '/etc/shadow']
+        if os_type == 'windows':
+            blocked_paths = ['C:\\Windows', 'C:\\Program Files', 'C:\\ProgramData']
+        else:
+            blocked_paths = ['/proc', '/sys', '/dev', '/boot', '/etc/shadow']
+        
         if any(str(target_path).startswith(bp) for bp in blocked_paths):
             raise HTTPException(status_code=403, detail="Access denied to system directory")
         
@@ -1263,8 +1306,16 @@ async def browse_filesystem(
         
         items = []
         
+        # Determine if we're at root
+        is_root = False
+        if os_type == 'windows':
+            # Check if at drive root (e.g., C:\)
+            is_root = len(str(target_path)) <= 3
+        else:
+            is_root = str(target_path) == "/"
+        
         # Add parent directory option (unless at root)
-        if str(target_path) != "/":
+        if not is_root:
             items.append({
                 "name": "..",
                 "path": str(target_path.parent),
@@ -1365,11 +1416,12 @@ async def browse_filesystem(
         
         return {
             "current_path": str(target_path),
-            "parent_path": str(target_path.parent) if str(target_path) != "/" else None,
+            "parent_path": str(target_path.parent) if not is_root else None,
             "items": items,
             "drives": drives,
             "media_files_in_current": media_count,
-            "is_root": str(target_path) == "/"
+            "is_root": is_root,
+            "os_type": os_type
         }
         
     except HTTPException:
@@ -5555,3 +5607,24 @@ async def shutdown_db_client():
     # Close SQLite connection
     if db:
         await db.close()
+
+
+# ==================== STANDALONE STARTUP ====================
+if __name__ == "__main__":
+    import uvicorn
+    import sys
+    
+    # Get port from environment or default to 8001
+    port = int(os.environ.get("PORT", 8001))
+    host = os.environ.get("HOST", "0.0.0.0")
+    
+    logger.info(f"Starting WatchNexus server on {host}:{port}")
+    
+    # Run uvicorn server
+    uvicorn.run(
+        "server:app",
+        host=host,
+        port=port,
+        reload=False,
+        log_level="info"
+    )
