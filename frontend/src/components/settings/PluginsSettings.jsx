@@ -616,9 +616,8 @@ export const PluginsSettings = () => {
                   <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{plugin.error_message}</div>
                 )}
               </motion.div>
-            ))
-          )}
-          </>
+              ))}
+            </>
           )}
 
           {/* Empty state when nothing installed */}
