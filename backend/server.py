@@ -3065,8 +3065,8 @@ async def set_skip_segments(
         if segment["start"] >= segment["end"]:
             raise HTTPException(status_code=400, detail="Segment start must be before end")
     
-    # Save to database
-    await db.skip_segments.update_one(
+    # Save to database (using skip_markers table)
+    await db.skip_markers.update_one(
         {"media_id": media_id},
         {"$set": {"media_id": media_id, "segments": segments, "updated_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True
