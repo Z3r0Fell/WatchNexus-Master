@@ -126,13 +126,13 @@ const LibrariesTab = ({
                   <select
                     value={newLibrary.media_type}
                     onChange={(e) => setNewLibrary(p => ({ ...p, media_type: e.target.value }))}
-                    className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:bg-[#1a1a1a] [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:text-white"
+                    className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white"
                   >
-                    <option value="movies">🎬 Movies</option>
-                    <option value="tv">📺 TV Shows</option>
-                    <option value="anime">🎌 Anime</option>
-                    <option value="music">🎵 Music</option>
-                    <option value="audiobooks">📚 Audiobooks</option>
+                    <option value="movies">Movies</option>
+                    <option value="tv">TV Shows</option>
+                    <option value="anime">Anime</option>
+                    <option value="music">Music</option>
+                    <option value="audiobooks">Audiobooks</option>
                   </select>
                 </div>
                 <div>
