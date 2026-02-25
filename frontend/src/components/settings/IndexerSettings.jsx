@@ -143,7 +143,7 @@ export const IndexerSettings = () => {
               <div>
                 <label className="text-sm text-gray-400 mb-2 block">Type *</label>
                 <select value={newIndexer.type} onChange={(e) => setNewIndexer(p => ({ ...p, type: e.target.value }))}
-                  className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">
+                  className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:bg-[#1a1a1a] [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:text-white">
                   <option value="torznab">Torrent (via Syrup)</option>
                   <option value="newznab">NZB (via Pulp)</option>
                   <option value="rss">RSS Feed</option>
