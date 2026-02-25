@@ -74,6 +74,7 @@ export const Sidebar = () => {
   const [visibleTabs, setVisibleTabs] = useState(getVisibleTabs);
   const location = useLocation();
   const { logout, user } = useAuth();
+  const { hooks } = useGadgets();
 
   // Listen for changes from settings page
   useEffect(() => {
@@ -83,7 +84,6 @@ export const Sidebar = () => {
       }
     };
     
-    // Also listen for custom event from settings
     const handleTabsUpdate = () => {
       setVisibleTabs(getVisibleTabs());
     };
@@ -97,9 +97,27 @@ export const Sidebar = () => {
     };
   }, []);
 
+  // Build dynamic gadget sidebar items from active hooks
+  const gadgetNavItems = (hooks?.sidebar_entries || []).map(entry => ({
+    icon: ICON_MAP[entry.icon] || Sparkles,
+    label: entry.label,
+    path: entry.path,
+    hideable: true,
+    isGadget: true,
+  }));
+
+  // Combine static + gadget nav items (gadgets go before Downloads/Settings)
+  const staticBeforeDownloads = allNavItems.filter(i => !i.alwaysVisible || i.path === '/');
+  const staticAfter = allNavItems.filter(i => i.alwaysVisible && i.path !== '/');
+  const combinedItems = [
+    ...allNavItems.filter(i => i.path !== '/downloads' && i.path !== '/settings'),
+    ...gadgetNavItems,
+    ...allNavItems.filter(i => i.path === '/downloads' || i.path === '/settings'),
+  ];
+
   // Filter nav items based on visibility settings
-  const navItems = allNavItems.filter(item => 
-    item.alwaysVisible || visibleTabs.includes(item.label)
+  const navItems = combinedItems.filter(item => 
+    item.alwaysVisible || item.isGadget || visibleTabs.includes(item.label)
   );
 
   return (
