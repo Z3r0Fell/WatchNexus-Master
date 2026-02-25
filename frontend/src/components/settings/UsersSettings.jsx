@@ -149,7 +149,7 @@ const UsersTab = ({
                   <select
                     value={newUser.role}
                     onChange={(e) => setNewUser(p => ({ ...p, role: e.target.value }))}
-                    className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:bg-[#1a1a1a] [className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white">option]:text-white"
+                    className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white"
                   >
                     <option value="user">User</option>
                     <option value="admin">Administrator</option>
