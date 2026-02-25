@@ -40,6 +40,18 @@ const TIER_BADGES = {
 // Release history
 const RELEASES = [
   {
+    version: '2.5.9', date: '2025-02-25', type: 'minor', title: 'Watch History Management',
+    highlights: ['X button on Continue Watching cards', 'Watch History tab in Playback Settings', 'Clear all history with confirmation dialog'],
+    changes: [
+      { type: 'feature', text: 'Added X button (top-right) on Continue Watching cards to remove items' },
+      { type: 'feature', text: 'New "Watch History" tab in Playback Settings' },
+      { type: 'feature', text: 'Clear individual items or entire watch history' },
+      { type: 'feature', text: 'Confirmation dialog with warning before clearing all history (like Crunchyroll)' },
+      { type: 'feature', text: 'Backend API: DELETE /watch-progress and /watch-progress/all endpoints' },
+      { type: 'fix', text: 'Fixed server.py to include uvicorn startup for standalone execution' },
+    ]
+  },
+  {
     version: '2.5.8', date: '2025-02-25', type: 'minor', title: 'Settings UX Overhaul - Tabbed Navigation',
     highlights: ['Tabbed submenus for ALL Settings pages', 'Consistent UI across entire Settings section', 'Improved navigation and discoverability'],
     changes: [
