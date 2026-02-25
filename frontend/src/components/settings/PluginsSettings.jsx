@@ -13,6 +13,7 @@ import { Switch } from '../ui/switch';
 import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useGadgets } from '../../context/GadgetContext';
 
 const categoryIcons = {
   metadata: Database, subtitle: MessageSquare, notification: Bell,
