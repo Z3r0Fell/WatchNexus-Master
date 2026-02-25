@@ -40,6 +40,22 @@ const TIER_BADGES = {
 // Release history
 const RELEASES = [
   {
+    version: '2.5.8', date: '2025-02-25', type: 'minor', title: 'Settings UX Overhaul - Tabbed Navigation',
+    highlights: ['Tabbed submenus for ALL Settings pages', 'Consistent UI across entire Settings section', 'Improved navigation and discoverability'],
+    changes: [
+      { type: 'feature', text: 'General Settings: Paths & Storage | Sidebar Tabs | Preferences' },
+      { type: 'feature', text: 'Playback Settings: Skip Intro/Credits | Auto-Play | Detection Engine | Player Options' },
+      { type: 'feature', text: 'Users & Access: User Management | Access & API | Activity Log' },
+      { type: 'feature', text: 'IPTV: IPTV Sources | EPG Guide | Recording' },
+      { type: 'feature', text: 'Streaming Services: Service Logins | Deep Links | Watch Tracking' },
+      { type: 'feature', text: 'Theme Forge: Light/Dark Mode | Theme Presets | Custom Theme' },
+      { type: 'feature', text: 'External Access (Gelatin): Server Status | Network Tunnels | Access Tokens' },
+      { type: 'feature', text: 'Maintenance: System Status | Database | Cache & Services | Server Logs' },
+      { type: 'feature', text: 'Subtitles (Garnish): Providers | Languages | Preferences' },
+      { type: 'improvement', text: 'Reusable SettingsTabHeader component for consistent styling' },
+    ]
+  },
+  {
     version: '2.5.7', date: '2025-02-25', type: 'patch', title: 'Scaffolding Cleanup & Legal Compliance',
     highlights: ['Removed dummy gadget pages', 'Added Legal & Trademarks section', 'Gadget compatibility UI'],
     changes: [
