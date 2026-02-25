@@ -197,7 +197,7 @@ export const StreamingPage = () => {
                         {/* Service Links */}
                         <div className="flex flex-wrap gap-2">
                           {enabledServices.map((service) => {
-                            const info = streamingLogos[service.id] || { color: '#666', name: service.name };
+                            const info = streamingServices[service.id] || { color: '#666', name: service.name };
                             return (
                               <button
                                 key={service.id}
