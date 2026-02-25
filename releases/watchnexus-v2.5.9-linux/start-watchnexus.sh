@@ -1,8 +1,8 @@
 #!/bin/bash
-# WatchNexus v2.5.8 - Unified Media Pipeline
+# WatchNexus v2.5.9 - Unified Media Pipeline
 # Linux Start Script
 
-echo "Starting WatchNexus v2.5.8..."
+echo "Starting WatchNexus v2.5.9..."
 echo "====================================="
 
 # Check Python
@@ -29,7 +29,7 @@ sleep 3
 
 echo ""
 echo "====================================="
-echo "WatchNexus v2.5.8 is running!"
+echo "WatchNexus v2.5.9 is running!"
 echo "====================================="
 echo ""
 echo "Open your browser and navigate to:"

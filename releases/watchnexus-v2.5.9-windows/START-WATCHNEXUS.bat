@@ -1,8 +1,8 @@
 @echo off
-REM WatchNexus v2.5.8 - Unified Media Pipeline
+REM WatchNexus v2.5.9 - Unified Media Pipeline
 REM Windows Start Script
 
-echo Starting WatchNexus v2.5.8...
+echo Starting WatchNexus v2.5.9...
 echo =====================================
 
 REM Check Python
@@ -31,7 +31,7 @@ timeout /t 3 >nul
 
 echo.
 echo =====================================
-echo WatchNexus v2.5.8 is running!
+echo WatchNexus v2.5.9 is running!
 echo =====================================
 echo.
 echo Open your browser and navigate to:

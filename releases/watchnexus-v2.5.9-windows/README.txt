@@ -1,7 +1,7 @@
-# WatchNexus v2.5.8 - Unified Media Pipeline
+# WatchNexus v2.5.9 - Unified Media Pipeline
 # Release: February 25, 2025
 
-## What's New in 2.5.8: Settings UX Overhaul
+## What's New in 2.5.9: Settings UX Overhaul
 
 This release brings a complete overhaul of the Settings interface with tabbed 
 navigation throughout, making it easier to find and configure options.
@@ -42,7 +42,7 @@ navigation throughout, making it easier to find and configure options.
 
 ## Directory Structure:
 ```
-watchnexus-v2.5.8-linux/
+watchnexus-v2.5.9-linux/
 ├── backend/           # Python FastAPI server
 │   ├── server.py      # Main server
 │   ├── marmalade_server.py  # Media library engine

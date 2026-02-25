@@ -764,6 +764,32 @@ async def get_next_up(user: dict = Depends(require_auth)):
     
     return next_up[:10]  # Limit to 10 items
 
+@api_router.delete("/watch-progress")
+async def delete_watch_progress(
+    tmdb_id: int,
+    media_type: str,
+    season: int = None,
+    episode: int = None,
+    user: dict = Depends(require_auth)
+):
+    """Delete a specific watch progress entry."""
+    query = {"user_id": user["id"], "tmdb_id": tmdb_id, "media_type": media_type}
+    if season is not None:
+        query["season"] = season
+    if episode is not None:
+        query["episode"] = episode
+    
+    result = await db.watch_progress.delete_one(query)
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Watch progress not found")
+    return {"message": "Watch progress deleted", "deleted_count": result.deleted_count}
+
+@api_router.delete("/watch-progress/all")
+async def clear_all_watch_progress(user: dict = Depends(require_auth)):
+    """Clear all watch progress for the current user."""
+    result = await db.watch_progress.delete_many({"user_id": user["id"]})
+    return {"message": "All watch history cleared", "deleted_count": result.deleted_count}
+
 # ==================== DOWNLOADS (MOCK) ====================
 
 mock_downloads = []
