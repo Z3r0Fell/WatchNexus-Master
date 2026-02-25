@@ -5,6 +5,13 @@ WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Pr
 
 ## Current Version: 2.5.7
 
+## Recent Changes (v2.5.7 - Feb 25, 2025)
+- **Removed scaffolding:** Deleted non-functional gadget pages (Radio, Photos, Podcasts, WebVideo)
+- **Gadget Compatibility UI:** Unsupported gadgets show "Coming Soon" badge instead of Install button
+- **Legal & Trademarks:** Added comprehensive legal disclaimer with tabbed UI
+- **Streaming Service Icons:** Replaced fake letter logos with generic Play icons to avoid copyright issues
+- **About Page Redesign:** Split into tabbed interface (Overview, Release History, Credits, Legal)
+
 ## Core Architecture
 - **Backend:** FastAPI + SQLite (aiosqlite)
 - **Frontend:** React + Tailwind CSS + shadcn/ui
