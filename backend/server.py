@@ -1294,8 +1294,10 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
 @api_router.get("/iptv/sources")
 async def get_iptv_sources(user: dict = Depends(require_auth)):
     """Get all IPTV sources for the current user."""
-    sources = await db.iptv_sources.find({"user_id": user["id"]}, {"_id": 0})
-    return {"sources": sources, "count": len(sources)}
+    sources = await db.iptv_sources.find({"user_id": user["id"]})
+    # Remove user_id from results
+    clean_sources = [{k: v for k, v in s.items() if k != "user_id"} for s in sources]
+    return {"sources": clean_sources, "count": len(clean_sources)}
 
 @api_router.post("/iptv/sources")
 async def add_iptv_source(name: str, url: str, type: str = "m3u", epg_url: str = None, user: dict = Depends(require_auth)):
@@ -1310,8 +1312,8 @@ async def add_iptv_source(name: str, url: str, type: str = "m3u", epg_url: str =
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.iptv_sources.insert_one(source)
-    del source["user_id"]  # Don't return user_id
-    return source
+    # Return without user_id
+    return {k: v for k, v in source.items() if k != "user_id"}
 
 @api_router.delete("/iptv/sources/{source_id}")
 async def delete_iptv_source(source_id: str, user: dict = Depends(require_auth)):
