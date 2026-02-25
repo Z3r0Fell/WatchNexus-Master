@@ -1294,7 +1294,7 @@ async def update_streaming_service(service_id: str, enabled: bool, username: str
 @api_router.get("/iptv/sources")
 async def get_iptv_sources(user: dict = Depends(require_auth)):
     """Get all IPTV sources for the current user."""
-    sources = await db.iptv_sources.find({"user_id": user["id"]})
+    sources = await db.iptv_sources.find({"user_id": user["id"]}).to_list(100)
     # Remove user_id from results
     clean_sources = [{k: v for k, v in s.items() if k != "user_id"} for s in sources]
     return {"sources": clean_sources, "count": len(clean_sources)}
