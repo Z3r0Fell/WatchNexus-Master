@@ -10,13 +10,13 @@ import { Link } from 'react-router-dom';
 import { Input } from '../components/ui/input';
 import { getTitle } from '../lib/utils';
 
-const streamingLogos = {
+const streamingServices = {
   netflix: { color: '#E50914', name: 'Netflix' },
   disney: { color: '#113CCF', name: 'Disney+' },
   prime: { color: '#00A8E1', name: 'Prime Video' },
   hulu: { color: '#1CE783', name: 'Hulu' },
   hbo: { color: '#B000FF', name: 'HBO Max' },
-  apple: { color: '#000000', name: 'Apple TV+' },
+  apple: { color: '#555555', name: 'Apple TV+' },
   peacock: { color: '#000000', name: 'Peacock' },
   paramount: { color: '#0064FF', name: 'Paramount+' },
 };
