@@ -378,7 +378,7 @@ export const SettingsPage = () => {
         <main className="flex-1 min-h-screen">
           {/* Content Header */}
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
-            <h2 className="font-medium capitalize">{activeSection.replace('-', ' ')} Settings</h2>
+            <h2 className="font-medium capitalize">{activeSection === 'plugins' ? 'Gadgets' : activeSection.replace('-', ' ')} Settings</h2>
           </div>
 
           {/* Content */}
