@@ -249,3 +249,7 @@ frontend/node_modules/.cache/default-development/8.pack
 separated/web/node_modules/.cache/default-development/2.pack
 separated/web/node_modules/.cache/default-development/7.pack
 separated/web/node_modules/electron/dist/electron
+-e 
+# Environment files
+*.env
+*.env.*
