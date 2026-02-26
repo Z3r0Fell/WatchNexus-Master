@@ -586,8 +586,8 @@ class SQLiteDB:
             );
             CREATE INDEX IF NOT EXISTS idx_iptv_user ON iptv_sources(user_id);
             
-            -- User Preferences (synced across devices)
-            CREATE TABLE IF NOT EXISTS user_preferences (
+            -- User Preferences KV Store (for gadgets)
+            CREATE TABLE IF NOT EXISTS user_settings_kv (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 key TEXT NOT NULL,
@@ -595,7 +595,7 @@ class SQLiteDB:
                 FOREIGN KEY (user_id) REFERENCES users(id),
                 UNIQUE(user_id, key)
             );
-            CREATE INDEX IF NOT EXISTS idx_user_prefs ON user_preferences(user_id, key);
+            CREATE INDEX IF NOT EXISTS idx_user_settings_kv ON user_settings_kv(user_id, key);
             
             -- Podcast Subscriptions
             CREATE TABLE IF NOT EXISTS podcast_subscriptions (
