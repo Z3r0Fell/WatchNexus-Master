@@ -5645,12 +5645,12 @@ async def search_location(q: str, user: dict = Depends(require_auth)):
 
 @api_router.get("/gadgets/weather/settings")
 async def get_weather_settings(user: dict = Depends(require_auth)):
-    row = await db.execute_fetchone("SELECT value FROM user_preferences WHERE user_id = ? AND key = ?", (user["id"], "weather_location"))
-    return json.loads(row[0]) if row else {"lat": 40.7128, "lon": -74.0060, "name": "New York", "country": "US"}
+    row = await db.execute_fetchone("SELECT value FROM user_settings_kv WHERE user_id = ? AND key = ?", (user["id"], "weather_location"))
+    return json.loads(row["value"]) if row else {"lat": 40.7128, "lon": -74.0060, "name": "New York", "country": "US"}
 
 @api_router.post("/gadgets/weather/settings")
 async def save_weather_settings(data: dict, user: dict = Depends(require_auth)):
-    await db.execute("INSERT INTO user_preferences (id, user_id, key, value) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value", (str(uuid.uuid4()), user["id"], "weather_location", json.dumps(data)))
+    await db.execute("INSERT INTO user_settings_kv (id, user_id, key, value) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value", (str(uuid.uuid4()), user["id"], "weather_location", json.dumps(data)))
     return {"success": True}
 
 # --- PODCASTS ---
