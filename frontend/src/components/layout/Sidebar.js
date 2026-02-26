@@ -23,7 +23,9 @@ import {
   Image,
   Gamepad2,
   Podcast,
-  MonitorPlay
+  MonitorPlay,
+  Cloud,
+  Video
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -31,7 +33,7 @@ import { cn } from '../../lib/utils';
 
 // Icon mapping for dynamic gadget sidebar entries
 const ICON_MAP = {
-  Image, Gamepad2, Radio, Podcast, MonitorPlay,
+  Image, Gamepad2, Radio, Podcast, MonitorPlay, Cloud, Video,
   Home, Film, Tv, Music, BookOpen, Download, Settings,
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
 };
@@ -49,12 +51,19 @@ const allNavItems = [
   { icon: Radio, label: 'Live TV', path: '/live', hideable: true },
   { icon: Layers, label: 'Streaming', path: '/streaming', hideable: true },
   { icon: Compass, label: 'Indexers', path: '/indexers', hideable: true },
+  // Gadget Pages
+  { icon: Cloud, label: 'Weather', path: '/weather', hideable: true, isGadget: true },
+  { icon: Podcast, label: 'Podcasts', path: '/podcasts', hideable: true, isGadget: true },
+  { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
+  { icon: Image, label: 'Photos', path: '/photos', hideable: true, isGadget: true },
+  { icon: Video, label: 'Web Video', path: '/webvideo', hideable: true, isGadget: true },
+  // Always visible
   { icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true },
   { icon: Settings, label: 'Settings', path: '/settings', alwaysVisible: true },
 ];
 
 // Default visible tabs (all except Live TV which users often don't use)
-const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers'];
+const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video'];
 
 // Get visible tabs from localStorage
 const getVisibleTabs = () => {
