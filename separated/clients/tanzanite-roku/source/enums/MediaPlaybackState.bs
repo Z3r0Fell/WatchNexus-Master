@@ -1,8 +1,0 @@
-enum MediaPlaybackState
-    BUFFERING = "buffering"
-    ERROR = "error"
-    FINISHED = "finished"
-    PAUSED = "paused"
-    PLAYING = "playing"
-    STOPPED = "stopped"
-end enum

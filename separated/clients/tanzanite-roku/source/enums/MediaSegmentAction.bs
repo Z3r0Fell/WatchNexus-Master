@@ -1,5 +1,0 @@
-enum MediaSegmentAction
-    ASKTOSKIP = "asktoskip"
-    SKIP = "skip"
-    NONE = "none"
-end enum

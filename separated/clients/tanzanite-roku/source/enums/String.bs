@@ -1,3 +1,0 @@
-enum String
-    EMPTY = ""
-end enum

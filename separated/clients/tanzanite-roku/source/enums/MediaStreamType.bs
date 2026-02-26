@@ -1,3 +1,0 @@
-enum MediaStreamType
-    VIDEO = "video"
-end enum

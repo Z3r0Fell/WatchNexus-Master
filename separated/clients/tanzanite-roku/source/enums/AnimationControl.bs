@@ -1,3 +1,0 @@
-enum AnimationControl
-    START = "start"
-end enum

@@ -1,5 +1,0 @@
-enum MenuType
-    VIEW
-    SORT
-    FILTER
-end enum

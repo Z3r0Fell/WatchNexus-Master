@@ -1,5 +1,0 @@
-enum PersonType
-    DIRECTOR = "director"
-    ACTOR = "actor"
-    PERSON = "person"
-end enum

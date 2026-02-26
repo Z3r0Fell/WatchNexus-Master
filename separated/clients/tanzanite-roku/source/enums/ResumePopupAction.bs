@@ -1,7 +1,0 @@
-enum ResumePopupAction
-    RESUME
-    STARTOVER
-    GOTOSERIES
-    GOTOSEASON
-    GOTOEPISODE
-end enum
