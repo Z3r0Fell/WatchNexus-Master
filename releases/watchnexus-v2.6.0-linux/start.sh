@@ -1,26 +1,24 @@
 #!/bin/bash
 cd "$(dirname "$0")/server"
 
-# Check for Python
 if ! command -v python3 &> /dev/null; then
-    echo "Error: Python 3 is required but not installed."
+    echo "Error: Python 3 is required. Install with: sudo apt install python3 python3-venv"
     exit 1
 fi
 
-# Create virtual environment if not exists
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
     python3 -m venv venv
 fi
 
-# Activate virtual environment
 source venv/bin/activate
-
-# Install dependencies
 echo "Installing dependencies..."
 pip install -r requirements.txt --quiet
 
-# Run server
-echo "Starting WatchNexus v2.6.0..."
-echo "Open http://localhost:8001 in your browser"
+echo ""
+echo "=========================================="
+echo "  WatchNexus v2.6.0 - Starting..."
+echo "  Open http://localhost:8001 in browser"
+echo "=========================================="
+echo ""
 python3 server.py

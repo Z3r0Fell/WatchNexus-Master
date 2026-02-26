@@ -1,24 +1,18 @@
 # WatchNexus v2.6.0
 
-## Quick Start (Linux/macOS)
+## Quick Start
 ```bash
 ./start.sh
 ```
 
-Then open http://localhost:8001 in your browser.
+Open http://localhost:8001 in your browser.
+
+## What's New in v2.6.0
+- **OS-Aware File Browser**: Completely rewritten file browser with proper handling for Windows, macOS, and Linux
+- **5 Functional Gadgets**: Weather, Podcasts, Radio, Photos, Web Video
+- **Single-Click Navigation**: File browser now responds to single clicks
+- **Bug Fixes**: Fixed folder navigation issues on all platforms
 
 ## Requirements
 - Python 3.9+
 - Internet connection (for TMDB metadata)
-
-## What's New in v2.6.0
-- **Weather Gadget**: Real-time weather and 7-day forecast (Open-Meteo)
-- **Podcasts**: Subscribe to RSS feeds, playback progress, queue
-- **Internet Radio**: 50,000+ stations worldwide
-- **Photos**: Local photo library browser
-- **Web Video**: Stream from YouTube, Vimeo, etc (yt-dlp)
-
-## Configuration
-Edit `server/.env` to set:
-- `TMDB_API_KEY`: Get from https://themoviedb.org/settings/api
-- `JWT_SECRET`: Random string for session security
