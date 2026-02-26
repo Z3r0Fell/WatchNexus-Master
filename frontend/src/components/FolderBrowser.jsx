@@ -166,7 +166,7 @@ const FolderBrowser = ({ onSelect, initialPath, selectedPath }) => {
           <div className="flex items-center justify-center h-32 text-sm text-red-400">
             {error}
           </div>
-        ) : items.length === 0 ? (
+        ) : items.filter(item => !item.is_parent).length === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-gray-500">
             No subdirectories found
           </div>
