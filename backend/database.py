@@ -571,13 +571,135 @@ class SQLiteDB:
             
             -- User Preferences (synced across devices)
             CREATE TABLE IF NOT EXISTS user_preferences (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT UNIQUE NOT NULL,
-                visible_tabs TEXT DEFAULT '[]',
-                download_mode TEXT DEFAULT 'builtin',
-                theme_mode TEXT DEFAULT 'dark',
-                updated_at TEXT NOT NULL,
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                key TEXT NOT NULL,
+                value TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE(user_id, key)
+            );
+            CREATE INDEX IF NOT EXISTS idx_user_prefs ON user_preferences(user_id, key);
+            
+            -- Podcast Subscriptions
+            CREATE TABLE IF NOT EXISTS podcast_subscriptions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                feed_url TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                image TEXT,
+                author TEXT,
+                episode_count INTEGER DEFAULT 0,
+                last_updated TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_podcast_subs_user ON podcast_subscriptions(user_id);
+            
+            -- Podcast Episodes
+            CREATE TABLE IF NOT EXISTS podcast_episodes (
+                id TEXT PRIMARY KEY,
+                subscription_id TEXT NOT NULL,
+                guid TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                audio_url TEXT NOT NULL,
+                duration INTEGER,
+                published TEXT,
+                image TEXT,
+                FOREIGN KEY (subscription_id) REFERENCES podcast_subscriptions(id),
+                UNIQUE(subscription_id, guid)
+            );
+            CREATE INDEX IF NOT EXISTS idx_podcast_eps_sub ON podcast_episodes(subscription_id);
+            
+            -- Podcast Progress
+            CREATE TABLE IF NOT EXISTS podcast_progress (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                episode_id TEXT NOT NULL,
+                progress INTEGER DEFAULT 0,
+                played INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (episode_id) REFERENCES podcast_episodes(id),
+                UNIQUE(user_id, episode_id)
+            );
+            
+            -- Podcast Queue
+            CREATE TABLE IF NOT EXISTS podcast_queue (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                episode_id TEXT NOT NULL,
+                position INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (episode_id) REFERENCES podcast_episodes(id)
+            );
+            
+            -- Radio Favorites
+            CREATE TABLE IF NOT EXISTS radio_favorites (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                station_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL,
+                favicon TEXT,
+                country TEXT,
+                tags TEXT,
+                added_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE(user_id, station_id)
+            );
+            
+            -- Photo Libraries
+            CREATE TABLE IF NOT EXISTS photo_libraries (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                path TEXT NOT NULL,
+                photo_count INTEGER DEFAULT 0,
+                last_scanned TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            
+            -- Photos
+            CREATE TABLE IF NOT EXISTS photos (
+                id TEXT PRIMARY KEY,
+                library_id TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                filename TEXT NOT NULL,
+                file_size INTEGER,
+                created_at TEXT,
+                width INTEGER,
+                height INTEGER,
+                FOREIGN KEY (library_id) REFERENCES photo_libraries(id),
+                UNIQUE(library_id, file_path)
+            );
+            CREATE INDEX IF NOT EXISTS idx_photos_lib ON photos(library_id);
+            
+            -- Web Video History
+            CREATE TABLE IF NOT EXISTS webvideo_history (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                video_id TEXT NOT NULL,
+                url TEXT NOT NULL,
+                title TEXT,
+                thumbnail TEXT,
+                duration INTEGER,
+                watched_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_webvideo_hist ON webvideo_history(user_id);
+            
+            -- Web Video Bookmarks
+            CREATE TABLE IF NOT EXISTS webvideo_bookmarks (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                video_id TEXT NOT NULL,
+                url TEXT NOT NULL,
+                title TEXT,
+                thumbnail TEXT,
+                duration INTEGER,
+                added_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE(user_id, video_id)
             );
         ''')
         await self._connection.commit()
