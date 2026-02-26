@@ -255,3 +255,4 @@ separated/web/node_modules/electron/dist/electron
 *.env.*
 releases/zips/watchnexus-v2.6.0-linux.zip
 releases/zips/watchnexus-v2.6.0-windows.zip
+separated/web/node_modules/.cache/default-development/1.pack
