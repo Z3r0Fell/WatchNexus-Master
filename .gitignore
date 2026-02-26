@@ -261,3 +261,8 @@ separated/web/node_modules/.cache/default-development/1.pack
 *.env
 *.env.*
 src/web/node_modules/electron/dist/electron
+-e 
+# Environment files
+*.env
+*.env.*
+src/web/node_modules/.cache/default-development/2.pack
