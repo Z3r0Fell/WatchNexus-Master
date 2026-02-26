@@ -166,13 +166,16 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
 
 ## Pending Issues
 - P0: Library scanning returns no results (needs user testing on local machine)
+- P0: Folder browser fix awaiting user verification (v2.5.13 release)
 - P3: visual-edits babel plugin disabled
 
 ## Backlog / Future Tasks
-- P1: Cloud Sync "Marshmallow"
-- P1: Implement functional gadgets (Radio, Podcasts, Photos when backend ready)
-- P2: Fortress Code Protection
+- P1: Cloud Sync "Marshmallow" (plan in `/app/docs/Marshmallow-CloudSync-Plan.md`)
+- P1: Dashboard widgets for gadgets (Weather widget, Now Playing, etc.)
+- P2: Fortress Code Protection (plan in `/app/docs/Fortress-CodeProtection-Plan.md`)
 - P2: Docker/RPi distribution (Harbor)
+- P2: Podcast downloads for offline listening
+- P3: Photo EXIF extraction and slideshow mode
 
 ## Code Architecture
 
