@@ -5606,6 +5606,262 @@ async def ripen_update_config(gadget_id: str, config: dict, user: dict = Depends
     return {"success": True}
 
 
+# ==================== FUNCTIONAL GADGETS ====================
+import feedparser
+import subprocess
+import shutil
+import mimetypes
+from pathlib import Path as PathLib
+
+PHOTO_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}
+RADIO_BROWSER_API = "https://de1.api.radio-browser.info/json"
+YT_DLP_PATH = shutil.which("yt-dlp") or "yt-dlp"
+
+# --- WEATHER (Open-Meteo) ---
+@api_router.get("/gadgets/weather")
+async def get_weather(lat: float = 40.7128, lon: float = -74.0060, user: dict = Depends(require_auth)):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        params = {"latitude": lat, "longitude": lon, "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
+            "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum", "timezone": "auto", "forecast_days": 7}
+        resp = await client.get("https://api.open-meteo.com/v1/forecast", params=params)
+        data = resp.json()
+        codes = {0: ("Clear", "sun"), 1: ("Clear", "sun"), 2: ("Partly cloudy", "cloud-sun"), 3: ("Overcast", "cloud"),
+            45: ("Fog", "cloud"), 51: ("Drizzle", "cloud-drizzle"), 61: ("Rain", "cloud-rain"), 71: ("Snow", "snowflake"), 95: ("Storm", "bolt")}
+        cur = data.get("current", {})
+        daily = data.get("daily", {})
+        code = cur.get("weather_code", 0)
+        desc, icon = codes.get(code, codes.get(code // 10 * 10, ("Unknown", "question")))
+        forecast = [{"date": daily["time"][i], "temp_max": daily.get("temperature_2m_max", [None])[i], "temp_min": daily.get("temperature_2m_min", [None])[i],
+            "description": codes.get(daily.get("weather_code", [0])[i], ("?", "question"))[0], "icon": codes.get(daily.get("weather_code", [0])[i], ("?", "question"))[1]} for i in range(len(daily.get("time", [])))]
+        return {"current": {"temperature": cur.get("temperature_2m"), "feels_like": cur.get("apparent_temperature"), "humidity": cur.get("relative_humidity_2m"),
+            "wind_speed": cur.get("wind_speed_10m"), "description": desc, "icon": icon}, "forecast": forecast, "location": {"lat": lat, "lon": lon}}
+
+@api_router.get("/gadgets/weather/search")
+async def search_location(q: str, user: dict = Depends(require_auth)):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get("https://geocoding-api.open-meteo.com/v1/search", params={"name": q, "count": 10})
+        data = resp.json()
+        return {"results": [{"name": r.get("name"), "country": r.get("country"), "lat": r.get("latitude"), "lon": r.get("longitude")} for r in data.get("results", [])]}
+
+@api_router.get("/gadgets/weather/settings")
+async def get_weather_settings(user: dict = Depends(require_auth)):
+    row = await db.execute_fetchone("SELECT value FROM user_preferences WHERE user_id = ? AND key = ?", (user["id"], "weather_location"))
+    return json.loads(row[0]) if row else {"lat": 40.7128, "lon": -74.0060, "name": "New York", "country": "US"}
+
+@api_router.post("/gadgets/weather/settings")
+async def save_weather_settings(data: dict, user: dict = Depends(require_auth)):
+    await db.execute("INSERT INTO user_preferences (id, user_id, key, value) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value", (str(uuid.uuid4()), user["id"], "weather_location", json.dumps(data)))
+    return {"success": True}
+
+# --- PODCASTS ---
+@api_router.get("/gadgets/podcasts")
+async def list_podcasts(user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT * FROM podcast_subscriptions WHERE user_id = ? ORDER BY title", (user["id"],))
+    return {"subscriptions": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/podcasts")
+async def subscribe_podcast(data: dict, user: dict = Depends(require_auth)):
+    feed_url = data.get("feed_url", "").strip()
+    if not feed_url: raise HTTPException(status_code=400, detail="Feed URL required")
+    if await db.execute_fetchone("SELECT id FROM podcast_subscriptions WHERE user_id = ? AND feed_url = ?", (user["id"], feed_url)):
+        raise HTTPException(status_code=400, detail="Already subscribed")
+    feed = feedparser.parse(feed_url)
+    if feed.bozo and not feed.entries: raise HTTPException(status_code=400, detail="Invalid RSS feed")
+    title = feed.feed.get("title", "Unknown")
+    image = feed.feed.get("image", {}).get("href") or feed.feed.get("itunes_image", {}).get("href")
+    sub_id = str(uuid.uuid4())
+    await db.execute("INSERT INTO podcast_subscriptions (id, user_id, feed_url, title, description, image, author, episode_count, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (sub_id, user["id"], feed_url, title, feed.feed.get("description", "")[:500], image, feed.feed.get("author"), len(feed.entries), datetime.now(timezone.utc).isoformat()))
+    for entry in feed.entries[:50]:
+        audio_url = next((l.get("href") for l in entry.get("links", []) + entry.get("enclosures", []) if l.get("type", "").startswith("audio/")), None)
+        if audio_url:
+            dur = entry.get("itunes_duration", "0")
+            duration = sum(int(p) * (60 ** i) for i, p in enumerate(reversed(str(dur).split(":")))) if ":" in str(dur) else (int(dur) if str(dur).isdigit() else None)
+            await db.execute("INSERT OR IGNORE INTO podcast_episodes (id, subscription_id, guid, title, description, audio_url, duration, published, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), sub_id, entry.get("id", entry.get("link", "")), entry.get("title", ""), entry.get("summary", "")[:500], audio_url, duration, entry.get("published"), image))
+    return {"success": True, "subscription": {"id": sub_id, "title": title}}
+
+@api_router.delete("/gadgets/podcasts/{sub_id}")
+async def unsubscribe_podcast(sub_id: str, user: dict = Depends(require_auth)):
+    await db.execute("DELETE FROM podcast_episodes WHERE subscription_id = ?", (sub_id,))
+    await db.execute("DELETE FROM podcast_subscriptions WHERE id = ? AND user_id = ?", (sub_id, user["id"]))
+    return {"success": True}
+
+@api_router.get("/gadgets/podcasts/{sub_id}/episodes")
+async def list_episodes(sub_id: str, limit: int = 50, user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT e.*, COALESCE(p.progress, 0) as progress, COALESCE(p.played, 0) as played FROM podcast_episodes e LEFT JOIN podcast_progress p ON e.id = p.episode_id AND p.user_id = ? WHERE e.subscription_id = ? ORDER BY e.published DESC LIMIT ?", (user["id"], sub_id, limit))
+    return {"episodes": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/podcasts/progress")
+async def update_podcast_progress(data: dict, user: dict = Depends(require_auth)):
+    await db.execute("INSERT INTO podcast_progress (id, user_id, episode_id, progress, played) VALUES (?, ?, ?, ?, ?) ON CONFLICT(user_id, episode_id) DO UPDATE SET progress = excluded.progress, played = excluded.played",
+        (str(uuid.uuid4()), user["id"], data.get("episode_id"), data.get("progress", 0), data.get("played", False)))
+    return {"success": True}
+
+@api_router.post("/gadgets/podcasts/{sub_id}/refresh")
+async def refresh_podcast(sub_id: str, user: dict = Depends(require_auth)):
+    sub = await db.execute_fetchone("SELECT * FROM podcast_subscriptions WHERE id = ? AND user_id = ?", (sub_id, user["id"]))
+    if not sub: raise HTTPException(status_code=404, detail="Not found")
+    feed = feedparser.parse(sub["feed_url"])
+    new_count = 0
+    for entry in feed.entries[:50]:
+        audio_url = next((l.get("href") for l in entry.get("links", []) + entry.get("enclosures", []) if l.get("type", "").startswith("audio/")), None)
+        if audio_url:
+            guid = entry.get("id", entry.get("link", ""))
+            if not await db.execute_fetchone("SELECT id FROM podcast_episodes WHERE subscription_id = ? AND guid = ?", (sub_id, guid)):
+                dur = entry.get("itunes_duration", "0")
+                duration = sum(int(p) * (60 ** i) for i, p in enumerate(reversed(str(dur).split(":")))) if ":" in str(dur) else None
+                await db.execute("INSERT INTO podcast_episodes (id, subscription_id, guid, title, description, audio_url, duration, published, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (str(uuid.uuid4()), sub_id, guid, entry.get("title", ""), entry.get("summary", "")[:500], audio_url, duration, entry.get("published"), sub["image"]))
+                new_count += 1
+    await db.execute("UPDATE podcast_subscriptions SET last_updated = ? WHERE id = ?", (datetime.now(timezone.utc).isoformat(), sub_id))
+    return {"success": True, "new_episodes": new_count}
+
+@api_router.get("/gadgets/podcasts/queue")
+async def get_queue(user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT q.*, e.title, e.audio_url, e.duration, e.image, s.title as podcast FROM podcast_queue q JOIN podcast_episodes e ON q.episode_id = e.id JOIN podcast_subscriptions s ON e.subscription_id = s.id WHERE q.user_id = ? ORDER BY q.position", (user["id"],))
+    return {"queue": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/podcasts/queue")
+async def add_to_queue(data: dict, user: dict = Depends(require_auth)):
+    row = await db.execute_fetchone("SELECT MAX(position) as p FROM podcast_queue WHERE user_id = ?", (user["id"],))
+    pos = (row["p"] or 0) + 1 if row else 1
+    await db.execute("INSERT INTO podcast_queue (id, user_id, episode_id, position) VALUES (?, ?, ?, ?)", (str(uuid.uuid4()), user["id"], data.get("episode_id"), pos))
+    return {"success": True}
+
+@api_router.delete("/gadgets/podcasts/queue/{episode_id}")
+async def remove_from_queue(episode_id: str, user: dict = Depends(require_auth)):
+    await db.execute("DELETE FROM podcast_queue WHERE user_id = ? AND episode_id = ?", (user["id"], episode_id))
+    return {"success": True}
+
+# --- RADIO ---
+@api_router.get("/gadgets/radio/stations")
+async def search_radio(q: str = "", country: str = "", tag: str = "", limit: int = 50, user: dict = Depends(require_auth)):
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        url = f"{RADIO_BROWSER_API}/stations/byname/{q}" if q else f"{RADIO_BROWSER_API}/stations/bycountry/{country}" if country else f"{RADIO_BROWSER_API}/stations/bytag/{tag}" if tag else f"{RADIO_BROWSER_API}/stations/topvote"
+        resp = await client.get(url, params={"limit": limit, "hidebroken": "true", "order": "votes", "reverse": "true"})
+        return {"stations": [{"id": s.get("stationuuid"), "name": s.get("name"), "url": s.get("url_resolved") or s.get("url"), "favicon": s.get("favicon"), "country": s.get("country"), "tags": s.get("tags", "").split(",")[:5], "bitrate": s.get("bitrate"), "votes": s.get("votes")} for s in resp.json()[:limit]]}
+
+@api_router.get("/gadgets/radio/countries")
+async def radio_countries(user: dict = Depends(require_auth)):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(f"{RADIO_BROWSER_API}/countries", params={"order": "stationcount", "reverse": "true"})
+        return {"countries": [{"name": c.get("name"), "code": c.get("iso_3166_1"), "count": c.get("stationcount")} for c in resp.json() if c.get("stationcount", 0) > 10][:100]}
+
+@api_router.get("/gadgets/radio/tags")
+async def radio_tags(user: dict = Depends(require_auth)):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(f"{RADIO_BROWSER_API}/tags", params={"order": "stationcount", "reverse": "true", "limit": 50})
+        return {"tags": [{"name": t.get("name"), "count": t.get("stationcount")} for t in resp.json() if t.get("stationcount", 0) > 100]}
+
+@api_router.get("/gadgets/radio/favorites")
+async def radio_favorites(user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT * FROM radio_favorites WHERE user_id = ? ORDER BY added_at DESC", (user["id"],))
+    return {"favorites": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/radio/favorites")
+async def add_radio_fav(data: dict, user: dict = Depends(require_auth)):
+    await db.execute("INSERT OR REPLACE INTO radio_favorites (id, user_id, station_id, name, url, favicon, country, tags, added_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (str(uuid.uuid4()), user["id"], data.get("station_id"), data.get("name"), data.get("url"), data.get("favicon"), data.get("country"), json.dumps(data.get("tags", [])), datetime.now(timezone.utc).isoformat()))
+    return {"success": True}
+
+@api_router.delete("/gadgets/radio/favorites/{station_id}")
+async def remove_radio_fav(station_id: str, user: dict = Depends(require_auth)):
+    await db.execute("DELETE FROM radio_favorites WHERE user_id = ? AND station_id = ?", (user["id"], station_id))
+    return {"success": True}
+
+# --- PHOTOS ---
+@api_router.get("/gadgets/photos/libraries")
+async def photo_libraries(user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT * FROM photo_libraries WHERE user_id = ? ORDER BY name", (user["id"],))
+    return {"libraries": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/photos/libraries")
+async def add_photo_lib(data: dict, user: dict = Depends(require_auth)):
+    name, path = data.get("name", "").strip(), data.get("path", "").strip()
+    if not name or not path: raise HTTPException(status_code=400, detail="Name and path required")
+    if not PathLib(path).exists(): raise HTTPException(status_code=400, detail="Path does not exist")
+    lib_id = str(uuid.uuid4())
+    await db.execute("INSERT INTO photo_libraries (id, user_id, name, path, photo_count, last_scanned) VALUES (?, ?, ?, ?, 0, NULL)", (lib_id, user["id"], name, path))
+    return {"success": True, "library": {"id": lib_id, "name": name}}
+
+@api_router.delete("/gadgets/photos/libraries/{lib_id}")
+async def delete_photo_lib(lib_id: str, user: dict = Depends(require_auth)):
+    await db.execute("DELETE FROM photos WHERE library_id = ?", (lib_id,))
+    await db.execute("DELETE FROM photo_libraries WHERE id = ? AND user_id = ?", (lib_id, user["id"]))
+    return {"success": True}
+
+@api_router.post("/gadgets/photos/scan/{lib_id}")
+async def scan_photos(lib_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_auth)):
+    lib = await db.execute_fetchone("SELECT * FROM photo_libraries WHERE id = ? AND user_id = ?", (lib_id, user["id"]))
+    if not lib: raise HTTPException(status_code=404, detail="Not found")
+    async def do_scan():
+        count = 0
+        for f in PathLib(lib["path"]).rglob("*"):
+            if f.suffix.lower() in PHOTO_EXTENSIONS and not await db.execute_fetchone("SELECT id FROM photos WHERE library_id = ? AND file_path = ?", (lib_id, str(f))):
+                stat = f.stat()
+                await db.execute("INSERT INTO photos (id, library_id, file_path, filename, file_size, created_at, width, height) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)",
+                    (str(uuid.uuid4()), lib_id, str(f), f.name, stat.st_size, datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()))
+                count += 1
+        await db.execute("UPDATE photo_libraries SET photo_count = (SELECT COUNT(*) FROM photos WHERE library_id = ?), last_scanned = ? WHERE id = ?", (lib_id, datetime.now(timezone.utc).isoformat(), lib_id))
+    background_tasks.add_task(do_scan)
+    return {"success": True}
+
+@api_router.get("/gadgets/photos/{lib_id}")
+async def list_photos(lib_id: str, limit: int = 100, offset: int = 0, user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT * FROM photos WHERE library_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?", (lib_id, limit, offset))
+    return {"photos": [dict(r) for r in rows] if rows else []}
+
+@api_router.get("/gadgets/photos/file/{photo_id}")
+async def get_photo(photo_id: str, user: dict = Depends(require_auth)):
+    photo = await db.execute_fetchone("SELECT * FROM photos WHERE id = ?", (photo_id,))
+    if not photo or not PathLib(photo["file_path"]).exists(): raise HTTPException(status_code=404, detail="Not found")
+    mime, _ = mimetypes.guess_type(photo["file_path"])
+    return FileResponse(photo["file_path"], media_type=mime or "image/jpeg")
+
+# --- WEB VIDEO ---
+@api_router.get("/gadgets/webvideo/info")
+async def webvideo_info(url: str, user: dict = Depends(require_auth)):
+    result = subprocess.run([YT_DLP_PATH, "-j", "--no-playlist", url], capture_output=True, text=True, timeout=30)
+    if result.returncode != 0: raise HTTPException(status_code=400, detail="Could not extract video")
+    info = json.loads(result.stdout)
+    formats = [{"format_id": f.get("format_id"), "ext": f.get("ext"), "resolution": f.get("resolution") or f"{f.get('width', '?')}x{f.get('height', '?')}", "filesize": f.get("filesize")} for f in info.get("formats", []) if f.get("vcodec") != "none"]
+    return {"id": info.get("id"), "title": info.get("title"), "description": info.get("description", "")[:500], "thumbnail": info.get("thumbnail"), "duration": info.get("duration"), "uploader": info.get("uploader"), "formats": formats[-10:]}
+
+@api_router.get("/gadgets/webvideo/stream")
+async def webvideo_stream(url: str, format_id: str = "best", user: dict = Depends(require_auth)):
+    result = subprocess.run([YT_DLP_PATH, "-g", "-f", format_id, "--no-playlist", url], capture_output=True, text=True, timeout=30)
+    if result.returncode != 0: raise HTTPException(status_code=400, detail="Could not get stream")
+    return {"stream_url": result.stdout.strip().split("\n")[0]}
+
+@api_router.get("/gadgets/webvideo/history")
+async def webvideo_history(limit: int = 50, user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT * FROM webvideo_history WHERE user_id = ? ORDER BY watched_at DESC LIMIT ?", (user["id"], limit))
+    return {"history": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/webvideo/history")
+async def add_webvideo_history(data: dict, user: dict = Depends(require_auth)):
+    await db.execute("INSERT INTO webvideo_history (id, user_id, video_id, url, title, thumbnail, duration, watched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (str(uuid.uuid4()), user["id"], data.get("video_id"), data.get("url"), data.get("title"), data.get("thumbnail"), data.get("duration"), datetime.now(timezone.utc).isoformat()))
+    return {"success": True}
+
+@api_router.get("/gadgets/webvideo/bookmarks")
+async def webvideo_bookmarks(user: dict = Depends(require_auth)):
+    rows = await db.execute_fetchall("SELECT * FROM webvideo_bookmarks WHERE user_id = ? ORDER BY added_at DESC", (user["id"],))
+    return {"bookmarks": [dict(r) for r in rows] if rows else []}
+
+@api_router.post("/gadgets/webvideo/bookmarks")
+async def add_webvideo_bookmark(data: dict, user: dict = Depends(require_auth)):
+    await db.execute("INSERT OR REPLACE INTO webvideo_bookmarks (id, user_id, video_id, url, title, thumbnail, duration, added_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (str(uuid.uuid4()), user["id"], data.get("video_id"), data.get("url"), data.get("title"), data.get("thumbnail"), data.get("duration"), datetime.now(timezone.utc).isoformat()))
+    return {"success": True}
+
+@api_router.delete("/gadgets/webvideo/bookmarks/{video_id}")
+async def remove_webvideo_bookmark(video_id: str, user: dict = Depends(require_auth)):
+    await db.execute("DELETE FROM webvideo_bookmarks WHERE user_id = ? AND video_id = ?", (user["id"], video_id))
+    return {"success": True}
+
+
 # Include router and middleware
 app.include_router(api_router)
 
