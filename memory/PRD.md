@@ -165,8 +165,7 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
 - Better error handling with user-friendly messages
 
 ## Pending Issues
-- P0: Library scanning returns no results (needs user testing on local machine)
-- P0: Folder browser fix awaiting user verification (v2.5.13 release)
+- P0: Library scanning - needs user testing on local machine with real media
 - P3: visual-edits babel plugin disabled
 
 ## Backlog / Future Tasks
