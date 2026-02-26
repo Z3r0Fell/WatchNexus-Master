@@ -211,6 +211,23 @@ class SQLiteDB:
                     stats[f"{table}_count"] = 0
                     
         return stats
+    
+    async def execute(self, sql: str, params: tuple = ()):
+        """Execute a SQL statement."""
+        await self._connection.execute(sql, params)
+        await self._connection.commit()
+    
+    async def execute_fetchone(self, sql: str, params: tuple = ()):
+        """Execute and fetch one row."""
+        async with self._connection.execute(sql, params) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+    
+    async def execute_fetchall(self, sql: str, params: tuple = ()):
+        """Execute and fetch all rows."""
+        async with self._connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [dict(r) for r in rows]
         
     async def close(self):
         """Close database connection."""
