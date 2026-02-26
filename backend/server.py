@@ -1375,183 +1375,30 @@ async def browse_filesystem(
 ):
     """
     Browse the local filesystem to find media folders.
-    Returns directories and basic info for folder selection.
-    OS-aware: Returns appropriate paths for Windows, Linux, or macOS.
+    OS-aware: Proper handling for Windows, Linux, and macOS.
     """
-    import os
-    import platform
-    from pathlib import Path as FilePath
+    from filesystem_browser import get_filesystem_browser
     
-    os_type = platform.system().lower()  # 'windows', 'linux', 'darwin'
+    browser = get_filesystem_browser()
+    result = browser.browse(path)
     
-    # Determine default path based on OS
-    if not path:
-        if os_type == 'windows':
-            path = "C:\\"
-        elif os_type == 'darwin':
-            path = os.path.expanduser("~")
-        else:
-            # Linux: Start at user's home directory if available
-            home_dir = os.path.expanduser("~")
-            if os.path.exists(home_dir) and home_dir != "~":
-                path = home_dir
-            elif os.path.exists("/home"):
-                # Try to find a user directory
-                try:
-                    users = [d for d in os.listdir("/home") if os.path.isdir(os.path.join("/home", d)) and not d.startswith('.')]
-                    if users:
-                        path = os.path.join("/home", users[0])
-                    else:
-                        path = "/home"
-                except:
-                    path = "/home"
-            else:
-                path = "/"
+    if result.error:
+        if "denied" in result.error.lower():
+            raise HTTPException(status_code=403, detail=result.error)
+        elif "not a directory" in result.error.lower():
+            raise HTTPException(status_code=400, detail=result.error)
     
-    try:
-        # Normalize and validate path
-        target_path = FilePath(path).resolve()
-        
-        # Security: Prevent accessing sensitive system directories
-        if os_type == 'windows':
-            blocked_paths = ['C:\\Windows', 'C:\\Program Files', 'C:\\ProgramData']
-        else:
-            blocked_paths = ['/proc', '/sys', '/dev', '/boot', '/etc/shadow']
-        
-        if any(str(target_path).startswith(bp) for bp in blocked_paths):
-            raise HTTPException(status_code=403, detail="Access denied to system directory")
-        
-        if not target_path.exists():
-            raise HTTPException(status_code=404, detail="Path not found")
-        
-        if not target_path.is_dir():
-            raise HTTPException(status_code=400, detail="Path is not a directory")
-        
-        items = []
-        
-        # Determine if we're at root
-        is_root = False
-        if os_type == 'windows':
-            # Check if at drive root (e.g., C:\)
-            is_root = len(str(target_path)) <= 3
-        else:
-            is_root = str(target_path) == "/"
-        
-        # Add parent directory option (unless at root)
-        if not is_root:
-            items.append({
-                "name": "..",
-                "path": str(target_path.parent),
-                "type": "directory",
-                "is_parent": True
-            })
-        
-        # List directory contents
-        try:
-            for entry in sorted(target_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
-                try:
-                    # Skip hidden files and system files
-                    if entry.name.startswith('.'):
-                        continue
-                    
-                    item = {
-                        "name": entry.name,
-                        "path": str(entry),
-                        "type": "directory" if entry.is_dir() else "file",
-                        "is_parent": False
-                    }
-                    
-                    if entry.is_dir():
-                        # Count items in directory (limited check)
-                        try:
-                            item["item_count"] = len(list(entry.iterdir())[:100])
-                        except PermissionError:
-                            item["item_count"] = 0
-                            item["permission_denied"] = True
-                        items.append(item)
-                    else:
-                        # For files, add size and check if it's a media file
-                        try:
-                            stat = entry.stat()
-                            item["size"] = stat.st_size
-                            
-                            # Check if it's a media file
-                            media_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', 
-                                               '.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg',
-                                               '.jpg', '.jpeg', '.png', '.gif', '.bmp'}
-                            if entry.suffix.lower() in media_extensions:
-                                item["is_media"] = True
-                        except Exception:
-                            item["size"] = 0
-                        
-                        # Only include directories for library selection
-                        # but we can show media file counts
-                except PermissionError:
-                    continue
-                except Exception:
-                    continue
-        except PermissionError:
-            raise HTTPException(status_code=403, detail="Permission denied to read directory")
-        
-        # Get common mount points/drives
-        drives = []
-        if os.name == 'nt':  # Windows
-            import string
-            for letter in string.ascii_uppercase:
-                drive = f"{letter}:\\"
-                if os.path.exists(drive):
-                    drives.append({"name": f"{letter}:", "path": drive})
-        else:  # Linux/Mac
-            common_mounts = ["/", "/home", "/media", "/mnt", "/srv", "/data"]
-            for mount in common_mounts:
-                if os.path.exists(mount) and os.path.isdir(mount):
-                    drives.append({"name": mount, "path": mount})
-            
-            # Add user home directory
-            home = os.path.expanduser("~")
-            if home not in common_mounts:
-                drives.append({"name": "Home", "path": home})
-            
-            # Add all user directories from /home (Linux)
-            home_dir = FilePath("/home")
-            if home_dir.exists() and home_dir.is_dir():
-                try:
-                    for user_dir in home_dir.iterdir():
-                        if user_dir.is_dir() and not user_dir.name.startswith('.'):
-                            user_path = str(user_dir)
-                            # Don't add if already in drives list
-                            if not any(d["path"] == user_path for d in drives):
-                                drives.append({"name": f"/home/{user_dir.name}", "path": user_path})
-                except PermissionError:
-                    pass
-        
-        # Count media files in current directory
-        media_count = 0
-        try:
-            for entry in target_path.iterdir():
-                if entry.is_file():
-                    media_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm',
-                                       '.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg'}
-                    if entry.suffix.lower() in media_extensions:
-                        media_count += 1
-        except Exception:
-            pass
-        
-        return {
-            "current_path": str(target_path),
-            "parent_path": str(target_path.parent) if not is_root else None,
-            "items": items,
-            "drives": drives,
-            "media_files_in_current": media_count,
-            "is_root": is_root,
-            "os_type": os_type
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error browsing filesystem: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "current_path": result.current_path,
+        "parent_path": result.parent_path,
+        "items": result.items,
+        "drives": result.drives,
+        "is_root": result.is_root,
+        "os_type": result.os_type,
+        "path_separator": result.path_separator,
+        "home_directory": result.home_directory,
+        "media_files_in_current": result.media_count
+    }
 
 # ==================== LOCAL LIBRARY ====================
 
