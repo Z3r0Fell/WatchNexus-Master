@@ -5606,149 +5606,144 @@ async def ripen_update_config(gadget_id: str, config: dict, user: dict = Depends
     return {"success": True}
 
 
-# Include router and middleware
-app.include_router(api_router)
+# ==================== GADGET FEATURES - FUNCTIONAL IMPLEMENTATIONS ====================
+# These are the actual functional backends for gadgets marked as "supported: true"
 
-# Hidden Jellyfin-compatible API layer
-# Allows connection from existing Jellyfin/Emby clients
-# Connect to: http://server:8096/emby (or your server URL + /emby)
-try:
-    from jellyfin_compat import jellyfin_router
-    app.include_router(jellyfin_router)
-    logger.info("Jellyfin-compatible API layer enabled at /emby")
-except ImportError as e:
-    logger.warning(f"Jellyfin compatibility layer not available: {e}")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ==================== DATABASE INITIALIZATION ====================
-@app.on_event("startup")
-async def startup_db():
-    """Initialize SQLite database on startup."""
-    global db
-    db = await init_database()
-    logger.info("SQLite database initialized successfully")
-    
-    # Initialize Drizzle with database connection
-    init_drizzle(db)
-    logger.info("Drizzle playlist engine initialized")
-
-# ==================== STATIC FILE SERVING (FOR STANDALONE BUILD) ====================
-# Serve frontend build files when running as standalone application
-FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend"
-FRONTEND_BUILD_FALLBACK = ROOT_DIR / "frontend_build"  # Alternative location
-
-# Determine which frontend directory exists
-frontend_dir = None
-for potential_dir in [FRONTEND_BUILD_DIR, FRONTEND_BUILD_FALLBACK]:
-    if potential_dir.exists() and (potential_dir / "index.html").exists():
-        frontend_dir = potential_dir
-        break
-
-if frontend_dir:
-    # Serve static files (JS, CSS, images) from /static
-    static_dir = frontend_dir / "static"
-    if static_dir.exists():
-        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-    
-    # Serve other static assets (favicon, manifest, etc.)
-    @app.get("/favicon.ico")
-    async def favicon():
-        favicon_path = frontend_dir / "favicon.ico"
-        if favicon_path.exists():
-            return FileResponse(str(favicon_path))
-        raise HTTPException(status_code=404)
-    
-    @app.get("/manifest.json")
-    async def manifest():
-        manifest_path = frontend_dir / "manifest.json"
-        if manifest_path.exists():
-            return FileResponse(str(manifest_path), media_type="application/json")
-        raise HTTPException(status_code=404)
-    
-    @app.get("/watchnexus-logo.png")
-    async def logo_png():
-        logo_path = frontend_dir / "watchnexus-logo.png"
-        if logo_path.exists():
-            return FileResponse(str(logo_path), media_type="image/png")
-        raise HTTPException(status_code=404)
-    
-    @app.get("/watchnexus-logo.svg")
-    async def logo_svg():
-        logo_path = frontend_dir / "watchnexus-logo.svg"
-        if logo_path.exists():
-            return FileResponse(str(logo_path), media_type="image/svg+xml")
-        raise HTTPException(status_code=404)
-    
-    @app.get("/asset-manifest.json")
-    async def asset_manifest():
-        manifest_path = frontend_dir / "asset-manifest.json"
-        if manifest_path.exists():
-            return FileResponse(str(manifest_path), media_type="application/json")
-        raise HTTPException(status_code=404)
-    
-    # Serve root path explicitly
-    @app.get("/")
-    async def serve_root():
-        index_path = frontend_dir / "index.html"
-        if index_path.exists():
-            return FileResponse(str(index_path), media_type="text/html")
-        raise HTTPException(status_code=404, detail="Frontend not found")
-    
-    # Catch-all route: serve index.html for SPA routing
-    # This must be LAST to not interfere with API routes
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # Don't serve index.html for API routes
-        if full_path.startswith("api/") or full_path.startswith("emby/") or full_path.startswith("ws/"):
-            raise HTTPException(status_code=404, detail="Not Found")
-        
-        # Serve index.html for all other routes (SPA client-side routing)
-        index_path = frontend_dir / "index.html"
-        if index_path.exists():
-            return FileResponse(str(index_path), media_type="text/html")
-        raise HTTPException(status_code=404, detail="Frontend not found")
-    
-    logger.info(f"Frontend static files enabled from: {frontend_dir}")
-else:
-    logger.warning("No frontend build directory found. Run 'yarn build' in frontend/ to enable static serving.")
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    """Clean shutdown of database and torrent engine."""
-    global db
-    # Shutdown torrent engine gracefully
+# --- WEATHER GADGET (Open-Meteo - No API Key Required) ---
+@api_router.get("/gadgets/weather")
+async def get_weather(lat: float = 40.7128, lon: float = -74.0060, user: dict = Depends(require_auth)):
+    """Get current weather and forecast using Open-Meteo (free, no API key)."""
     try:
-        shutdown_fondue_engine()
-    except Exception:
-        pass
-    # Close SQLite connection
-    if db:
-        await db.close()
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Current weather + 7-day forecast
+            url = "https://api.open-meteo.com/v1/forecast"
+            params = {
+                "latitude": lat,
+                "longitude": lon,
+                "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m",
+                "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum",
+                "timezone": "auto",
+                "forecast_days": 7
+            }
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            
+            # Weather code to description mapping
+            weather_codes = {
+                0: ("Clear sky", "sun"), 1: ("Mainly clear", "sun"), 2: ("Partly cloudy", "cloud-sun"),
+                3: ("Overcast", "cloud"), 45: ("Foggy", "cloud-fog"), 48: ("Depositing rime fog", "cloud-fog"),
+                51: ("Light drizzle", "cloud-drizzle"), 53: ("Moderate drizzle", "cloud-drizzle"), 55: ("Dense drizzle", "cloud-drizzle"),
+                61: ("Slight rain", "cloud-rain"), 63: ("Moderate rain", "cloud-rain"), 65: ("Heavy rain", "cloud-rain"),
+                71: ("Slight snow", "snowflake"), 73: ("Moderate snow", "snowflake"), 75: ("Heavy snow", "snowflake"),
+                80: ("Slight showers", "cloud-showers-heavy"), 81: ("Moderate showers", "cloud-showers-heavy"), 82: ("Violent showers", "cloud-showers-heavy"),
+                95: ("Thunderstorm", "bolt"), 96: ("Thunderstorm with hail", "bolt"), 99: ("Thunderstorm with heavy hail", "bolt"),
+            }
+            
+            current = data.get("current", {})
+            daily = data.get("daily", {})
+            code = current.get("weather_code", 0)
+            desc, icon = weather_codes.get(code, ("Unknown", "question"))
+            
+            forecast = []
+            for i in range(len(daily.get("time", []))):
+                day_code = daily["weather_code"][i] if daily.get("weather_code") else 0
+                day_desc, day_icon = weather_codes.get(day_code, ("Unknown", "question"))
+                forecast.append({
+                    "date": daily["time"][i],
+                    "temp_max": daily["temperature_2m_max"][i] if daily.get("temperature_2m_max") else None,
+                    "temp_min": daily["temperature_2m_min"][i] if daily.get("temperature_2m_min") else None,
+                    "description": day_desc,
+                    "icon": day_icon,
+                    "precipitation": daily["precipitation_sum"][i] if daily.get("precipitation_sum") else 0,
+                    "sunrise": daily["sunrise"][i] if daily.get("sunrise") else None,
+                    "sunset": daily["sunset"][i] if daily.get("sunset") else None,
+                })
+            
+            return {
+                "current": {
+                    "temperature": current.get("temperature_2m"),
+                    "feels_like": current.get("apparent_temperature"),
+                    "humidity": current.get("relative_humidity_2m"),
+                    "wind_speed": current.get("wind_speed_10m"),
+                    "wind_direction": current.get("wind_direction_10m"),
+                    "description": desc,
+                    "icon": icon,
+                    "code": code
+                },
+                "forecast": forecast,
+                "location": {"lat": lat, "lon": lon, "timezone": data.get("timezone")}
+            }
+    except Exception as e:
+        logger.error(f"Weather API error: {e}")
+        raise HTTPException(status_code=500, detail=f"Weather service unavailable: {str(e)}")
 
+@api_router.get("/gadgets/weather/location")
+async def search_weather_location(q: str, user: dict = Depends(require_auth)):
+    """Search for a location by name using Open-Meteo geocoding."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = "https://geocoding-api.open-meteo.com/v1/search"
+            resp = await client.get(url, params={"name": q, "count": 10, "language": "en", "format": "json"})
+            resp.raise_for_status()
+            data = resp.json()
+            results = []
+            for r in data.get("results", []):
+                results.append({
+                    "name": r.get("name"),
+                    "country": r.get("country"),
+                    "admin1": r.get("admin1"),  # State/Province
+                    "lat": r.get("latitude"),
+                    "lon": r.get("longitude"),
+                    "timezone": r.get("timezone")
+                })
+            return {"results": results}
+    except Exception as e:
+        logger.error(f"Geocoding error: {e}")
+        raise HTTPException(status_code=500, detail="Location search failed")
 
-# ==================== STANDALONE STARTUP ====================
-if __name__ == "__main__":
-    import uvicorn
-    import sys
-    
-    # Get port from environment or default to 8001
-    port = int(os.environ.get("PORT", 8001))
-    host = os.environ.get("HOST", "0.0.0.0")
-    
-    logger.info(f"Starting WatchNexus server on {host}:{port}")
-    
-    # Run uvicorn server
-    uvicorn.run(
-        "server:app",
-        host=host,
-        port=port,
-        reload=False,
-        log_level="info"
+@api_router.get("/gadgets/weather/settings")
+async def get_weather_settings(user: dict = Depends(require_auth)):
+    """Get user's saved weather location."""
+    row = await db.execute_fetchone(
+        "SELECT value FROM user_preferences WHERE user_id = ? AND key = ?",
+        (user["id"], "weather_location")
     )
+    if row:
+        return json.loads(row[0])
+    return {"lat": 40.7128, "lon": -74.0060, "name": "New York", "country": "United States"}
+
+@api_router.post("/gadgets/weather/settings")
+async def save_weather_settings(data: dict, user: dict = Depends(require_auth)):
+    """Save user's weather location preference."""
+    await db.execute(
+        """INSERT INTO user_preferences (id, user_id, key, value) VALUES (?, ?, ?, ?)
+           ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value""",
+        (str(uuid.uuid4()), user["id"], "weather_location", json.dumps(data))
+    )
+    return {"success": True}
+
+
+# --- PODCAST GADGET (RSS Feed Parser) ---
+import feedparser
+
+class PodcastSubscription(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    feed_url: str
+    title: str = ""
+    description: str = ""
+    image: Optional[str] = None
+    author: Optional[str] = None
+    last_updated: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    episode_count: int = 0
+
+class PodcastEpisode(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subscription_id: str
+    guid: str
+    title: str
+    description: str = ""
+    audio_url: str
+    duration: Optional[int] = None  # seconds
+ 
