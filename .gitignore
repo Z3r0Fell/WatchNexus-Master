@@ -253,3 +253,5 @@ separated/web/node_modules/electron/dist/electron
 # Environment files
 *.env
 *.env.*
+releases/zips/watchnexus-v2.6.0-linux.zip
+releases/zips/watchnexus-v2.6.0-windows.zip
