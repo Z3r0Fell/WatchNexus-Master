@@ -306,6 +306,48 @@ function AppRouter() {
         }
       />
 
+      {/* Gadget Pages */}
+      <Route
+        path="/weather"
+        element={
+          <ProtectedRoute>
+            <WeatherPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcasts"
+        element={
+          <ProtectedRoute>
+            <PodcastsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/radio"
+        element={
+          <ProtectedRoute>
+            <RadioPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/photos"
+        element={
+          <ProtectedRoute>
+            <PhotosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/webvideo"
+        element={
+          <ProtectedRoute>
+            <WebVideoPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
