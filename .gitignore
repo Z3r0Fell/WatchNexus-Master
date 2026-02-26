@@ -64,21 +64,11 @@ frontend/node_modules/electron/
 frontend/node_modules/.cache/default-development/2.pack
 frontend/node_modules/.cache/default-development/5.pack
 frontend/node_modules/electron/dist/electron
-dist/watchnexus-v2.0.1-linux.zip
-dist/watchnexus-v2.0.1-windows.zip
-releases/zips/watchnexus-v2.0.1-linux.zip
-releases/zips/watchnexus-v2.0.1-windows.zip
-releases/watchnexus-v2.0.1-linux.zip
-releases/watchnexus-v2.0.1-windows.zip
 -e 
 # Environment files
 *.env
 *.env.*
 frontend/node_modules/.cache/default-development/3.pack
-dist/watchnexus-v2.1.0-linux.zip
-dist/watchnexus-v2.1.0-windows.zip
-releases/zips/watchnexus-v2.1.0-linux.zip
-releases/zips/watchnexus-v2.1.0-windows.zip
 frontend/node_modules/.cache/default-development/6.pack
 -e 
 # Environment files
@@ -94,10 +84,6 @@ frontend/node_modules/.cache/default-development/6.pack
 *.env.*
 frontend/node_modules/.cache/default-development/0.pack
 frontend/node_modules/.cache/default-development/7.pack
-dist/watchnexus-v2.2.0-linux.zip
-dist/watchnexus-v2.2.0-windows.zip
-releases/zips/watchnexus-v2.2.0-linux.zip
-releases/zips/watchnexus-v2.2.0-windows.zip
 -e 
 # Environment files
 *.env
@@ -108,18 +94,10 @@ releases/zips/watchnexus-v2.2.0-windows.zip
 *.env.*
 frontend/node_modules/.cache/default-development/1.pack
 frontend/node_modules/.cache/default-development/4.pack
-dist/watchnexus-v2.3.0-windows.zip
-dist/watchnexus-v2.3.0-linux.zip
-releases/zips/watchnexus-v2.3.0-windows.zip
-releases/zips/watchnexus-v2.3.0-linux.zip
 -e 
 # Environment files
 *.env
 *.env.*
-dist/watchnexus-v2.4.0-windows.zip
-dist/watchnexus-v2.4.0-linux.zip
-releases/zips/watchnexus-v2.4.0-windows.zip
-releases/zips/watchnexus-v2.4.0-linux.zip
 -e 
 # Environment files
 *.env
@@ -253,8 +231,6 @@ separated/web/node_modules/electron/dist/electron
 # Environment files
 *.env
 *.env.*
-releases/zips/watchnexus-v2.6.0-linux.zip
-releases/zips/watchnexus-v2.6.0-windows.zip
 separated/web/node_modules/.cache/default-development/1.pack
 -e 
 # Environment files
@@ -270,3 +246,5 @@ src/web/node_modules/.cache/default-development/2.pack
 # Environment files
 *.env
 *.env.*
+releases/zips/watchnexus-v2.6.0-linux.zip
+releases/zips/watchnexus-v2.6.0-windows.zip
