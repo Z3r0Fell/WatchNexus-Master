@@ -32,6 +32,13 @@ import { WatchHistoryPage } from "./pages/WatchHistoryPage";
 import { WatchlistPage } from "./pages/WatchlistPage";
 import { DiscoverPage } from "./pages/DiscoverPage";
 
+// Gadget Pages
+import WeatherPage from "./pages/gadgets/WeatherPage";
+import PodcastsPage from "./pages/gadgets/PodcastsPage";
+import RadioPage from "./pages/gadgets/RadioPage";
+import PhotosPage from "./pages/gadgets/PhotosPage";
+import WebVideoPage from "./pages/gadgets/WebVideoPage";
+
 import "./App.css";
 
 // Gadget Pages - Currently none are functional
@@ -295,6 +302,48 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <DiscoverPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Gadget Pages */}
+      <Route
+        path="/weather"
+        element={
+          <ProtectedRoute>
+            <WeatherPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcasts"
+        element={
+          <ProtectedRoute>
+            <PodcastsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/radio"
+        element={
+          <ProtectedRoute>
+            <RadioPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/photos"
+        element={
+          <ProtectedRoute>
+            <PhotosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/webvideo"
+        element={
+          <ProtectedRoute>
+            <WebVideoPage />
           </ProtectedRoute>
         }
       />
