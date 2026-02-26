@@ -3,10 +3,94 @@
 ## Product Overview
 WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
-## Current Version: 2.5.13
-**Last Updated:** Feb 25, 2025
+## Current Version: 2.6.0
+**Last Updated:** Feb 26, 2025
 
-## Session Summary (Feb 25, 2025) - Code Audit COMPLETE
+## Session Summary (Feb 26, 2025) - Functional Gadgets COMPLETE
+
+### NEW: Five Functional Gadgets Implemented (v2.6.0)
+All five gadgets now have full backend + frontend functionality:
+
+| Gadget | Description | API | Status |
+|--------|-------------|-----|--------|
+| **Weather** | Current conditions + 7-day forecast | Open-Meteo (free, no key) | ✅ COMPLETE |
+| **Podcasts** | RSS subscriptions, episodes, queue, progress | feedparser | ✅ COMPLETE |
+| **Radio** | Internet radio with 50k+ stations | Radio Browser API (free) | ✅ COMPLETE |
+| **Photos** | Local photo library browser | File system | ✅ COMPLETE |
+| **Web Video** | YouTube/Vimeo/Twitter extraction | yt-dlp | ✅ COMPLETE |
+
+### New API Endpoints (v2.6.0)
+```
+# Weather
+GET  /api/gadgets/weather?lat=&lon=    - Get weather data
+GET  /api/gadgets/weather/search?q=    - Search locations
+GET  /api/gadgets/weather/settings     - Get saved location
+POST /api/gadgets/weather/settings     - Save location
+
+# Podcasts
+GET  /api/gadgets/podcasts             - List subscriptions
+POST /api/gadgets/podcasts             - Subscribe to RSS feed
+DELETE /api/gadgets/podcasts/{id}      - Unsubscribe
+GET  /api/gadgets/podcasts/{id}/episodes - Get episodes
+POST /api/gadgets/podcasts/{id}/refresh  - Refresh feed
+GET  /api/gadgets/podcasts/queue       - Get queue
+POST /api/gadgets/podcasts/queue       - Add to queue
+POST /api/gadgets/podcasts/progress    - Update playback progress
+
+# Radio
+GET  /api/gadgets/radio/stations       - Search stations (?q=, ?country=, ?tag=)
+GET  /api/gadgets/radio/countries      - Get country list
+GET  /api/gadgets/radio/tags           - Get genre tags
+GET  /api/gadgets/radio/favorites      - Get user favorites
+POST /api/gadgets/radio/favorites      - Add favorite
+DELETE /api/gadgets/radio/favorites/{id} - Remove favorite
+
+# Photos
+GET  /api/gadgets/photos/libraries     - List libraries
+POST /api/gadgets/photos/libraries     - Create library
+DELETE /api/gadgets/photos/libraries/{id} - Delete library
+POST /api/gadgets/photos/scan/{id}     - Scan library
+GET  /api/gadgets/photos/{id}          - List photos
+GET  /api/gadgets/photos/file/{id}     - Serve photo file
+
+# Web Video
+GET  /api/gadgets/webvideo/info?url=   - Extract video info
+GET  /api/gadgets/webvideo/stream?url= - Get stream URL
+GET  /api/gadgets/webvideo/history     - Watch history
+POST /api/gadgets/webvideo/history     - Add to history
+GET  /api/gadgets/webvideo/bookmarks   - Get bookmarks
+POST /api/gadgets/webvideo/bookmarks   - Add bookmark
+DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
+```
+
+### New Database Tables (v2.6.0)
+- `user_settings_kv` - Key-value storage for gadget settings
+- `podcast_subscriptions` - Podcast RSS subscriptions
+- `podcast_episodes` - Podcast episodes
+- `podcast_progress` - Playback progress per user
+- `podcast_queue` - User's podcast queue
+- `radio_favorites` - Saved radio stations
+- `photo_libraries` - Photo library paths
+- `photos` - Photo file metadata
+- `webvideo_history` - Watch history
+- `webvideo_bookmarks` - Saved videos
+
+### New Frontend Pages
+- `/app/frontend/src/pages/gadgets/WeatherPage.jsx`
+- `/app/frontend/src/pages/gadgets/PodcastsPage.jsx`
+- `/app/frontend/src/pages/gadgets/RadioPage.jsx`
+- `/app/frontend/src/pages/gadgets/PhotosPage.jsx`
+- `/app/frontend/src/pages/gadgets/WebVideoPage.jsx`
+
+### Updated Files
+- `Sidebar.js` - Added gadget nav items (Weather, Podcasts, Radio, Photos, Web Video)
+- `App.js` - Added routes for all 5 gadget pages
+- `server.py` - Added ~300 lines of gadget API endpoints
+- `database.py` - Added 10 new tables for gadget data
+
+---
+
+## Previous Session (Feb 25, 2025) - Code Audit COMPLETE
 
 ### Theme Mode Sync (v2.5.13)
 - ✅ **Theme Mode** - Dark/Light preference now syncs to backend across all devices
