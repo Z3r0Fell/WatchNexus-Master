@@ -208,11 +208,28 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
 - ✅ File Browser bug fix (critical blocker resolved)
 - ✅ Project restructure (`/app/src/` directory with symlinks)
 - ✅ `/app/builds/` directory structure created
+- ✅ **Code Audit (Feb 28, 2025):**
+  - Fixed duplicate IPTV endpoint (`add_iptv_source` → `add_relish_iptv_source`)
+  - Fixed lint issues (multiple statements on one line, ambiguous variable names)
+  - Backend lint: 100% clean
+  - Frontend lint: 100% clean
+- ✅ **Developer README (`/app/builds/README.md`):**
+  - Prerequisites for all platforms
+  - Platform-specific dependency installation (Linux, macOS, Windows)
+  - Backend/Frontend setup instructions
+  - Project structure documentation
+  - Troubleshooting guide
+- ✅ **Cross-Platform Installers Created:**
+  - `/app/builds/Linux/install.sh` - Debian/Ubuntu/Fedora/Arch auto-detect, systemd service, desktop entry
+  - `/app/builds/Windows/install.bat` - Python/Node check, venv setup, shortcuts
+  - `/app/builds/Mac/install.sh` - Homebrew integration, .app bundle, LaunchAgent
+  - `/app/builds/Docker/` - Dockerfile, docker-compose.yml, README
+  - `/app/builds/Unraid/` - Community Apps template XML, README
+  - `/app/builds/NAS/` - Synology, QNAP, TrueNAS, OpenMediaVault guides
 
-### Upcoming:
-- P0: Cross-platform installers (Mac, Windows, Linux, Docker, Unraid, NAS)
-- P1: Dependency README for local development setup
-- P1: Continue full code audit (line-by-line review)
+### Remaining:
+- P1: Test installers on actual target systems (user testing needed)
+- P2: Create release zip packages with installers bundled
 
 ## Backlog / Future Tasks
 - P1: Cloud Sync "Marshmallow" (plan in `/app/docs/Marshmallow-CloudSync-Plan.md`)
