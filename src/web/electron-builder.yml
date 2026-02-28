@@ -13,7 +13,7 @@ files:
   - package.json
 
 extraResources:
-  - from: ../backend/dist/
+  - from: ../server/dist/
     to: backend
     filter:
       - "**/*"
