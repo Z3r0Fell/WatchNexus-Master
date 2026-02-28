@@ -5677,7 +5677,8 @@ async def get_photo(photo_id: str, user: dict = Depends(require_auth)):
 @api_router.get("/gadgets/webvideo/info")
 async def webvideo_info(url: str, user: dict = Depends(require_auth)):
     result = subprocess.run([YT_DLP_PATH, "-j", "--no-playlist", url], capture_output=True, text=True, timeout=30)
-    if result.returncode != 0: raise HTTPException(status_code=400, detail="Could not extract video")
+    if result.returncode != 0:
+        raise HTTPException(status_code=400, detail="Could not extract video")
     info = json.loads(result.stdout)
     formats = [{"format_id": f.get("format_id"), "ext": f.get("ext"), "resolution": f.get("resolution") or f"{f.get('width', '?')}x{f.get('height', '?')}", "filesize": f.get("filesize")} for f in info.get("formats", []) if f.get("vcodec") != "none"]
     return {"id": info.get("id"), "title": info.get("title"), "description": info.get("description", "")[:500], "thumbnail": info.get("thumbnail"), "duration": info.get("duration"), "uploader": info.get("uploader"), "formats": formats[-10:]}
@@ -5685,7 +5686,8 @@ async def webvideo_info(url: str, user: dict = Depends(require_auth)):
 @api_router.get("/gadgets/webvideo/stream")
 async def webvideo_stream(url: str, format_id: str = "best", user: dict = Depends(require_auth)):
     result = subprocess.run([YT_DLP_PATH, "-g", "-f", format_id, "--no-playlist", url], capture_output=True, text=True, timeout=30)
-    if result.returncode != 0: raise HTTPException(status_code=400, detail="Could not get stream")
+    if result.returncode != 0:
+        raise HTTPException(status_code=400, detail="Could not get stream")
     return {"stream_url": result.stdout.strip().split("\n")[0]}
 
 @api_router.get("/gadgets/webvideo/history")
