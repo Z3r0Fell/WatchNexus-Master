@@ -5629,8 +5629,10 @@ async def photo_libraries(user: dict = Depends(require_auth)):
 @api_router.post("/gadgets/photos/libraries")
 async def add_photo_lib(data: dict, user: dict = Depends(require_auth)):
     name, path = data.get("name", "").strip(), data.get("path", "").strip()
-    if not name or not path: raise HTTPException(status_code=400, detail="Name and path required")
-    if not PathLib(path).exists(): raise HTTPException(status_code=400, detail="Path does not exist")
+    if not name or not path:
+        raise HTTPException(status_code=400, detail="Name and path required")
+    if not PathLib(path).exists():
+        raise HTTPException(status_code=400, detail="Path does not exist")
     lib_id = str(uuid.uuid4())
     await db.execute("INSERT INTO photo_libraries (id, user_id, name, path, photo_count, last_scanned) VALUES (?, ?, ?, ?, 0, NULL)", (lib_id, user["id"], name, path))
     return {"success": True, "library": {"id": lib_id, "name": name}}
