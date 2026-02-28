@@ -5550,11 +5550,12 @@ async def update_podcast_progress(data: dict, user: dict = Depends(require_auth)
 @api_router.post("/gadgets/podcasts/{sub_id}/refresh")
 async def refresh_podcast(sub_id: str, user: dict = Depends(require_auth)):
     sub = await db.execute_fetchone("SELECT * FROM podcast_subscriptions WHERE id = ? AND user_id = ?", (sub_id, user["id"]))
-    if not sub: raise HTTPException(status_code=404, detail="Not found")
+    if not sub:
+        raise HTTPException(status_code=404, detail="Not found")
     feed = feedparser.parse(sub["feed_url"])
     new_count = 0
     for entry in feed.entries[:50]:
-        audio_url = next((l.get("href") for l in entry.get("links", []) + entry.get("enclosures", []) if l.get("type", "").startswith("audio/")), None)
+        audio_url = next((link.get("href") for link in entry.get("links", []) + entry.get("enclosures", []) if link.get("type", "").startswith("audio/")), None)
         if audio_url:
             guid = entry.get("id", entry.get("link", ""))
             if not await db.execute_fetchone("SELECT id FROM podcast_episodes WHERE subscription_id = ? AND guid = ?", (sub_id, guid)):
