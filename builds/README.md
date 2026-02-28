@@ -1,345 +1,174 @@
-# WatchNexus - Developer Setup Guide
+# WatchNexus Build System
 
-A unified, self-hosted media pipeline for requesting, acquiring, organizing, and streaming media.
+This directory contains everything needed to build WatchNexus installers for all platforms.
 
 ## Quick Start
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd watchnexus
+# Build for your current platform
+./build.sh
 
-# Backend setup
-cd src/server
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or: venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-
-# Frontend setup
-cd ../web
-yarn install  # or npm install
-
-# Run the application
-# Terminal 1 - Backend
-cd src/server && uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-
-# Terminal 2 - Frontend
-cd src/web && yarn start
+# Or on Windows
+build.bat
 ```
 
----
+## Output Formats
+
+| Platform | Installer Types | Output Location |
+|----------|-----------------|-----------------|
+| **Windows** | `.exe` (NSIS), Portable `.exe` | `releases/installers/` |
+| **macOS** | `.dmg`, `.zip` | `releases/installers/` |
+| **Linux** | `.AppImage`, `.deb`, `.rpm` | `releases/installers/` |
 
 ## Prerequisites
 
 ### All Platforms
+- Python 3.10+
+- Node.js 18+
+- Yarn
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| Python | 3.10+ | Backend runtime |
-| Node.js | 18+ | Frontend runtime |
-| Yarn | 1.22+ | Package manager (recommended) |
-| Git | 2.0+ | Version control |
+### Platform-Specific
 
-### Optional Dependencies
+**Windows:**
+- Visual Studio Build Tools (for native modules)
+- Windows SDK
 
-| Dependency | Purpose | Installation |
-|------------|---------|--------------|
-| FFmpeg | Media transcoding, metadata extraction | See platform-specific instructions below |
-| yt-dlp | Web video extraction | `pip install yt-dlp` |
-| Chromaprint (fpcalc) | Audio fingerprinting for intro detection | See platform-specific instructions below |
+**macOS:**
+- Xcode Command Line Tools
+- For code signing: Apple Developer certificate
 
----
+**Linux:**
+- Build essentials: `sudo apt install build-essential`
+- For .rpm: `sudo apt install rpm`
 
-## Platform-Specific Setup
-
-### Linux (Ubuntu/Debian)
+## Build Commands
 
 ```bash
-# System dependencies
-sudo apt update
-sudo apt install -y python3 python3-pip python3-venv nodejs npm ffmpeg
+# Full build (backend + frontend + installer)
+./build.sh all
 
-# Install yarn globally
-sudo npm install -g yarn
+# Backend only (creates watchnexus-server executable)
+./build.sh backend
 
-# Optional: Chromaprint for audio fingerprinting
-sudo apt install -y libchromaprint-tools
+# Frontend only (creates React build)
+./build.sh frontend
+
+# Electron installer only (requires backend + frontend first)
+./build.sh electron          # Current platform
+./build.sh electron mac      # macOS .dmg
+./build.sh electron win      # Windows .exe
+./build.sh electron linux    # Linux .AppImage, .deb, .rpm
+
+# Install dependencies
+./build.sh deps
+
+# Clean all build artifacts
+./build.sh clean
 ```
 
-### Linux (Fedora/RHEL)
+## Build Process
 
+The build system works in three stages:
+
+### 1. Backend Build (PyInstaller)
+```
+src/server/ → PyInstaller → watchnexus-server(.exe)
+```
+
+Bundles the Python FastAPI server into a standalone executable using `watchnexus.spec`.
+
+### 2. Frontend Build (React)
+```
+src/web/src/ → yarn build → src/web/build/
+```
+
+Compiles the React frontend into static files.
+
+### 3. Electron Package
+```
+Electron + Backend + Frontend → .dmg / .exe / .AppImage
+```
+
+electron-builder packages everything into platform-native installers using `electron-builder.yml`.
+
+## Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `src/server/watchnexus.spec` | PyInstaller configuration |
+| `src/web/electron-builder.yml` | Electron-builder configuration |
+| `src/web/electron/main.js` | Electron main process |
+| `src/web/electron/preload.js` | Electron preload script |
+
+## Customization
+
+### Changing Version
+Update `version` in `src/web/package.json`
+
+### Icons
+Replace files in `src/web/assets/`:
+- `watchnexus.icns` - macOS icon (1024x1024)
+- `watchnexus.ico` - Windows icon
+- `icons/` - Linux icons (various sizes)
+
+### Code Signing
+
+**macOS:**
 ```bash
-# System dependencies
-sudo dnf install -y python3 python3-pip nodejs npm ffmpeg
-
-# Install yarn globally
-sudo npm install -g yarn
-
-# Optional: Chromaprint
-sudo dnf install -y chromaprint-tools
+export CSC_LINK=/path/to/cert.p12
+export CSC_KEY_PASSWORD=password
+./build.sh electron mac
 ```
 
-### Linux (Arch)
-
+**Windows:**
 ```bash
-# System dependencies
-sudo pacman -S python python-pip nodejs npm yarn ffmpeg
-
-# Optional: Chromaprint
-sudo pacman -S chromaprint
+export CSC_LINK=/path/to/cert.pfx
+export CSC_KEY_PASSWORD=password
+./build.sh electron win
 ```
-
-### macOS
-
-```bash
-# Using Homebrew
-brew install python node yarn ffmpeg
-
-# Optional: Chromaprint
-brew install chromaprint
-```
-
-### Windows
-
-1. **Python**: Download from [python.org](https://www.python.org/downloads/) (check "Add to PATH")
-2. **Node.js**: Download from [nodejs.org](https://nodejs.org/) (LTS version)
-3. **Yarn**: Run `npm install -g yarn` in Command Prompt/PowerShell
-4. **FFmpeg**: 
-   - Download from [ffmpeg.org/download.html](https://ffmpeg.org/download.html)
-   - Extract to `C:\ffmpeg`
-   - Add `C:\ffmpeg\bin` to system PATH
-5. **Chromaprint** (optional):
-   - Download from [acoustid.org/chromaprint](https://acoustid.org/chromaprint)
-   - Extract and add to PATH
-
----
-
-## Backend Setup
-
-### 1. Create Virtual Environment
-
-```bash
-cd src/server
-python3 -m venv venv
-
-# Activate:
-# Linux/Mac:
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Environment Configuration
-
-Create `.env` file in `src/server/`:
-
-```env
-# Required
-JWT_SECRET=your-secret-key-here-change-in-production
-
-# Optional - TMDB API for metadata (get free key at themoviedb.org)
-TMDB_API_KEY=your-tmdb-api-key
-
-# Optional - qBittorrent integration
-QBITTORRENT_HOST=localhost
-QBITTORRENT_PORT=8080
-QBITTORRENT_USERNAME=admin
-QBITTORRENT_PASSWORD=adminadmin
-```
-
-### 4. Run Backend
-
-```bash
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-```
-
-The API will be available at `http://localhost:8001/api/`
-
-### Backend Dependencies Explained
-
-| Package | Purpose |
-|---------|---------|
-| fastapi | Web framework |
-| uvicorn | ASGI server |
-| aiosqlite | Async SQLite database |
-| pydantic | Data validation |
-| bcrypt | Password hashing |
-| pyjwt | JWT authentication |
-| httpx | Async HTTP client |
-| feedparser | RSS/Podcast parsing |
-| yt-dlp | YouTube/web video extraction |
-| beautifulsoup4 | Web scraping |
-
----
-
-## Frontend Setup
-
-### 1. Install Dependencies
-
-```bash
-cd src/web
-yarn install
-```
-
-### 2. Environment Configuration
-
-Create `.env` file in `src/web/`:
-
-```env
-REACT_APP_BACKEND_URL=http://localhost:8001
-```
-
-### 3. Run Frontend
-
-```bash
-yarn start
-```
-
-The UI will be available at `http://localhost:3000`
-
-### Frontend Stack
-
-| Technology | Purpose |
-|------------|---------|
-| React 19 | UI framework |
-| Tailwind CSS | Styling |
-| Radix UI | Accessible components |
-| Framer Motion | Animations |
-| React Router | Navigation |
-| Axios | API client |
-
----
-
-## Project Structure
-
-```
-watchnexus/
-├── src/
-│   ├── server/              # Python backend
-│   │   ├── server.py        # Main FastAPI application
-│   │   ├── database.py      # SQLite database layer
-│   │   ├── marmalade_server.py  # Media library management
-│   │   ├── filesystem_browser.py  # OS-aware file browser
-│   │   ├── compote.py       # Indexer integration
-│   │   ├── fondue.py        # Download client
-│   │   ├── relish.py        # IPTV handling
-│   │   ├── garnish.py       # Subtitle management
-│   │   └── requirements.txt
-│   │
-│   └── web/                 # React frontend
-│       ├── src/
-│       │   ├── components/  # UI components
-│       │   ├── pages/       # Page components
-│       │   ├── context/     # React context providers
-│       │   └── services/    # API services
-│       └── package.json
-│
-├── separated/               # Release source (synced copy)
-│   ├── server/
-│   └── web/
-│
-├── builds/                  # Platform-specific builds
-│   ├── Linux/
-│   ├── Windows/
-│   ├── Mac/
-│   ├── Docker/
-│   └── README.md           # This file
-│
-└── releases/
-    └── zips/               # Release packages
-```
-
----
-
-## Database
-
-WatchNexus uses **SQLite** for zero-configuration, portable storage:
-
-- Database file: `src/server/watchnexus.db`
-- Automatic backups: `src/server/backups/`
-- WAL mode enabled for concurrent access
-
-No external database setup required!
-
----
-
-## Development Tips
-
-### Hot Reload
-
-Both backend and frontend support hot reload:
-- Backend: `--reload` flag with uvicorn
-- Frontend: Built-in with React Scripts
-
-### Running Tests
-
-```bash
-# Backend tests
-cd src/server
-pytest tests/
-
-# Frontend tests
-cd src/web
-yarn test
-```
-
-### Code Linting
-
-```bash
-# Backend (Python)
-ruff check src/server/
-
-# Frontend (JavaScript/React)
-cd src/web && yarn lint
-```
-
----
 
 ## Troubleshooting
 
-### Backend won't start
+### PyInstaller fails
+- Ensure all Python dependencies are installed
+- Check for missing hidden imports in `watchnexus.spec`
 
-1. Check Python version: `python3 --version` (need 3.10+)
-2. Ensure virtual environment is activated
-3. Reinstall dependencies: `pip install -r requirements.txt --force-reinstall`
+### Electron build fails
+- Run `yarn install` in `src/web/`
+- Check that backend executable exists in `src/backend/dist/`
 
-### Frontend build fails
+### Large installer size
+- The backend executable includes Python runtime (~50MB)
+- Use UPX compression (enabled by default)
 
-1. Delete `node_modules` and `yarn.lock`
-2. Run `yarn install` again
-3. Clear cache: `yarn cache clean`
+## Directory Structure
 
-### Database errors
+```
+builds/
+├── build.sh           # Main build script (Linux/macOS)
+├── build.bat          # Windows build script
+├── README.md          # This file
+├── Docker/            # Docker configuration
+├── Linux/             # Additional Linux configs
+├── Mac/               # Additional macOS configs
+├── Windows/           # Additional Windows configs
+├── NAS/               # NAS deployment guides
+└── Unraid/            # Unraid templates
 
-1. Delete `watchnexus.db` to reset (data will be lost)
-2. Or restore from `backups/` folder
+src/
+├── server/
+│   ├── watchnexus.spec    # PyInstaller spec
+│   ├── server.py          # Main backend
+│   └── requirements.txt
+└── web/
+    ├── electron/          # Electron files
+    │   ├── main.js
+    │   └── preload.js
+    ├── electron-builder.yml
+    ├── assets/            # Icons and images
+    └── package.json
 
-### FFmpeg not found
-
-Ensure FFmpeg is in your system PATH:
-```bash
-ffmpeg -version  # Should show version info
+releases/
+└── installers/        # Built installers output
 ```
 
----
-
-## Building for Production
-
-See platform-specific build guides in:
-- `/builds/Linux/`
-- `/builds/Windows/`
-- `/builds/Mac/`
-- `/builds/Docker/`
-
----
-
-## License
-
-MIT License - See LICENSE file for details.
