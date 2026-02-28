@@ -2,7 +2,7 @@
   WatchNexus Walkthrough Capture
 ============================================================
 
-  Target URL: https://nexus-media-hub.preview.emergentagent.com
+  Target URL: https://nexus-fortress-audit.preview.emergentagent.com
   Output: /app/walkthrough_frames
 
 🔐 Section 1: Login
