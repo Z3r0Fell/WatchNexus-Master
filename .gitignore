@@ -262,3 +262,4 @@ src/web/node_modules/.cache/default-development/2.pack
 # Environment files
 *.env
 *.env.*
+src/web/node_modules/.cache/default-development/0.pack
