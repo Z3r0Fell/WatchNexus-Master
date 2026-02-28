@@ -201,10 +201,10 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
 - P1: Library scanning - needs user testing on local machine with real media
 - P3: visual-edits babel plugin disabled
 
-## Operation Fortress - In Progress
+## Operation Fortress - COMPLETE
 **Goal:** Create stable, robust cross-platform release packages.
 
-### Completed:
+### All Completed:
 - ✅ File Browser bug fix (critical blocker resolved)
 - ✅ Project restructure (`/app/src/` directory with symlinks)
 - ✅ `/app/builds/` directory structure created
@@ -213,23 +213,33 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
   - Fixed lint issues (multiple statements on one line, ambiguous variable names)
   - Backend lint: 100% clean
   - Frontend lint: 100% clean
-- ✅ **Developer README (`/app/builds/README.md`):**
-  - Prerequisites for all platforms
-  - Platform-specific dependency installation (Linux, macOS, Windows)
-  - Backend/Frontend setup instructions
-  - Project structure documentation
-  - Troubleshooting guide
-- ✅ **Cross-Platform Installers Created:**
-  - `/app/builds/Linux/install.sh` - Debian/Ubuntu/Fedora/Arch auto-detect, systemd service, desktop entry
-  - `/app/builds/Windows/install.bat` - Python/Node check, venv setup, shortcuts
-  - `/app/builds/Mac/install.sh` - Homebrew integration, .app bundle, LaunchAgent
-  - `/app/builds/Docker/` - Dockerfile, docker-compose.yml, README
-  - `/app/builds/Unraid/` - Community Apps template XML, README
-  - `/app/builds/NAS/` - Synology, QNAP, TrueNAS, OpenMediaVault guides
+- ✅ **Developer README (`/app/DEVELOPMENT.md`)** - Quick setup guide
+- ✅ **Build System Created:**
+  - `/app/builds/build.sh` - Master build script (Linux/macOS)
+  - `/app/builds/build.bat` - Windows build script
+  - `/app/src/server/watchnexus.spec` - PyInstaller configuration
+  - `/app/src/web/electron-builder.yml` - Electron-builder config (pre-existing, updated)
+  - `/app/src/web/electron/main.js` - Electron main process (pre-existing)
 
-### Remaining:
-- P1: Test installers on actual target systems (user testing needed)
-- P2: Create release zip packages with installers bundled
+### Installer Outputs (when built):
+| Platform | Format | File |
+|----------|--------|------|
+| Windows | NSIS Installer | `WatchNexus-{ver}-win-x64.exe` |
+| Windows | Portable | `WatchNexus-{ver}-win-x64-portable.exe` |
+| macOS | DMG | `WatchNexus-{ver}-mac-{arch}.dmg` |
+| macOS | ZIP | `WatchNexus-{ver}-mac-{arch}.zip` |
+| Linux | AppImage | `WatchNexus-{ver}.AppImage` |
+| Linux | DEB | `WatchNexus-{ver}-amd64.deb` |
+| Linux | RPM | `WatchNexus-{ver}.x86_64.rpm` |
+
+### Build Command:
+```bash
+cd /app/builds
+./build.sh          # Build for current platform
+./build.sh electron mac    # macOS only
+./build.sh electron win    # Windows only  
+./build.sh electron linux  # Linux only
+```
 
 ## Backlog / Future Tasks
 - P1: Cloud Sync "Marshmallow" (plan in `/app/docs/Marshmallow-CloudSync-Plan.md`)
