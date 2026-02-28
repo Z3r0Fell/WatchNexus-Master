@@ -3,10 +3,42 @@
 ## Product Overview
 WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
-## Current Version: 2.6.0
-**Last Updated:** Feb 26, 2025
+## Current Version: 2.6.1
+**Last Updated:** Feb 28, 2025
 
-## Session Summary (Feb 26, 2025) - Functional Gadgets COMPLETE
+---
+
+## Session Summary (Feb 28, 2025) - Operation Fortress: File Browser Fix COMPLETE
+
+### Critical Bug Fix: File Browser in Settings (P0)
+**Root Cause Identified & Fixed:** The file browser in Settings > Media Libraries was broken because `SettingsPage.js` had its own **duplicate inline file browser implementation** instead of using the centralized `FolderBrowser.jsx` component.
+
+**Fix Applied:**
+- Removed inline file browser modal code from `SettingsPage.js` (lines 404-477)
+- Imported and integrated the centralized `FolderBrowser.jsx` component
+- Added proper state management for `selectedBrowserPath` and `initialBrowserPath`
+- Implemented `handleBrowserPathSelect()` and `confirmFolderSelection()` handlers
+
+**Files Modified:**
+- `/app/src/web/src/pages/SettingsPage.js` - Refactored to use FolderBrowser component
+- Synced to `/app/separated/web/src/pages/SettingsPage.js`
+
+**Testing Verified (100% Pass Rate):**
+| Feature | Status |
+|---------|--------|
+| Modal opens on browse button click | ✅ PASS |
+| Current path displays correctly | ✅ PASS |
+| Directory listing shows folders with item counts | ✅ PASS |
+| Single-click folder navigation | ✅ PASS |
+| Go Up button to parent directory | ✅ PASS |
+| Quick access buttons (Root, Home, Media, etc.) | ✅ PASS |
+| Select This Folder confirms selection | ✅ PASS |
+| Path populates in library input field | ✅ PASS |
+| Cancel closes modal without selection | ✅ PASS |
+
+---
+
+## Previous Session Summary (Feb 26, 2025) - Functional Gadgets COMPLETE
 
 ### NEW: Five Functional Gadgets Implemented (v2.6.0)
 All five gadgets now have full backend + frontend functionality:
