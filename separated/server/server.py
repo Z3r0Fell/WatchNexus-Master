@@ -5203,14 +5203,14 @@ async def list_iptv_sources(user: dict = Depends(require_auth)):
     relish = get_relish()
     return relish.list_sources()
 
-@api_router.post("/iptv/sources")
-async def add_iptv_source(
+@api_router.post("/iptv/relish/sources")
+async def add_relish_iptv_source(
     name: str,
     url: str,
     epg_url: str = "",
     user: dict = Depends(require_auth)
 ):
-    """Add a new IPTV source (M3U playlist)."""
+    """Add a new IPTV source to Relish (M3U playlist) - for local playback."""
     relish = get_relish()
     source = await relish.add_source(name, url, epg_url)
     return source.to_dict()
@@ -5509,18 +5509,20 @@ async def list_podcasts(user: dict = Depends(require_auth)):
 @api_router.post("/gadgets/podcasts")
 async def subscribe_podcast(data: dict, user: dict = Depends(require_auth)):
     feed_url = data.get("feed_url", "").strip()
-    if not feed_url: raise HTTPException(status_code=400, detail="Feed URL required")
+    if not feed_url:
+        raise HTTPException(status_code=400, detail="Feed URL required")
     if await db.execute_fetchone("SELECT id FROM podcast_subscriptions WHERE user_id = ? AND feed_url = ?", (user["id"], feed_url)):
         raise HTTPException(status_code=400, detail="Already subscribed")
     feed = feedparser.parse(feed_url)
-    if feed.bozo and not feed.entries: raise HTTPException(status_code=400, detail="Invalid RSS feed")
+    if feed.bozo and not feed.entries:
+        raise HTTPException(status_code=400, detail="Invalid RSS feed")
     title = feed.feed.get("title", "Unknown")
     image = feed.feed.get("image", {}).get("href") or feed.feed.get("itunes_image", {}).get("href")
     sub_id = str(uuid.uuid4())
     await db.execute("INSERT INTO podcast_subscriptions (id, user_id, feed_url, title, description, image, author, episode_count, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (sub_id, user["id"], feed_url, title, feed.feed.get("description", "")[:500], image, feed.feed.get("author"), len(feed.entries), datetime.now(timezone.utc).isoformat()))
     for entry in feed.entries[:50]:
-        audio_url = next((l.get("href") for l in entry.get("links", []) + entry.get("enclosures", []) if l.get("type", "").startswith("audio/")), None)
+        audio_url = next((link.get("href") for link in entry.get("links", []) + entry.get("enclosures", []) if link.get("type", "").startswith("audio/")), None)
         if audio_url:
             dur = entry.get("itunes_duration", "0")
             duration = sum(int(p) * (60 ** i) for i, p in enumerate(reversed(str(dur).split(":")))) if ":" in str(dur) else (int(dur) if str(dur).isdigit() else None)
@@ -5548,11 +5550,12 @@ async def update_podcast_progress(data: dict, user: dict = Depends(require_auth)
 @api_router.post("/gadgets/podcasts/{sub_id}/refresh")
 async def refresh_podcast(sub_id: str, user: dict = Depends(require_auth)):
     sub = await db.execute_fetchone("SELECT * FROM podcast_subscriptions WHERE id = ? AND user_id = ?", (sub_id, user["id"]))
-    if not sub: raise HTTPException(status_code=404, detail="Not found")
+    if not sub:
+        raise HTTPException(status_code=404, detail="Not found")
     feed = feedparser.parse(sub["feed_url"])
     new_count = 0
     for entry in feed.entries[:50]:
-        audio_url = next((l.get("href") for l in entry.get("links", []) + entry.get("enclosures", []) if l.get("type", "").startswith("audio/")), None)
+        audio_url = next((link.get("href") for link in entry.get("links", []) + entry.get("enclosures", []) if link.get("type", "").startswith("audio/")), None)
         if audio_url:
             guid = entry.get("id", entry.get("link", ""))
             if not await db.execute_fetchone("SELECT id FROM podcast_episodes WHERE subscription_id = ? AND guid = ?", (sub_id, guid)):
@@ -5626,8 +5629,10 @@ async def photo_libraries(user: dict = Depends(require_auth)):
 @api_router.post("/gadgets/photos/libraries")
 async def add_photo_lib(data: dict, user: dict = Depends(require_auth)):
     name, path = data.get("name", "").strip(), data.get("path", "").strip()
-    if not name or not path: raise HTTPException(status_code=400, detail="Name and path required")
-    if not PathLib(path).exists(): raise HTTPException(status_code=400, detail="Path does not exist")
+    if not name or not path:
+        raise HTTPException(status_code=400, detail="Name and path required")
+    if not PathLib(path).exists():
+        raise HTTPException(status_code=400, detail="Path does not exist")
     lib_id = str(uuid.uuid4())
     await db.execute("INSERT INTO photo_libraries (id, user_id, name, path, photo_count, last_scanned) VALUES (?, ?, ?, ?, 0, NULL)", (lib_id, user["id"], name, path))
     return {"success": True, "library": {"id": lib_id, "name": name}}
@@ -5641,7 +5646,8 @@ async def delete_photo_lib(lib_id: str, user: dict = Depends(require_auth)):
 @api_router.post("/gadgets/photos/scan/{lib_id}")
 async def scan_photos(lib_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_auth)):
     lib = await db.execute_fetchone("SELECT * FROM photo_libraries WHERE id = ? AND user_id = ?", (lib_id, user["id"]))
-    if not lib: raise HTTPException(status_code=404, detail="Not found")
+    if not lib:
+        raise HTTPException(status_code=404, detail="Not found")
     async def do_scan():
         count = 0
         for f in PathLib(lib["path"]).rglob("*"):
@@ -5662,7 +5668,8 @@ async def list_photos(lib_id: str, limit: int = 100, offset: int = 0, user: dict
 @api_router.get("/gadgets/photos/file/{photo_id}")
 async def get_photo(photo_id: str, user: dict = Depends(require_auth)):
     photo = await db.execute_fetchone("SELECT * FROM photos WHERE id = ?", (photo_id,))
-    if not photo or not PathLib(photo["file_path"]).exists(): raise HTTPException(status_code=404, detail="Not found")
+    if not photo or not PathLib(photo["file_path"]).exists():
+        raise HTTPException(status_code=404, detail="Not found")
     mime, _ = mimetypes.guess_type(photo["file_path"])
     return FileResponse(photo["file_path"], media_type=mime or "image/jpeg")
 
@@ -5670,7 +5677,8 @@ async def get_photo(photo_id: str, user: dict = Depends(require_auth)):
 @api_router.get("/gadgets/webvideo/info")
 async def webvideo_info(url: str, user: dict = Depends(require_auth)):
     result = subprocess.run([YT_DLP_PATH, "-j", "--no-playlist", url], capture_output=True, text=True, timeout=30)
-    if result.returncode != 0: raise HTTPException(status_code=400, detail="Could not extract video")
+    if result.returncode != 0:
+        raise HTTPException(status_code=400, detail="Could not extract video")
     info = json.loads(result.stdout)
     formats = [{"format_id": f.get("format_id"), "ext": f.get("ext"), "resolution": f.get("resolution") or f"{f.get('width', '?')}x{f.get('height', '?')}", "filesize": f.get("filesize")} for f in info.get("formats", []) if f.get("vcodec") != "none"]
     return {"id": info.get("id"), "title": info.get("title"), "description": info.get("description", "")[:500], "thumbnail": info.get("thumbnail"), "duration": info.get("duration"), "uploader": info.get("uploader"), "formats": formats[-10:]}
@@ -5678,7 +5686,8 @@ async def webvideo_info(url: str, user: dict = Depends(require_auth)):
 @api_router.get("/gadgets/webvideo/stream")
 async def webvideo_stream(url: str, format_id: str = "best", user: dict = Depends(require_auth)):
     result = subprocess.run([YT_DLP_PATH, "-g", "-f", format_id, "--no-playlist", url], capture_output=True, text=True, timeout=30)
-    if result.returncode != 0: raise HTTPException(status_code=400, detail="Could not get stream")
+    if result.returncode != 0:
+        raise HTTPException(status_code=400, detail="Could not get stream")
     return {"stream_url": result.stdout.strip().split("\n")[0]}
 
 @api_router.get("/gadgets/webvideo/history")
