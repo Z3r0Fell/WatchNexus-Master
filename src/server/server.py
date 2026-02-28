@@ -5509,18 +5509,20 @@ async def list_podcasts(user: dict = Depends(require_auth)):
 @api_router.post("/gadgets/podcasts")
 async def subscribe_podcast(data: dict, user: dict = Depends(require_auth)):
     feed_url = data.get("feed_url", "").strip()
-    if not feed_url: raise HTTPException(status_code=400, detail="Feed URL required")
+    if not feed_url:
+        raise HTTPException(status_code=400, detail="Feed URL required")
     if await db.execute_fetchone("SELECT id FROM podcast_subscriptions WHERE user_id = ? AND feed_url = ?", (user["id"], feed_url)):
         raise HTTPException(status_code=400, detail="Already subscribed")
     feed = feedparser.parse(feed_url)
-    if feed.bozo and not feed.entries: raise HTTPException(status_code=400, detail="Invalid RSS feed")
+    if feed.bozo and not feed.entries:
+        raise HTTPException(status_code=400, detail="Invalid RSS feed")
     title = feed.feed.get("title", "Unknown")
     image = feed.feed.get("image", {}).get("href") or feed.feed.get("itunes_image", {}).get("href")
     sub_id = str(uuid.uuid4())
     await db.execute("INSERT INTO podcast_subscriptions (id, user_id, feed_url, title, description, image, author, episode_count, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (sub_id, user["id"], feed_url, title, feed.feed.get("description", "")[:500], image, feed.feed.get("author"), len(feed.entries), datetime.now(timezone.utc).isoformat()))
     for entry in feed.entries[:50]:
-        audio_url = next((l.get("href") for l in entry.get("links", []) + entry.get("enclosures", []) if l.get("type", "").startswith("audio/")), None)
+        audio_url = next((link.get("href") for link in entry.get("links", []) + entry.get("enclosures", []) if link.get("type", "").startswith("audio/")), None)
         if audio_url:
             dur = entry.get("itunes_duration", "0")
             duration = sum(int(p) * (60 ** i) for i, p in enumerate(reversed(str(dur).split(":")))) if ":" in str(dur) else (int(dur) if str(dur).isdigit() else None)
