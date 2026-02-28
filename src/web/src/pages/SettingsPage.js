@@ -388,7 +388,7 @@ export const SettingsPage = () => {
         </main>
       </div>
 
-      {/* File Browser Modal */}
+      {/* File Browser Modal - Using centralized FolderBrowser component */}
       <AnimatePresence>
         {showFileBrowser && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -397,62 +397,36 @@ export const SettingsPage = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="bg-surface border border-white/10 rounded-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}>
-              <div className="p-4 border-b border-white/10">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <FolderSearch className="w-5 h-5 text-violet-400" /> Browse for Folder
-                  </h2>
-                  <Button variant="ghost" size="sm" onClick={() => setShowFileBrowser(false)} className="hover:bg-white/10">
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-400">Current:</span>
-                  <code className="flex-1 bg-black/30 px-3 py-1.5 rounded-lg text-violet-400 truncate">{browserPath}</code>
-                </div>
-                <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-                  <span className="text-xs text-gray-500 shrink-0">Quick access:</span>
-                  {browserDrives.map((drive) => (
-                    <button key={drive.path} onClick={() => browsePath(drive.path)}
-                      className={`px-3 py-1 text-xs rounded-full border transition-colors shrink-0 ${browserPath === drive.path ? 'bg-violet-600 border-violet-500 text-white' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                      {drive.name}
-                    </button>
-                  ))}
-                </div>
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <FolderSearch className="w-5 h-5 text-violet-400" /> Browse for Folder
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowFileBrowser(false)} className="hover:bg-white/10">
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
-                {browserLoading ? (
-                  <div className="flex items-center justify-center py-12"><RefreshCw className="w-6 h-6 animate-spin text-violet-400" /></div>
-                ) : browserItems.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400"><FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>This folder is empty</p></div>
-                ) : (
-                  <div className="space-y-1">
-                    {browserItems.filter(item => item.type === 'directory').map((item) => (
-                      <button key={item.path} onClick={() => browsePath(item.path)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${item.is_parent ? 'bg-white/5 hover:bg-white/10' : 'hover:bg-violet-500/10'}`}>
-                        {item.is_parent ? <ChevronRight className="w-5 h-5 text-gray-400 rotate-180" /> : <Folder className="w-5 h-5 text-violet-400" />}
-                        <span className="flex-1 truncate">{item.is_parent ? 'Go up' : item.name}</span>
-                        {!item.is_parent && (
-                          <span className="text-xs text-gray-500">
-                            {item.permission_denied ? <Lock className="w-4 h-4 text-red-400" /> : `${item.item_count || 0} items`}
-                          </span>
-                        )}
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <FolderBrowser
+                  onSelect={handleBrowserPathSelect}
+                  initialPath={initialBrowserPath}
+                  selectedPath={selectedBrowserPath}
+                />
               </div>
               <div className="p-4 border-t border-white/10 bg-black/20">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-400">
-                    {browserMediaCount > 0 && (
-                      <span className="flex items-center gap-2"><Film className="w-4 h-4 text-green-400" />{browserMediaCount} media files in this folder</span>
+                    {selectedBrowserPath && (
+                      <span className="text-violet-400 font-mono">{selectedBrowserPath}</span>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setShowFileBrowser(false)} className="border-white/20">Cancel</Button>
-                    <Button onClick={selectFolderFromBrowser} className="bg-violet-600 hover:bg-violet-700">
+                    <Button 
+                      onClick={confirmFolderSelection} 
+                      className="bg-violet-600 hover:bg-violet-700"
+                      disabled={!selectedBrowserPath}
+                      data-testid="confirm-folder-selection-btn"
+                    >
                       <Check className="w-4 h-4 mr-2" /> Select This Folder
                     </Button>
                   </div>
