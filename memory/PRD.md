@@ -232,8 +232,8 @@ The application runs from the platform-managed directories:
 **Note:** The supervisor config is READ-ONLY and managed by the Emergent platform. All development happens in `/app/backend` and `/app/frontend`, and is synced to `/app/separated/` for release builds.
 
 ### Key Files Modified
-- `/app/backend/server.py` - OS detection in filesystem/browse endpoint
-- `/app/frontend/src/components/FolderBrowser.jsx` - OS-aware path display
-- `/app/frontend/src/components/settings/StreamingSettings.jsx` - Dropdown fix
-- `/app/frontend/src/components/settings/MediaHealthSettings.jsx` - Browse buttons
-- `/app/frontend/src/components/settings/IndexerSettings.jsx` - Preset auto-add
+- `/app/src/web/src/pages/SettingsPage.js` - **Refactored to use FolderBrowser component (Feb 28, 2025)**
+- `/app/src/web/src/components/FolderBrowser.jsx` - OS-aware path display
+- `/app/src/server/filesystem_browser.py` - OS-aware filesystem browsing module
+- `/app/src/server/server.py` - OS detection in filesystem/browse endpoint
+- `/app/separated/` - Synced with `/app/src/` for release packaging
