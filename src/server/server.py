@@ -5646,7 +5646,8 @@ async def delete_photo_lib(lib_id: str, user: dict = Depends(require_auth)):
 @api_router.post("/gadgets/photos/scan/{lib_id}")
 async def scan_photos(lib_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_auth)):
     lib = await db.execute_fetchone("SELECT * FROM photo_libraries WHERE id = ? AND user_id = ?", (lib_id, user["id"]))
-    if not lib: raise HTTPException(status_code=404, detail="Not found")
+    if not lib:
+        raise HTTPException(status_code=404, detail="Not found")
     async def do_scan():
         count = 0
         for f in PathLib(lib["path"]).rglob("*"):
