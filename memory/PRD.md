@@ -197,8 +197,22 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
 - Better error handling with user-friendly messages
 
 ## Pending Issues
-- P0: Library scanning - needs user testing on local machine with real media
+- P0: ~~File Browser broken in Settings~~ **FIXED in v2.6.1**
+- P1: Library scanning - needs user testing on local machine with real media
 - P3: visual-edits babel plugin disabled
+
+## Operation Fortress - In Progress
+**Goal:** Create stable, robust cross-platform release packages.
+
+### Completed:
+- ✅ File Browser bug fix (critical blocker resolved)
+- ✅ Project restructure (`/app/src/` directory with symlinks)
+- ✅ `/app/builds/` directory structure created
+
+### Upcoming:
+- P0: Cross-platform installers (Mac, Windows, Linux, Docker, Unraid, NAS)
+- P1: Dependency README for local development setup
+- P1: Continue full code audit (line-by-line review)
 
 ## Backlog / Future Tasks
 - P1: Cloud Sync "Marshmallow" (plan in `/app/docs/Marshmallow-CloudSync-Plan.md`)
