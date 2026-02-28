@@ -5668,7 +5668,8 @@ async def list_photos(lib_id: str, limit: int = 100, offset: int = 0, user: dict
 @api_router.get("/gadgets/photos/file/{photo_id}")
 async def get_photo(photo_id: str, user: dict = Depends(require_auth)):
     photo = await db.execute_fetchone("SELECT * FROM photos WHERE id = ?", (photo_id,))
-    if not photo or not PathLib(photo["file_path"]).exists(): raise HTTPException(status_code=404, detail="Not found")
+    if not photo or not PathLib(photo["file_path"]).exists():
+        raise HTTPException(status_code=404, detail="Not found")
     mime, _ = mimetypes.guess_type(photo["file_path"])
     return FileResponse(photo["file_path"], media_type=mime or "image/jpeg")
 
