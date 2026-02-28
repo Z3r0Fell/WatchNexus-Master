@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Folder, Check, X, RefreshCw, FolderOpen, FolderSearch, ChevronRight, Lock, Film } from 'lucide-react';
-import { Input } from '../components/ui/input';
+import { Settings, Check, X, FolderSearch } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
   GeneralSettings, UsersSettings, LibrarySettings,
@@ -13,6 +12,7 @@ import {
 } from '../components/settings';
 import { ZestSettings } from '../components/settings/ZestSettings';
 import { Layout } from '../components/layout/Layout';
+import FolderBrowser from '../components/FolderBrowser';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { settingsApi } from '../services/api';
