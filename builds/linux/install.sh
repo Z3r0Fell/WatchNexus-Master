@@ -1,268 +1,305 @@
 #!/bin/bash
-# WatchNexus Linux Installer
-# Installs all dependencies and sets up the application
+#
+# WatchNexus Installer for Linux
+# Downloads and installs all dependencies automatically
+#
 
 set -e
 
-echo "=========================================="
-echo "  WatchNexus Linux Installer"
-echo "=========================================="
-echo ""
+VERSION="2.6.1"
+INSTALL_DIR="$HOME/.local/share/watchnexus"
+BIN_DIR="$HOME/.local/bin"
+DATA_DIR="$HOME/.watchnexus"
+DOWNLOAD_URL="https://github.com/watchnexus/watchnexus/releases/download/v${VERSION}"
 
-# Detect Linux distribution
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() { echo -e "${BLUE}[*]${NC} $1"; }
+success() { echo -e "${GREEN}[✓]${NC} $1"; }
+warn() { echo -e "${YELLOW}[!]${NC} $1"; }
+error() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
+
+# Detect distro
 detect_distro() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         DISTRO=$ID
-        DISTRO_VERSION=$VERSION_ID
-    elif [ -f /etc/debian_version ]; then
-        DISTRO="debian"
-    elif [ -f /etc/redhat-release ]; then
-        DISTRO="rhel"
+    elif command -v lsb_release &>/dev/null; then
+        DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
     else
         DISTRO="unknown"
     fi
-    echo "Detected distribution: $DISTRO"
 }
 
-# Install system dependencies based on distro
-install_system_deps() {
-    echo ""
-    echo "Installing system dependencies..."
+# Install Python 3.10+ if needed
+install_python() {
+    if command -v python3 &>/dev/null; then
+        PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+        PY_MAJOR=$(echo $PY_VER | cut -d. -f1)
+        PY_MINOR=$(echo $PY_VER | cut -d. -f2)
+        if [ "$PY_MAJOR" -ge 3 ] && [ "$PY_MINOR" -ge 10 ]; then
+            success "Python $PY_VER already installed"
+            return 0
+        fi
+    fi
     
+    log "Installing Python 3.11..."
     case $DISTRO in
         ubuntu|debian|linuxmint|pop)
-            sudo apt update
-            sudo apt install -y python3 python3-pip python3-venv nodejs npm ffmpeg curl
+            sudo apt-get update -qq
+            sudo apt-get install -y python3.11 python3.11-venv python3-pip
             ;;
         fedora)
-            sudo dnf install -y python3 python3-pip nodejs npm ffmpeg curl
+            sudo dnf install -y python3.11
             ;;
-        centos|rhel|rocky|almalinux)
-            sudo dnf install -y python3 python3-pip nodejs npm curl
-            # FFmpeg requires RPM Fusion
-            sudo dnf install -y epel-release
-            sudo dnf install -y ffmpeg --enablerepo=epel
-            ;;
-        arch|manjaro|endeavouros)
-            sudo pacman -Syu --noconfirm python python-pip nodejs npm ffmpeg curl
-            ;;
-        opensuse*)
-            sudo zypper install -y python3 python3-pip nodejs npm ffmpeg curl
+        arch|manjaro)
+            sudo pacman -S --noconfirm python
             ;;
         *)
-            echo "Unsupported distribution: $DISTRO"
-            echo "Please install manually: python3, pip, nodejs, npm, ffmpeg"
-            exit 1
+            warn "Unknown distro, trying generic python3 install"
+            sudo apt-get install -y python3 python3-venv python3-pip 2>/dev/null || \
+            sudo dnf install -y python3 2>/dev/null || \
+            sudo pacman -S --noconfirm python 2>/dev/null || \
+            error "Could not install Python. Install Python 3.10+ manually."
             ;;
     esac
+    success "Python installed"
 }
 
-# Install Yarn
-install_yarn() {
-    echo ""
-    echo "Installing Yarn..."
-    if ! command -v yarn &> /dev/null; then
-        sudo npm install -g yarn
+# Install Node.js 18+ if needed
+install_node() {
+    if command -v node &>/dev/null; then
+        NODE_VER=$(node -v | sed 's/v//' | cut -d. -f1)
+        if [ "$NODE_VER" -ge 18 ]; then
+            success "Node.js v$NODE_VER already installed"
+            return 0
+        fi
+    fi
+    
+    log "Installing Node.js 20 LTS..."
+    
+    # Use NodeSource for consistent installs
+    if command -v curl &>/dev/null; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - 2>/dev/null && \
+        sudo apt-get install -y nodejs 2>/dev/null
+    fi
+    
+    # Fallback to distro packages
+    if ! command -v node &>/dev/null; then
+        case $DISTRO in
+            ubuntu|debian) sudo apt-get install -y nodejs npm ;;
+            fedora) sudo dnf install -y nodejs npm ;;
+            arch|manjaro) sudo pacman -S --noconfirm nodejs npm ;;
+        esac
+    fi
+    
+    command -v node &>/dev/null || error "Could not install Node.js. Install Node.js 18+ manually."
+    success "Node.js installed"
+}
+
+# Install FFmpeg if needed
+install_ffmpeg() {
+    if command -v ffmpeg &>/dev/null; then
+        success "FFmpeg already installed"
+        return 0
+    fi
+    
+    log "Installing FFmpeg..."
+    case $DISTRO in
+        ubuntu|debian|linuxmint|pop)
+            sudo apt-get install -y ffmpeg
+            ;;
+        fedora)
+            sudo dnf install -y ffmpeg
+            ;;
+        arch|manjaro)
+            sudo pacman -S --noconfirm ffmpeg
+            ;;
+        *)
+            warn "Could not auto-install FFmpeg - install manually for transcoding support"
+            return 0
+            ;;
+    esac
+    success "FFmpeg installed"
+}
+
+# Download WatchNexus
+download_app() {
+    log "Downloading WatchNexus v${VERSION}..."
+    
+    mkdir -p "$INSTALL_DIR" "$DATA_DIR"
+    cd "$INSTALL_DIR"
+    
+    # Try to download release tarball
+    if command -v curl &>/dev/null; then
+        curl -fsSL "${DOWNLOAD_URL}/watchnexus-${VERSION}-linux.tar.gz" -o watchnexus.tar.gz 2>/dev/null || \
+        curl -fsSL "${DOWNLOAD_URL}/watchnexus-linux.tar.gz" -o watchnexus.tar.gz 2>/dev/null || true
+    elif command -v wget &>/dev/null; then
+        wget -q "${DOWNLOAD_URL}/watchnexus-${VERSION}-linux.tar.gz" -O watchnexus.tar.gz 2>/dev/null || true
+    fi
+    
+    if [ -f watchnexus.tar.gz ] && [ -s watchnexus.tar.gz ]; then
+        tar -xzf watchnexus.tar.gz
+        rm watchnexus.tar.gz
+        success "Downloaded release package"
     else
-        echo "Yarn already installed"
+        # Fallback: clone from git
+        warn "Release not found, cloning from repository..."
+        rm -f watchnexus.tar.gz
+        if command -v git &>/dev/null; then
+            git clone --depth 1 https://github.com/watchnexus/watchnexus.git . 2>/dev/null || \
+            error "Could not download WatchNexus. Check your internet connection."
+        else
+            error "Git not installed. Install git or download manually."
+        fi
     fi
 }
 
-# Create installation directory
-INSTALL_DIR="${HOME}/watchnexus"
-DATA_DIR="${HOME}/.watchnexus"
-
-setup_directories() {
-    echo ""
-    echo "Setting up directories..."
-    mkdir -p "$INSTALL_DIR"
-    mkdir -p "$DATA_DIR/logs"
-    mkdir -p "$DATA_DIR/backups"
-    mkdir -p "$DATA_DIR/cache"
-}
-
-# Copy application files
-copy_files() {
-    echo ""
-    echo "Copying application files..."
+# Setup Python environment
+setup_backend() {
+    log "Setting up backend..."
     
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    cd "$INSTALL_DIR"
     
-    # Copy backend
-    if [ -d "$SCRIPT_DIR/server" ]; then
-        cp -r "$SCRIPT_DIR/server" "$INSTALL_DIR/"
-    elif [ -d "$SCRIPT_DIR/../separated/server" ]; then
-        cp -r "$SCRIPT_DIR/../separated/server" "$INSTALL_DIR/"
+    # Find server directory
+    if [ -d "src/server" ]; then
+        SERVER_DIR="src/server"
+    elif [ -d "server" ]; then
+        SERVER_DIR="server"
+    elif [ -d "separated/server" ]; then
+        SERVER_DIR="separated/server"
+    else
+        error "Server directory not found"
     fi
     
-    # Copy frontend build or source
-    if [ -d "$SCRIPT_DIR/web/build" ]; then
-        cp -r "$SCRIPT_DIR/web/build" "$INSTALL_DIR/web/"
-    elif [ -d "$SCRIPT_DIR/web" ]; then
-        cp -r "$SCRIPT_DIR/web" "$INSTALL_DIR/"
-    elif [ -d "$SCRIPT_DIR/../separated/web" ]; then
-        cp -r "$SCRIPT_DIR/../separated/web" "$INSTALL_DIR/"
-    fi
-}
-
-# Setup Python virtual environment
-setup_python_env() {
-    echo ""
-    echo "Setting up Python environment..."
+    cd "$SERVER_DIR"
     
-    cd "$INSTALL_DIR/server"
     python3 -m venv venv
     source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
+    pip install --upgrade pip -q
+    pip install -r requirements.txt -q
     deactivate
-}
-
-# Setup Node.js dependencies
-setup_node_env() {
-    echo ""
-    echo "Setting up Node.js environment..."
     
-    if [ -d "$INSTALL_DIR/web" ] && [ -f "$INSTALL_DIR/web/package.json" ]; then
-        cd "$INSTALL_DIR/web"
-        yarn install --production
+    # Create env file
+    if [ ! -f .env ]; then
+        echo "JWT_SECRET=$(openssl rand -hex 32)" > .env
+        echo "DATA_DIR=$DATA_DIR" >> .env
     fi
+    
+    success "Backend configured"
 }
 
-# Create environment file
-create_env_file() {
-    echo ""
-    echo "Creating environment configuration..."
+# Create launcher script
+create_launcher() {
+    log "Creating launcher..."
     
-    if [ ! -f "$INSTALL_DIR/server/.env" ]; then
-        cat > "$INSTALL_DIR/server/.env" << EOF
-# WatchNexus Configuration
-JWT_SECRET=$(openssl rand -hex 32)
+    mkdir -p "$BIN_DIR"
+    
+    cat > "$BIN_DIR/watchnexus" << 'LAUNCHER'
+#!/bin/bash
+INSTALL_DIR="$HOME/.local/share/watchnexus"
+cd "$INSTALL_DIR"
 
-# Optional: TMDB API key for metadata (get free at themoviedb.org)
-# TMDB_API_KEY=your-key-here
-
-# Data directory
-DATA_DIR=$DATA_DIR
-EOF
+# Find and start server
+for dir in src/server server separated/server; do
+    if [ -d "$dir" ]; then
+        cd "$dir"
+        source venv/bin/activate
+        exec uvicorn server:app --host 127.0.0.1 --port 8001
     fi
-}
+done
+echo "Server not found"
+exit 1
+LAUNCHER
 
-# Create systemd service
-create_systemd_service() {
-    echo ""
-    echo "Creating systemd service..."
+    chmod +x "$BIN_DIR/watchnexus"
     
-    SERVICE_FILE="/etc/systemd/system/watchnexus.service"
+    # Add to PATH if needed
+    if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc" 2>/dev/null || true
+    fi
     
-    sudo tee "$SERVICE_FILE" > /dev/null << EOF
-[Unit]
-Description=WatchNexus Media Server
-After=network.target
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$INSTALL_DIR/server
-Environment=PATH=$INSTALL_DIR/server/venv/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=$INSTALL_DIR/server/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    sudo systemctl daemon-reload
-    sudo systemctl enable watchnexus
-    echo "Service created. Start with: sudo systemctl start watchnexus"
+    success "Launcher created at $BIN_DIR/watchnexus"
 }
 
 # Create desktop entry
 create_desktop_entry() {
-    echo ""
-    echo "Creating desktop entry..."
+    DESKTOP_DIR="$HOME/.local/share/applications"
+    mkdir -p "$DESKTOP_DIR"
     
-    DESKTOP_FILE="${HOME}/.local/share/applications/watchnexus.desktop"
-    mkdir -p "$(dirname "$DESKTOP_FILE")"
-    
-    cat > "$DESKTOP_FILE" << EOF
+    cat > "$DESKTOP_DIR/watchnexus.desktop" << EOF
 [Desktop Entry]
 Name=WatchNexus
-Comment=Unified Media Pipeline
-Exec=xdg-open http://localhost:8001
+Comment=Media Server
+Exec=sh -c '$BIN_DIR/watchnexus & sleep 2 && xdg-open http://localhost:8001'
 Icon=video-display
 Terminal=false
 Type=Application
 Categories=AudioVideo;Video;
 EOF
 
-    echo "Desktop entry created"
+    success "Desktop entry created"
 }
 
-# Create start script
-create_start_script() {
-    echo ""
-    echo "Creating start script..."
+# Create systemd service
+create_service() {
+    SERVICE_DIR="$HOME/.config/systemd/user"
+    mkdir -p "$SERVICE_DIR"
     
-    cat > "$INSTALL_DIR/start.sh" << 'EOF'
-#!/bin/bash
-cd "$(dirname "$0")/server"
-source venv/bin/activate
-exec uvicorn server:app --host 0.0.0.0 --port 8001
+    cat > "$SERVICE_DIR/watchnexus.service" << EOF
+[Unit]
+Description=WatchNexus Media Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$BIN_DIR/watchnexus
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
 EOF
 
-    chmod +x "$INSTALL_DIR/start.sh"
+    systemctl --user daemon-reload
+    success "Systemd service created (run: systemctl --user enable --now watchnexus)"
 }
 
-# Main installation
+# Main
 main() {
+    echo ""
+    echo "  WatchNexus Installer v${VERSION}"
+    echo "  ================================"
+    echo ""
+    
     detect_distro
+    log "Detected: $DISTRO"
+    
+    install_python
+    install_node
+    install_ffmpeg
+    download_app
+    setup_backend
+    create_launcher
+    create_desktop_entry
+    create_service
     
     echo ""
-    read -p "Install system dependencies? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        install_system_deps
-        install_yarn
-    fi
-    
-    setup_directories
-    copy_files
-    setup_python_env
-    setup_node_env
-    create_env_file
-    create_start_script
-    
+    echo "  ================================"
+    success "Installation complete!"
     echo ""
-    read -p "Create systemd service for auto-start? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        create_systemd_service
-    fi
-    
+    echo "  Start WatchNexus:"
+    echo "    watchnexus"
     echo ""
-    read -p "Create desktop menu entry? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        create_desktop_entry
-    fi
-    
+    echo "  Or enable auto-start:"
+    echo "    systemctl --user enable --now watchnexus"
     echo ""
-    echo "=========================================="
-    echo "  Installation Complete!"
-    echo "=========================================="
-    echo ""
-    echo "Installation directory: $INSTALL_DIR"
-    echo ""
-    echo "To start WatchNexus:"
-    echo "  $INSTALL_DIR/start.sh"
-    echo ""
-    echo "Or if systemd service was installed:"
-    echo "  sudo systemctl start watchnexus"
-    echo ""
-    echo "Then open: http://localhost:8001"
+    echo "  Then open: http://localhost:8001"
     echo ""
 }
 
