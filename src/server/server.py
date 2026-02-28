@@ -5203,14 +5203,14 @@ async def list_iptv_sources(user: dict = Depends(require_auth)):
     relish = get_relish()
     return relish.list_sources()
 
-@api_router.post("/iptv/sources")
-async def add_iptv_source(
+@api_router.post("/iptv/relish/sources")
+async def add_relish_iptv_source(
     name: str,
     url: str,
     epg_url: str = "",
     user: dict = Depends(require_auth)
 ):
-    """Add a new IPTV source (M3U playlist)."""
+    """Add a new IPTV source to Relish (M3U playlist) - for local playback."""
     relish = get_relish()
     source = await relish.add_source(name, url, epg_url)
     return source.to_dict()
