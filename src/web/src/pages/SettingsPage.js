@@ -139,45 +139,34 @@ export const SettingsPage = () => {
     finally { setScanningLibrary(null); }
   };
 
-  // File browser
-  const openFileBrowser = async (targetField = null, initialPath = '/') => {
+  // File browser - opens the FolderBrowser modal
+  const openFileBrowser = (targetField = null, initialPath = '/') => {
     setBrowserTargetField(targetField);
-    setShowFileBrowser(true); 
-    await browsePath(initialPath);
+    setInitialBrowserPath(initialPath);
+    setSelectedBrowserPath('');
+    setShowFileBrowser(true);
   };
 
-  const browsePath = async (path) => {
-    setBrowserLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/api/filesystem/browse`, { 
-        params: { path },
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      setBrowserPath(res.data.current_path); setBrowserItems(res.data.items || []);
-      setBrowserDrives(res.data.drives || []); setBrowserMediaCount(res.data.media_files_in_current || 0);
-    } catch (error) {
-      // If path doesn't exist, fall back to root
-      if (error.response?.status === 404 && path !== '/') {
-        return browsePath('/');
-      }
-      toast.error(error.response?.data?.detail || 'Failed to browse directory'); 
-    }
-    finally { setBrowserLoading(false); }
+  // Handle folder selection from FolderBrowser component
+  const handleBrowserPathSelect = (path) => {
+    setSelectedBrowserPath(path);
   };
 
-  const selectFolderFromBrowser = () => {
+  // Confirm folder selection
+  const confirmFolderSelection = () => {
+    if (!selectedBrowserPath) return;
+    
     // If we have a target field (for settings), update settings directly
     if (browserTargetField) {
-      setSettings(prev => ({ ...prev, [browserTargetField]: browserPath }));
+      setSettings(prev => ({ ...prev, [browserTargetField]: selectedBrowserPath }));
       setShowFileBrowser(false);
       setBrowserTargetField(null);
       return;
     }
     
     // Otherwise, it's for library creation
-    setNewLibrary(prev => ({ ...prev, path: browserPath }));
-    const folderName = browserPath.split('/').filter(Boolean).pop() || browserPath.split('\\').filter(Boolean).pop();
+    setNewLibrary(prev => ({ ...prev, path: selectedBrowserPath }));
+    const folderName = selectedBrowserPath.split('/').filter(Boolean).pop() || selectedBrowserPath.split('\\').filter(Boolean).pop();
     if (folderName && !newLibrary.name) {
       setNewLibrary(prev => ({ ...prev, name: folderName.charAt(0).toUpperCase() + folderName.slice(1).replace(/[-_]/g, ' ') }));
     }
@@ -186,7 +175,8 @@ export const SettingsPage = () => {
     else if (lowerName.includes('tv') || lowerName.includes('series')) setNewLibrary(prev => ({ ...prev, media_type: 'tv' }));
     else if (lowerName.includes('anime')) setNewLibrary(prev => ({ ...prev, media_type: 'anime' }));
     else if (lowerName.includes('music')) setNewLibrary(prev => ({ ...prev, media_type: 'music' }));
-    setShowFileBrowser(false); setShowAddLibrary(true);
+    setShowFileBrowser(false);
+    setShowAddLibrary(true);
   };
 
   // Media management handlers
