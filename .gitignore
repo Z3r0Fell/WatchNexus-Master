@@ -264,3 +264,7 @@ src/web/node_modules/.cache/default-development/2.pack
 *.env.*
 src/web/node_modules/.cache/default-development/0.pack
 src/web/node_modules/.cache/default-development/1.pack
+-e 
+# Environment files
+*.env
+*.env.*
