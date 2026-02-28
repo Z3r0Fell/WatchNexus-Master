@@ -1,98 +1,68 @@
-# WatchNexus Docker Deployment
+# WatchNexus Docker Setup
 
-## Quick Start
+Run WatchNexus in a container. No Python/Node install needed on the host.
+
+## Quick start
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd watchnexus
-
-# Edit docker-compose.yml to set your media paths
-nano builds/Docker/docker-compose.yml
-
-# Build and start
-cd builds/Docker
 docker-compose up -d
-
-# View logs
-docker-compose logs -f
 ```
 
-Access WatchNexus at: http://localhost:8001
+Open http://localhost:8001
 
 ## Configuration
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `JWT_SECRET` | Secret key for JWT tokens | **MUST CHANGE** |
-| `TMDB_API_KEY` | TMDB API key for metadata | Optional |
-| `TZ` | Timezone | `America/New_York` |
-| `PORT` | Backend port | `8001` |
-
-### Volume Mounts
-
-Edit `docker-compose.yml` to mount your media directories:
+Edit `docker-compose.yml` to mount your media:
 
 ```yaml
 volumes:
-  - /your/movies/path:/media/movies:ro
-  - /your/tv/path:/media/tv:ro
-  - /your/music/path:/media/music:ro
+  - /your/movies:/media/movies:ro
+  - /your/tv:/media/tv:ro
 ```
 
-The `:ro` suffix makes them read-only for safety.
+The `:ro` makes them read-only (recommended).
 
-## Build Manually
+## Environment variables
+
+| Variable | What it does |
+|----------|--------------|
+| `JWT_SECRET` | Auth token secret. Change this. |
+| `TMDB_API_KEY` | For fetching metadata. Optional. |
+| `TZ` | Timezone, e.g. `America/New_York` |
+
+## Manual docker run
 
 ```bash
-# From repository root
-docker build -f builds/Docker/Dockerfile -t watchnexus .
+docker build -t watchnexus .
 
-# Run
 docker run -d \
   --name watchnexus \
   -p 8001:8001 \
-  -v watchnexus_data:/data \
-  -v /path/to/media:/media:ro \
-  -e JWT_SECRET=your-secret-here \
+  -v /path/to/data:/data \
+  -v /path/to/movies:/media/movies:ro \
+  -e JWT_SECRET=change-me \
   watchnexus
 ```
 
 ## Updating
 
 ```bash
-cd builds/Docker
 docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
 ```
 
+## Logs
+
+```bash
+docker-compose logs -f
+```
+
 ## Backup
 
 ```bash
-# Backup data
 docker run --rm \
   -v watchnexus_data:/data:ro \
-  -v $(pwd)/backup:/backup \
-  alpine tar czf /backup/watchnexus-backup-$(date +%Y%m%d).tar.gz /data
-```
-
-## Troubleshooting
-
-### Check logs
-```bash
-docker-compose logs -f watchnexus
-```
-
-### Enter container
-```bash
-docker exec -it watchnexus /bin/bash
-```
-
-### Reset database
-```bash
-docker-compose down -v  # Warning: deletes all data
-docker-compose up -d
+  -v $(pwd):/backup \
+  alpine tar czf /backup/watchnexus-$(date +%Y%m%d).tar.gz /data
 ```
