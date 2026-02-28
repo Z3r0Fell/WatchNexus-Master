@@ -1,174 +1,95 @@
 # WatchNexus Build System
 
-This directory contains everything needed to build WatchNexus installers for all platforms.
+Everything you need to build WatchNexus installers.
 
-## Quick Start
+## tl;dr
 
 ```bash
-# Build for your current platform
+# Linux/Mac
 ./build.sh
 
-# Or on Windows
+# Windows
 build.bat
 ```
 
-## Output Formats
+This builds an installer for whatever OS you're on. Output lands in `releases/installers/`.
 
-| Platform | Installer Types | Output Location |
-|----------|-----------------|-----------------|
-| **Windows** | `.exe` (NSIS), Portable `.exe` | `releases/installers/` |
-| **macOS** | `.dmg`, `.zip` | `releases/installers/` |
-| **Linux** | `.AppImage`, `.deb`, `.rpm` | `releases/installers/` |
+## What gets built
 
-## Prerequisites
+| Platform | Output |
+|----------|--------|
+| Windows | `.exe` installer, portable `.exe` |
+| macOS | `.dmg` disk image |
+| Linux | `.AppImage`, `.deb`, `.rpm` |
 
-### All Platforms
+## Before you build
+
+You'll need:
 - Python 3.10+
 - Node.js 18+
-- Yarn
+- Yarn (`npm i -g yarn`)
 
-### Platform-Specific
+On Windows you also need Visual Studio Build Tools. On Mac, Xcode command line tools.
 
-**Windows:**
-- Visual Studio Build Tools (for native modules)
-- Windows SDK
-
-**macOS:**
-- Xcode Command Line Tools
-- For code signing: Apple Developer certificate
-
-**Linux:**
-- Build essentials: `sudo apt install build-essential`
-- For .rpm: `sudo apt install rpm`
-
-## Build Commands
+## Build commands
 
 ```bash
-# Full build (backend + frontend + installer)
-./build.sh all
-
-# Backend only (creates watchnexus-server executable)
-./build.sh backend
-
-# Frontend only (creates React build)
-./build.sh frontend
-
-# Electron installer only (requires backend + frontend first)
-./build.sh electron          # Current platform
-./build.sh electron mac      # macOS .dmg
-./build.sh electron win      # Windows .exe
-./build.sh electron linux    # Linux .AppImage, .deb, .rpm
-
-# Install dependencies
-./build.sh deps
-
-# Clean all build artifacts
-./build.sh clean
+./build.sh              # everything for current platform
+./build.sh backend      # just the server executable
+./build.sh frontend     # just the web build
+./build.sh electron mac # mac installer only
+./build.sh electron win # windows installer only
+./build.sh clean        # nuke all build artifacts
 ```
 
-## Build Process
+## How it works
 
-The build system works in three stages:
+Three stages:
 
-### 1. Backend Build (PyInstaller)
+1. **Backend** - PyInstaller bundles Python + FastAPI into a single executable
+2. **Frontend** - React gets compiled to static files
+3. **Electron** - Wraps both into a native app with installer
+
+The backend executable ends up at ~50MB (Python runtime included). The full installer is ~150MB because Electron bundles Chromium.
+
+## Lightweight installers
+
+If you don't want the full Electron app, check out `linux/install.sh`, `mac/install.sh`, or `windows/install.bat`. These are ~10KB scripts that download prerequisites from the internet during install instead of bundling everything.
+
+## Files that matter
+
 ```
-src/server/ → PyInstaller → watchnexus-server(.exe)
+src/server/watchnexus.spec  - PyInstaller config
+src/web/electron-builder.yml - Electron builder config
+src/web/electron/main.js    - Desktop app entry point
+builds/build.sh             - Main build script
 ```
 
-Bundles the Python FastAPI server into a standalone executable using `watchnexus.spec`.
+## Icons
 
-### 2. Frontend Build (React)
-```
-src/web/src/ → yarn build → src/web/build/
-```
+Replace these with your actual icons:
+- `src/web/assets/watchnexus.icns` - Mac (1024x1024)
+- `src/web/assets/watchnexus.ico` - Windows
+- `src/web/assets/icons/` - Linux (multiple sizes)
 
-Compiles the React frontend into static files.
+## Code signing
 
-### 3. Electron Package
-```
-Electron + Backend + Frontend → .dmg / .exe / .AppImage
-```
+For signed releases, set these env vars before building:
 
-electron-builder packages everything into platform-native installers using `electron-builder.yml`.
-
-## Configuration Files
-
-| File | Purpose |
-|------|---------|
-| `src/server/watchnexus.spec` | PyInstaller configuration |
-| `src/web/electron-builder.yml` | Electron-builder configuration |
-| `src/web/electron/main.js` | Electron main process |
-| `src/web/electron/preload.js` | Electron preload script |
-
-## Customization
-
-### Changing Version
-Update `version` in `src/web/package.json`
-
-### Icons
-Replace files in `src/web/assets/`:
-- `watchnexus.icns` - macOS icon (1024x1024)
-- `watchnexus.ico` - Windows icon
-- `icons/` - Linux icons (various sizes)
-
-### Code Signing
-
-**macOS:**
 ```bash
-export CSC_LINK=/path/to/cert.p12
-export CSC_KEY_PASSWORD=password
-./build.sh electron mac
+# Mac
+export CSC_LINK=/path/to/Developer_ID_Application.p12
+export CSC_KEY_PASSWORD=yourpassword
+
+# Windows
+export CSC_LINK=/path/to/codesign.pfx
+export CSC_KEY_PASSWORD=yourpassword
 ```
 
-**Windows:**
-```bash
-export CSC_LINK=/path/to/cert.pfx
-export CSC_KEY_PASSWORD=password
-./build.sh electron win
-```
+## Common issues
 
-## Troubleshooting
+**PyInstaller fails:** Usually a missing hidden import. Edit `watchnexus.spec` and add to `hiddenimports`.
 
-### PyInstaller fails
-- Ensure all Python dependencies are installed
-- Check for missing hidden imports in `watchnexus.spec`
+**Electron build fails:** Run `yarn install` in `src/web/` first. Make sure the backend executable exists.
 
-### Electron build fails
-- Run `yarn install` in `src/web/`
-- Check that backend executable exists in `src/backend/dist/`
-
-### Large installer size
-- The backend executable includes Python runtime (~50MB)
-- Use UPX compression (enabled by default)
-
-## Directory Structure
-
-```
-builds/
-├── build.sh           # Main build script (Linux/macOS)
-├── build.bat          # Windows build script
-├── README.md          # This file
-├── Docker/            # Docker configuration
-├── Linux/             # Additional Linux configs
-├── Mac/               # Additional macOS configs
-├── Windows/           # Additional Windows configs
-├── NAS/               # NAS deployment guides
-└── Unraid/            # Unraid templates
-
-src/
-├── server/
-│   ├── watchnexus.spec    # PyInstaller spec
-│   ├── server.py          # Main backend
-│   └── requirements.txt
-└── web/
-    ├── electron/          # Electron files
-    │   ├── main.js
-    │   └── preload.js
-    ├── electron-builder.yml
-    ├── assets/            # Icons and images
-    └── package.json
-
-releases/
-└── installers/        # Built installers output
-```
-
+**Installer too big:** That's just how Electron is. Use the lightweight shell script installers if size matters.
