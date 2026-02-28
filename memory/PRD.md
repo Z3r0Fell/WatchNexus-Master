@@ -208,38 +208,27 @@ DELETE /api/gadgets/webvideo/bookmarks/{id} - Remove bookmark
 - ✅ File Browser bug fix (critical blocker resolved)
 - ✅ Project restructure (`/app/src/` directory with symlinks)
 - ✅ `/app/builds/` directory structure created
-- ✅ **Code Audit (Feb 28, 2025):**
-  - Fixed duplicate IPTV endpoint (`add_iptv_source` → `add_relish_iptv_source`)
-  - Fixed lint issues (multiple statements on one line, ambiguous variable names)
-  - Backend lint: 100% clean
-  - Frontend lint: 100% clean
-- ✅ **Developer README (`/app/DEVELOPMENT.md`)** - Quick setup guide
-- ✅ **Build System Created:**
-  - `/app/builds/build.sh` - Master build script (Linux/macOS)
-  - `/app/builds/build.bat` - Windows build script
-  - `/app/src/server/watchnexus.spec` - PyInstaller configuration
-  - `/app/src/web/electron-builder.yml` - Electron-builder config (pre-existing, updated)
-  - `/app/src/web/electron/main.js` - Electron main process (pre-existing)
+- ✅ Code Audit - Fixed duplicate IPTV endpoint, all lint clean
+- ✅ **Lightweight Installers (download deps at runtime):**
+  - `builds/linux/install.sh` - Auto-detects distro, installs Python/Node/FFmpeg
+  - `builds/windows/install.bat` - Downloads Python/Node installers automatically
+  - `builds/mac/install.sh` - Uses Homebrew, creates .app bundle
+- ✅ **Full Electron Build System:**
+  - `src/server/watchnexus.spec` - PyInstaller config
+  - `src/web/electron-builder.yml` - Builds .exe/.dmg/.AppImage
+  - `builds/build.sh` / `build.bat` - Master build scripts
+- ✅ **Documentation (human-written style):**
+  - `builds/README.md` - Build system docs
+  - `DEVELOPMENT.md` - Dev setup guide
+  - `builds/Docker/README.md`
+  - `builds/NAS/README.md` - Synology/QNAP/TrueNAS
+  - `builds/Unraid/README.md`
 
-### Installer Outputs (when built):
-| Platform | Format | File |
-|----------|--------|------|
-| Windows | NSIS Installer | `WatchNexus-{ver}-win-x64.exe` |
-| Windows | Portable | `WatchNexus-{ver}-win-x64-portable.exe` |
-| macOS | DMG | `WatchNexus-{ver}-mac-{arch}.dmg` |
-| macOS | ZIP | `WatchNexus-{ver}-mac-{arch}.zip` |
-| Linux | AppImage | `WatchNexus-{ver}.AppImage` |
-| Linux | DEB | `WatchNexus-{ver}-amd64.deb` |
-| Linux | RPM | `WatchNexus-{ver}.x86_64.rpm` |
-
-### Build Command:
-```bash
-cd /app/builds
-./build.sh          # Build for current platform
-./build.sh electron mac    # macOS only
-./build.sh electron win    # Windows only  
-./build.sh electron linux  # Linux only
-```
+### Installer Types:
+| Type | Size | Use Case |
+|------|------|----------|
+| Shell scripts | ~10KB | Downloads deps at install time |
+| Electron build | ~150MB | Full bundled app with runtime |
 
 ## Backlog / Future Tasks
 - P1: Cloud Sync "Marshmallow" (plan in `/app/docs/Marshmallow-CloudSync-Plan.md`)
