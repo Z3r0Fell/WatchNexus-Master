@@ -46,14 +46,11 @@ export const SettingsPage = () => {
   const [manualImportPath, setManualImportPath] = useState('');
   const [manualImportFiles, setManualImportFiles] = useState([]);
 
-  // File browser
+  // File browser - using centralized FolderBrowser component
   const [showFileBrowser, setShowFileBrowser] = useState(false);
-  const [browserPath, setBrowserPath] = useState('/');
-  const [browserItems, setBrowserItems] = useState([]);
-  const [browserDrives, setBrowserDrives] = useState([]);
-  const [browserLoading, setBrowserLoading] = useState(false);
-  const [browserMediaCount, setBrowserMediaCount] = useState(0);
   const [browserTargetField, setBrowserTargetField] = useState(null); // Track which field needs the path
+  const [selectedBrowserPath, setSelectedBrowserPath] = useState('');
+  const [initialBrowserPath, setInitialBrowserPath] = useState('');
 
   // Users management
   const [users, setUsers] = useState([]);
