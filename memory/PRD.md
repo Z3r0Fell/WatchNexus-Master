@@ -3,7 +3,7 @@
 ## Product Overview
 WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application for requesting, acquiring, organizing, and streaming media.
 
-## Current Version: 2.6.1
+## Current Version: 2.7.0 — Operation Fortress
 **Last Updated:** Feb 28, 2025
 
 ---

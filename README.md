@@ -1,324 +1,214 @@
 # WatchNexus
 
-<p align="center">
-  <img src="frontend/public/watchnexus-logo.svg" alt="WatchNexus Logo" width="120" height="120">
-</p>
+**One app to rule them all.** Request, download, organize, and stream your media library.
 
-<h3 align="center">🍯 Unified Media Pipeline</h3>
+```
+v2.7.0 — Operation Fortress
+```
 
-<p align="center">
-  A self-hosted, all-in-one media automation platform that replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin.
-</p>
-
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#modules">Modules</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#api">API</a> •
-  <a href="#contributing">Contributing</a>
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](#installation)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](#docker)
 
 ---
 
-## ✨ Features
+## What is this?
 
-- **🎬 Unified Media Server** - Stream movies, TV shows, music, and audiobooks from one place
-- **🔍 Smart Indexer Aggregation** - Search multiple torrent/usenet sources simultaneously  
-- **⬇️ Built-in Download Engine** - No need for external torrent clients
-- **📝 Automatic Subtitles** - Fetch subtitles from Addic7ed and OpenSubtitles
-- **🎉 Watch Parties** - Synchronized viewing with friends (LAN + Internet)
-- **🌐 Remote Access** - Access your media from anywhere with Gelatin tunneling
-- **🎨 Customizable Themes** - 6 built-in themes + custom theme creator
-- **🔌 Plugin System** - Extend functionality with custom plugins
-- **📱 Cross-Platform** - Runs on Linux, macOS, and Windows
+WatchNexus replaces your entire media stack:
 
-## 🍯 Modules
+| Replaces | With |
+|----------|------|
+| Sonarr + Radarr | **Marmalade** — Smart library management |
+| Prowlarr + Jackett | **Compote** — Unified indexer hub |
+| qBittorrent | **Fondue** — Download orchestration |
+| Bazarr | **Garnish** — Subtitle fetching |
+| Jellyfin + Plex | **Gelatin** — Streaming & transcoding |
 
-WatchNexus is built with a modular architecture using a food-themed naming convention:
+One interface. One database. No more juggling 6 different apps.
 
-| Module | Code Name | Description |
-|--------|-----------|-------------|
-| Media Server | **Marmalade** 🍊 | Library management, streaming, watch progress |
-| Indexer Manager | **Compote** 🍇 | Central hub for indexers and scrapers |
-| Indexer Aggregator | **Syrup** 🍯 | Live site scrapers (1337x, YTS, EZTV) |
-| Challenge Solver | **Preserve** 🫙 | Cloudflare bypass protection |
-| Usenet Handler | **Pulp** 🍊 | NZB/Usenet download management |
-| Torrent Engine | **Fondue** 🫕 | Built-in libtorrent client |
-| Subtitle Service | **Garnish** 🌿 | Addic7ed/OpenSubtitles integration |
-| Watch Party | **Potluck** 🍲 | Synchronized viewing with chat |
-| External Access | **Gelatin** 🍮 | LAN discovery & tunneling |
-| Media Health | **Sieve** 🫗 | File validation and repair |
-| Plugin System | **Gadgets** 🔧 | Extension framework |
-| Theme Engine | **Milk** 🥛 | Visual customization |
-| Color Picker | **Juice** 🧃 | Theme color selection |
+---
 
-## 📦 Installation
+## Features
 
-### Quick Install (Linux)
+### Core Modules
 
+| Module | Codename | What it does |
+|--------|----------|--------------|
+| Library Manager | **Marmalade** | Scans folders, fetches metadata from TMDB, organizes movies/TV/anime/music |
+| Indexer Hub | **Compote** | Connects to Torznab/Newznab indexers, aggregates search results |
+| Download Engine | **Fondue** | Built-in torrent client + qBittorrent integration |
+| Subtitle Manager | **Garnish** | Auto-downloads subs from OpenSubtitles, Addic7ed, Subscene |
+| Transcoder | **Gelatin** | FFmpeg-powered streaming, HLS adaptive bitrate |
+| Torrent Search | **Zest** | Multi-tracker search aggregation |
+| IPTV Player | **Relish** | M3U playlist support, EPG guide |
+| Playlist Engine | **Drizzle** | Custom playlists, smart collections |
+| Stream Links | **Cream** | External streaming service integration |
+| Audio Fingerprint | **Fprint** | Chromaprint-based intro/outro detection |
+| Request System | **Potluck** | Multi-user media requests with approval workflow |
+| Content Filter | **Sieve** | Quality profiles, release filtering |
+| Scraper Engine | **Syrup** | Metadata scrapers for edge cases |
+
+### Gadgets (v2.6+)
+
+| Gadget | Description |
+|--------|-------------|
+| **Weather** | Current conditions + 7-day forecast |
+| **Podcasts** | RSS subscriptions, queue, progress sync |
+| **Radio** | 50,000+ internet radio stations |
+| **Photos** | Local photo library browser |
+| **Web Video** | YouTube/Vimeo/Twitter extraction via yt-dlp |
+
+### Platform Features
+
+- **Cross-device sync** — Settings, watch progress, and preferences sync to your account
+- **Multi-user** — Separate profiles with permission levels
+- **Jellyfin/Kodi compatible** — API compatibility layer for existing apps
+- **Plugin system** — Extend functionality with custom plugins
+- **Dark/Light themes** — System-aware theming
+
+---
+
+## Installation
+
+### One-liner install
+
+**Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/watchnexus/watchnexus/main/scripts/install-linux.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/watchnexus/watchnexus/main/builds/linux/install.sh | bash
 ```
 
-### Platform-Specific Installation
-
-#### Arch Linux
+**macOS:**
 ```bash
-git clone https://github.com/watchnexus/watchnexus.git
-cd watchnexus
-./scripts/build-arch.sh
+curl -fsSL https://raw.githubusercontent.com/watchnexus/watchnexus/main/builds/mac/install.sh | bash
 ```
 
-#### macOS
-```bash
-curl -fsSL https://raw.githubusercontent.com/watchnexus/watchnexus/main/scripts/install-mac.sh | bash
-```
-
-#### Windows (PowerShell as Admin)
+**Windows (PowerShell as Admin):**
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iwr -useb https://raw.githubusercontent.com/watchnexus/watchnexus/main/scripts/install-windows.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/watchnexus/watchnexus/main/builds/windows/install.ps1 | iex
 ```
 
-### Manual Installation
-
-📖 **For detailed instructions with direct download links**, see **[docs/BUILD_GUIDE.md](docs/BUILD_GUIDE.md)**
-
-1. **Prerequisites**
-   - Python 3.11+
-   - Node.js 18+
-   - MongoDB 6+
-   - FFmpeg
-
-2. **Clone & Setup**
-   ```bash
-   git clone https://github.com/watchnexus/watchnexus.git
-   cd watchnexus
-   
-   # Backend
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   
-   # Frontend
-   cd ../frontend
-   yarn install
-   ```
-
-3. **Configure**
-   ```bash
-   # Backend .env
-   cp backend/.env.example backend/.env
-   # Edit with your settings
-   
-   # Frontend .env
-   cp frontend/.env.example frontend/.env
-   ```
-
-4. **Run**
-   ```bash
-   # Terminal 1 - Backend
-   cd backend && source venv/bin/activate
-   uvicorn server:app --host 0.0.0.0 --port 8001
-   
-   # Terminal 2 - Frontend
-   cd frontend && yarn start
-   ```
-
-5. **Access** at `http://localhost:3000`
-
-## 🚀 Usage
-
-### First-Time Setup
-
-1. Open WatchNexus in your browser
-2. Create an account or login with Google
-3. Go to **Settings > Library** to add your media folders
-4. Configure indexers in **Settings > Indexers**
-5. Start browsing and streaming!
-
-### Watch Party
-
-1. Find a movie/show in your library
-2. Click **Start Watch Party**
-3. Share the party code with friends
-4. Everyone syncs automatically!
-
-### Theme Customization
-
-1. Go to **Settings > Theme Forge**
-2. Choose a built-in theme or create custom
-3. Use the Juice color picker for fine-tuning
-4. Save and apply instantly
-
-## 🔌 API Reference
-
-### Authentication
-```bash
-# Login
-POST /api/auth/login
-Body: { "email": "user@example.com", "password": "..." }
-
-# Register
-POST /api/auth/register
-Body: { "email": "...", "password": "...", "username": "..." }
-```
-
-### Media Library (Marmalade)
-```bash
-# List libraries
-GET /api/marmalade/libraries
-
-# Add library
-POST /api/marmalade/libraries
-Body: { "name": "Movies", "path": "/media/movies", "media_type": "movies" }
-
-# Get media
-GET /api/marmalade/media?type=movies
-
-# Stream media
-GET /api/marmalade/stream/{media_id}/file
-```
-
-### Watch Party (Potluck)
-```bash
-# Create party
-POST /api/watch-party/create?media_id=123&media_title=Movie&media_type=movie
-
-# Join via WebSocket
-WS /ws/party/{party_code}
-```
-
-### Subtitles (Garnish)
-```bash
-# Search TV subtitles
-GET /api/subtitles/search/tv?show_name=Breaking%20Bad&season=1&episode=1
-
-# Search movie subtitles
-GET /api/subtitles/search/movie?movie_name=Inception&year=2010
-```
-
-### External Access (Gelatin)
-```bash
-# Get server status
-GET /api/gelatin/status
-
-# Create tunnel
-POST /api/gelatin/tunnel/create
-
-# Generate access token
-POST /api/gelatin/access-token
-```
-
-### Themes (Milk)
-```bash
-# Get theme config
-GET /api/milk/themes
-
-# Set theme
-POST /api/milk/set-theme
-Body: { "type": "movie" }
-
-# Get current CSS
-GET /api/milk/css
-```
-
-## 🏗️ Project Structure
-
-```
-watchnexus/
-├── backend/
-│   ├── server.py           # FastAPI main app
-│   ├── marmalade_server.py # Media server
-│   ├── compote.py          # Indexer manager
-│   ├── fondue.py           # Torrent engine
-│   ├── garnish.py          # Subtitle service
-│   ├── potluck.py          # Watch party
-│   ├── gelatin.py          # External access
-│   ├── sieve.py            # Media health
-│   ├── gadgets.py          # Plugin system
-│   ├── milk.py             # Theme engine
-│   └── syrup_scrapers.py   # Live scrapers
-├── frontend/
-│   ├── src/
-│   │   ├── pages/          # React pages
-│   │   ├── components/     # UI components
-│   │   │   └── juice/      # Color picker
-│   │   └── services/       # API services
-│   └── public/
-├── scripts/
-│   ├── build-arch.sh       # Arch build script
-│   ├── install-linux.sh    # Linux installer
-│   ├── install-mac.sh      # macOS installer
-│   └── install-windows.ps1 # Windows installer
-├── docs/
-│   └── WN-SPLIT-STRUCTURE.md
-└── memory/
-    └── PRD.md
-```
-
-## 🤝 Contributing
-
-We welcome contributions! See our [WN-Split Structure](docs/WN-SPLIT-STRUCTURE.md) for the modular repository layout.
-
-### Development Setup
+### Docker
 
 ```bash
-# Clone
-git clone https://github.com/watchnexus/watchnexus.git
-cd watchnexus
-
-# Install dev dependencies
-cd backend && pip install -r requirements-dev.txt
-cd ../frontend && yarn install
-
-# Run tests
-cd backend && pytest tests/
-cd ../frontend && yarn test
+docker run -d \
+  --name watchnexus \
+  -p 8001:8001 \
+  -v /path/to/data:/data \
+  -v /path/to/media:/media:ro \
+  -e JWT_SECRET=change-me \
+  watchnexus/watchnexus:latest
 ```
 
-### Plugin Development
+### Manual
 
-Create plugins using the Gadgets framework:
-
-```python
-from gadgets import GadgetPlugin, PluginType
-
-class MyPlugin(GadgetPlugin):
-    @property
-    def name(self) -> str:
-        return "My Plugin"
-    
-    @property
-    def plugin_id(self) -> str:
-        return "my-plugin"
-    
-    @property
-    def plugin_type(self) -> PluginType:
-        return PluginType.GENERAL
-    
-    async def initialize(self) -> bool:
-        return True
-    
-    async def shutdown(self):
-        pass
-```
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## 🙏 Acknowledgments
-
-- Built with [FastAPI](https://fastapi.tiangolo.com/), [React](https://reactjs.org/), [libtorrent](https://libtorrent.org/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Animations by [Framer Motion](https://www.framer.com/motion/)
-- Metadata from [TMDB](https://www.themoviedb.org/)
+See [DEVELOPMENT.md](DEVELOPMENT.md) for full setup instructions.
 
 ---
 
-<p align="center">
-  Made with 🍯 by the WatchNexus Team
-</p>
+## Screenshots
+
+```
+[Dashboard]     [Library]      [Player]       [Settings]
+    📊              📚            ▶️              ⚙️
+```
+
+---
+
+## Tech Stack
+
+**Backend:** Python 3.11, FastAPI, SQLite, FFmpeg
+**Frontend:** React 19, Tailwind CSS, Radix UI, Framer Motion
+**Desktop:** Electron (optional)
+
+---
+
+## Version History
+
+### v2.7.0 — Operation Fortress *(Current)*
+- ✅ Complete installer system for all platforms
+- ✅ Lightweight installers (download deps at runtime)
+- ✅ Full Electron build pipeline
+- ✅ PyInstaller backend bundling
+- ✅ Cross-platform build scripts
+
+### v2.6.1 — The Browser Fix
+- ✅ Fixed file browser in Settings (critical bug)
+- ✅ Refactored to use centralized FolderBrowser component
+- ✅ Code audit — fixed duplicate endpoints, lint cleanup
+
+### v2.6.0 — Gadget Drop
+- ✅ Weather gadget with 7-day forecast
+- ✅ Podcast subscriptions and playback
+- ✅ Internet radio with 50k+ stations
+- ✅ Photo library browser
+- ✅ Web video extraction (YouTube, etc.)
+
+### v2.5.x — Polish & Sync
+- ✅ Cross-device settings sync
+- ✅ Theme mode persistence
+- ✅ Watch history management
+- ✅ User deletion cascade fix
+- ✅ Quality profiles
+
+---
+
+## What Works (v2.7.0)
+
+| Feature | Status |
+|---------|--------|
+| User auth & multi-user | ✅ Working |
+| Library scanning | ✅ Working |
+| TMDB metadata | ✅ Working |
+| Video playback | ✅ Working |
+| Watch progress | ✅ Working |
+| Watchlist | ✅ Working |
+| Playlists | ✅ Working |
+| Indexer search | ✅ Working |
+| Download management | ✅ Working |
+| qBittorrent integration | ✅ Working |
+| Subtitle search | ✅ Working |
+| IPTV/M3U playback | ✅ Working |
+| Settings sync | ✅ Working |
+| File browser | ✅ Working |
+| Weather gadget | ✅ Working |
+| Podcast player | ✅ Working |
+| Radio streaming | ✅ Working |
+| Photo browser | ✅ Working |
+| Web video | ✅ Working |
+| Transcoding | ✅ Working |
+| Quality profiles | ✅ Working |
+
+---
+
+## Roadmap
+
+- [ ] **Marshmallow** — Cloud sync & backup
+- [ ] **Harbor** — Raspberry Pi builds
+- [ ] **Echo** — FFmpeg replacement research
+- [ ] Spotify/Deezer integration
+- [ ] Mobile apps (Android/iOS)
+- [ ] Auto-update system
+
+---
+
+## Contributing
+
+PRs welcome. See [DEVELOPMENT.md](DEVELOPMENT.md) to get started.
+
+---
+
+## License
+
+MIT — do whatever you want with it.
+
+---
+
+## Links
+
+- **Docs:** [docs.watchnexus.io](https://docs.watchnexus.io)
+- **Discord:** [discord.gg/watchnexus](https://discord.gg/watchnexus)
+- **Twitter:** [@watchnexus](https://twitter.com/watchnexus)
+
+---
+
+**Made with 🍿 for media hoarders everywhere.**
