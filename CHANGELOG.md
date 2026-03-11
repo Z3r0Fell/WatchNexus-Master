@@ -1,30 +1,46 @@
 # WatchNexus Changelog
 
-## v2.8.0 (March 11, 2026)
+## v3.0.0-beta (March 11, 2026)
+
+### BREAKING: Full C#/.NET 8 Migration
+- **Replaced entire Python/FastAPI backend** with C#/.NET 8 ASP.NET Core
+- Entity Framework Core with SQLite database
+- JWT Bearer authentication via Microsoft.AspNetCore.Authentication.JwtBearer
+- All API endpoints ported and verified (25/25 tests passed)
+
+### Unified Modular Architecture
+- Created `watchnexus/` unified project structure
+- `core/` - Main C# server with controllers, auth, DB
+- `shared/` - IWatchNexusModule interface for plugin system
+- `modules/` - Drop-in module directory with module.json manifests
+- ModuleLoader: discovers and registers external .NET assembly modules
+- 10 module manifests created (marmalade, bastion, tunnel, zest, fondue, drizzle, compote, gelatin, syrup, beacon)
 
 ### New Features
-- **Security Module (Bastion)**: Full CRUD for audit logs, IP rules, API keys, session management
-- **VPN Module (Tunnel)**: WireGuard server/peer configuration, QR code generation, status monitoring
-- **System Info Endpoint**: `/api/info` returns CPU, memory, disk, module health
-- **Library Bridge Routes**: `/api/libraries` CRUD mapped to Marmalade backend
-- **Integration Settings**: TMDB API key and qBittorrent connection management via `/api/settings/integrations`
-- **Background Library Scanning**: Async scan with job tracking and status polling
-- **Logs Bridge Routes**: `/api/logs` for log file browsing and latest entries
-- **Platform Installers**: Docker, Linux, Windows, macOS, Unraid
+- **Netflix-style Media Browser** (`/browse`): Poster grid with TMDB art, search, detail modal with backdrop/overview/genres
+- **Dashboard API** (`/api/dashboard`): Stats, recent media
+- **Preferences API** (`/api/preferences`): User settings persistence
+- **Marmalade Bridge** (`/api/marmalade/*`): Legacy endpoint compatibility
 
-### Bug Fixes
-- Fixed `/api/users/me` returning 405 (was missing GET route)
-- Fixed VPN Traffic stats showing NaN when no data
-- Fixed Log Viewer system stats showing NaN values
-- Fixed MediaType enum mismatch between frontend and backend
+### Clean Database
+- Production database wiped clean for v3.0.0-beta release
+- No test data - fresh start
 
-### Infrastructure
-- Cleaned up root-level legacy scripts (capture, marketing, split)
-- Removed duplicate/broken C# code from /app/src/
+### Installers Updated for .NET
+- Docker: Multi-stage build with dotnet SDK + aspnet runtime
+- Linux: .NET 8 runtime installer
+- Windows: .NET 8 runtime check + dotnet publish
+- macOS: .NET 8 + .app bundle
+- Unraid: Docker template
+
+### File Cleanup
+- Removed legacy Python capture/marketing scripts
+- Removed duplicate /app/src/web, /app/src/dotnet directories
 - Disabled broken dotnet supervisor entry
-- Updated README.md with current architecture
-- Updated src/README.md with module documentation
+- Cleaned root directory
 
-### Testing
-- iteration_31: 20/20 backend tests passed, all frontend flows working
-- iteration_32: 24/24 backend tests passed, all pages loading correctly
+## v2.8.0 (March 11, 2026)
+- TMDB integration, qBittorrent settings, library scanning
+- Security module (Bastion), VPN module (Tunnel)
+- Background scan jobs, system info endpoint
+- Platform installers (Docker, Linux, Windows, macOS, Unraid)
