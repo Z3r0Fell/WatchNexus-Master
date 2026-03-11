@@ -1,6 +1,0 @@
-@WatchNexus.API_HostAddress = http://localhost:5117
-
-GET {{WatchNexus.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -1,1 +1,0 @@
-/app/backend/jellyfin_compat.py

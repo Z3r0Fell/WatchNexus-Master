@@ -2750,6 +2750,8 @@ async def marmalade_refresh_library_metadata(
 
 # ==================== LIBRARIES BRIDGE ROUTES ====================
 # Bridge /api/libraries → /api/marmalade/libraries for nexusApi.js compatibility
+# Track background scan jobs
+_scan_jobs = {}
 
 class LibraryCreate(BaseModel):
     name: str
@@ -2837,11 +2839,67 @@ async def libraries_delete(library_id: str, user: dict = Depends(require_auth)):
     return {"status": "deleted"}
 
 @api_router.post("/libraries/{library_id}/scan")
-async def libraries_scan(library_id: str, user: dict = Depends(require_auth)):
-    """Scan a library (bridge to marmalade)."""
+async def libraries_scan(library_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_auth)):
+    """Start an async library scan (background task)."""
     server = get_marmalade_server()
-    result = await server.scan_library(library_id)
-    return result
+    lib = server.get_library(library_id)
+    if not lib:
+        raise HTTPException(status_code=404, detail="Library not found")
+    
+    # Check if already scanning
+    if library_id in _scan_jobs and _scan_jobs[library_id]["status"] == "scanning":
+        return _scan_jobs[library_id]
+    
+    # Initialize job tracker
+    job_id = str(uuid.uuid4())[:8]
+    _scan_jobs[library_id] = {
+        "job_id": job_id,
+        "library_id": library_id,
+        "library_name": lib.name,
+        "status": "scanning",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": None,
+        "progress": 0,
+        "new": 0,
+        "updated": 0,
+        "total": 0,
+        "errors": [],
+        "error_count": 0
+    }
+    
+    async def do_scan():
+        try:
+            result = await server.scan_library(library_id)
+            _scan_jobs[library_id].update({
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "progress": 100,
+                "new": result.get("new", 0),
+                "updated": result.get("updated", 0),
+                "total": result.get("total", 0),
+                "errors": result.get("errors", []),
+                "error_count": result.get("error_count", 0),
+            })
+            logger.info(f"Background scan completed for library {library_id}: {result.get('total', 0)} items")
+        except Exception as e:
+            logger.error(f"Background scan failed for library {library_id}: {e}")
+            _scan_jobs[library_id].update({
+                "status": "failed",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "errors": [str(e)],
+                "error_count": 1,
+            })
+    
+    background_tasks.add_task(do_scan)
+    
+    return _scan_jobs[library_id]
+
+@api_router.get("/libraries/{library_id}/scan/status")
+async def libraries_scan_status(library_id: str, user: dict = Depends(require_auth)):
+    """Get the scan status for a library."""
+    if library_id in _scan_jobs:
+        return _scan_jobs[library_id]
+    return {"library_id": library_id, "status": "idle", "progress": 0}
 
 # ==================== LOGS BRIDGE ROUTES ====================
 # Bridge /api/logs → /api/zest for nexusApi.js compatibility
@@ -2989,6 +3047,240 @@ async def test_qbit_connection(body: QbitSettingsUpdate, user: dict = Depends(re
     result = await qbit.test_connection()
     await qbit.close()
     return result
+
+
+# ==================== SECURITY MODULE (BASTION) ====================
+from bastion import get_security_module
+
+class IpRuleCreate(BaseModel):
+    ip: str
+    rule_type: str = "block"
+    reason: str = ""
+
+class ApiKeyCreate(BaseModel):
+    name: str
+    permissions: List[str] = ["read"]
+
+@api_router.get("/security/stats")
+async def security_stats(user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    return sec.get_stats()
+
+@api_router.get("/security/audit")
+async def security_audit(page: int = 1, page_size: int = 50, action: str = None, user_id: str = None, user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    return sec.get_audit_logs(page, page_size, action, user_id)
+
+@api_router.get("/security/ip-rules")
+async def security_ip_rules(user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    return [r.to_dict() for r in sec.ip_rules]
+
+@api_router.post("/security/ip-rules")
+async def security_add_ip_rule(body: IpRuleCreate, user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    rule = sec.add_ip_rule(body.ip, body.rule_type, body.reason)
+    sec.log_audit("ip_rule_added", user["id"], details=f"{body.rule_type} {body.ip}")
+    return rule.to_dict()
+
+@api_router.delete("/security/ip-rules/{rule_id}")
+async def security_delete_ip_rule(rule_id: str, user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    sec.remove_ip_rule(rule_id)
+    sec.log_audit("ip_rule_removed", user["id"], details=rule_id)
+    return {"status": "deleted"}
+
+@api_router.get("/security/api-keys")
+async def security_api_keys(user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    return [k.to_dict() for k in sec.api_keys]
+
+@api_router.post("/security/api-keys")
+async def security_create_api_key(body: ApiKeyCreate, user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    key = sec.create_api_key(body.name, body.permissions)
+    sec.log_audit("api_key_created", user["id"], details=body.name)
+    return key.to_dict(show_key=True)
+
+@api_router.delete("/security/api-keys/{key_id}")
+async def security_revoke_api_key(key_id: str, user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    sec.revoke_api_key(key_id)
+    sec.log_audit("api_key_revoked", user["id"], details=key_id)
+    return {"status": "revoked"}
+
+@api_router.get("/security/sessions")
+async def security_sessions(user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    return list(sec.sessions.values())
+
+@api_router.post("/security/sessions/{session_id}/revoke")
+async def security_revoke_session(session_id: str, user: dict = Depends(require_auth)):
+    sec = get_security_module()
+    sec.revoke_session(session_id)
+    return {"status": "revoked"}
+
+# ==================== VPN MODULE (TUNNEL) ====================
+from tunnel import get_vpn_module
+
+class VpnServerSetup(BaseModel):
+    listen_port: int = 51820
+    address: str = "10.0.0.1/24"
+    dns: str = "1.1.1.1"
+    endpoint: str = ""
+    mtu: int = 1420
+
+class VpnPeerCreate(BaseModel):
+    name: str
+    allowed_ips: str = "10.0.0.0/24"
+
+@api_router.get("/vpn/server")
+async def vpn_get_server(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    return vpn.server.to_dict()
+
+@api_router.post("/vpn/server/setup")
+async def vpn_setup_server(body: VpnServerSetup, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.setup_server(body.listen_port, body.address, body.dns, body.endpoint, body.mtu)
+    return vpn.server.to_dict()
+
+@api_router.put("/vpn/server")
+async def vpn_update_server(body: VpnServerSetup, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.setup_server(body.listen_port, body.address, body.dns, body.endpoint, body.mtu)
+    return vpn.server.to_dict()
+
+@api_router.post("/vpn/server/activate")
+async def vpn_activate(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.activate()
+    return vpn.server.to_dict()
+
+@api_router.post("/vpn/server/deactivate")
+async def vpn_deactivate(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.deactivate()
+    return vpn.server.to_dict()
+
+@api_router.get("/vpn/peers")
+async def vpn_get_peers(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    return [p.to_dict() for p in vpn.peers]
+
+@api_router.get("/vpn/peers/{peer_id}")
+async def vpn_get_peer(peer_id: str, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    peer = next((p for p in vpn.peers if p.id == peer_id), None)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+    return peer.to_dict()
+
+@api_router.post("/vpn/peers")
+async def vpn_create_peer(body: VpnPeerCreate, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    peer = vpn.add_peer(body.name, body.allowed_ips)
+    return peer.to_dict()
+
+@api_router.put("/vpn/peers/{peer_id}")
+async def vpn_update_peer(peer_id: str, body: VpnPeerCreate, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    peer = next((p for p in vpn.peers if p.id == peer_id), None)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+    peer.name = body.name
+    peer.allowed_ips = body.allowed_ips
+    return peer.to_dict()
+
+@api_router.delete("/vpn/peers/{peer_id}")
+async def vpn_delete_peer(peer_id: str, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.remove_peer(peer_id)
+    return {"status": "deleted"}
+
+@api_router.post("/vpn/peers/{peer_id}/toggle")
+async def vpn_toggle_peer(peer_id: str, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    peer = vpn.toggle_peer(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+    return peer.to_dict()
+
+@api_router.get("/vpn/peers/{peer_id}/qr-data")
+async def vpn_peer_qr(peer_id: str, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    qr_data = vpn.get_peer_qr_data(peer_id)
+    if not qr_data:
+        raise HTTPException(status_code=404, detail="Peer not found")
+    return {"qr_data": qr_data, "peer_id": peer_id}
+
+@api_router.post("/vpn/server/wg-up")
+async def vpn_wg_up(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.activate()
+    return {"status": "up", "message": "WireGuard interface activated (mock)"}
+
+@api_router.post("/vpn/server/wg-down")
+async def vpn_wg_down(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    vpn.deactivate()
+    return {"status": "down", "message": "WireGuard interface deactivated (mock)"}
+
+@api_router.get("/vpn/server/wg-status")
+async def vpn_wg_status(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    return vpn.wg_status()
+
+@api_router.get("/vpn/logs")
+async def vpn_logs(page: int = 1, page_size: int = 50, user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    return vpn.get_connection_logs(page, page_size)
+
+@api_router.get("/vpn/stats")
+async def vpn_stats(user: dict = Depends(require_auth)):
+    vpn = get_vpn_module()
+    return vpn.get_stats()
+
+# ==================== SYSTEM INFO ====================
+
+@api_router.get("/info")
+async def get_system_info(user: dict = Depends(require_auth)):
+    """Get system info for the System page."""
+    import platform
+    import psutil
+    
+    cpu_percent = psutil.cpu_percent(interval=0.1)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+    
+    return {
+        "version": "2.8.0",
+        "hostname": platform.node(),
+        "platform": platform.system(),
+        "architecture": platform.machine(),
+        "python_version": platform.python_version(),
+        "cpu_count": psutil.cpu_count(),
+        "cpu_percent": cpu_percent,
+        "memory_total": memory.total,
+        "memory_used": memory.used,
+        "memory_percent": memory.percent,
+        "disk_total": disk.total,
+        "disk_used": disk.used,
+        "disk_percent": disk.percent,
+        "uptime": time.time() - psutil.boot_time(),
+        "modules": {
+            "marmalade": {"name": "Marmalade", "status": "active", "description": "Media Library Manager"},
+            "bastion": {"name": "Bastion", "status": "active", "description": "Security Module"},
+            "tunnel": {"name": "Tunnel", "status": "active", "description": "VPN Portal"},
+            "zest": {"name": "Zest", "status": "active", "description": "Log Viewer"},
+            "drizzle": {"name": "Drizzle", "status": "active", "description": "Playlist Engine"},
+            "fondue": {"name": "Fondue", "status": "active", "description": "Download Manager"},
+            "compote": {"name": "Compote", "status": "active", "description": "Indexer Manager"},
+            "gelatin": {"name": "Gelatin", "status": "active", "description": "Transcoding"},
+            "syrup": {"name": "Syrup", "status": "active", "description": "Live Scraper"},
+        }
+    }
+
 
 # ==================== MEDIA MANAGEMENT (Manual Import) ====================
 
