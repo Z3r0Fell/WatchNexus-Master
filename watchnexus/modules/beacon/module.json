@@ -1,0 +1,12 @@
+{
+  "name": "Beacon",
+  "codename": "beacon",
+  "display_name": "System Tray Application",
+  "version": "3.0.0",
+  "description": "Desktop system tray controller for server management and quick access",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": [],
+  "frontend_pages": [],
+  "type": "desktop"
+}

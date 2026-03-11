@@ -1,107 +1,60 @@
 @echo off
-:: WatchNexus Windows Installer
-:: Creates a portable installation with optional system tray launcher
-
+:: WatchNexus Windows Installer (.NET 8)
 setlocal EnableDelayedExpansion
 
 set APP_NAME=WatchNexus
-set APP_VERSION=2.8.0
+set APP_VERSION=3.0.0-beta
 set INSTALL_DIR=%LOCALAPPDATA%\WatchNexus
-set START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\WatchNexus
+set START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs
 
 echo ================================================
 echo   %APP_NAME% v%APP_VERSION% - Windows Installer
 echo ================================================
 echo.
 
-:: Check Python
-echo [1/6] Checking dependencies...
-python --version >nul 2>&1
+:: Check .NET 8
+echo [1/4] Checking .NET 8 runtime...
+dotnet --list-runtimes 2>nul | findstr "AspNetCore" >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: Python 3 is required but not found.
-    echo Download from: https://www.python.org/downloads/
-    echo Make sure to check "Add Python to PATH" during installation.
+    echo ERROR: ASP.NET Core 8 runtime required.
+    echo Download from: https://dotnet.microsoft.com/download/dotnet/8.0
+    echo Select: ASP.NET Core Runtime 8.x ^(Windows x64 Installer^)
     pause
     exit /b 1
 )
+echo   .NET 8 runtime found.
 
-:: Check Node.js
-node --version >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: Node.js is required but not found.
-    echo Download from: https://nodejs.org/
-    pause
-    exit /b 1
-)
-echo   All dependencies found.
+:: Create dirs
+echo [2/4] Creating installation directory...
+if not exist "%INSTALL_DIR%\data" mkdir "%INSTALL_DIR%\data"
+if not exist "%INSTALL_DIR%\logs" mkdir "%INSTALL_DIR%\logs"
+if not exist "%INSTALL_DIR%\modules" mkdir "%INSTALL_DIR%\modules"
 
-:: Create directories
-echo [2/6] Creating installation directory...
-if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
-if not exist "%START_MENU%" mkdir "%START_MENU%"
-
-:: Copy backend
-echo [3/6] Installing backend...
+:: Build
+echo [3/4] Building WatchNexus...
 set SCRIPT_DIR=%~dp0..\..
-xcopy /E /I /Y "%SCRIPT_DIR%\src\server" "%INSTALL_DIR%\backend" >nul
+cd /d "%SCRIPT_DIR%\watchnexus"
+dotnet publish core\WatchNexus.Core.csproj -c Release -o "%INSTALL_DIR%\bin" --self-contained false
+xcopy /E /I /Y modules "%INSTALL_DIR%\modules" >nul
 
-cd /d "%INSTALL_DIR%\backend"
-python -m venv venv
-call venv\Scripts\activate.bat
-pip install --quiet -r requirements.txt
-call deactivate
-
-:: Build frontend
-echo [4/6] Building frontend...
-set TEMP_WEB=%TEMP%\watchnexus-web-build
-xcopy /E /I /Y "%SCRIPT_DIR%\src\web" "%TEMP_WEB%" >nul
-cd /d "%TEMP_WEB%"
-call yarn install --frozen-lockfile --silent 2>nul
-call yarn build 2>nul
-xcopy /E /I /Y build "%INSTALL_DIR%\backend\frontend_build" >nul
-rd /s /q "%TEMP_WEB%"
-
-:: Copy tray app
-echo [5/6] Installing tray application...
-copy /Y "%SCRIPT_DIR%\tray_app.py" "%INSTALL_DIR%\" >nul 2>&1
-copy /Y "%SCRIPT_DIR%\launch.py" "%INSTALL_DIR%\" >nul 2>&1
-
-:: Create launcher batch files
-echo [6/6] Creating shortcuts...
-
-:: Server launcher
+:: Create launcher
+echo [4/4] Creating launcher...
 (
 echo @echo off
-echo cd /d "%INSTALL_DIR%\backend"
-echo call venv\Scripts\activate.bat
-echo echo WatchNexus starting on http://localhost:8001
-echo python -m uvicorn server:app --host 0.0.0.0 --port 8001
-) > "%INSTALL_DIR%\watchnexus-server.bat"
+echo set ASPNETCORE_URLS=http://0.0.0.0:8001
+echo cd /d "%INSTALL_DIR%\bin"
+echo dotnet WatchNexus.Core.dll %%*
+) > "%INSTALL_DIR%\WatchNexus.bat"
 
-:: Tray launcher
-(
-echo @echo off
-echo cd /d "%INSTALL_DIR%"
-echo call backend\venv\Scripts\activate.bat
-echo start /B pythonw tray_app.py --port 8001
-) > "%INSTALL_DIR%\watchnexus-tray.bat"
-
-:: Create Start Menu shortcuts
-(
-echo @echo off
-echo start "" "%INSTALL_DIR%\watchnexus-tray.bat"
-) > "%START_MENU%\WatchNexus.bat"
+:: Start menu shortcut
+copy /Y "%INSTALL_DIR%\WatchNexus.bat" "%START_MENU%\WatchNexus.bat" >nul
 
 echo.
 echo ================================================
 echo   Installation complete!
 echo ================================================
 echo.
-echo   Server:     %INSTALL_DIR%\watchnexus-server.bat
-echo   Tray App:   %INSTALL_DIR%\watchnexus-tray.bat
-echo   Dashboard:  http://localhost:8001
-echo   Data dir:   %INSTALL_DIR%
-echo.
-echo   Start Menu entry created.
+echo   Run:       %INSTALL_DIR%\WatchNexus.bat
+echo   Dashboard: http://localhost:8001
 echo.
 pause
