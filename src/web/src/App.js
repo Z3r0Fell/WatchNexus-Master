@@ -32,6 +32,11 @@ import { WatchHistoryPage } from "./pages/WatchHistoryPage";
 import { WatchlistPage } from "./pages/WatchlistPage";
 import { DiscoverPage } from "./pages/DiscoverPage";
 
+// Admin / Security / VPN / System
+import SecurityPage from "./pages/SecurityPage";
+import VpnPage from "./pages/VpnPage";
+import SystemPage from "./pages/SystemPage";
+
 // Gadget Pages
 import WeatherPage from "./pages/gadgets/WeatherPage";
 import PodcastsPage from "./pages/gadgets/PodcastsPage";
@@ -344,6 +349,30 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <WebVideoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/security"
+        element={
+          <ProtectedRoute>
+            <SecurityPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vpn"
+        element={
+          <ProtectedRoute>
+            <VpnPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/system"
+        element={
+          <ProtectedRoute>
+            <SystemPage />
           </ProtectedRoute>
         }
       />

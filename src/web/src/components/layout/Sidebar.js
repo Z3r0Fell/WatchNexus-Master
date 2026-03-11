@@ -25,7 +25,10 @@ import {
   Podcast,
   MonitorPlay,
   Cloud,
-  Video
+  Video,
+  Shield,
+  Wifi,
+  Server
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -36,6 +39,7 @@ const ICON_MAP = {
   Image, Gamepad2, Radio, Podcast, MonitorPlay, Cloud, Video,
   Home, Film, Tv, Music, BookOpen, Download, Settings,
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
+  Shield, Wifi, Server,
 };
 
 // All navigation items - Home, Downloads, Settings are always visible (not hideable)
@@ -57,13 +61,17 @@ const allNavItems = [
   { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
   { icon: Image, label: 'Photos', path: '/photos', hideable: true, isGadget: true },
   { icon: Video, label: 'Web Video', path: '/webvideo', hideable: true, isGadget: true },
+  // Admin
+  { icon: Shield, label: 'Security', path: '/security', hideable: true },
+  { icon: Wifi, label: 'VPN Portal', path: '/vpn', hideable: true },
+  { icon: Server, label: 'System', path: '/system', hideable: true },
   // Always visible
   { icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true },
   { icon: Settings, label: 'Settings', path: '/settings', alwaysVisible: true },
 ];
 
 // Default visible tabs (all except Live TV which users often don't use)
-const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video'];
+const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video', 'Security', 'VPN Portal', 'System'];
 
 // Get visible tabs from localStorage
 const getVisibleTabs = () => {
