@@ -652,7 +652,7 @@ STORY LAYOUT:
 ## Files You Need
 
 All files are in your screenshots ZIP:
-**Download:** `https://metaflix-sandbox.preview.emergentagent.com/watchnexus-screenshots.zip`
+**Download:** `https://media-pipeline-demo.preview.emergentagent.com/watchnexus-screenshots.zip`
 
 ### Create These Additional Graphics
 
