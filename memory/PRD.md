@@ -4,7 +4,8 @@
 Build a unified, self-hosted media pipeline called "WatchNexus". Single cohesive application with modular architecture where each module can be independently developed, updated, and installed.
 
 ## Architecture (v3.0.0-beta)
-- **Backend:** Python 3 / FastAPI, SQLite (via custom ORM)
+- **Backend (C#):** .NET 10, ASP.NET Core, Entity Framework Core 10, SQLite
+- **Backend (Python):** Python 3 / FastAPI, MongoDB (dev environment)
 - **Frontend:** React 18, TailwindCSS, Shadcn UI, Framer Motion
 - **Auth:** JWT Bearer Tokens + Google OAuth
 - **Structure:** Unified modular monolith

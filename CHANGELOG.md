@@ -2,9 +2,9 @@
 
 ## v3.0.0-beta (March 11, 2026)
 
-### BREAKING: Full C#/.NET 8 Migration
-- **Replaced entire Python/FastAPI backend** with C#/.NET 8 ASP.NET Core
-- Entity Framework Core with SQLite database
+### BREAKING: Full C#/.NET 10 Migration
+- **Replaced entire Python/FastAPI backend** with C#/.NET 10 ASP.NET Core
+- Entity Framework Core 10 with SQLite database
 - JWT Bearer authentication via Microsoft.AspNetCore.Authentication.JwtBearer
 - All API endpoints ported and verified (25/25 tests passed)
 
@@ -28,9 +28,9 @@
 
 ### Installers Updated for .NET
 - Docker: Multi-stage build with dotnet SDK + aspnet runtime
-- Linux: .NET 8 runtime installer
-- Windows: .NET 8 runtime check + dotnet publish
-- macOS: .NET 8 + .app bundle
+- Linux: .NET 10 runtime installer with prerequisite checks
+- Windows: .NET 10 runtime check + dotnet publish with prerequisite checks
+- macOS: .NET 10 + .app bundle
 - Unraid: Docker template
 
 ### File Cleanup

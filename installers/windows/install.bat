@@ -1,5 +1,5 @@
 @echo off
-:: WatchNexus Windows Installer (.NET 8)
+:: WatchNexus Windows Installer (.NET 10)
 setlocal EnableDelayedExpansion
 
 set APP_NAME=WatchNexus
@@ -12,17 +12,36 @@ echo   %APP_NAME% v%APP_VERSION% - Windows Installer
 echo ================================================
 echo.
 
-:: Check .NET 8
-echo [1/4] Checking .NET 8 runtime...
+:: Prerequisite check
+echo Checking prerequisites...
+echo   -----------------------------------------------
+
+:: Check .NET 10
+echo   Checking .NET 10 runtime...
 dotnet --list-runtimes 2>nul | findstr "AspNetCore" >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: ASP.NET Core 8 runtime required.
-    echo Download from: https://dotnet.microsoft.com/download/dotnet/8.0
-    echo Select: ASP.NET Core Runtime 8.x ^(Windows x64 Installer^)
+    echo   [MISSING] ASP.NET Core 10 Runtime
+    echo.
+    echo   ERROR: ASP.NET Core 10 runtime is required.
+    echo   Download from: https://dotnet.microsoft.com/download/dotnet/10.0
+    echo   Select: ASP.NET Core Runtime 10.x ^(Windows x64 Installer^)
+    echo.
     pause
     exit /b 1
+) else (
+    echo   [OK]      .NET ASP.NET Core Runtime found
 )
-echo   .NET 8 runtime found.
+
+:: Check Node.js (optional)
+where node >nul 2>&1
+if errorlevel 1 (
+    echo   [INFO]    Node.js not found ^(optional, for frontend build^)
+) else (
+    for /f "delims=" %%v in ('node --version 2^>nul') do echo   [OK]      Node.js %%v
+)
+
+echo   -----------------------------------------------
+echo.
 
 :: Create dirs
 echo [2/4] Creating installation directory...
