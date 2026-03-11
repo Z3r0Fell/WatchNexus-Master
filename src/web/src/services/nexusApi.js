@@ -46,6 +46,12 @@ export const vpnApi = {
   updatePeer: (id, data) => axios.put(`${API}/vpn/peers/${id}`, data),
   deletePeer: (id) => axios.delete(`${API}/vpn/peers/${id}`),
   togglePeer: (id) => axios.post(`${API}/vpn/peers/${id}/toggle`),
+  getPeerQr: (id) => axios.get(`${API}/vpn/peers/${id}/qr-data`),
+  
+  // WireGuard control
+  wgUp: () => axios.post(`${API}/vpn/server/wg-up`),
+  wgDown: () => axios.post(`${API}/vpn/server/wg-down`),
+  wgStatus: () => axios.get(`${API}/vpn/server/wg-status`),
   
   // Logs & Stats
   getConnectionLogs: (page = 1, pageSize = 50) =>

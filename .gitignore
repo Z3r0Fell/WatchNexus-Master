@@ -282,3 +282,4 @@ src/web/node_modules/.cache/default-development/1.pack
 *.env.*
 src/web/node_modules/.cache/default-development/5.pack
 src/web/node_modules/.cache/default-development/5.pack
+src/web/node_modules/.cache/default-development/6.pack

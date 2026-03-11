@@ -54,6 +54,10 @@
               "target": "Package",
               "version": "[8.0.0, )"
             },
+            "QRCoder": {
+              "target": "Package",
+              "version": "[1.7.0, )"
+            },
             "Serilog.AspNetCore": {
               "target": "Package",
               "version": "[8.0.0, )"
