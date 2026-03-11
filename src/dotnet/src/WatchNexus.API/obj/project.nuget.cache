@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "D1ZJyBs2ecA=",
+  "dgSpecHash": "4OrQNvqUab4=",
   "success": true,
   "projectFilePath": "/app/src/dotnet/src/WatchNexus.API/WatchNexus.API.csproj",
   "expectedPackageFiles": [
@@ -47,6 +47,7 @@
     "/root/.nuget/packages/microsoft.win32.systemevents/6.0.0/microsoft.win32.systemevents.6.0.0.nupkg.sha512",
     "/root/.nuget/packages/npgsql/8.0.0/npgsql.8.0.0.nupkg.sha512",
     "/root/.nuget/packages/npgsql.entityframeworkcore.postgresql/8.0.0/npgsql.entityframeworkcore.postgresql.8.0.0.nupkg.sha512",
+    "/root/.nuget/packages/qrcoder/1.7.0/qrcoder.1.7.0.nupkg.sha512",
     "/root/.nuget/packages/serilog/3.1.1/serilog.3.1.1.nupkg.sha512",
     "/root/.nuget/packages/serilog.aspnetcore/8.0.0/serilog.aspnetcore.8.0.0.nupkg.sha512",
     "/root/.nuget/packages/serilog.extensions.hosting/8.0.0/serilog.extensions.hosting.8.0.0.nupkg.sha512",

@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import {
   Shield, Wifi, WifiOff, Server, Plus, Trash2, Copy, Download,
   ToggleLeft, ToggleRight, RefreshCw, Activity, ArrowUpDown,
-  Globe, Clock, Users, Power, PowerOff, ChevronDown, Settings
+  Globe, Clock, Users, Power, PowerOff, ChevronDown, Settings,
+  QrCode, Terminal, X
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -42,6 +43,9 @@ const ServerConfig = ({ config, onRefresh }) => {
     dns_servers: '1.1.1.1, 8.8.8.8', max_peers: 50
   });
   const [toggling, setToggling] = useState(false);
+  const [wgStatus, setWgStatus] = useState(null);
+  const [showWgTerminal, setShowWgTerminal] = useState(false);
+  const [wgOutput, setWgOutput] = useState('');
 
   const handleSetup = async () => {
     try {
@@ -65,6 +69,44 @@ const ServerConfig = ({ config, onRefresh }) => {
       onRefresh();
     } catch (e) { toast.error('Toggle failed'); }
     finally { setToggling(false); }
+  };
+
+  const handleWgUp = async () => {
+    try {
+      const res = await vpnApi.wgUp();
+      setWgOutput(res.data.output || res.data.message);
+      setShowWgTerminal(true);
+      toast.success('WireGuard interface up');
+      onRefresh();
+    } catch (e) {
+      setWgOutput(e.response?.data?.message || 'Command failed');
+      setShowWgTerminal(true);
+      toast.error('WireGuard up failed');
+    }
+  };
+
+  const handleWgDown = async () => {
+    try {
+      const res = await vpnApi.wgDown();
+      setWgOutput(res.data.output || res.data.message);
+      setShowWgTerminal(true);
+      toast.success('WireGuard interface down');
+      onRefresh();
+    } catch (e) {
+      setWgOutput(e.response?.data?.message || 'Command failed');
+      setShowWgTerminal(true);
+    }
+  };
+
+  const handleWgStatus = async () => {
+    try {
+      const res = await vpnApi.wgStatus();
+      setWgOutput(res.data.output || 'No WireGuard interfaces found');
+      setShowWgTerminal(true);
+    } catch (e) {
+      setWgOutput(e.response?.data?.message || 'Status check failed');
+      setShowWgTerminal(true);
+    }
   };
 
   if (!config?.configured) {
@@ -177,19 +219,56 @@ const ServerConfig = ({ config, onRefresh }) => {
           <p className="text-xs mt-0.5">{config.allow_internet ? 'Yes' : 'No'}</p>
         </div>
       </div>
+
+      {/* WireGuard Controls */}
+      <div className="mt-4 flex items-center gap-2">
+        <Button size="sm" onClick={handleWgUp} data-testid="wg-up-btn"
+          className="bg-cyan-600/80 hover:bg-cyan-700 text-white text-xs">
+          <Power className="w-3.5 h-3.5 mr-1" /> wg-quick up
+        </Button>
+        <Button size="sm" onClick={handleWgDown} data-testid="wg-down-btn"
+          className="bg-red-600/80 hover:bg-red-700 text-white text-xs">
+          <PowerOff className="w-3.5 h-3.5 mr-1" /> wg-quick down
+        </Button>
+        <Button size="sm" variant="ghost" onClick={handleWgStatus} data-testid="wg-status-btn"
+          className="text-xs">
+          <Terminal className="w-3.5 h-3.5 mr-1" /> wg show
+        </Button>
+      </div>
+
+      <AnimatePresence>
+        {showWgTerminal && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }} className="mt-3">
+            <div className="relative">
+              <button onClick={() => setShowWgTerminal(false)}
+                className="absolute top-2 right-2 p-1 rounded hover:bg-white/10">
+                <X className="w-3 h-3 text-gray-400" />
+              </button>
+              <pre className="px-4 py-3 rounded-lg bg-black/60 border border-white/[0.05] text-xs font-mono text-green-400 overflow-x-auto whitespace-pre-wrap max-h-32 overflow-y-auto">
+                {wgOutput || 'No output'}
+              </pre>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
 
 // Peer Card
 const PeerCard = ({ peer, onToggle, onDelete }) => {
-  const [showConfig, setShowConfig] = useState(false);
+  const [qrData, setQrData] = useState(null);
+  const [loadingQr, setLoadingQr] = useState(false);
 
-  const copyConfig = () => {
-    if (peer.client_config) {
-      navigator.clipboard.writeText(peer.client_config);
-      toast.success('Config copied to clipboard');
-    }
+  const handleShowQr = async () => {
+    if (qrData) { setQrData(null); return; }
+    setLoadingQr(true);
+    try {
+      const res = await vpnApi.getPeerQr(peer.id);
+      setQrData(res.data);
+    } catch { toast.error('Failed to generate QR code'); }
+    finally { setLoadingQr(false); }
   };
 
   return (
@@ -207,6 +286,11 @@ const PeerCard = ({ peer, onToggle, onDelete }) => {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          <button onClick={handleShowQr}
+            data-testid={`qr-peer-${peer.id}`}
+            className={cn("p-1.5 rounded-lg hover:bg-white/5 transition-colors", loadingQr && "animate-pulse")}>
+            <QrCode className={cn("w-4 h-4", qrData ? "text-cyan-400" : "text-gray-400")} />
+          </button>
           <button onClick={() => onToggle(peer.id)}
             data-testid={`toggle-peer-${peer.id}`}
             className="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
@@ -222,6 +306,21 @@ const PeerCard = ({ peer, onToggle, onDelete }) => {
           </button>
         </div>
       </div>
+
+      {/* QR Code Display */}
+      <AnimatePresence>
+        {qrData && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }} className="mb-3">
+            <div className="p-3 rounded-lg bg-white/[0.03] border border-cyan-500/20 text-center">
+              <p className="text-xs text-cyan-400 font-medium mb-2">Scan with WireGuard App</p>
+              <img src={qrData.qr_image} alt="WireGuard QR Code" className="mx-auto rounded-lg" style={{ maxWidth: '200px' }} />
+              <p className="text-xs text-gray-500 mt-2">Replace YOUR_PRIVATE_KEY with the key from initial setup</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="px-2 py-1.5 rounded-lg bg-white/[0.03]">
           <span className="text-gray-500">Rx:</span>{' '}

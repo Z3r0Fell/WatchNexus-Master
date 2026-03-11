@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QRCoder;
 using WatchNexus.Domain.Entities;
 using WatchNexus.Domain.Interfaces;
 
@@ -268,6 +269,123 @@ public class VpnController : ControllerBase
         return Ok(new { is_enabled = peer.IsEnabled });
     }
 
+    // ── QR Code ──
+
+    [HttpGet("peers/{id}/qr")]
+    public async Task<IActionResult> GetPeerQrCode(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        var peer = await _unitOfWork.VpnPeers.GetByIdAsync(id, ct);
+        if (peer == null) return NotFound();
+        if (peer.UserId != userId && !IsAdmin()) return Forbid();
+
+        var serverConfig = (await _unitOfWork.VpnServerConfigs.GetAllAsync(ct)).FirstOrDefault();
+        if (serverConfig == null) return BadRequest(new { message = "VPN server not configured" });
+
+        // We need to regenerate the config from stored data (private key is not stored for security)
+        // Instead generate a config with placeholder for the private key
+        var configText = GenerateClientConfigFromStored(peer, serverConfig);
+
+        using var qrGenerator = new QRCodeGenerator();
+        var qrCodeData = qrGenerator.CreateQrCode(configText, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        var qrBytes = qrCode.GetGraphic(8);
+
+        return File(qrBytes, "image/png");
+    }
+
+    [HttpGet("peers/{id}/qr-data")]
+    public async Task<IActionResult> GetPeerQrData(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        var peer = await _unitOfWork.VpnPeers.GetByIdAsync(id, ct);
+        if (peer == null) return NotFound();
+        if (peer.UserId != userId && !IsAdmin()) return Forbid();
+
+        var serverConfig = (await _unitOfWork.VpnServerConfigs.GetAllAsync(ct)).FirstOrDefault();
+        if (serverConfig == null) return BadRequest(new { message = "VPN server not configured" });
+
+        var configText = GenerateClientConfigFromStored(peer, serverConfig);
+
+        using var qrGenerator = new QRCodeGenerator();
+        var qrCodeData = qrGenerator.CreateQrCode(configText, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        var qrBytes = qrCode.GetGraphic(8);
+
+        var base64 = Convert.ToBase64String(qrBytes);
+        return Ok(new { qr_image = $"data:image/png;base64,{base64}", config = configText });
+    }
+
+    // ── WireGuard Control ──
+
+    [HttpPost("server/wg-up")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> WireGuardUp(CancellationToken ct)
+    {
+        var config = (await _unitOfWork.VpnServerConfigs.GetAllAsync(ct)).FirstOrDefault();
+        if (config == null) return NotFound(new { message = "VPN server not configured" });
+
+        try
+        {
+            // Write WireGuard config file
+            var wgConfigPath = $"/etc/wireguard/{config.InterfaceName}.conf";
+            var wgConfig = await GenerateServerWgConfig(config, ct);
+
+            // Attempt to write config and bring up interface
+            var result = await ExecuteCommand($"echo '{wgConfig}' | sudo tee {wgConfigPath} > /dev/null && sudo wg-quick up {config.InterfaceName}");
+
+            config.IsActive = true;
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation("WireGuard interface {Interface} brought up", config.InterfaceName);
+            return Ok(new { message = $"WireGuard {config.InterfaceName} is up", output = result, is_active = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to bring up WireGuard");
+            return StatusCode(500, new { message = $"Failed to bring up WireGuard: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("server/wg-down")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> WireGuardDown(CancellationToken ct)
+    {
+        var config = (await _unitOfWork.VpnServerConfigs.GetAllAsync(ct)).FirstOrDefault();
+        if (config == null) return NotFound(new { message = "VPN server not configured" });
+
+        try
+        {
+            var result = await ExecuteCommand($"sudo wg-quick down {config.InterfaceName}");
+
+            config.IsActive = false;
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation("WireGuard interface {Interface} brought down", config.InterfaceName);
+            return Ok(new { message = $"WireGuard {config.InterfaceName} is down", output = result, is_active = false });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to bring down WireGuard");
+            return StatusCode(500, new { message = $"Failed to bring down WireGuard: {ex.Message}" });
+        }
+    }
+
+    [HttpGet("server/wg-status")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> WireGuardStatus(CancellationToken ct)
+    {
+        try
+        {
+            var result = await ExecuteCommand("sudo wg show all");
+            return Ok(new { output = result, available = !string.IsNullOrWhiteSpace(result) });
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { output = ex.Message, available = false });
+        }
+    }
+
     // ── Connection Logs ──
 
     [HttpGet("logs")]
@@ -388,6 +506,79 @@ public class VpnController : ControllerBase
             sb.AppendLine($"Endpoint = {server.ExternalEndpoint}:{server.ListenPort}");
         sb.AppendLine($"PersistentKeepalive = {peer.KeepAlive}");
         return sb.ToString();
+    }
+
+    private static string GenerateClientConfigFromStored(VpnPeer peer, VpnServerConfig server)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("[Interface]");
+        sb.AppendLine($"PrivateKey = YOUR_PRIVATE_KEY");
+        sb.AppendLine($"Address = {peer.AssignedIp}/32");
+        if (!string.IsNullOrEmpty(peer.DnsServers))
+            sb.AppendLine($"DNS = {peer.DnsServers}");
+        sb.AppendLine();
+        sb.AppendLine("[Peer]");
+        sb.AppendLine($"PublicKey = {server.PublicKey}");
+        if (!string.IsNullOrEmpty(peer.PresharedKey))
+            sb.AppendLine($"PresharedKey = {peer.PresharedKey}");
+        sb.AppendLine($"AllowedIPs = {(server.AllowInternetAccess ? "0.0.0.0/0" : server.Subnet)}");
+        if (!string.IsNullOrEmpty(server.ExternalEndpoint))
+            sb.AppendLine($"Endpoint = {server.ExternalEndpoint}:{server.ListenPort}");
+        sb.AppendLine($"PersistentKeepalive = {peer.KeepAlive}");
+        return sb.ToString();
+    }
+
+    private async Task<string> GenerateServerWgConfig(VpnServerConfig config, CancellationToken ct)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("[Interface]");
+        sb.AppendLine($"Address = {config.ServerIp}/24");
+        sb.AppendLine($"ListenPort = {config.ListenPort}");
+        sb.AppendLine($"PrivateKey = {config.PrivateKey}");
+        if (!string.IsNullOrEmpty(config.PostUp))
+            sb.AppendLine($"PostUp = {config.PostUp}");
+        else
+            sb.AppendLine($"PostUp = iptables -A FORWARD -i {config.InterfaceName} -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE");
+        if (!string.IsNullOrEmpty(config.PostDown))
+            sb.AppendLine($"PostDown = {config.PostDown}");
+        else
+            sb.AppendLine($"PostDown = iptables -D FORWARD -i {config.InterfaceName} -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE");
+
+        // Add all enabled peers
+        var peers = await _unitOfWork.VpnPeers.FindAsync(p => p.IsEnabled, ct);
+        foreach (var peer in peers)
+        {
+            sb.AppendLine();
+            sb.AppendLine("[Peer]");
+            sb.AppendLine($"PublicKey = {peer.PublicKey}");
+            if (!string.IsNullOrEmpty(peer.PresharedKey))
+                sb.AppendLine($"PresharedKey = {peer.PresharedKey}");
+            sb.AppendLine($"AllowedIPs = {peer.AllowedIps}");
+        }
+
+        return sb.ToString();
+    }
+
+    private static async Task<string> ExecuteCommand(string command)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "/bin/bash",
+            Arguments = $"-c \"{command.Replace("\"", "\\\"")}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = System.Diagnostics.Process.Start(psi);
+        if (process == null) throw new InvalidOperationException("Failed to start process");
+
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        return string.IsNullOrWhiteSpace(output) ? error : output;
     }
 
     private static object MapPeerToDto(VpnPeer p) => new

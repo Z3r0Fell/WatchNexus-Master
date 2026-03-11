@@ -113,3 +113,4 @@
 /app/src/dotnet/src/WatchNexus.API/obj/Debug/net8.0/WatchNexus.API.pdb
 /app/src/dotnet/src/WatchNexus.API/obj/Debug/net8.0/WatchNexus.API.genruntimeconfig.cache
 /app/src/dotnet/src/WatchNexus.API/obj/Debug/net8.0/ref/WatchNexus.API.dll
+/app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/QRCoder.dll
