@@ -5,7 +5,8 @@ using WatchNexus.Domain.Interfaces;
 namespace WatchNexus.Infrastructure.Services;
 
 /// <summary>
-/// FFmpeg transcoding service - Gelatin implementation
+/// FFmpeg transcoding service
+/// (not a standalone module — part of Marmalade media pipeline)
 /// </summary>
 public class TranscodingService : ITranscodingService
 {

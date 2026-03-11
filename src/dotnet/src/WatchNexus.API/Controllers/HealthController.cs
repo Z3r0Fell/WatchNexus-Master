@@ -36,8 +36,8 @@ public class HealthController : ControllerBase
                 new { name = "Compote", description = "Indexer Hub", status = "active" },
                 new { name = "Fondue", description = "Download Engine", status = "active" },
                 new { name = "Garnish", description = "Subtitle Manager", status = "active" },
-                new { name = "Gelatin", description = "Transcoding", status = "active" },
-                new { name = "Zest", description = "Torrent Search", status = "active" },
+                new { name = "Gelatin", description = "External Access & Tunnels", status = "active" },
+                new { name = "Zest", description = "Log Viewer & Diagnostics", status = "active" },
                 new { name = "Relish", description = "IPTV Player", status = "active" },
                 new { name = "Drizzle", description = "Playlists", status = "active" },
                 new { name = "Cream", description = "Stream Links", status = "active" },
@@ -45,6 +45,7 @@ public class HealthController : ControllerBase
                 new { name = "Potluck", description = "Request System", status = "active" },
                 new { name = "Sieve", description = "Quality Profiles", status = "active" },
                 new { name = "Syrup", description = "Scraper Engine", status = "active" },
+                new { name = "Tiramisu", description = "Auto-Updater", status = "active" },
                 new { name = "Bastion", description = "Security & Audit", status = "active" },
                 new { name = "Tunnel", description = "VPN Portal", status = "active" }
             },

@@ -64,3 +64,42 @@ export const systemApi = {
   getHealth: () => axios.get(`${API}/health`),
   getInfo: () => axios.get(`${API}/info`),
 };
+
+// Libraries (Marmalade)
+export const libraryApi = {
+  getAll: () => axios.get(`${API}/libraries`),
+  getById: (id) => axios.get(`${API}/libraries/${id}`),
+  create: (data) => axios.post(`${API}/libraries`, data),
+  update: (id, data) => axios.put(`${API}/libraries/${id}`, data),
+  remove: (id) => axios.delete(`${API}/libraries/${id}`),
+  scan: (id) => axios.post(`${API}/libraries/${id}/scan`),
+};
+
+// Downloads (Fondue)
+export const downloadApi = {
+  getAll: (status) => axios.get(`${API}/downloads`, { params: status ? { status } : {} }),
+  getById: (id) => axios.get(`${API}/downloads/${id}`),
+  create: (data) => axios.post(`${API}/downloads`, data),
+  pause: (id) => axios.post(`${API}/downloads/${id}/pause`),
+  resume: (id) => axios.post(`${API}/downloads/${id}/resume`),
+  remove: (id, deleteFiles) => axios.delete(`${API}/downloads/${id}`, { params: { delete_files: deleteFiles } }),
+  getStats: () => axios.get(`${API}/downloads/stats`),
+};
+
+// Logs (Zest)
+export const logsApi = {
+  getFiles: () => axios.get(`${API}/logs`),
+  getLatest: (lines = 100, level) => axios.get(`${API}/logs/latest`, { params: { lines, level } }),
+  getFile: (filename, offset, limit) => axios.get(`${API}/logs/file/${filename}`, { params: { offset, limit } }),
+  getSystem: () => axios.get(`${API}/logs/system`),
+  deleteFile: (filename) => axios.delete(`${API}/logs/file/${filename}`),
+};
+
+// Settings
+export const settingsApi = {
+  getAll: () => axios.get(`${API}/settings`),
+  get: (key) => axios.get(`${API}/settings/${key}`),
+  set: (key, value, global) => axios.put(`${API}/settings/${key}`, { value, global }),
+  remove: (key) => axios.delete(`${API}/settings/${key}`),
+  bulkSet: (settings) => axios.post(`${API}/settings/bulk`, settings),
+};

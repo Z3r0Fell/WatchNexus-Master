@@ -5,16 +5,16 @@ import { systemApi } from '../services/nexusApi';
 import { toast } from 'sonner';
 import {
   Server, Cpu, HardDrive, Activity, CheckCircle, Clock,
-  Shield, Wifi, Layers, Box, RefreshCw
+  Shield, Wifi, Layers, Box, RefreshCw, Globe
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
 
 const MODULE_ICONS = {
   Marmalade: Layers, Compote: Box, Fondue: HardDrive, Garnish: Box,
-  Gelatin: Activity, Zest: Box, Relish: Box, Drizzle: Box,
+  Gelatin: Globe, Zest: Activity, Relish: Box, Drizzle: Box,
   Cream: Box, Fprint: Box, Potluck: Box, Sieve: Box,
-  Syrup: Box, Bastion: Shield, Tunnel: Wifi,
+  Syrup: Box, Tiramisu: Box, Bastion: Shield, Tunnel: Wifi,
 };
 
 export default function SystemPage() {
