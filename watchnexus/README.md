@@ -1,6 +1,6 @@
 # WatchNexus v3.0.0-beta
 
-> Unified, self-hosted media pipeline built with C#/.NET 8.
+> Unified, self-hosted media pipeline built with C#/.NET 10.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ WatchNexus is a **unified modular monolith** — a single application with indep
 
 ```
 watchnexus/
-├── core/                    # C#/.NET 8 server (entry point)
+├── core/                    # C#/.NET 10 server (entry point)
 │   ├── Program.cs          # Bootstrap, DI, middleware
 │   ├── Auth/               # JWT authentication
 │   ├── Controllers/        # API controllers (Core, Libraries, Security, VPN, Settings, Logs)
@@ -70,7 +70,7 @@ docker compose up -d
 ```
 
 ## Tech Stack
-- **Backend:** C#/.NET 8, ASP.NET Core, Entity Framework Core, SQLite
+- **Backend:** C#/.NET 10, ASP.NET Core, Entity Framework Core 10, SQLite
 - **Frontend:** React 18, TailwindCSS, Framer Motion, Shadcn UI
 - **Auth:** JWT Bearer Tokens
 - **Metadata:** TMDB API v3
