@@ -132,7 +132,7 @@ export default function LogViewerPage() {
                 <span className="text-xs text-gray-500">Uptime</span>
               </div>
               <p className="text-sm font-medium">
-                {Math.floor(systemInfo.uptime_seconds / 3600)}h {Math.floor((systemInfo.uptime_seconds % 3600) / 60)}m
+                {systemInfo.uptime_seconds ? `${Math.floor(systemInfo.uptime_seconds / 3600)}h ${Math.floor((systemInfo.uptime_seconds % 3600) / 60)}m` : '--'}
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
@@ -140,21 +140,21 @@ export default function LogViewerPage() {
                 <HardDrive className="w-3.5 h-3.5 text-violet-400" />
                 <span className="text-xs text-gray-500">Memory</span>
               </div>
-              <p className="text-sm font-medium">{systemInfo.memory_mb?.toFixed(0)} MB</p>
+              <p className="text-sm font-medium">{systemInfo.memory_mb ? `${systemInfo.memory_mb.toFixed(0)} MB` : '--'}</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <div className="flex items-center gap-2 mb-1">
                 <Cpu className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="text-xs text-gray-500">CPU Time</span>
               </div>
-              <p className="text-sm font-medium">{systemInfo.cpu_time_seconds?.toFixed(1)}s</p>
+              <p className="text-sm font-medium">{systemInfo.cpu_time_seconds ? `${systemInfo.cpu_time_seconds.toFixed(1)}s` : '--'}</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <div className="flex items-center gap-2 mb-1">
                 <Activity className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-xs text-gray-500">Threads</span>
               </div>
-              <p className="text-sm font-medium">{systemInfo.threads}</p>
+              <p className="text-sm font-medium">{systemInfo.threads || '--'}</p>
             </div>
           </div>
         )}
