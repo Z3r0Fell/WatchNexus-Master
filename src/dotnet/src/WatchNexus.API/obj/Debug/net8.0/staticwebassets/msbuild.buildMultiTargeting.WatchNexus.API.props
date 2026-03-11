@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/WatchNexus.API.props" />
-</Project>

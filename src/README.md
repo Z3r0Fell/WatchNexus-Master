@@ -1,84 +1,53 @@
 # WatchNexus Source Code
 
-This directory contains the WatchNexus application source code organized in a Jellyfin-style modular structure.
-
-## Directory Structure
+## Architecture
 
 ```
-/app/src/
-├── WatchNexus.Server/      # Backend FastAPI application
-│   ├── server.py           # Main application entry point
-│   ├── marmalade_server.py # 🍯 Media library management
-│   ├── compote.py          # 🍮 Indexer integration
-│   ├── garnish.py          # 🌿 Subtitle services
-│   ├── milk.py             # 🥛 Theme engine
-│   ├── zest.py             # 🍋 Log viewer
-│   ├── drizzle.py          # 💧 Playlist engine
-│   ├── sieve.py            # 🧪 Media health checker
-│   ├── gelatin.py          # 🧈 Jellyfin compatibility
-│   ├── relish.py           # 🍭 IPTV integration
-│   ├── fondue.py           # 🧀 Audio fingerprinting
-│   ├── potluck.py          # 🍲 qBittorrent client
-│   └── database.py         # Database layer
-│
-├── WatchNexus.Web/         # Frontend React application
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   ├── context/        # React contexts
-│   │   ├── hooks/          # Custom hooks
-│   │   └── services/       # API services
-│   ├── public/             # Static assets
-│   └── package.json        # Dependencies
-│
-├── WatchNexus.Plugins/     # Plugin system
-│   ├── core/               # Plugin infrastructure
-│   ├── builtin/            # Built-in plugins
-│   └── installed/          # User-installed plugins
-│
-└── WatchNexus.Common/      # Shared utilities
-    ├── config.py           # Configuration management
-    ├── logging.py          # Logging utilities
-    ├── auth.py             # Authentication helpers
-    └── database.py         # Database utilities
+src/
+├── server/          # Python/FastAPI backend (primary)
+│   ├── server.py    # Main API server (6000+ LOC)
+│   ├── database.py  # SQLite database layer
+│   ├── bastion.py   # Security module
+│   ├── tunnel.py    # VPN module
+│   ├── marmalade_server.py  # Media library manager
+│   ├── qbittorrent_client.py  # qBittorrent integration
+│   ├── zest.py      # Log viewer
+│   ├── drizzle.py   # Playlist engine
+│   ├── fondue.py    # Download manager
+│   ├── compote.py   # Indexer manager
+│   ├── gelatin.py   # Transcoding
+│   ├── syrup_scrapers.py  # Live scrapers
+│   └── ...
+└── web/             # React frontend (symlinked as /app/frontend)
+    ├── src/
+    │   ├── App.js           # Root router
+    │   ├── pages/           # Page components
+    │   ├── components/      # Reusable components
+    │   ├── services/        # API clients
+    │   └── context/         # React contexts
+    └── public/
 ```
 
-## Module Code Names
+## Module Codenames
 
-| Module | Code Name | Description |
-|--------|-----------|-------------|
-| marmalade | 🍯 | Media library and scanning |
-| compote | 🍮 | Indexer management |
-| garnish | 🌿 | Subtitle services |
-| milk | 🥛 | Theme engine |
-| zest | 🍋 | Log viewer |
-| drizzle | 💧 | Playlists |
-| sieve | 🧪 | Media health |
-| gelatin | 🧈 | External access |
-| relish | 🍭 | IPTV |
-| fondue | 🧀 | Audio fingerprinting |
-| potluck | 🍲 | Torrent client |
-| gadgets | 🔧 | Plugin system |
-| cream | 🍨 | Streaming services |
+| Codename | Module | Description |
+|----------|--------|-------------|
+| **Marmalade** | Library Manager | Media scanning, TMDB metadata |
+| **Bastion** | Security | Audit logs, IP rules, API keys |
+| **Tunnel** | VPN Portal | WireGuard management |
+| **Zest** | Log Viewer | Application log browser |
+| **Drizzle** | Playlists | Queue and playlist engine |
+| **Fondue** | Downloads | Download management |
+| **Compote** | Indexers | Torrent indexer manager |
+| **Gelatin** | Transcoding | Media transcoding |
+| **Syrup** | Scrapers | Live content scrapers |
+| **Beacon** | Tray App | System tray controller |
+| **Tiramisu** | Updater | Auto-update system |
 
-## Building
+## Tech Stack
 
-### Backend
-```bash
-cd /app/backend
-pip install -r requirements.txt
-uvicorn server:app --reload
-```
-
-### Frontend
-```bash
-cd /app/frontend
-yarn install
-yarn start
-```
-
-## Version
-
-Current version: **2.3.0**
-
-See `/app/memory/PRD.md` for changelog and roadmap.
+- **Backend:** Python 3.11, FastAPI, SQLite, httpx
+- **Frontend:** React 18, TailwindCSS, Framer Motion, Shadcn UI
+- **Auth:** JWT Bearer Tokens
+- **Metadata:** TMDB API
+- **Downloads:** qBittorrent Web API, Built-in torrent engine
