@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WatchNexus.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+52805bd1c0123171e6ea540e9c96e4d5bbc90cd0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+07ee8534b95bed29baebf30679e2aab9edc97fc1")]
 [assembly: System.Reflection.AssemblyProductAttribute("WatchNexus.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WatchNexus.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

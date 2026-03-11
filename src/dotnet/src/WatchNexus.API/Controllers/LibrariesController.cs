@@ -100,13 +100,23 @@ public class LibrariesController : ControllerBase
         if (library == null)
             return NotFound();
 
+        if (library.ScanStatus == LibraryScanStatus.Scanning)
+            return BadRequest(new { message = "Scan already in progress" });
+
         library.ScanStatus = LibraryScanStatus.Scanning;
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // TODO: Queue background scan job
-        _logger.LogInformation("Library scan queued for {LibraryId}", id);
+        // Run scan in background
+        var scanner = HttpContext.RequestServices.GetRequiredService<ILibraryScannerService>();
+        _ = Task.Run(async () =>
+        {
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var bgScanner = scope.ServiceProvider.GetRequiredService<ILibraryScannerService>();
+            try { await bgScanner.ScanLibraryAsync(id); }
+            catch (Exception ex) { _logger.LogError(ex, "Background scan failed for {LibraryId}", id); }
+        });
 
-        return Accepted(new { message = "Scan started" });
+        return Accepted(new { message = "Scan started", scan_status = "scanning" });
     }
 
     private static object MapToDto(Library l) => new

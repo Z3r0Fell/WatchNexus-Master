@@ -36,6 +36,8 @@ import { DiscoverPage } from "./pages/DiscoverPage";
 import SecurityPage from "./pages/SecurityPage";
 import VpnPage from "./pages/VpnPage";
 import SystemPage from "./pages/SystemPage";
+import LibraryManagerPage from "./pages/LibraryManagerPage";
+import LogViewerPage from "./pages/LogViewerPage";
 
 // Gadget Pages
 import WeatherPage from "./pages/gadgets/WeatherPage";
@@ -373,6 +375,22 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <SystemPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/library-manager"
+        element={
+          <ProtectedRoute>
+            <LibraryManagerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/log-viewer"
+        element={
+          <ProtectedRoute>
+            <LogViewerPage />
           </ProtectedRoute>
         }
       />
