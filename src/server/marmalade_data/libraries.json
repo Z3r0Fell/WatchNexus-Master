@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "8f369cc1cfafd6aa",
+    "name": "Test Library UI",
+    "path": "/tmp/test-movies",
+    "media_type": "movies",
+    "enabled": true,
+    "scan_interval": 3600,
+    "last_scan": "2026-03-11T21:28:09.739687+00:00",
+    "item_count": 5
+  }
+]

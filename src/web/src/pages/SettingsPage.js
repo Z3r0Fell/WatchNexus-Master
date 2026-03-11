@@ -11,6 +11,7 @@ import {
   QualityProfilesSettings
 } from '../components/settings';
 import { ZestSettings } from '../components/settings/ZestSettings';
+import { IntegrationsSettings } from '../components/settings/IntegrationsSettings';
 import { Layout } from '../components/layout/Layout';
 import FolderBrowser from '../components/FolderBrowser';
 import axios from 'axios';
@@ -251,6 +252,7 @@ export const SettingsPage = () => {
             manualImportFiles={manualImportFiles} onManualImportScan={handleManualImportScan} onImportFiles={handleImportFiles} />
         );
       case 'media-health': return <MediaHealthSettings />;
+      case 'integrations': return <IntegrationsSettings />;
       case 'playback': return <PlaybackSettings />;
       case 'quality-profiles': return <QualityProfilesSettings />;
       case 'indexers': return <IndexerSettings />;
@@ -321,10 +323,11 @@ export const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Media Acquisition */}
+            {/* Integrations */}
             <div>
-              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Media Acquisition</h3>
+              <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Integrations</h3>
               <div className="space-y-0.5">
+                <NavButton id="integrations" label="TMDB & Downloads" />
                 <NavButton id="indexers" label="Indexers" />
                 <NavButton id="download" label="Download Client" />
               </div>
