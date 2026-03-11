@@ -2,7 +2,7 @@
   WatchNexus Walkthrough Capture
 ============================================================
 
-  Target URL: https://nexus-csharp-api.preview.emergentagent.com
+  Target URL: https://metaflix-sandbox.preview.emergentagent.com
   Output: /app/walkthrough_frames
 
 🔐 Section 1: Login

@@ -65,7 +65,7 @@ export const systemApi = {
   getInfo: () => axios.get(`${API}/info`),
 };
 
-// Libraries (Marmalade)
+// Libraries (Marmalade) - using bridge routes
 export const libraryApi = {
   getAll: () => axios.get(`${API}/libraries`),
   getById: (id) => axios.get(`${API}/libraries/${id}`),
@@ -73,17 +73,20 @@ export const libraryApi = {
   update: (id, data) => axios.put(`${API}/libraries/${id}`, data),
   remove: (id) => axios.delete(`${API}/libraries/${id}`),
   scan: (id) => axios.post(`${API}/libraries/${id}/scan`),
+  getMedia: (libraryId, mediaType, limit, offset) =>
+    axios.get(`${API}/marmalade/media`, { params: { library_id: libraryId, media_type: mediaType, limit, offset } }),
+  refreshMetadata: (id) => axios.post(`${API}/marmalade/libraries/${id}/refresh-metadata`),
 };
 
 // Downloads (Fondue)
 export const downloadApi = {
   getAll: (status) => axios.get(`${API}/downloads`, { params: status ? { status } : {} }),
-  getById: (id) => axios.get(`${API}/downloads/${id}`),
+  getById: (id) => axios.get(`${API}/downloads/engine/${id}`),
   create: (data) => axios.post(`${API}/downloads`, data),
-  pause: (id) => axios.post(`${API}/downloads/${id}/pause`),
-  resume: (id) => axios.post(`${API}/downloads/${id}/resume`),
-  remove: (id, deleteFiles) => axios.delete(`${API}/downloads/${id}`, { params: { delete_files: deleteFiles } }),
-  getStats: () => axios.get(`${API}/downloads/stats`),
+  pause: (id) => axios.post(`${API}/downloads/engine/${id}/pause`),
+  resume: (id) => axios.post(`${API}/downloads/engine/${id}/resume`),
+  remove: (id, deleteFiles) => axios.delete(`${API}/downloads/engine/${id}`, { params: { delete_files: deleteFiles } }),
+  getStats: () => axios.get(`${API}/downloads/engine/status`),
 };
 
 // Logs (Zest)
@@ -99,7 +102,15 @@ export const logsApi = {
 export const settingsApi = {
   getAll: () => axios.get(`${API}/settings`),
   get: (key) => axios.get(`${API}/settings/${key}`),
-  set: (key, value, global) => axios.put(`${API}/settings/${key}`, { value, global }),
+  set: (key, value, global_) => axios.put(`${API}/settings/${key}`, { value, global: global_ }),
   remove: (key) => axios.delete(`${API}/settings/${key}`),
   bulkSet: (settings) => axios.post(`${API}/settings/bulk`, settings),
+};
+
+// Integration Settings (TMDB, qBittorrent)
+export const integrationApi = {
+  getAll: () => axios.get(`${API}/settings/integrations`),
+  updateTmdb: (apiKey) => axios.put(`${API}/settings/integrations/tmdb`, { api_key: apiKey }),
+  updateQbit: (settings) => axios.put(`${API}/settings/integrations/qbittorrent`, settings),
+  testQbit: (settings) => axios.post(`${API}/settings/integrations/qbittorrent/test`, settings),
 };

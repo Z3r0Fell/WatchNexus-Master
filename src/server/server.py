@@ -937,6 +937,11 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     permissions: Optional[UserPermissions] = None
 
+@api_router.get("/users/me", response_model=UserResponse)
+async def get_current_user_bridge(user: dict = Depends(require_auth)):
+    """Get the currently authenticated user (bridge for AuthContext)."""
+    return user
+
 @api_router.get("/users/profiles")
 async def get_user_profiles(request: Request):
     """
@@ -2742,6 +2747,248 @@ async def marmalade_refresh_library_metadata(
         "total": len(media_list),
         "refreshed": refreshed
     }
+
+# ==================== LIBRARIES BRIDGE ROUTES ====================
+# Bridge /api/libraries → /api/marmalade/libraries for nexusApi.js compatibility
+
+class LibraryCreate(BaseModel):
+    name: str
+    path: str
+    media_type: str = "movies"
+
+@api_router.get("/libraries")
+async def libraries_get_all(user: dict = Depends(require_auth)):
+    """Get all libraries (bridge to marmalade)."""
+    server = get_marmalade_server()
+    libs = server.get_libraries()
+    result = []
+    for lib in libs:
+        d = lib.to_dict()
+        # Calculate total_size from media files
+        total_size = sum(m.size for m in server.media_files.values() if m.path.startswith(lib.path))
+        d["total_size"] = total_size
+        d["scan_status"] = "completed" if lib.last_scan else "idle"
+        d["last_scanned_at"] = lib.last_scan
+        result.append(d)
+    return result
+
+@api_router.get("/libraries/{library_id}")
+async def libraries_get_one(library_id: str, user: dict = Depends(require_auth)):
+    """Get a single library by ID."""
+    server = get_marmalade_server()
+    lib = server.get_library(library_id)
+    if not lib:
+        raise HTTPException(status_code=404, detail="Library not found")
+    d = lib.to_dict()
+    total_size = sum(m.size for m in server.media_files.values() if m.path.startswith(lib.path))
+    d["total_size"] = total_size
+    d["scan_status"] = "completed" if lib.last_scan else "idle"
+    d["last_scanned_at"] = lib.last_scan
+    return d
+
+@api_router.post("/libraries")
+async def libraries_create(body: LibraryCreate, user: dict = Depends(require_auth)):
+    """Create a new library (bridge to marmalade)."""
+    server = get_marmalade_server()
+    # Map frontend media_type values to marmalade expected values
+    media_type_map = {
+        "Movie": "movies", "Movies": "movies", "movies": "movies",
+        "TvShow": "tv", "TV Shows": "tv", "tv": "tv",
+        "Music": "music", "music": "music",
+        "Anime": "anime", "anime": "anime",
+        "Podcast": "music", "podcast": "music",
+    }
+    mapped_type = media_type_map.get(body.media_type, body.media_type.lower())
+    library = server.add_library(body.name, body.path, mapped_type)
+    d = library.to_dict()
+    d["total_size"] = 0
+    d["scan_status"] = "idle"
+    d["last_scanned_at"] = None
+    return d
+
+@api_router.put("/libraries/{library_id}")
+async def libraries_update(library_id: str, body: LibraryCreate, user: dict = Depends(require_auth)):
+    """Update a library."""
+    server = get_marmalade_server()
+    lib = server.get_library(library_id)
+    if not lib:
+        raise HTTPException(status_code=404, detail="Library not found")
+    lib.name = body.name
+    lib.path = body.path
+    media_type_map = {
+        "Movie": "movies", "Movies": "movies", "TvShow": "tv", "TV Shows": "tv",
+        "Music": "music", "Anime": "anime", "Podcast": "music",
+    }
+    lib.media_type = media_type_map.get(body.media_type, body.media_type.lower())
+    server._save_data()
+    d = lib.to_dict()
+    d["total_size"] = sum(m.size for m in server.media_files.values() if m.path.startswith(lib.path))
+    d["scan_status"] = "completed" if lib.last_scan else "idle"
+    d["last_scanned_at"] = lib.last_scan
+    return d
+
+@api_router.delete("/libraries/{library_id}")
+async def libraries_delete(library_id: str, user: dict = Depends(require_auth)):
+    """Delete a library (bridge to marmalade)."""
+    server = get_marmalade_server()
+    success = server.remove_library(library_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Library not found")
+    return {"status": "deleted"}
+
+@api_router.post("/libraries/{library_id}/scan")
+async def libraries_scan(library_id: str, user: dict = Depends(require_auth)):
+    """Scan a library (bridge to marmalade)."""
+    server = get_marmalade_server()
+    result = await server.scan_library(library_id)
+    return result
+
+# ==================== LOGS BRIDGE ROUTES ====================
+# Bridge /api/logs → /api/zest for nexusApi.js compatibility
+
+@api_router.get("/logs")
+async def logs_get_files(user: dict = Depends(require_auth)):
+    """Get available log files."""
+    log_files = []
+    for f in LOG_DIR.glob("watchnexus.log*"):
+        stat = f.stat()
+        log_files.append({
+            "filename": f.name,
+            "size": stat.st_size,
+            "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+        })
+    return log_files
+
+@api_router.get("/logs/latest")
+async def logs_get_latest(
+    lines: int = 100,
+    level: str = None,
+    user: dict = Depends(require_auth)
+):
+    """Get latest log entries (bridge to zest)."""
+    zest = get_zest_viewer()
+    return zest.get_logs(lines=lines, level=level)
+
+@api_router.get("/logs/file/{filename}")
+async def logs_get_file(filename: str, offset: int = 0, limit: int = 500, user: dict = Depends(require_auth)):
+    """Get a specific log file."""
+    log_path = LOG_DIR / filename
+    if not log_path.exists() or not log_path.is_file():
+        raise HTTPException(status_code=404, detail="Log file not found")
+    try:
+        lines = log_path.read_text().splitlines()
+        return {"lines": lines[offset:offset+limit], "total": len(lines)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/logs/system")
+async def logs_get_system(user: dict = Depends(require_auth)):
+    """Get system health info (bridge to zest)."""
+    zest = get_zest_viewer()
+    return zest.get_system_health()
+
+@api_router.delete("/logs/file/{filename}")
+async def logs_delete_file(filename: str, user: dict = Depends(require_auth)):
+    """Delete a log file."""
+    log_path = LOG_DIR / filename
+    if not log_path.exists():
+        raise HTTPException(status_code=404, detail="Log file not found")
+    if log_path.name == "watchnexus.log":
+        raise HTTPException(status_code=400, detail="Cannot delete active log file")
+    log_path.unlink()
+    return {"status": "deleted"}
+
+# ==================== INTEGRATION SETTINGS (TMDB / qBittorrent) ====================
+
+class TmdbSettingsUpdate(BaseModel):
+    api_key: str
+
+class QbitSettingsUpdate(BaseModel):
+    host: str = "localhost"
+    port: int = 8080
+    username: str = "admin"
+    password: str = ""
+    enabled: bool = True
+
+@api_router.get("/settings/integrations")
+async def get_integration_settings(user: dict = Depends(require_auth)):
+    """Get TMDB and qBittorrent connection settings."""
+    tmdb_row = await db.execute_fetchone(
+        "SELECT value FROM user_settings_kv WHERE user_id = ? AND key = 'tmdb_api_key'",
+        (user["id"],)
+    )
+    qbit_row = await db.execute_fetchone(
+        "SELECT value FROM user_settings_kv WHERE user_id = ? AND key = 'qbittorrent_settings'",
+        (user["id"],)
+    )
+    
+    # Also read env-level TMDB key as fallback
+    env_tmdb_key = os.environ.get("TMDB_API_KEY", "")
+    
+    return {
+        "tmdb": {
+            "api_key": (tmdb_row["value"] if tmdb_row else "") or env_tmdb_key,
+            "has_key": bool((tmdb_row["value"] if tmdb_row else "") or env_tmdb_key),
+            "source": "user" if (tmdb_row and tmdb_row["value"]) else ("env" if env_tmdb_key else "none")
+        },
+        "qbittorrent": json.loads(qbit_row["value"]) if qbit_row else {
+            "host": "localhost", "port": 8080, "username": "admin", "password": "", "enabled": False
+        }
+    }
+
+@api_router.put("/settings/integrations/tmdb")
+async def update_tmdb_settings(body: TmdbSettingsUpdate, user: dict = Depends(require_auth)):
+    """Update TMDB API key."""
+    # Test the key first
+    if body.api_key:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"https://api.themoviedb.org/3/configuration", params={"api_key": body.api_key})
+                if resp.status_code != 200:
+                    raise HTTPException(status_code=400, detail="Invalid TMDB API key")
+        except httpx.RequestError:
+            raise HTTPException(status_code=400, detail="Could not verify TMDB API key")
+    
+    await db.execute(
+        "INSERT OR REPLACE INTO user_settings_kv (id, user_id, key, value) VALUES (?, ?, 'tmdb_api_key', ?)",
+        (f"{user['id']}_tmdb_api_key", user["id"], body.api_key)
+    )
+    
+    # Also update the marmalade server's TMDB key
+    import marmalade_server as mm
+    mm.TMDB_API_KEY = body.api_key
+    
+    return {"status": "saved", "has_key": bool(body.api_key)}
+
+@api_router.put("/settings/integrations/qbittorrent")
+async def update_qbit_settings(body: QbitSettingsUpdate, user: dict = Depends(require_auth)):
+    """Update qBittorrent connection settings."""
+    settings_json = json.dumps(body.model_dump())
+    
+    await db.execute(
+        "INSERT OR REPLACE INTO user_settings_kv (id, user_id, key, value) VALUES (?, ?, 'qbittorrent_settings', ?)",
+        (f"{user['id']}_qbittorrent_settings", user["id"], settings_json)
+    )
+    
+    # Update the qBittorrent client
+    from qbittorrent_client import QBittorrentClient
+    global _qbit_client
+    if body.enabled:
+        _qbit_client = QBittorrentClient(
+            host=body.host, port=body.port,
+            username=body.username, password=body.password
+        )
+    
+    return {"status": "saved", "settings": body.model_dump()}
+
+@api_router.post("/settings/integrations/qbittorrent/test")
+async def test_qbit_connection(body: QbitSettingsUpdate, user: dict = Depends(require_auth)):
+    """Test qBittorrent connection."""
+    from qbittorrent_client import QBittorrentClient
+    qbit = QBittorrentClient(host=body.host, port=body.port, username=body.username, password=body.password)
+    result = await qbit.test_connection()
+    await qbit.close()
+    return result
 
 # ==================== MEDIA MANAGEMENT (Manual Import) ====================
 
