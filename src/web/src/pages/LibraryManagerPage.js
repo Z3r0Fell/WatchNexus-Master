@@ -13,11 +13,11 @@ import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
 
 const MEDIA_TYPES = [
-  { value: 'Movies', label: 'Movies', icon: Film, color: 'bg-blue-500/15 text-blue-400' },
-  { value: 'TvShows', label: 'TV Shows', icon: Tv, color: 'bg-violet-500/15 text-violet-400' },
+  { value: 'Movie', label: 'Movies', icon: Film, color: 'bg-blue-500/15 text-blue-400' },
+  { value: 'TvShow', label: 'TV Shows', icon: Tv, color: 'bg-violet-500/15 text-violet-400' },
   { value: 'Music', label: 'Music', icon: Music, color: 'bg-emerald-500/15 text-emerald-400' },
-  { value: 'Audiobooks', label: 'Audiobooks', icon: BookOpen, color: 'bg-amber-500/15 text-amber-400' },
   { value: 'Anime', label: 'Anime', icon: Play, color: 'bg-pink-500/15 text-pink-400' },
+  { value: 'Podcast', label: 'Podcasts', icon: BookOpen, color: 'bg-amber-500/15 text-amber-400' },
 ];
 
 const formatSize = (bytes) => {
