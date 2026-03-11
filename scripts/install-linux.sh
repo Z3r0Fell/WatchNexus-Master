@@ -2,6 +2,7 @@
 #===============================================================================
 # WatchNexus Installation Script for Linux (Debian/Ubuntu/Fedora)
 # Supports: Ubuntu 22.04+, Debian 12+, Fedora 38+
+# v3.0.0-beta
 #===============================================================================
 
 set -e
@@ -12,21 +13,24 @@ INSTALL_DIR="/opt/watchnexus"
 DATA_DIR="/var/lib/watchnexus"
 CONFIG_DIR="/etc/watchnexus"
 USER="watchnexus"
-VERSION="1.0.0"
+VERSION="3.0.0-beta"
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
 
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-echo "=============================================="
-echo "  WatchNexus Installer - Linux"
-echo "=============================================="
+echo ""
+echo -e "${BOLD}=============================================="
+echo "  WatchNexus Installer - Linux  v${VERSION}"
+echo -e "==============================================${NC}"
 echo ""
 
 # Detect distribution
@@ -43,8 +47,106 @@ detect_distro() {
         log_error "Could not detect Linux distribution"
         exit 1
     fi
-    
     log_info "Detected: $DISTRO $VERSION_ID"
+}
+
+#===============================================================================
+# PREREQUISITE CHECK
+#===============================================================================
+check_prerequisites() {
+    echo -e "${BOLD}Checking prerequisites...${NC}"
+    echo ""
+
+    MISSING=()
+    FOUND=()
+
+    # Python 3.10+
+    if command -v python3 &>/dev/null; then
+        PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null)
+        PY_MAJOR=$(echo "$PY_VER" | cut -d. -f1)
+        PY_MINOR=$(echo "$PY_VER" | cut -d. -f2)
+        if [ "$PY_MAJOR" -ge 3 ] && [ "$PY_MINOR" -ge 10 ]; then
+            FOUND+=("Python $PY_VER")
+        else
+            MISSING+=("Python 3.10+ (found $PY_VER)")
+        fi
+    else
+        MISSING+=("Python 3.10+")
+    fi
+
+    # Node.js 18+
+    if command -v node &>/dev/null; then
+        NODE_VER=$(node --version | sed 's/v//')
+        NODE_MAJOR=$(echo "$NODE_VER" | cut -d. -f1)
+        if [ "$NODE_MAJOR" -ge 18 ]; then
+            FOUND+=("Node.js v$NODE_VER")
+        else
+            MISSING+=("Node.js 18+ (found v$NODE_VER)")
+        fi
+    else
+        MISSING+=("Node.js 18+")
+    fi
+
+    # Yarn
+    if command -v yarn &>/dev/null; then
+        FOUND+=("Yarn $(yarn --version)")
+    else
+        MISSING+=("Yarn")
+    fi
+
+    # MongoDB
+    if command -v mongod &>/dev/null; then
+        FOUND+=("MongoDB")
+    else
+        MISSING+=("MongoDB 7.x")
+    fi
+
+    # FFmpeg
+    if command -v ffmpeg &>/dev/null; then
+        FOUND+=("FFmpeg")
+    else
+        MISSING+=("FFmpeg (optional, for transcoding)")
+    fi
+
+    # Git
+    if command -v git &>/dev/null; then
+        FOUND+=("Git $(git --version | awk '{print $3}')")
+    else
+        MISSING+=("Git")
+    fi
+
+    # Display results
+    echo -e "  ${CYAN}Prerequisite Status:${NC}"
+    echo "  -----------------------------------------------"
+    for item in "${FOUND[@]}"; do
+        echo -e "  ${GREEN}OK${NC}      $item"
+    done
+    for item in "${MISSING[@]}"; do
+        echo -e "  ${RED}MISSING${NC} $item"
+    done
+    echo "  -----------------------------------------------"
+    echo ""
+
+    if [ ${#MISSING[@]} -gt 0 ]; then
+        echo -e "  ${YELLOW}The following prerequisites are missing:${NC}"
+        for item in "${MISSING[@]}"; do
+            echo -e "    - $item"
+        done
+        echo ""
+        read -p "  The installer can attempt to install missing dependencies. Continue? (y/n): " ANSWER
+        if [[ "$ANSWER" != "y" && "$ANSWER" != "Y" ]]; then
+            echo ""
+            log_info "Installation cancelled. Please install the prerequisites manually:"
+            echo "  - Python 3.10+:  https://www.python.org/downloads/"
+            echo "  - Node.js 20:    https://nodejs.org/"
+            echo "  - MongoDB 7:     https://www.mongodb.com/try/download/community"
+            echo "  - FFmpeg:         sudo apt install ffmpeg  (or equivalent)"
+            exit 0
+        fi
+    else
+        echo -e "  ${GREEN}All prerequisites satisfied!${NC}"
+    fi
+    echo ""
 }
 
 # Install dependencies for Debian/Ubuntu
@@ -96,11 +198,9 @@ install_deps_debian() {
     if ! command -v mongod &> /dev/null; then
         log_warn "MongoDB not found. Installing..."
         
-        # Try to install MongoDB 7.0
         curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
             sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg 2>/dev/null || true
         
-        # Detect Ubuntu version for MongoDB repo
         UBUNTU_CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
         echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${UBUNTU_CODENAME}/mongodb-org/7.0 multiverse" | \
             sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
@@ -113,7 +213,7 @@ install_deps_debian() {
         }
     fi
     
-    log_info "✓ Dependencies installed"
+    log_info "Dependencies installed"
 }
 
 # Install dependencies for Fedora/RHEL
@@ -135,22 +235,18 @@ install_deps_fedora() {
         exit 1
     }
     
-    # Optional packages
     sudo dnf install -y vips-devel 2>/dev/null || log_warn "vips-devel not available"
     
-    # Install Node.js
     if ! command -v node &> /dev/null; then
         log_info "Installing Node.js..."
         curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
         sudo dnf install -y nodejs
     fi
     
-    # Install Yarn
     if ! command -v yarn &> /dev/null; then
         sudo npm install -g yarn
     fi
     
-    # MongoDB
     if ! command -v mongod &> /dev/null; then
         log_warn "MongoDB not found. Setting up repository..."
         
@@ -168,25 +264,23 @@ EOF
         }
     fi
     
-    log_info "✓ Dependencies installed"
+    log_info "Dependencies installed"
 }
 
 # Create user and directories
 setup_user_and_dirs() {
     log_info "[2/7] Creating user and directories..."
     
-    # Create service user
     if ! id "$USER" &>/dev/null; then
         sudo useradd -r -s /bin/false -d "$INSTALL_DIR" "$USER"
     fi
     
-    # Create directories
     sudo mkdir -p "$INSTALL_DIR"
     sudo mkdir -p "$DATA_DIR"/{config,themes,plugins,downloads,media}
     sudo mkdir -p "$CONFIG_DIR"
     sudo mkdir -p /var/log/watchnexus
     
-    log_info "✓ Directories created"
+    log_info "Directories created"
 }
 
 # Build frontend
@@ -200,20 +294,17 @@ build_frontend() {
         exit 1
     fi
     
-    # Install dependencies
     if [ -f "yarn.lock" ]; then
         yarn install --frozen-lockfile 2>/dev/null || yarn install
     else
         yarn install
     fi
     
-    # Build
     yarn build || {
         log_error "Frontend build failed"
         exit 1
     }
     
-    # Determine output directory
     if [ -d "build" ]; then
         FRONTEND_BUILD_DIR="build"
     elif [ -d "dist" ]; then
@@ -223,7 +314,7 @@ build_frontend() {
         exit 1
     fi
     
-    log_info "✓ Frontend built"
+    log_info "Frontend built"
 }
 
 # Install backend
@@ -237,87 +328,68 @@ install_backend() {
         exit 1
     fi
     
-    # Create virtual environment
     python3 -m venv venv || {
         log_error "Failed to create virtual environment"
         exit 1
     }
     
     source venv/bin/activate
-    
     pip install --upgrade pip
     pip install -r requirements.txt || {
         log_error "Failed to install Python dependencies"
         deactivate
         exit 1
     }
-    
     deactivate
     
-    log_info "✓ Backend installed"
+    log_info "Backend installed"
 }
 
 # Copy files to installation directory
 install_files() {
     log_info "[5/7] Installing files..."
     
-    # Copy frontend build
     cd "$PROJECT_ROOT/frontend"
     sudo rm -rf "$INSTALL_DIR/frontend" 2>/dev/null || true
     sudo cp -r "$FRONTEND_BUILD_DIR" "$INSTALL_DIR/frontend"
     
-    # Copy backend
     cd "$PROJECT_ROOT"
     sudo rm -rf "$INSTALL_DIR/backend" 2>/dev/null || true
     sudo cp -r backend "$INSTALL_DIR/"
     
-    # Copy plugins if exist
     if [ -d "$PROJECT_ROOT/backend/plugins" ]; then
         sudo cp -r "$PROJECT_ROOT/backend/plugins"/* "$DATA_DIR/plugins/" 2>/dev/null || true
     fi
     
-    # Set permissions
     sudo chown -R "$USER:$USER" "$INSTALL_DIR"
     sudo chown -R "$USER:$USER" "$DATA_DIR"
     sudo chown -R "$USER:$USER" /var/log/watchnexus
     
-    log_info "✓ Files installed"
+    log_info "Files installed"
 }
 
 # Create configuration files
 create_config() {
     log_info "[6/7] Creating configuration..."
     
-    # Generate secrets
     JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
     ENCRYPTION_KEY=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
     
-    # Create main config
     sudo tee "$CONFIG_DIR/watchnexus.conf" > /dev/null << EOF
-# WatchNexus Configuration
-
-# Server
 HOST=0.0.0.0
 BACKEND_PORT=8001
 FRONTEND_PORT=3000
-
-# Database
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
-
-# Paths
 DATA_DIR=$DATA_DIR
 MEDIA_DIR=$DATA_DIR/media
 DOWNLOADS_DIR=$DATA_DIR/downloads
 PLUGINS_DIR=$DATA_DIR/plugins
 THEMES_DIR=$DATA_DIR/themes
-
-# Security
 JWT_SECRET=$JWT_SECRET
 ENCRYPTION_KEY=$ENCRYPTION_KEY
 EOF
     
-    # Create environment file
     sudo tee "$INSTALL_DIR/backend/.env" > /dev/null << EOF
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
@@ -330,7 +402,7 @@ EOF
     sudo chmod 600 "$CONFIG_DIR/watchnexus.conf"
     sudo chmod 600 "$INSTALL_DIR/backend/.env"
     
-    log_info "✓ Configuration created"
+    log_info "Configuration created"
 }
 
 # Create systemd service
@@ -360,30 +432,27 @@ StandardError=append:/var/log/watchnexus/error.log
 WantedBy=multi-user.target
 EOF
     
-    # Reload systemd
     sudo systemctl daemon-reload
     
-    # Enable and start MongoDB if available
     if command -v mongod &> /dev/null; then
         sudo systemctl enable mongod 2>/dev/null || sudo systemctl enable mongodb 2>/dev/null || true
         sudo systemctl start mongod 2>/dev/null || sudo systemctl start mongodb 2>/dev/null || true
     fi
     
-    # Enable WatchNexus
     sudo systemctl enable watchnexus
     
-    # Try to start (may fail if MongoDB not running)
     sudo systemctl start watchnexus 2>/dev/null || {
         log_warn "Could not start WatchNexus service automatically"
         log_warn "Make sure MongoDB is running, then: sudo systemctl start watchnexus"
     }
     
-    log_info "✓ Service created"
+    log_info "Service created"
 }
 
 # Main
 main() {
     detect_distro
+    check_prerequisites
     
     case "$DISTRO" in
         ubuntu|debian|pop|linuxmint|elementary)
@@ -411,14 +480,14 @@ main() {
     create_service
     
     echo ""
-    echo "=============================================="
+    echo -e "${BOLD}=============================================="
     echo "  Installation Complete!"
-    echo "=============================================="
+    echo -e "==============================================${NC}"
     echo ""
     echo "WatchNexus is installed at:"
     echo "  $INSTALL_DIR"
     echo ""
-    echo "Access at: http://localhost:8001"
+    echo -e "Access at: ${CYAN}http://localhost:8001${NC}"
     echo ""
     echo "Service commands:"
     echo "  sudo systemctl status watchnexus"
