@@ -50,6 +50,17 @@ public interface IUnitOfWork : IDisposable
     IRepository<Photo> Photos { get; }
     IRepository<WebVideoBookmark> WebVideoBookmarks { get; }
     
+    // Security
+    IRepository<AuditLog> AuditLogs { get; }
+    IRepository<IpAccessRule> IpAccessRules { get; }
+    IRepository<ApiKey> ApiKeys { get; }
+    IRepository<UserSession> UserSessions { get; }
+    
+    // VPN
+    IRepository<VpnPeer> VpnPeers { get; }
+    IRepository<VpnServerConfig> VpnServerConfigs { get; }
+    IRepository<VpnConnectionLog> VpnConnectionLogs { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task BeginTransactionAsync(CancellationToken ct = default);
     Task CommitAsync(CancellationToken ct = default);

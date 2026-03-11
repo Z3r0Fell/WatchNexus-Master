@@ -128,7 +128,8 @@ public class SubtitlesController : ControllerBase
         if (!new[] { "srt", "vtt", "ass", "sub" }.Contains(ext))
             return BadRequest(new { message = "Invalid subtitle format" });
 
-        var filePath = $"/subtitles/{mediaItemId}_{language}_{Guid.NewGuid():N[..8]}.{ext}";
+        var shortGuid = Guid.NewGuid().ToString("N")[..8];
+        var filePath = $"/subtitles/{mediaItemId}_{language}_{shortGuid}.{ext}";
         Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
 
         await using var stream = new FileStream(filePath, FileMode.Create);

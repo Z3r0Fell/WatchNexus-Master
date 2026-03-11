@@ -118,6 +118,13 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<PhotoLibrary>? _photoLibraries;
     private IRepository<Photo>? _photos;
     private IRepository<WebVideoBookmark>? _webVideoBookmarks;
+    private IRepository<AuditLog>? _auditLogs;
+    private IRepository<IpAccessRule>? _ipAccessRules;
+    private IRepository<ApiKey>? _apiKeys;
+    private IRepository<UserSession>? _userSessions;
+    private IRepository<VpnPeer>? _vpnPeers;
+    private IRepository<VpnServerConfig>? _vpnServerConfigs;
+    private IRepository<VpnConnectionLog>? _vpnConnectionLogs;
 
     public UnitOfWork(WatchNexusDbContext context)
     {
@@ -146,6 +153,13 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<PhotoLibrary> PhotoLibraries => _photoLibraries ??= new Repository<PhotoLibrary>(_context);
     public IRepository<Photo> Photos => _photos ??= new Repository<Photo>(_context);
     public IRepository<WebVideoBookmark> WebVideoBookmarks => _webVideoBookmarks ??= new Repository<WebVideoBookmark>(_context);
+    public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
+    public IRepository<IpAccessRule> IpAccessRules => _ipAccessRules ??= new Repository<IpAccessRule>(_context);
+    public IRepository<ApiKey> ApiKeys => _apiKeys ??= new Repository<ApiKey>(_context);
+    public IRepository<UserSession> UserSessions => _userSessions ??= new Repository<UserSession>(_context);
+    public IRepository<VpnPeer> VpnPeers => _vpnPeers ??= new Repository<VpnPeer>(_context);
+    public IRepository<VpnServerConfig> VpnServerConfigs => _vpnServerConfigs ??= new Repository<VpnServerConfig>(_context);
+    public IRepository<VpnConnectionLog> VpnConnectionLogs => _vpnConnectionLogs ??= new Repository<VpnConnectionLog>(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {

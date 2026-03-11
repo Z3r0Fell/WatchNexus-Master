@@ -175,7 +175,7 @@ public class LibraryScannerService : ILibraryScannerService
                 mediaItem.Title = CleanTitle(fileName);
             }
 
-            mediaItem.SortTitle = mediaItem.Title.TrimStart("The ", "A ", "An ");
+            mediaItem.SortTitle = StripArticle(mediaItem.Title);
             return mediaItem;
         }
         catch (Exception ex)
@@ -189,6 +189,16 @@ public class LibraryScannerService : ILibraryScannerService
     {
         var ext = Path.GetExtension(path).ToLower();
         return VideoExtensions.Contains(ext) || AudioExtensions.Contains(ext);
+    }
+
+    private static string StripArticle(string title)
+    {
+        foreach (var article in new[] { "The ", "A ", "An " })
+        {
+            if (title.StartsWith(article, StringComparison.OrdinalIgnoreCase))
+                return title[article.Length..];
+        }
+        return title;
     }
 
     private static string CleanTitle(string title)
