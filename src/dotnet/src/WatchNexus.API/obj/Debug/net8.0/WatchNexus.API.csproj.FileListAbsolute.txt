@@ -5,13 +5,9 @@
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/WatchNexus.API.runtimeconfig.json
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/WatchNexus.API.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/WatchNexus.API.pdb
-/app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/AutoMapper.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/Azure.Core.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/Azure.Identity.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/BCrypt.Net-Next.dll
-/app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/FluentValidation.dll
-/app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/MediatR.dll
-/app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/MediatR.Contracts.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/Microsoft.Bcl.AsyncInterfaces.dll
 /app/src/dotnet/src/WatchNexus.API/bin/Debug/net8.0/Microsoft.Data.SqlClient.dll

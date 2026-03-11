@@ -4,12 +4,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using WatchNexus.API.Middleware;
 using WatchNexus.Domain.Interfaces;
 using WatchNexus.Infrastructure.Data;
 using WatchNexus.Infrastructure.Repositories;
 using WatchNexus.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Force port 8001 for Emergent platform compatibility
+builder.WebHost.UseUrls("http://0.0.0.0:8001");
 
 // Serilog
 Log.Logger = new LoggerConfiguration()
@@ -57,6 +61,13 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFileBrowserService, FileBrowserService>();
+builder.Services.AddScoped<ILibraryScannerService, LibraryScannerService>();
+builder.Services.AddScoped<IMetadataService, TmdbMetadataService>();
+builder.Services.AddScoped<IDownloadService, QBittorrentService>();
+builder.Services.AddScoped<ITranscodingService, TranscodingService>();
+
+// HttpClient
+builder.Services.AddHttpClient();
 
 // Authentication
 builder.Services.AddAuthentication(options =>
@@ -82,7 +93,11 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
+    });
 
 // CORS
 builder.Services.AddCors(options =>
@@ -102,8 +117,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo 
     { 
         Title = "WatchNexus API", 
-        Version = "v2.7.0",
-        Description = "Unified media pipeline API"
+        Version = "v3.0.0",
+        Description = "Unified media pipeline API — .NET 8 / C# Edition"
     });
     
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -133,35 +148,48 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Migrate database
+// Ensure database exists
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<WatchNexusDbContext>();
-    await db.Database.MigrateAsync();
+    await db.Database.EnsureCreatedAsync();
+    Log.Information("Database initialized: {Provider}", dbProvider);
 }
 
-// Middleware
+// Security middleware pipeline (order matters)
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<IpFilteringMiddleware>();
+
+// Logging
 app.UseSerilogRequestLogging();
 
-if (app.Environment.IsDevelopment())
+// Swagger (always on for now)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "WatchNexus API v3.0.0");
+    c.RoutePrefix = "api/docs";
+});
 
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Serve static files (React frontend)
-app.UseDefaultFiles();
-app.UseStaticFiles();
+// Audit logging (after auth so we have user context)
+app.UseMiddleware<AuditLoggingMiddleware>();
 
 app.MapControllers();
 
-// Fallback to React app for SPA routing
-app.MapFallbackToFile("index.html");
+// Health check at root
+app.MapGet("/", () => Results.Ok(new 
+{ 
+    name = "WatchNexus", 
+    version = "3.0.0", 
+    framework = ".NET 8",
+    status = "running"
+}));
 
-Log.Information("WatchNexus API starting on {Urls}", string.Join(", ", app.Urls));
+Log.Information("WatchNexus API v3.0.0 (.NET 8) starting on port 8001");
 
 app.Run();

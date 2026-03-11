@@ -12,8 +12,10 @@ public class HealthController : ControllerBase
         return Ok(new
         {
             status = "healthy",
-            version = "2.7.0",
+            version = "3.0.0",
             framework = ".NET 8",
+            runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+            os = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
             timestamp = DateTime.UtcNow
         });
     }
@@ -24,24 +26,37 @@ public class HealthController : ControllerBase
         return Ok(new
         {
             name = "WatchNexus",
-            version = "2.7.0",
-            codename = "Operation Fortress",
+            version = "3.0.0",
+            codename = "Operation Bastion",
             framework = ".NET 8",
+            architecture = "Clean Architecture (C#)",
             modules = new[]
             {
-                new { name = "Marmalade", description = "Library Management" },
-                new { name = "Compote", description = "Indexer Hub" },
-                new { name = "Fondue", description = "Download Engine" },
-                new { name = "Garnish", description = "Subtitle Manager" },
-                new { name = "Gelatin", description = "Transcoding" },
-                new { name = "Zest", description = "Torrent Search" },
-                new { name = "Relish", description = "IPTV Player" },
-                new { name = "Drizzle", description = "Playlists" },
-                new { name = "Cream", description = "Stream Links" },
-                new { name = "Fprint", description = "Audio Fingerprint" },
-                new { name = "Potluck", description = "Request System" },
-                new { name = "Sieve", description = "Quality Profiles" },
-                new { name = "Syrup", description = "Scraper Engine" }
+                new { name = "Marmalade", description = "Library Management", status = "active" },
+                new { name = "Compote", description = "Indexer Hub", status = "active" },
+                new { name = "Fondue", description = "Download Engine", status = "active" },
+                new { name = "Garnish", description = "Subtitle Manager", status = "active" },
+                new { name = "Gelatin", description = "Transcoding", status = "active" },
+                new { name = "Zest", description = "Torrent Search", status = "active" },
+                new { name = "Relish", description = "IPTV Player", status = "active" },
+                new { name = "Drizzle", description = "Playlists", status = "active" },
+                new { name = "Cream", description = "Stream Links", status = "active" },
+                new { name = "Fprint", description = "Audio Fingerprint", status = "active" },
+                new { name = "Potluck", description = "Request System", status = "active" },
+                new { name = "Sieve", description = "Quality Profiles", status = "active" },
+                new { name = "Syrup", description = "Scraper Engine", status = "active" },
+                new { name = "Bastion", description = "Security & Audit", status = "active" },
+                new { name = "Tunnel", description = "VPN Portal", status = "active" }
+            },
+            security = new
+            {
+                rate_limiting = true,
+                security_headers = true,
+                audit_logging = true,
+                ip_filtering = true,
+                jwt_auth = true,
+                api_key_auth = true,
+                vpn_portal = true
             }
         });
     }

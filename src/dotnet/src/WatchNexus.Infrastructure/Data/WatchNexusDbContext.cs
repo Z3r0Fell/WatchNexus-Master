@@ -43,6 +43,17 @@ public class WatchNexusDbContext : DbContext
     public DbSet<PhotoLibrary> PhotoLibraries => Set<PhotoLibrary>();
     public DbSet<Photo> Photos => Set<Photo>();
     public DbSet<WebVideoBookmark> WebVideoBookmarks => Set<WebVideoBookmark>();
+    
+    // Security
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<IpAccessRule> IpAccessRules => Set<IpAccessRule>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    
+    // VPN
+    public DbSet<VpnPeer> VpnPeers => Set<VpnPeer>();
+    public DbSet<VpnServerConfig> VpnServerConfigs => Set<VpnServerConfig>();
+    public DbSet<VpnConnectionLog> VpnConnectionLogs => Set<VpnConnectionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -204,6 +215,51 @@ public class WatchNexusDbContext : DbContext
         modelBuilder.Entity<AppSetting>(e =>
         {
             e.HasIndex(s => new { s.Key, s.UserId }).IsUnique();
+        });
+        
+        // Security - AuditLog
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.HasIndex(a => a.UserId);
+            e.HasIndex(a => a.Action);
+            e.HasIndex(a => a.CreatedAt);
+        });
+        
+        // Security - IpAccessRule
+        modelBuilder.Entity<IpAccessRule>(e =>
+        {
+            e.HasIndex(r => r.IpAddress).IsUnique();
+        });
+        
+        // Security - ApiKey
+        modelBuilder.Entity<ApiKey>(e =>
+        {
+            e.HasIndex(k => k.Prefix);
+            e.HasOne(k => k.User).WithMany().HasForeignKey(k => k.UserId).OnDelete(DeleteBehavior.SetNull);
+        });
+        
+        // Security - UserSession
+        modelBuilder.Entity<UserSession>(e =>
+        {
+            e.HasOne(s => s.User).WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(s => s.SessionToken).IsUnique();
+            e.HasIndex(s => s.UserId);
+        });
+        
+        // VPN - Peer
+        modelBuilder.Entity<VpnPeer>(e =>
+        {
+            e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(p => p.PublicKey).IsUnique();
+            e.HasIndex(p => p.AssignedIp).IsUnique();
+        });
+        
+        // VPN - ConnectionLog
+        modelBuilder.Entity<VpnConnectionLog>(e =>
+        {
+            e.HasOne(l => l.Peer).WithMany().HasForeignKey(l => l.PeerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(l => l.User).WithMany().HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(l => l.UserId);
         });
     }
     
