@@ -8,6 +8,56 @@ WatchNexus is a self-hosted, unified media pipeline replacing Sonarr, Radarr, Pr
 
 ---
 
+## C# .NET Conversion (In Progress)
+
+### Completed Architecture
+
+**Solution:** `/app/src/dotnet/WatchNexus.sln`
+
+| Project | Purpose |
+|---------|---------|
+| `WatchNexus.Domain` | Entities, enums, interfaces |
+| `WatchNexus.Application` | Services, DTOs, business logic |
+| `WatchNexus.Infrastructure` | EF Core DbContext, repositories, services |
+| `WatchNexus.API` | ASP.NET Core Web API controllers |
+
+### Entities Created (Domain Layer)
+- `User`, `RefreshToken` — Authentication
+- `Library`, `MediaItem`, `WatchProgress`, `Watchlist` — Media (Marmalade)
+- `Download`, `Indexer`, `MediaRequest`, `QualityProfileEntity` — Downloads (Fondue/Compote)
+- `Subtitle`, `IptvSource`, `IptvChannel`, `Playlist`, `PlaylistItem` — Content (Garnish/Relish/Drizzle)
+- `PodcastSubscription`, `PodcastEpisode`, `RadioStation`, `PhotoLibrary`, `Photo`, `WebVideoBookmark` — Gadgets
+
+### API Controllers Created
+- `AuthController` — Login, Register, Refresh, Logout
+- `UsersController` — Profile, settings, admin user management
+- `LibrariesController` — CRUD, scan trigger
+- `MediaController` — Browse, search, details
+- `WatchProgressController` — Position tracking, continue watching
+- `PlaylistsController` — CRUD, add/remove items
+- `IndexersController` — CRUD, test connection
+- `FilesystemController` — Browse directories (cross-platform)
+- `HealthController` — Health check, API info
+
+### Infrastructure Services
+- `JwtService` — Token generation/validation
+- `AuthService` — Login/register, password hashing (BCrypt)
+- `FileBrowserService` — Cross-platform file system navigation
+
+### Database Support
+- SQLite (default)
+- PostgreSQL
+- SQL Server
+
+### Tech Stack
+- .NET 8 LTS
+- ASP.NET Core Web API
+- Entity Framework Core 8
+- Serilog logging
+- Swagger/OpenAPI
+
+---
+
 ## Session Summary (Feb 28, 2025) - Operation Fortress: File Browser Fix COMPLETE
 
 ### Critical Bug Fix: File Browser in Settings (P0)
