@@ -1,172 +1,170 @@
 <analysis>**original_problem_statement:**
-The user wants to build a unified, self-hosted media pipeline called WatchNexus. The goal is a single, **fully self-contained application** that handles requesting, acquiring, organizing, and watching media.
+The user wants to build a unified, self-hosted media pipeline called WatchNexus. The initial goal was a single, fully self-contained application for media management.
 
-The latest request is to begin Operation Fortress, a major overhaul focused on stability and creating robust, cross-platform release builds.
-
-**PRODUCT REQUIREMENTS (Operation Fortress):**
-1.  Create a new  directory with subfolders for Mac, Windows, Linux, Docker, Unraid, NAS, Testing, and Installer.
-2.  Perform an extreme mode, line-by-line functional code audit to find and fix all bugs, starting with the chronically broken file browser.
-3.  Execute Fortress protocols for each OS (implying robust, OS-specific code).
-4.  Create a build and installer source for each OS. The installer must configure and install all dependencies for the target OS.
-5.  Create a  file explaining how to gather and install dependencies for local development.
+The project has now pivoted to a complete architectural rewrite. The user has directed the agent to convert the entire application from its current Python/FastAPI/React stack to a new stack predominantly written in C# and built on the cross-platform .NET framework with an Avalonia UI frontend. The user wants to use .NET 8, Entity Framework Core for the database, and a full rewrite of all features.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack media server (FastAPI + React) with recently added gadget features: Weather, Podcasts, Radio, Photos, and Web Video. The project structure was recently reorganized into  directories with symlinks from the original locations to maintain supervisor functionality.
+The agent has begun the major migration to C#/.NET. The old Python/React application is still present but is now considered legacy and will be replaced.
 
-The agent has just completed a major effort to implement OS-specific logic for the file browser, which has been a significant source of user frustration. The backend now has a dedicated  module to handle different OS paths, and the frontend  component was rewritten. However, the agent discovered that the settings page () uses its own, separate file browser implementation, which is likely the source of the persistent bug.
+A new C# solution has been created at  following a Clean Architecture pattern:
+*   : The solution file.
+*   : The ASP.NET Core Web API project.
+*   : The project for application logic and services.
+*   : The project containing core entities and business logic.
+*   : The project for data access (EF Core) and external services.
+
+The initial scaffolding is complete:
+*   Domain entities (, , , etc.) have been created.
+*   Repository interfaces have been defined.
+*   The  for Entity Framework Core has been created.
+*   Initial service and controller stubs have been created in the Application and Api projects.
+*   The new C# solution successfully compiles, but is not yet runnable or functional.
 
 **Last working item**:
--   **Last item agent was working:** The user initiated Operation Fortress after repeated failures with the release packages and the file browser. The agent began the deep code audit, focusing on the file browser. The key discovery was that  contains a separate, inline file browser implementation and does **not** use the  component that was repeatedly fixed. The agent was investigating why the  browser fails, suspecting it's because the new backend API no longer provides a parent () directory item in its response, which the old UI code might expect.
+-   **Last item agent was working:** The agent was in the process of implementing the application service layer for the new C# backend, following the user's instruction to do all 6 non stop. The agent was creating the implementation files for services like , , , , , and .
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Manual testing by curl/screenshot tool after fixing the browser. The final deliverable will be release packages, which the user will test.
--   **User Testing Done:** Y (User has repeatedly tested and found the file browser broken in release packages)
+-   **Which testing method agent to use?** backend testing agent. Once the C# API is runnable, the agent should configure a database, run EF Core migrations, and write tests to hit the new API endpoints to verify functionality.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: File Browser is Broken in Settings (P0 - CRITICAL)**
-
-**Issues Detail:**
--   **Issue 1: File Browser is Broken in Settings**
-    -   **Attempted fixes:** The agent has rewritten  for OS-specific logic and completely rewritten the  component. These fixes failed because the problematic UI is not in .
-    -   **Next debug checklist:**
-        1.  **Confirm the root cause:** The file browser logic is duplicated. The broken one is inside .
-        2.  **Refactor :** Remove the inline/local file browser modal from .
-        3.  **Integrate the correct component:** Make  import and use the rewritten, centralized  component.
-        4.  **Verify UI:** Ensure single-click navigation works correctly across different operating systems (Linux, Windows) by testing the API and then the UI.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical bug preventing the user from adding media libraries, a core function of the app. The user is extremely frustrated with this recurring issue, and fixing it is the first step of Operation Fortress.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None. This is the main blocker.
+There are no specific bugs for the new C# codebase. The primary issue is the incomplete migration.
 
 **In progress Task List**:
--   **Task 1: Operation Fortress (P0)**
-    -   **Where to resume:** Resume the deep code audit, starting with fixing the file browser as detailed in Issue 1.
-    -   **What will be achieved with this?** A stable, reliable application with robust, cross-platform release packages.
+-   **Task 1: Complete Backend Migration to C#/.NET (P0 - CRITICAL)**
+    -   **Where to resume:** Continue implementing the logic for all the service classes within the  directory. The files are created, but the methods are empty.
+    -   **What will be achieved with this?** A fully functional backend API rewritten in C#/.NET, replacing the old Python version.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on something:** Blocked on fixing the file browser bug.
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
-**Upcoming Tasks (Part of Operation Fortress):**
--   **P0: Create Cross-Platform Installers:** Once the code is stable, create build and installer sources for each OS (Mac, Windows, Linux, Docker, etc.) inside the  directory. Ensure installers handle all dependencies.
--   **P1: Create Dependency README:** Author a  file that explains how a developer can manually install all necessary dependencies.
--   **P1: Complete Full Code Audit:** After fixing the browser, continue the line-by-line audit of the entire codebase as requested.
+**Upcoming Tasks (C# Migration):**
+-   **P0: Implement Service Layer:** Flesh out all methods in the service classes () with business logic that mirrors the original Python application.
+-   **P0: Implement Repository Layer:** Implement the repository interfaces in the  project using Entity Framework Core.
+-   **P0: Complete API Controllers:** Wire up all API controllers to the application services.
+-   **P0: Implement Authentication:** Fully implement JWT-based authentication in  and secure the endpoints.
+-   **P0: Set up Database Migrations:** Create and apply the initial EF Core migration to build the database schema.
+-   **P0: Configure and Run API:** Configure  with a database connection string and run the new API.
+-   **P1: Build Avalonia UI Frontend:** Once the C# API is functional, begin creating the new cross-platform desktop frontend using Avalonia UI, replacing the legacy React web app.
 
 **Future Tasks:**
--   Implement Cloud Sync (Marshmallow) as planned in .
--   Implement Fortress Code Protection as outlined in .
--   Create Advanced Distribution Packages (Raspberry Pi, DEB, RPM).
--   Investigate FFmpeg Replacement (Project Echo).
--   Create Proper Android Builds.
--   Integrate third-party music streaming services (Spotify, Deezer, etc.).
+-   Re-implement all extended features (Cloud Sync Marshmallow, Fortress Code Protection) in the new .NET stack.
+-   Create new, robust installers for the .NET application (e.g., MSIX, DMG, AppImage).
 
 **Completed work in this session**
--   **Feature: Functional Gadgets (DONE):** Implemented five new gadget features: Weather, Podcasts, Radio, Photos, and Web Video, including backend APIs, database tables, and frontend pages.
--   **Bugfix: Release Package Dependencies (DONE):** Cleaned up  multiple times to remove platform-specific/un-installable packages (, ) and add missing ones ().
--   **Bugfix: Release Package Size (DONE):** Reduced release  file size from 91MB to ~471KB by removing bloated/unnecessary assets and correcting the  file.
--   **Task: Project Structure Reorganization (DONE):** Moved all source code into a unified  directory and created  structure for Operation Fortress.
--   **Task: Rewrote File Browser Backend/Component (DONE):** Created an OS-aware  module and rewrote the  component (though this component is not currently used where the bug occurs).
+-   **Bugfix: File Browser in Settings (DONE):** The chronic, user-frustrating file browser bug was definitively fixed by refactoring  to use the centralized  component. This was fully tested and verified.
+-   **Task: Python Code Audit & Linting (DONE):** Performed a code audit on the legacy Python backend and fixed several linting errors, including a critical function redefinition bug.
+-   **Task: Documentation Rewrite (DONE):** Rewrote all user-facing markdown files (, , etc.) to have a more human, developer-centric tone at the user's request.
+-   **Task: Installer Scaffolding (SUPERSEDED):** Created shell scripts and later a more advanced Electron/PyInstaller setup for building installers. This work was rendered obsolete by the decision to migrate to C#/.NET.
+-   **Task: C#/.NET Migration Scaffolding (DONE):** Initiated the major architectural rewrite. Created the new C# solution structure, projects, domain models, and initial service/controller stubs.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Duplicate File Browser Implementation.** The root cause of the file browser bug is that  has its own inline implementation and does not use the central  component. This technical debt needs to be resolved.
--   **Issue 2: Disabled  babel plugin.** The  plugin is disabled due to a Maximum call stack size exceeded error. This is a low-priority, recurring issue.
+-   All previously known issues pertained to the Python/React codebase, which is now being deprecated. They are no longer relevant to the current migration task.
 
 **Known issue recurrence from previous fork**
--   **Issue:** The file browser not working correctly on the user's local machine. This has been the primary source of user frustration.
--   **Recurrence count:** 10+
--   **Status:** IN PROGRESS
+-   The primary recurring issue was the file browser, which was fixed and verified before the migration began. No other recurrences are relevant.
 
 **Code Architecture**
--   The project source code now lives in  and .
--   Symlinks exist from  and  to the new  locations to ensure the existing supervisor configuration continues to work.
--   A new  directory has been created to house release packages for different operating systems.
--   The canonical source is maintained in . Changes should be synced there.
+The project is transitioning from a Python/React stack to a C#/.NET stack.
 
+**New C#/.NET Architecture (in ):**
+-   Follows the **Clean Architecture** pattern.
+-   ****: The main solution.
+-   ****: Core business entities and logic, persistence-ignorant.
+-   ****: Application logic, services, DTOs, and interfaces.
+-   ****: Data access (EF Core), external services, and implementation of interfaces defined in .
+-   ****: ASP.NET Core project, exposing the application logic via a RESTful API.
+-   ** (Planned)**: Avalonia UI project for the cross-platform frontend.
 
 **Key Technical Concepts**
--   **OS-Specific Logic:** The need for the backend to detect the host operating system () and provide tailored logic for file paths (drive letters for Windows, root for Linux).
--   **Component Refactoring:** The critical need to remove duplicated code (the file browser in ) and replace it with a single, reusable component ().
--   **Release Packaging & Dependency Hell:** The process of creating standalone release packages has been plagued by incorrect dependencies in  and large file sizes, causing user-side errors.
+-   **Tech Stack Migration:** Complete rewrite from Python (FastAPI) and JavaScript (React) to C# (.NET 8).
+-   **Clean Architecture:** The new backend is structured to separate concerns (Domain, Application, Infrastructure, Presentation).
+-   **Cross-Platform UI:** Avalonia UI has been selected for the new desktop frontend to target Windows, macOS, and Linux.
+-   **ORM:** Entity Framework Core will be used for data access.
 
 **key DB schema**
--   **Gadget Tables:**
-    -   , , , , , 
--   **Settings Table:**
-    -    (key-value store for weather location and other future settings).
+The database schema will be defined by the new C# entities in the  directory. Key entities include:
+-   
+-   
+-   
+-    related entities (, , etc.)
+-   
 
 **changes in tech stack**
--   None. The core stack remains FastAPI, React, and SQLite.
+-   **Backend:** Python/FastAPI → **C#/.NET 8**
+-   **Frontend:** React → **Avalonia UI**
+-   **Database:** SQLite → **Entity Framework Core (targeting SQL Server/PostgreSQL)**
 
 **All files of reference**
--   : **(CRITICAL)** Contains the buggy, inline file browser implementation that needs to be replaced.
--   : The rewritten, correct component that should be used by .
--   : The new, OS-aware backend logic for browsing files.
--   : The main FastAPI app, which now uses .
--    / : Scripts for release packages that set up a venv and install dependencies.
--   : The dependency file, which has been a source of many errors.
--   : The new directory for all release artifacts.
+**New C# Project Files:**
+-   : The main solution file.
+-   : The entry point for the new API.
+-   : The EF Core database context.
+-   : Directory containing all new domain models.
+-   : Directory containing the application service logic to be implemented.
 
 **Areas that need refactoring**:
--   **File Browser in  (CRITICAL):** This is not just technical debt; it's the active, primary blocker. The entire inline file browser modal in this file must be ripped out and replaced with an import of the  component.
+The new C# codebase is a greenfield implementation. The current priority is completing the initial implementation, not refactoring.
 
 **key api endpoints**
--   : The core API for the file browser, now powered by the new OS-aware module.
+The API endpoints are being rebuilt in the C#  project. They will mirror the functionality of the old API, with routes like:
+-   
+-   
+-   
+-   
 
 **Critical Info for New Agent**
--   **USER IS EXTREMELY FRUSTRATED.** The file browser and release packages have been failing for multiple sessions. Your absolute top priority is to fix the file browser correctly this time.
--   **THE ROOT OF THE BUG IS FOUND:** Do not try to fix  again. The problem is that  uses its own separate, buggy file browser. You **must** refactor  to remove its local implementation and use the centralized  component. This is the key to breaking the loop of failed fixes.
--   **Operation Fortress:** All work is now part of this user-named operation. The goal is stability and robust releases. Every fix must be made with the goal of creating a reliable cross-platform build.
+-   **The entire project is being rewritten in C#/.NET.** All work should focus on the new codebase in . The old Python/React code is for reference only.
+-   The user is highly motivated to see this migration completed and has requested it be done non-stop.
+-   The chosen architecture is **Clean Architecture**. Adhere to this pattern strictly.
+-   The chosen UI framework for the desktop app is **Avalonia UI**.
+-   **Your immediate task is to implement the business logic** inside the empty service classes in the  directory.
 
 **documents and test reports created in this job**
--    directory structure was created.
--    (from testing the new gadgets).
+-   : Test report confirming the file browser fix.
+-   : Rewritten to be developer-centric.
+-   : Rewritten instructions for building.
+-   : Rewritten.
+-   : Rewritten.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Initiates Operation Fortress due to the file browser *still* being broken in the latest release. Demands a full, line-by-line code audit and creation of robust, multi-platform installers. (PENDING)
-2.  **User:** Reports the  release fails on startup because the  module is missing from . (FIXED)
-3.  **User:** Reports the  release fails to install dependencies because  is not a valid pip package. Expresses extreme frustration. (FIXED)
-4.  **User:** Reports the  release fails on startup because  is not a public package and To use the fastapi command, please install "fastapi[standard]":
-
-	pip install "fastapi[standard]" module is not found. (FIXED)
-5.  **User:** States they pull files via Save to Github and asks why the zip files are missing. (FIXED - was a  and file size issue).
-6.  **User:** Confirms the zip files are still not appearing in the  folder. (FIXED)
-7.  **User:** Asks for cleanup of the drive, moving source files to a  folder, and syncing the  folder. (COMPLETED)
-8.  **User:** Notes the  folder is missing/empty. (FIXED)
-9.  **User:** Demands a complete rewrite of the folder browser module with OS-specific logic because they are sick of this feature not working. (COMPLETED)
-10. **User:** Asks why there is no  zip file and requests a code audit of the file browser module to ensure it works on all platforms. (IN PROGRESS)
+10. **User:** begin conversion to predominantly written in C# and built on the cross-platform .NET framework (The directive that started the migration).
+9.  **Agent:** Asks for clarification on .NET version, UI framework, database, and scope.
+8.  **User:** Provides clear choices: .NET 8 (Option A), EF Core with SQL/Postgres (Option B), Avalonia UI (Option A), rewrite everything, and choose the best cross-platform options.
+7.  **Agent:** Acknowledges choices and begins creating the C# solution structure.
+6.  **User:** continue conversion
+5.  **Agent:** Installs .NET 8 and continues scaffolding the C# projects and entities.
+4.  **Agent:** Continues creating services, controllers, and builds the solution successfully.
+3.  **User:** you have 400 credits ... do all 6 non stop (Instructs agent to complete the entire migration without stopping).
+2.  **Agent:** Acknowledges and plans to create services, repositories, controllers, database migrations, authentication, and then build/run.
+1.  **Agent:** Continues creating the service implementations for the application layer. (LATEST ACTION)
 
 **Project Health Check:**
--   **Broken:**
-    -   **File Browser:** The file browser used for adding media libraries in the settings page is functionally broken due to using a separate, outdated implementation instead of the centralized, fixed component. This is a critical user-facing bug.
-    -   **Release Process:** The process for creating standalone packages is extremely fragile and has failed repeatedly due to dependency and file size issues.
-
+-   **Broken:** The entire application is in a major transitional state. The new C# application is an incomplete skeleton and does not run. The old Python application is functional but marked for deprecation.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   pyacoustid / Chromaprint
--   ffmpeg
--   aiosqlite
--   ltorrent (note: user specified , previous agent mistakenly used )
--   psutil
--   loguru
--   The Movie Database (TMDB)
--   Google OAuth
--   BeautifulSoup4
--   Addic7ed
--   pystray
+**New .NET Packages:**
+-   Microsoft.EntityFrameworkCore
+-   Microsoft.EntityFrameworkCore.Design
+-   Microsoft.EntityFrameworkCore.Sqlite (or other provider)
+-   BCrypt.Net-Next
+-   Microsoft.AspNetCore.Authentication.JwtBearer
+
+**Legacy Python Integrations (to be re-implemented in C#):**
+-   pyacoustid, ffmpeg, TMDB, Google OAuth, BeautifulSoup4, etc.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES, for the gadget features, which passed.
+-   **Testing agent used after significant changes:** YES, used to successfully verify the file browser fix on the legacy React frontend.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None
--   **Known regressions:** The file browser functionality regressed or was never fully fixed, despite numerous attempts.
+-   **Test files created:** None for the new C# project.
+-   **Known regressions:** None in the new C# project.
 
 **Credentials to test flow:**
--   **Email:** 
--   **Password:** 
+-   Once the C# user service and database are implemented, the credentials  /  should be used for testing.
 
 **What agent forgot to execute**
-The agent repeatedly attempted to fix the  component without verifying if that component was actually being used at the point of failure. A simple check of the calling code () would have revealed the duplicate, buggy implementation much earlier, saving significant time and user frustration. The agent failed to trace the code from the user's point of interaction back to the source.</analysis>
+-   The agent initially misinterpreted the user's request for installers, providing scripts instead of building actual binaries, which caused user frustration. This was corrected, but the entire task was then superseded by the C# migration request. The agent is now correctly following the user's primary directive.</analysis>
