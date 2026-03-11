@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${API}/auth/me`);
+      const response = await axios.get(`${API}/users/me`);
       setUser(response.data);
       setIsAuthenticated(true);
     } catch (error) {

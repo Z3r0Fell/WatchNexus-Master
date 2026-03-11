@@ -280,3 +280,5 @@ src/web/node_modules/.cache/default-development/1.pack
 # Environment files
 *.env
 *.env.*
+src/web/node_modules/.cache/default-development/5.pack
+src/web/node_modules/.cache/default-development/5.pack
