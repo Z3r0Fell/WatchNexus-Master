@@ -1,49 +1,51 @@
-FROM python:3.11-slim AS backend-base
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
+# Copy solution and project files
+COPY watchnexus/WatchNexus.sln ./
+COPY watchnexus/core/WatchNexus.Core.csproj ./core/
+COPY watchnexus/shared/WatchNexus.Shared.csproj ./shared/
+
+# Restore packages
+RUN dotnet restore
+
+# Copy source code and build
+COPY watchnexus/ ./
+RUN dotnet publish core/WatchNexus.Core.csproj -c Release -o /app/publish
+
+# Frontend build
+FROM node:20-slim AS frontend
+WORKDIR /web
+COPY src/web/package.json src/web/yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY src/web/ ./
+RUN yarn build
+
+# Runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim
 WORKDIR /opt/watchnexus
 
-# System dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg ffmpeg sqlite3 \
-    && rm -rf /var/lib/apt/lists/*
+# Copy published .NET app
+COPY --from=build /app/publish ./
 
-# Install Node.js 20 for frontend build
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g yarn \
-    && rm -rf /var/lib/apt/lists/*
+# Copy frontend build
+COPY --from=frontend /web/build ./web/build/
 
-# Copy backend
-COPY src/server/ /opt/watchnexus/backend/
-WORKDIR /opt/watchnexus/backend
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy module manifests
+COPY watchnexus/modules/ ./modules/
 
-# Copy and build frontend
-COPY src/web/ /opt/watchnexus/frontend-src/
-WORKDIR /opt/watchnexus/frontend-src
-RUN yarn install --frozen-lockfile && yarn build \
-    && mv build /opt/watchnexus/backend/frontend_build \
-    && rm -rf /opt/watchnexus/frontend-src
+# Create data/log dirs
+RUN mkdir -p data logs
 
-# Copy tray app and launcher
-COPY tray_app.py /opt/watchnexus/
-COPY launch.py /opt/watchnexus/
-COPY VERSION /opt/watchnexus/
+VOLUME /opt/watchnexus/data
+VOLUME /opt/watchnexus/logs
 
-WORKDIR /opt/watchnexus/backend
-
-# Volumes
-VOLUME /opt/watchnexus/backend/data
-VOLUME /opt/watchnexus/backend/logs
-
-# Environment
+ENV ASPNETCORE_URLS=http://0.0.0.0:8001
 ENV WATCHNEXUS_PORT=8001
-ENV WATCHNEXUS_DATA=/opt/watchnexus/backend/data
-ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8001/api/health || exit 1
 
-CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
+ENTRYPOINT ["dotnet", "WatchNexus.Core.dll"]

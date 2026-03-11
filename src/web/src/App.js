@@ -38,6 +38,7 @@ import VpnPage from "./pages/VpnPage";
 import SystemPage from "./pages/SystemPage";
 import LibraryManagerPage from "./pages/LibraryManagerPage";
 import LogViewerPage from "./pages/LogViewerPage";
+import MediaBrowserPage from "./pages/MediaBrowserPage";
 
 // Gadget Pages
 import WeatherPage from "./pages/gadgets/WeatherPage";
@@ -391,6 +392,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <LogViewerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/browse"
+        element={
+          <ProtectedRoute>
+            <MediaBrowserPage />
           </ProtectedRoute>
         }
       />

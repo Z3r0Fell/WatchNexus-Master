@@ -67,6 +67,7 @@ const allNavItems = [
   { icon: Shield, label: 'Security', path: '/security', hideable: true },
   { icon: Wifi, label: 'VPN Portal', path: '/vpn', hideable: true },
   { icon: Library, label: 'Lib Manager', path: '/library-manager', hideable: true },
+  { icon: Film, label: 'Browse Media', path: '/browse', hideable: true },
   { icon: FileText, label: 'Log Viewer', path: '/log-viewer', hideable: true },
   { icon: Server, label: 'System', path: '/system', hideable: true },
   // Always visible
@@ -75,7 +76,7 @@ const allNavItems = [
 ];
 
 // Default visible tabs (all except Live TV which users often don't use)
-const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video', 'Security', 'VPN Portal', 'Lib Manager', 'Log Viewer', 'System'];
+const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video', 'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System'];
 
 // Get visible tabs from localStorage
 const getVisibleTabs = () => {
