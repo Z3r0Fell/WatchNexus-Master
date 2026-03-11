@@ -5,8 +5,9 @@ WatchNexus is a unified, self-hosted media pipeline for media management. The pr
 
 ## Current Architecture
 - **Backend**: C#/.NET 8 ASP.NET Core Web API (Clean Architecture)
+- **Frontend**: React 19 with Tailwind CSS, Shadcn/UI, Framer Motion
 - **Database**: SQLite via Entity Framework Core
-- **Location**: `/app/src/dotnet/`
+- **Location**: `/app/src/dotnet/` (backend), `/app/frontend/` (frontend)
 - **Port**: 8001 (matches Emergent platform ingress)
 - **Auth**: JWT (Bearer tokens) with role-based authorization
 
@@ -41,8 +42,8 @@ WatchNexus is a unified, self-hosted media pipeline for media management. The pr
 - **Photos**: Libraries, browse, EXIF
 - **Web Videos**: Bookmarks, search
 
-### Security Module ("Bastion") - NEW
-- Audit logging (all auth/security/VPN events)
+### Security Module ("Bastion")
+- Audit logging (all auth/security/VPN events) 
 - IP access rules (whitelist/blacklist with expiry)
 - API key management (generation, revocation, usage tracking)
 - Session management (active sessions, revocation)
@@ -50,18 +51,23 @@ WatchNexus is a unified, self-hosted media pipeline for media management. The pr
 - Security headers (OWASP: HSTS, X-Frame-Options, CSP, etc.)
 - IP filtering middleware
 
-### VPN Portal ("Tunnel") - NEW
+### VPN Portal ("Tunnel")
 - WireGuard-based VPN server configuration
 - Peer management (create, toggle, delete)
 - Auto IP assignment from subnet pool
-- Client config generation (WireGuard format)
+- Client config generation (WireGuard format, downloadable .conf)
 - Connection logging and statistics
 - Per-user access control
 
+### Frontend Dashboard Pages
+- **Security Dashboard** (`/security`): 4 stat cards, tabbed interface (Audit Log, IP Rules, API Keys, Sessions)
+- **VPN Portal** (`/vpn`): Server config panel, peer management with add/toggle/delete, connection logs
+- **System Info** (`/system`): Health status, runtime info, security features grid, 15 modules list
+
 ## Testing
-- **45/45 backend tests passed** (100% success rate)
-- Test file: `/app/backend/tests/test_watchnexus_api.py`
-- Test report: `/app/test_reports/iteration_27.json`
+- **Backend**: 45/45 tests passed (100% - iteration_27)
+- **Frontend + Backend**: 100% pass (iteration_28)
+- Test reports: `/app/test_reports/iteration_27.json`, `/app/test_reports/iteration_28.json`
 
 ## Test Credentials
 - Email: test@test.com
@@ -74,7 +80,6 @@ WatchNexus is a unified, self-hosted media pipeline for media management. The pr
 - VPN keypair uses SHA256 placeholder (not real Curve25519)
 
 ## Upcoming Tasks (P1)
-- Frontend UI (React or Avalonia)
 - Real WireGuard integration (wg-quick commands)
 - TMDB metadata fetching with real API key
 - Library scanning implementation
@@ -88,3 +93,4 @@ WatchNexus is a unified, self-hosted media pipeline for media management. The pr
 - Real Curve25519 keypair generation
 - PostgreSQL/SQL Server migration option
 - WebSocket real-time updates
+- Avalonia desktop client
