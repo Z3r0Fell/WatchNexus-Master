@@ -1,0 +1,15 @@
+/app/src/dotnet/src/WatchNexus.Application/bin/Debug/net8.0/WatchNexus.Application.deps.json
+/app/src/dotnet/src/WatchNexus.Application/bin/Debug/net8.0/WatchNexus.Application.dll
+/app/src/dotnet/src/WatchNexus.Application/bin/Debug/net8.0/WatchNexus.Application.pdb
+/app/src/dotnet/src/WatchNexus.Application/bin/Debug/net8.0/WatchNexus.Domain.dll
+/app/src/dotnet/src/WatchNexus.Application/bin/Debug/net8.0/WatchNexus.Domain.pdb
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.csproj.AssemblyReference.cache
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.GeneratedMSBuildEditorConfig.editorconfig
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.AssemblyInfoInputs.cache
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.AssemblyInfo.cs
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.csproj.CoreCompileInputs.cache
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNex.C3C6F2DE.Up2Date
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.dll
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/refint/WatchNexus.Application.dll
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/WatchNexus.Application.pdb
+/app/src/dotnet/src/WatchNexus.Application/obj/Debug/net8.0/ref/WatchNexus.Application.dll
