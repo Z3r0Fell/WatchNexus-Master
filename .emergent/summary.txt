@@ -1,126 +1,167 @@
 <analysis>**original_problem_statement:**
-The user wants to build a unified, self-hosted media pipeline called WatchNexus. The project's initial goal was a Python/FastAPI/React application, which has since been completely rewritten into a C#/.NET 8 backend with a React frontend dashboard, at the user's direction. The new stack follows a Clean Architecture pattern.
+The user wants to build a unified, self-hosted media pipeline called WatchNexus. The project started as a Python/FastAPI application but has since been completely rewritten, at the user's explicit direction, into a C#/.NET 8 backend with a React frontend, following a modular architecture.
 
-Recent development has focused on adding significant new features to the C# application, including a security module (Bastion), a VPN portal (Tunnel), and the start of core media management features like a library manager (Marmalade) and log viewer (Zest). The user's last instruction was to validate module codenames and then proceed with implementing the next set of features.
+The user's latest set of instructions are:
+1.  First, perform a thorough cleanup of the  directory, removing all unnecessary files and folders to create a clean development repository.
+2.  Implement a Marketplace feature, which was an expected feature from earlier stages.
+3.  Enhance the existing installer scripts to include prompts for any prerequisites needed for the application to run correctly (e.g., .NET SDK).
+4.  Ensure the production database is empty and free of test data for the upcoming v3.0.0 beta release.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project is a fully functional C#/.NET 8 backend application using Clean Architecture, serving a REST API on port 8001. It uses an SQLite database managed by Entity Framework Core and secures endpoints with JWT authentication. The legacy Python application has been completely replaced.
+The project is a fully functional C#/.NET 8 backend application serving a REST API, integrated with a React frontend. The old Python codebase has been entirely replaced.
 
-A comprehensive React frontend dashboard has been built to interact with the new backend.
-
-**Implemented Backend & Frontend Features:**
-*   **Full C# Backend:** A robust API with 18 controllers.
-*   **Security Module (Bastion):** Provides audit logging, IP filtering, API key management, session tracking, rate limiting, and OWASP security headers. A full dashboard page allows managing these features.
-*   **VPN Portal (Tunnel):** Manages WireGuard server/peer configurations, generates client configs with QR codes, and provides mock controls for the WireGuard service. A full dashboard page visualizes this.
-*   **System & Logging:** A System page displays module health and a Zest log viewer page allows browsing backend logs.
-*   **Library Management (Marmalade):** A backend controller and frontend page to create and view media libraries. The scanning logic is a placeholder.
-*   **Settings Endpoint:** An API endpoint () exists to manage application configuration like external API keys.
+*   **Backend:** A modular C#/.NET 8 monolith using ASP.NET Core and Entity Framework Core with an SQLite database. It includes modules for security (Bastion), VPN management (Tunnel), library management (Marmalade), logging (Zest), and a placeholder for settings (Fondue).
+*   **Frontend:** A comprehensive React dashboard that interacts with the C# backend. It features pages for all modules, a new Netflix-style Browse Media page, and working JWT authentication.
+*   **Build/Deploy:** The project includes installer scripts for Docker, Linux, and Windows that bundle the C# application. The environment's supervisor is configured to run the compiled C# backend.
 
 **Last working item**:
-*   **Last item agent was working:** The agent was implementing the next set of media management features. It began by validating and correcting all module codenames across the entire C# and React codebase. It then created backend endpoints for a log viewer, app settings, and library scanning. Following this, it built the corresponding Library Manager and Log Viewer pages in the React frontend. During this process, the agent diagnosed and fixed a blank-page JavaScript error and a critical  enum mismatch bug that was preventing library creation. The agent self-tested the fix successfully.
-*   **Status:** IN PROGRESS
+*   **Last item agent was working:** The agent had just finished a complete, user-directed rewrite of the application from Python to C#/.NET 8. It then received a new set of instructions to clean the repository and build the Marketplace feature. The agent created a plan to address these new requests and was waiting for user approval.
+*   **Status:** BLOCKED
 *   **Agent Testing Done:** Y
-*   **Which testing method agent to use?** both. Use the backend testing agent to verify the new endpoints for settings, and full library scan functionality. Use the frontend testing agent to verify the new settings UI, download manager UI, and library scan progress indicators.
+*   **Which testing method agent to use?** both. The repository cleanup should be followed by a smoke test (curl/screenshot) to ensure the app still runs. The Marketplace feature will require full backend and frontend testing via the testing agent.
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-There are no known bugs. The primary pending work is completing the current feature development task.
+There are no known bugs or technical issues. The application is stable after the recent migration and testing. The pending work is based entirely on the user's latest feature requests.
 
 **In progress Task List**:
--   **Task 1: Complete Core Media Management Features (P0 - HIGHEST)**
-    -   **Where to resume:** The foundational UI and API endpoints are in place. The next step is to implement the core logic.
-        1.  **TMDB Integration:** Create a settings UI (e.g., in a new  page or within the Library Manager) for users to input their TMDB API key, which will be saved via the  endpoint. Implement the logic in  to use this key to fetch movie/show details.
-        2.  **qBittorrent Integration:** Create a Downloads page in the frontend. This page should allow users to configure qBittorrent connection settings (URL, user, pass). Implement the backend logic to interact with the qBittorrent API for managing torrents.
-        3.  **Library Scanning Logic:** Enhance the  endpoint. The backend logic needs to be fully implemented to traverse the library's file path, identify media files, call the  to fetch metadata, and save it to the database. The frontend should be updated to display scan progress (e.g., Scanning..., Fetching metadata...).
-    -   **What will be achieved with this?** This will deliver the core media management functionality of WatchNexus: scanning libraries, enriching them with metadata, and integrating a download client.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both
-    -   **Blocked on something:** None.
+There are no tasks currently in progress. The previous migration task was completed.
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   **P0: Build Avalonia UI Frontend:** The user's original goal was a cross-platform desktop app. While the React app serves as a powerful dashboard, the Avalonia UI client is still a top-priority upcoming task.
-    *   **P1: Implement Robust Background Task Processing:** Refactor the library scanning logic from a synchronous API call into an asynchronous background job using a library like Hangfire or Quartz.NET. This is crucial for handling long-running scans without timing out or blocking the server.
-    *   **P1: Implement EF Core Migrations:** Replace the current  method with a proper EF Core migration strategy to allow for structured schema evolution.
-*   **Future Tasks:**
-    *   Re-implement extended features from the original plan (Marshmallow Cloud Sync, Fortress Code Protection) in the new .NET stack.
-    *   Implement the remaining  functionality (Podcasts, Radio).
-    *   Create native installers for the desktop application (MSIX, DMG, AppImage).
+*   **Upcoming Tasks (User's Current Request):**
+    *   **P0: Clean  Directory:** Perform a comprehensive cleanup of the root application directory, identifying and removing all legacy files, symlinks, and folders that are not essential for the current C#/.NET 8 + React project.
+    *   **P0: Build Marketplace (Fondue):** Implement the module marketplace. This involves creating a new backend API to manage modules (list, install, etc.) and a corresponding frontend page to display and interact with them.
+    *   **P1: Enhance Installers with Prerequisite Checks:** Modify the  and  scripts to detect and prompt the user to install necessary dependencies like the .NET 8 SDK.
+    *   **P1: Ensure Clean Production Database:** Implement a mechanism to ensure the SQLite database is empty and free of any test data when the application is packaged for release.
+
+*   **Future Tasks (From Backlog):**
+    *   **Implement EF Core Migrations:** Replace the current  method with a proper EF Core migration strategy for structured schema evolution.
+    *   **Implement qBittorrent C# Client:** Integrate a qBittorrent client into the C# backend for the Downloads page functionality.
+    *   **Re-implement Extended Features:** Port the Marshmallow (Cloud Sync) and Fortress (Code Protection) concepts to the new .NET stack.
 
 **Completed work in this session**
--   **C#/.NET 8 Backend Migration:** The entire Python backend was successfully replaced with a new, fully functional C#/.NET 8 application.
--   **Security Module (Bastion):** Implemented a full security suite with a corresponding frontend dashboard.
--   **VPN Portal (Tunnel):** Built a WireGuard management portal with a frontend dashboard, including QR code generation.
--   **Dashboard Pages:** Created frontend pages for System Health, Log Viewer (Zest), and Library Management (Marmalade).
--   **Codename Validation:** Audited and fixed all module codenames across the backend and frontend to ensure consistency.
--   **Bugfix ( Enum Mismatch):** Resolved a critical bug preventing library creation due to an enum mismatch between frontend and backend.
--   **Bugfix (Blank Page):** Diagnosed and fixed a client-side JavaScript error (missing icon import) that was breaking the frontend.
+-   **Complete Python to C#/.NET 8 Migration:** The entire Python backend was successfully rewritten into a new, fully functional, and modular C#/.NET 8 application.
+-   **Modular C# Architecture:** Established a unified C# project structure with a core application and a shared library, designed to support future module separation.
+-   **Full Feature Port:** All key features, including security, VPN, library scanning (with TMDB), and logging, were ported to the new C# backend.
+-   **Background Scan Fix:** Correctly implemented asynchronous library scanning in C# using  to avoid database context conflicts.
+-   **New Browse Media Page:** Created a new frontend page to display media items in a Netflix-style grid.
+-   **C# Installer Scripts:** Created and updated installer scripts for Docker, Linux, and Windows tailored to the new .NET application.
+-   **Comprehensive Testing:** Successfully used the testing agent to validate the entire C# stack, passing 25/25 backend tests and confirming all frontend pages load correctly.
+-   **Bug Fixes:** Resolved legacy endpoint issues and fixed minor UI display bugs (NaN values) identified by the testing agent.
+
+**Earlier issues found/mentioned but not fixed**
+*   **Issue 1: Database Migration Strategy**
+    *   **Debug checklist:** The database initialization logic is in  and uses .
+    *   **Why to solve this issue and what will be achieved with this?** Replacing  with EF Core Migrations is standard practice for production applications. It allows for versioned, incremental, and reversible schema changes, preventing data loss and ensuring database consistency as the application evolves.
+    *   **Should Test frontend/backend/both after fix:** Backend
+    *   **Is recurring issue?** N
+
+**Known issue recurrence from previous fork**
+- None.
 
 **Code Architecture**
-*   **Backend ():** A C#/.NET 8 application using the Clean Architecture pattern (Domain, Application, Infrastructure, Api layers).
-*   **Frontend ():** A React single-page application built with Vite.
+*   **Backend ():** A modular monolith built with C#/.NET 8.
+    *   : The main project containing , all controllers, services, EF Core models, and the .
+    *   : A class library for shared code, primarily the  interface.
+*   **Frontend ():** A React single-page application created with Vite.
+*   **Module Structure ():** A set of placeholder directories (, , etc.) intended for the future separation of module source code.
 
 **Key Technical Concepts**
-*   **Tech Stack:** C#/.NET 8, ASP.NET Core, Entity Framework Core, SQLite, React, Vite.
-*   **Authentication:** JWT Bearer Tokens.
-*   **Architecture Pattern:** Clean Architecture.
+*   **Tech Stack:** C#/.NET 8, ASP.NET Core, Entity Framework Core, SQLite, React, Vite
+*   **Authentication:** JWT Bearer Tokens
+*   **Architecture Pattern:** Modular Monolith
 
 **key DB schema**
-*   The schema is defined by C# entities in .
-*   The  manages tables for Users, Libraries, MediaItems, and the new Security/VPN entities (, , , , etc.).
+-   The schema is defined by C# POCO classes (entities) in .
+-   **AppDbContext:** () Manages all tables, including , , , , , , and .
+
+**changes in tech stack**
+*   The entire backend was rewritten from Python/FastAPI to **C#/.NET 8**. The Python codebase is fully deprecated and should be removed.
 
 **All files of reference**
-*   **Backend Logic:** 
-*   **API Endpoints:** 
-*   **Frontend Routing:** 
-*   **Frontend API Layer:** 
-*   **Frontend Pages:**  (especially , and the new pages to be created for Settings and Downloads).
+*   **C# Backend Entrypoint:** 
+*   **C# Controllers:** 
+*   **C# DB Context:** 
+*   **Frontend Main Component:** 
+*   **Frontend API Service:** 
+*   **Supervisor Config:** 
+*   **Installer Scripts:** , , 
 
 **Areas that need refactoring**:
-*   **Library Scanning:** The current synchronous API endpoint for scanning is a prototype. It must be refactored into a background job to handle long-running operations gracefully.
-*   **Database Initialization:** The use of  is convenient for development but should be replaced with a formal EF Core migration strategy for production readiness.
+*   **Database Initialization:** The  method should be replaced with a formal EF Core migration strategy to support production environments and evolving schemas.
+*   **Module Code Separation:** While the directory structure for modules exists in , the actual C# code for all modules currently resides within the single  project. A refactoring task would be to move module-specific controllers, services, and models into separate C# projects within those folders.
 
 **key api endpoints**
-*   , , 
-*   : Endpoints for the Bastion security module.
-*   : Endpoints for the Tunnel VPN portal.
-*   : Endpoint for the Zest log viewer.
-*   : CRUD for media libraries.
-*   : Triggers a library scan.
-*   : GET/POST for application settings (e.g., TMDB key).
+*   , 
+*   
+*    (CRUD for libraries)
+*    (Triggers an async library scan)
+*   
+*    (All Bastion security endpoints)
+*    (All Tunnel VPN endpoints)
+*   
+*   
+*   
 
 **Critical Info for New Agent**
-*   Focus exclusively on the C#/.NET 8 backend and the React frontend. The old Python code is deprecated.
-*   Your immediate priority is to complete the media management features as outlined in the **In progress Task List**. This involves implementing TMDB metadata fetching, qBittorrent integration, and the actual file scanning logic.
-*   The user appreciates rapid progress and security-conscious enhancements.
-*   Be prepared to create new frontend pages and components for the settings and download manager features.
+*   **The project is now a C#/.NET 8 application.** Ignore and delete any remaining Python code. The user has been emphatic about this migration.
+*   Your immediate priority is the user's latest request. Follow this order:
+    1.  **Clean the  directory.** Be extremely careful not to delete essential files (, , , etc.). Use total 152
+-rw-r--r--  1 root root  5875 Feb 25 16:00 AUDIT_LOG.md
+-rw-r--r--  1 root root  9868 Feb 11 09:36 BUILD_GUIDE.md
+-rw-r--r--  1 root root  1932 Mar 11 22:28 CHANGELOG.md
+-rw-r--r--  1 root root  2545 Feb 28 17:21 DEVELOPMENT.md
+-rw-r--r--  1 root root  1888 Mar 11 21:56 README.md
+-rw-r--r--  1 root root   753 Feb 23 15:23 START-WATCHNEXUS-TRAY.bat
+-rw-r--r--  1 root root     6 Feb 24 01:28 VERSION
+drwxr-xr-x  2 root root  4096 Feb 23 15:56 __pycache__
+lrwxrwxrwx  1 root root    15 Feb 26 11:47 backend -> /app/src/server
+drwxr-xr-x  3 root root  4096 Feb 23 15:29 backups
+drwxr-xr-x 13 root root  4096 Feb 28 17:07 builds
+-rw-r--r--  1 root root  8692 Feb  3 18:39 design_guidelines.json
+drwxr-xr-x  2 root root  4096 Mar 11 21:03 docs
+lrwxrwxrwx  1 root root    12 Feb 26 11:47 frontend -> /app/src/web
+drwxr-xr-x  7 root root  4096 Mar 11 21:46 installers
+-rw-r--r--  1 root root  4875 Feb 14 23:48 launch.py
+drwxr-xr-x  2 root root  4096 Feb 15 04:31 memory
+drwxr-xr-x  2 root root  4096 Feb  3 22:34 node_modules
+drwxr-xr-x  3 root root  4096 Feb 26 12:06 releases
+drwxr-xr-x  2 root root  4096 Feb 23 13:02 scripts
+drwxr-xr-x  8 root root  4096 Feb 26 11:47 separated
+drwxr-xr-x  4 root root  4096 Mar 11 21:34 src
+-rwxr-xr-x  1 root root  1163 Feb 23 15:23 start-watchnexus-tray.sh
+drwxr-xr-x  3 root root  4096 Mar 11 22:26 test_reports
+drwxr-xr-x  2 root root  4096 Jun 18  2025 tests
+-rw-r--r--  1 root root 25512 Feb 23 15:56 tray_app.py
+drwxr-xr-x  5 root root  4096 Mar 11 22:20 watchnexus
+-rw-r--r--  1 root root    86 Feb  3 22:34 yarn.lock to understand symlinks before removing them.
+    2.  **Build the Marketplace feature.**
+    3.  **Enhance the installers.**
+*   The project uses a modular monolith pattern. All C# code is currently in one project (), but the user's long-term vision is for modules to be developed and updated independently. Keep this in mind when adding the Marketplace feature.
 
 **documents and test reports created in this job**
-*    (Latest test report)
-*    (Updated with new features and architecture)
+*   
+*   
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. full speed, full c# conversion... - Initial directive for the migration and enhancement phase.
-9.  continue with the Full C# backend... Add the dashboard as well - User confirms the addition of the React dashboard.
-8.  next action items and the enhancement - User asks to continue with planned work.
-7.  Validate module codenames and continue with next action items - The most recent, specific directive setting the course for the last work session.
-*The remaining messages are agent updates and user confirmations related to the implementation of the security/VPN modules and the new frontend pages.*
+*   A series of messages where the user corrected the agent's misunderstanding about the tech stack, confirming the C#/.NET 8 migration.
+*   The most recent and critical message is: the marketplace should have been already been built ages back .. so yes do that now then next action items. first though, flush the entire app folder clean and keep only the necessary files and folders needed for this project .. I want a clean, detailed dev repo, no junk... SIDE NOTE - include in the installers prompts to install any prerequisites... This message sets the immediate priorities for the next agent.
+*   The agent has proposed a plan to address this and is waiting for the user's approval.
 
 **Project Health Check:**
-*   **Broken:** None. The application is in a stable, running state.
+*   **Broken:** None. The application is stable and fully functional on the new C# stack.
 *   **Mocked:**
-    *   The WireGuard integration executes  commands as the  utility is not installed in the development environment.
-    *   The library scanning logic is a placeholder; it does not yet traverse file systems or fetch external metadata.
+    *   The WireGuard integration in the Tunnel module still uses  commands, as the  utility is not available in the dev environment.
 
 **3rd Party Integrations**
-*   **Active (.NET):** EF Core, BCrypt.Net-Next, JWTBearer, QRCoder.
-*   **To Be Implemented:** A TMDB API client (like ), a qBittorrent API client.
+*   **Active (.NET):** Entity Framework Core, BCrypt.Net-Next, JWTBearer, QRCoder, TMDbLib, Serilog.
+*   **To Be Implemented (in C#):** A qBittorrent API client.
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES. The agent was used to test the new frontend pages and backend endpoints, successfully identifying a critical bug that was then fixed.
-*   **Test files created:** None by the agent.
+*   **Testing agent used after significant changes:** YES. It was used to perform a full validation of the C# migration, passing 25/25 backend tests and confirming all frontend pages were functional.
+*   **Test files created:** None.
 *   **Known regressions:** None.
 
 **Credentials to test flow:**
@@ -128,4 +169,4 @@ There are no known bugs. The primary pending work is completing the current feat
 *   **Password:** 
 
 **What agent forgot to execute**
-The agent is on track and has been correctly following the user's directives and the logical progression of the project. No tasks have been missed.</analysis>
+The agent has successfully navigated a complex and contradictory set of user instructions, culminating in a complete and working C# application that matches the user's final vision. No tasks were forgotten; the agent is currently paused, awaiting approval on a plan for the user's very latest requests.</analysis>
