@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -6,11 +7,22 @@ namespace WatchNexus.Shared;
 /// <summary>Module manifest loaded from module.json</summary>
 public class ModuleManifest
 {
+    [JsonPropertyName("name")]
     public string Name { get; set; } = "";
+
+    [JsonPropertyName("display_name")]
     public string DisplayName { get; set; } = "";
+
+    [JsonPropertyName("version")]
     public string Version { get; set; } = "1.0.0";
+
+    [JsonPropertyName("description")]
     public string Description { get; set; } = "";
+
+    [JsonPropertyName("codename")]
     public string Codename { get; set; } = "";
+
+    [JsonPropertyName("dependencies")]
     public string[] Dependencies { get; set; } = Array.Empty<string>();
 }
 

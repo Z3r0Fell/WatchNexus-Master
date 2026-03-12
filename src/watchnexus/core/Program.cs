@@ -104,6 +104,35 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
+// ── Serve Frontend (SPA) — MUST be before auth so static files load without tokens
+var frontendSearchPaths = new[]
+{
+    Path.Combine(repoRoot, "src", "web", "build"),
+    Path.Combine(repoRoot, "web", "build"),
+    Path.Combine(AppContext.BaseDirectory, "web", "build"),
+    Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+};
+var webRoot = frontendSearchPaths.FirstOrDefault(p => Directory.Exists(p));
+if (webRoot != null)
+{
+    var fullPath = Path.GetFullPath(webRoot);
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        FileProvider = new PhysicalFileProvider(fullPath)
+    });
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(fullPath),
+        RequestPath = ""
+    });
+    Console.WriteLine($"[WatchNexus] Serving frontend from {fullPath}");
+}
+else
+{
+    Console.WriteLine($"[WatchNexus] No frontend build found - API only mode");
+    Console.WriteLine($"[WatchNexus] Build frontend with: cd src/web && yarn build");
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -117,34 +146,14 @@ app.MapControllers();
 // ── Map external module routes ────────────────────────────────
 ModuleLoader.MapAllRoutes(app);
 
-// ── Serve Frontend (SPA fallback) ─────────────────────────────
-var frontendSearchPaths = new[]
-{
-    Path.Combine(repoRoot, "src", "web", "build"),              // repo: src/web/build
-    Path.Combine(repoRoot, "web", "build"),                    // repo root: web/build
-    Path.Combine(repoRoot, "web", "build"),                 // published: web/build
-    Path.Combine(AppContext.BaseDirectory, "web", "build"),  // alongside binary
-    Path.Combine(AppContext.BaseDirectory, "wwwroot"),        // standard ASP.NET
-};
-var webRoot = frontendSearchPaths.FirstOrDefault(p => Directory.Exists(p));
+// ── SPA fallback — catch-all for client-side routes ───────────
 if (webRoot != null)
 {
     var fullPath = Path.GetFullPath(webRoot);
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(fullPath),
-        RequestPath = ""
-    });
     app.MapFallbackToFile("index.html", new StaticFileOptions
     {
         FileProvider = new PhysicalFileProvider(fullPath)
     });
-    Console.WriteLine($"[WatchNexus] Serving frontend from {fullPath}");
-}
-else
-{
-    Console.WriteLine($"[WatchNexus] No frontend build found - API only mode");
-    Console.WriteLine($"[WatchNexus] Build frontend with: cd src/web && yarn build");
 }
 
 // ── Start ─────────────────────────────────────────────────────
