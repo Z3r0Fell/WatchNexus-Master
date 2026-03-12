@@ -207,8 +207,8 @@ class TestVpnEndpoints:
         response = requests.get(f"{BASE_URL}/api/vpn/server", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
-        assert "ListenPort" in data or "listen_port" in data
-        print(f"VPN server config retrieved - port: {data.get('ListenPort', data.get('listen_port'))}")
+        assert "listenPort" in data or "listen_port" in data or "ListenPort" in data
+        print(f"VPN server config retrieved - port: {data.get('listenPort', data.get('listen_port', data.get('ListenPort')))}")
 
 
 class TestMarmalade:
