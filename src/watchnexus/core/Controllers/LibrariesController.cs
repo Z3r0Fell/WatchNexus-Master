@@ -42,6 +42,22 @@ public class LibrariesController : ControllerBase
         }));
     }
 
+    [HttpGet("recent")]
+    public async Task<IActionResult> Recent(int limit = 20)
+    {
+        var items = await _db.MediaItems
+            .OrderByDescending(m => m.Id)
+            .Take(limit)
+            .ToListAsync();
+        return Ok(items.Select(m => new
+        {
+            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
+            m.Genres, m.Year, m.Runtime
+        }));
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
