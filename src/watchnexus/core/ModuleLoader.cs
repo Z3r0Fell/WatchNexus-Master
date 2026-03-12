@@ -7,7 +7,9 @@ namespace WatchNexus.Core;
 public static class ModuleLoader
 {
     private static readonly List<IWatchNexusModule> _loadedModules = new();
+    private static readonly List<ModuleManifest> _discoveredManifests = new();
     public static IReadOnlyList<IWatchNexusModule> LoadedModules => _loadedModules;
+    public static IReadOnlyList<ModuleManifest> DiscoveredManifests => _discoveredManifests;
 
     public static void DiscoverAndRegister(IServiceCollection services, string modulesPath)
     {
@@ -16,6 +18,8 @@ public static class ModuleLoader
             Console.WriteLine($"[ModuleLoader] Modules directory not found: {modulesPath}");
             return;
         }
+
+        Console.WriteLine($"[ModuleLoader] Scanning: {modulesPath}");
 
         foreach (var dir in Directory.GetDirectories(modulesPath))
         {
@@ -31,7 +35,9 @@ public static class ModuleLoader
                 });
                 if (manifest == null) continue;
 
-                // Load the module assembly
+                _discoveredManifests.Add(manifest);
+
+                // Try to load a compiled module DLL (for external/third-party modules)
                 var dllPath = Path.Combine(dir, $"WatchNexus.Module.{manifest.Name}.dll");
                 if (File.Exists(dllPath))
                 {
@@ -42,12 +48,13 @@ public static class ModuleLoader
                         var module = (IWatchNexusModule)Activator.CreateInstance(moduleType)!;
                         module.ConfigureServices(services);
                         _loadedModules.Add(module);
-                        Console.WriteLine($"[ModuleLoader] Loaded external module: {manifest.DisplayName} v{manifest.Version}");
+                        Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (external)");
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"[ModuleLoader] Manifest found for '{manifest.DisplayName}' but no DLL at {dllPath}");
+                    // Module manifest registered — code is built into core or in separated/
+                    Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (registered)");
                 }
             }
             catch (Exception ex)
@@ -55,6 +62,8 @@ public static class ModuleLoader
                 Console.WriteLine($"[ModuleLoader] Error loading module from {dir}: {ex.Message}");
             }
         }
+
+        Console.WriteLine($"[ModuleLoader] {_discoveredManifests.Count} modules discovered, {_loadedModules.Count} external DLLs loaded");
     }
 
     public static void MapAllRoutes(IEndpointRouteBuilder routes)
@@ -64,7 +73,6 @@ public static class ModuleLoader
             try
             {
                 module.MapRoutes(routes);
-                Console.WriteLine($"[ModuleLoader] Routes mapped for: {module.Manifest.DisplayName}");
             }
             catch (Exception ex)
             {
