@@ -25,17 +25,16 @@
   <!-- Auto-build frontend on dotnet build/run -->
   <Target Name="BuildFrontend" BeforeTargets="Build" Condition="!Exists('$(MSBuildProjectDirectory)\..\..\web\build\index.html')">
     <Message Importance="high" Text="[WatchNexus] Building frontend (src/web)..." />
-    <Exec Command="yarn install --frozen-lockfile --silent 2>$(NullDevice) || yarn install --silent" WorkingDirectory="$(MSBuildProjectDirectory)\..\..\web" />
-    <Exec Command="yarn build" WorkingDirectory="$(MSBuildProjectDirectory)\..\..\web" />
+    <Exec Command="yarn install --frozen-lockfile || yarn install" WorkingDirectory="$(MSBuildProjectDirectory)/../../web" />
+    <Exec Command="yarn build" WorkingDirectory="$(MSBuildProjectDirectory)/../../web" />
     <Message Importance="high" Text="[WatchNexus] Frontend build complete." />
   </Target>
 
-  <!-- Copy frontend build output next to the binary on publish -->
   <Target Name="PublishFrontend" AfterTargets="Publish">
     <ItemGroup>
-      <FrontendFiles Include="$(MSBuildProjectDirectory)\..\..\web\build\**\*" />
+      <FrontendFiles Include="$(MSBuildProjectDirectory)/../../web/build/**/*" />
     </ItemGroup>
-    <Copy SourceFiles="@(FrontendFiles)" DestinationFolder="$(PublishDir)web\build\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(FrontendFiles)" DestinationFolder="$(PublishDir)web/build/%(RecursiveDir)" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>
