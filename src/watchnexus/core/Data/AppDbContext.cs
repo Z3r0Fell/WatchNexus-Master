@@ -19,6 +19,15 @@ public class AppDbContext : DbContext
     public DbSet<VpnPeer> VpnPeers => Set<VpnPeer>();
     public DbSet<VpnServerConfig> VpnServerConfigs => Set<VpnServerConfig>();
     public DbSet<DownloadItem> Downloads => Set<DownloadItem>();
+    public DbSet<IptvSource> IptvSources => Set<IptvSource>();
+    public DbSet<IptvChannel> IptvChannels => Set<IptvChannel>();
+    public DbSet<PodcastSubscription> PodcastSubscriptions => Set<PodcastSubscription>();
+    public DbSet<RadioFavorite> RadioFavorites => Set<RadioFavorite>();
+    public DbSet<PhotoLibrary> PhotoLibraries => Set<PhotoLibrary>();
+    public DbSet<Playlist> Playlists => Set<Playlist>();
+    public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
+    public DbSet<WebVideoBookmark> WebVideoBookmarks => Set<WebVideoBookmark>();
+    public DbSet<WebVideoHistory> WebVideoHistories => Set<WebVideoHistory>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -40,6 +49,15 @@ public class AppDbContext : DbContext
         b.Entity<VpnPeer>().HasKey(p => p.Id);
         b.Entity<VpnServerConfig>().HasKey(c => c.Id);
         b.Entity<DownloadItem>().HasKey(d => d.Id);
+        b.Entity<IptvSource>().HasKey(s => s.Id);
+        b.Entity<IptvChannel>(e => { e.HasKey(c => c.Id); e.HasIndex(c => c.SourceId); });
+        b.Entity<PodcastSubscription>(e => { e.HasKey(p => p.Id); e.HasIndex(p => p.UserId); });
+        b.Entity<RadioFavorite>(e => { e.HasKey(f => f.Id); e.HasIndex(f => f.UserId); });
+        b.Entity<PhotoLibrary>(e => { e.HasKey(p => p.Id); e.HasIndex(p => p.UserId); });
+        b.Entity<Playlist>(e => { e.HasKey(p => p.Id); e.HasIndex(p => p.UserId); });
+        b.Entity<PlaylistItem>(e => { e.HasKey(i => i.Id); e.HasIndex(i => i.PlaylistId); });
+        b.Entity<WebVideoBookmark>(e => { e.HasKey(b2 => b2.Id); e.HasIndex(b2 => b2.UserId); });
+        b.Entity<WebVideoHistory>(e => { e.HasKey(h => h.Id); e.HasIndex(h => h.UserId); });
     }
 }
 
@@ -150,4 +168,116 @@ public class DownloadItem
     public long Downloaded { get; set; }
     public string? SavePath { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// IPTV
+public class IptvSource
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string? EpgUrl { get; set; }
+    public int ChannelCount { get; set; }
+    public DateTime? LastRefreshed { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class IptvChannel
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string SourceId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? GroupTitle { get; set; }
+    public string StreamUrl { get; set; } = "";
+    public string? LogoUrl { get; set; }
+    public string? TvgId { get; set; }
+    public string? TvgName { get; set; }
+    public int SortOrder { get; set; }
+}
+
+// Podcasts
+public class PodcastSubscription
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Author { get; set; }
+    public string FeedUrl { get; set; } = "";
+    public string? ArtworkUrl { get; set; }
+    public string? Description { get; set; }
+    public DateTime? LastChecked { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Radio
+public class RadioFavorite
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string StationUuid { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? StreamUrl { get; set; }
+    public string? Favicon { get; set; }
+    public string? Country { get; set; }
+    public string? Tags { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Photos
+public class PhotoLibrary
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Path { get; set; } = "";
+    public int PhotoCount { get; set; }
+    public DateTime? LastScanned { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Playlists
+public class Playlist
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public string MediaType { get; set; } = "mixed";
+    public int ItemCount { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class PlaylistItem
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string PlaylistId { get; set; } = "";
+    public string? MediaItemId { get; set; }
+    public string? TmdbId { get; set; }
+    public string Title { get; set; } = "";
+    public string? PosterUrl { get; set; }
+    public string MediaType { get; set; } = "movie";
+    public int SortOrder { get; set; }
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Web Video Bookmarks
+public class WebVideoBookmark
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Thumbnail { get; set; }
+    public int? Duration { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class WebVideoHistory
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string Title { get; set; } = "";
+    public DateTime ViewedAt { get; set; } = DateTime.UtcNow;
 }

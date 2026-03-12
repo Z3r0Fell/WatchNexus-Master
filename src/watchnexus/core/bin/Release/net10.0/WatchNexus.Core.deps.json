@@ -15,6 +15,7 @@
           "Microsoft.IdentityModel.Tokens": "8.16.0",
           "Swashbuckle.AspNetCore": "10.1.5",
           "System.IdentityModel.Tokens.Jwt": "8.16.0",
+          "System.ServiceModel.Syndication": "10.0.5",
           "WatchNexus.Shared": "1.0.0"
         },
         "runtime": {
@@ -393,6 +394,14 @@
           }
         }
       },
+      "System.ServiceModel.Syndication/10.0.5": {
+        "runtime": {
+          "lib/net10.0/System.ServiceModel.Syndication.dll": {
+            "assemblyVersion": "10.0.0.5",
+            "fileVersion": "10.0.526.15411"
+          }
+        }
+      },
       "WatchNexus.Shared/1.0.0": {
         "runtime": {
           "WatchNexus.Shared.dll": {
@@ -590,6 +599,13 @@
       "sha512": "sha512-rrs2u7DRMXQG2yh0oVyF/vLwosfRv20Ld2iEpYcKwQWXHjfV+gFXNQsQ9p008kR9Ou4pxBs68Q6/9zC8Gi1wjg==",
       "path": "system.identitymodel.tokens.jwt/8.16.0",
       "hashPath": "system.identitymodel.tokens.jwt.8.16.0.nupkg.sha512"
+    },
+    "System.ServiceModel.Syndication/10.0.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lMzvEBS8dnq+TH4Ff50abQRMlbVTTBMenAmv/ILyaY3Mpf4+k/IlQtIl3uAyoNX/nXfKZp+1NyBWpxDSsMs6iA==",
+      "path": "system.servicemodel.syndication/10.0.5",
+      "hashPath": "system.servicemodel.syndication.10.0.5.nupkg.sha512"
     },
     "WatchNexus.Shared/1.0.0": {
       "type": "project",

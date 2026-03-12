@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "3odb1vyoMUY=",
+  "dgSpecHash": "wVxGrZN63/U=",
   "success": true,
   "projectFilePath": "/app/src/watchnexus/core/WatchNexus.Core.csproj",
   "expectedPackageFiles": [
@@ -31,7 +31,8 @@
     "/root/.nuget/packages/swashbuckle.aspnetcore.swagger/10.1.5/swashbuckle.aspnetcore.swagger.10.1.5.nupkg.sha512",
     "/root/.nuget/packages/swashbuckle.aspnetcore.swaggergen/10.1.5/swashbuckle.aspnetcore.swaggergen.10.1.5.nupkg.sha512",
     "/root/.nuget/packages/swashbuckle.aspnetcore.swaggerui/10.1.5/swashbuckle.aspnetcore.swaggerui.10.1.5.nupkg.sha512",
-    "/root/.nuget/packages/system.identitymodel.tokens.jwt/8.16.0/system.identitymodel.tokens.jwt.8.16.0.nupkg.sha512"
+    "/root/.nuget/packages/system.identitymodel.tokens.jwt/8.16.0/system.identitymodel.tokens.jwt.8.16.0.nupkg.sha512",
+    "/root/.nuget/packages/system.servicemodel.syndication/10.0.5/system.servicemodel.syndication.10.0.5.nupkg.sha512"
   ],
   "logs": []
 }

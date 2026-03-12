@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.16.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
+    <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup>
