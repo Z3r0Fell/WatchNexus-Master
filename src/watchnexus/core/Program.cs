@@ -12,18 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 // ── Resolve project root (works from bin/Debug, published, or installed) ──
 static string FindRepoRoot()
 {
-    // Walk up from the binary location looking for the watchnexus/ directory
     var dir = new DirectoryInfo(AppContext.BaseDirectory);
     while (dir != null)
     {
-        if (Directory.Exists(Path.Combine(dir.FullName, "watchnexus", "modules")))
+        // Check if this directory contains src/watchnexus/modules
+        if (Directory.Exists(Path.Combine(dir.FullName, "src", "watchnexus", "modules")))
             return dir.FullName;
-        // Also check if we ARE inside the watchnexus folder
-        if (dir.Name == "watchnexus" && Directory.Exists(Path.Combine(dir.FullName, "modules")))
-            return dir.Parent!.FullName;
+        // Check if this directory contains separated/ (repo root marker)
+        if (Directory.Exists(Path.Combine(dir.FullName, "separated")))
+            return dir.FullName;
         dir = dir.Parent;
     }
-    // Fallback: use the binary directory
     return AppContext.BaseDirectory;
 }
 var repoRoot = FindRepoRoot();
@@ -72,7 +71,7 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 // ── Load external modules ─────────────────────────────────────
-var modulesPath = Path.Combine(repoRoot, "watchnexus", "modules");
+var modulesPath = Path.Combine(repoRoot, "src", "watchnexus", "modules");
 if (!Directory.Exists(modulesPath))
     modulesPath = Path.Combine(repoRoot, "modules"); // published layout
 ModuleLoader.DiscoverAndRegister(builder.Services, modulesPath);
@@ -121,8 +120,8 @@ ModuleLoader.MapAllRoutes(app);
 // ── Serve Frontend (SPA fallback) ─────────────────────────────
 var frontendSearchPaths = new[]
 {
+    Path.Combine(repoRoot, "src", "web", "build"),              // repo: src/web/build
     Path.Combine(repoRoot, "web", "build"),                    // repo root: web/build
-    Path.Combine(repoRoot, "frontend", "build"),               // alt: frontend/build
     Path.Combine(repoRoot, "web", "build"),                 // published: web/build
     Path.Combine(AppContext.BaseDirectory, "web", "build"),  // alongside binary
     Path.Combine(AppContext.BaseDirectory, "wwwroot"),        // standard ASP.NET

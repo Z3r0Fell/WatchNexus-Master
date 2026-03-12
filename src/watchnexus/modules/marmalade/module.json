@@ -2,7 +2,7 @@
   "name": "Marmalade",
   "codename": "marmalade",
   "display_name": "Library Manager",
-  "version": "3.0.0",
+  "version": "2.6.5",
   "description": "Media library scanning with TMDB metadata enrichment, file system traversal, and media organization",
   "author": "WatchNexus",
   "dependencies": ["core"],

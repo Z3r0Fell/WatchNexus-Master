@@ -6,42 +6,41 @@
 
 ```
 WatchNexus/
-├── watchnexus/              # C#/.NET 10 backend
-│   ├── core/                # ASP.NET Core server (entry point)
-│   ├── shared/              # Shared interfaces (IWatchNexusModule)
-│   └── modules/             # Drop-in module manifests
-│       ├── marmalade/       # Library Manager
-│       ├── bastion/         # Security
-│       ├── tunnel/          # VPN Portal
-│       ├── fondue/          # Downloads
-│       ├── zest/            # Log Viewer
-│       ├── drizzle/         # Playlists
-│       ├── compote/         # Indexers
-│       ├── gelatin/         # Transcoding
-│       ├── syrup/           # Scrapers
-│       └── beacon/          # System Tray
+├── src/                     # Source code
+│   ├── watchnexus/          # C#/.NET 10 backend
+│   │   ├── core/            # ASP.NET Core server (entry point)
+│   │   ├── shared/          # Shared interfaces (IWatchNexusModule)
+│   │   └── modules/         # Module manifests
+│   └── web/                 # React frontend (SPA)
+│       ├── src/pages/       # Page components
+│       ├── src/components/  # Reusable UI (Shadcn)
+│       ├── src/services/    # API client layer
+│       └── electron/        # Desktop app wrapper
 │
-├── web/                     # React frontend (SPA)
-│   ├── src/
-│   │   ├── pages/           # All page components
-│   │   ├── components/      # Reusable UI (Shadcn)
-│   │   └── services/        # API client layer
-│   └── electron/            # Desktop app wrapper
+├── separated/               # Standalone module projects
+│   ├── marmalade/           # Library Manager
+│   ├── bastion/             # Security
+│   ├── tunnel/              # VPN Portal
+│   ├── fondue/              # Downloads
+│   ├── zest/                # Log Viewer
+│   ├── drizzle/             # Playlists
+│   ├── compote/             # Indexers
+│   ├── gelatin/             # Transcoding
+│   ├── syrup/               # Scrapers
+│   └── beacon/              # System Tray
+│
+├── docs/                    # Documentation + images
+│   ├── images/              # App screenshots
+│   └── *.md                 # Guides, plans, research
 │
 ├── installers/              # Platform-specific installers
 │   ├── docker/              # Docker + docker-compose
-│   ├── linux/               # .NET 10 systemd installer
+│   ├── linux/               # systemd installer
 │   ├── macos/               # .app bundle + LaunchDaemon
 │   ├── windows/             # Scheduled Task installer
 │   └── unraid/              # Unraid template
 │
 ├── scripts/                 # Build & install scripts
-│   ├── install-linux.sh     # Full Linux installer (apt/dnf)
-│   ├── install-mac.sh       # Full macOS installer (Homebrew)
-│   ├── install-windows.ps1  # Full Windows installer
-│   └── build-arch.sh        # Arch Linux build
-│
-├── docs/                    # Documentation
 ├── CHANGELOG.md
 └── README.md
 ```
@@ -67,11 +66,11 @@ WatchNexus/
 ### From Source
 ```bash
 # Backend
-cd watchnexus/core
+cd src/watchnexus/core
 dotnet run
 
 # Frontend (separate terminal)
-cd web
+cd src/web
 yarn install
 yarn build        # production build
 yarn start        # dev server

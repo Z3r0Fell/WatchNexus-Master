@@ -2,7 +2,7 @@
   "name": "Drizzle",
   "codename": "drizzle",
   "display_name": "Playlist Engine",
-  "version": "3.0.0",
+  "version": "2.6.5",
   "description": "Continuous playback, queue management, and playlist creation",
   "author": "WatchNexus",
   "dependencies": ["core"],

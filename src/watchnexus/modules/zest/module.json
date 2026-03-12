@@ -2,7 +2,7 @@
   "name": "Zest",
   "codename": "zest",
   "display_name": "Log Viewer",
-  "version": "3.0.0",
+  "version": "2.6.5",
   "description": "Application log browser, system diagnostics, and health monitoring",
   "author": "WatchNexus",
   "dependencies": ["core"],
