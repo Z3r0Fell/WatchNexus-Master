@@ -918,94 +918,177 @@ async def filesystem_browse(path: str = "", user=Depends(get_current_user)):
         os_type = "windows"
     else:
         os_type = "linux"
-    
+
     path_sep = "\\" if os_type == "windows" else "/"
     home_dir = str(Path.home())
-    
-    # Default to home directory
+
+    # Normalize and clean path
     if not path:
         path = home_dir
-    
+    # Windows: allow forward slashes too, normalize
+    if os_type == "windows":
+        path = path.replace("/", "\\")
+
     current_path = path
     items = []
     drives = []
     parent_path = None
     is_root = False
     media_count = 0
-    
-    media_extensions = {".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".m4v", ".webm",
-                       ".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a", ".wma"}
-    
+
+    media_extensions = {
+        ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".m4v", ".webm",
+        ".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a", ".wma",
+        ".ts", ".m2ts", ".vob", ".iso", ".srt", ".sub", ".ass",
+    }
+
     try:
-        p = Path(current_path)
-        
+        p = Path(current_path).resolve()
+
         if not p.exists():
             raise HTTPException(status_code=400, detail=f"Path does not exist: {current_path}")
-        
+
         if not p.is_dir():
             raise HTTPException(status_code=400, detail=f"Not a directory: {current_path}")
-        
-        # Build drives/quick access
+
+        # Use resolved path as current
+        current_path = str(p)
+
+        # Build drives/quick access per OS
         if os_type == "linux":
             drives = [
                 {"name": "Root", "path": "/"},
                 {"name": "Home", "path": home_dir},
             ]
-            if Path("/media").exists():
-                drives.append({"name": "Media", "path": "/media"})
-            if Path("/mnt").exists():
-                drives.append({"name": "Mounts", "path": "/mnt"})
-            if Path("/tmp").exists():
-                drives.append({"name": "Tmp", "path": "/tmp"})
+            # Common user dirs
+            for name, sub in [("Desktop", "Desktop"), ("Documents", "Documents"), ("Downloads", "Downloads"), ("Videos", "Videos")]:
+                dp = Path(home_dir) / sub
+                if dp.exists():
+                    drives.append({"name": name, "path": str(dp)})
+            # Mount points
+            for mp_name, mp_path in [("Media", "/media"), ("Mounts", "/mnt"), ("Tmp", "/tmp"), ("Srv", "/srv")]:
+                if Path(mp_path).exists():
+                    drives.append({"name": mp_name, "path": mp_path})
         elif os_type == "darwin":
             drives = [
                 {"name": "Root", "path": "/"},
                 {"name": "Home", "path": home_dir},
-                {"name": "Volumes", "path": "/Volumes"},
             ]
+            for name, sub in [("Desktop", "Desktop"), ("Documents", "Documents"), ("Downloads", "Downloads"), ("Movies", "Movies"), ("Music", "Music")]:
+                dp = Path(home_dir) / sub
+                if dp.exists():
+                    drives.append({"name": name, "path": str(dp)})
+            if Path("/Volumes").exists():
+                drives.append({"name": "Volumes", "path": "/Volumes"})
+                # Also list individual volumes
+                try:
+                    for vol in Path("/Volumes").iterdir():
+                        if vol.is_dir() and vol.name != "Macintosh HD":
+                            drives.append({"name": vol.name, "path": str(vol)})
+                except Exception:
+                    pass
         else:
+            # Windows
             import string
             for letter in string.ascii_uppercase:
                 dp = f"{letter}:\\"
-                if Path(dp).exists():
-                    drives.append({"name": f"{letter}:", "path": dp})
-        
+                try:
+                    if Path(dp).exists():
+                        drives.append({"name": f"{letter}:", "path": dp})
+                except Exception:
+                    pass
+            # Common user dirs on Windows
+            for name, sub in [("Desktop", "Desktop"), ("Documents", "Documents"), ("Downloads", "Downloads"), ("Videos", "Videos")]:
+                dp = Path(home_dir) / sub
+                try:
+                    if dp.exists():
+                        drives.append({"name": name, "path": str(dp)})
+                except Exception:
+                    pass
+
         # Parent path
         parent = p.parent
         if str(parent) != str(p):
             parent_path = str(parent)
         else:
             is_root = True
-        
-        # List directory contents
+
+        # List directory contents with robust error handling
         try:
-            for entry in sorted(p.iterdir(), key=lambda e: (not e.is_dir(), e.name.lower())):
-                if entry.name.startswith('.'):
-                    continue
-                if entry.is_dir():
-                    try:
-                        child_count = sum(1 for _ in entry.iterdir())
-                    except PermissionError:
+            entries = []
+            try:
+                entries = list(p.iterdir())
+            except PermissionError:
+                raise HTTPException(status_code=403, detail=f"Permission denied: {current_path}")
+            except OSError as e:
+                raise HTTPException(status_code=500, detail=f"Cannot read directory: {e}")
+
+            # Sort: directories first, then by name (case-insensitive)
+            def sort_key(e):
+                try:
+                    return (not e.is_dir(), e.name.lower())
+                except (OSError, PermissionError):
+                    return (True, e.name.lower())
+
+            entries.sort(key=sort_key)
+
+            for entry in entries:
+                try:
+                    name = entry.name
+                    # Skip hidden files/dirs
+                    if name.startswith('.'):
+                        continue
+                    # On Windows, check hidden attribute
+                    if os_type == "windows":
+                        try:
+                            import ctypes
+                            attrs = ctypes.windll.kernel32.GetFileAttributesW(str(entry))
+                            if attrs != -1 and (attrs & 2):  # FILE_ATTRIBUTE_HIDDEN
+                                continue
+                        except Exception:
+                            pass
+
+                    if entry.is_dir():
+                        # Count children safely with a cap for performance
                         child_count = 0
-                    items.append({
-                        "name": entry.name,
-                        "path": str(entry),
-                        "type": "directory",
-                        "is_parent": False,
-                        "item_count": child_count,
-                        "permission_denied": False,
-                    })
-                elif entry.suffix.lower() in media_extensions:
-                    media_count += 1
-        except PermissionError:
-            raise HTTPException(status_code=403, detail=f"Permission denied: {current_path}")
+                        perm_denied = False
+                        try:
+                            count = 0
+                            for _ in entry.iterdir():
+                                count += 1
+                                if count >= 999:
+                                    break
+                            child_count = count
+                        except PermissionError:
+                            perm_denied = True
+                        except OSError:
+                            child_count = 0
+
+                        items.append({
+                            "name": name,
+                            "path": str(entry),
+                            "type": "directory",
+                            "is_parent": False,
+                            "item_count": child_count,
+                            "permission_denied": perm_denied,
+                        })
+                    elif entry.is_file():
+                        if entry.suffix.lower() in media_extensions:
+                            media_count += 1
+                except (OSError, PermissionError):
+                    # Skip entries we can't stat (broken symlinks, etc.)
+                    continue
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error reading directory: {e}")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
     return {
-        "current_path": str(current_path),
+        "current_path": current_path,
         "items": items,
         "drives": drives,
         "parent_path": parent_path,
