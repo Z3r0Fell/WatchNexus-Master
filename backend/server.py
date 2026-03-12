@@ -265,6 +265,11 @@ async def get_libraries(user=Depends(get_current_user)):
     libs = await db.libraries.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return libs
 
+@app.get("/api/libraries/recent")
+async def libraries_recent(limit: int = 20, user=Depends(get_current_user)):
+    items = await db.media_items.find({}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return items
+
 @app.get("/api/libraries/{lib_id}")
 async def get_library(lib_id: str, user=Depends(get_current_user)):
     lib = await db.libraries.find_one({"id": lib_id}, {"_id": 0})
@@ -333,11 +338,6 @@ async def scan_library(lib_id: str, user=Depends(get_current_user)):
 async def scan_status(lib_id: str, user=Depends(get_current_user)):
     return {"library_id": lib_id, "status": "idle", "progress": 0}
 
-@app.get("/api/libraries/recent")
-async def libraries_recent(limit: int = 20, user=Depends(get_current_user)):
-    items = await db.media_items.find({}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
-    return items
-
 
 # ==================== MARMALADE (bridge) ====================
 @app.get("/api/marmalade/libraries")
@@ -404,26 +404,6 @@ async def get_settings(user=Depends(get_current_user)):
     settings = await db.settings.find({"$or": [{"user_id": user["id"]}, {"user_id": None}]}, {"_id": 0}).to_list(500)
     return {s["key"]: s.get("value", "") for s in settings}
 
-@app.get("/api/settings/{key}")
-async def get_setting(key: str, user=Depends(get_current_user)):
-    s = await db.settings.find_one({"key": key, "$or": [{"user_id": user["id"]}, {"user_id": None}]}, {"_id": 0})
-    return {"key": key, "value": s.get("value") if s else None}
-
-@app.put("/api/settings/{key}")
-async def set_setting(key: str, req: SettingValue, user=Depends(get_current_user)):
-    val = req.value or req.Value or ""
-    await db.settings.update_one(
-        {"key": key, "user_id": user["id"]},
-        {"$set": {"key": key, "value": val, "user_id": user["id"]}},
-        upsert=True
-    )
-    return {"key": key, "value": val}
-
-@app.delete("/api/settings/{key}")
-async def delete_setting(key: str, user=Depends(get_current_user)):
-    await db.settings.delete_one({"key": key, "user_id": user["id"]})
-    return {"status": "deleted"}
-
 @app.post("/api/settings/bulk")
 async def bulk_settings(settings: dict, user=Depends(get_current_user)):
     for k, v in settings.items():
@@ -437,7 +417,6 @@ async def bulk_settings(settings: dict, user=Depends(get_current_user)):
 @app.get("/api/settings/integrations")
 async def get_integrations(user=Depends(get_current_user)):
     tmdb = await db.settings.find_one({"key": "tmdb_api_key", "user_id": user["id"]}, {"_id": 0})
-    qbit = await db.settings.find_one({"key": "qbittorrent_settings", "user_id": user["id"]}, {"_id": 0})
     tmdb_key = tmdb.get("value", "") if tmdb else ""
     return {
         "tmdb": {"api_key": tmdb_key, "has_key": bool(tmdb_key), "source": "user" if tmdb_key else "none"},
@@ -461,6 +440,26 @@ async def update_qbit(req: QbitUpdate, user=Depends(get_current_user)):
 @app.post("/api/settings/integrations/qbittorrent/test")
 async def test_qbit(req: QbitUpdate):
     return {"success": False, "error": "Connection failed"}
+
+@app.get("/api/settings/{key}")
+async def get_setting(key: str, user=Depends(get_current_user)):
+    s = await db.settings.find_one({"key": key, "$or": [{"user_id": user["id"]}, {"user_id": None}]}, {"_id": 0})
+    return {"key": key, "value": s.get("value") if s else None}
+
+@app.put("/api/settings/{key}")
+async def set_setting(key: str, req: SettingValue, user=Depends(get_current_user)):
+    val = req.value or req.Value or ""
+    await db.settings.update_one(
+        {"key": key, "user_id": user["id"]},
+        {"$set": {"key": key, "value": val, "user_id": user["id"]}},
+        upsert=True
+    )
+    return {"key": key, "value": val}
+
+@app.delete("/api/settings/{key}")
+async def delete_setting(key: str, user=Depends(get_current_user)):
+    await db.settings.delete_one({"key": key, "user_id": user["id"]})
+    return {"status": "deleted"}
 
 
 # ==================== TMDB PROXY ====================
@@ -1293,3 +1292,44 @@ async def qbit_files(hash: str, user=Depends(get_current_user)):
 @app.post("/api/qbittorrent/test")
 async def qbit_test(host: str = "", port: int = 8080, username: str = "", password: str = ""):
     return {"success": False, "error": "Not configured"}
+
+
+# ==================== RIPEN (Gadgets) ====================
+@app.get("/api/ripen/installed")
+async def ripen_installed(user=Depends(get_current_user)):
+    return {"gadgets": []}
+
+@app.get("/api/ripen/hooks")
+async def ripen_hooks(user=Depends(get_current_user)):
+    return {
+        "sidebar_entries": [], "routes": [], "settings_panels": [],
+        "dashboard_widgets": [], "theme_presets": [],
+        "providers": {"metadata": [], "subtitle": [], "notification": [], "indexer": [], "streaming": [], "sync": [], "auth": []},
+        "enhanced_pages": [], "background_services": [],
+    }
+
+@app.post("/api/ripen/install/{gadget_id}")
+async def ripen_install(gadget_id: str, user=Depends(get_current_user)):
+    return {"status": "installed", "gadget_id": gadget_id}
+
+@app.delete("/api/ripen/uninstall/{gadget_id}")
+async def ripen_uninstall(gadget_id: str, user=Depends(get_current_user)):
+    return {"status": "uninstalled"}
+
+@app.post("/api/ripen/activate/{gadget_id}")
+async def ripen_activate(gadget_id: str, user=Depends(get_current_user)):
+    return {"status": "activated"}
+
+@app.post("/api/ripen/deactivate/{gadget_id}")
+async def ripen_deactivate(gadget_id: str, user=Depends(get_current_user)):
+    return {"status": "deactivated"}
+
+
+# ==================== MILK (Theme Forge) ====================
+@app.get("/api/milk/theme-forge")
+async def milk_theme_forge(user=Depends(get_current_user)):
+    return {"themes": [], "active_theme": None, "custom_css": ""}
+
+@app.get("/api/milk/themes")
+async def milk_themes(user=Depends(get_current_user)):
+    return []
