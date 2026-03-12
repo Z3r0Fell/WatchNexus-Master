@@ -1,12 +1,14 @@
 #!/bin/bash
-# WatchNexus macOS Installer (.NET 10)
+# WatchNexus macOS Installer (.NET 10) — v2.6.5
+# Auto-start via LaunchAgent + LaunchDaemon
 set -e
 
 APP_NAME="WatchNexus"
-APP_VERSION="3.0.0-beta"
+APP_VERSION="2.6.5"
 INSTALL_DIR="/Applications/WatchNexus.app"
 SUPPORT_DIR="${HOME}/Library/Application Support/WatchNexus"
-LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
+AGENT_PLIST="$HOME/Library/LaunchAgents/ca.watchnexus.server.plist"
+DAEMON_PLIST="/Library/LaunchDaemons/ca.watchnexus.server.plist"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -23,145 +25,136 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 
 # Prerequisite check
 echo -e "${CYAN}Checking prerequisites...${NC}"
-echo "  -----------------------------------------------"
 MISSING=()
 FOUND=()
 
 if command -v dotnet &>/dev/null; then
-    DOTNET_VER=$(dotnet --version 2>/dev/null || echo "unknown")
     if dotnet --list-runtimes 2>/dev/null | grep -q "AspNetCore.*10\."; then
-        FOUND+=(".NET 10 ASP.NET Core Runtime ($DOTNET_VER)")
-    elif dotnet --list-runtimes 2>/dev/null | grep -q "AspNetCore"; then
-        FOUND+=(".NET Runtime ($DOTNET_VER) - may need ASP.NET Core 10")
-    else
-        MISSING+=("ASP.NET Core 10 Runtime")
-    fi
-else
-    MISSING+=(".NET 10 SDK/Runtime")
-fi
+        FOUND+=(".NET 10 ASP.NET Core Runtime")
+    else MISSING+=("ASP.NET Core 10 Runtime"); fi
+else MISSING+=(".NET 10 SDK/Runtime"); fi
 
-if command -v node &>/dev/null; then
-    FOUND+=("Node.js $(node --version)")
-else
-    MISSING+=("Node.js (optional, for frontend build)")
-fi
+command -v node &>/dev/null && FOUND+=("Node.js $(node --version)") || MISSING+=("Node.js (optional)")
 
-for item in "${FOUND[@]}"; do
-    echo -e "  ${GREEN}OK${NC}      $item"
-done
-for item in "${MISSING[@]}"; do
-    echo -e "  ${RED}MISSING${NC} $item"
-done
+echo "  -----------------------------------------------"
+for item in "${FOUND[@]}"; do echo -e "  ${GREEN}OK${NC}      $item"; done
+for item in "${MISSING[@]}"; do echo -e "  ${RED}MISSING${NC} $item"; done
 echo "  -----------------------------------------------"
 echo ""
 
 if [ ${#MISSING[@]} -gt 0 ]; then
-    echo -e "  ${YELLOW}Missing prerequisites detected.${NC}"
-    echo "  .NET 10 SDK can be installed via Homebrew:"
+    echo "  Install .NET 10:"
     echo "    brew install dotnet"
-    echo "  Or download from: https://dotnet.microsoft.com/download/dotnet/10.0"
-    echo ""
-    read -p "  Attempt to install .NET 10 via Homebrew? (y/n): " ANSWER
+    echo "    Or: https://dotnet.microsoft.com/download/dotnet/10.0"
+    read -p "  Install via Homebrew now? (y/n): " ANSWER
     if [[ "$ANSWER" == "y" || "$ANSWER" == "Y" ]]; then
-        if command -v brew &>/dev/null; then
-            brew install dotnet
-        else
-            echo "  Homebrew not found. Installing .NET via install script..."
+        command -v brew &>/dev/null && brew install dotnet || {
             curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir "$HOME/.dotnet"
             export PATH="$HOME/.dotnet:$PATH"
-        fi
-    else
-        echo "  Please install .NET 10 and re-run this installer."
-        exit 0
-    fi
+        }
+    else exit 0; fi
 fi
 
-# Verify .NET
-echo "[1/5] Verifying .NET 10 runtime..."
-if ! command -v dotnet &>/dev/null; then
-    echo "ERROR: dotnet command not found."
-    exit 1
-fi
-dotnet --list-runtimes | grep -q "AspNetCore" || {
-    echo "ERROR: ASP.NET Core 10 runtime required."
-    exit 1
-}
-echo "  .NET runtime verified."
-
-# Create dirs
-echo "[2/5] Creating application directories..."
+# Build and install
+echo "[1/4] Building WatchNexus..."
 mkdir -p "$SUPPORT_DIR"/{data,logs,modules}
-mkdir -p "$INSTALL_DIR/Contents/MacOS"
-mkdir -p "$INSTALL_DIR/Contents/Resources"
-
-# Build and publish
-echo "[3/5] Building WatchNexus..."
+mkdir -p "$INSTALL_DIR/Contents/"{MacOS,Resources}
+mkdir -p "$HOME/Library/LaunchAgents"
 cd "$SCRIPT_DIR/watchnexus"
 dotnet publish core/WatchNexus.Core.csproj -c Release -o "$INSTALL_DIR/Contents/Resources/bin" --self-contained false
 
-# Copy modules
-echo "[4/5] Installing modules..."
-cp -r "$SCRIPT_DIR/watchnexus/modules/"* "$SUPPORT_DIR/modules/" 2>/dev/null || true
+echo "[2/4] Installing modules..."
+cp -r modules/* "$SUPPORT_DIR/modules/" 2>/dev/null || true
 
-# Build frontend (if node available)
-if command -v node &>/dev/null && [ -d "$SCRIPT_DIR/src/web" ]; then
-    echo "  Building frontend..."
-    cd "$SCRIPT_DIR/src/web"
-    yarn install --frozen-lockfile --silent 2>/dev/null || npm install --silent 2>/dev/null
-    yarn build 2>/dev/null || npm run build 2>/dev/null
-    cp -r build "$INSTALL_DIR/Contents/Resources/web/" 2>/dev/null || true
-fi
-
-# Create launcher
-echo "[5/5] Creating application bundle..."
-cat > "$INSTALL_DIR/Contents/MacOS/WatchNexus" << 'LAUNCHER'
+echo "[3/4] Creating app bundle..."
+DOTNET_PATH=$(which dotnet)
+cat > "$INSTALL_DIR/Contents/MacOS/watchnexus" << LAUNCHER
 #!/bin/bash
-APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-RESOURCES="$APP_DIR/Resources"
-SUPPORT_DIR="${HOME}/Library/Application Support/WatchNexus"
-LOG_DIR="$SUPPORT_DIR/logs"
-mkdir -p "$LOG_DIR"
-export ASPNETCORE_URLS="http://0.0.0.0:${WATCHNEXUS_PORT:-8001}"
-cd "$RESOURCES/bin"
-dotnet WatchNexus.Core.dll >> "$LOG_DIR/server.log" 2>&1 &
-PID=$!
-sleep 3
-if kill -0 $PID 2>/dev/null; then
-    open "http://localhost:${WATCHNEXUS_PORT:-8001}"
-    wait $PID
-else
-    osascript -e 'display alert "WatchNexus" message "Failed to start. Check logs at ~/Library/Application Support/WatchNexus/logs/"'
-fi
+export ASPNETCORE_URLS="http://0.0.0.0:\${WATCHNEXUS_PORT:-8001}"
+APP_DIR="\$(cd "\$(dirname "\$0")/.." && pwd)"
+cd "\$APP_DIR/Resources/bin"
+exec $DOTNET_PATH WatchNexus.Core.dll
 LAUNCHER
-chmod +x "$INSTALL_DIR/Contents/MacOS/WatchNexus"
+chmod +x "$INSTALL_DIR/Contents/MacOS/watchnexus"
 
-cat > "$INSTALL_DIR/Contents/Info.plist" << PLIST
+cat > "$INSTALL_DIR/Contents/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleExecutable</key><string>WatchNexus</string>
-    <key>CFBundleIdentifier</key><string>ca.watchnexus.app</string>
     <key>CFBundleName</key><string>WatchNexus</string>
+    <key>CFBundleIdentifier</key><string>ca.watchnexus.app</string>
     <key>CFBundleVersion</key><string>$APP_VERSION</string>
     <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
+    <key>CFBundleExecutable</key><string>watchnexus</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>LSUIElement</key><true/>
     <key>LSMinimumSystemVersion</key><string>12.0</string>
     <key>NSHighResolutionCapable</key><true/>
-    <key>LSApplicationCategoryType</key><string>public.app-category.entertainment</string>
 </dict>
 </plist>
-PLIST
+EOF
+
+# Auto-start registration
+echo "[4/4] Registering auto-start service..."
+
+# LaunchAgent — starts at user login, restarts on crash
+cat > "$AGENT_PLIST" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>ca.watchnexus.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$INSTALL_DIR/Contents/MacOS/watchnexus</string>
+    </array>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key>
+    <dict><key>SuccessfulExit</key><false/></dict>
+    <key>ThrottleInterval</key><integer>5</integer>
+    <key>StandardOutPath</key><string>$SUPPORT_DIR/logs/server.log</string>
+    <key>StandardErrorPath</key><string>$SUPPORT_DIR/logs/error.log</string>
+</dict>
+</plist>
+EOF
+launchctl unload "$AGENT_PLIST" 2>/dev/null || true
+launchctl load -w "$AGENT_PLIST"
+
+# LaunchDaemon — starts at BOOT before login (requires sudo)
+if sudo -n true 2>/dev/null; then
+    sudo tee "$DAEMON_PLIST" > /dev/null << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>ca.watchnexus.server.daemon</string>
+    <key>ProgramArguments</key>
+    <array><string>$INSTALL_DIR/Contents/MacOS/watchnexus</string></array>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>ThrottleInterval</key><integer>5</integer>
+    <key>StandardOutPath</key><string>$SUPPORT_DIR/logs/server.log</string>
+    <key>StandardErrorPath</key><string>$SUPPORT_DIR/logs/error.log</string>
+</dict>
+</plist>
+EOF
+    sudo launchctl load -w "$DAEMON_PLIST" 2>/dev/null || true
+    echo -e "  ${GREEN}LaunchDaemon registered — starts at BOOT${NC}"
+fi
 
 echo ""
 echo "================================================"
-echo "  Installation complete!"
+echo "  Installation complete!  v$APP_VERSION"
 echo "================================================"
-echo ""
-echo "  App:       /Applications/WatchNexus.app"
-echo "  Data:      ~/Library/Application Support/WatchNexus"
 echo "  Dashboard: http://localhost:8001"
+echo "  App:       $INSTALL_DIR"
+echo "  Data:      $SUPPORT_DIR"
 echo ""
-echo "  Launch from Applications folder or Spotlight."
+echo -e "  ${GREEN}Auto-start: ENABLED${NC}"
+echo "  WatchNexus starts on boot/login, restarts on crash."
+echo ""
+echo "  Commands:"
+echo "    launchctl list | grep watchnexus"
+echo "    launchctl stop ca.watchnexus.server"
+echo "    launchctl unload -w ~/Library/LaunchAgents/ca.watchnexus.server.plist  (disable)"
 echo ""

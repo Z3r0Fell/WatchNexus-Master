@@ -1,5 +1,23 @@
 # WatchNexus Changelog
 
+## v2.6.5 (March 12, 2026)
+
+### Auto-Start Service Registration
+- **Linux:** systemd service (`watchnexus.service`) enabled at boot via `multi-user.target`
+- **macOS:** LaunchDaemon (`ca.watchnexus.server.plist`) starts WatchNexus at system boot, before login
+- **Windows:** Scheduled Task runs at startup under current user, with auto-restart on failure
+- **Docker:** `restart: unless-stopped` ensures container survives reboots
+- All platforms: service auto-recovers after power failure or unexpected shutdown
+
+### .NET 10 Upgrade
+- All C# projects target `net10.0`
+- NuGet packages updated: EF Core 10.0.4, JwtBearer 10.0.4, OpenApi 10.0.4, Swashbuckle 10.1.5
+
+### Installer Enhancements
+- All platform installers now include prerequisite detection with clear status table
+- Interactive prompts to auto-install missing dependencies
+- Version unified to 2.6.5 across all platforms
+
 ## v3.0.0-beta (March 11, 2026)
 
 ### BREAKING: Full C#/.NET 10 Migration

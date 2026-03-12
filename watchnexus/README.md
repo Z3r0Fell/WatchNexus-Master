@@ -1,4 +1,4 @@
-# WatchNexus v3.0.0-beta
+# WatchNexus v2.6.5
 
 > Unified, self-hosted media pipeline built with C#/.NET 10.
 
@@ -45,7 +45,7 @@ Each module is a self-contained unit with a `module.json` manifest:
 {
   "name": "Marmalade",
   "codename": "marmalade",
-  "version": "3.0.0",
+  "version": "2.6.5",
   "description": "Media library scanning with TMDB metadata",
   "dependencies": ["core"]
 }

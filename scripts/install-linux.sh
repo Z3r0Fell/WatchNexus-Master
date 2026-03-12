@@ -1,8 +1,7 @@
 #!/bin/bash
 #===============================================================================
 # WatchNexus Installation Script for Linux (Debian/Ubuntu/Fedora)
-# Supports: Ubuntu 22.04+, Debian 12+, Fedora 38+
-# v3.0.0-beta
+# v2.6.5 — Installs WatchNexus + registers a systemd service for auto-start
 #===============================================================================
 
 set -e
@@ -13,9 +12,9 @@ INSTALL_DIR="/opt/watchnexus"
 DATA_DIR="/var/lib/watchnexus"
 CONFIG_DIR="/etc/watchnexus"
 USER="watchnexus"
-VERSION="3.0.0-beta"
+VERSION="2.6.5"
+SERVICE_NAME="watchnexus"
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -33,21 +32,15 @@ echo "  WatchNexus Installer - Linux  v${VERSION}"
 echo -e "==============================================${NC}"
 echo ""
 
-# Detect distribution
 detect_distro() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         DISTRO=$ID
-        VERSION_ID=$VERSION_ID
-    elif [ -f /etc/lsb-release ]; then
-        . /etc/lsb-release
-        DISTRO=$DISTRIB_ID
-        VERSION_ID=$DISTRIB_RELEASE
     else
         log_error "Could not detect Linux distribution"
         exit 1
     fi
-    log_info "Detected: $DISTRO $VERSION_ID"
+    log_info "Detected: $DISTRO"
 }
 
 #===============================================================================
@@ -56,13 +49,11 @@ detect_distro() {
 check_prerequisites() {
     echo -e "${BOLD}Checking prerequisites...${NC}"
     echo ""
-
     MISSING=()
     FOUND=()
 
-    # Python 3.10+
     if command -v python3 &>/dev/null; then
-        PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null)
+        PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
         PY_MAJOR=$(echo "$PY_VER" | cut -d. -f1)
         PY_MINOR=$(echo "$PY_VER" | cut -d. -f2)
         if [ "$PY_MAJOR" -ge 3 ] && [ "$PY_MINOR" -ge 10 ]; then
@@ -74,73 +65,32 @@ check_prerequisites() {
         MISSING+=("Python 3.10+")
     fi
 
-    # Node.js 18+
     if command -v node &>/dev/null; then
         NODE_VER=$(node --version | sed 's/v//')
         NODE_MAJOR=$(echo "$NODE_VER" | cut -d. -f1)
-        if [ "$NODE_MAJOR" -ge 18 ]; then
-            FOUND+=("Node.js v$NODE_VER")
-        else
-            MISSING+=("Node.js 18+ (found v$NODE_VER)")
-        fi
-    else
-        MISSING+=("Node.js 18+")
-    fi
+        if [ "$NODE_MAJOR" -ge 18 ]; then FOUND+=("Node.js v$NODE_VER")
+        else MISSING+=("Node.js 18+ (found v$NODE_VER)"); fi
+    else MISSING+=("Node.js 18+"); fi
 
-    # Yarn
-    if command -v yarn &>/dev/null; then
-        FOUND+=("Yarn $(yarn --version)")
-    else
-        MISSING+=("Yarn")
-    fi
+    command -v yarn &>/dev/null && FOUND+=("Yarn $(yarn --version)") || MISSING+=("Yarn")
+    command -v mongod &>/dev/null && FOUND+=("MongoDB") || MISSING+=("MongoDB 7.x")
+    command -v ffmpeg &>/dev/null && FOUND+=("FFmpeg") || MISSING+=("FFmpeg (optional, for transcoding)")
+    command -v git &>/dev/null && FOUND+=("Git") || MISSING+=("Git")
 
-    # MongoDB
-    if command -v mongod &>/dev/null; then
-        FOUND+=("MongoDB")
-    else
-        MISSING+=("MongoDB 7.x")
-    fi
-
-    # FFmpeg
-    if command -v ffmpeg &>/dev/null; then
-        FOUND+=("FFmpeg")
-    else
-        MISSING+=("FFmpeg (optional, for transcoding)")
-    fi
-
-    # Git
-    if command -v git &>/dev/null; then
-        FOUND+=("Git $(git --version | awk '{print $3}')")
-    else
-        MISSING+=("Git")
-    fi
-
-    # Display results
     echo -e "  ${CYAN}Prerequisite Status:${NC}"
     echo "  -----------------------------------------------"
-    for item in "${FOUND[@]}"; do
-        echo -e "  ${GREEN}OK${NC}      $item"
-    done
-    for item in "${MISSING[@]}"; do
-        echo -e "  ${RED}MISSING${NC} $item"
-    done
+    for item in "${FOUND[@]}"; do echo -e "  ${GREEN}OK${NC}      $item"; done
+    for item in "${MISSING[@]}"; do echo -e "  ${RED}MISSING${NC} $item"; done
     echo "  -----------------------------------------------"
     echo ""
 
     if [ ${#MISSING[@]} -gt 0 ]; then
-        echo -e "  ${YELLOW}The following prerequisites are missing:${NC}"
-        for item in "${MISSING[@]}"; do
-            echo -e "    - $item"
-        done
+        echo -e "  ${YELLOW}Missing prerequisites:${NC}"
+        for item in "${MISSING[@]}"; do echo "    - $item"; done
         echo ""
-        read -p "  The installer can attempt to install missing dependencies. Continue? (y/n): " ANSWER
+        read -p "  Attempt to install missing dependencies? (y/n): " ANSWER
         if [[ "$ANSWER" != "y" && "$ANSWER" != "Y" ]]; then
-            echo ""
-            log_info "Installation cancelled. Please install the prerequisites manually:"
-            echo "  - Python 3.10+:  https://www.python.org/downloads/"
-            echo "  - Node.js 20:    https://nodejs.org/"
-            echo "  - MongoDB 7:     https://www.mongodb.com/try/download/community"
-            echo "  - FFmpeg:         sudo apt install ffmpeg  (or equivalent)"
+            log_info "Installation cancelled."
             exit 0
         fi
     else
@@ -149,271 +99,113 @@ check_prerequisites() {
     echo ""
 }
 
-# Install dependencies for Debian/Ubuntu
 install_deps_debian() {
-    log_info "[1/7] Installing dependencies (apt)..."
-    
-    sudo apt-get update || {
-        log_error "Failed to update package lists"
-        exit 1
-    }
-    
-    sudo apt-get install -y \
-        curl \
-        gnupg \
-        ca-certificates \
-        build-essential \
-        python3 \
-        python3-pip \
-        python3-venv \
-        python3-dev \
-        ffmpeg || {
-        log_error "Failed to install core packages"
-        exit 1
-    }
-    
-    # Optional packages (don't fail if unavailable)
-    sudo apt-get install -y libvips-dev 2>/dev/null || log_warn "libvips-dev not available, skipping"
-    
-    # Install Node.js 20.x
-    if ! command -v node &> /dev/null; then
-        log_info "Installing Node.js 20.x..."
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - || {
-            log_error "Failed to add NodeSource repository"
-            exit 1
-        }
-        sudo apt-get install -y nodejs || {
-            log_error "Failed to install Node.js"
-            exit 1
-        }
+    log_info "[1/8] Installing dependencies (apt)..."
+    sudo apt-get update -qq
+    sudo apt-get install -y curl gnupg ca-certificates build-essential \
+        python3 python3-pip python3-venv python3-dev ffmpeg
+
+    if ! command -v node &>/dev/null; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
     fi
-    
-    # Install Yarn
-    if ! command -v yarn &> /dev/null; then
-        log_info "Installing Yarn..."
-        sudo npm install -g yarn
-    fi
-    
-    # MongoDB
-    if ! command -v mongod &> /dev/null; then
-        log_warn "MongoDB not found. Installing..."
-        
+    command -v yarn &>/dev/null || sudo npm install -g yarn
+
+    if ! command -v mongod &>/dev/null; then
         curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
             sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg 2>/dev/null || true
-        
-        UBUNTU_CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
-        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${UBUNTU_CODENAME}/mongodb-org/7.0 multiverse" | \
+        CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
+        echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/7.0 multiverse" | \
             sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-        
-        sudo apt-get update
-        sudo apt-get install -y mongodb-org 2>/dev/null || {
-            log_warn "Could not install MongoDB from official repo"
-            log_warn "Please install MongoDB manually or use Docker:"
-            log_warn "  docker run -d --name mongodb -p 27017:27017 mongo:7"
-        }
+        sudo apt-get update -qq
+        sudo apt-get install -y mongodb-org 2>/dev/null || log_warn "MongoDB install failed — use Docker instead"
     fi
-    
     log_info "Dependencies installed"
 }
 
-# Install dependencies for Fedora/RHEL
 install_deps_fedora() {
-    log_info "[1/7] Installing dependencies (dnf)..."
-    
-    sudo dnf install -y \
-        curl \
-        gnupg2 \
-        gcc \
-        gcc-c++ \
-        make \
-        python3 \
-        python3-pip \
-        python3-devel \
-        python3-virtualenv \
-        ffmpeg || {
-        log_error "Failed to install core packages"
-        exit 1
-    }
-    
-    sudo dnf install -y vips-devel 2>/dev/null || log_warn "vips-devel not available"
-    
-    if ! command -v node &> /dev/null; then
-        log_info "Installing Node.js..."
+    log_info "[1/8] Installing dependencies (dnf)..."
+    sudo dnf install -y curl gcc gcc-c++ make python3 python3-pip python3-devel python3-virtualenv ffmpeg
+    if ! command -v node &>/dev/null; then
         curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
         sudo dnf install -y nodejs
     fi
-    
-    if ! command -v yarn &> /dev/null; then
-        sudo npm install -g yarn
-    fi
-    
-    if ! command -v mongod &> /dev/null; then
-        log_warn "MongoDB not found. Setting up repository..."
-        
-        sudo tee /etc/yum.repos.d/mongodb-org-7.0.repo << 'EOF'
-[mongodb-org-7.0]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/x86_64/
-gpgcheck=1
-enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
-EOF
-        sudo dnf install -y mongodb-org 2>/dev/null || {
-            log_warn "Could not install MongoDB. Use Docker instead:"
-            log_warn "  docker run -d --name mongodb -p 27017:27017 mongo:7"
-        }
-    fi
-    
+    command -v yarn &>/dev/null || sudo npm install -g yarn
     log_info "Dependencies installed"
 }
 
-# Create user and directories
 setup_user_and_dirs() {
-    log_info "[2/7] Creating user and directories..."
-    
-    if ! id "$USER" &>/dev/null; then
-        sudo useradd -r -s /bin/false -d "$INSTALL_DIR" "$USER"
-    fi
-    
-    sudo mkdir -p "$INSTALL_DIR"
-    sudo mkdir -p "$DATA_DIR"/{config,themes,plugins,downloads,media}
-    sudo mkdir -p "$CONFIG_DIR"
-    sudo mkdir -p /var/log/watchnexus
-    
+    log_info "[2/8] Creating user and directories..."
+    id "$USER" &>/dev/null || sudo useradd -r -s /bin/false -d "$INSTALL_DIR" "$USER"
+    sudo mkdir -p "$INSTALL_DIR" "$DATA_DIR"/{config,themes,plugins,downloads,media} "$CONFIG_DIR" /var/log/watchnexus
     log_info "Directories created"
 }
 
-# Build frontend
 build_frontend() {
-    log_info "[3/7] Building frontend..."
-    
+    log_info "[3/8] Building frontend..."
     cd "$PROJECT_ROOT/frontend"
-    
-    if [ ! -f "package.json" ]; then
-        log_error "frontend/package.json not found"
-        exit 1
-    fi
-    
-    if [ -f "yarn.lock" ]; then
-        yarn install --frozen-lockfile 2>/dev/null || yarn install
-    else
-        yarn install
-    fi
-    
-    yarn build || {
-        log_error "Frontend build failed"
-        exit 1
-    }
-    
-    if [ -d "build" ]; then
-        FRONTEND_BUILD_DIR="build"
-    elif [ -d "dist" ]; then
-        FRONTEND_BUILD_DIR="dist"
-    else
-        log_error "No frontend build directory found"
-        exit 1
-    fi
-    
+    [ -f "yarn.lock" ] && yarn install --frozen-lockfile 2>/dev/null || yarn install
+    yarn build
+    [ -d "build" ] && FRONTEND_BUILD_DIR="build" || FRONTEND_BUILD_DIR="dist"
     log_info "Frontend built"
 }
 
-# Install backend
 install_backend() {
-    log_info "[4/7] Installing backend..."
-    
+    log_info "[4/8] Installing backend..."
     cd "$PROJECT_ROOT/backend"
-    
-    if [ ! -f "requirements.txt" ]; then
-        log_error "backend/requirements.txt not found"
-        exit 1
-    fi
-    
-    python3 -m venv venv || {
-        log_error "Failed to create virtual environment"
-        exit 1
-    }
-    
+    python3 -m venv venv
     source venv/bin/activate
     pip install --upgrade pip
-    pip install -r requirements.txt || {
-        log_error "Failed to install Python dependencies"
-        deactivate
-        exit 1
-    }
+    pip install -r requirements.txt
     deactivate
-    
     log_info "Backend installed"
 }
 
-# Copy files to installation directory
 install_files() {
-    log_info "[5/7] Installing files..."
-    
+    log_info "[5/8] Installing files..."
     cd "$PROJECT_ROOT/frontend"
     sudo rm -rf "$INSTALL_DIR/frontend" 2>/dev/null || true
     sudo cp -r "$FRONTEND_BUILD_DIR" "$INSTALL_DIR/frontend"
-    
-    cd "$PROJECT_ROOT"
     sudo rm -rf "$INSTALL_DIR/backend" 2>/dev/null || true
-    sudo cp -r backend "$INSTALL_DIR/"
-    
-    if [ -d "$PROJECT_ROOT/backend/plugins" ]; then
-        sudo cp -r "$PROJECT_ROOT/backend/plugins"/* "$DATA_DIR/plugins/" 2>/dev/null || true
-    fi
-    
-    sudo chown -R "$USER:$USER" "$INSTALL_DIR"
-    sudo chown -R "$USER:$USER" "$DATA_DIR"
-    sudo chown -R "$USER:$USER" /var/log/watchnexus
-    
+    sudo cp -r "$PROJECT_ROOT/backend" "$INSTALL_DIR/"
+    sudo chown -R "$USER:$USER" "$INSTALL_DIR" "$DATA_DIR" /var/log/watchnexus
     log_info "Files installed"
 }
 
-# Create configuration files
 create_config() {
-    log_info "[6/7] Creating configuration..."
-    
+    log_info "[6/8] Creating configuration..."
     JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
-    ENCRYPTION_KEY=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
-    
-    sudo tee "$CONFIG_DIR/watchnexus.conf" > /dev/null << EOF
-HOST=0.0.0.0
-BACKEND_PORT=8001
-FRONTEND_PORT=3000
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=watchnexus
-DATA_DIR=$DATA_DIR
-MEDIA_DIR=$DATA_DIR/media
-DOWNLOADS_DIR=$DATA_DIR/downloads
-PLUGINS_DIR=$DATA_DIR/plugins
-THEMES_DIR=$DATA_DIR/themes
-JWT_SECRET=$JWT_SECRET
-ENCRYPTION_KEY=$ENCRYPTION_KEY
-EOF
-    
     sudo tee "$INSTALL_DIR/backend/.env" > /dev/null << EOF
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=watchnexus
 WATCHNEXUS_PLUGINS_DIR=$DATA_DIR/plugins
 WATCHNEXUS_THEMES_DIR=$DATA_DIR/themes
+JWT_SECRET=$JWT_SECRET
 EOF
-    
-    sudo chown "$USER:$USER" "$CONFIG_DIR/watchnexus.conf"
     sudo chown "$USER:$USER" "$INSTALL_DIR/backend/.env"
-    sudo chmod 600 "$CONFIG_DIR/watchnexus.conf"
     sudo chmod 600 "$INSTALL_DIR/backend/.env"
-    
     log_info "Configuration created"
 }
 
-# Create systemd service
+#===============================================================================
+# SYSTEMD SERVICE — auto-start on boot, auto-restart on crash
+#===============================================================================
 create_service() {
-    log_info "[7/7] Creating systemd service..."
-    
-    sudo tee /etc/systemd/system/watchnexus.service > /dev/null << EOF
+    log_info "[7/8] Creating systemd service (auto-start on boot)..."
+
+    # MongoDB service
+    if command -v mongod &>/dev/null; then
+        sudo systemctl enable mongod 2>/dev/null || sudo systemctl enable mongodb 2>/dev/null || true
+        sudo systemctl start mongod 2>/dev/null || sudo systemctl start mongodb 2>/dev/null || true
+    fi
+
+    # WatchNexus service
+    sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << EOF
 [Unit]
 Description=WatchNexus Media Server
-After=network.target mongodb.service mongod.service
-Wants=mongodb.service mongod.service
+Documentation=https://github.com/watchnexus
+After=network-online.target mongodb.service mongod.service
+Wants=network-online.target mongodb.service mongod.service
 
 [Service]
 Type=simple
@@ -421,82 +213,89 @@ User=$USER
 Group=$USER
 WorkingDirectory=$INSTALL_DIR/backend
 Environment="PATH=$INSTALL_DIR/backend/venv/bin:/usr/local/bin:/usr/bin"
-EnvironmentFile=$CONFIG_DIR/watchnexus.conf
 ExecStart=$INSTALL_DIR/backend/venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8001
+
+# Auto-restart on crash or unexpected exit
 Restart=always
-RestartSec=10
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=$DATA_DIR /var/log/watchnexus $INSTALL_DIR/backend
+PrivateTmp=true
+
 StandardOutput=append:/var/log/watchnexus/server.log
 StandardError=append:/var/log/watchnexus/error.log
 
 [Install]
+# This ensures the service starts at boot, before any user logs in
 WantedBy=multi-user.target
 EOF
-    
+
     sudo systemctl daemon-reload
-    
-    if command -v mongod &> /dev/null; then
-        sudo systemctl enable mongod 2>/dev/null || sudo systemctl enable mongodb 2>/dev/null || true
-        sudo systemctl start mongod 2>/dev/null || sudo systemctl start mongodb 2>/dev/null || true
-    fi
-    
-    sudo systemctl enable watchnexus
-    
-    sudo systemctl start watchnexus 2>/dev/null || {
-        log_warn "Could not start WatchNexus service automatically"
-        log_warn "Make sure MongoDB is running, then: sudo systemctl start watchnexus"
+    sudo systemctl enable ${SERVICE_NAME}.service
+    sudo systemctl start ${SERVICE_NAME}.service 2>/dev/null || {
+        log_warn "Could not start WatchNexus now — it will start on next boot."
+        log_warn "Check: sudo journalctl -u ${SERVICE_NAME} -f"
     }
-    
-    log_info "Service created"
+
+    log_info "Service created and enabled for auto-start on boot"
 }
 
-# Main
+verify_service() {
+    log_info "[8/8] Verifying service..."
+    sleep 3
+    if systemctl is-active --quiet ${SERVICE_NAME}; then
+        echo -e "  ${GREEN}WatchNexus is running${NC}"
+    else
+        log_warn "Service not yet active. Check: sudo systemctl status ${SERVICE_NAME}"
+    fi
+    if systemctl is-enabled --quiet ${SERVICE_NAME}; then
+        echo -e "  ${GREEN}Auto-start on boot: ENABLED${NC}"
+    fi
+}
+
 main() {
     detect_distro
     check_prerequisites
-    
+
     case "$DISTRO" in
-        ubuntu|debian|pop|linuxmint|elementary)
-            install_deps_debian
-            ;;
-        fedora|rhel|centos|rocky|alma)
-            install_deps_fedora
-            ;;
-        arch|manjaro|endeavouros)
-            log_info "For Arch-based systems, please use build-arch.sh instead"
-            exit 0
-            ;;
-        *)
-            log_error "Unsupported distribution: $DISTRO"
-            log_error "Try manual installation or use Docker."
-            exit 1
-            ;;
+        ubuntu|debian|pop|linuxmint|elementary) install_deps_debian ;;
+        fedora|rhel|centos|rocky|alma) install_deps_fedora ;;
+        *) log_error "Unsupported distribution: $DISTRO"; exit 1 ;;
     esac
-    
+
     setup_user_and_dirs
     build_frontend
     install_backend
     install_files
     create_config
     create_service
-    
+    verify_service
+
     echo ""
     echo -e "${BOLD}=============================================="
-    echo "  Installation Complete!"
+    echo "  Installation Complete!  v${VERSION}"
     echo -e "==============================================${NC}"
     echo ""
-    echo "WatchNexus is installed at:"
-    echo "  $INSTALL_DIR"
+    echo -e "  Access:    ${CYAN}http://localhost:8001${NC}"
+    echo "  Install:   $INSTALL_DIR"
+    echo "  Data:      $DATA_DIR"
+    echo "  Logs:      /var/log/watchnexus/"
     echo ""
-    echo -e "Access at: ${CYAN}http://localhost:8001${NC}"
+    echo -e "  ${GREEN}Auto-start: ENABLED${NC} — WatchNexus will start"
+    echo "  automatically on every boot, before the login screen."
     echo ""
-    echo "Service commands:"
-    echo "  sudo systemctl status watchnexus"
-    echo "  sudo systemctl restart watchnexus"
-    echo "  sudo journalctl -u watchnexus -f"
+    echo "  Service commands:"
+    echo "    sudo systemctl status ${SERVICE_NAME}"
+    echo "    sudo systemctl restart ${SERVICE_NAME}"
+    echo "    sudo systemctl stop ${SERVICE_NAME}"
+    echo "    sudo journalctl -u ${SERVICE_NAME} -f"
     echo ""
-    echo "Configuration: $CONFIG_DIR/watchnexus.conf"
-    echo "Data directory: $DATA_DIR"
-    echo "Logs: /var/log/watchnexus/"
+    echo "  To disable auto-start:"
+    echo "    sudo systemctl disable ${SERVICE_NAME}"
     echo ""
 }
 

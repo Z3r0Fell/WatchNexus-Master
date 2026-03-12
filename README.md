@@ -1,4 +1,4 @@
-# WatchNexus v3.0.0-beta
+# WatchNexus v2.6.5
 
 > Unified, self-hosted media pipeline. Request, acquire, organize, and watch your media.
 
