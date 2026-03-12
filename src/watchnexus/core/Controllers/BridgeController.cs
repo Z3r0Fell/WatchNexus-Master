@@ -44,6 +44,13 @@ public class MarmaladeBridgeController : ControllerBase
             total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
         });
     }
+
+    [HttpGet("media/recent")]
+    public async Task<IActionResult> RecentMedia(int limit = 20) =>
+        Ok(await _db.MediaItems.OrderByDescending(m => m.CreatedAt).Take(limit)
+            .Select(m => new { m.Id, m.Title, m.Year, m.Rating, poster_url = m.PosterUrl,
+                backdrop_url = m.BackdropUrl, media_type = m.MediaType, m.Overview })
+            .ToListAsync());
 }
 
 /// <summary>Preferences endpoint for user settings persistence</summary>

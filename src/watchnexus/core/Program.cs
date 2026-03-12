@@ -146,13 +146,22 @@ app.MapControllers();
 // ── Map external module routes ────────────────────────────────
 ModuleLoader.MapAllRoutes(app);
 
-// ── SPA fallback — catch-all for client-side routes ───────────
+// ── SPA fallback — catch-all for client-side routes (NOT /api/*) ─
 if (webRoot != null)
 {
     var fullPath = Path.GetFullPath(webRoot);
-    app.MapFallbackToFile("index.html", new StaticFileOptions
+    app.MapFallback(async context =>
     {
-        FileProvider = new PhysicalFileProvider(fullPath)
+        // Never intercept API routes — let them 404 properly
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = 404;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"detail\":\"Not Found\"}");
+            return;
+        }
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(Path.Combine(fullPath, "index.html"));
     });
 }
 
