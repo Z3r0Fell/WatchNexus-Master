@@ -14,6 +14,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Play,
   Layers,
   FolderOpen,
@@ -31,7 +32,8 @@ import {
   Server,
   FileText,
   Library,
-  Store
+  Store,
+  Key,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -42,11 +44,11 @@ const ICON_MAP = {
   Image, Gamepad2, Radio, Podcast, MonitorPlay, Cloud, Video,
   Home, Film, Tv, Music, BookOpen, Download, Settings,
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
-  Shield, Wifi, Server, FileText, Library, Store,
+  Shield, Wifi, Server, FileText, Library, Store, Key,
 };
 
-// All navigation items - Home, Downloads, Settings are always visible (not hideable)
-const allNavItems = [
+// Media navigation items
+const mediaNavItems = [
   { icon: Home, label: 'Home', path: '/', alwaysVisible: true },
   { icon: FolderOpen, label: 'Library', path: '/library', hideable: true },
   { icon: Film, label: 'Movies', path: '/movies', hideable: true },
@@ -58,13 +60,19 @@ const allNavItems = [
   { icon: Radio, label: 'Live TV', path: '/live', hideable: true },
   { icon: Layers, label: 'Streaming', path: '/streaming', hideable: true },
   { icon: Compass, label: 'Indexers', path: '/indexers', hideable: true },
-  // Gadget Pages
+];
+
+// Gadget page items
+const gadgetNavItems = [
   { icon: Cloud, label: 'Weather', path: '/weather', hideable: true, isGadget: true },
   { icon: Podcast, label: 'Podcasts', path: '/podcasts', hideable: true, isGadget: true },
   { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
   { icon: Image, label: 'Photos', path: '/photos', hideable: true, isGadget: true },
   { icon: Video, label: 'Web Video', path: '/webvideo', hideable: true, isGadget: true },
-  // Admin
+];
+
+// Admin/Tools items (shown under Settings sub-menu)
+const settingsSubItems = [
   { icon: Shield, label: 'Security', path: '/security', hideable: true },
   { icon: Wifi, label: 'VPN Portal', path: '/vpn', hideable: true },
   { icon: Library, label: 'Lib Manager', path: '/library-manager', hideable: true },
@@ -72,21 +80,20 @@ const allNavItems = [
   { icon: FileText, label: 'Log Viewer', path: '/log-viewer', hideable: true },
   { icon: Server, label: 'System', path: '/system', hideable: true },
   { icon: Store, label: 'Marketplace', path: '/plugins', hideable: true },
-  // Always visible
-  { icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true },
-  { icon: Settings, label: 'Settings', path: '/settings', alwaysVisible: true },
 ];
 
-// Default visible tabs (all except Live TV which users often don't use)
-const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video', 'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace'];
+// Default visible tabs
+const defaultVisibleTabs = [
+  'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks',
+  'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
+  'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
+];
 
 // Get visible tabs from localStorage
 const getVisibleTabs = () => {
   try {
     const saved = localStorage.getItem('watchnexus_visible_tabs');
-    if (saved) {
-      return JSON.parse(saved);
-    }
+    if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error('Error loading visible tabs:', e);
   }
@@ -96,6 +103,7 @@ const getVisibleTabs = () => {
 export const Sidebar = () => {
   const [expanded, setExpanded] = useState(true);
   const [visibleTabs, setVisibleTabs] = useState(getVisibleTabs);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const location = useLocation();
   const { logout, user } = useAuth();
   const { hooks } = useGadgets();
@@ -107,22 +115,27 @@ export const Sidebar = () => {
         setVisibleTabs(getVisibleTabs());
       }
     };
-    
     const handleTabsUpdate = () => {
       setVisibleTabs(getVisibleTabs());
     };
-    
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('watchnexus_tabs_updated', handleTabsUpdate);
-    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('watchnexus_tabs_updated', handleTabsUpdate);
     };
   }, []);
 
+  // Auto-expand settings section if current path is a sub-item
+  useEffect(() => {
+    const isSettingsSubPath = settingsSubItems.some(item => location.pathname === item.path) || location.pathname === '/settings';
+    if (isSettingsSubPath) {
+      setSettingsOpen(true);
+    }
+  }, [location.pathname]);
+
   // Build dynamic gadget sidebar items from active hooks
-  const gadgetNavItems = (hooks?.sidebar_entries || []).map(entry => ({
+  const dynamicGadgets = (hooks?.sidebar_entries || []).map(entry => ({
     icon: ICON_MAP[entry.icon] || Sparkles,
     label: entry.label,
     path: entry.path,
@@ -130,19 +143,57 @@ export const Sidebar = () => {
     isGadget: true,
   }));
 
-  // Combine static + gadget nav items (gadgets go before Downloads/Settings)
-  const staticBeforeDownloads = allNavItems.filter(i => !i.alwaysVisible || i.path === '/');
-  const staticAfter = allNavItems.filter(i => i.alwaysVisible && i.path !== '/');
-  const combinedItems = [
-    ...allNavItems.filter(i => i.path !== '/downloads' && i.path !== '/settings'),
-    ...gadgetNavItems,
-    ...allNavItems.filter(i => i.path === '/downloads' || i.path === '/settings'),
-  ];
+  // Filter items based on visibility
+  const isVisible = (item) => item.alwaysVisible || visibleTabs.includes(item.label);
 
-  // Filter nav items based on visibility settings
-  const navItems = combinedItems.filter(item => 
-    item.alwaysVisible || item.isGadget || visibleTabs.includes(item.label)
-  );
+  const visibleMedia = mediaNavItems.filter(isVisible);
+  const visibleGadgets = [...gadgetNavItems, ...dynamicGadgets].filter(isVisible);
+  const visibleSettingsSubs = settingsSubItems.filter(isVisible);
+
+  const renderNavItem = (item) => {
+    const isActive = location.pathname === item.path;
+    const Icon = item.icon;
+    return (
+      <li key={item.path}>
+        <Link
+          to={item.path}
+          data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
+            isActive ? "text-white" : "text-gray-400 hover:text-white hover:bg-white/5"
+          )}
+          style={isActive ? {
+            backgroundColor: 'color-mix(in srgb, var(--primary, #8B5CF6) 20%, transparent)',
+            color: 'var(--primary, #8B5CF6)',
+          } : {}}
+        >
+          <Icon className="w-5 h-5" style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}} />
+          <AnimatePresence>
+            {expanded && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="text-sm font-medium"
+              >
+                {item.label}
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {isActive && expanded && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="ml-auto w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: 'var(--primary, #8B5CF6)' }}
+            />
+          )}
+        </Link>
+      </li>
+    );
+  };
+
+  const isSettingsActive = location.pathname === '/settings';
+  const isAnySubActive = settingsSubItems.some(item => location.pathname === item.path);
 
   return (
     <motion.aside
@@ -155,11 +206,7 @@ export const Sidebar = () => {
       {/* Logo */}
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <Link to="/" className="flex items-center gap-3">
-          <img 
-            src="/watchnexus-logo.svg" 
-            alt="WatchNexus" 
-            className="w-10 h-10 rounded-xl"
-          />
+          <img src="/watchnexus-logo.svg" alt="WatchNexus" className="w-10 h-10 rounded-xl" />
           <AnimatePresence>
             {expanded && (
               <motion.span
@@ -168,10 +215,10 @@ export const Sidebar = () => {
                 exit={{ opacity: 0, x: -10 }}
                 className="font-bold text-xl tracking-tight"
                 style={{
-                  background: `linear-gradient(90deg, var(--primary, #8B5CF6), var(--secondary, #EC4899))`,
+                  background: 'linear-gradient(90deg, var(--primary, #8B5CF6), var(--secondary, #EC4899))',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  backgroundClip: 'text',
                 }}
               >
                 WatchNexus
@@ -188,7 +235,7 @@ export const Sidebar = () => {
         </button>
       </div>
 
-      {/* Search (expanded only) */}
+      {/* Search */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -212,30 +259,33 @@ export const Sidebar = () => {
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">
         <ul className="space-y-1 px-3">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const Icon = item.icon;
-            
-            return (
-              <li key={item.path}>
+          {/* Media Items */}
+          {visibleMedia.map(renderNavItem)}
+
+          {/* Gadget Items */}
+          {visibleGadgets.length > 0 && visibleGadgets.map(renderNavItem)}
+
+          {/* Downloads - always visible */}
+          {renderNavItem({ icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true })}
+
+          {/* Settings Section with collapsible sub-items */}
+          <li>
+            <div className="flex flex-col">
+              {/* Settings main button */}
+              <div className="flex items-center">
                 <Link
-                  to={item.path}
-                  data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
+                  to="/settings"
+                  data-testid="nav-settings"
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
-                    isActive
-                      ? "text-white"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 flex-1",
+                    (isSettingsActive || isAnySubActive) ? "text-white" : "text-gray-400 hover:text-white hover:bg-white/5"
                   )}
-                  style={isActive ? {
+                  style={(isSettingsActive && !isAnySubActive) ? {
                     backgroundColor: 'color-mix(in srgb, var(--primary, #8B5CF6) 20%, transparent)',
-                    color: 'var(--primary, #8B5CF6)'
+                    color: 'var(--primary, #8B5CF6)',
                   } : {}}
                 >
-                  <Icon 
-                    className="w-5 h-5" 
-                    style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}}
-                  />
+                  <Settings className="w-5 h-5" style={(isSettingsActive || isAnySubActive) ? { color: 'var(--primary, #8B5CF6)' } : {}} />
                   <AnimatePresence>
                     {expanded && (
                       <motion.span
@@ -244,21 +294,56 @@ export const Sidebar = () => {
                         exit={{ opacity: 0, x: -10 }}
                         className="text-sm font-medium"
                       >
-                        {item.label}
+                        Settings
                       </motion.span>
                     )}
                   </AnimatePresence>
-                  {isActive && expanded && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="ml-auto w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: 'var(--primary, #8B5CF6)' }}
-                    />
-                  )}
                 </Link>
-              </li>
-            );
-          })}
+                {expanded && visibleSettingsSubs.length > 0 && (
+                  <button
+                    data-testid="settings-expand-toggle"
+                    onClick={() => setSettingsOpen(!settingsOpen)}
+                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", settingsOpen && "rotate-180")} />
+                  </button>
+                )}
+              </div>
+
+              {/* Settings sub-items */}
+              <AnimatePresence>
+                {expanded && settingsOpen && visibleSettingsSubs.length > 0 && (
+                  <motion.ul
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="ml-4 pl-3 border-l border-white/10 space-y-0.5 mt-1"
+                  >
+                    {visibleSettingsSubs.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      const Icon = item.icon;
+                      return (
+                        <li key={item.path}>
+                          <Link
+                            to={item.path}
+                            data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                            className={cn(
+                              "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-200 text-sm",
+                              isActive ? "text-white bg-white/10" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                            )}
+                          >
+                            <Icon className="w-4 h-4" style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}} />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
+          </li>
         </ul>
       </nav>
 
@@ -267,7 +352,7 @@ export const Sidebar = () => {
         <div className={cn("flex items-center", expanded ? "gap-3" : "justify-center")}>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0">
             <span className="text-sm font-bold text-white">
-              {user?.username?.charAt(0).toUpperCase() || 'U'}
+              {user?.username?.charAt(0).toUpperCase() || user?.Username?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
           <AnimatePresence>
@@ -278,8 +363,8 @@ export const Sidebar = () => {
                 exit={{ opacity: 0, x: -10 }}
                 className="flex-1 min-w-0"
               >
-                <p className="text-sm font-medium truncate">{user?.username || 'User'}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-sm font-medium truncate">{user?.username || user?.Username || 'User'}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.email || user?.Email}</p>
               </motion.div>
             )}
           </AnimatePresence>

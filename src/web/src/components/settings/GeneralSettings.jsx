@@ -18,21 +18,40 @@ const GENERAL_TABS = [
   { id: 'preferences', label: 'Preferences', icon: Sliders },
 ];
 
-// All hideable sidebar tabs
+// All hideable sidebar tabs - includes media, gadgets, and admin/tools
 const hideableTabs = [
-  { label: 'Library', description: 'Browse your local media collection' },
-  { label: 'Movies', description: 'View your movie library' },
-  { label: 'TV Shows', description: 'Browse TV series' },
-  { label: 'Anime', description: 'Anime content section' },
-  { label: 'Playlists', description: 'Custom playlists & collections' },
-  { label: 'Music', description: 'Music library' },
-  { label: 'Audiobooks', description: 'Audiobook collection' },
-  { label: 'Live TV', description: 'IPTV & live channels' },
-  { label: 'Streaming', description: 'Streaming service integration' },
-  { label: 'Indexers', description: 'Search indexers for content' },
+  // Media
+  { label: 'Library', description: 'Browse your local media collection', group: 'Media' },
+  { label: 'Movies', description: 'View your movie library', group: 'Media' },
+  { label: 'TV Shows', description: 'Browse TV series', group: 'Media' },
+  { label: 'Anime', description: 'Anime content section', group: 'Media' },
+  { label: 'Playlists', description: 'Custom playlists & collections', group: 'Media' },
+  { label: 'Music', description: 'Music library', group: 'Media' },
+  { label: 'Audiobooks', description: 'Audiobook collection', group: 'Media' },
+  { label: 'Live TV', description: 'IPTV & live channels', group: 'Media' },
+  { label: 'Streaming', description: 'Streaming service integration', group: 'Media' },
+  { label: 'Indexers', description: 'Search indexers for content', group: 'Media' },
+  // Gadgets
+  { label: 'Weather', description: 'Weather dashboard gadget', group: 'Gadgets' },
+  { label: 'Podcasts', description: 'Podcast player gadget', group: 'Gadgets' },
+  { label: 'Radio', description: 'Internet radio gadget', group: 'Gadgets' },
+  { label: 'Photos', description: 'Photo gallery gadget', group: 'Gadgets' },
+  { label: 'Web Video', description: 'Web video player gadget', group: 'Gadgets' },
+  // Admin / Settings sub-items
+  { label: 'Security', description: 'Security dashboard & audit logs', group: 'Admin' },
+  { label: 'VPN Portal', description: 'WireGuard VPN management', group: 'Admin' },
+  { label: 'Lib Manager', description: 'Library management tools', group: 'Admin' },
+  { label: 'Browse Media', description: 'Browse media files on disk', group: 'Admin' },
+  { label: 'Log Viewer', description: 'View application logs', group: 'Admin' },
+  { label: 'System', description: 'System info & health', group: 'Admin' },
+  { label: 'Marketplace', description: 'Plugin marketplace', group: 'Admin' },
 ];
 
-const defaultVisibleTabs = ['Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers'];
+const defaultVisibleTabs = [
+  'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers',
+  'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
+  'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
+];
 
 export const GeneralSettings = ({ 
   settings, 
@@ -259,25 +278,36 @@ const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabV
           <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-          {hideableTabs.map(tab => {
-            const isVisible = visibleTabs.includes(tab.label);
+        <div className="space-y-4">
+          {['Media', 'Gadgets', 'Admin'].map(group => {
+            const groupTabs = hideableTabs.filter(t => t.group === group);
+            if (groupTabs.length === 0) return null;
             return (
-              <button
-                key={tab.label}
-                onClick={() => toggleTab(tab.label)}
-                className={`p-3 rounded-lg border transition-all text-left ${
-                  isVisible 
-                    ? 'bg-violet-600/20 border-violet-500/50 text-white' 
-                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                }`}
-                data-testid={`toggle-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{tab.label}</span>
-                  {isVisible && <Check className="w-4 h-4 text-violet-400" />}
+              <div key={group}>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{group}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {groupTabs.map(tab => {
+                    const isVisible = visibleTabs.includes(tab.label);
+                    return (
+                      <button
+                        key={tab.label}
+                        onClick={() => toggleTab(tab.label)}
+                        className={`p-3 rounded-lg border transition-all text-left ${
+                          isVisible
+                            ? 'bg-violet-600/20 border-violet-500/50 text-white'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                        data-testid={`toggle-tab-${tab.label.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{tab.label}</span>
+                          {isVisible && <Check className="w-4 h-4 text-violet-400" />}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

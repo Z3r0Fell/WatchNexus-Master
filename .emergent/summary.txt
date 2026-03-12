@@ -1,172 +1,168 @@
 <analysis>**original_problem_statement:**
-The user wants to build a unified, self-hosted media pipeline called WatchNexus. The project started as a Python/FastAPI application but has since been completely rewritten, at the user's explicit direction, into a C#/.NET 8 backend with a React frontend, following a modular architecture.
+The user wants to build a unified, self-hosted media pipeline called WatchNexus. The initial goals for this session were to clean up the repository, implement a Marketplace feature, and enhance the installers. However, the user's requests quickly escalated to include a full migration from .NET 8 to .NET 10, multiple major repository restructurings, and implementing auto-start services for all platforms. These rapid, sweeping changes have left the application in an unstable state with several user-reported bugs.
 
-The user's latest set of instructions are:
-1.  First, perform a thorough cleanup of the  directory, removing all unnecessary files and folders to create a clean development repository.
-2.  Implement a Marketplace feature, which was an expected feature from earlier stages.
-3.  Enhance the existing installer scripts to include prompts for any prerequisites needed for the application to run correctly (e.g., .NET SDK).
-4.  Ensure the production database is empty and free of test data for the upcoming v3.0.0 beta release.
+The latest user complaint is that specific navigation items (Security, API Keys, VPN, Logs) are incorrectly placed at the top level of the sidebar instead of being under a Settings menu. Additionally, a feature referred to as Folder Browsing is reportedly still broken.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project is a fully functional C#/.NET 8 backend application serving a REST API, integrated with a React frontend. The old Python codebase has been entirely replaced.
+The project is a C#/.NET 10 backend with a React frontend. The codebase has undergone significant, chaotic restructuring and a major version upgrade to .NET 10. The backend project file () is now configured to automatically build the frontend on .
 
-*   **Backend:** A modular C#/.NET 8 monolith using ASP.NET Core and Entity Framework Core with an SQLite database. It includes modules for security (Bastion), VPN management (Tunnel), library management (Marmalade), logging (Zest), and a placeholder for settings (Fondue).
-*   **Frontend:** A comprehensive React dashboard that interacts with the C# backend. It features pages for all modules, a new Netflix-style Browse Media page, and working JWT authentication.
-*   **Build/Deploy:** The project includes installer scripts for Docker, Linux, and Windows that bundle the C# application. The environment's supervisor is configured to run the compiled C# backend.
+The agent has been in a reactive bug-fixing cycle, addressing numerous build and runtime errors caused by the refactoring. Key fixes included correcting path resolution for modules and the frontend, implementing an auto-build process for the frontend, and adding several missing API endpoints required by the dashboard to fix a blank screen after login issue.
 
 **Last working item**:
-*   **Last item agent was working:** The agent had just finished a complete, user-directed rewrite of the application from Python to C#/.NET 8. It then received a new set of instructions to clean the repository and build the Marketplace feature. The agent created a plan to address these new requests and was waiting for user approval.
-*   **Status:** BLOCKED
-*   **Agent Testing Done:** Y
-*   **Which testing method agent to use?** both. The repository cleanup should be followed by a smoke test (curl/screenshot) to ensure the app still runs. The Marketplace feature will require full backend and frontend testing via the testing agent.
-*   **User Testing Done:** N
+- **Last item agent was working:** The agent was actively debugging critical runtime and UI issues reported by the user after the migration to .NET 10 and a major repository restructure. The user's latest message reported that several sidebar menu items were in the wrong location and that Folder Browsing was still broken. The agent acknowledged these issues and was about to start fixing them.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** both. After fixing the immediate UI and folder browsing bugs, the next agent MUST run a comprehensive regression test using the testing agent. The application's stability is highly questionable after the recent extensive changes.
+- **User Testing Done:** Y
 
 **All Pending/In progress Issue list**:
-There are no known bugs or technical issues. The application is stable after the recent migration and testing. The pending work is based entirely on the user's latest feature requests.
+- **Issue 1: Incorrect Sidebar UI Layout (P0)**
+- **Issue 2: Broken Folder Browsing Functionality (P0)**
+- **Issue 3: Application Instability Post-Refactor (P1)**
+
+**Issues Detail:**
+- **Issue 1: Incorrect Sidebar UI Layout**
+    - **Description:** The user has reported that the Security, API Keys, VPN, and Logs navigation links are appearing as top-level items in the sidebar. They should be grouped under a Settings section.
+    - **Next debug checklist:**
+        - Examine  to understand how navigation items are rendered.
+        - Modify the component to group the specified links under a collapsible Settings menu item.
+        - Examine  and the React router in  to ensure the new structure works with the existing routing.
+    - **Why fix this issue and what will be achieved with the fix?** To correct the UI layout as per the user's explicit request and improve the application's user experience and organization.
+    - **Status:** NOT STARTED
+    - **Should Test frontend/backend/both after fix?** Frontend
+
+- **Issue 2: Broken Folder Browsing Functionality**
+    - **Description:** The user states Folder Browsing is STILL broken. This likely refers to the functionality for selecting a directory path when creating or editing a media library. This is a recurring complaint.
+    - **Next debug checklist:**
+        - Identify the component responsible for folder/directory selection (likely within the Libraries or Marmalade feature).
+        - Trace the API call made by this component and verify the corresponding C# backend controller is implemented correctly and can access the filesystem.
+        - The recent repository restructuring likely broke the file path logic. Investigate how the backend resolves paths and ensure it has the correct permissions and context to browse the filesystem.
+        - Reproduce the issue by attempting to add a new library in the UI.
+    - **Why fix this issue and what will be achieved with the fix?** This is a critical bug blocking a core feature of the application (managing media libraries). Fixing it is essential for the app to be usable.
+    - **Status:** NOT STARTED
+    - **Is recurring issue?** Y
+    - **Should Test frontend/backend/both after fix?** Both
+
+- **Issue 3: Application Instability Post-Refactor**
+    - **Description:** The recent migration to .NET 10 and multiple, chaotic repository restructures have introduced a cascade of bugs. The application is not stable.
+    - **Next debug checklist:**
+        - After fixing Issues 1 and 2, immediately invoke the  for a full end-to-end regression test of all features (backend and frontend).
+    - **Why fix this issue and what will be achieved with the fix?** To identify and resolve any hidden regressions, stabilize the application, and regain user confidence.
+    - **Status:** NOT STARTED
+    - **Should Test frontend/backend/both after fix?** Both
 
 **In progress Task List**:
-There are no tasks currently in progress. The previous migration task was completed.
+- **Task 1: Stabilize the Application**
+    - **Where to resume:** Start by fixing the two P0 issues reported by the user: the incorrect UI layout and the broken folder browsing.
+    - **What will be achieved with this?** A stable, functional application that meets the user's immediate expectations.
+    - **Status:** IN PROGRESS
+    - **Should Test frontend/backend/both after fix?** Both
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks (User's Current Request):**
-    *   **P0: Clean  Directory:** Perform a comprehensive cleanup of the root application directory, identifying and removing all legacy files, symlinks, and folders that are not essential for the current C#/.NET 8 + React project.
-    *   **P0: Build Marketplace (Fondue):** Implement the module marketplace. This involves creating a new backend API to manage modules (list, install, etc.) and a corresponding frontend page to display and interact with them.
-    *   **P1: Enhance Installers with Prerequisite Checks:** Modify the  and  scripts to detect and prompt the user to install necessary dependencies like the .NET 8 SDK.
-    *   **P1: Ensure Clean Production Database:** Implement a mechanism to ensure the SQLite database is empty and free of any test data when the application is packaged for release.
-
-*   **Future Tasks (From Backlog):**
-    *   **Implement EF Core Migrations:** Replace the current  method with a proper EF Core migration strategy for structured schema evolution.
-    *   **Implement qBittorrent C# Client:** Integrate a qBittorrent client into the C# backend for the Downloads page functionality.
-    *   **Re-implement Extended Features:** Port the Marshmallow (Cloud Sync) and Fortress (Code Protection) concepts to the new .NET stack.
+- **Upcoming Tasks:**
+    - **P1: Full Module Separation & Dynamic Loading:** The code for modules has been moved to the  directory, but they are not yet being compiled into individual DLLs and loaded dynamically at runtime. The  needs to be enhanced to build and load these DLLs.
+- **Future Tasks:**
+    - **Implement EF Core Migrations:** Replace the current  method with a proper EF Core migration strategy for structured schema evolution.
+    - **Implement qBittorrent C# Client:** Integrate a qBittorrent client into the C# backend.
+    - **Re-implement Extended Features:** Port Marshmallow (Cloud Sync) and Fortress (Code Protection) to the .NET stack.
 
 **Completed work in this session**
--   **Complete Python to C#/.NET 8 Migration:** The entire Python backend was successfully rewritten into a new, fully functional, and modular C#/.NET 8 application.
--   **Modular C# Architecture:** Established a unified C# project structure with a core application and a shared library, designed to support future module separation.
--   **Full Feature Port:** All key features, including security, VPN, library scanning (with TMDB), and logging, were ported to the new C# backend.
--   **Background Scan Fix:** Correctly implemented asynchronous library scanning in C# using  to avoid database context conflicts.
--   **New Browse Media Page:** Created a new frontend page to display media items in a Netflix-style grid.
--   **C# Installer Scripts:** Created and updated installer scripts for Docker, Linux, and Windows tailored to the new .NET application.
--   **Comprehensive Testing:** Successfully used the testing agent to validate the entire C# stack, passing 25/25 backend tests and confirming all frontend pages load correctly.
--   **Bug Fixes:** Resolved legacy endpoint issues and fixed minor UI display bugs (NaN values) identified by the testing agent.
+- **Python to C# Migration Completion:** All remaining Python code was removed.
+- **.NET 8 to .NET 10 Migration:** The entire C# backend, including project files, dependencies, and installer scripts, was upgraded to target .NET 10.
+- **Major Repository Restructuring:** The project structure was completely overhauled to a cleaner layout with , , , and  directories.
+- **Installer Enhancements:** All installer scripts (Linux, Windows, macOS, Docker) were updated to include auto-start service registration.
+- **Critical Bug Fixing:**
+    - Resolved numerous .NET 10 build and runtime errors.
+    - Implemented a frontend auto-build process triggered by .
+    - Fixed a blank-screen-on-login bug by correcting the SPA fallback middleware and adding several missing API endpoints required by the dashboard.
 
 **Earlier issues found/mentioned but not fixed**
-*   **Issue 1: Database Migration Strategy**
-    *   **Debug checklist:** The database initialization logic is in  and uses .
-    *   **Why to solve this issue and what will be achieved with this?** Replacing  with EF Core Migrations is standard practice for production applications. It allows for versioned, incremental, and reversible schema changes, preventing data loss and ensuring database consistency as the application evolves.
-    *   **Should Test frontend/backend/both after fix:** Backend
-    *   **Is recurring issue?** N
+- **Issue 1: Database Migration Strategy**
+    - **Debug checklist:** The logic is in  and uses .
+    - **Why to solve this issue and what will be achieved with this?** To allow for versioned, incremental, and reversible schema changes, which is standard practice for production applications.
+    - **Should Test frontend/backend/both after fix:** Backend
+    - **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
-- None.
+- The user's complaint that Folder Browsing is STILL broken indicates this is a recurring bug that has persisted through multiple fix attempts, likely due to the chaotic repository restructuring breaking file path logic repeatedly.
 
 **Code Architecture**
-*   **Backend ():** A modular monolith built with C#/.NET 8.
-    *   : The main project containing , all controllers, services, EF Core models, and the .
-    *   : A class library for shared code, primarily the  interface.
-*   **Frontend ():** A React single-page application created with Vite.
-*   **Module Structure ():** A set of placeholder directories (, , etc.) intended for the future separation of module source code.
+
 
 **Key Technical Concepts**
-*   **Tech Stack:** C#/.NET 8, ASP.NET Core, Entity Framework Core, SQLite, React, Vite
-*   **Authentication:** JWT Bearer Tokens
-*   **Architecture Pattern:** Modular Monolith
+- **Tech Stack:** C#/.NET 10, ASP.NET Core, Entity Framework Core, SQLite, React, Vite
+- **Authentication:** JWT Bearer Tokens
+- **Architecture Pattern:** Modular Monolith (in transition)
+- **Build Process:** The main C# project file () contains MSBuild targets that automatically run yarn install v1.22.22
+info No lockfile found.
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[4/4] Building fresh packages...
+success Saved lockfile.
+Done in 0.02s. and yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. for the frontend.
 
 **key DB schema**
--   The schema is defined by C# POCO classes (entities) in .
--   **AppDbContext:** () Manages all tables, including , , , , , , and .
+- The schema is defined by C# POCO classes in  and managed by . No changes to the schema were made in this session.
 
 **changes in tech stack**
-*   The entire backend was rewritten from Python/FastAPI to **C#/.NET 8**. The Python codebase is fully deprecated and should be removed.
+- The backend was upgraded from **.NET 8 to .NET 10**.
 
 **All files of reference**
-*   **C# Backend Entrypoint:** 
-*   **C# Controllers:** 
-*   **C# DB Context:** 
-*   **Frontend Main Component:** 
-*   **Frontend API Service:** 
-*   **Supervisor Config:** 
-*   **Installer Scripts:** , , 
+- **Backend Entrypoint:** 
+- **Backend Project File (contains frontend build logic):** 
+- **Frontend Sidebar (for UI fix):** 
+- **Frontend API Services:** 
+- **Frontend Pages (for routing context):** 
 
 **Areas that need refactoring**:
-*   **Database Initialization:** The  method should be replaced with a formal EF Core migration strategy to support production environments and evolving schemas.
-*   **Module Code Separation:** While the directory structure for modules exists in , the actual C# code for all modules currently resides within the single  project. A refactoring task would be to move module-specific controllers, services, and models into separate C# projects within those folders.
+- **Module Loading:** The system for separating and loading modules is half-finished. The source exists in , but the build process and dynamic loading logic are not complete.
+- **Installer Script Locations:** There appear to be installer scripts in both  and . This should be consolidated.
 
 **key api endpoints**
-*   , 
-*   
-*    (CRUD for libraries)
-*    (Triggers an async library scan)
-*   
-*    (All Bastion security endpoints)
-*    (All Tunnel VPN endpoints)
-*   
-*   
-*   
+- **Existing:** All CRUD endpoints for , , , etc.
+- **Newly Added:**
+    -  (Proxy for TMDB)
+    - 
+    - 
+    - 
+    - 
 
 **Critical Info for New Agent**
-*   **The project is now a C#/.NET 8 application.** Ignore and delete any remaining Python code. The user has been emphatic about this migration.
-*   Your immediate priority is the user's latest request. Follow this order:
-    1.  **Clean the  directory.** Be extremely careful not to delete essential files (, , , etc.). Use total 152
--rw-r--r--  1 root root  5875 Feb 25 16:00 AUDIT_LOG.md
--rw-r--r--  1 root root  9868 Feb 11 09:36 BUILD_GUIDE.md
--rw-r--r--  1 root root  1932 Mar 11 22:28 CHANGELOG.md
--rw-r--r--  1 root root  2545 Feb 28 17:21 DEVELOPMENT.md
--rw-r--r--  1 root root  1888 Mar 11 21:56 README.md
--rw-r--r--  1 root root   753 Feb 23 15:23 START-WATCHNEXUS-TRAY.bat
--rw-r--r--  1 root root     6 Feb 24 01:28 VERSION
-drwxr-xr-x  2 root root  4096 Feb 23 15:56 __pycache__
-lrwxrwxrwx  1 root root    15 Feb 26 11:47 backend -> /app/src/server
-drwxr-xr-x  3 root root  4096 Feb 23 15:29 backups
-drwxr-xr-x 13 root root  4096 Feb 28 17:07 builds
--rw-r--r--  1 root root  8692 Feb  3 18:39 design_guidelines.json
-drwxr-xr-x  2 root root  4096 Mar 11 21:03 docs
-lrwxrwxrwx  1 root root    12 Feb 26 11:47 frontend -> /app/src/web
-drwxr-xr-x  7 root root  4096 Mar 11 21:46 installers
--rw-r--r--  1 root root  4875 Feb 14 23:48 launch.py
-drwxr-xr-x  2 root root  4096 Feb 15 04:31 memory
-drwxr-xr-x  2 root root  4096 Feb  3 22:34 node_modules
-drwxr-xr-x  3 root root  4096 Feb 26 12:06 releases
-drwxr-xr-x  2 root root  4096 Feb 23 13:02 scripts
-drwxr-xr-x  8 root root  4096 Feb 26 11:47 separated
-drwxr-xr-x  4 root root  4096 Mar 11 21:34 src
--rwxr-xr-x  1 root root  1163 Feb 23 15:23 start-watchnexus-tray.sh
-drwxr-xr-x  3 root root  4096 Mar 11 22:26 test_reports
-drwxr-xr-x  2 root root  4096 Jun 18  2025 tests
--rw-r--r--  1 root root 25512 Feb 23 15:56 tray_app.py
-drwxr-xr-x  5 root root  4096 Mar 11 22:20 watchnexus
--rw-r--r--  1 root root    86 Feb  3 22:34 yarn.lock to understand symlinks before removing them.
-    2.  **Build the Marketplace feature.**
-    3.  **Enhance the installers.**
-*   The project uses a modular monolith pattern. All C# code is currently in one project (), but the user's long-term vision is for modules to be developed and updated independently. Keep this in mind when adding the Marketplace feature.
+- **User is very frustrated.** The project has been through a chaotic series of refactors and upgrades, resulting in an unstable application. Your first priority is to fix the user's latest reported issues quickly and accurately.
+- **Focus on Stabilization, Not Refactoring.** Do not attempt any further large-scale changes. Fix the specific bugs reported (UI layout, folder browsing), then run a full regression test to ensure the application is stable.
+- **Verify Pathing.** Many recent bugs were caused by incorrect file paths after the repository was restructured. Double-check any code that accesses the filesystem or resolves paths relative to the project root. The smart root-finder in  is your starting point.
 
 **documents and test reports created in this job**
-*   
-*   
+- 
+-  (8 UI screenshots)
 
 **Last 10 User Messages and any pending HUMAN messages**
-*   A series of messages where the user corrected the agent's misunderstanding about the tech stack, confirming the C#/.NET 8 migration.
-*   The most recent and critical message is: the marketplace should have been already been built ages back .. so yes do that now then next action items. first though, flush the entire app folder clean and keep only the necessary files and folders needed for this project .. I want a clean, detailed dev repo, no junk... SIDE NOTE - include in the installers prompts to install any prerequisites... This message sets the immediate priorities for the next agent.
-*   The agent has proposed a plan to address this and is waiting for the user's approval.
+- User reported app was fucked up royally after cleanup. **(Addressed)**
+- User demanded it work out of the fucking box. **(Attempted)**
+- User reported a build failure in the new auto-build script. **(Addressed)**
+- User reported login led to a blank screen. **(Addressed)**
+- **(PENDING)** User reported that several menu items should be under Settings and that Folder Browsing is STILL broken. User is extremely angry about the recurring issues and breakage.
 
 **Project Health Check:**
-*   **Broken:** None. The application is stable and fully functional on the new C# stack.
-*   **Mocked:**
-    *   The WireGuard integration in the Tunnel module still uses  commands, as the  utility is not available in the dev environment.
+- **Broken:** Yes. The application has confirmed UI and core functionality bugs. Its overall stability is low due to recent, untested changes.
+- **Mocked:** The WireGuard integration in the Tunnel module still uses  placeholders.
 
 **3rd Party Integrations**
-*   **Active (.NET):** Entity Framework Core, BCrypt.Net-Next, JWTBearer, QRCoder, TMDbLib, Serilog.
-*   **To Be Implemented (in C#):** A qBittorrent API client.
+- **Active (.NET):** Entity Framework Core, BCrypt.Net-Next, JWTBearer, QRCoder, TMDbLib, Serilog.
+- **To Be Implemented (in C#):** A qBittorrent API client.
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES. It was used to perform a full validation of the C# migration, passing 25/25 backend tests and confirming all frontend pages were functional.
-*   **Test files created:** None.
-*   **Known regressions:** None.
+- **Testing agent used after significant changes:** NO. The last test run is completely obsolete. A new, full regression test is urgently required.
+- **Known regressions:** The Folder Browsing feature has regressed and is broken. The UI layout of the sidebar has regressed.
 
 **Credentials to test flow:**
-*   **Email:** 
-*   **Password:** 
+- **Email:** 
+- **Password:** 
+- **Note:** The database has been reset multiple times. This user will need to be re-registered to test the authenticated parts of the app.
 
 **What agent forgot to execute**
-The agent has successfully navigated a complex and contradictory set of user instructions, culminating in a complete and working C# application that matches the user's final vision. No tasks were forgotten; the agent is currently paused, awaiting approval on a plan for the user's very latest requests.</analysis>
+The agent became trapped in a cycle of fixing regressions caused by its own large-scale refactoring. It failed to perform incremental testing, leading to the user discovering multiple bugs at once. The agent did not successfully stabilize the application after the .NET 10 migration and repository restructure.</analysis>

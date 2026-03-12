@@ -32,7 +32,18 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       const response = await axios.get(`${API}/users/me`);
-      setUser(response.data);
+      const d = response.data;
+      // Normalize PascalCase to lowercase for consistent access
+      const normalized = {
+        id: d.Id || d.id,
+        email: d.Email || d.email,
+        username: d.Username || d.username,
+        avatar: d.Avatar || d.avatar,
+        role: d.Role || d.role,
+        created_at: d.CreatedAt || d.created_at,
+        ...d,
+      };
+      setUser(normalized);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Failed to fetch user:', error);
