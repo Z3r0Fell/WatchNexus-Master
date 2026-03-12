@@ -121,8 +121,8 @@ ModuleLoader.MapAllRoutes(app);
 // ── Serve Frontend (SPA fallback) ─────────────────────────────
 var frontendSearchPaths = new[]
 {
-    Path.Combine(repoRoot, "src", "web", "build"),          // dev repo: src/web/build
-    Path.Combine(repoRoot, "frontend", "build"),            // alt: frontend/build
+    Path.Combine(repoRoot, "web", "build"),                    // repo root: web/build
+    Path.Combine(repoRoot, "frontend", "build"),               // alt: frontend/build
     Path.Combine(repoRoot, "web", "build"),                 // published: web/build
     Path.Combine(AppContext.BaseDirectory, "web", "build"),  // alongside binary
     Path.Combine(AppContext.BaseDirectory, "wwwroot"),        // standard ASP.NET
