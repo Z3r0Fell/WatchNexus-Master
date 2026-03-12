@@ -1,0 +1,11 @@
+{
+  "name": "Gelatin",
+  "codename": "gelatin",
+  "display_name": "Transcoding Engine",
+  "version": "2.6.5",
+  "description": "FFmpeg-based media transcoding with quality profiles",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": ["/api/gelatin/jobs", "/api/gelatin/transcode", "/api/gelatin/profiles"],
+  "frontend_pages": []
+}

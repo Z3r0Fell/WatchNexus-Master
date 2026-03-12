@@ -1,85 +1,47 @@
 # WatchNexus - Product Requirements Document
 
 ## Problem Statement
-Build a unified, self-hosted media pipeline called "WatchNexus". Single cohesive application with modular architecture where each module can be independently developed, updated, and installed.
+Build a unified, self-hosted media pipeline called "WatchNexus" with modular architecture where each module can be independently developed, updated, and released.
 
 ## Architecture (v2.6.5)
-- **Backend (C#):** .NET 10, ASP.NET Core, Entity Framework Core 10, SQLite
-- **Backend (Python):** Python 3 / FastAPI, MongoDB (dev environment)
+- **Backend:** C#/.NET 10, ASP.NET Core, Entity Framework Core 10, SQLite
 - **Frontend:** React 18, TailwindCSS, Shadcn UI, Framer Motion
-- **Auth:** JWT Bearer Tokens + Google OAuth
-- **Structure:** Unified modular monolith
+- **Auth:** JWT Bearer Tokens
+- **Structure:** Modular monolith with separated module projects
 
 ```
 src/
-├── server/        # Python FastAPI backend
-└── web/           # React SPA frontend
-watchnexus/
-├── core/          # C# ASP.NET Core (future migration)
-├── shared/        # Shared interfaces
-└── modules/       # Module manifests
+├── watchnexus/        # C#/.NET 10 backend
+│   ├── core/          # ASP.NET Core server
+│   ├── shared/        # Shared interfaces
+│   └── modules/       # Module manifests
+└── web/               # React SPA frontend
+
+separated/             # Standalone buildable module projects
+├── bastion/           # Security (full code)
+├── tunnel/            # VPN Portal (full code)
+├── marmalade/         # Library Manager (full code)
+├── zest/              # Log Viewer (full code)
+├── fondue/            # Downloads (full code)
+├── drizzle/           # Playlists (stub)
+├── compote/           # Indexers (stub)
+├── gelatin/           # Transcoding (stub)
+├── syrup/             # Scrapers (stub)
+└── beacon/            # System Tray (stub)
 ```
 
-## Module System
-Each module has a `module.json` manifest and can be independently:
-- Developed in its own repo
-- Updated by replacing the module folder
-- Installed by dropping into `modules/`
-
-### Built-in Modules (v3.0.0)
-| Codename | Module | Status |
-|----------|--------|--------|
-| Marmalade | Library Manager | Active |
-| Bastion | Security Module | Active |
-| Tunnel | VPN Portal | Active |
-| Zest | Log Viewer | Active |
-| Fondue | Download Manager | Active |
-| Gadgets | Marketplace | Active |
-| Drizzle | Playlist Engine | Planned |
-| Compote | Indexer Manager | Planned |
-| Gelatin | Transcoding | Planned |
-| Syrup | Scrapers | Planned |
-| Beacon | System Tray | Planned |
-
-## What's Implemented (March 11, 2026)
-
-### Python/FastAPI Backend (All endpoints 200)
-- Auth: register, login, JWT, Google OAuth, /auth/me
-- Libraries: CRUD, background scanning, TMDB metadata
-- Security (Bastion): audit logs, IP rules, API keys, sessions
-- VPN (Tunnel): server/peer config, WireGuard status (mocked in dev)
-- Settings: integrations (TMDB, qBittorrent)
-- Logs: file browser, latest entries, system health
-- Downloads: engine status
-- Dashboard: stats endpoint
-- Marketplace: gadgets catalogue (16 categories), Kodi repository, plugin management
-- Database reset: /api/db/reset endpoint
-- Bridge routes: /api/marmalade/*, /api/preferences, /api/dashboard
-
-### React Frontend (All pages load)
-- Dashboard with trending media, Browse Media (Netflix-style grid)
-- Library Manager, Movies, TV Shows, Anime, Music, Audiobooks
-- Marketplace/Plugins (4 tabs: Catalogue, Kodi Repo, Installed, Convert Plugin)
-- Settings > Integrations (TMDB + qBittorrent)
-- Security (Bastion), VPN Portal (Tunnel), System Health
-- Log Viewer, Downloads, Playlists, Streaming, Indexers
-- Weather, Podcasts, Radio, Photos, Web Video
-- Watch History, Watchlist, Discover, DVR
-
-### Infrastructure
-- Platform installers: Linux, macOS, Windows (with prerequisite checks)
-- Docker installer with docker-compose
-- Clean production database (v3.0.0-beta release ready)
-- Module manifest system with module.json
-
-## Test Credentials
-- Email: test@test.com / Password: password
+## What's Implemented (v2.6.5 — March 12, 2026)
+- C#/.NET 10 backend with 5 built-in modules
+- React frontend with all pages (marketplace, security, VPN, browse, libraries, etc.)
+- Platform installers (Linux, macOS, Windows, Docker, Unraid) with auto-start service
+- Separated module projects under /separated/ — each independently buildable
+- Project screenshots in docs/images/
+- Clean repo structure
 
 ## Remaining Backlog
-- P1: Implement qBittorrent C# client integration
-- P1: EF Core Migrations for C# backend
+- P1: qBittorrent C# client integration
+- P1: EF Core Migrations
 - P2: Cloud Sync ("Marshmallow") module
 - P2: Code Protection ("Fortress") module
 - P2: Native code-signed installers (MSIX, DMG)
 - P2: WebSocket real-time updates
-- P2: Avalonia UI desktop client
