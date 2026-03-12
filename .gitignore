@@ -331,3 +331,7 @@ web/node_modules/electron/dist/electron
 *.env
 *.env.*
 web/node_modules/.cache/default-development/0.pack
+-e 
+# Environment files
+*.env
+*.env.*
