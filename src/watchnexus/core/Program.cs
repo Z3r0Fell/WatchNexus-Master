@@ -148,6 +148,8 @@ else
 }
 
 // ── Start ─────────────────────────────────────────────────────
+var discovered = ModuleLoader.DiscoveredManifests.Count;
+var external = ModuleLoader.LoadedModules.Count;
 Console.WriteLine($"[WatchNexus] v2.6.5 starting on port {port}");
-Console.WriteLine($"[WatchNexus] Modules loaded: {ModuleLoader.LoadedModules.Count} external + 5 built-in");
+Console.WriteLine($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
 app.Run($"http://0.0.0.0:{port}");
