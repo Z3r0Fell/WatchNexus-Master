@@ -97,26 +97,37 @@ app.MapControllers();
 ModuleLoader.MapAllRoutes(app);
 
 // ── Serve Frontend (SPA fallback) ─────────────────────────────
-var webRoot = Path.Combine(AppContext.BaseDirectory, "..", "web", "build");
-if (Directory.Exists(webRoot))
+// Search multiple possible frontend locations
+var searchPaths = new[]
 {
+    Path.Combine(AppContext.BaseDirectory, "..", "web", "build"),       // dev: alongside project
+    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "src", "web", "build"), // repo root structure
+    Path.Combine(AppContext.BaseDirectory, "web", "build"),            // published alongside binary
+    Path.Combine(AppContext.BaseDirectory, "..", "frontend", "build"), // alternative naming
+    Path.Combine(AppContext.BaseDirectory, "wwwroot"),                 // standard ASP.NET convention
+};
+var webRoot = searchPaths.FirstOrDefault(p => Directory.Exists(p));
+if (webRoot != null)
+{
+    var fullPath = Path.GetFullPath(webRoot);
     app.UseStaticFiles(new StaticFileOptions
     {
-        FileProvider = new PhysicalFileProvider(webRoot),
+        FileProvider = new PhysicalFileProvider(fullPath),
         RequestPath = ""
     });
     app.MapFallbackToFile("index.html", new StaticFileOptions
     {
-        FileProvider = new PhysicalFileProvider(webRoot)
+        FileProvider = new PhysicalFileProvider(fullPath)
     });
-    Console.WriteLine($"[WatchNexus] Serving frontend from {webRoot}");
+    Console.WriteLine($"[WatchNexus] Serving frontend from {fullPath}");
 }
 else
 {
-    Console.WriteLine($"[WatchNexus] No frontend build found at {webRoot} - API only mode");
+    Console.WriteLine($"[WatchNexus] No frontend build found - API only mode");
+    Console.WriteLine($"[WatchNexus] Build frontend with: cd src/web && yarn build");
 }
 
 // ── Start ─────────────────────────────────────────────────────
-Console.WriteLine($"[WatchNexus] v3.0.0-beta starting on port {port}");
+Console.WriteLine($"[WatchNexus] v2.6.5 starting on port {port}");
 Console.WriteLine($"[WatchNexus] Modules loaded: {ModuleLoader.LoadedModules.Count} external + 5 built-in");
 app.Run($"http://0.0.0.0:{port}");
