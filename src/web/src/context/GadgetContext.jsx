@@ -26,13 +26,19 @@ export const GadgetProvider = ({ children }) => {
   };
 
   const refresh = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
+      const headers = { Authorization: `Bearer ${token}` };
       const [instRes, hooksRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/api/ripen/installed`, { headers: getAuth() }),
-        axios.get(`${BACKEND_URL}/api/ripen/hooks`, { headers: getAuth() }),
+        axios.get(`${BACKEND_URL}/api/ripen/installed`, { headers }),
+        axios.get(`${BACKEND_URL}/api/ripen/hooks`, { headers }),
       ]);
       setInstalled(instRes.data.gadgets || []);
-      setHooks(hooksRes.data || hooks);
+      setHooks(prev => hooksRes.data || prev);
     } catch (err) {
       console.error('Ripen: Failed to load gadgets:', err);
     } finally {
@@ -40,10 +46,30 @@ export const GadgetProvider = ({ children }) => {
     }
   }, []);
 
+  // Initial fetch + listen for storage changes (login/logout)
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) refresh();
-    else setLoading(false);
+    refresh();
+
+    // Re-fetch when token changes (login/logout events)
+    const handleStorage = (e) => {
+      if (e.key === 'token') refresh();
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // Also poll for token changes (same-tab login won't fire storage event)
+    let lastToken = localStorage.getItem('token');
+    const interval = setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+      if (currentToken !== lastToken) {
+        lastToken = currentToken;
+        refresh();
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
   }, [refresh]);
 
   const install = async (gadgetId) => {

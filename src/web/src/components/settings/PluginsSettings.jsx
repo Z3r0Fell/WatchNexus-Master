@@ -531,13 +531,26 @@ export const PluginsSettings = () => {
           {/* Ripen-installed gadgets */}
           {installed.length > 0 && (
             <>
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Catalogue Gadgets ({installed.length})</h3>
+              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Installed Gadgets ({installed.length})</h3>
               {installed.map((gadget) => {
-                const CatIcon = categoryIcons[gadget.category] || Package;
-                const gradient = categoryColors[gadget.category] || 'from-gray-500 to-gray-600';
+                const cat = gadget.category || gadget.plugin_type || 'system';
+                const CatIcon = categoryIcons[cat] || Package;
+                const gradient = categoryColors[cat] || 'from-gray-500 to-gray-600';
+                const active = isActive(gadget.gadget_id || gadget.id);
+                const badgeColors = {
+                  weather: 'bg-yellow-500/20 text-yellow-400',
+                  audio: 'bg-green-500/20 text-green-400',
+                  image: 'bg-fuchsia-500/20 text-fuchsia-400',
+                  video: 'bg-blue-500/20 text-blue-400',
+                  notification: 'bg-pink-500/20 text-pink-400',
+                  metadata: 'bg-indigo-500/20 text-indigo-400',
+                  system: 'bg-slate-500/20 text-slate-400',
+                  game: 'bg-red-500/20 text-red-400',
+                  service: 'bg-emerald-500/20 text-emerald-400',
+                };
                 return (
-                  <motion.div key={gadget.gadget_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`ripen-${gadget.gadget_id}`}>
+                  <motion.div key={gadget.gadget_id || gadget.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`ripen-${gadget.gadget_id || gadget.id}`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3 flex-1">
                         <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
@@ -547,33 +560,21 @@ export const PluginsSettings = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-medium">{gadget.name}</h3>
                             <span className="text-xs text-gray-500">v{gadget.version}</span>
-                            {gadget.hooks?.sidebar && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400">+ sidebar</span>
-                            )}
-                            {gadget.hooks?.route && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">+ page</span>
-                            )}
-                            {gadget.hooks?.settings_panel && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">+ settings</span>
-                            )}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badgeColors[cat] || 'bg-gray-500/20 text-gray-400'}`}>
+                              {cat}
+                            </span>
                           </div>
                           <p className="text-sm text-gray-400 line-clamp-1">{gadget.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className={`px-2 py-1 rounded-full text-xs ${
-                          gadget.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                          active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
                         }`}>
-                          {gadget.status === 'active' ? <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span> : <span>Inactive</span>}
+                          {active ? <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span> : <span>Inactive</span>}
                         </div>
-                        <Switch checked={gadget.status === 'active'}
-                          onCheckedChange={() => handleToggleGadget(gadget.gadget_id, gadget.status === 'active')} />
-                        <Button variant="ghost" size="icon"
-                          onClick={() => handleInstallGadget(gadget.gadget_id, gadget.name)}
-                          disabled={installingGadget === gadget.gadget_id}
-                          className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10">
-                          {installingGadget === gadget.gadget_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        </Button>
+                        <Switch checked={active}
+                          onCheckedChange={() => handleToggleGadget(gadget.gadget_id || gadget.id, active)} />
                       </div>
                     </div>
                   </motion.div>
@@ -582,62 +583,8 @@ export const PluginsSettings = () => {
             </>
           )}
 
-          {/* Legacy plugins (from filesystem) */}
-          {plugins.length > 0 && (
-            <>
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mt-6">Custom Gadgets ({plugins.length})</h3>
-              {plugins.map((plugin) => (
-              <motion.div key={plugin.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-xl p-4 hover:bg-white/10 transition-all" data-testid={`installed-${plugin.id}`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium">{plugin.name}</h3>
-                      <span className="text-xs text-gray-500">v{plugin.version}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${pluginTypeColors[plugin.plugin_type] || 'bg-gray-500/20 text-gray-400'}`}>
-                        {plugin.plugin_type?.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-2">{plugin.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>by {plugin.author}</span>
-                      {plugin.homepage && (
-                        <a href={plugin.homepage} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" /> Homepage
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`px-2 py-1 rounded-full text-xs ${
-                      plugin.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                      plugin.status === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
-                    }`}>
-                      {plugin.status === 'active' ? <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Active</span> :
-                       plugin.status === 'error' ? <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Error</span> : <span>Disabled</span>}
-                    </div>
-                    <Switch checked={plugin.status === 'active'} disabled={togglingPlugin === plugin.id}
-                      onCheckedChange={() => handleTogglePlugin(plugin.id, plugin.status)} />
-                    <Button variant="ghost" size="icon"
-                      onClick={() => handleUninstallPlugin(plugin.id, plugin.name)}
-                      disabled={uninstallingPlugin === plugin.id}
-                      className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      data-testid={`uninstall-${plugin.id}`}
-                    >
-                      {uninstallingPlugin === plugin.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-                {plugin.error_message && (
-                  <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{plugin.error_message}</div>
-                )}
-              </motion.div>
-              ))}
-            </>
-          )}
-
           {/* Empty state when nothing installed */}
-          {installed.length === 0 && plugins.length === 0 && !loadingPlugins && (
+          {installed.length === 0 && !loadingPlugins && (
             <div className="glass-card rounded-xl p-8 text-center">
               <Package className="w-16 h-16 mx-auto mb-4 text-gray-600" />
               <h3 className="text-lg font-semibold mb-2">No Gadgets Installed</h3>
