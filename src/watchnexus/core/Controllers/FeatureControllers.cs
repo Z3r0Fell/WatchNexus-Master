@@ -22,6 +22,11 @@ public class RipenController : ControllerBase
             new { id = "radio", name = "Radio", version = "1.0.0", status = "active" },
             new { id = "photos", name = "Photos", version = "1.0.0", status = "active" },
             new { id = "webvideo", name = "Web Video", version = "1.0.0", status = "active" },
+            new { id = "matrix", name = "Matrix", version = "1.0.0", status = "active" },
+            new { id = "jellyfin", name = "Jellyfin", version = "1.0.0", status = "active" },
+            new { id = "synapse-admin", name = "Synapse Admin", version = "1.0.0", status = "active" },
+            new { id = "gamebot", name = "GameBot", version = "1.0.0", status = "active" },
+            new { id = "bot", name = "Bot Service", version = "1.0.0", status = "active" },
         }
     });
 
