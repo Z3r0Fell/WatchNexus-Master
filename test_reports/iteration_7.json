@@ -1,0 +1,97 @@
+{
+  "summary": "WatchNexus v2.6.5 - All 3 user-reported issues verified fixed. 11/11 backend tests passed, all frontend UI tests passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "fix_1_gadgets_proper_names_icons": {
+      "status": "PASS",
+      "details": "GET /api/ripen/installed returns 10 gadgets with proper names (Weather, Podcasts, Internet Radio, etc.) and colored category icons"
+    },
+    "fix_1_gadgets_required_fields": {
+      "status": "PASS", 
+      "details": "Each gadget has gadget_id, name, version, status, category, description fields"
+    },
+    "fix_1_gadgets_valid_categories": {
+      "status": "PASS",
+      "details": "All gadgets have valid categories: weather, audio, image, video, notification, metadata, system, game, service"
+    },
+    "fix_2_toggle_deactivate_persists": {
+      "status": "PASS",
+      "details": "POST /api/ripen/deactivate/weather persists to DB, GET /api/ripen/installed shows status='inactive'"
+    },
+    "fix_2_toggle_activate_persists": {
+      "status": "PASS",
+      "details": "POST /api/ripen/activate/weather persists to DB, GET /api/ripen/installed shows status='active'"
+    },
+    "fix_2_toggle_roundtrip": {
+      "status": "PASS",
+      "details": "Full toggle cycle works: active -> inactive -> active with persistence"
+    },
+    "fix_3_crumbs_services_count": {
+      "status": "PASS",
+      "details": "GET /api/crumbs/services returns exactly 11 services"
+    },
+    "fix_3_no_jellyfin_in_crumbs": {
+      "status": "PASS",
+      "details": "Jellyfin is NOT in /api/crumbs/services (removed from registry)"
+    },
+    "fix_3_gadgets_category_correct": {
+      "status": "PASS",
+      "details": "Gadgets category contains only: openweathermap, matrix, synapse"
+    },
+    "frontend_users_label": {
+      "status": "PASS",
+      "details": "Settings sidebar shows 'Users' (not 'Users & Access')"
+    },
+    "frontend_gadgets_installed_display": {
+      "status": "PASS",
+      "details": "Gadgets > Installed shows 10 gadgets with colored icons, proper names, category badges"
+    },
+    "frontend_gadget_toggle_deactivate": {
+      "status": "PASS",
+      "details": "Clicking Weather switch: status changes to 'Inactive', switch changes to off (aria-checked=false)"
+    },
+    "frontend_gadget_toggle_activate": {
+      "status": "PASS",
+      "details": "Clicking Weather switch again: status changes to 'Active', switch changes to on (aria-checked=true)"
+    },
+    "frontend_api_management_no_jellyfin": {
+      "status": "PASS",
+      "details": "API Management > Gadgets section shows NO Jellyfin service entry"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ripen_toggle_persistence.py",
+    "/app/test_reports/pytest/pytest_v265_toggle.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All 3 user-reported issues properly fixed",
+    "RipenController correctly implements DB-persisted activate/deactivate using ripen_disabled_gadgets setting",
+    "Gadgets now have proper gadget_id, name, version, category, description fields for frontend icon/badge display",
+    "CrumbsController registry correctly excludes Jellyfin (11 services, gadgets category has only openweathermap, matrix, synapse)",
+    "GadgetContext auto-refreshes after login via polling for token changes"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ripen_toggle_persistence.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (all UI tests passed)"
+  },
+  "test_credentials": {
+    "email": "test@test.com",
+    "password": "password"
+  },
+  "seed_data_creation": "None - tested existing gadget data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "v2.6.5 user-reported issues all verified fixed. Fix 1: Gadgets now show proper names/icons/descriptions from /api/ripen/installed with gadget_id, category, description fields. Fix 2: Toggle persistence works via ripen_disabled_gadgets DB setting (deactivate adds to set, activate removes). Fix 3: Jellyfin removed from /api/crumbs/services registry (now 11 services, gadgets category has openweathermap, matrix, synapse only). Frontend Settings correctly shows 'Users' label and gadget toggles work with immediate status/switch state updates."
+}

@@ -12,23 +12,49 @@ namespace WatchNexus.Core.Controllers;
 [Authorize]
 public class RipenController : ControllerBase
 {
-    [HttpGet("installed")]
-    public IActionResult Installed() => Ok(new
+    private readonly AppDbContext _db;
+    public RipenController(AppDbContext db) => _db = db;
+
+    private static readonly List<Dictionary<string, string>> AllGadgets = new()
     {
-        gadgets = new[]
+        new() { ["gadget_id"] = "weather", ["name"] = "Weather", ["version"] = "1.0.0", ["category"] = "weather", ["description"] = "Weather dashboard powered by Open-Meteo" },
+        new() { ["gadget_id"] = "podcasts", ["name"] = "Podcasts", ["version"] = "1.0.0", ["category"] = "audio", ["description"] = "Podcast player with iTunes search and RSS feeds" },
+        new() { ["gadget_id"] = "radio", ["name"] = "Internet Radio", ["version"] = "1.0.0", ["category"] = "audio", ["description"] = "Live radio streams via Radio Browser API" },
+        new() { ["gadget_id"] = "photos", ["name"] = "Photo Gallery", ["version"] = "1.0.0", ["category"] = "image", ["description"] = "Browse and view photos from local libraries" },
+        new() { ["gadget_id"] = "webvideo", ["name"] = "Web Video", ["version"] = "1.0.0", ["category"] = "video", ["description"] = "Web video bookmarks, history, and YouTube info" },
+        new() { ["gadget_id"] = "matrix", ["name"] = "Matrix Chat", ["version"] = "1.0.0", ["category"] = "notification", ["description"] = "Matrix messaging, room management, and event sync" },
+        new() { ["gadget_id"] = "jellyfin", ["name"] = "Jellyfin Bridge", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "Browse and manage your Jellyfin media server library" },
+        new() { ["gadget_id"] = "synapse-admin", ["name"] = "Synapse Admin", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Synapse homeserver user, room, and media management" },
+        new() { ["gadget_id"] = "gamebot", ["name"] = "Movie Quiz", ["version"] = "1.0.0", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
+        new() { ["gadget_id"] = "bot", ["name"] = "Background Automation", ["version"] = "1.0.0", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
+    };
+
+    [HttpGet("installed")]
+    public async Task<IActionResult> Installed()
+    {
+        var userId = this.UserId();
+        var disabledSetting = await _db.Settings.FirstOrDefaultAsync(
+            s => s.UserId == userId && s.Key == "ripen_disabled_gadgets");
+        var disabled = new HashSet<string>();
+        if (disabledSetting?.Value != null)
         {
-            new { id = "weather", name = "Weather", version = "1.0.0", status = "active" },
-            new { id = "podcasts", name = "Podcasts", version = "1.0.0", status = "active" },
-            new { id = "radio", name = "Radio", version = "1.0.0", status = "active" },
-            new { id = "photos", name = "Photos", version = "1.0.0", status = "active" },
-            new { id = "webvideo", name = "Web Video", version = "1.0.0", status = "active" },
-            new { id = "matrix", name = "Matrix", version = "1.0.0", status = "active" },
-            new { id = "jellyfin", name = "Jellyfin", version = "1.0.0", status = "active" },
-            new { id = "synapse-admin", name = "Synapse Admin", version = "1.0.0", status = "active" },
-            new { id = "gamebot", name = "GameBot", version = "1.0.0", status = "active" },
-            new { id = "bot", name = "Bot Service", version = "1.0.0", status = "active" },
+            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(disabledSetting.Value) ?? disabled; }
+            catch { }
         }
-    });
+
+        var gadgets = AllGadgets.Select(g => new
+        {
+            gadget_id = g["gadget_id"],
+            id = g["gadget_id"],
+            name = g["name"],
+            version = g["version"],
+            status = disabled.Contains(g["gadget_id"]) ? "inactive" : "active",
+            category = g["category"],
+            description = g["description"],
+        }).ToList();
+
+        return Ok(new { gadgets });
+    }
 
     [HttpGet("hooks")]
     public IActionResult Hooks() => Ok(new
@@ -56,10 +82,38 @@ public class RipenController : ControllerBase
     public IActionResult Install(string gadgetId) => Ok(new { status = "installed", gadget_id = gadgetId });
     [HttpDelete("uninstall/{gadgetId}")]
     public IActionResult Uninstall(string gadgetId) => Ok(new { status = "uninstalled" });
+
     [HttpPost("activate/{gadgetId}")]
-    public IActionResult Activate(string gadgetId) => Ok(new { status = "activated" });
+    public async Task<IActionResult> Activate(string gadgetId)
+    {
+        var userId = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "ripen_disabled_gadgets");
+        var disabled = new HashSet<string>();
+        if (setting?.Value != null)
+            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(setting.Value) ?? disabled; } catch { }
+        disabled.Remove(gadgetId);
+        var json = JsonSerializer.Serialize(disabled);
+        if (setting != null) setting.Value = json;
+        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "ripen_disabled_gadgets", Value = json, UserId = userId });
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "activated", gadget_id = gadgetId });
+    }
+
     [HttpPost("deactivate/{gadgetId}")]
-    public IActionResult Deactivate(string gadgetId) => Ok(new { status = "deactivated" });
+    public async Task<IActionResult> Deactivate(string gadgetId)
+    {
+        var userId = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "ripen_disabled_gadgets");
+        var disabled = new HashSet<string>();
+        if (setting?.Value != null)
+            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(setting.Value) ?? disabled; } catch { }
+        disabled.Add(gadgetId);
+        var json = JsonSerializer.Serialize(disabled);
+        if (setting != null) setting.Value = json;
+        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "ripen_disabled_gadgets", Value = json, UserId = userId });
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deactivated", gadget_id = gadgetId });
+    }
 }
 
 // ── Milk (Theme engine) ──────────────────────────────────
