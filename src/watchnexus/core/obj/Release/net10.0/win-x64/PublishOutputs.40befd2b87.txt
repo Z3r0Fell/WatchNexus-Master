@@ -1,0 +1,5 @@
+/app/release/win-x64/appsettings.Development.json
+/app/release/win-x64/appsettings.json
+/app/release/win-x64/WatchNexus.Core.pdb
+/app/release/win-x64/WatchNexus.Shared.pdb
+/app/release/win-x64/WatchNexus.Core.exe

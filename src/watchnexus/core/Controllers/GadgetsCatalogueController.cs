@@ -16,6 +16,11 @@ public class GadgetsCatalogueController : ControllerBase
         new { id = "radio", name = "Radio", version = "1.0.0", author = "WatchNexus", status = "active", description = "Internet radio via Radio Browser" },
         new { id = "photos", name = "Photos", version = "1.0.0", author = "WatchNexus", status = "active", description = "Photo gallery from local filesystem" },
         new { id = "webvideo", name = "Web Video", version = "1.0.0", author = "WatchNexus", status = "active", description = "Web video bookmarks and history" },
+        new { id = "matrix", name = "Matrix", version = "1.0.0", author = "WatchNexus", status = "active", description = "Matrix messaging, rooms, and event sync" },
+        new { id = "jellyfin", name = "Jellyfin", version = "1.0.0", author = "WatchNexus", status = "active", description = "Jellyfin media server library and playback" },
+        new { id = "synapse-admin", name = "Synapse Admin", version = "1.0.0", author = "WatchNexus", status = "active", description = "Synapse homeserver administration" },
+        new { id = "gamebot", name = "GameBot", version = "1.0.0", author = "WatchNexus", status = "active", description = "Movie poster guessing games with image effects" },
+        new { id = "bot", name = "Bot Service", version = "1.0.0", author = "WatchNexus", status = "active", description = "Background automation: inactivity checks, token drip, featured film" },
     });
 
     [HttpGet("plugins/{id}")]

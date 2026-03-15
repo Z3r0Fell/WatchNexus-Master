@@ -355,3 +355,9 @@ web/node_modules/.cache/default-development/0.pack
 # Environment files
 *.env
 *.env.*
+release/watchnexus-2.6.5-win-x64/WatchNexus.Core.exe
+release/watchnexus-2.6.5-linux-x64/WatchNexus.Core
+release/watchnexus-2.6.5-linux-x64.tar.gz
+release/watchnexus-2.6.5-win-x64.tar.gz
+release/win-x64/WatchNexus.Core.exe
+release/linux-x64/WatchNexus.Core

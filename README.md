@@ -2,6 +2,8 @@
 
 > Unified, self-hosted media pipeline. Request, acquire, organize, and watch your media.
 
+**QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
+
 ## Repository Structure
 
 ```
@@ -103,6 +105,10 @@ All installers register WatchNexus as a **system service** that auto-starts on b
 - **Auth:** JWT Bearer Tokens
 - **Metadata:** TMDB API
 - **Downloads:** qBittorrent Web API
+
+## Testing
+
+**QA Dashboard & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
 
 ## License
 

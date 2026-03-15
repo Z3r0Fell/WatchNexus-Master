@@ -1,0 +1,5 @@
+/app/release/linux-x64/appsettings.Development.json
+/app/release/linux-x64/appsettings.json
+/app/release/linux-x64/WatchNexus.Core.pdb
+/app/release/linux-x64/WatchNexus.Shared.pdb
+/app/release/linux-x64/WatchNexus.Core
