@@ -6,6 +6,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Churro (qBittorrent) ────────────────────────────────────
 [Route("api/qbittorrent")]
 [ApiController]
 [Authorize]

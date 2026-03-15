@@ -29,6 +29,13 @@
 - Updated `Program.cs` startup banner to v2.7.3
 - Updated CoreController, SystemController, CrumbsController, SubtitlesController User-Agent
 
+### Codename Directory
+- Assigned codenames to all 16 previously unnamed components
+- Gadgets: Sorbet (Weather), Brioche (Podcasts), Nectar (Radio), Ganache (Photos), Bisque (Web Video), Marzipan (Matrix), Praline (Jellyfin), Cinnamon (Synapse), Waffle (Movie Quiz), Yeast (Background Automation)
+- Core: Sourdough (Auth), Taffy (IPTV), Churro (qBittorrent), Saffron (Subtitles), Pantry (Filesystem), Nutmeg (System Stats)
+- All codenames exposed via `/api/ripen/installed` and `/api/info` endpoints
+- Frontend gadget settings now display codename badges
+
 ### Release Builds
 - Fresh Windows x64 and Linux x64 self-contained archives at `/app/release_builds/`
 - Includes separated modules, frontend, installer scripts, systemd service, PKGBUILD

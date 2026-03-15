@@ -41,6 +41,25 @@ public class CoreController : ControllerBase
             new { name = "Tunnel", codename = "tunnel", version = "2.7.3", status = "active" },
             new { name = "Zest", codename = "zest", version = "2.7.3", status = "active" },
             new { name = "Fondue", codename = "fondue", version = "2.7.3", status = "active" },
+            new { name = "Sorbet", codename = "sorbet", version = "2.7.3", status = "active" },
+            new { name = "Brioche", codename = "brioche", version = "2.7.3", status = "active" },
+            new { name = "Nectar", codename = "nectar", version = "2.7.3", status = "active" },
+            new { name = "Ganache", codename = "ganache", version = "2.7.3", status = "active" },
+            new { name = "Bisque", codename = "bisque", version = "2.7.3", status = "active" },
+            new { name = "Marzipan", codename = "marzipan", version = "2.7.3", status = "active" },
+            new { name = "Praline", codename = "praline", version = "2.7.3", status = "active" },
+            new { name = "Cinnamon", codename = "cinnamon", version = "2.7.3", status = "active" },
+            new { name = "Waffle", codename = "waffle", version = "2.7.3", status = "active" },
+            new { name = "Yeast", codename = "yeast", version = "2.7.3", status = "active" },
+            new { name = "Sourdough", codename = "sourdough", version = "2.7.3", status = "active" },
+            new { name = "Taffy", codename = "taffy", version = "2.7.3", status = "active" },
+            new { name = "Churro", codename = "churro", version = "2.7.3", status = "active" },
+            new { name = "Saffron", codename = "saffron", version = "2.7.3", status = "active" },
+            new { name = "Pantry", codename = "pantry", version = "2.7.3", status = "active" },
+            new { name = "Nutmeg", codename = "nutmeg", version = "2.7.3", status = "active" },
+            new { name = "Crumbs", codename = "crumbs", version = "2.7.3", status = "active" },
+            new { name = "Fortress", codename = "fortress", version = "2.7.3", status = "active" },
+            new { name = "Ripen", codename = "ripen", version = "2.7.3", status = "active" },
         };
 
         return Ok(new
@@ -58,6 +77,7 @@ public class CoreController : ControllerBase
     }
 }
 
+// ── Sourdough (Auth) ────────────────────────────────────────
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase

@@ -6,6 +6,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Sorbet (Weather) ────────────────────────────────────────
 [Route("api/gadgets/weather")]
 [ApiController]
 [Authorize]

@@ -60,7 +60,7 @@ WatchNexus/
 | Security | **Bastion** | Audit logs, IP filtering, API keys, session management |
 | VPN Portal | **Tunnel** | WireGuard server/peer management, QR configs |
 | Downloads | **Fondue** | Built-in torrent engine + qBittorrent integration |
-| Marketplace | **Gadgets** | Module marketplace, Kodi repository, plugin management |
+| Marketplace | **Ripen** | Module marketplace, Kodi repository, plugin management |
 | Playlists | **Drizzle** | Queue management, playlists, skip markers |
 | Indexers | **Compote** | Torrent indexer management, search |
 | Transcoding | **Gelatin** | Media transcoding and quality profiles |
@@ -69,6 +69,22 @@ WatchNexus/
 | Tray App | **Beacon** | System tray controller for desktop |
 | API Management | **Crumbs** | Centralized API key management for 11 services |
 | Code Protection | **Fortress** | Assembly integrity, anti-tampering, license validation |
+| Weather | **Sorbet** | Weather dashboard powered by Open-Meteo |
+| Podcasts | **Brioche** | Podcast player with iTunes search and RSS feeds |
+| Internet Radio | **Nectar** | Live radio streams via Radio Browser API |
+| Photo Gallery | **Ganache** | Browse and view photos from local libraries |
+| Web Video | **Bisque** | Web video bookmarks, history, and YouTube info |
+| Matrix Chat | **Marzipan** | Matrix messaging, room management, and event sync |
+| Jellyfin Bridge | **Praline** | Browse and manage your Jellyfin media server library |
+| Synapse Admin | **Cinnamon** | Synapse homeserver user, room, and media management |
+| Movie Quiz | **Waffle** | Guess-the-poster games with blur and reveal effects |
+| Background Automation | **Yeast** | Inactivity checks, token drip, featured film rotation |
+| Auth | **Sourdough** | JWT authentication, registration, session management |
+| IPTV | **Taffy** | Live TV channel streams and EPG management |
+| qBittorrent | **Churro** | Torrent client integration and download management |
+| Subtitles | **Saffron** | Subtitle search and download from OpenSubtitles |
+| Filesystem | **Pantry** | File and directory browser for media storage |
+| System Stats | **Nutmeg** | CPU, memory, disk, and process monitoring |
 
 ## Fortress Security
 

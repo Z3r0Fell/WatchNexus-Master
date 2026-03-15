@@ -13,6 +13,7 @@ namespace WatchNexus.Core.Controllers;
 /// Handles: sending messages, room management, event handling, user lookup.
 /// Uses the Matrix Client-Server API v1.1+ via HttpClient.
 /// </summary>
+// ── Marzipan (Matrix Chat) ──────────────────────────────────
 [Route("api/gadgets/matrix")]
 [ApiController]
 [Authorize]

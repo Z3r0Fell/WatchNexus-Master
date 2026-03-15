@@ -10,6 +10,7 @@ namespace WatchNexus.Core.Controllers;
 /// Bot status controller — exposes data from the BotBackgroundService.
 /// Provides: inactivity reports, featured film, token drip status.
 /// </summary>
+// ── Yeast (Background Automation) ───────────────────────────
 [Route("api/gadgets/bot")]
 [ApiController]
 [Authorize]

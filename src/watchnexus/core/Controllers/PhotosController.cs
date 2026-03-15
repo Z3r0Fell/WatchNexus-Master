@@ -6,6 +6,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Ganache (Photo Gallery) ─────────────────────────────────
 [Route("api/gadgets/photos")]
 [ApiController]
 [Authorize]

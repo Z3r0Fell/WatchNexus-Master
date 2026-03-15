@@ -12,6 +12,7 @@ namespace WatchNexus.Core.Controllers;
 /// Jellyfin Media Server gadget — C# port of aiohttp-based Jellyfin API calls.
 /// Handles: library browsing, playback info, user sessions, server info.
 /// </summary>
+// ── Praline (Jellyfin Bridge) ───────────────────────────────
 [Route("api/gadgets/jellyfin")]
 [ApiController]
 [Authorize]
