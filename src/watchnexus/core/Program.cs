@@ -79,15 +79,21 @@ if (!Directory.Exists(modulesPath))
     modulesPath = Path.Combine(repoRoot, "modules"); // published layout
 ModuleLoader.DiscoverAndRegister(builder.Services, modulesPath);
 
+// ── Load separated modules (dynamic DLL compilation & loading) ─
+var separatedPath = Path.Combine(repoRoot, "separated");
+if (!Directory.Exists(separatedPath))
+    separatedPath = Path.Combine(repoRoot, "src", "separated"); // alt layout
+ModuleLoader.CompileAndLoadSeparated(builder.Services, separatedPath);
+
 // ── Build app ─────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── Init Database ─────────────────────────────────────────────
+// ── Init Database (EF Core Migrations) ────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
-    Console.WriteLine($"[WatchNexus] Database initialized at {dbPath}");
+    db.Database.Migrate();
+    Console.WriteLine($"[WatchNexus] Database migrated and ready at {dbPath}");
 }
 
 // ── Logging directory ─────────────────────────────────────────
@@ -168,9 +174,13 @@ if (webRoot != null)
     });
 }
 
+// ── Fortress: Runtime integrity checks ────────────────────────
+Fortress.Initialize(app);
+
 // ── Start ─────────────────────────────────────────────────────
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
-Console.WriteLine($"[WatchNexus] v2.6.5 starting on port {port}");
-Console.WriteLine($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
+var separated = ModuleLoader.SeparatedModules.Count;
+Console.WriteLine($"[WatchNexus] v2.7.3 starting on port {port}");
+Console.WriteLine($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {separated} separated, {discovered - external - separated} built-in)");
 app.Run($"http://0.0.0.0:{port}");

@@ -103,7 +103,7 @@ public class FondueModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Fondue", Codename = "fondue",
-        DisplayName = "Download Manager", Version = "2.6.5",
+        DisplayName = "Download Manager", Version = "2.7.3",
         Description = "Built-in download engine and qBittorrent integration",
     };
     public void ConfigureServices(IServiceCollection services) { }

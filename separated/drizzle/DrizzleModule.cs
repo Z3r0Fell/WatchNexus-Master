@@ -67,7 +67,7 @@ public class DrizzleModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Drizzle", Codename = "drizzle",
-        DisplayName = "Playlist Engine", Version = "2.6.5",
+        DisplayName = "Playlist Engine", Version = "2.7.3",
         Description = "Continuous playback, queue management, and playlist creation",
     };
     public void ConfigureServices(IServiceCollection services) { }

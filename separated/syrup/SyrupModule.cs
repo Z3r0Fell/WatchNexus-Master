@@ -45,7 +45,7 @@ public class SyrupModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Syrup", Codename = "syrup",
-        DisplayName = "Live Scrapers", Version = "2.6.5",
+        DisplayName = "Live Scrapers", Version = "2.7.3",
         Description = "IPTV and live content scraper engine",
     };
     public void ConfigureServices(IServiceCollection services) { }

@@ -56,7 +56,7 @@ public class GelatinModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Gelatin", Codename = "gelatin",
-        DisplayName = "Transcoding Engine", Version = "2.6.5",
+        DisplayName = "Transcoding Engine", Version = "2.7.3",
         Description = "FFmpeg-based media transcoding with quality profiles",
     };
     public void ConfigureServices(IServiceCollection services) { }

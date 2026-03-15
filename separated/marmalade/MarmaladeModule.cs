@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using WatchNexus.Shared;
 
@@ -216,7 +217,7 @@ public class MarmaladeModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Marmalade", Codename = "marmalade",
-        DisplayName = "Library Manager", Version = "2.6.5",
+        DisplayName = "Library Manager", Version = "2.7.3",
         Description = "Media library scanning with TMDB metadata enrichment and file system traversal",
     };
     public void ConfigureServices(IServiceCollection services) { }

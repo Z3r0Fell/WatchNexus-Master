@@ -1,0 +1,15 @@
+/app/separated/compote/bin/Release/net10.0/WatchNexus.Compote.deps.json
+/app/separated/compote/bin/Release/net10.0/WatchNexus.Compote.dll
+/app/separated/compote/bin/Release/net10.0/WatchNexus.Compote.pdb
+/app/separated/compote/bin/Release/net10.0/WatchNexus.Shared.dll
+/app/separated/compote/bin/Release/net10.0/WatchNexus.Shared.pdb
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.csproj.AssemblyReference.cache
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.GeneratedMSBuildEditorConfig.editorconfig
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.AssemblyInfoInputs.cache
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.AssemblyInfo.cs
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.csproj.CoreCompileInputs.cache
+/app/separated/compote/obj/Release/net10.0/WatchNex.C8BFCCB5.Up2Date
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.dll
+/app/separated/compote/obj/Release/net10.0/refint/WatchNexus.Compote.dll
+/app/separated/compote/obj/Release/net10.0/WatchNexus.Compote.pdb
+/app/separated/compote/obj/Release/net10.0/ref/WatchNexus.Compote.dll

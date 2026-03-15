@@ -193,7 +193,7 @@ public class TunnelModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Tunnel", Codename = "tunnel",
-        DisplayName = "VPN Portal", Version = "2.6.5",
+        DisplayName = "VPN Portal", Version = "2.7.3",
         Description = "WireGuard VPN server and peer management with QR code config generation",
     };
     public void ConfigureServices(IServiceCollection services) { }

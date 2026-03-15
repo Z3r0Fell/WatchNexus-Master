@@ -1,5 +1,32 @@
 # WatchNexus Changelog
 
+## 2026-03-15 - v2.7.3
+
+### P0: EF Core Migrations
+- Replaced `EnsureCreated()` with proper EF Core migration strategy
+- Added `Microsoft.EntityFrameworkCore.Design` package
+- Created initial migration (`20260315_InitialCreate`) in `Data/Migrations/`
+- Startup now uses `Database.Migrate()` for versioned, incremental schema management
+
+### P1: Dynamic Module Loading
+- Enhanced `ModuleLoader` to compile and load separated modules from `/app/separated/`
+- Automatic `dotnet build` of module `.csproj` files at startup
+- Isolated `AssemblyLoadContext` per module to prevent type conflicts
+- Module status API (`GetModuleStatus()`) for health/diagnostic endpoints
+- All 10 separated modules now compile and load successfully
+
+### P2: Fortress Code Protection
+- Assembly integrity verification via SHA-256 hash baselines
+- Runtime anti-tampering checks (periodic on every 100th API request)
+- License/activation validation with machine-specific instance IDs
+- Auto-lockout middleware blocks API access if tampering detected
+- Endpoints: `/api/fortress/status`, `/api/fortress/verify`
+- Persistent config and baseline storage in `data/fortress/`
+
+### P3: Version Bump
+- Updated all module manifests and source files to v2.7.3
+- Updated `Program.cs` startup banner to v2.7.3
+
 ## 2026-03-15 - v2.6.5 (Fork Session)
 
 ### P0: Crumbs API Management Module

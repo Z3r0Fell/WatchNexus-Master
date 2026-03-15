@@ -1,0 +1,15 @@
+/app/separated/beacon/bin/Release/net10.0/WatchNexus.Beacon.deps.json
+/app/separated/beacon/bin/Release/net10.0/WatchNexus.Beacon.dll
+/app/separated/beacon/bin/Release/net10.0/WatchNexus.Beacon.pdb
+/app/separated/beacon/bin/Release/net10.0/WatchNexus.Shared.dll
+/app/separated/beacon/bin/Release/net10.0/WatchNexus.Shared.pdb
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.csproj.AssemblyReference.cache
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.GeneratedMSBuildEditorConfig.editorconfig
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.AssemblyInfoInputs.cache
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.AssemblyInfo.cs
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.csproj.CoreCompileInputs.cache
+/app/separated/beacon/obj/Release/net10.0/WatchNex.CF15AA7F.Up2Date
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.dll
+/app/separated/beacon/obj/Release/net10.0/refint/WatchNexus.Beacon.dll
+/app/separated/beacon/obj/Release/net10.0/WatchNexus.Beacon.pdb
+/app/separated/beacon/obj/Release/net10.0/ref/WatchNexus.Beacon.dll

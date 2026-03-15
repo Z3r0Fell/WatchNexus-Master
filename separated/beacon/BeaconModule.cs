@@ -23,7 +23,7 @@ public class BeaconController : ControllerBase
     public IActionResult Status() => Ok(new
     {
         server_running = true,
-        version = "2.6.5",
+        version = "2.7.3",
         uptime = (DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalSeconds,
         pid = Environment.ProcessId,
     });
@@ -50,7 +50,7 @@ public class BeaconModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Beacon", Codename = "beacon",
-        DisplayName = "System Tray Application", Version = "2.6.5",
+        DisplayName = "System Tray Application", Version = "2.7.3",
         Description = "Desktop system tray controller for server management and quick access",
     };
     public void ConfigureServices(IServiceCollection services) { }

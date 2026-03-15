@@ -2,7 +2,7 @@
   "name": "Bastion",
   "codename": "bastion",
   "display_name": "Security Module",
-  "version": "2.6.5",
+  "version": "2.7.3",
   "description": "Audit logging, IP filtering, API key management, session tracking, OWASP headers",
   "author": "WatchNexus",
   "dependencies": ["core"],

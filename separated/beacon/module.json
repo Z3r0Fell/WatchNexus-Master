@@ -2,7 +2,7 @@
   "name": "Beacon",
   "codename": "beacon",
   "display_name": "System Tray Application",
-  "version": "2.6.5",
+  "version": "2.7.3",
   "description": "Desktop system tray controller for server management and quick access",
   "author": "WatchNexus",
   "dependencies": ["core"],

@@ -174,7 +174,7 @@ public class BastionModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Bastion", Codename = "bastion",
-        DisplayName = "Security Module", Version = "2.6.5",
+        DisplayName = "Security Module", Version = "2.7.3",
         Description = "Audit logging, IP filtering, API key management, session tracking",
     };
     public void ConfigureServices(IServiceCollection services) { }

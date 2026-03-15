@@ -20,13 +20,13 @@ public class LogController : ControllerBase
             return Ok(new { logs = Array.Empty<object>(), total = 0 });
 
         var files = Directory.GetFiles(logDir, "*.log")
-            .OrderByDescending(File.GetLastWriteTimeUtc)
+            .OrderByDescending(f => System.IO.File.GetLastWriteTimeUtc(f))
             .Skip(offset).Take(limit)
             .Select(f => new
             {
                 name = Path.GetFileName(f),
                 size = new FileInfo(f).Length,
-                modified = File.GetLastWriteTimeUtc(f),
+                modified = System.IO.File.GetLastWriteTimeUtc(f),
             }).ToList();
 
         return Ok(new { logs = files, total = files.Count });
@@ -65,7 +65,7 @@ public class ZestModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Zest", Codename = "zest",
-        DisplayName = "Log Viewer", Version = "2.6.5",
+        DisplayName = "Log Viewer", Version = "2.7.3",
         Description = "Application log browser, system diagnostics, and health monitoring",
     };
     public void ConfigureServices(IServiceCollection services) { }

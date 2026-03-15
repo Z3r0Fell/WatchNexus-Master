@@ -43,7 +43,7 @@ public class CompoteModule : IWatchNexusModule
     public ModuleManifest Manifest => new()
     {
         Name = "Compote", Codename = "compote",
-        DisplayName = "Indexer Manager", Version = "2.6.5",
+        DisplayName = "Indexer Manager", Version = "2.7.3",
         Description = "Torrent indexer management and search aggregation",
     };
     public void ConfigureServices(IServiceCollection services) { }
