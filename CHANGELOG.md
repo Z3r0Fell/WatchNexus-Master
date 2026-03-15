@@ -1,64 +1,45 @@
 # WatchNexus Changelog
 
-## v2.6.5 (March 12, 2026)
+## 2026-03-15 - v2.6.5 (Fork Session)
 
-### Auto-Start Service Registration
-- **Linux:** systemd service (`watchnexus.service`) enabled at boot via `multi-user.target`
-- **macOS:** LaunchDaemon (`ca.watchnexus.server.plist`) starts WatchNexus at system boot, before login
-- **Windows:** Scheduled Task runs at startup under current user, with auto-restart on failure
-- **Docker:** `restart: unless-stopped` ensures container survives reboots
-- All platforms: service auto-recovers after power failure or unexpected shutdown
+### P0: Crumbs API Management Module
+- Created CrumbsSettings.jsx frontend with categorized service list, editor panel, test/save/delete
+- Fixed CrumbsController.cs build error (anonymous type mismatch in service registry)
+- Replaced IntegrationsSettings with CrumbsSettings in SettingsPage.js
+- Renamed "TMDB & Downloads" tab to "API Management"
+- 12 services: TMDB, OpenSubtitles, Addic7ed, Subscene, Podnapisi, YIFY, qBittorrent, OpenWeatherMap, Matrix, Jellyfin, Synapse Admin, OMDB
 
-### .NET 10 Upgrade
-- All C# projects target `net10.0`
-- NuGet packages updated: EF Core 10.0.4, JwtBearer 10.0.4, OpenApi 10.0.4, Swashbuckle 10.1.5
+### P1: Controller Refactoring
+- Split 1970-line ExtendedControllers.cs into 12+ individual files:
+  - Helpers.cs, WeatherController.cs, PodcastsController.cs, RadioController.cs
+  - PhotosController.cs, WebVideoController.cs, GadgetsCatalogueController.cs
+  - IptvController.cs, SubtitlesController.cs, DrizzleController.cs
+  - SystemController.cs, FeatureControllers.cs, MediaControllers.cs
+  - QBittorrentController.cs, UtilityControllers.cs
+- Removed ExtendedControllers.cs monolith
 
-### Installer Enhancements
-- All platform installers now include prerequisite detection with clear status table
-- Interactive prompts to auto-install missing dependencies
-- Version unified to 2.6.5 across all platforms
+### Matrix/Jellyfin Bot System (Python → C# Port)
+- **MatrixController.cs** - Matrix Client-Server API: config, rooms, messaging, sync, members, user search
+- **JellyfinController.cs** - Jellyfin API: config, library, items, images, sessions, users, OMDB lookup
+- **SynapseAdminController.cs** - Synapse Admin API: users, rooms, media, purge, registration tokens
+- **GameBotController.cs** - Image processing via SixLabors.ImageSharp: blur, progressive reveal, pixelate, grayscale, resize, quiz generation
+- **BotBackgroundService.cs** - IHostedService with 30-min loop: inactivity check, token drip, featured film rotation
+- **BotController.cs** - Status/data endpoints for background service results
 
-## v3.0.0-beta (March 11, 2026)
+### Release Builds
+- Created /app/scripts/build-release.sh for Windows x64 and Arch Linux x64
+- Windows: self-contained .exe, start-watchnexus.bat, install-service.ps1
+- Arch Linux: self-contained binary, systemd service, install.sh, PKGBUILD
+- Both include QA link in READMEs
 
-### BREAKING: Full C#/.NET 10 Migration
-- **Replaced entire Python/FastAPI backend** with C#/.NET 10 ASP.NET Core
-- Entity Framework Core 10 with SQLite database
-- JWT Bearer authentication via Microsoft.AspNetCore.Authentication.JwtBearer
-- All API endpoints ported and verified (25/25 tests passed)
+### Testing
+- iteration_4.json: 24/24 backend + frontend = 100%
+- iteration_5.json: 31/31 backend + frontend = 100%
+- Added SixLabors.ImageSharp 3.1.12 NuGet package
 
-### Unified Modular Architecture
-- Created `watchnexus/` unified project structure
-- `core/` - Main C# server with controllers, auth, DB
-- `shared/` - IWatchNexusModule interface for plugin system
-- `modules/` - Drop-in module directory with module.json manifests
-- ModuleLoader: discovers and registers external .NET assembly modules
-- 10 module manifests created (marmalade, bastion, tunnel, zest, fondue, drizzle, compote, gelatin, syrup, beacon)
-
-### New Features
-- **Netflix-style Media Browser** (`/browse`): Poster grid with TMDB art, search, detail modal with backdrop/overview/genres
-- **Dashboard API** (`/api/dashboard`): Stats, recent media
-- **Preferences API** (`/api/preferences`): User settings persistence
-- **Marmalade Bridge** (`/api/marmalade/*`): Legacy endpoint compatibility
-
-### Clean Database
-- Production database wiped clean for v3.0.0-beta release
-- No test data - fresh start
-
-### Installers Updated for .NET
-- Docker: Multi-stage build with dotnet SDK + aspnet runtime
-- Linux: .NET 10 runtime installer with prerequisite checks
-- Windows: .NET 10 runtime check + dotnet publish with prerequisite checks
-- macOS: .NET 10 + .app bundle
-- Unraid: Docker template
-
-### File Cleanup
-- Removed legacy Python capture/marketing scripts
-- Removed duplicate /app/src/web, /app/src/dotnet directories
-- Disabled broken dotnet supervisor entry
-- Cleaned root directory
-
-## v2.8.0 (March 11, 2026)
-- TMDB integration, qBittorrent settings, library scanning
-- Security module (Bastion), VPN module (Tunnel)
-- Background scan jobs, system info endpoint
-- Platform installers (Docker, Linux, Windows, macOS, Unraid)
+### Infrastructure
+- Installed .NET 10 SDK/runtime in forked environment
+- Added BotBackgroundService registration in Program.cs
+- Updated GadgetsCatalogue to 10 plugins
+- Updated Ripen installed list to 10 gadgets
+- README.md updated with QA link at top and bottom
