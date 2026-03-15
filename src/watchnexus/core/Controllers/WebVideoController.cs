@@ -6,6 +6,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Bisque (Web Video) ──────────────────────────────────────
 [Route("api/gadgets/webvideo")]
 [ApiController]
 [Authorize]

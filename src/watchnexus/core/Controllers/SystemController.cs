@@ -5,6 +5,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Nutmeg (System Stats) ───────────────────────────────────
 [Route("api/system")]
 [ApiController]
 [Authorize]

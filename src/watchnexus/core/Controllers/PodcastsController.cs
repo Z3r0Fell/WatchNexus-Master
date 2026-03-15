@@ -8,6 +8,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Brioche (Podcasts) ──────────────────────────────────────
 [Route("api/gadgets/podcasts")]
 [ApiController]
 [Authorize]

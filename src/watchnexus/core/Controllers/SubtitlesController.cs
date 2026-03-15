@@ -6,6 +6,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Saffron (Subtitles) ─────────────────────────────────────
 [Route("api/subtitles")]
 [ApiController]
 [Authorize]

@@ -559,6 +559,7 @@ export const PluginsSettings = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-medium">{gadget.name}</h3>
+                            {gadget.codename && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-mono">{gadget.codename}</span>}
                             <span className="text-xs text-gray-500">v{gadget.version}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badgeColors[cat] || 'bg-gray-500/20 text-gray-400'}`}>
                               {cat}

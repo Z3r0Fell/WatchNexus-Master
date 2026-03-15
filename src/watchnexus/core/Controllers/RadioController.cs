@@ -6,6 +6,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Nectar (Internet Radio) ─────────────────────────────────
 [Route("api/gadgets/radio")]
 [ApiController]
 [Authorize]

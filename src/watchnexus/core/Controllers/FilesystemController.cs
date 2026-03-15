@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Pantry (Filesystem) ─────────────────────────────────────
 [Route("api/filesystem")]
 [ApiController]
 [Authorize]

@@ -13,6 +13,7 @@ namespace WatchNexus.Core.Controllers;
 /// Handles: user management, room administration, server statistics, purge history.
 /// Uses the Synapse Admin API via HttpClient.
 /// </summary>
+// ── Cinnamon (Synapse Admin) ────────────────────────────────
 [Route("api/gadgets/synapse-admin")]
 [ApiController]
 [Authorize]

@@ -14,6 +14,7 @@ namespace WatchNexus.Core.Controllers;
 /// Handles: poster blurring, progressive reveal, quiz generation.
 /// Uses SixLabors.ImageSharp (replaces Pillow).
 /// </summary>
+// ── Waffle (Movie Quiz) ─────────────────────────────────────
 [Route("api/gadgets/gamebot")]
 [ApiController]
 [Authorize]

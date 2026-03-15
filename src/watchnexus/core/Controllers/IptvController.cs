@@ -7,6 +7,7 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// ── Taffy (IPTV) ────────────────────────────────────────────
 [Route("api/iptv")]
 [ApiController]
 [Authorize]

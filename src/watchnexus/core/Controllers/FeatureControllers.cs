@@ -17,16 +17,16 @@ public class RipenController : ControllerBase
 
     private static readonly List<Dictionary<string, string>> AllGadgets = new()
     {
-        new() { ["gadget_id"] = "weather", ["name"] = "Weather", ["version"] = "1.0.0", ["category"] = "weather", ["description"] = "Weather dashboard powered by Open-Meteo" },
-        new() { ["gadget_id"] = "podcasts", ["name"] = "Podcasts", ["version"] = "1.0.0", ["category"] = "audio", ["description"] = "Podcast player with iTunes search and RSS feeds" },
-        new() { ["gadget_id"] = "radio", ["name"] = "Internet Radio", ["version"] = "1.0.0", ["category"] = "audio", ["description"] = "Live radio streams via Radio Browser API" },
-        new() { ["gadget_id"] = "photos", ["name"] = "Photo Gallery", ["version"] = "1.0.0", ["category"] = "image", ["description"] = "Browse and view photos from local libraries" },
-        new() { ["gadget_id"] = "webvideo", ["name"] = "Web Video", ["version"] = "1.0.0", ["category"] = "video", ["description"] = "Web video bookmarks, history, and YouTube info" },
-        new() { ["gadget_id"] = "matrix", ["name"] = "Matrix Chat", ["version"] = "1.0.0", ["category"] = "notification", ["description"] = "Matrix messaging, room management, and event sync" },
-        new() { ["gadget_id"] = "jellyfin", ["name"] = "Jellyfin Bridge", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "Browse and manage your Jellyfin media server library" },
-        new() { ["gadget_id"] = "synapse-admin", ["name"] = "Synapse Admin", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Synapse homeserver user, room, and media management" },
-        new() { ["gadget_id"] = "gamebot", ["name"] = "Movie Quiz", ["version"] = "1.0.0", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
-        new() { ["gadget_id"] = "bot", ["name"] = "Background Automation", ["version"] = "1.0.0", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
+        new() { ["gadget_id"] = "weather", ["codename"] = "sorbet", ["name"] = "Weather", ["version"] = "1.0.0", ["category"] = "weather", ["description"] = "Weather dashboard powered by Open-Meteo" },
+        new() { ["gadget_id"] = "podcasts", ["codename"] = "brioche", ["name"] = "Podcasts", ["version"] = "1.0.0", ["category"] = "audio", ["description"] = "Podcast player with iTunes search and RSS feeds" },
+        new() { ["gadget_id"] = "radio", ["codename"] = "nectar", ["name"] = "Internet Radio", ["version"] = "1.0.0", ["category"] = "audio", ["description"] = "Live radio streams via Radio Browser API" },
+        new() { ["gadget_id"] = "photos", ["codename"] = "ganache", ["name"] = "Photo Gallery", ["version"] = "1.0.0", ["category"] = "image", ["description"] = "Browse and view photos from local libraries" },
+        new() { ["gadget_id"] = "webvideo", ["codename"] = "bisque", ["name"] = "Web Video", ["version"] = "1.0.0", ["category"] = "video", ["description"] = "Web video bookmarks, history, and YouTube info" },
+        new() { ["gadget_id"] = "matrix", ["codename"] = "marzipan", ["name"] = "Matrix Chat", ["version"] = "1.0.0", ["category"] = "notification", ["description"] = "Matrix messaging, room management, and event sync" },
+        new() { ["gadget_id"] = "jellyfin", ["codename"] = "praline", ["name"] = "Jellyfin Bridge", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "Browse and manage your Jellyfin media server library" },
+        new() { ["gadget_id"] = "synapse-admin", ["codename"] = "cinnamon", ["name"] = "Synapse Admin", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Synapse homeserver user, room, and media management" },
+        new() { ["gadget_id"] = "gamebot", ["codename"] = "waffle", ["name"] = "Movie Quiz", ["version"] = "1.0.0", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
+        new() { ["gadget_id"] = "bot", ["codename"] = "yeast", ["name"] = "Background Automation", ["version"] = "1.0.0", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
     };
 
     [HttpGet("installed")]
@@ -46,6 +46,7 @@ public class RipenController : ControllerBase
         {
             gadget_id = g["gadget_id"],
             id = g["gadget_id"],
+            codename = g["codename"],
             name = g["name"],
             version = g["version"],
             status = disabled.Contains(g["gadget_id"]) ? "inactive" : "active",
