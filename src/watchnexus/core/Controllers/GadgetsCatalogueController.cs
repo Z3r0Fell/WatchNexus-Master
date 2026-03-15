@@ -11,16 +11,16 @@ public class GadgetsCatalogueController : ControllerBase
     [HttpGet("plugins")]
     public IActionResult Plugins() => Ok(new[]
     {
-        new { id = "weather", name = "Weather", version = "1.0.0", author = "WatchNexus", status = "active", description = "Weather dashboard using Open-Meteo" },
-        new { id = "podcasts", name = "Podcasts", version = "1.0.0", author = "WatchNexus", status = "active", description = "Podcast player with iTunes search and RSS" },
-        new { id = "radio", name = "Radio", version = "1.0.0", author = "WatchNexus", status = "active", description = "Internet radio via Radio Browser" },
-        new { id = "photos", name = "Photos", version = "1.0.0", author = "WatchNexus", status = "active", description = "Photo gallery from local filesystem" },
-        new { id = "webvideo", name = "Web Video", version = "1.0.0", author = "WatchNexus", status = "active", description = "Web video bookmarks and history" },
-        new { id = "matrix", name = "Matrix", version = "1.0.0", author = "WatchNexus", status = "active", description = "Matrix messaging, rooms, and event sync" },
-        new { id = "jellyfin", name = "Jellyfin", version = "1.0.0", author = "WatchNexus", status = "active", description = "Jellyfin media server library and playback" },
-        new { id = "synapse-admin", name = "Synapse Admin", version = "1.0.0", author = "WatchNexus", status = "active", description = "Synapse homeserver administration" },
-        new { id = "gamebot", name = "GameBot", version = "1.0.0", author = "WatchNexus", status = "active", description = "Movie poster guessing games with image effects" },
-        new { id = "bot", name = "Bot Service", version = "1.0.0", author = "WatchNexus", status = "active", description = "Background automation: inactivity checks, token drip, featured film" },
+        new { id = "weather", name = "Weather", version = "1.0.0", author = "WatchNexus", status = "active", description = "Weather dashboard using Open-Meteo", plugin_type = "weather", category = "weather" },
+        new { id = "podcasts", name = "Podcasts", version = "1.0.0", author = "WatchNexus", status = "active", description = "Podcast player with iTunes search and RSS feeds", plugin_type = "audio", category = "audio" },
+        new { id = "radio", name = "Internet Radio", version = "1.0.0", author = "WatchNexus", status = "active", description = "Live radio streams via Radio Browser API", plugin_type = "audio", category = "audio" },
+        new { id = "photos", name = "Photo Gallery", version = "1.0.0", author = "WatchNexus", status = "active", description = "Browse and view photos from local libraries", plugin_type = "image", category = "image" },
+        new { id = "webvideo", name = "Web Video", version = "1.0.0", author = "WatchNexus", status = "active", description = "Web video bookmarks, history, and YouTube info", plugin_type = "video", category = "video" },
+        new { id = "matrix", name = "Matrix Chat", version = "1.0.0", author = "WatchNexus", status = "active", description = "Matrix messaging, room management, and event sync", plugin_type = "notification", category = "notification" },
+        new { id = "jellyfin", name = "Jellyfin Bridge", version = "1.0.0", author = "WatchNexus", status = "active", description = "Browse and manage your Jellyfin media server library", plugin_type = "metadata", category = "metadata" },
+        new { id = "synapse-admin", name = "Synapse Admin", version = "1.0.0", author = "WatchNexus", status = "active", description = "Synapse homeserver user, room, and media management", plugin_type = "system", category = "system" },
+        new { id = "gamebot", name = "Movie Quiz", version = "1.0.0", author = "WatchNexus", status = "active", description = "Guess-the-poster games with blur and reveal effects", plugin_type = "game", category = "game" },
+        new { id = "bot", name = "Background Automation", version = "1.0.0", author = "WatchNexus", status = "active", description = "Inactivity checks, token drip, and featured film rotation", plugin_type = "service", category = "service" },
     });
 
     [HttpGet("plugins/{id}")]

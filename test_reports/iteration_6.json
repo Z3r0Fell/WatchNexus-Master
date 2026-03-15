@@ -1,0 +1,113 @@
+{
+  "summary": "WatchNexus v2.6.5 - All 4 user-requested fixes verified. 14/14 backend tests passed, all frontend UI tests passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "fix_1_users_label": {
+      "status": "PASS",
+      "details": "Settings sidebar shows 'Users' (not 'Users & Access') - confirmed via UI test"
+    },
+    "fix_2_library_crud_create": {
+      "status": "PASS",
+      "details": "POST /api/marmalade/libraries?name=TestLib&path=/tmp&media_type=movies creates library with full object response"
+    },
+    "fix_2_library_crud_read": {
+      "status": "PASS",
+      "details": "GET /api/marmalade/libraries returns list of libraries including created one"
+    },
+    "fix_2_library_crud_scan": {
+      "status": "PASS",
+      "details": "POST /api/marmalade/libraries/{id}/scan returns new/updated/total counts"
+    },
+    "fix_2_library_crud_delete": {
+      "status": "PASS",
+      "details": "DELETE /api/marmalade/libraries/{id} deletes library and returns status='deleted'"
+    },
+    "fix_2_library_crud_full_cycle": {
+      "status": "PASS",
+      "details": "Full POST→GET→SCAN→DELETE cycle works correctly"
+    },
+    "fix_3_gadgets_count": {
+      "status": "PASS",
+      "details": "GET /api/gadgets/plugins returns exactly 10 gadgets"
+    },
+    "fix_3_gadgets_plugin_type": {
+      "status": "PASS",
+      "details": "All gadgets have plugin_type field (weather, audio, image, video, notification, metadata, system, game, service)"
+    },
+    "fix_3_gadgets_category": {
+      "status": "PASS",
+      "details": "All gadgets have category field for icon mapping"
+    },
+    "fix_3_gadgets_names": {
+      "status": "PASS",
+      "details": "Gadgets have meaningful names: Weather, Podcasts, Internet Radio, Photo Gallery, Web Video, Matrix Chat, Jellyfin Bridge, Synapse Admin, Movie Quiz, Background Automation"
+    },
+    "fix_3_gadgets_descriptions": {
+      "status": "PASS",
+      "details": "All gadgets have descriptive descriptions"
+    },
+    "fix_4_crumbs_services_count": {
+      "status": "PASS",
+      "details": "GET /api/crumbs/services returns exactly 11 services (Jellyfin removed)"
+    },
+    "fix_4_crumbs_no_jellyfin": {
+      "status": "PASS",
+      "details": "Jellyfin is NOT in Crumbs services list"
+    },
+    "fix_4_crumbs_expected_services": {
+      "status": "PASS",
+      "details": "All 11 expected services present: tmdb, opensubtitles, addic7ed, subscene, podnapisi, yifysubtitles, qbittorrent, openweathermap, matrix, synapse, omdb"
+    },
+    "frontend_settings_users_label": {
+      "status": "PASS",
+      "details": "Settings > Users nav button shows 'Users' text (not 'Users & Access')"
+    },
+    "frontend_api_management": {
+      "status": "PASS",
+      "details": "API Management page shows 11 services grouped by category (METADATA, SUBTITLES, DOWNLOADS, GADGETS) - NO Jellyfin"
+    },
+    "frontend_gadgets_installed": {
+      "status": "PASS",
+      "details": "Gadgets > Installed shows 10 gadgets with proper names and category badges"
+    },
+    "frontend_library_settings": {
+      "status": "PASS",
+      "details": "Library Settings shows 'Media Libraries (Marmalade)' with Add Library button"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_watchnexus_v265_fixes.py",
+    "/app/test_reports/pytest/pytest_v265_fixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All 4 user-requested fixes have been properly implemented",
+    "BridgeController.cs correctly implements library CRUD with query params for POST",
+    "GadgetsCatalogueController.cs correctly includes plugin_type and category fields for all 10 gadgets",
+    "CrumbsController.cs correctly has 11 services (Jellyfin removed from registry)",
+    "SettingsPage.js correctly shows 'Users' label instead of 'Users & Access'"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_watchnexus_v265_fixes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (all 4 fixes verified in UI)"
+  },
+  "test_credentials": {
+    "email": "test@test.com",
+    "password": "password"
+  },
+  "seed_data_creation": "None - used /tmp for library test path",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "v2.6.5 user-requested fixes all verified. Fix 1: 'Users & Access' renamed to 'Users' in Settings sidebar. Fix 2: Library CRUD via /api/marmalade/libraries works (POST with query params, DELETE, scan). Fix 3: Gadgets have plugin_type and category fields for proper icon display. Fix 4: Jellyfin removed from Crumbs services (now 11 services). Jellyfin Bridge remains as a Gadget plugin (not a Crumbs API service)."
+}
