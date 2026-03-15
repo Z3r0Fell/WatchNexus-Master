@@ -365,3 +365,7 @@ release_builds/watchnexus-2.7.3-win-x64.tar.gz
 release_builds/watchnexus-2.7.3-linux-x64.tar.gz
 release/watchnexus-2.7.3-win-x64/WatchNexus.Core.exe
 release/watchnexus-2.7.3-linux-x64/WatchNexus.Core
+-e 
+# Environment files
+*.env
+*.env.*
