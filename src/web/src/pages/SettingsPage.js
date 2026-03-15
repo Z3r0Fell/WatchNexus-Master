@@ -11,7 +11,7 @@ import {
   QualityProfilesSettings
 } from '../components/settings';
 import { ZestSettings } from '../components/settings/ZestSettings';
-import { IntegrationsSettings } from '../components/settings/IntegrationsSettings';
+import { CrumbsSettings } from '../components/settings/CrumbsSettings';
 import { Layout } from '../components/layout/Layout';
 import FolderBrowser from '../components/FolderBrowser';
 import axios from 'axios';
@@ -252,7 +252,7 @@ export const SettingsPage = () => {
             manualImportFiles={manualImportFiles} onManualImportScan={handleManualImportScan} onImportFiles={handleImportFiles} />
         );
       case 'media-health': return <MediaHealthSettings />;
-      case 'integrations': return <IntegrationsSettings />;
+      case 'integrations': return <CrumbsSettings />;
       case 'playback': return <PlaybackSettings />;
       case 'quality-profiles': return <QualityProfilesSettings />;
       case 'indexers': return <IndexerSettings />;
@@ -327,7 +327,7 @@ export const SettingsPage = () => {
             <div>
               <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Integrations</h3>
               <div className="space-y-0.5">
-                <NavButton id="integrations" label="TMDB & Downloads" />
+                <NavButton id="integrations" label="API Management" />
                 <NavButton id="indexers" label="Indexers" />
                 <NavButton id="download" label="Download Client" />
               </div>
@@ -371,7 +371,7 @@ export const SettingsPage = () => {
         <main className="flex-1 min-h-screen">
           {/* Content Header */}
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
-            <h2 className="font-medium capitalize">{activeSection === 'plugins' ? 'Gadgets' : activeSection.replace('-', ' ')} Settings</h2>
+            <h2 className="font-medium capitalize">{activeSection === 'plugins' ? 'Gadgets' : activeSection === 'integrations' ? 'API Management' : activeSection.replace('-', ' ')} Settings</h2>
           </div>
 
           {/* Content */}
