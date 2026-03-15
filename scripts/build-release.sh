@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/release"
-VERSION="2.6.5"
+VERSION="2.7.3"
 
 echo "=== WatchNexus v${VERSION} Release Builder ==="
 
@@ -67,7 +67,7 @@ cat > "$WIN_PKG/start-watchnexus.bat" << 'WINEOF'
 @echo off
 title WatchNexus Server
 echo ================================================
-echo  WatchNexus v2.6.5 - Self-Hosted Media Pipeline
+echo  WatchNexus v2.7.3 - Self-Hosted Media Pipeline
 echo  QA: https://z3r0fell.github.io/watchnexus-qa/
 echo ================================================
 echo.
@@ -103,7 +103,7 @@ PSEOF
 
 # Windows README
 cat > "$WIN_PKG/README.md" << 'RDEOF'
-# WatchNexus v2.6.5 - Windows Release
+# WatchNexus v2.7.3 - Windows Release
 
 **QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
 
@@ -175,7 +175,7 @@ SDEOF
 cat > "$LINUX_PKG/install.sh" << 'LXEOF'
 #!/bin/bash
 set -e
-echo "=== WatchNexus v2.6.5 Installer (Arch Linux) ==="
+echo "=== WatchNexus v2.7.3 Installer (Arch Linux) ==="
 echo "QA: https://z3r0fell.github.io/watchnexus-qa/"
 echo ""
 
@@ -210,7 +210,7 @@ chmod +x "$LINUX_PKG/install.sh"
 cat > "$LINUX_PKG/PKGBUILD" << 'PKGEOF'
 # Maintainer: WatchNexus Team
 pkgname=watchnexus
-pkgver=2.6.5
+pkgver=2.7.3
 pkgrel=1
 pkgdesc="Unified, self-hosted media pipeline"
 arch=('x86_64')
@@ -237,7 +237,7 @@ PKGEOF
 
 # Linux README
 cat > "$LINUX_PKG/README.md" << 'RDEOF'
-# WatchNexus v2.6.5 - Arch Linux Release
+# WatchNexus v2.7.3 - Arch Linux Release
 
 **QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
 

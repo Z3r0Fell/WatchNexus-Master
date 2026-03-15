@@ -20,12 +20,18 @@
 - Runtime anti-tampering checks (periodic on every 100th API request)
 - License/activation validation with machine-specific instance IDs
 - Auto-lockout middleware blocks API access if tampering detected
-- Endpoints: `/api/fortress/status`, `/api/fortress/verify`
+- **Fortress Audit Log** — persistent event log (in-memory + JSONL on disk)
+- Endpoints: `/api/fortress/status`, `/api/fortress/verify`, `/api/fortress/audit`, `/api/fortress/audit/export`
 - Persistent config and baseline storage in `data/fortress/`
 
 ### P3: Version Bump
 - Updated all module manifests and source files to v2.7.3
 - Updated `Program.cs` startup banner to v2.7.3
+- Updated CoreController, SystemController, CrumbsController, SubtitlesController User-Agent
+
+### Release Builds
+- Fresh Windows x64 and Linux x64 self-contained archives at `/app/release_builds/`
+- Includes separated modules, frontend, installer scripts, systemd service, PKGBUILD
 
 ## 2026-03-15 - v2.6.5 (Fork Session)
 
