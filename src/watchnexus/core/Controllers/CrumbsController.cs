@@ -99,6 +99,43 @@ public class CrumbsController : ControllerBase
                 },
                 ["test_endpoint"] = "/api/crumbs/test/openweathermap", ["docs_url"] = "https://openweathermap.org/api"
             },
+            new() {
+                ["id"] = "matrix", ["name"] = "Matrix", ["category"] = "gadgets",
+                ["description"] = "Matrix homeserver for messaging and room management",
+                ["fields"] = new object[] {
+                    new { key = "homeserver", label = "Homeserver URL", type = "text", required = true, help = "e.g. https://matrix.example.org" },
+                    new { key = "access_token", label = "Access Token", type = "password", required = true, help = "Bot or user access token" },
+                    new { key = "user_id", label = "User ID", type = "text", required = false, help = "e.g. @bot:example.org" }
+                },
+                ["test_endpoint"] = "/api/crumbs/test/matrix", ["docs_url"] = "https://spec.matrix.org/latest/client-server-api/"
+            },
+            new() {
+                ["id"] = "jellyfin", ["name"] = "Jellyfin", ["category"] = "gadgets",
+                ["description"] = "Jellyfin media server integration",
+                ["fields"] = new object[] {
+                    new { key = "url", label = "Server URL", type = "text", required = true, help = "e.g. http://localhost:8096" },
+                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "Generate in Jellyfin Dashboard > API Keys" },
+                    new { key = "user_id", label = "User ID", type = "text", required = false, help = "Jellyfin user ID for library access" }
+                },
+                ["test_endpoint"] = "/api/crumbs/test/jellyfin", ["docs_url"] = "https://jellyfin.org/docs/"
+            },
+            new() {
+                ["id"] = "synapse", ["name"] = "Synapse Admin", ["category"] = "gadgets",
+                ["description"] = "Synapse homeserver admin API for user/room management",
+                ["fields"] = new object[] {
+                    new { key = "homeserver", label = "Homeserver URL", type = "text", required = true, help = "e.g. https://matrix.example.org" },
+                    new { key = "admin_token", label = "Admin Access Token", type = "password", required = true, help = "Token for a server admin user" }
+                },
+                ["test_endpoint"] = "/api/crumbs/test/synapse", ["docs_url"] = "https://element-hq.github.io/synapse/latest/usage/administration/admin_api/"
+            },
+            new() {
+                ["id"] = "omdb", ["name"] = "OMDB", ["category"] = "metadata",
+                ["description"] = "Open Movie Database for detailed movie/TV info",
+                ["fields"] = new object[] {
+                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "Get free key from omdbapi.com/apikey.aspx" }
+                },
+                ["test_endpoint"] = "/api/crumbs/test/omdb", ["docs_url"] = "https://www.omdbapi.com/"
+            },
         };
         return Ok(services);
     }
@@ -249,6 +286,10 @@ public class CrumbsController : ControllerBase
             "podnapisi" => await TestUrl("https://www.podnapisi.net", "Podnapisi"),
             "yifysubtitles" => await TestUrl("https://yifysubtitles.org", "YIFY Subtitles"),
             "openweathermap" => await TestOpenWeatherMap(fields),
+            "matrix" => await TestMatrix(fields),
+            "jellyfin" => await TestJellyfin(fields),
+            "synapse" => await TestSynapse(fields),
+            "omdb" => await TestOmdb(fields),
             _ => (false, $"Unknown service: {serviceId}", 0)
         };
 
@@ -438,6 +479,88 @@ public class CrumbsController : ControllerBase
         catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
+    private async Task<(bool, string, int)> TestMatrix(Dictionary<string, string> fields)
+    {
+        var homeserver = fields.GetValueOrDefault("homeserver", "")?.TrimEnd('/');
+        var token = fields.GetValueOrDefault("access_token", "");
+        if (string.IsNullOrEmpty(homeserver)) return (false, "Homeserver URL is required", 0);
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        if (!string.IsNullOrEmpty(token))
+            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var resp = await http.GetStringAsync($"{homeserver}/_matrix/client/v3/account/whoami");
+            sw.Stop();
+            var doc = JsonDocument.Parse(resp);
+            var userId = doc.RootElement.TryGetProperty("user_id", out var uid) ? uid.GetString() : "unknown";
+            return (true, $"Connected as {userId}", (int)sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+    }
+
+    private async Task<(bool, string, int)> TestJellyfin(Dictionary<string, string> fields)
+    {
+        var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
+        var apiKey = fields.GetValueOrDefault("api_key", "");
+        if (string.IsNullOrEmpty(url)) return (false, "Server URL is required", 0);
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        if (!string.IsNullOrEmpty(apiKey)) http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var resp = await http.GetStringAsync($"{url}/System/Info/Public");
+            sw.Stop();
+            var doc = JsonDocument.Parse(resp);
+            var name = doc.RootElement.TryGetProperty("ServerName", out var sn) ? sn.GetString() : "Unknown";
+            var ver = doc.RootElement.TryGetProperty("Version", out var v) ? v.GetString() : "";
+            return (true, $"Connected to {name} v{ver}", (int)sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+    }
+
+    private async Task<(bool, string, int)> TestSynapse(Dictionary<string, string> fields)
+    {
+        var homeserver = fields.GetValueOrDefault("homeserver", "")?.TrimEnd('/');
+        var token = fields.GetValueOrDefault("admin_token", "");
+        if (string.IsNullOrEmpty(homeserver)) return (false, "Homeserver URL is required", 0);
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        if (!string.IsNullOrEmpty(token))
+            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var resp = await http.GetStringAsync($"{homeserver}/_synapse/admin/v1/server_version");
+            sw.Stop();
+            var doc = JsonDocument.Parse(resp);
+            var ver = doc.RootElement.TryGetProperty("server_version", out var v) ? v.GetString() : "unknown";
+            return (true, $"Synapse v{ver}", (int)sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+    }
+
+    private async Task<(bool, string, int)> TestOmdb(Dictionary<string, string> fields)
+    {
+        var apiKey = fields.GetValueOrDefault("api_key", "");
+        if (string.IsNullOrEmpty(apiKey)) return (false, "API key is required", 0);
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var resp = await http.GetStringAsync($"https://www.omdbapi.com/?apikey={apiKey}&t=Matrix");
+            sw.Stop();
+            var doc = JsonDocument.Parse(resp);
+            if (doc.RootElement.TryGetProperty("Response", out var r) && r.GetString() == "True")
+                return (true, "OMDB API connected", (int)sw.ElapsedMilliseconds);
+            return (false, "OMDB returned error — check API key", (int)sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+    }
+
     // ── Sync to legacy settings for backward compatibility ──────────────────
     private async Task SyncLegacySettings(string serviceId, Dictionary<string, string> fields)
     {
@@ -460,6 +583,30 @@ public class CrumbsController : ControllerBase
                 var osSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "subtitle_opensubtitles");
                 if (osSetting != null) osSetting.Value = osJson;
                 else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "subtitle_opensubtitles", Value = osJson, UserId = UserId });
+                break;
+            case "matrix":
+                var matrixJson = JsonSerializer.Serialize(fields);
+                var matrixSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "matrix_config");
+                if (matrixSetting != null) matrixSetting.Value = matrixJson;
+                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "matrix_config", Value = matrixJson, UserId = UserId });
+                break;
+            case "jellyfin":
+                var jellyJson = JsonSerializer.Serialize(fields);
+                var jellySetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "jellyfin_config");
+                if (jellySetting != null) jellySetting.Value = jellyJson;
+                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "jellyfin_config", Value = jellyJson, UserId = UserId });
+                break;
+            case "synapse":
+                var synapseJson = JsonSerializer.Serialize(fields);
+                var synapseSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "synapse_admin_config");
+                if (synapseSetting != null) synapseSetting.Value = synapseJson;
+                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "synapse_admin_config", Value = synapseJson, UserId = UserId });
+                break;
+            case "omdb":
+                var omdbKey = fields.GetValueOrDefault("api_key", "");
+                var omdbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "omdb_api_key");
+                if (omdbSetting != null) omdbSetting.Value = omdbKey;
+                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "omdb_api_key", Value = omdbKey, UserId = UserId });
                 break;
         }
         await _db.SaveChangesAsync();

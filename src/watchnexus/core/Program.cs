@@ -66,6 +66,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// ── Background Services (Bot loops: inactivity, token drip, featured film) ──
+builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>();
+
 // CORS
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
