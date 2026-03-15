@@ -1,0 +1,11 @@
+{
+  "name": "Tunnel",
+  "codename": "tunnel",
+  "display_name": "VPN Portal",
+  "version": "2.7.3",
+  "description": "WireGuard VPN server and peer management with QR code config generation",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": ["/api/vpn/server", "/api/vpn/peers", "/api/vpn/stats"],
+  "frontend_pages": ["VpnPage"]
+}

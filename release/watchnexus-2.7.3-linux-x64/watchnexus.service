@@ -1,0 +1,16 @@
+[Unit]
+Description=WatchNexus Media Server v2.7.3
+After=network.target
+
+[Service]
+Type=simple
+User=watchnexus
+Group=watchnexus
+WorkingDirectory=/opt/watchnexus
+ExecStart=/opt/watchnexus/WatchNexus.Core
+Environment=ASPNETCORE_URLS=http://0.0.0.0:8001
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

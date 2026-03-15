@@ -1,0 +1,3 @@
+{"Timestamp":"2026-03-15T19:07:47.1534522Z","Action":"activation","Result":"verified","Detail":"Instance WN-7f8514b94664a902 valid","InstanceId":"WN-7f8514b94664a902"}
+{"Timestamp":"2026-03-15T19:07:47.1578398Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-7f8514b94664a902","InstanceId":"WN-7f8514b94664a902"}
+{"Timestamp":"2026-03-15T19:08:00.7809765Z","Action":"manual_verify","Result":"pass","Detail":"Checked 12 assemblies","InstanceId":"WN-7f8514b94664a902"}

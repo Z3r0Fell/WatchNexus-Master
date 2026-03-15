@@ -1,0 +1,24 @@
+# Maintainer: WatchNexus Team
+pkgname=watchnexus
+pkgver=2.7.3
+pkgrel=1
+pkgdesc="Unified, self-hosted media pipeline"
+arch=('x86_64')
+license=('custom')
+depends=()
+backup=('etc/systemd/system/watchnexus.service')
+source=()
+
+package() {
+    install -dm755 "$pkgdir/opt/watchnexus"
+    install -Dm755 "$srcdir/WatchNexus.Core" "$pkgdir/opt/watchnexus/WatchNexus.Core"
+    cp -r "$srcdir/wwwroot" "$pkgdir/opt/watchnexus/"
+    cp -r "$srcdir/modules" "$pkgdir/opt/watchnexus/"
+    cp -r "$srcdir/separated" "$pkgdir/opt/watchnexus/"
+    install -Dm644 "$srcdir/watchnexus.service" "$pkgdir/etc/systemd/system/watchnexus.service"
+    install -dm755 "$pkgdir/opt/watchnexus/data"
+
+    install -Dm644 /dev/stdin "$pkgdir/usr/lib/sysusers.d/watchnexus.conf" <<SYSEOF
+u watchnexus - "WatchNexus" /opt/watchnexus /usr/bin/nologin
+SYSEOF
+}

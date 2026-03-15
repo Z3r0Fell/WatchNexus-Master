@@ -1,0 +1,15 @@
+/app/separated/syrup/bin/Release/net10.0/WatchNexus.Syrup.deps.json
+/app/separated/syrup/bin/Release/net10.0/WatchNexus.Syrup.dll
+/app/separated/syrup/bin/Release/net10.0/WatchNexus.Syrup.pdb
+/app/separated/syrup/bin/Release/net10.0/WatchNexus.Shared.dll
+/app/separated/syrup/bin/Release/net10.0/WatchNexus.Shared.pdb
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.csproj.AssemblyReference.cache
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.GeneratedMSBuildEditorConfig.editorconfig
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.AssemblyInfoInputs.cache
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.AssemblyInfo.cs
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.csproj.CoreCompileInputs.cache
+/app/separated/syrup/obj/Release/net10.0/WatchNex.4E34325A.Up2Date
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.dll
+/app/separated/syrup/obj/Release/net10.0/refint/WatchNexus.Syrup.dll
+/app/separated/syrup/obj/Release/net10.0/WatchNexus.Syrup.pdb
+/app/separated/syrup/obj/Release/net10.0/ref/WatchNexus.Syrup.dll

@@ -14,31 +14,39 @@ Build a unified, self-hosted media pipeline called "WatchNexus". Migrated from .
 
 ## What's Been Implemented
 - P0 EF Core Migrations (replace EnsureCreated with Database.Migrate)
-- P1 Dynamic Module Loading (compile & load separated modules from /app/separated/)
-- P2 Fortress Code Protection (assembly integrity, anti-tampering, license validation)
+- P1 Dynamic Module Loading (compile & load 10 separated modules from /app/separated/)
+- P2 Fortress Code Protection (assembly integrity, anti-tampering, license validation, audit log)
 - P3 Version bump to 2.7.3 across all files
+- Release builds for Windows x64 and Linux x64 (self-contained)
 - Crumbs API Management (11 services)
 - Controller Refactoring (monolith split into 12+ files)
 - Matrix/Jellyfin Bot System (C# ports)
-- Release Builds (Windows x64, Arch Linux x64)
 - Gadget proper names, icons, categories, descriptions (10 gadgets)
 - Toggle activate/deactivate with DB persistence
 - Library CRUD (add/scan/delete via /api/marmalade/libraries)
-- Settings sidebar: "Users" (not "Users & Access")
-- Jellyfin removed from API Management Crumbs
+
+## Fortress Endpoints
+- `GET /api/fortress/status` — Security status, assembly count, license info
+- `POST /api/fortress/verify` — Manual integrity re-check of all assemblies
+- `GET /api/fortress/audit` — Security event log (?limit=50&offset=0)
+- `GET /api/fortress/audit/export` — Full audit log as JSON download
 
 ## Testing Status
 - iteration_4: 24/24 = 100%
 - iteration_5: 31/31 = 100%
 - iteration_6: 14/14 = 100%
 - iteration_7: 14/14 = 100%
-- iteration_8: 12/12 backend + all frontend = 100% (v2.7.3 P0-P3 features)
+- iteration_8: 12/12 backend + all frontend = 100% (v2.7.3 P0-P3)
 
 ## Architecture
 - 20 modules: 10 built-in + 10 separated (compiled at startup)
 - Fortress tracks 12 assemblies with SHA-256 baselines
 - EF Core Migrations for versioned schema management
 - Isolated AssemblyLoadContext per dynamically loaded module
+
+## Release Builds
+- `/app/release_builds/watchnexus-2.7.3-win-x64.tar.gz` (229M, self-contained)
+- `/app/release_builds/watchnexus-2.7.3-linux-x64.tar.gz` (229M, self-contained)
 
 ## Backlog
 ### P1
@@ -47,7 +55,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus". Migrated from .
 ### P2
 - [ ] Subtitle download integrations
 - [ ] Docker container support
-- [ ] Browse Catalogue UI improvements
+- [ ] Browse Catalogue UI improvements (gadget tiles show placeholder)
 
 ## Credentials
 - Email: test@test.com | Password: password

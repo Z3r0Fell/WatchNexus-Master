@@ -13,6 +13,8 @@ namespace WatchNexus.Core;
 public static class Fortress
 {
     private static readonly Dictionary<string, string> _assemblyHashes = new();
+    private static readonly List<AuditEntry> _auditLog = new();
+    private static readonly object _auditLock = new();
     private static bool _initialized;
     private static string _fortressDataPath = "";
     private static FortressConfig _config = new();
@@ -87,6 +89,7 @@ public static class Fortress
         app.MapPost("/api/fortress/verify", () =>
         {
             var results = VerifyAllAssemblies();
+            RecordAudit("manual_verify", IsIntact ? "pass" : "fail", $"Checked {results.Count} assemblies");
             return Results.Ok(new
             {
                 intact = IsIntact,
@@ -94,6 +97,50 @@ public static class Fortress
                 assemblies = results
             });
         });
+
+        // 6. Map Fortress audit log endpoint
+        app.MapGet("/api/fortress/audit", (int? limit, int? offset) =>
+        {
+            var take = Math.Clamp(limit ?? 50, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
+
+            List<AuditEntry> entries;
+            int total;
+            lock (_auditLock)
+            {
+                total = _auditLog.Count;
+                entries = _auditLog
+                    .OrderByDescending(e => e.Timestamp)
+                    .Skip(skip).Take(take).ToList();
+            }
+
+            return Results.Ok(new
+            {
+                total,
+                offset = skip,
+                limit = take,
+                entries = entries.Select(e => new
+                {
+                    timestamp = e.Timestamp.ToString("o"),
+                    action = e.Action,
+                    result = e.Result,
+                    detail = e.Detail,
+                    instanceId = e.InstanceId
+                })
+            });
+        });
+
+        // 7. Map Fortress audit export (full log as JSON download)
+        app.MapGet("/api/fortress/audit/export", () =>
+        {
+            List<AuditEntry> entries;
+            lock (_auditLock) { entries = _auditLog.ToList(); }
+            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+            return Results.Text(json, "application/json");
+        });
+
+        // Record startup in audit log
+        RecordAudit("startup", "pass", $"Fortress initialized — tracking {_assemblyHashes.Count} assemblies, instance {_config.InstanceId}");
 
         _initialized = true;
         Console.WriteLine($"[Fortress] Protection active — tracking {_assemblyHashes.Count} assemblies, instance {_config.InstanceId}");
@@ -189,7 +236,6 @@ public static class Fortress
     {
         try
         {
-            // Verify critical assembly hasn't been swapped
             var entryAssembly = Assembly.GetEntryAssembly();
             if (entryAssembly?.Location != null && File.Exists(entryAssembly.Location))
             {
@@ -201,24 +247,27 @@ public static class Fortress
                     {
                         Console.WriteLine("[Fortress] ALERT: Entry assembly tampering detected!");
                         IsIntact = false;
+                        RecordAudit("runtime_check", "fail", $"Assembly {name} hash mismatch");
                     }
                 }
             }
 
-            // Verify the Fortress class itself hasn't been bypassed via reflection
             var fortressType = typeof(Fortress);
             var isIntactField = fortressType.GetProperty(nameof(IsIntact));
             if (isIntactField == null)
             {
                 Console.WriteLine("[Fortress] ALERT: Fortress type structure has been modified!");
                 IsIntact = false;
+                RecordAudit("runtime_check", "fail", "Fortress type structure modified");
             }
 
+            RecordAudit("runtime_check", "pass", $"Request #{_requestCounter}");
             _lastCheckTime = DateTime.UtcNow;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Fortress] Runtime check error: {ex.Message}");
+            RecordAudit("runtime_check", "error", ex.Message);
         }
     }
 
@@ -228,25 +277,29 @@ public static class Fortress
     {
         if (string.IsNullOrEmpty(_config.InstanceId))
         {
-            // Generate new instance ID on first run
             _config.InstanceId = GenerateInstanceId();
-            _config.IsActivated = true; // Auto-activate for self-hosted instances
+            _config.IsActivated = true;
             _config.ActivatedAt = DateTime.UtcNow.ToString("o");
             _config.LicenseType = "self-hosted";
             SaveConfig();
             Console.WriteLine($"[Fortress] New instance activated: {_config.InstanceId}");
+            RecordAudit("activation", "new", $"Instance {_config.InstanceId} activated");
         }
         else
         {
-            // Verify existing activation
             var expectedId = GenerateInstanceId();
             if (_config.InstanceId != expectedId)
             {
                 Console.WriteLine("[Fortress] WARNING: Instance ID mismatch — hardware/environment changed");
                 Console.WriteLine("[Fortress] Re-activating for current environment...");
+                RecordAudit("activation", "reactivated", $"Environment changed: {_config.InstanceId} -> {expectedId}");
                 _config.InstanceId = expectedId;
                 _config.ActivatedAt = DateTime.UtcNow.ToString("o");
                 SaveConfig();
+            }
+            else
+            {
+                RecordAudit("activation", "verified", $"Instance {_config.InstanceId} valid");
             }
             Console.WriteLine($"[Fortress] Instance verified: {_config.InstanceId}");
         }
@@ -315,6 +368,46 @@ public static class Fortress
             Console.WriteLine($"[Fortress] Failed to save baseline: {ex.Message}");
         }
     }
+
+    // ── Audit Log ───────────────────────────────────────────────
+
+    private static void RecordAudit(string action, string result, string detail)
+    {
+        var entry = new AuditEntry
+        {
+            Timestamp = DateTime.UtcNow,
+            Action = action,
+            Result = result,
+            Detail = detail,
+            InstanceId = _config.InstanceId
+        };
+
+        lock (_auditLock)
+        {
+            _auditLog.Add(entry);
+            // Cap in-memory log at 10,000 entries
+            if (_auditLog.Count > 10_000)
+                _auditLog.RemoveRange(0, _auditLog.Count - 10_000);
+        }
+
+        // Persist to disk (append to JSONL file)
+        try
+        {
+            var auditPath = Path.Combine(_fortressDataPath, "audit.jsonl");
+            var line = JsonSerializer.Serialize(entry) + "\n";
+            File.AppendAllText(auditPath, line);
+        }
+        catch { /* non-critical */ }
+    }
+}
+
+internal class AuditEntry
+{
+    public DateTime Timestamp { get; set; }
+    public string Action { get; set; } = "";
+    public string Result { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public string InstanceId { get; set; } = "";
 }
 
 internal class FortressConfig
