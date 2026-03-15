@@ -2,7 +2,7 @@
   "name": "Fondue",
   "codename": "fondue",
   "display_name": "Download Manager",
-  "version": "2.6.5",
+  "version": "2.7.3",
   "description": "Built-in download engine and qBittorrent integration for torrent management",
   "author": "WatchNexus",
   "dependencies": ["core"],
