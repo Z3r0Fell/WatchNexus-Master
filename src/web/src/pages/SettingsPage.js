@@ -317,7 +317,7 @@ export const SettingsPage = () => {
               <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Core Settings</h3>
               <div className="space-y-0.5">
                 <NavButton id="general" label="General" />
-                <NavButton id="users" label="Users & Access" />
+                <NavButton id="users" label="Users" />
                 <NavButton id="library" label="Media Libraries" />
                 <NavButton id="media-health" label="Media Health" />
               </div>

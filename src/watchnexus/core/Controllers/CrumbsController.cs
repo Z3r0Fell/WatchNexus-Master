@@ -110,16 +110,6 @@ public class CrumbsController : ControllerBase
                 ["test_endpoint"] = "/api/crumbs/test/matrix", ["docs_url"] = "https://spec.matrix.org/latest/client-server-api/"
             },
             new() {
-                ["id"] = "jellyfin", ["name"] = "Jellyfin", ["category"] = "gadgets",
-                ["description"] = "Jellyfin media server integration",
-                ["fields"] = new object[] {
-                    new { key = "url", label = "Server URL", type = "text", required = true, help = "e.g. http://localhost:8096" },
-                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "Generate in Jellyfin Dashboard > API Keys" },
-                    new { key = "user_id", label = "User ID", type = "text", required = false, help = "Jellyfin user ID for library access" }
-                },
-                ["test_endpoint"] = "/api/crumbs/test/jellyfin", ["docs_url"] = "https://jellyfin.org/docs/"
-            },
-            new() {
                 ["id"] = "synapse", ["name"] = "Synapse Admin", ["category"] = "gadgets",
                 ["description"] = "Synapse homeserver admin API for user/room management",
                 ["fields"] = new object[] {
@@ -589,12 +579,6 @@ public class CrumbsController : ControllerBase
                 var matrixSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "matrix_config");
                 if (matrixSetting != null) matrixSetting.Value = matrixJson;
                 else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "matrix_config", Value = matrixJson, UserId = UserId });
-                break;
-            case "jellyfin":
-                var jellyJson = JsonSerializer.Serialize(fields);
-                var jellySetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "jellyfin_config");
-                if (jellySetting != null) jellySetting.Value = jellyJson;
-                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "jellyfin_config", Value = jellyJson, UserId = UserId });
                 break;
             case "synapse":
                 var synapseJson = JsonSerializer.Serialize(fields);

@@ -12,11 +12,121 @@ namespace WatchNexus.Core.Controllers;
 public class MarmaladeBridgeController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public MarmaladeBridgeController(AppDbContext db) { _db = db; }
+    private readonly IConfiguration _config;
+    private readonly IHttpClientFactory _httpFactory;
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public MarmaladeBridgeController(AppDbContext db, IConfiguration config, IHttpClientFactory httpFactory, IServiceScopeFactory scopeFactory)
+    {
+        _db = db;
+        _config = config;
+        _httpFactory = httpFactory;
+        _scopeFactory = scopeFactory;
+    }
 
     [HttpGet("libraries")]
     public async Task<IActionResult> GetLibraries() =>
-        Ok(await _db.Libraries.OrderByDescending(l => l.CreatedAt).ToListAsync());
+        Ok((await _db.Libraries.OrderByDescending(l => l.CreatedAt).ToListAsync())
+            .Select(l => new {
+                l.Id, l.Name, l.Path, media_type = l.MediaType,
+                item_count = l.ItemCount, total_size = l.TotalSize,
+                scan_status = l.ScanStatus, last_scanned_at = l.LastScannedAt,
+                created_at = l.CreatedAt
+            }));
+
+    [HttpPost("libraries")]
+    public async Task<IActionResult> AddLibrary([FromQuery] string name, [FromQuery] string path, [FromQuery] string media_type = "movies")
+    {
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(path))
+            return BadRequest(new { detail = "Name and path are required" });
+
+        var typeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Movie"] = "movies", ["Movies"] = "movies", ["movies"] = "movies",
+            ["TvShow"] = "tv", ["TV Shows"] = "tv", ["tv"] = "tv",
+            ["Music"] = "music", ["Anime"] = "anime",
+        };
+
+        var lib = new Library
+        {
+            Name = name,
+            Path = path,
+            MediaType = typeMap.GetValueOrDefault(media_type, media_type.ToLower()),
+        };
+        _db.Libraries.Add(lib);
+        await _db.SaveChangesAsync();
+        return Ok(new {
+            lib.Id, lib.Name, lib.Path, media_type = lib.MediaType,
+            item_count = 0, total_size = 0L,
+            scan_status = "idle", last_scanned_at = (DateTime?)null,
+            created_at = lib.CreatedAt
+        });
+    }
+
+    [HttpDelete("libraries/{id}")]
+    public async Task<IActionResult> DeleteLibrary(string id)
+    {
+        var lib = await _db.Libraries.FindAsync(id);
+        if (lib == null) return NotFound();
+        _db.MediaItems.RemoveRange(_db.MediaItems.Where(m => m.LibraryId == id));
+        _db.Libraries.Remove(lib);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deleted" });
+    }
+
+    [HttpPost("libraries/{id}/scan")]
+    public async Task<IActionResult> ScanLibrary(string id)
+    {
+        var lib = await _db.Libraries.FindAsync(id);
+        if (lib == null) return NotFound(new { detail = "Library not found" });
+
+        var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".m4v", ".webm",
+          ".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a", ".wma" };
+
+        var newCount = 0; var updated = 0;
+        try
+        {
+            if (!Directory.Exists(lib.Path))
+                return Ok(new { @new = 0, updated = 0, total = 0, errors = new[] { $"Path not found: {lib.Path}" } });
+
+            var files = Directory.EnumerateFiles(lib.Path, "*.*", SearchOption.AllDirectories)
+                .Where(f => extensions.Contains(System.IO.Path.GetExtension(f)))
+                .ToList();
+
+            long totalSize = 0;
+            foreach (var file in files)
+            {
+                var fi = new FileInfo(file);
+                totalSize += fi.Length;
+                var existing = await _db.MediaItems.FirstOrDefaultAsync(m => m.FilePath == file && m.LibraryId == id);
+                if (existing != null) { updated++; continue; }
+
+                var cleanName = System.IO.Path.GetFileNameWithoutExtension(file)
+                    .Replace('.', ' ').Replace('_', ' ');
+
+                _db.MediaItems.Add(new MediaItem
+                {
+                    LibraryId = id, Title = cleanName,
+                    FilePath = file, FileSize = fi.Length,
+                    MediaType = lib.MediaType,
+                });
+                newCount++;
+            }
+
+            lib.ItemCount = await _db.MediaItems.CountAsync(m => m.LibraryId == id) + newCount;
+            lib.TotalSize = totalSize;
+            lib.ScanStatus = "completed";
+            lib.LastScannedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { @new = newCount, updated, total = newCount + updated, errors = new[] { ex.Message } });
+        }
+
+        return Ok(new { @new = newCount, updated, total = newCount + updated, errors = Array.Empty<string>() });
+    }
 
     [HttpGet("media")]
     public async Task<IActionResult> GetMedia(string? library_id = null, string? media_type = null, int limit = 50, int offset = 0)
