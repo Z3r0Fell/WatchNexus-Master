@@ -1,0 +1,11 @@
+{
+  "name": "Syrup",
+  "codename": "syrup",
+  "display_name": "Live Scrapers",
+  "version": "2.7.3-alpha",
+  "description": "IPTV and live content scraper engine",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": ["/api/syrup/sources", "/api/syrup/streams", "/api/syrup/scrape"],
+  "frontend_pages": ["StreamingPage"]
+}

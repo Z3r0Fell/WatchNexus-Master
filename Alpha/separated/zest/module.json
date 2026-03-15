@@ -1,0 +1,11 @@
+{
+  "name": "Zest",
+  "codename": "zest",
+  "display_name": "Log Viewer",
+  "version": "2.7.3-alpha",
+  "description": "Application log browser, system diagnostics, and health monitoring",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": ["/api/logs", "/api/logs/latest", "/api/logs/system"],
+  "frontend_pages": ["LogViewerPage"]
+}

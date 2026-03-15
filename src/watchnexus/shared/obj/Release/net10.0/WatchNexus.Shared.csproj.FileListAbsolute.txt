@@ -1,0 +1,11 @@
+/app/src/watchnexus/shared/bin/Release/net10.0/WatchNexus.Shared.deps.json
+/app/src/watchnexus/shared/bin/Release/net10.0/WatchNexus.Shared.dll
+/app/src/watchnexus/shared/bin/Release/net10.0/WatchNexus.Shared.pdb
+/app/src/watchnexus/shared/obj/Release/net10.0/WatchNexus.Shared.GeneratedMSBuildEditorConfig.editorconfig
+/app/src/watchnexus/shared/obj/Release/net10.0/WatchNexus.Shared.AssemblyInfoInputs.cache
+/app/src/watchnexus/shared/obj/Release/net10.0/WatchNexus.Shared.AssemblyInfo.cs
+/app/src/watchnexus/shared/obj/Release/net10.0/WatchNexus.Shared.csproj.CoreCompileInputs.cache
+/app/src/watchnexus/shared/obj/Release/net10.0/WatchNexus.Shared.dll
+/app/src/watchnexus/shared/obj/Release/net10.0/refint/WatchNexus.Shared.dll
+/app/src/watchnexus/shared/obj/Release/net10.0/WatchNexus.Shared.pdb
+/app/src/watchnexus/shared/obj/Release/net10.0/ref/WatchNexus.Shared.dll

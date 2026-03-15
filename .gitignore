@@ -377,3 +377,4 @@ release/watchnexus-2.7.3-linux-x64/WatchNexus.Core
 # Environment files
 *.env
 *.env.*
+Alpha/src/web/node_modules/electron/dist/electron

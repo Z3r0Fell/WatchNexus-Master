@@ -1,0 +1,11 @@
+{
+  "name": "Bastion",
+  "codename": "bastion",
+  "display_name": "Security Module",
+  "version": "2.7.3-alpha",
+  "description": "Audit logging, IP filtering, API key management, session tracking, OWASP headers",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": ["/api/security/stats", "/api/security/audit", "/api/security/ip-rules", "/api/security/api-keys", "/api/security/sessions"],
+  "frontend_pages": ["SecurityPage"]
+}

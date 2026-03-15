@@ -1,0 +1,11 @@
+{
+  "name": "Fondue",
+  "codename": "fondue",
+  "display_name": "Download Manager",
+  "version": "2.7.3-alpha",
+  "description": "Built-in download engine and qBittorrent integration for torrent management",
+  "author": "WatchNexus",
+  "dependencies": ["core"],
+  "api_routes": ["/api/downloads", "/api/settings/integrations/qbittorrent"],
+  "frontend_pages": ["DownloadsPage"]
+}

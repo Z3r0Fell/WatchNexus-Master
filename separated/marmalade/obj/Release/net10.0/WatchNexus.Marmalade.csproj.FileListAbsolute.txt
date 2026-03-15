@@ -1,0 +1,15 @@
+/app/separated/marmalade/bin/Release/net10.0/WatchNexus.Marmalade.deps.json
+/app/separated/marmalade/bin/Release/net10.0/WatchNexus.Marmalade.dll
+/app/separated/marmalade/bin/Release/net10.0/WatchNexus.Marmalade.pdb
+/app/separated/marmalade/bin/Release/net10.0/WatchNexus.Shared.dll
+/app/separated/marmalade/bin/Release/net10.0/WatchNexus.Shared.pdb
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.csproj.AssemblyReference.cache
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.GeneratedMSBuildEditorConfig.editorconfig
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.AssemblyInfoInputs.cache
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.AssemblyInfo.cs
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.csproj.CoreCompileInputs.cache
+/app/separated/marmalade/obj/Release/net10.0/WatchNex.8B0645B5.Up2Date
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.dll
+/app/separated/marmalade/obj/Release/net10.0/refint/WatchNexus.Marmalade.dll
+/app/separated/marmalade/obj/Release/net10.0/WatchNexus.Marmalade.pdb
+/app/separated/marmalade/obj/Release/net10.0/ref/WatchNexus.Marmalade.dll
