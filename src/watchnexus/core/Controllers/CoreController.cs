@@ -17,7 +17,7 @@ public class CoreController : ControllerBase
     {
         status = "healthy",
         timestamp = DateTime.UtcNow,
-        version = "2.6.5"
+        version = "2.7.3"
     });
 
     [Authorize]
@@ -36,16 +36,16 @@ public class CoreController : ControllerBase
         // Add built-in modules
         var builtIn = new[]
         {
-            new { name = "Marmalade", codename = "marmalade", version = "2.6.5", status = "active" },
-            new { name = "Bastion", codename = "bastion", version = "2.6.5", status = "active" },
-            new { name = "Tunnel", codename = "tunnel", version = "2.6.5", status = "active" },
-            new { name = "Zest", codename = "zest", version = "2.6.5", status = "active" },
-            new { name = "Fondue", codename = "fondue", version = "2.6.5", status = "active" },
+            new { name = "Marmalade", codename = "marmalade", version = "2.7.3", status = "active" },
+            new { name = "Bastion", codename = "bastion", version = "2.7.3", status = "active" },
+            new { name = "Tunnel", codename = "tunnel", version = "2.7.3", status = "active" },
+            new { name = "Zest", codename = "zest", version = "2.7.3", status = "active" },
+            new { name = "Fondue", codename = "fondue", version = "2.7.3", status = "active" },
         };
 
         return Ok(new
         {
-            version = "2.6.5",
+            version = "2.7.3",
             hostname = Environment.MachineName,
             platform = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
             architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),

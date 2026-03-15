@@ -425,7 +425,7 @@ public class CrumbsController : ControllerBase
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         http.DefaultRequestHeaders.Add("Api-Key", apiKey);
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.6.5");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.7.3");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
