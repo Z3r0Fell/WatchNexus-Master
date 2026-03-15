@@ -652,7 +652,7 @@ STORY LAYOUT:
 ## Files You Need
 
 All files are in your screenshots ZIP:
-**Download:** `https://nexus-staging-4.preview.emergentagent.com/watchnexus-screenshots.zip`
+**Download:** `https://keyvault-nexus.preview.emergentagent.com/watchnexus-screenshots.zip`
 
 ### Create These Additional Graphics
 

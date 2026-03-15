@@ -1,0 +1,162 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Data;
+
+namespace WatchNexus.Core.Controllers;
+
+[Route("api/qbittorrent")]
+[ApiController]
+[Authorize]
+public class QBittorrentController : ControllerBase
+{
+    private readonly AppDbContext _db;
+    public QBittorrentController(AppDbContext db) => _db = db;
+
+    [HttpGet("status")]
+    public async Task<IActionResult> Status()
+    {
+        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == this.UserId());
+        if (cfg?.Value == null) return Ok(new { connected = false, status = "not_configured" });
+        try
+        {
+            var doc = JsonDocument.Parse(cfg.Value).RootElement;
+            var host = doc.TryGetProperty("host", out var h) ? h.GetString() : "localhost";
+            var port = doc.TryGetProperty("port", out var p) ? p.GetInt32() : 8080;
+            var http = this.Http();
+            http.Timeout = TimeSpan.FromSeconds(5);
+            var resp = await http.GetAsync($"http://{host}:{port}/api/v2/app/version");
+            if (resp.IsSuccessStatusCode)
+            {
+                var ver = await resp.Content.ReadAsStringAsync();
+                return Ok(new { connected = true, status = "connected", version = ver });
+            }
+            return Ok(new { connected = false, status = "unreachable" });
+        }
+        catch (Exception ex) { return Ok(new { connected = false, status = "error", error = ex.Message }); }
+    }
+
+    [HttpGet("torrents")]
+    public async Task<IActionResult> Torrents()
+    {
+        var cfgVal = await GetQbitConfig();
+        if (cfgVal == null) return Ok(Array.Empty<object>());
+        try
+        {
+            var (host, port, cookie) = await AuthQbit(cfgVal.Value);
+            if (cookie == null) return Ok(Array.Empty<object>());
+            var http = this.Http();
+            http.DefaultRequestHeaders.Add("Cookie", cookie);
+            var resp = await http.GetStringAsync($"http://{host}:{port}/api/v2/torrents/info");
+            return Content(resp, "application/json");
+        }
+        catch { return Ok(Array.Empty<object>()); }
+    }
+
+    [HttpPost("add")]
+    public async Task<IActionResult> Add([FromBody] JsonElement body)
+    {
+        var cfgVal = await GetQbitConfig();
+        if (cfgVal == null) return BadRequest(new { detail = "qBittorrent not configured" });
+        var url = body.TryGetProperty("url", out var u) ? u.GetString() : null;
+        var magnet = body.TryGetProperty("magnet", out var m) ? m.GetString() : null;
+        var link = magnet ?? url ?? "";
+        try
+        {
+            var (host, port, cookie) = await AuthQbit(cfgVal.Value);
+            if (cookie == null) return BadRequest(new { detail = "qBittorrent auth failed" });
+            var http = this.Http();
+            http.DefaultRequestHeaders.Add("Cookie", cookie);
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(link), "urls");
+            await http.PostAsync($"http://{host}:{port}/api/v2/torrents/add", content);
+            return Ok(new { status = "added" });
+        }
+        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+    }
+
+    [HttpPost("pause/{hash}")]
+    public async Task<IActionResult> Pause(string hash) => await QbitAction($"torrents/pause?hashes={hash}");
+    [HttpPost("resume/{hash}")]
+    public async Task<IActionResult> Resume(string hash) => await QbitAction($"torrents/resume?hashes={hash}");
+    [HttpDelete("delete/{hash}")]
+    public async Task<IActionResult> Delete(string hash, [FromQuery] bool delete_files = false) =>
+        await QbitAction($"torrents/delete?hashes={hash}&deleteFiles={delete_files}");
+
+    [HttpGet("files/{hash}")]
+    public async Task<IActionResult> Files(string hash)
+    {
+        var cfgVal = await GetQbitConfig();
+        if (cfgVal == null) return Ok(Array.Empty<object>());
+        try
+        {
+            var (host, port, cookie) = await AuthQbit(cfgVal.Value);
+            if (cookie == null) return Ok(Array.Empty<object>());
+            var http = this.Http();
+            http.DefaultRequestHeaders.Add("Cookie", cookie);
+            var resp = await http.GetStringAsync($"http://{host}:{port}/api/v2/torrents/files?hash={hash}");
+            return Content(resp, "application/json");
+        }
+        catch { return Ok(Array.Empty<object>()); }
+    }
+
+    [HttpPost("test")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Test([FromBody] JsonElement body)
+    {
+        var host = body.TryGetProperty("host", out var h) ? h.GetString() ?? "localhost" : "localhost";
+        var port = body.TryGetProperty("port", out var p) ? p.GetInt32() : 8080;
+        try
+        {
+            var http = this.Http();
+            http.Timeout = TimeSpan.FromSeconds(5);
+            var resp = await http.GetAsync($"http://{host}:{port}/api/v2/app/version");
+            if (resp.IsSuccessStatusCode)
+                return Ok(new { success = true, version = await resp.Content.ReadAsStringAsync() });
+            return Ok(new { success = false, error = $"HTTP {resp.StatusCode}" });
+        }
+        catch (Exception ex) { return Ok(new { success = false, error = ex.Message }); }
+    }
+
+    private async Task<JsonElement?> GetQbitConfig()
+    {
+        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == this.UserId());
+        if (cfg?.Value == null) return null;
+        return JsonDocument.Parse(cfg.Value).RootElement;
+    }
+
+    private async Task<(string host, int port, string? cookie)> AuthQbit(JsonElement cfg)
+    {
+        var host = cfg.TryGetProperty("host", out var h) ? h.GetString() ?? "localhost" : "localhost";
+        var port = cfg.TryGetProperty("port", out var p) ? p.GetInt32() : 8080;
+        var username = cfg.TryGetProperty("username", out var u) ? u.GetString() ?? "" : "";
+        var password = cfg.TryGetProperty("password", out var pw) ? pw.GetString() ?? "" : "";
+        var http = this.Http();
+        http.Timeout = TimeSpan.FromSeconds(5);
+        var content = new FormUrlEncodedContent(new[] {
+            new KeyValuePair<string, string>("username", username),
+            new KeyValuePair<string, string>("password", password)
+        });
+        var resp = await http.PostAsync($"http://{host}:{port}/api/v2/auth/login", content);
+        if (resp.Headers.TryGetValues("Set-Cookie", out var cookies))
+            return (host, port, cookies.FirstOrDefault());
+        return (host, port, null);
+    }
+
+    private async Task<IActionResult> QbitAction(string path)
+    {
+        var cfgVal = await GetQbitConfig();
+        if (cfgVal == null) return BadRequest(new { detail = "Not configured" });
+        try
+        {
+            var (host, port, cookie) = await AuthQbit(cfgVal.Value);
+            if (cookie == null) return BadRequest(new { detail = "Auth failed" });
+            var http = this.Http();
+            http.DefaultRequestHeaders.Add("Cookie", cookie);
+            await http.PostAsync($"http://{host}:{port}/api/v2/{path}", null);
+            return Ok(new { status = "ok" });
+        }
+        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+    }
+}
