@@ -48,7 +48,7 @@ public class BotController : ControllerBase
     {
         var report = await _db.Settings.FirstOrDefaultAsync(
             s => s.UserId == this.UserId() && s.Key == $"bot_featured_film:{this.UserId()}");
-        if (report?.Value == null) return Ok(new { selected_at = (string?)null, message = "No featured film yet. Configure Jellyfin and enable featured film rotation." });
+        if (report?.Value == null) return Ok(new { selected_at = (string?)null, message = "No featured film yet. Configure Media Bridge and enable featured film rotation." });
         return Content(report.Value, "application/json");
     }
 

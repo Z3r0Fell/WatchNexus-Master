@@ -49,7 +49,7 @@ public class BotController : ControllerBase
     {
         var report = await _db.Settings.FirstOrDefaultAsync(
             s => s.UserId == this.UserId() && s.Key == $"bot_featured_film:{this.UserId()}");
-        if (report?.Value == null) return Ok(new { selected_at = (string?)null, message = "No featured film yet. Configure Jellyfin and enable featured film rotation." });
+        if (report?.Value == null) return Ok(new { selected_at = (string?)null, message = "No featured film yet. Configure TMDB API key and the bot will rotate featured films automatically." });
         return Content(report.Value, "application/json");
     }
 

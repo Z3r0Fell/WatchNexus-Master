@@ -40,7 +40,7 @@
 - Fixed CrumbsController.cs build error (anonymous type mismatch in service registry)
 - Replaced IntegrationsSettings with CrumbsSettings in SettingsPage.js
 - Renamed "TMDB & Downloads" tab to "API Management"
-- 12 services: TMDB, OpenSubtitles, Addic7ed, Subscene, Podnapisi, YIFY, qBittorrent, OpenWeatherMap, Matrix, Jellyfin, Synapse Admin, OMDB
+- 12 services: TMDB, OpenSubtitles, Addic7ed, Subscene, Podnapisi, YIFY, qBittorrent, OpenWeatherMap, Matrix, Media Bridge, Synapse Admin, OMDB
 
 ### P1: Controller Refactoring
 - Split 1970-line ExtendedControllers.cs into 12+ individual files:
@@ -51,9 +51,9 @@
   - QBittorrentController.cs, UtilityControllers.cs
 - Removed ExtendedControllers.cs monolith
 
-### Matrix/Jellyfin Bot System (Python → C# Port)
+### Matrix/Media Bridge Bot System (Python → C# Port)
 - **MatrixController.cs** - Matrix Client-Server API: config, rooms, messaging, sync, members, user search
-- **JellyfinController.cs** - Jellyfin API: config, library, items, images, sessions, users, OMDB lookup
+- **MediaBridgeController.cs** - Media Bridge API: config, library, items, images, sessions, users, OMDB lookup
 - **SynapseAdminController.cs** - Synapse Admin API: users, rooms, media, purge, registration tokens
 - **GameBotController.cs** - Image processing via SixLabors.ImageSharp: blur, progressive reveal, pixelate, grayscale, resize, quiz generation
 - **BotBackgroundService.cs** - IHostedService with 30-min loop: inactivity check, token drip, featured film rotation

@@ -9,22 +9,25 @@ using WatchNexus.Core.Data;
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
-/// Jellyfin Media Server gadget — C# port of aiohttp-based Jellyfin API calls.
-/// Handles: library browsing, playback info, user sessions, server info.
+/// Custard — Media Bridge gadget.
+/// Proxies to an external Emby-compatible media server for library browsing,
+/// playback info, user sessions, and server details.
 /// </summary>
-[Route("api/gadgets/jellyfin")]
+[Route("api/gadgets/media-bridge")]
 [ApiController]
 [Authorize]
-public class JellyfinController : ControllerBase
+public class MediaBridgeController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public JellyfinController(AppDbContext db) => _db = db;
+    public MediaBridgeController(AppDbContext db) => _db = db;
+
+    private const string ConfigKey = "media_bridge_config";
 
     // ── Configuration ──────────────────────────────────
     [HttpGet("config")]
     public async Task<IActionResult> GetConfig()
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         return Ok(new { configured = cfg.url != null, url = cfg.url });
     }
 
@@ -32,10 +35,10 @@ public class JellyfinController : ControllerBase
     public async Task<IActionResult> SaveConfig([FromBody] JsonElement body)
     {
         var userId = this.UserId();
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "jellyfin_config");
+        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == ConfigKey);
         var value = body.GetRawText();
         if (existing != null) existing.Value = value;
-        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "jellyfin_config", Value = value, UserId = userId });
+        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = ConfigKey, Value = value, UserId = userId });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -43,8 +46,8 @@ public class JellyfinController : ControllerBase
     [HttpPost("test")]
     public async Task<IActionResult> TestConnection()
     {
-        var cfg = await GetJellyfinConfig();
-        if (cfg.url == null) return BadRequest(new { detail = "Jellyfin not configured" });
+        var cfg = await GetBridgeConfig();
+        if (cfg.url == null) return BadRequest(new { detail = "Media server not configured" });
         try
         {
             var http = BuildClient(cfg);
@@ -65,7 +68,7 @@ public class JellyfinController : ControllerBase
     [HttpGet("info")]
     public async Task<IActionResult> ServerInfo()
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg, "/System/Info");
     }
@@ -73,7 +76,7 @@ public class JellyfinController : ControllerBase
     [HttpGet("activity")]
     public async Task<IActionResult> ActivityLog([FromQuery] int limit = 25)
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg, $"/System/ActivityLog/Entries?Limit={limit}");
     }
@@ -82,7 +85,7 @@ public class JellyfinController : ControllerBase
     [HttpGet("libraries")]
     public async Task<IActionResult> Libraries()
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg, "/Library/VirtualFolders");
     }
@@ -93,30 +96,30 @@ public class JellyfinController : ControllerBase
         [FromQuery] string? includeItemTypes = null, [FromQuery] string sortBy = "SortName",
         [FromQuery] string sortOrder = "Ascending")
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         var url = $"/Items?Limit={limit}&StartIndex={startIndex}&SortBy={sortBy}&SortOrder={sortOrder}&Recursive=true&Fields=Overview,Genres,People,Studios,CommunityRating";
         if (!string.IsNullOrEmpty(parentId)) url += $"&ParentId={parentId}";
         if (!string.IsNullOrEmpty(searchTerm)) url += $"&SearchTerm={Uri.EscapeDataString(searchTerm)}";
         if (!string.IsNullOrEmpty(includeItemTypes)) url += $"&IncludeItemTypes={includeItemTypes}";
-        if (!string.IsNullOrEmpty(cfg.jellyfinUserId)) url += $"&UserId={cfg.jellyfinUserId}";
+        if (!string.IsNullOrEmpty(cfg.serverUserId)) url += $"&UserId={cfg.serverUserId}";
         return await ProxyGet(cfg, url);
     }
 
     [HttpGet("items/{itemId}")]
     public async Task<IActionResult> ItemDetails(string itemId)
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         var url = $"/Items/{itemId}";
-        if (!string.IsNullOrEmpty(cfg.jellyfinUserId)) url += $"?UserId={cfg.jellyfinUserId}";
+        if (!string.IsNullOrEmpty(cfg.serverUserId)) url += $"?UserId={cfg.serverUserId}";
         return await ProxyGet(cfg, url);
     }
 
     [HttpGet("items/{itemId}/similar")]
     public async Task<IActionResult> SimilarItems(string itemId, [FromQuery] int limit = 10)
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg, $"/Items/{itemId}/Similar?Limit={limit}");
     }
@@ -124,7 +127,7 @@ public class JellyfinController : ControllerBase
     [HttpGet("items/{itemId}/images/{imageType}")]
     public async Task<IActionResult> ItemImage(string itemId, string imageType)
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         try
         {
@@ -142,7 +145,7 @@ public class JellyfinController : ControllerBase
     [HttpGet("sessions")]
     public async Task<IActionResult> Sessions()
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg, "/Sessions");
     }
@@ -150,7 +153,7 @@ public class JellyfinController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> Users()
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg, "/Users");
     }
@@ -158,19 +161,19 @@ public class JellyfinController : ControllerBase
     [HttpGet("latest")]
     public async Task<IActionResult> LatestMedia([FromQuery] int limit = 20)
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        if (string.IsNullOrEmpty(cfg.jellyfinUserId)) return BadRequest(new { detail = "Jellyfin user ID not set" });
-        return await ProxyGet(cfg, $"/Users/{cfg.jellyfinUserId}/Items/Latest?Limit={limit}&Fields=Overview,Genres");
+        if (string.IsNullOrEmpty(cfg.serverUserId)) return BadRequest(new { detail = "Media server user ID not set" });
+        return await ProxyGet(cfg, $"/Users/{cfg.serverUserId}/Items/Latest?Limit={limit}&Fields=Overview,Genres");
     }
 
     [HttpGet("resume")]
     public async Task<IActionResult> ResumeItems([FromQuery] int limit = 10)
     {
-        var cfg = await GetJellyfinConfig();
+        var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        if (string.IsNullOrEmpty(cfg.jellyfinUserId)) return BadRequest(new { detail = "Jellyfin user ID not set" });
-        return await ProxyGet(cfg, $"/Users/{cfg.jellyfinUserId}/Items/Resume?Limit={limit}");
+        if (string.IsNullOrEmpty(cfg.serverUserId)) return BadRequest(new { detail = "Media server user ID not set" });
+        return await ProxyGet(cfg, $"/Users/{cfg.serverUserId}/Items/Resume?Limit={limit}");
     }
 
     // ── OMDB Integration (direct) ──────────────────────────────────
@@ -215,10 +218,10 @@ public class JellyfinController : ControllerBase
     }
 
     // ── Helpers ──────────────────────────────────
-    private async Task<(string? url, string? apiKey, string? jellyfinUserId)> GetJellyfinConfig()
+    private async Task<(string? url, string? apiKey, string? serverUserId)> GetBridgeConfig()
     {
         var uid = this.UserId();
-        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == "jellyfin_config");
+        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ConfigKey);
         if (cfg?.Value == null) return (null, null, null);
         var doc = JsonDocument.Parse(cfg.Value).RootElement;
         return (
@@ -228,7 +231,7 @@ public class JellyfinController : ControllerBase
         );
     }
 
-    private HttpClient BuildClient((string? url, string? apiKey, string? jellyfinUserId) cfg)
+    private HttpClient BuildClient((string? url, string? apiKey, string? serverUserId) cfg)
     {
         var http = this.Http();
         http.Timeout = TimeSpan.FromSeconds(15);
@@ -237,7 +240,7 @@ public class JellyfinController : ControllerBase
         return http;
     }
 
-    private async Task<IActionResult> ProxyGet((string? url, string? apiKey, string? jellyfinUserId) cfg, string path)
+    private async Task<IActionResult> ProxyGet((string? url, string? apiKey, string? serverUserId) cfg, string path)
     {
         try
         {

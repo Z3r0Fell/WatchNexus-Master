@@ -121,7 +121,7 @@ public class GameBotController : ControllerBase
         var category = body.TryGetProperty("category", out var cat) ? cat.GetString() ?? "movie" : "movie";
         var count = body.TryGetProperty("count", out var c) ? c.GetInt32() : 5;
 
-        // Get movies from Jellyfin or TMDB for quiz material
+        // Get movies from TMDB for quiz material
         var userId = this.UserId();
         var tmdbKey = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "crumbs_tmdb");
         string? apiKey = null;

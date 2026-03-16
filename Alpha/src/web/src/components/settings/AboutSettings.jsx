@@ -296,7 +296,7 @@ const RELEASES = [
       { type: 'feature', text: 'User authentication (local + Google OAuth)' },
       { type: 'feature', text: 'Watchlist and watch progress tracking' },
       { type: 'feature', text: 'Library management with media scanning' },
-      { type: 'feature', text: 'Jellyfin/Emby API compatibility layer' },
+      { type: 'feature', text: 'Emby-compatible API compatibility layer' },
     ]
   },
 ];
@@ -408,8 +408,8 @@ const OverviewTab = ({ systemInfo }) => (
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.5.10'}</h3>
-          <p className="text-gray-300">Unified Media Pipeline - Your Personal Netflix, Plex & Jellyfin in One</p>
-          <p className="text-sm text-gray-400 mt-2">A self-hosted media server that replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin.</p>
+          <p className="text-gray-300">Unified Media Pipeline - Your Personal Netflix & Plex in One</p>
+          <p className="text-sm text-gray-400 mt-2">A self-hosted media server that replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and more.</p>
         </div>
         <div className="hidden md:flex items-center gap-2">
           <Heart className="w-5 h-5 text-red-400" />
@@ -467,7 +467,7 @@ const OverviewTab = ({ systemInfo }) => (
       </h3>
       <div className="text-gray-300 text-sm space-y-2">
         <p><strong>Open Source:</strong> FFmpeg, LTorrent, FastAPI, React, Tailwind CSS</p>
-        <p><strong>Communities:</strong> Jellyfin community, r/selfhosted, r/homelab</p>
+        <p><strong>Communities:</strong> r/selfhosted, r/homelab</p>
         <p><strong>APIs:</strong> TMDB, Addic7ed, OpenSubtitles, and all indexer providers</p>
       </div>
     </div>
@@ -587,7 +587,7 @@ const LegalTab = () => (
           </h4>
           <p className="text-sm text-gray-300">
             All product names, logos, and brands mentioned in WatchNexus are property of their respective owners. 
-            This includes but is not limited to: TMDB, Jellyfin, Plex, Kodi, Sonarr, Radarr, Prowlarr, qBittorrent, 
+            This includes but is not limited to: TMDB, Plex, Kodi, Sonarr, Radarr, Prowlarr, qBittorrent, 
             Bazarr, Discord, Telegram, Slack, Trakt, OpenSubtitles, Netflix, Disney+, Prime Video, Hulu, HBO Max, 
             Apple TV+, Peacock, Paramount+, Crunchyroll, and any other third-party services referenced.
           </p>

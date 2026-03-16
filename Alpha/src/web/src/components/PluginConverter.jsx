@@ -87,7 +87,7 @@ export const PluginConverter = () => {
           <ArrowRight className="w-5 h-5 text-violet-400" /> Plugin Converter
         </h2>
         <p className="text-gray-400 text-sm mb-6">
-          Convert plugins from Kodi, Jellyfin/Emby, or Plex to the WatchNexus format.
+          Convert plugins from Kodi, Emby, or Plex to the WatchNexus format.
         </p>
 
         <div className="mb-4">
@@ -95,7 +95,7 @@ export const PluginConverter = () => {
           <div className="flex gap-3 flex-wrap">
             <EcosystemButton id="" label="Auto-detect" icon={Zap} selected={convertEcosystem === ''} onSelect={setConvertEcosystem} />
             <EcosystemButton id="kodi" label="Kodi" icon={Globe} selected={convertEcosystem === 'kodi'} onSelect={setConvertEcosystem} />
-            <EcosystemButton id="jellyfin" label="Jellyfin/Emby" icon={Tv} selected={convertEcosystem === 'jellyfin'} onSelect={setConvertEcosystem} />
+            <EcosystemButton id="emby" label="Emby-Compatible" icon={Tv} selected={convertEcosystem === 'emby'} onSelect={setConvertEcosystem} />
             <EcosystemButton id="plex" label="Plex" icon={Play} selected={convertEcosystem === 'plex'} onSelect={setConvertEcosystem} />
           </div>
         </div>
@@ -168,7 +168,7 @@ export const PluginConverter = () => {
         <h3 className="font-bold mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-violet-400" /> Supported Plugin Ecosystems</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <EcoCard name="Kodi" icon={Globe} desc="Add-ons with addon.xml manifest. Supports video, audio, subtitle, metadata, and service plugins." colorClass="text-blue-400" />
-          <EcoCard name="Jellyfin/Emby" icon={Tv} desc="Plugins with meta.json. Both C# and JavaScript plugins supported with conversion notes." colorClass="text-purple-400" />
+          <EcoCard name="Emby-Compatible" icon={Tv} desc="Plugins with meta.json. Both C# and JavaScript plugins supported with conversion notes." colorClass="text-purple-400" />
           <EcoCard name="Plex" icon={Play} desc="Channel bundles with Info.plist. Python-based plugins with Framework API conversion." colorClass="text-orange-400" />
         </div>
       </div>

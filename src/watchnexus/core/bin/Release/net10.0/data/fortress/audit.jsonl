@@ -31,3 +31,11 @@
 {"Timestamp":"2026-03-16T10:04:10.8199485Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-7f8514b94664a902","InstanceId":"WN-7f8514b94664a902"}
 {"Timestamp":"2026-03-16T11:30:36.5570588Z","Action":"activation","Result":"verified","Detail":"Instance WN-7f8514b94664a902 valid","InstanceId":"WN-7f8514b94664a902"}
 {"Timestamp":"2026-03-16T11:30:36.5621367Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-7f8514b94664a902","InstanceId":"WN-7f8514b94664a902"}
+{"Timestamp":"2026-03-16T11:51:45.6213824Z","Action":"activation","Result":"reactivated","Detail":"Environment changed: WN-7f8514b94664a902 -\u003E WN-6392cba99fa39d97","InstanceId":"WN-7f8514b94664a902"}
+{"Timestamp":"2026-03-16T11:51:45.6268641Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-6392cba99fa39d97","InstanceId":"WN-6392cba99fa39d97"}
+{"Timestamp":"2026-03-16T11:56:54.5884707Z","Action":"activation","Result":"verified","Detail":"Instance WN-6392cba99fa39d97 valid","InstanceId":"WN-6392cba99fa39d97"}
+{"Timestamp":"2026-03-16T11:56:54.5933792Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-6392cba99fa39d97","InstanceId":"WN-6392cba99fa39d97"}
+{"Timestamp":"2026-03-16T11:59:49.1671759Z","Action":"activation","Result":"verified","Detail":"Instance WN-6392cba99fa39d97 valid","InstanceId":"WN-6392cba99fa39d97"}
+{"Timestamp":"2026-03-16T11:59:49.1716643Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-6392cba99fa39d97","InstanceId":"WN-6392cba99fa39d97"}
+{"Timestamp":"2026-03-16T11:59:57.7753466Z","Action":"activation","Result":"verified","Detail":"Instance WN-6392cba99fa39d97 valid","InstanceId":"WN-6392cba99fa39d97"}
+{"Timestamp":"2026-03-16T11:59:57.7797031Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-6392cba99fa39d97","InstanceId":"WN-6392cba99fa39d97"}

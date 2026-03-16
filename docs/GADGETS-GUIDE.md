@@ -62,7 +62,7 @@ WatchNexus can convert plugins from other platforms:
 | Platform | Format | Conversion Quality |
 |----------|--------|-------------------|
 | **Kodi** | `.zip` addon | ⭐⭐⭐⭐ Excellent |
-| **Jellyfin/Emby** | `.dll` or `.js` | ⭐⭐⭐ Good |
+| **Emby-Compatible** | `.dll` or `.js` | ⭐⭐⭐ Good |
 | **Plex** | `.bundle` | ⭐⭐⭐ Good |
 
 ### How to Convert

@@ -17,9 +17,9 @@ public class GadgetsCatalogueController : ControllerBase
         new { id = "photos", codename = "ganache", name = "Photo Gallery", version = "1.0.0", author = "WatchNexus", status = "active", description = "Browse and view photos from local libraries", plugin_type = "image", category = "image" },
         new { id = "webvideo", codename = "bisque", name = "Web Video", version = "1.0.0", author = "WatchNexus", status = "active", description = "Web video bookmarks, history, and YouTube info", plugin_type = "video", category = "video" },
         new { id = "matrix", codename = "marzipan", name = "Matrix Chat", version = "1.0.0", author = "WatchNexus", status = "active", description = "Matrix messaging, room management, and event sync", plugin_type = "notification", category = "notification" },
-        new { id = "jellyfin", codename = "praline", name = "Jellyfin Bridge", version = "1.0.0", author = "WatchNexus", status = "active", description = "Browse and manage your Jellyfin media server library", plugin_type = "metadata", category = "metadata" },
         new { id = "synapse-admin", codename = "cinnamon", name = "Synapse Admin", version = "1.0.0", author = "WatchNexus", status = "active", description = "Synapse homeserver user, room, and media management", plugin_type = "system", category = "system" },
         new { id = "gamebot", codename = "waffle", name = "Movie Quiz", version = "1.0.0", author = "WatchNexus", status = "active", description = "Guess-the-poster games with blur and reveal effects", plugin_type = "game", category = "game" },
+        new { id = "media-bridge", codename = "custard", name = "Media Bridge", version = "1.0.0", author = "WatchNexus", status = "active", description = "Browse and manage your external Emby-compatible media server library", plugin_type = "metadata", category = "metadata" },
         new { id = "bot", codename = "yeast", name = "Background Automation", version = "1.0.0", author = "WatchNexus", status = "active", description = "Inactivity checks, token drip, and featured film rotation", plugin_type = "service", category = "service" },
     });
 

@@ -10,7 +10,7 @@ using WatchNexus.Core.Data;
 namespace WatchNexus.Core.Services;
 
 /// <summary>
-/// Background service for Matrix/Jellyfin bot automation — C# port of asyncio background loops.
+/// Background service for Matrix bot automation and featured film rotation.
 /// Handles: inactivity checks, token drip (registration tokens), featured film rotation.
 /// Replaces Python asyncio event loop with .NET IHostedService / BackgroundService.
 /// </summary>
@@ -48,7 +48,7 @@ public class BotBackgroundService : BackgroundService
     }
 
     /// <summary>
-    /// Inactivity check — identifies Matrix rooms or Jellyfin sessions with no activity.
+    /// Inactivity check — identifies Matrix rooms with no activity.
     /// Ported from Python asyncio inactivity check loop.
     /// </summary>
     private async Task RunInactivityCheck(CancellationToken ct)
@@ -203,8 +203,7 @@ public class BotBackgroundService : BackgroundService
     }
 
     /// <summary>
-    /// Featured film rotation — picks a random movie from Jellyfin library for "featured" display.
-    /// Ported from Python asyncio featured film loop.
+    /// Featured film rotation — picks a random trending movie from TMDB for "featured" display.
     /// </summary>
     private async Task RunFeaturedFilmRotation(CancellationToken ct)
     {
@@ -212,64 +211,84 @@ public class BotBackgroundService : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var httpFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
-        var jellyfinConfigs = await db.Settings
-            .Where(s => s.Key == "jellyfin_config" && s.Value != null)
-            .ToListAsync(ct);
+        // Get TMDB API key from settings
+        var tmdbConfig = await db.Settings
+            .FirstOrDefaultAsync(s => s.Key == "tmdb_config" && s.Value != null, ct);
 
-        foreach (var cfg in jellyfinConfigs)
+        string? tmdbApiKey = null;
+        if (tmdbConfig?.Value != null)
         {
             try
             {
-                var doc = JsonDocument.Parse(cfg.Value!).RootElement;
-                var url = doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
-                var apiKey = doc.TryGetProperty("api_key", out var ak) ? ak.GetString() : null;
-                var userId = doc.TryGetProperty("user_id", out var ui) ? ui.GetString() : null;
-                var featuredEnabled = doc.TryGetProperty("featured_film_enabled", out var ff) && ff.GetBoolean();
-
-                if (url == null || apiKey == null || !featuredEnabled) continue;
-
-                var http = httpFactory.CreateClient();
-                http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);
-                http.Timeout = TimeSpan.FromSeconds(15);
-
-                // Get random movie
-                var queryUrl = $"{url}/Items?IncludeItemTypes=Movie&Recursive=true&Limit=100&SortBy=Random&Fields=Overview,Genres,CommunityRating";
-                if (!string.IsNullOrEmpty(userId)) queryUrl += $"&UserId={userId}";
-
-                var resp = await http.GetStringAsync(queryUrl, ct);
-                var items = JsonDocument.Parse(resp);
-                if (items.RootElement.TryGetProperty("Items", out var movieList) && movieList.GetArrayLength() > 0)
-                {
-                    var movie = movieList[0];
-                    var featured = new
-                    {
-                        selected_at = DateTime.UtcNow,
-                        id = movie.TryGetProperty("Id", out var id) ? id.GetString() : null,
-                        name = movie.TryGetProperty("Name", out var n) ? n.GetString() : null,
-                        overview = movie.TryGetProperty("Overview", out var ov) ? ov.GetString() : null,
-                        year = movie.TryGetProperty("ProductionYear", out var py) ? py.GetInt32() : 0,
-                        rating = movie.TryGetProperty("CommunityRating", out var cr) ? cr.GetDouble() : 0,
-                        genres = movie.TryGetProperty("Genres", out var g) ? g.EnumerateArray().Select(x => x.GetString()).ToList() : new List<string?>(),
-                        jellyfin_url = url,
-                    };
-
-                    var reportKey = $"bot_featured_film:{cfg.UserId}";
-                    var existing = await db.Settings.FirstOrDefaultAsync(
-                        s => s.Key == reportKey && s.UserId == cfg.UserId, ct);
-                    var report = JsonSerializer.Serialize(featured);
-                    if (existing != null) existing.Value = report;
-                    else db.Settings.Add(new WatchNexus.Shared.AppSetting
-                    { Key = reportKey, Value = report, UserId = cfg.UserId });
-                    await db.SaveChangesAsync(ct);
-
-                    _logger.LogInformation("[BotService] Featured film: {Movie} for user {User}",
-                        featured.name, cfg.UserId);
-                }
+                var doc = JsonDocument.Parse(tmdbConfig.Value).RootElement;
+                tmdbApiKey = doc.TryGetProperty("api_key", out var ak) ? ak.GetString() : null;
             }
-            catch (Exception ex)
+            catch { }
+        }
+
+        // Fallback: check crumbs for TMDB key
+        if (string.IsNullOrEmpty(tmdbApiKey))
+        {
+            var crumbsCfg = await db.Settings
+                .FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null, ct);
+            if (crumbsCfg?.Value != null)
             {
-                _logger.LogWarning(ex, "[BotService] Featured film rotation failed");
+                try
+                {
+                    var doc = JsonDocument.Parse(crumbsCfg.Value).RootElement;
+                    tmdbApiKey = doc.TryGetProperty("api_key", out var ak) ? ak.GetString() : null;
+                }
+                catch { }
             }
+        }
+
+        if (string.IsNullOrEmpty(tmdbApiKey))
+        {
+            _logger.LogDebug("[BotService] No TMDB API key configured, skipping featured film rotation");
+            return;
+        }
+
+        try
+        {
+            var http = httpFactory.CreateClient();
+            http.Timeout = TimeSpan.FromSeconds(15);
+
+            var page = Random.Shared.Next(1, 5);
+            var resp = await http.GetStringAsync(
+                $"https://api.themoviedb.org/3/movie/popular?api_key={tmdbApiKey}&page={page}", ct);
+            var data = JsonDocument.Parse(resp);
+
+            if (data.RootElement.TryGetProperty("results", out var results) && results.GetArrayLength() > 0)
+            {
+                var idx = Random.Shared.Next(results.GetArrayLength());
+                var movie = results[idx];
+                var featured = new
+                {
+                    selected_at = DateTime.UtcNow,
+                    id = movie.TryGetProperty("id", out var id) ? id.GetInt32().ToString() : null,
+                    name = movie.TryGetProperty("title", out var t) ? t.GetString() : null,
+                    overview = movie.TryGetProperty("overview", out var ov) ? ov.GetString() : null,
+                    year = movie.TryGetProperty("release_date", out var rd) ? rd.GetString()?[..4] : null,
+                    rating = movie.TryGetProperty("vote_average", out var va) ? va.GetDouble() : 0,
+                    poster = movie.TryGetProperty("poster_path", out var pp) ? $"https://image.tmdb.org/t/p/w500{pp.GetString()}" : null,
+                    source = "tmdb",
+                };
+
+                var reportKey = "bot_featured_film:global";
+                var existing = await db.Settings.FirstOrDefaultAsync(
+                    s => s.Key == reportKey, ct);
+                var report = JsonSerializer.Serialize(featured);
+                if (existing != null) existing.Value = report;
+                else db.Settings.Add(new WatchNexus.Shared.AppSetting
+                { Key = reportKey, Value = report });
+                await db.SaveChangesAsync(ct);
+
+                _logger.LogInformation("[BotService] Featured film: {Movie}", featured.name);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[BotService] Featured film rotation failed");
         }
     }
 }

@@ -1,5 +1,5 @@
 # WatchNexus Competitive Analysis
-## Comparing with Jellyfin, Plex, and the *arr Suite (Sonarr/Radarr)
+## Comparing with Other Media Servers, Plex, and the *arr Suite (Sonarr/Radarr)
 
 **Document Date**: February 15, 2026  
 **WatchNexus Version**: 2.0.1
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-WatchNexus aims to unify the functionality of multiple applications (Jellyfin/Plex for playback, Sonarr/Radarr for automation, Prowlarr for indexers) into a single, self-contained application. This analysis identifies feature gaps and opportunities.
+WatchNexus aims to unify the functionality of multiple applications (other media servers/Plex for playback, Sonarr/Radarr for automation, Prowlarr for indexers) into a single, self-contained application. This analysis identifies feature gaps and opportunities.
 
 ---
 
@@ -22,10 +22,10 @@ WatchNexus aims to unify the functionality of multiple applications (Jellyfin/Pl
 
 ---
 
-## 1. MEDIA SERVER FEATURES (vs Jellyfin/Plex)
+## 1. MEDIA SERVER FEATURES (vs Other Servers/Plex)
 
 ### Library Management
-| Feature | Jellyfin | Plex | WatchNexus | Priority |
+| Feature | Emby-Compatible | Plex | WatchNexus | Priority |
 |---------|----------|------|------------|----------|
 | Movies library | ✅ | ✅ | ✅ | - |
 | TV Shows library | ✅ | ✅ | ✅ | - |
@@ -40,7 +40,7 @@ WatchNexus aims to unify the functionality of multiple applications (Jellyfin/Pl
 | Extras folder support (behind-the-scenes) | ✅ | ✅ | ❌ | P2 |
 
 ### Playback Features
-| Feature | Jellyfin | Plex | WatchNexus | Priority |
+| Feature | Emby-Compatible | Plex | WatchNexus | Priority |
 |---------|----------|------|------------|----------|
 | Direct play | ✅ | ✅ | ✅ | - |
 | Transcoding | ✅ | ✅ | ⚠️ (via FFmpeg) | P1 |
@@ -55,7 +55,7 @@ WatchNexus aims to unify the functionality of multiple applications (Jellyfin/Pl
 | SyncPlay (watch together) | ✅ | ❌ | ✅ (Watch Party) | - |
 
 ### User Management
-| Feature | Jellyfin | Plex | WatchNexus | Priority |
+| Feature | Emby-Compatible | Plex | WatchNexus | Priority |
 |---------|----------|------|------------|----------|
 | Multiple user profiles | ✅ | ✅ | ✅ | - |
 | Parental controls | ✅ | ✅ | ❌ | P1 🎯 |
@@ -66,7 +66,7 @@ WatchNexus aims to unify the functionality of multiple applications (Jellyfin/Pl
 | Continue watching | ✅ | ✅ | ✅ | - |
 
 ### Clients & Accessibility
-| Feature | Jellyfin | Plex | WatchNexus | Priority |
+| Feature | Emby-Compatible | Plex | WatchNexus | Priority |
 |---------|----------|------|------------|----------|
 | Web browser | ✅ | ✅ | ✅ | - |
 | Desktop app | ✅ | ✅ | ❌ | P2 |

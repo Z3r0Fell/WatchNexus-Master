@@ -119,6 +119,16 @@ public class CrumbsController : ControllerBase
                 ["test_endpoint"] = "/api/crumbs/test/synapse", ["docs_url"] = "https://element-hq.github.io/synapse/latest/usage/administration/admin_api/"
             },
             new() {
+                ["id"] = "media-bridge", ["name"] = "Media Bridge", ["category"] = "gadgets",
+                ["description"] = "External Emby-compatible media server (library browsing, playback, sessions)",
+                ["fields"] = new object[] {
+                    new { key = "url", label = "Server URL", type = "text", required = true, help = "e.g. http://192.168.1.10:8096" },
+                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "Server API key for authentication" },
+                    new { key = "user_id", label = "User ID", type = "text", required = false, help = "Optional server user ID for personalized results" }
+                },
+                ["test_endpoint"] = "/api/crumbs/test/media-bridge", ["docs_url"] = "https://github.com/MediaBrowser/Emby/wiki/Browsing-the-Library"
+            },
+            new() {
                 ["id"] = "omdb", ["name"] = "OMDB", ["category"] = "metadata",
                 ["description"] = "Open Movie Database for detailed movie/TV info",
                 ["fields"] = new object[] {
@@ -277,7 +287,7 @@ public class CrumbsController : ControllerBase
             "yifysubtitles" => await TestUrl("https://yifysubtitles.org", "YIFY Subtitles"),
             "openweathermap" => await TestOpenWeatherMap(fields),
             "matrix" => await TestMatrix(fields),
-            "jellyfin" => await TestJellyfin(fields),
+            "media-bridge" => await TestMediaBridge(fields),
             "synapse" => await TestSynapse(fields),
             "omdb" => await TestOmdb(fields),
             _ => (false, $"Unknown service: {serviceId}", 0)
@@ -490,7 +500,7 @@ public class CrumbsController : ControllerBase
         catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
-    private async Task<(bool, string, int)> TestJellyfin(Dictionary<string, string> fields)
+    private async Task<(bool, string, int)> TestMediaBridge(Dictionary<string, string> fields)
     {
         var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
         var apiKey = fields.GetValueOrDefault("api_key", "");

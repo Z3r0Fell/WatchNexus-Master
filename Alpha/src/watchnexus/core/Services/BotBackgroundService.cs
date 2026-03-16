@@ -10,7 +10,7 @@ using WatchNexus.Core.Data;
 namespace WatchNexus.Core.Services;
 
 /// <summary>
-/// Background service for Matrix/Jellyfin bot automation — C# port of asyncio background loops.
+/// Background service for Matrix/Media Bridge bot automation — C# port of asyncio background loops.
 /// Handles: inactivity checks, token drip (registration tokens), featured film rotation.
 /// Replaces Python asyncio event loop with .NET IHostedService / BackgroundService.
 /// </summary>
@@ -48,7 +48,7 @@ public class BotBackgroundService : BackgroundService
     }
 
     /// <summary>
-    /// Inactivity check — identifies Matrix rooms or Jellyfin sessions with no activity.
+    /// Inactivity check — identifies Matrix rooms or media server sessions with no activity.
     /// Ported from Python asyncio inactivity check loop.
     /// </summary>
     private async Task RunInactivityCheck(CancellationToken ct)
@@ -203,7 +203,7 @@ public class BotBackgroundService : BackgroundService
     }
 
     /// <summary>
-    /// Featured film rotation — picks a random movie from Jellyfin library for "featured" display.
+    /// Featured film rotation — picks a random movie from media server library for "featured" display.
     /// Ported from Python asyncio featured film loop.
     /// </summary>
     private async Task RunFeaturedFilmRotation(CancellationToken ct)
@@ -212,11 +212,11 @@ public class BotBackgroundService : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var httpFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
-        var jellyfinConfigs = await db.Settings
-            .Where(s => s.Key == "jellyfin_config" && s.Value != null)
+        var bridgeConfigs = await db.Settings
+            .Where(s => s.Key == "media_bridge_config" && s.Value != null)
             .ToListAsync(ct);
 
-        foreach (var cfg in jellyfinConfigs)
+        foreach (var cfg in bridgeConfigs)
         {
             try
             {
@@ -250,7 +250,7 @@ public class BotBackgroundService : BackgroundService
                         year = movie.TryGetProperty("ProductionYear", out var py) ? py.GetInt32() : 0,
                         rating = movie.TryGetProperty("CommunityRating", out var cr) ? cr.GetDouble() : 0,
                         genres = movie.TryGetProperty("Genres", out var g) ? g.EnumerateArray().Select(x => x.GetString()).ToList() : new List<string?>(),
-                        jellyfin_url = url,
+                        media_bridge_url = url,
                     };
 
                     var reportKey = $"bot_featured_film:{cfg.UserId}";

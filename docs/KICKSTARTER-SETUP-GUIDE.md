@@ -42,7 +42,7 @@
 | Field | What to Enter |
 |-------|---------------|
 | **Project Title** | `WatchNexus: One App to Replace Your Entire Media Stack` |
-| **Short Blurb** | `Replace Sonarr, Radarr, Jellyfin & 3 more apps with ONE beautiful, self-hosted media server. Open source. Privacy-first.` |
+| **Short Blurb** | `Replace Sonarr, Radarr & 4 more apps with ONE beautiful, self-hosted media server. Open source. Privacy-first.` |
 | **Category** | Technology > Software |
 | **Subcategory** | Apps |
 | **Project Location** | Your city, country |
@@ -81,7 +81,7 @@ Setting up a home media server today requires juggling:
 ❌ Prowlarr (Indexers)
 ❌ qBittorrent (Downloads)
 ❌ Bazarr (Subtitles)
-❌ Jellyfin/Plex (Playback)
+❌ Other Media Servers (Playback)
 
 **Setup time: 4-8 hours** for technical users. Impossible for everyone else.
 ```
@@ -171,7 +171,7 @@ Theme Forge lets you customize everything:
 
 Our plugin system that even converts:
 • Kodi addons
-• Jellyfin plugins
+• Emby-compatible plugins
 • Plex plugins
 
 Browse and install with one click.
@@ -527,9 +527,9 @@ A: WatchNexus is a replacement, not an integration. However, you can run them si
 
 ---
 
-**Q: What about Plex/Jellyfin clients?**
+**Q: What about Plex/Emby clients?**
 ```
-A: WatchNexus includes a Jellyfin-compatible API layer! Your existing Jellyfin clients can connect to WatchNexus.
+A: WatchNexus includes an Emby-compatible API layer! Your existing media server clients can connect to WatchNexus.
 ```
 
 ---
@@ -652,7 +652,7 @@ STORY LAYOUT:
 ## Files You Need
 
 All files are in your screenshots ZIP:
-**Download:** `https://watchnexus-core.preview.emergentagent.com/watchnexus-screenshots.zip`
+**Download:** `https://nexus-fortress-alpha.preview.emergentagent.com/watchnexus-screenshots.zip`
 
 ### Create These Additional Graphics
 

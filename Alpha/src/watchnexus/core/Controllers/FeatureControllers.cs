@@ -23,7 +23,7 @@ public class RipenController : ControllerBase
         new() { ["gadget_id"] = "photos", ["name"] = "Photo Gallery", ["version"] = "1.0.0", ["category"] = "image", ["description"] = "Browse and view photos from local libraries" },
         new() { ["gadget_id"] = "webvideo", ["name"] = "Web Video", ["version"] = "1.0.0", ["category"] = "video", ["description"] = "Web video bookmarks, history, and YouTube info" },
         new() { ["gadget_id"] = "matrix", ["name"] = "Matrix Chat", ["version"] = "1.0.0", ["category"] = "notification", ["description"] = "Matrix messaging, room management, and event sync" },
-        new() { ["gadget_id"] = "jellyfin", ["name"] = "Jellyfin Bridge", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "Browse and manage your Jellyfin media server library" },
+        new() { ["gadget_id"] = "media-bridge", ["codename"] = "custard", ["name"] = "Media Bridge", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "Browse and manage your external Emby-compatible media server library" },
         new() { ["gadget_id"] = "synapse-admin", ["name"] = "Synapse Admin", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Synapse homeserver user, room, and media management" },
         new() { ["gadget_id"] = "gamebot", ["name"] = "Movie Quiz", ["version"] = "1.0.0", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
         new() { ["gadget_id"] = "bot", ["name"] = "Background Automation", ["version"] = "1.0.0", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
