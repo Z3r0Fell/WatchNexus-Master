@@ -1,5 +1,30 @@
 # WatchNexus Changelog
 
+## 2026-03-16 - v2.7.3 (Code Cleanup & Media Bridge)
+
+### Jellyfin Removal & Media Bridge Recoding
+- Complete removal of all "Jellyfin" references from source code and documentation
+- **JellyfinController** recoded as **MediaBridgeController** (codename: **Custard**)
+  - Route: `api/gadgets/media-bridge`
+  - Full Emby-compatible proxy: config, libraries, items, search, images, sessions, users, OMDB
+  - Added to: gadgets plugins, ripen installed, crumbs services, core info modules
+- CrumbsController: added `media-bridge` service entry with test endpoint
+- Updated all documentation files (COMPETITIVE_ANALYSIS, KICKSTARTER-*, PLUGIN-DEVELOPMENT-GUIDE, GADGETS-GUIDE)
+- Alpha directory fully synced with same changes
+- Fresh framework-dependent release packages created:
+  - `watchnexus-2.7.3-linux-x64.tar.gz` (main)
+  - `watchnexus-2.7.3-alpha-linux-x64.tar.gz` (alpha with pre-seeded admin accounts)
+
+### Infrastructure (Dev Environment)
+- Python FastAPI reverse proxy on port 8001 → C# server on port 8002
+- .NET 10 SDK installed and builds verified
+- Fixed BotBackgroundService.cs duplicate closing braces
+
+### Testing
+- iteration_9.json: 11/11 backend tests = 100%
+- Global Jellyfin scan: 0 references found across 11 API endpoints
+- Media Bridge (custard) confirmed in all registries
+
 ## 2026-03-15 - v2.7.3
 
 ### P0: EF Core Migrations
