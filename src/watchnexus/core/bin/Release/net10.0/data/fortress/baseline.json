@@ -1,14 +1,14 @@
 {
-  "WatchNexus.Core": "fa1dd13cc0493a0328a8a3bd6be80e795c0b411c6686e184e3bad19f18cf21d2",
-  "WatchNexus.Shared": "2317eed96304849990b5d727710d34496ae3c8f5b2beca53de4ab555673f2d38",
-  "WatchNexus.Compote": "dc3814f709522ee9f0fdbadd5c09f5ae64c62a4163d585974fe1118b0883ecd6",
-  "WatchNexus.Marmalade": "e01a7a16511af261415c742376c9e772a087d967f9e163e9de963f2f6f2101f6",
-  "WatchNexus.Gelatin": "04b4eda9738aa7d0c39db1b4821c43fb5de592c069ebb105dee14097a6b6104a",
-  "WatchNexus.Drizzle": "d3e27fe97da603e224e890b2d90442b99c3f6a31860e3a827a9cdf7a38c27f18",
-  "WatchNexus.Syrup": "b3ad709c6d40a6e4caf9218eede247bbf985c47d9a95a0a64a9763f0d104d656",
-  "WatchNexus.Zest": "67240d5184ad6f7e2a7ca114cd7f40075e6330658bfdd6ba89cacebab2425976",
-  "WatchNexus.Bastion": "dbd3d3a53de5f9f7e06f5974aa8d7ab91a5c379d06c2abbb02e9675c63304cb5",
-  "WatchNexus.Fondue": "f7d7bcfc1505dc63a1aedbef5d5caef00d64d8325f3b3ddf02e0128b7cceb362",
-  "WatchNexus.Beacon": "ed7acdc6504949cb9a49803718905ab83ad836173a199a768938660ffabbfb99",
-  "WatchNexus.Tunnel": "894784d9973e8b218331ea959ce751a15e7cbfa93af64eee5e6e5dd396aada0b"
+  "WatchNexus.Core": "c0a0aa642172bac8e891b9d9f85cc0cd0b43a60d4d4865c0fd425b8c195d1ad9",
+  "WatchNexus.Shared": "80943c0e8425a9bd8b83aa45644fbcebd592d6b314440ae30f4bf3673a46a54d",
+  "WatchNexus.Compote": "ba141caaea7131dcfed4c673b4849f5166b0509541a7bcbdbdfcbcef91f37f3b",
+  "WatchNexus.Marmalade": "135218f6281e3045dae86c0c40034a8028a3913d4b133117e636e36ff60adf0b",
+  "WatchNexus.Gelatin": "acfe85197c1972011820f2e508eb83d057570bc66c06690b5fe9019a2efd95d0",
+  "WatchNexus.Drizzle": "cf92fc6f23a6a5d5e2f7f59d0c38178e8fe58bb243f36a50ca5e71d5052fdb87",
+  "WatchNexus.Syrup": "81a538d842b2edc5c2ef6f9ffd8cea4c9ee3277ffc318fb1d5a458b44906af6d",
+  "WatchNexus.Zest": "fd5ed5219a3f69cfb4a9d75d24bd9d594c9167780da1f23f25e9654b9902efd6",
+  "WatchNexus.Bastion": "92f3465a348716bb7d27caf70187c6fde7f1adfa027908336d84ee7d7fa23354",
+  "WatchNexus.Fondue": "a37e506baf36334e73ef3bec5aeeccf49ee7b2046e738548567c9e4b52b4c142",
+  "WatchNexus.Beacon": "b6e8368190a56711d5d0f3cf08958f120d0da4f4e1ba676c86204099c8cdd05a",
+  "WatchNexus.Tunnel": "6b416ce43ed13d8e6e1a1c9d7b17b5c2590b7d6d5945ccf7eb1288a619dff782"
 }

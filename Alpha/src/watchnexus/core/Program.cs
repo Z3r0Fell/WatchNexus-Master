@@ -101,27 +101,47 @@ using (var scope = app.Services.CreateScope())
 
 static void SeedAlphaAccounts(AppDbContext db)
 {
-    var alphaAccounts = new[]
+    try
     {
-        ("admin@watchnexus.ca", "watchnexus-admin", "password123", "admin"),
-        ("admin@friendlymedia.net", "friendlymedia-admin", "password123", "admin"),
-    };
-
-    foreach (var (email, username, password, role) in alphaAccounts)
-    {
-        if (!db.Users.Any(u => u.Email == email))
+        var alphaAccounts = new[]
         {
-            db.Users.Add(new WatchNexus.Shared.AppUser
+            ("admin@watchnexus.ca", "watchnexus-admin", "password123", "admin"),
+            ("admin@friendlymedia.net", "friendlymedia-admin", "password123", "admin"),
+        };
+
+        var seeded = 0;
+        foreach (var (email, username, password, role) in alphaAccounts)
+        {
+            if (!db.Users.Any(u => u.Email == email))
             {
-                Email = email,
-                Username = username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                Role = role
-            });
-            Console.WriteLine($"[WatchNexus] Seeded alpha account: {email} ({role})");
+                var hash = BCrypt.Net.BCrypt.HashPassword(password);
+                Console.WriteLine($"[WatchNexus] Hashing password for {email}: {hash[..20]}...");
+                db.Users.Add(new WatchNexus.Shared.AppUser
+                {
+                    Email = email,
+                    Username = username,
+                    PasswordHash = hash,
+                    Role = role
+                });
+                seeded++;
+                Console.WriteLine($"[WatchNexus] Seeded alpha account: {email} ({role})");
+            }
+            else
+            {
+                Console.WriteLine($"[WatchNexus] Alpha account already exists: {email}");
+            }
         }
+
+        if (seeded > 0)
+            db.SaveChanges();
+
+        Console.WriteLine($"[WatchNexus] Alpha account seeding complete ({seeded} new accounts)");
     }
-    db.SaveChanges();
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[WatchNexus] ERROR seeding alpha accounts: {ex.Message}");
+        Console.WriteLine($"[WatchNexus] Stack trace: {ex.StackTrace}");
+    }
 }
 
 // ── Logging directory ─────────────────────────────────────────

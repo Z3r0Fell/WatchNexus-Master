@@ -107,10 +107,20 @@ public static class ModuleLoader
                 var expectedDll = Path.Combine(dir, "bin", "Release", "net10.0", $"{projectName}.dll");
                 if (!File.Exists(expectedDll))
                     expectedDll = Path.Combine(dir, "bin", "Debug", "net10.0", $"{projectName}.dll");
+                // Also check for a DLL shipped directly in the module directory
+                if (!File.Exists(expectedDll))
+                    expectedDll = Path.Combine(dir, $"{projectName}.dll");
 
-                // Compile if no DLL exists
+                // Compile if no DLL exists and dotnet is available
                 if (!File.Exists(expectedDll))
                 {
+                    var dotnetPath = FindDotnetPath();
+                    if (dotnetPath == null)
+                    {
+                        Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName}: No pre-built DLL and dotnet SDK not available, skipping");
+                        continue;
+                    }
+
                     Console.WriteLine($"[ModuleLoader]   Compiling {manifest.DisplayName}...");
                     var compiled = CompileModule(csprojPath, dir);
                     if (!compiled)
