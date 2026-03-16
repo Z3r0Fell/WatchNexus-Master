@@ -94,6 +94,27 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     Console.WriteLine($"[WatchNexus] Database migrated and ready at {dbPath}");
+
+    // Seed default accounts if none exist
+    SeedAccounts(db);
+}
+
+static void SeedAccounts(AppDbContext db)
+{
+    // Create default admin if no users exist
+    if (!db.Users.Any())
+    {
+        var admin = new WatchNexus.Shared.AppUser
+        {
+            Email = "admin@watchnexus.local",
+            Username = "admin",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+            Role = "admin"
+        };
+        db.Users.Add(admin);
+        db.SaveChanges();
+        Console.WriteLine($"[WatchNexus] Seeded default admin account: admin@watchnexus.local");
+    }
 }
 
 // ── Logging directory ─────────────────────────────────────────

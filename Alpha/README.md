@@ -30,6 +30,17 @@ sudo bash install.sh
 # Open http://localhost:8001
 ```
 
+## Pre-Seeded Admin Accounts
+
+These accounts are created automatically on first launch:
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@watchnexus.ca` | `password123` | admin |
+| `admin@friendlymedia.net` | `password123` | admin |
+
+You can also create additional accounts via the "Sign Up" page.
+
 ## What to Test
 
 - **Authentication** — Register, login, session persistence

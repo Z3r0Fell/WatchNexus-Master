@@ -94,6 +94,34 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     Console.WriteLine($"[WatchNexus] Database migrated and ready at {dbPath}");
+
+    // Seed alpha testing accounts
+    SeedAlphaAccounts(db);
+}
+
+static void SeedAlphaAccounts(AppDbContext db)
+{
+    var alphaAccounts = new[]
+    {
+        ("admin@watchnexus.ca", "watchnexus-admin", "password123", "admin"),
+        ("admin@friendlymedia.net", "friendlymedia-admin", "password123", "admin"),
+    };
+
+    foreach (var (email, username, password, role) in alphaAccounts)
+    {
+        if (!db.Users.Any(u => u.Email == email))
+        {
+            db.Users.Add(new WatchNexus.Shared.AppUser
+            {
+                Email = email,
+                Username = username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                Role = role
+            });
+            Console.WriteLine($"[WatchNexus] Seeded alpha account: {email} ({role})");
+        }
+    }
+    db.SaveChanges();
 }
 
 // ── Logging directory ─────────────────────────────────────────
