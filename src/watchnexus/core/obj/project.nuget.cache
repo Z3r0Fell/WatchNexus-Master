@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "PmolvQfISRw=",
+  "dgSpecHash": "lKoFWHPqYOM=",
   "success": true,
   "projectFilePath": "/app/src/watchnexus/core/WatchNexus.Core.csproj",
   "expectedPackageFiles": [
@@ -52,7 +52,8 @@
     "/root/.nuget/packages/system.composition.runtime/9.0.0/system.composition.runtime.9.0.0.nupkg.sha512",
     "/root/.nuget/packages/system.composition.typedparts/9.0.0/system.composition.typedparts.9.0.0.nupkg.sha512",
     "/root/.nuget/packages/system.identitymodel.tokens.jwt/8.16.0/system.identitymodel.tokens.jwt.8.16.0.nupkg.sha512",
-    "/root/.nuget/packages/system.servicemodel.syndication/10.0.5/system.servicemodel.syndication.10.0.5.nupkg.sha512"
+    "/root/.nuget/packages/system.servicemodel.syndication/10.0.5/system.servicemodel.syndication.10.0.5.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.netcore.app.host.win-x64/10.0.5/microsoft.netcore.app.host.win-x64.10.0.5.nupkg.sha512"
   ],
   "logs": []
 }
