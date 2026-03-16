@@ -47,7 +47,6 @@ public class CoreController : ControllerBase
             new { name = "Ganache", codename = "ganache", version = "2.7.3", status = "active" },
             new { name = "Bisque", codename = "bisque", version = "2.7.3", status = "active" },
             new { name = "Marzipan", codename = "marzipan", version = "2.7.3", status = "active" },
-            new { name = "Praline", codename = "praline", version = "2.7.3", status = "active" },
             new { name = "Cinnamon", codename = "cinnamon", version = "2.7.3", status = "active" },
             new { name = "Waffle", codename = "waffle", version = "2.7.3", status = "active" },
             new { name = "Yeast", codename = "yeast", version = "2.7.3", status = "active" },
@@ -59,6 +58,7 @@ public class CoreController : ControllerBase
             new { name = "Nutmeg", codename = "nutmeg", version = "2.7.3", status = "active" },
             new { name = "Crumbs", codename = "crumbs", version = "2.7.3", status = "active" },
             new { name = "Fortress", codename = "fortress", version = "2.7.3", status = "active" },
+            new { name = "Custard", codename = "custard", version = "2.7.3", status = "active" },
             new { name = "Ripen", codename = "ripen", version = "2.7.3", status = "active" },
         };
 

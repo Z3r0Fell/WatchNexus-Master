@@ -75,7 +75,6 @@ WatchNexus/
 | Photo Gallery | **Ganache** | Browse and view photos from local libraries |
 | Web Video | **Bisque** | Web video bookmarks, history, and YouTube info |
 | Matrix Chat | **Marzipan** | Matrix messaging, room management, and event sync |
-| Jellyfin Bridge | **Praline** | Browse and manage your Jellyfin media server library |
 | Synapse Admin | **Cinnamon** | Synapse homeserver user, room, and media management |
 | Movie Quiz | **Waffle** | Guess-the-poster games with blur and reveal effects |
 | Background Automation | **Yeast** | Inactivity checks, token drip, featured film rotation |

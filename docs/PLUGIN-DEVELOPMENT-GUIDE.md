@@ -9,7 +9,7 @@
 1. [Introduction](#introduction)
 2. [Native Plugin Development](#native-plugin-development)
 3. [Adapting Kodi Addons](#adapting-kodi-addons)
-4. [Adapting Jellyfin/Emby Plugins](#adapting-jellyfinemby-plugins)
+4. [Adapting Emby-Compatible Plugins](#adapting-emby-compatible-plugins)
 5. [Adapting Plex Plugins](#adapting-plex-plugins)
 6. [API Reference](#api-reference)
 7. [Publishing Plugins](#publishing-plugins)
@@ -21,7 +21,7 @@
 WatchNexus uses a modular plugin system called **Gadgets** that allows extending functionality through:
 
 - **Native Plugins**: Built specifically for WatchNexus
-- **Adapted Plugins**: Converted from Kodi, Jellyfin/Emby, or Plex
+- **Adapted Plugins**: Converted from Kodi, Emby, or Plex
 
 ### Plugin Types
 
@@ -711,23 +711,23 @@ plugin_class = ExamplePlugin
 
 ---
 
-## Adapting Jellyfin/Emby Plugins
+## Adapting Emby-Compatible Plugins
 
 ### Overview
 
-Jellyfin/Emby plugins are primarily C# or JavaScript. C# plugins require manual rewriting in Python, while JS plugins can be partially automated.
+Emby-compatible plugins are primarily C# or JavaScript. C# plugins require manual rewriting in Python, while JS plugins can be partially automated.
 
 ### Automatic Conversion
 
 ```python
-from plugin_adapter import convert_jellyfin_plugin
+from plugin_adapter import convert_emby_plugin
 
-manifest, output_path = convert_jellyfin_plugin("/path/to/plugin")
+manifest, output_path = convert_emby_plugin("/path/to/plugin")
 ```
 
 ### Plugin Types Mapping
 
-| Jellyfin Type | WatchNexus Type |
+| Emby Type | WatchNexus Type |
 |---------------|-----------------|
 | `Channel` | `stream_provider` |
 | `MetadataProvider` | `metadata_provider` |
@@ -742,7 +742,7 @@ manifest, output_path = convert_jellyfin_plugin("/path/to/plugin")
 
 #### Interface Mapping
 
-| Jellyfin C# Interface | WatchNexus Python |
+| Emby C# Interface | WatchNexus Python |
 |----------------------|-------------------|
 | `IMetadataProvider<Movie>` | `MetadataProvider.search_movie()` |
 | `IRemoteMetadataProvider<Series>` | `MetadataProvider.search_tv()` |
@@ -752,7 +752,7 @@ manifest, output_path = convert_jellyfin_plugin("/path/to/plugin")
 
 #### Example: Metadata Provider
 
-**Jellyfin C#:**
+**Emby C#:**
 ```csharp
 public class MyMetadataProvider : IRemoteMetadataProvider<Movie, MovieInfo>
 {
@@ -813,9 +813,9 @@ plugin_class = MyMetadataProvider
 
 ### JavaScript Plugin Conversion
 
-Jellyfin JS plugins are typically UI extensions. Convert them to WatchNexus UI extension format:
+Emby JS plugins are typically UI extensions. Convert them to WatchNexus UI extension format:
 
-**Jellyfin plugin.js:**
+**Emby plugin.js:**
 ```javascript
 export default function (view, params) {
     view.addEventListener('viewshow', function () {

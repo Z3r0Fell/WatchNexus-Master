@@ -32,7 +32,7 @@ Console.WriteLine($"[WatchNexus] Repo root: {repoRoot}");
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? Environment.GetEnvironmentVariable("JWT_SECRET")
     ?? "WatchNexus_DefaultSecret_ChangeInProduction_32chars!";
-var port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8001;
+var port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8002;
 
 // ── Database ──────────────────────────────────────────────────
 var dataDir = Path.Combine(AppContext.BaseDirectory, "data");

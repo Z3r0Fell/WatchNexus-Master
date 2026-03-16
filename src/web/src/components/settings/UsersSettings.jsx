@@ -260,9 +260,9 @@ const AccessTab = () => (
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-4 rounded-xl bg-black/30 border border-white/10">
-          <p className="text-gray-400 mb-2 text-sm">Jellyfin-Compatible API</p>
+          <p className="text-gray-400 mb-2 text-sm">WatchNexus API</p>
           <code className="text-violet-400 text-lg">/api/emby/*</code>
-          <p className="text-xs text-gray-500 mt-2">Connect using Jellyfin/Emby clients</p>
+          <p className="text-xs text-gray-500 mt-2">Connect using compatible media clients</p>
         </div>
         <div className="p-4 rounded-xl bg-black/30 border border-white/10">
           <p className="text-gray-400 mb-2 text-sm">Native API</p>

@@ -119,6 +119,16 @@ public class CrumbsController : ControllerBase
                 ["test_endpoint"] = "/api/crumbs/test/synapse", ["docs_url"] = "https://element-hq.github.io/synapse/latest/usage/administration/admin_api/"
             },
             new() {
+                ["id"] = "media-bridge", ["name"] = "Media Bridge", ["category"] = "gadgets",
+                ["description"] = "External Emby-compatible media server (library browsing, playback, sessions)",
+                ["fields"] = new object[] {
+                    new { key = "url", label = "Server URL", type = "text", required = true, help = "e.g. http://192.168.1.10:8096" },
+                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "Server API key for authentication" },
+                    new { key = "user_id", label = "User ID", type = "text", required = false, help = "Optional server user ID for personalized results" }
+                },
+                ["test_endpoint"] = "/api/crumbs/test/media-bridge", ["docs_url"] = "https://github.com/MediaBrowser/Emby/wiki/Browsing-the-Library"
+            },
+            new() {
                 ["id"] = "omdb", ["name"] = "OMDB", ["category"] = "metadata",
                 ["description"] = "Open Movie Database for detailed movie/TV info",
                 ["fields"] = new object[] {
@@ -277,7 +287,7 @@ public class CrumbsController : ControllerBase
             "yifysubtitles" => await TestUrl("https://yifysubtitles.org", "YIFY Subtitles"),
             "openweathermap" => await TestOpenWeatherMap(fields),
             "matrix" => await TestMatrix(fields),
-            "jellyfin" => await TestJellyfin(fields),
+            "media-bridge" => await TestMediaBridge(fields),
             "synapse" => await TestSynapse(fields),
             "omdb" => await TestOmdb(fields),
             _ => (false, $"Unknown service: {serviceId}", 0)
@@ -490,27 +500,6 @@ public class CrumbsController : ControllerBase
         catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
-    private async Task<(bool, string, int)> TestJellyfin(Dictionary<string, string> fields)
-    {
-        var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
-        var apiKey = fields.GetValueOrDefault("api_key", "");
-        if (string.IsNullOrEmpty(url)) return (false, "Server URL is required", 0);
-        var http = _httpFactory.CreateClient();
-        http.Timeout = TimeSpan.FromSeconds(10);
-        if (!string.IsNullOrEmpty(apiKey)) http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        try
-        {
-            var resp = await http.GetStringAsync($"{url}/System/Info/Public");
-            sw.Stop();
-            var doc = JsonDocument.Parse(resp);
-            var name = doc.RootElement.TryGetProperty("ServerName", out var sn) ? sn.GetString() : "Unknown";
-            var ver = doc.RootElement.TryGetProperty("Version", out var v) ? v.GetString() : "";
-            return (true, $"Connected to {name} v{ver}", (int)sw.ElapsedMilliseconds);
-        }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
-    }
-
     private async Task<(bool, string, int)> TestSynapse(Dictionary<string, string> fields)
     {
         var homeserver = fields.GetValueOrDefault("homeserver", "")?.TrimEnd('/');
@@ -528,6 +517,27 @@ public class CrumbsController : ControllerBase
             var doc = JsonDocument.Parse(resp);
             var ver = doc.RootElement.TryGetProperty("server_version", out var v) ? v.GetString() : "unknown";
             return (true, $"Synapse v{ver}", (int)sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+    }
+
+    private async Task<(bool, string, int)> TestMediaBridge(Dictionary<string, string> fields)
+    {
+        var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
+        var apiKey = fields.GetValueOrDefault("api_key", "");
+        if (string.IsNullOrEmpty(url)) return (false, "Server URL is required", 0);
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        if (!string.IsNullOrEmpty(apiKey)) http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var resp = await http.GetStringAsync($"{url}/System/Info/Public");
+            sw.Stop();
+            var doc = JsonDocument.Parse(resp);
+            var name = doc.RootElement.TryGetProperty("ServerName", out var sn) ? sn.GetString() : "Unknown";
+            var ver = doc.RootElement.TryGetProperty("Version", out var v) ? v.GetString() : "";
+            return (true, $"Connected to {name} v{ver}", (int)sw.ElapsedMilliseconds);
         }
         catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
@@ -579,6 +589,12 @@ public class CrumbsController : ControllerBase
                 var matrixSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "matrix_config");
                 if (matrixSetting != null) matrixSetting.Value = matrixJson;
                 else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "matrix_config", Value = matrixJson, UserId = UserId });
+                break;
+            case "media-bridge":
+                var mbJson = JsonSerializer.Serialize(fields);
+                var mbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "media_bridge_config");
+                if (mbSetting != null) mbSetting.Value = mbJson;
+                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "media_bridge_config", Value = mbJson, UserId = UserId });
                 break;
             case "synapse":
                 var synapseJson = JsonSerializer.Serialize(fields);

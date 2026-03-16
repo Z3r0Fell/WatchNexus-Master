@@ -31,7 +31,7 @@
 
 ### Codename Directory
 - Assigned codenames to all 16 previously unnamed components
-- Gadgets: Sorbet (Weather), Brioche (Podcasts), Nectar (Radio), Ganache (Photos), Bisque (Web Video), Marzipan (Matrix), Praline (Jellyfin), Cinnamon (Synapse), Waffle (Movie Quiz), Yeast (Background Automation)
+- Gadgets: Sorbet (Weather), Brioche (Podcasts), Nectar (Radio), Ganache (Photos), Bisque (Web Video), Marzipan (Matrix), Cinnamon (Synapse), Waffle (Movie Quiz), Yeast (Background Automation)
 - Core: Sourdough (Auth), Taffy (IPTV), Churro (qBittorrent), Saffron (Subtitles), Pantry (Filesystem), Nutmeg (System Stats)
 - All codenames exposed via `/api/ripen/installed` and `/api/info` endpoints
 - Frontend gadget settings now display codename badges
@@ -47,7 +47,7 @@
 - Fixed CrumbsController.cs build error (anonymous type mismatch in service registry)
 - Replaced IntegrationsSettings with CrumbsSettings in SettingsPage.js
 - Renamed "TMDB & Downloads" tab to "API Management"
-- 12 services: TMDB, OpenSubtitles, Addic7ed, Subscene, Podnapisi, YIFY, qBittorrent, OpenWeatherMap, Matrix, Jellyfin, Synapse Admin, OMDB
+- 11 services: TMDB, OpenSubtitles, Addic7ed, Subscene, Podnapisi, YIFY, qBittorrent, OpenWeatherMap, Matrix, Synapse Admin, OMDB
 
 ### P1: Controller Refactoring
 - Split 1970-line ExtendedControllers.cs into 12+ individual files:
@@ -58,9 +58,9 @@
   - QBittorrentController.cs, UtilityControllers.cs
 - Removed ExtendedControllers.cs monolith
 
-### Matrix/Jellyfin Bot System (Python → C# Port)
+### Matrix Bot System (Python → C# Port)
 - **MatrixController.cs** - Matrix Client-Server API: config, rooms, messaging, sync, members, user search
-- **JellyfinController.cs** - Jellyfin API: config, library, items, images, sessions, users, OMDB lookup
+- **BotController.cs** - Bot management: featured film (via TMDB), inactivity checks
 - **SynapseAdminController.cs** - Synapse Admin API: users, rooms, media, purge, registration tokens
 - **GameBotController.cs** - Image processing via SixLabors.ImageSharp: blur, progressive reveal, pixelate, grayscale, resize, quiz generation
 - **BotBackgroundService.cs** - IHostedService with 30-min loop: inactivity check, token drip, featured film rotation

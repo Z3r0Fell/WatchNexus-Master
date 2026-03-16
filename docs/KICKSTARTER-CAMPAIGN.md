@@ -2,7 +2,7 @@
 
 ## 🎬 One App to Rule Them All
 
-**WatchNexus** is a unified, self-hosted media pipeline that replaces the need for 6+ separate applications. No more juggling between Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin. One beautiful app handles everything.
+**WatchNexus** is a unified, self-hosted media pipeline that replaces the need for 6+ separate applications. No more juggling between Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and more. One beautiful app handles everything.
 
 ---
 
@@ -17,7 +17,7 @@ Setting up a home media server today requires:
 | Prowlarr | Indexer aggregation | Medium |
 | qBittorrent | Downloads | Medium |
 | Bazarr | Subtitles | Medium |
-| Jellyfin/Plex | Playback | High |
+| Media Servers | Playback | High |
 
 **Total setup time: 4-8 hours** for a technical user. Non-technical users? Virtually impossible.
 
@@ -75,7 +75,7 @@ A single, beautiful application that handles:
 - ✅ MIT License
 
 ### Hidden Features
-- ✅ **Jellyfin-Compatible API** - Connect existing Jellyfin/Emby clients
+- ✅ **Emby-Compatible API** - Connect existing Emby-compatible media server clients
 
 ---
 
