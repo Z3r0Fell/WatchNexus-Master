@@ -136,6 +136,32 @@ public class CrumbsController : ControllerBase
                 },
                 ["test_endpoint"] = "/api/crumbs/test/omdb", ["docs_url"] = "https://www.omdbapi.com/"
             },
+            new() {
+                ["id"] = "discord-webhook", ["name"] = "Discord Webhook", ["category"] = "notifications",
+                ["description"] = "Send alerts to a Discord channel via webhook (Pepper notification hub)",
+                ["fields"] = new object[] {
+                    new { key = "webhook_url", label = "Webhook URL", type = "text", required = true, help = "Discord channel settings > Integrations > Webhooks" }
+                },
+                ["test_endpoint"] = "/api/pepper/test/discord-webhook", ["docs_url"] = "https://discord.com/developers/docs/resources/webhook"
+            },
+            new() {
+                ["id"] = "telegram-bot", ["name"] = "Telegram Bot", ["category"] = "notifications",
+                ["description"] = "Send alerts to Telegram via bot (Pepper notification hub)",
+                ["fields"] = new object[] {
+                    new { key = "bot_token", label = "Bot Token", type = "password", required = true, help = "Create via @BotFather on Telegram" },
+                    new { key = "chat_id", label = "Chat ID", type = "text", required = true, help = "Your Telegram chat or group ID" }
+                },
+                ["test_endpoint"] = "/api/pepper/test/telegram-bot", ["docs_url"] = "https://core.telegram.org/bots/api"
+            },
+            new() {
+                ["id"] = "pushover", ["name"] = "Pushover", ["category"] = "notifications",
+                ["description"] = "Push notifications to mobile via Pushover (Pepper notification hub)",
+                ["fields"] = new object[] {
+                    new { key = "app_token", label = "Application Token", type = "password", required = true, help = "Create app at pushover.net" },
+                    new { key = "user_key", label = "User Key", type = "password", required = true, help = "Your Pushover user/group key" }
+                },
+                ["test_endpoint"] = "/api/pepper/test/pushover", ["docs_url"] = "https://pushover.net/api"
+            },
         };
         return Ok(services);
     }

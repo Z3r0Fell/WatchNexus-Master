@@ -28,6 +28,10 @@ public class AppDbContext : DbContext
     public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
     public DbSet<WebVideoBookmark> WebVideoBookmarks => Set<WebVideoBookmark>();
     public DbSet<WebVideoHistory> WebVideoHistories => Set<WebVideoHistory>();
+    public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+    public DbSet<MediaRequest> MediaRequests => Set<MediaRequest>();
+    public DbSet<TranscodeJob> TranscodeJobs => Set<TranscodeJob>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -58,6 +62,10 @@ public class AppDbContext : DbContext
         b.Entity<PlaylistItem>(e => { e.HasKey(i => i.Id); e.HasIndex(i => i.PlaylistId); });
         b.Entity<WebVideoBookmark>(e => { e.HasKey(b2 => b2.Id); e.HasIndex(b2 => b2.UserId); });
         b.Entity<WebVideoHistory>(e => { e.HasKey(h => h.Id); e.HasIndex(h => h.UserId); });
+        b.Entity<PlayEvent>(e => { e.HasKey(p => p.Id); e.HasIndex(p => p.UserId); e.HasIndex(p => p.StartedAt); });
+        b.Entity<NotificationLog>(e => { e.HasKey(n => n.Id); e.HasIndex(n => n.SentAt); });
+        b.Entity<MediaRequest>(e => { e.HasKey(r => r.Id); e.HasIndex(r => r.UserId); e.HasIndex(r => r.Status); });
+        b.Entity<TranscodeJob>(e => { e.HasKey(t => t.Id); e.HasIndex(t => t.Status); });
     }
 }
 
@@ -280,4 +288,70 @@ public class WebVideoHistory
     public string Url { get; set; } = "";
     public string Title { get; set; } = "";
     public DateTime ViewedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Truffle — Watch Analytics
+public class PlayEvent
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string MediaType { get; set; } = "movie";
+    public string? TmdbId { get; set; }
+    public string Title { get; set; } = "";
+    public int DurationSeconds { get; set; }
+    public string? DeviceType { get; set; }
+    public string? Quality { get; set; }
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? EndedAt { get; set; }
+}
+
+// Pepper — Notification Hub
+public class NotificationLog
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string EventType { get; set; } = "";
+    public string Channel { get; set; } = "";
+    public string Message { get; set; } = "";
+    public string Status { get; set; } = "sent";
+    public string? Error { get; set; }
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
+}
+
+// Meringue — Media Requests
+public class MediaRequest
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Username { get; set; } = "";
+    public int TmdbId { get; set; }
+    public string MediaType { get; set; } = "movie";
+    public string Title { get; set; } = "";
+    public string? PosterUrl { get; set; }
+    public string? Overview { get; set; }
+    public string Status { get; set; } = "pending";
+    public string? AdminNotes { get; set; }
+    public string? ReviewedBy { get; set; }
+    public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ReviewedAt { get; set; }
+}
+
+// Crucible — Media Processing
+public class TranscodeJob
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string SourcePath { get; set; } = "";
+    public string? OutputPath { get; set; }
+    public string Profile { get; set; } = "h265-default";
+    public string Status { get; set; } = "queued";
+    public double Progress { get; set; }
+    public long? SourceSize { get; set; }
+    public long? OutputSize { get; set; }
+    public string? Resolution { get; set; }
+    public string? Codec { get; set; }
+    public string? Error { get; set; }
+    public string? SettingsJson { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
 }

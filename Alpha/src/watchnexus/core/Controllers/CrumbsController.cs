@@ -136,6 +136,32 @@ public class CrumbsController : ControllerBase
                 },
                 ["test_endpoint"] = "/api/crumbs/test/omdb", ["docs_url"] = "https://www.omdbapi.com/"
             },
+            new() {
+                ["id"] = "discord-webhook", ["name"] = "Discord Webhook", ["category"] = "notifications",
+                ["description"] = "Send alerts to a Discord channel via webhook (Pepper notification hub)",
+                ["fields"] = new object[] {
+                    new { key = "webhook_url", label = "Webhook URL", type = "text", required = true, help = "Discord channel settings > Integrations > Webhooks" }
+                },
+                ["test_endpoint"] = "/api/pepper/test/discord-webhook", ["docs_url"] = "https://discord.com/developers/docs/resources/webhook"
+            },
+            new() {
+                ["id"] = "telegram-bot", ["name"] = "Telegram Bot", ["category"] = "notifications",
+                ["description"] = "Send alerts to Telegram via bot (Pepper notification hub)",
+                ["fields"] = new object[] {
+                    new { key = "bot_token", label = "Bot Token", type = "password", required = true, help = "Create via @BotFather on Telegram" },
+                    new { key = "chat_id", label = "Chat ID", type = "text", required = true, help = "Your Telegram chat or group ID" }
+                },
+                ["test_endpoint"] = "/api/pepper/test/telegram-bot", ["docs_url"] = "https://core.telegram.org/bots/api"
+            },
+            new() {
+                ["id"] = "pushover", ["name"] = "Pushover", ["category"] = "notifications",
+                ["description"] = "Push notifications to mobile via Pushover (Pepper notification hub)",
+                ["fields"] = new object[] {
+                    new { key = "app_token", label = "Application Token", type = "password", required = true, help = "Create app at pushover.net" },
+                    new { key = "user_key", label = "User Key", type = "password", required = true, help = "Your Pushover user/group key" }
+                },
+                ["test_endpoint"] = "/api/pepper/test/pushover", ["docs_url"] = "https://pushover.net/api"
+            },
         };
         return Ok(services);
     }
@@ -435,7 +461,7 @@ public class CrumbsController : ControllerBase
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         http.DefaultRequestHeaders.Add("Api-Key", apiKey);
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.7.3-alpha");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.7.3");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
@@ -500,27 +526,6 @@ public class CrumbsController : ControllerBase
         catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
-    private async Task<(bool, string, int)> TestMediaBridge(Dictionary<string, string> fields)
-    {
-        var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
-        var apiKey = fields.GetValueOrDefault("api_key", "");
-        if (string.IsNullOrEmpty(url)) return (false, "Server URL is required", 0);
-        var http = _httpFactory.CreateClient();
-        http.Timeout = TimeSpan.FromSeconds(10);
-        if (!string.IsNullOrEmpty(apiKey)) http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        try
-        {
-            var resp = await http.GetStringAsync($"{url}/System/Info/Public");
-            sw.Stop();
-            var doc = JsonDocument.Parse(resp);
-            var name = doc.RootElement.TryGetProperty("ServerName", out var sn) ? sn.GetString() : "Unknown";
-            var ver = doc.RootElement.TryGetProperty("Version", out var v) ? v.GetString() : "";
-            return (true, $"Connected to {name} v{ver}", (int)sw.ElapsedMilliseconds);
-        }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
-    }
-
     private async Task<(bool, string, int)> TestSynapse(Dictionary<string, string> fields)
     {
         var homeserver = fields.GetValueOrDefault("homeserver", "")?.TrimEnd('/');
@@ -538,6 +543,27 @@ public class CrumbsController : ControllerBase
             var doc = JsonDocument.Parse(resp);
             var ver = doc.RootElement.TryGetProperty("server_version", out var v) ? v.GetString() : "unknown";
             return (true, $"Synapse v{ver}", (int)sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+    }
+
+    private async Task<(bool, string, int)> TestMediaBridge(Dictionary<string, string> fields)
+    {
+        var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
+        var apiKey = fields.GetValueOrDefault("api_key", "");
+        if (string.IsNullOrEmpty(url)) return (false, "Server URL is required", 0);
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        if (!string.IsNullOrEmpty(apiKey)) http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var resp = await http.GetStringAsync($"{url}/System/Info/Public");
+            sw.Stop();
+            var doc = JsonDocument.Parse(resp);
+            var name = doc.RootElement.TryGetProperty("ServerName", out var sn) ? sn.GetString() : "Unknown";
+            var ver = doc.RootElement.TryGetProperty("Version", out var v) ? v.GetString() : "";
+            return (true, $"Connected to {name} v{ver}", (int)sw.ElapsedMilliseconds);
         }
         catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
@@ -589,6 +615,12 @@ public class CrumbsController : ControllerBase
                 var matrixSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "matrix_config");
                 if (matrixSetting != null) matrixSetting.Value = matrixJson;
                 else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "matrix_config", Value = matrixJson, UserId = UserId });
+                break;
+            case "media-bridge":
+                var mbJson = JsonSerializer.Serialize(fields);
+                var mbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == UserId && s.Key == "media_bridge_config");
+                if (mbSetting != null) mbSetting.Value = mbJson;
+                else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "media_bridge_config", Value = mbJson, UserId = UserId });
                 break;
             case "synapse":
                 var synapseJson = JsonSerializer.Serialize(fields);
