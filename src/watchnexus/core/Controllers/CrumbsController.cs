@@ -162,6 +162,25 @@ public class CrumbsController : ControllerBase
                 },
                 ["test_endpoint"] = "/api/pepper/test/pushover", ["docs_url"] = "https://pushover.net/api"
             },
+            new() {
+                ["id"] = "prowlarr", ["name"] = "Prowlarr (Usenet Indexer)", ["category"] = "usenet",
+                ["description"] = "Usenet indexer search via Prowlarr (Brine gadget)",
+                ["fields"] = new object[] {
+                    new { key = "url", label = "Prowlarr URL", type = "text", required = true, help = "e.g. http://localhost:9696" },
+                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "Prowlarr Settings > General > API Key" },
+                    new { key = "type", label = "Type", type = "text", required = false, help = "prowlarr (default) or newznab" }
+                },
+                ["test_endpoint"] = "/api/gadgets/brine/test", ["docs_url"] = "https://wiki.servarr.com/prowlarr"
+            },
+            new() {
+                ["id"] = "sabnzbd", ["name"] = "SABnzbd (Usenet Downloader)", ["category"] = "usenet",
+                ["description"] = "Usenet NZB downloading via SABnzbd (Ladle gadget)",
+                ["fields"] = new object[] {
+                    new { key = "url", label = "SABnzbd URL", type = "text", required = true, help = "e.g. http://localhost:8080" },
+                    new { key = "api_key", label = "API Key", type = "password", required = true, help = "SABnzbd Config > General > API Key" }
+                },
+                ["test_endpoint"] = "/api/gadgets/ladle/test", ["docs_url"] = "https://sabnzbd.org/wiki/"
+            },
         };
         return Ok(services);
     }

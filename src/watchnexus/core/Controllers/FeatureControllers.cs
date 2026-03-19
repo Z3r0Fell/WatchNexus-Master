@@ -32,6 +32,8 @@ public class RipenController : ControllerBase
         new() { ["gadget_id"] = "meringue", ["codename"] = "meringue", ["name"] = "User Requests", ["version"] = "1.0.0", ["category"] = "social", ["description"] = "Users request movies/TV shows, admins approve or reject" },
         new() { ["gadget_id"] = "rind", ["codename"] = "rind", ["name"] = "Parental Controls", ["version"] = "1.0.0", ["category"] = "security", ["description"] = "Content rating filters, PIN locks, and per-user restrictions" },
         new() { ["gadget_id"] = "crucible", ["codename"] = "crucible", ["name"] = "Media Processing", ["version"] = "1.0.0", ["category"] = "processing", ["description"] = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis" },
+        new() { ["gadget_id"] = "brine", ["codename"] = "brine", ["name"] = "Usenet Indexer", ["version"] = "1.0.0", ["category"] = "usenet", ["description"] = "Search NZBs via Prowlarr or Newznab-compatible indexers" },
+        new() { ["gadget_id"] = "ladle", ["codename"] = "ladle", ["name"] = "Usenet Downloader", ["version"] = "1.0.0", ["category"] = "usenet", ["description"] = "SABnzbd queue management, downloads, history, and speed control" },
     };
 
     [HttpGet("installed")]
