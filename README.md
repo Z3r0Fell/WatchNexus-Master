@@ -1,10 +1,10 @@
-# WatchNexus v2.7.3
+# WatchNexus v2.8.0
 
 > Unified, self-hosted media pipeline. Request, acquire, organize, and watch your media.
 
 **QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
 
-## What's New in 2.7.3
+## What's New in 2.8.0
 
 - **EF Core Migrations** — Versioned, incremental database schema management (replaces `EnsureCreated`)
 - **Dynamic Module Loading** — Separated modules in `/separated/` are compiled and loaded as DLLs at startup
@@ -44,8 +44,8 @@ WatchNexus/
 │   └── beacon/              # System Tray
 │
 ├── release_builds/          # Distributable archives
-│   ├── watchnexus-2.7.3-win-x64.tar.gz
-│   └── watchnexus-2.7.3-linux-x64.tar.gz
+│   ├── watchnexus-2.8.0-win-x64.tar.gz
+│   └── watchnexus-2.8.0-linux-x64.tar.gz
 │
 ├── scripts/                 # Build & install scripts
 ├── CHANGELOG.md
@@ -103,13 +103,13 @@ Fortress computes SHA-256 baselines for all WatchNexus assemblies at startup, pe
 ### From Release Build
 ```bash
 # Linux
-tar xzf watchnexus-2.7.3-linux-x64.tar.gz
-cd watchnexus-2.7.3-linux-x64
+tar xzf watchnexus-2.8.0-linux-x64.tar.gz
+cd watchnexus-2.8.0-linux-x64
 sudo bash install.sh
 # Open http://localhost:8001
 
 # Windows
-# Extract watchnexus-2.7.3-win-x64.tar.gz
+# Extract watchnexus-2.8.0-win-x64.tar.gz
 # Run start-watchnexus.bat
 # Open http://localhost:8001
 ```

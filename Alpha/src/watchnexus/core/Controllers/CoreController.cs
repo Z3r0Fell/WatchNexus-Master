@@ -17,7 +17,7 @@ public class CoreController : ControllerBase
     {
         status = "healthy",
         timestamp = DateTime.UtcNow,
-        version = "2.7.3-alpha"
+        version = "2.8.0-alpha"
     });
 
     [Authorize]
@@ -36,22 +36,22 @@ public class CoreController : ControllerBase
         // Add built-in modules
         var builtIn = new[]
         {
-            new { name = "Marmalade", codename = "marmalade", version = "2.7.3-alpha", status = "active" },
-            new { name = "Bastion", codename = "bastion", version = "2.7.3-alpha", status = "active" },
-            new { name = "Tunnel", codename = "tunnel", version = "2.7.3-alpha", status = "active" },
-            new { name = "Zest", codename = "zest", version = "2.7.3-alpha", status = "active" },
-            new { name = "Fondue", codename = "fondue", version = "2.7.3-alpha", status = "active" },
-            new { name = "Custard", codename = "custard", version = "2.7.3-alpha", status = "active" },
-            new { name = "Truffle", codename = "truffle", version = "2.7.3-alpha", status = "active" },
-            new { name = "Pepper", codename = "pepper", version = "2.7.3-alpha", status = "active" },
-            new { name = "Meringue", codename = "meringue", version = "2.7.3-alpha", status = "active" },
-            new { name = "Rind", codename = "rind", version = "2.7.3-alpha", status = "active" },
-            new { name = "Crucible", codename = "crucible", version = "2.7.3-alpha", status = "active" },
+            new { name = "Marmalade", codename = "marmalade", version = "2.8.0-alpha", status = "active" },
+            new { name = "Bastion", codename = "bastion", version = "2.8.0-alpha", status = "active" },
+            new { name = "Tunnel", codename = "tunnel", version = "2.8.0-alpha", status = "active" },
+            new { name = "Zest", codename = "zest", version = "2.8.0-alpha", status = "active" },
+            new { name = "Fondue", codename = "fondue", version = "2.8.0-alpha", status = "active" },
+            new { name = "Custard", codename = "custard", version = "2.8.0-alpha", status = "active" },
+            new { name = "Truffle", codename = "truffle", version = "2.8.0-alpha", status = "active" },
+            new { name = "Pepper", codename = "pepper", version = "2.8.0-alpha", status = "active" },
+            new { name = "Meringue", codename = "meringue", version = "2.8.0-alpha", status = "active" },
+            new { name = "Rind", codename = "rind", version = "2.8.0-alpha", status = "active" },
+            new { name = "Crucible", codename = "crucible", version = "2.8.0-alpha", status = "active" },
         };
 
         return Ok(new
         {
-            version = "2.7.3-alpha",
+            version = "2.8.0-alpha",
             hostname = Environment.MachineName,
             platform = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
             architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),

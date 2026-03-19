@@ -1,6 +1,6 @@
 # WatchNexus Changelog
 
-## 2026-03-19 - v2.7.3 (Five New Native Features)
+## 2026-03-19 - v2.8.0 (Five New Native Features)
 
 ### New Features
 - **Truffle** (Watch Analytics & Year Wrapped) — Play event tracking, viewing stats (by type, hour, day), top titles, Year Wrapped endpoint with streaks & monthly trends, admin overview
@@ -9,12 +9,15 @@
 - **Rind** (Parental Controls) — Content rating filters (G→NC-17), genre restrictions, PIN lock with BCrypt hashing, per-user profiles, library access controls, content access check API
 - **Crucible** (Media Processing Pipeline) — 7 transcode profiles (H.265, H.264, subtitle extraction/burning, audio normalize), job queue, FFprobe file analysis, FFmpeg status detection, space savings tracking
 
+### Version Bump
+- All modules updated from 2.7.3 → 2.8.0
+- Alpha updated from 2.7.3-alpha → 2.8.0-alpha
+
 ### Architecture
 - 4 new EF Core entities: PlayEvent, NotificationLog, MediaRequest, TranscodeJob
 - EF Core migration: AddNewFeatureEntities
-- All 5 registered in: CoreController (29 modules), FeatureControllers, GadgetsCatalogueController, CrumbsController
+- 29 total modules registered
 - 3 notification services added to Crumbs: discord-webhook, telegram-bot, pushover
-- Alpha directory synced with all changes
 
 ### Codename Assignments (All 15 Future Features)
 | Feature | Codename |
