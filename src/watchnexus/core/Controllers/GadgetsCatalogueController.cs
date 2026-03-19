@@ -21,6 +21,11 @@ public class GadgetsCatalogueController : ControllerBase
         new { id = "gamebot", codename = "waffle", name = "Movie Quiz", version = "1.0.0", author = "WatchNexus", status = "active", description = "Guess-the-poster games with blur and reveal effects", plugin_type = "game", category = "game" },
         new { id = "media-bridge", codename = "custard", name = "Media Bridge", version = "1.0.0", author = "WatchNexus", status = "active", description = "Browse and manage your external Emby-compatible media server library", plugin_type = "metadata", category = "metadata" },
         new { id = "bot", codename = "yeast", name = "Background Automation", version = "1.0.0", author = "WatchNexus", status = "active", description = "Inactivity checks, token drip, and featured film rotation", plugin_type = "service", category = "service" },
+        new { id = "truffle", codename = "truffle", name = "Watch Analytics", version = "1.0.0", author = "WatchNexus", status = "active", description = "Play tracking, viewing stats, trends, and Year Wrapped", plugin_type = "analytics", category = "analytics" },
+        new { id = "pepper", codename = "pepper", name = "Notification Hub", version = "1.0.0", author = "WatchNexus", status = "active", description = "Discord, Telegram, Slack, and Pushover alerts for media events", plugin_type = "notification", category = "notification" },
+        new { id = "meringue", codename = "meringue", name = "User Requests", version = "1.0.0", author = "WatchNexus", status = "active", description = "Users request movies/TV shows, admins approve or reject", plugin_type = "social", category = "social" },
+        new { id = "rind", codename = "rind", name = "Parental Controls", version = "1.0.0", author = "WatchNexus", status = "active", description = "Content rating filters, PIN locks, and per-user restrictions", plugin_type = "security", category = "security" },
+        new { id = "crucible", codename = "crucible", name = "Media Processing", version = "1.0.0", author = "WatchNexus", status = "active", description = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis", plugin_type = "processing", category = "processing" },
     });
 
     [HttpGet("plugins/{id}")]

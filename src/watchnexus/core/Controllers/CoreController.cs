@@ -59,6 +59,11 @@ public class CoreController : ControllerBase
             new { name = "Crumbs", codename = "crumbs", version = "2.7.3", status = "active" },
             new { name = "Fortress", codename = "fortress", version = "2.7.3", status = "active" },
             new { name = "Custard", codename = "custard", version = "2.7.3", status = "active" },
+            new { name = "Truffle", codename = "truffle", version = "2.7.3", status = "active" },
+            new { name = "Pepper", codename = "pepper", version = "2.7.3", status = "active" },
+            new { name = "Meringue", codename = "meringue", version = "2.7.3", status = "active" },
+            new { name = "Rind", codename = "rind", version = "2.7.3", status = "active" },
+            new { name = "Crucible", codename = "crucible", version = "2.7.3", status = "active" },
             new { name = "Ripen", codename = "ripen", version = "2.7.3", status = "active" },
         };
 

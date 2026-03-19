@@ -27,6 +27,11 @@ public class RipenController : ControllerBase
         new() { ["gadget_id"] = "gamebot", ["codename"] = "waffle", ["name"] = "Movie Quiz", ["version"] = "1.0.0", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
         new() { ["gadget_id"] = "media-bridge", ["codename"] = "custard", ["name"] = "Media Bridge", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "Browse and manage your external Emby-compatible media server library" },
         new() { ["gadget_id"] = "bot", ["codename"] = "yeast", ["name"] = "Background Automation", ["version"] = "1.0.0", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
+        new() { ["gadget_id"] = "truffle", ["codename"] = "truffle", ["name"] = "Watch Analytics", ["version"] = "1.0.0", ["category"] = "analytics", ["description"] = "Play tracking, viewing stats, trends, and Year Wrapped" },
+        new() { ["gadget_id"] = "pepper", ["codename"] = "pepper", ["name"] = "Notification Hub", ["version"] = "1.0.0", ["category"] = "notification", ["description"] = "Discord, Telegram, Slack, and Pushover alerts for media events" },
+        new() { ["gadget_id"] = "meringue", ["codename"] = "meringue", ["name"] = "User Requests", ["version"] = "1.0.0", ["category"] = "social", ["description"] = "Users request movies/TV shows, admins approve or reject" },
+        new() { ["gadget_id"] = "rind", ["codename"] = "rind", ["name"] = "Parental Controls", ["version"] = "1.0.0", ["category"] = "security", ["description"] = "Content rating filters, PIN locks, and per-user restrictions" },
+        new() { ["gadget_id"] = "crucible", ["codename"] = "crucible", ["name"] = "Media Processing", ["version"] = "1.0.0", ["category"] = "processing", ["description"] = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis" },
     };
 
     [HttpGet("installed")]
