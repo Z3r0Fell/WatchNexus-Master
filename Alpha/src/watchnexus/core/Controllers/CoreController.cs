@@ -47,6 +47,8 @@ public class CoreController : ControllerBase
             new { name = "Meringue", codename = "meringue", version = "2.8.0-alpha", status = "active" },
             new { name = "Rind", codename = "rind", version = "2.8.0-alpha", status = "active" },
             new { name = "Crucible", codename = "crucible", version = "2.8.0-alpha", status = "active" },
+            new { name = "Brine", codename = "brine", version = "2.8.0-alpha", status = "active" },
+            new { name = "Ladle", codename = "ladle", version = "2.8.0-alpha", status = "active" },
         };
 
         return Ok(new

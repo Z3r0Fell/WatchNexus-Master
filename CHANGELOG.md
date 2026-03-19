@@ -13,6 +13,12 @@
 - All modules updated from 2.7.3 → 2.8.0
 - Alpha updated from 2.7.3-alpha → 2.8.0-alpha
 
+### Usenet Support (Alpha User Feedback)
+- **Brine** (Usenet Indexer) — Prowlarr and Newznab-compatible proxy: NZB search (general, movie, TV), indexer management, category browsing, grab/download NZBs
+- **Ladle** (Usenet Downloader) — SABnzbd proxy: queue management (add/pause/resume/delete), download history, server stats, speed limit control, category management, priority setting
+- Both registered in Crumbs service registry with full configuration fields
+- 31 total modules
+
 ### Architecture
 - 4 new EF Core entities: PlayEvent, NotificationLog, MediaRequest, TranscodeJob
 - EF Core migration: AddNewFeatureEntities

@@ -9,7 +9,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus". All features mu
 - **Auth:** JWT Bearer Tokens
 - **Dev Proxy:** Python FastAPI reverse proxy (port 8001 → C# server port 8002)
 
-## Current Version: 2.8.0 | Total Modules: 29
+## Current Version: 2.8.0 | Total Modules: 31
 
 ## Implemented Features
 
@@ -53,6 +53,8 @@ Build a unified, self-hosted media pipeline called "WatchNexus". All features mu
 | Meringue | User Request System | /api/meringue | Active |
 | Rind | Parental Controls | /api/rind | Active |
 | Crucible | Media Processing Pipeline (FFmpeg) | /api/crucible | Active |
+| Brine | Usenet Indexer (Prowlarr/Newznab) | /api/gadgets/brine | Active |
+| Ladle | Usenet Downloader (SABnzbd) | /api/gadgets/ladle | Active |
 
 ## Backlog (Codenames Assigned)
 

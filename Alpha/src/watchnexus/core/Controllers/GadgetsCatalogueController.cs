@@ -26,6 +26,8 @@ public class GadgetsCatalogueController : ControllerBase
         new { id = "meringue", codename = "meringue", name = "User Requests", version = "1.0.0", author = "WatchNexus", status = "active", description = "Users request movies/TV shows, admins approve or reject", plugin_type = "social", category = "social" },
         new { id = "rind", codename = "rind", name = "Parental Controls", version = "1.0.0", author = "WatchNexus", status = "active", description = "Content rating filters, PIN locks, and per-user restrictions", plugin_type = "security", category = "security" },
         new { id = "crucible", codename = "crucible", name = "Media Processing", version = "1.0.0", author = "WatchNexus", status = "active", description = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis", plugin_type = "processing", category = "processing" },
+        new { id = "brine", codename = "brine", name = "Usenet Indexer", version = "1.0.0", author = "WatchNexus", status = "active", description = "Search NZBs via Prowlarr or Newznab-compatible indexers", plugin_type = "usenet", category = "usenet" },
+        new { id = "ladle", codename = "ladle", name = "Usenet Downloader", version = "1.0.0", author = "WatchNexus", status = "active", description = "SABnzbd queue management, downloads, history, and speed control", plugin_type = "usenet", category = "usenet" },
     });
 
     [HttpGet("plugins/{id}")]
