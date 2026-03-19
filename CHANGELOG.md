@@ -1,5 +1,44 @@
 # WatchNexus Changelog
 
+## 2026-03-19 - v2.7.3 (Five New Native Features)
+
+### New Features
+- **Truffle** (Watch Analytics & Year Wrapped) — Play event tracking, viewing stats (by type, hour, day), top titles, Year Wrapped endpoint with streaks & monthly trends, admin overview
+- **Pepper** (Notification Hub) — Multi-channel alerts: Discord webhooks, Telegram bots, Slack webhooks, Pushover. 7 event types. Channel management, test, and history log
+- **Meringue** (User Request System) — Users request movies/TV via TMDB ID. Admin approve/reject/fulfill workflow. Duplicate detection. Request statistics
+- **Rind** (Parental Controls) — Content rating filters (G→NC-17), genre restrictions, PIN lock with BCrypt hashing, per-user profiles, library access controls, content access check API
+- **Crucible** (Media Processing Pipeline) — 7 transcode profiles (H.265, H.264, subtitle extraction/burning, audio normalize), job queue, FFprobe file analysis, FFmpeg status detection, space savings tracking
+
+### Architecture
+- 4 new EF Core entities: PlayEvent, NotificationLog, MediaRequest, TranscodeJob
+- EF Core migration: AddNewFeatureEntities
+- All 5 registered in: CoreController (29 modules), FeatureControllers, GadgetsCatalogueController, CrumbsController
+- 3 notification services added to Crumbs: discord-webhook, telegram-bot, pushover
+- Alpha directory synced with all changes
+
+### Codename Assignments (All 15 Future Features)
+| Feature | Codename |
+|---------|----------|
+| Watch Analytics | Truffle |
+| Notification Hub | Pepper |
+| User Requests | Meringue |
+| Trakt/Last.fm Scrobbling | Glaze |
+| Collections & Smart Playlists | Roux |
+| Scheduled Tasks | Simmer |
+| Parental Controls | Rind |
+| RSS Feeds | Sprout |
+| Ebook/Audiobook/Comics | Biscotti |
+| Music Library | Treacle |
+| AI Metadata | Sage |
+| Media Processing | Crucible |
+| Live TV DVR | Terrine |
+| Offline Sync | Popsicle |
+| S3/Cloud Backup | Preserves |
+
+### Testing
+- iteration_10.json: 34/34 backend tests = 100%
+- All 5 feature CRUD flows tested end-to-end
+
 ## 2026-03-16 - v2.7.3 (Code Cleanup & Media Bridge)
 
 ### Jellyfin Removal & Media Bridge Recoding
