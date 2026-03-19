@@ -9,7 +9,7 @@ Build a unified, self-hosted media pipeline called "WatchNexus". All features mu
 - **Auth:** JWT Bearer Tokens
 - **Dev Proxy:** Python FastAPI reverse proxy (port 8001 → C# server port 8002)
 
-## Current Version: 2.7.3 | Total Modules: 29
+## Current Version: 2.8.0 | Total Modules: 29
 
 ## Implemented Features
 

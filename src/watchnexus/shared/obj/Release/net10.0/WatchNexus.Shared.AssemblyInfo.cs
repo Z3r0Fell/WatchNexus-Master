@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WatchNexus.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aebe0a0af06b7e07339d695f0af9b69f77b1bc10")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+57668f4abaacd6d483bc41a510e3925855d5f84c")]
 [assembly: System.Reflection.AssemblyProductAttribute("WatchNexus.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WatchNexus.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
