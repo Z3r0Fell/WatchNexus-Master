@@ -41,6 +41,17 @@ const TIER_BADGES = {
 const RELEASES = [
   // 2.8.x Series - Current
   {
+    version: '2.8.2.2', date: '2026-03-22', type: 'patch', title: 'System Tray Icon',
+    highlights: ['System tray icon on launch', 'Windows & Linux support', 'Quick-access Open & Quit menu'],
+    changes: [
+      { type: 'feature', text: 'System tray icon now loads on launch for both Windows and Linux, confirming WatchNexus is running' },
+      { type: 'feature', text: 'Windows: Native WinForms NotifyIcon with branded "W" icon, double-click to open browser, right-click context menu' },
+      { type: 'feature', text: 'Linux: GTK AppIndicator3 tray icon via embedded Python helper (supports AyatanaAppIndicator3 and legacy)' },
+      { type: 'improvement', text: 'Headless/server environments are auto-detected and gracefully skip tray icon initialization' },
+      { type: 'improvement', text: 'Icon resolves from bundled watchnexus-logo.png with procedural fallback on Windows' },
+    ]
+  },
+  {
     version: '2.8.2.1', date: '2026-03-22', type: 'patch', title: 'Searchable Help & Documentation Page',
     highlights: ['Dedicated /help page', 'Searchable help topics', '40+ documented topics'],
     changes: [
@@ -365,7 +376,7 @@ const RELEASES = [
 export const AboutSettings = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [systemInfo, setSystemInfo] = useState(null);
-  const [expandedVersion, setExpandedVersion] = useState('2.8.2.1');
+  const [expandedVersion, setExpandedVersion] = useState('2.8.2.2');
 
   useEffect(() => {
     const fetchSystemInfo = async () => {
@@ -421,7 +432,7 @@ export const AboutSettings = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold">About WatchNexus</h2>
-            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.8.2.1'}</p>
+            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.8.2.2'}</p>
           </div>
         </div>
 
@@ -468,7 +479,7 @@ const OverviewTab = ({ systemInfo }) => (
     <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-2xl p-6">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.8.2.1'}</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.8.2.2'}</h3>
           <p className="text-gray-300">Unified Media Pipeline - Your Personal Media Server</p>
           <p className="text-sm text-gray-400 mt-2">A self-hosted media server that replaces Sonarr, Radarr, Prowlarr, qBittorrent, and Bazarr.</p>
         </div>

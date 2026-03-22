@@ -3,7 +3,7 @@
 ## Overview
 WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backend and React frontend. It provides a comprehensive media management experience with 31+ features (called "gadgets") including library management, streaming, indexing, analytics, notifications, parental controls, and more.
 
-## Version: 2.8.2.1
+## Version: 2.8.2.2
 
 ## Architecture
 - **Backend**: C#/.NET 10 ASP.NET Core server (port 8002)
@@ -75,9 +75,16 @@ WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backen
 - **Frontend**: All pages load and function correctly
 - **Testing Agent**: 16/16 tests passed, 100% success rate
 
-## Release Builds (v2.8.2.1)
-- **Windows (win-x64)**: `/app/release_builds/WatchNexus-v2.8.2.1-win-x64.zip` (59MB, 384 files, self-contained)
-- **Linux (linux-x64)**: `/app/release_builds/WatchNexus-v2.8.2.1-linux-x64.zip` (59MB, 381 files, self-contained)
+## New Features (v2.8.2.2)
+30. **System Tray Icon** — Cross-platform tray icon that loads on launch
+    - Windows: Native WinForms NotifyIcon with branded icon, double-click to open browser, context menu (Open/Quit)
+    - Linux: Embedded Python helper using GTK AppIndicator3 (ayatana + legacy support)
+    - Headless environments gracefully skip tray initialization
+    - TrayIconService registered as BackgroundService; csproj conditional UseWindowsForms for win-x64
+
+## Release Builds (v2.8.2.2)
+- **Windows (win-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-win-x64.zip` (72MB, 472 files, self-contained + WinForms)
+- **Linux (linux-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-linux-x64.zip` (59MB, 381 files, self-contained)
 - Both include: executable, .NET runtime, React frontend build, CHANGELOG.md
 
 ## Upcoming Tasks (P1)

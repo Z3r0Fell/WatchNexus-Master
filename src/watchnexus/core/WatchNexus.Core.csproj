@@ -8,6 +8,14 @@
     <WebRoot>..\..\web</WebRoot>
   </PropertyGroup>
 
+  <!-- Windows: upgrade TFM to net10.0-windows and enable WinForms for system tray icon -->
+  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <DefineConstants>$(DefineConstants);WINDOWS_BUILD</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.4" />

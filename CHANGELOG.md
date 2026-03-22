@@ -1,5 +1,22 @@
 # WatchNexus Changelog
 
+## 2026-03-22 - v2.8.2.2 (System Tray Icon)
+
+### New Features
+- **System Tray Icon** — WatchNexus now loads a system tray icon on launch for both Windows and Linux, providing quick access to the web UI and a graceful quit option
+  - **Windows**: Native WinForms `NotifyIcon` on a dedicated STA thread with branded "W" icon, double-click to open browser, and right-click context menu (Open / Quit)
+  - **Linux**: Embedded Python helper using GTK `AppIndicator3` (supports both `AyatanaAppIndicator3` and legacy `AppIndicator3`), with context menu and SIGTERM-based shutdown
+  - Headless/server environments are detected and gracefully skipped (no display = no tray)
+  - Icon resolves from the bundled `watchnexus-logo.png` in the web build, with a procedurally generated fallback on Windows
+
+### Technical
+- New `TrayIconService` registered as a `BackgroundService` in the ASP.NET Core host
+- Conditional `UseWindowsForms` + `WINDOWS_BUILD` define in `.csproj` for Windows RID builds
+- Linux tray helper script is generated at runtime and launched as a managed subprocess
+
+### Version Bump
+- All modules updated from 2.8.2.1 to 2.8.2.2
+
 ## 2026-03-22 - v2.8.2.1 (Searchable Help & Documentation Page)
 
 ### New Features

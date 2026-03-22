@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
+using Image = SixLabors.ImageSharp.Image;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
