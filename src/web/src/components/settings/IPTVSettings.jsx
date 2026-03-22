@@ -123,6 +123,7 @@ export const IPTVSettings = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-pink-600 to-rose-500"
+        help={{ title: "IPTV Configuration", description: "Set up live TV by adding M3U playlist sources and EPG (Electronic Program Guide) data. Configure recording options for DVR functionality. Supports standard IPTV providers and custom M3U playlists.", examples: ["M3U Source: Paste your IPTV provider's M3U playlist URL", "EPG: Add an XMLTV guide URL for program listings", "DVR: Record live TV to your library path"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>

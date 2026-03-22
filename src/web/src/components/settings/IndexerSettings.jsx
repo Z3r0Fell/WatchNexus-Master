@@ -5,6 +5,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { compoteApi } from '../../services/api';
 import { IndexerHealthCheck } from './IndexerHealthCheck';
 
@@ -96,6 +97,7 @@ export const IndexerSettings = () => {
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Server className="w-5 h-5 text-violet-400" /> Indexers (Compote)
+              <HelpTooltip title="Indexers (Compote)" description="Indexers are search providers that WatchNexus queries to find torrent and NZB releases. Add Torznab-compatible indexers like Jackett, Prowlarr, or direct sites. Multiple indexers can be configured and searched simultaneously." examples={["Jackett: Install from github.com/Jackett/Jackett, add its Torznab URL", "Prowlarr: Install from prowlarr.com, add indexers there and connect here", "RSS: Add RSS feed URLs for automatic new release monitoring"]} />
             </h2>
             <p className="text-sm text-gray-400 mt-1">Configure torrent indexers, RSS feeds, and usenet sources</p>
           </div>

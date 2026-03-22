@@ -91,6 +91,7 @@ export const GelatinSettings = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-cyan-600 to-teal-500"
+        help={{ title: "External Access (Gelatin)", description: "Securely access your WatchNexus server from outside your home network. Create tunnels for remote access and generate share links for individual media items.", examples: ["Tunnel: Creates a secure connection from the internet to your server", "Share Link: Generate a temporary link to share a specific movie or show", "Custom Domain: Point your own domain to your WatchNexus instance"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>

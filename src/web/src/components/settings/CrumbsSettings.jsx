@@ -7,6 +7,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { toast } from 'sonner';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { BACKEND_URL } from '../../lib/config';
 import axios from 'axios';
 
@@ -131,6 +132,7 @@ export const CrumbsSettings = () => {
             <h2 className="text-xl font-bold flex items-center gap-2">
               API Management
               <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Crumbs</span>
+              <HelpTooltip title="API Management (Crumbs)" description="Manage API keys and credentials for external services that WatchNexus integrates with. Each service requires its own API key to function. Keys are stored securely on your server." examples={["TMDB: Required for movie/TV metadata. Get a free key at themoviedb.org", "OpenSubtitles: Required for subtitle downloads. Register at opensubtitles.com", "Click a service to configure its API key"]} />
             </h2>
             <p className="text-sm text-gray-400">Manage credentials for all external services</p>
           </div>

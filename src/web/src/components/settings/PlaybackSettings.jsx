@@ -11,6 +11,7 @@ import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
 import { progressApi } from '../../services/api';
 
@@ -137,6 +138,7 @@ export const PlaybackSettings = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-green-600 to-emerald-500"
+        help={{ title: "Playback Settings", description: "Control how media plays back including auto-skip for intros/credits, next episode behavior, audio preferences, and display options. Chromaprint can auto-detect intro segments using audio fingerprinting.", examples: ["Skip Intro: Automatically skips TV show opening credits", "Auto-Play: Plays the next episode after a countdown", "Audio: Set default volume and preferred language track"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>
@@ -160,6 +162,7 @@ const SkipTab = ({ settings, setSettings }) => (
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <FastForward className="w-5 h-5 text-violet-400" />
         Skip Intro & Credits
+        <HelpTooltip title="Skip Intro & Credits" description="Automatically detects and skips TV show intros, credits, and recaps. When enabled, a 'Skip' button appears during intro/credit segments, or they can be skipped automatically." examples={["Auto-skip intros: Jumps past opening credits automatically", "Skip credits: Skips end credits and goes to next episode", "Skip recaps: Skips 'previously on...' segments"]} />
       </h3>
       <p className="text-sm text-gray-400 mb-6">
         Automatically detect and skip intros, credits, and recaps in TV shows.
@@ -212,6 +215,7 @@ const SkipTab = ({ settings, setSettings }) => (
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <Clock className="w-5 h-5 text-violet-400" />
         Default Segment Timings
+        <HelpTooltip title="Default Segment Timings" description="Fallback timings used when Chromaprint audio fingerprinting can't detect intro/credit boundaries. Set approximate start/end times in seconds for typical intros and credits." examples={["Intro start: Usually 0-5 seconds into the episode", "Intro end: Most TV intros are 30-90 seconds", "Credits start: Usually begins 1-3 minutes before the end"]} />
       </h3>
       <p className="text-sm text-gray-400 mb-6">
         Fallback timings used when automatic detection is unavailable.
@@ -265,6 +269,7 @@ const AutoplayTab = ({ settings, setSettings }) => (
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <SkipForward className="w-5 h-5 text-violet-400" />
         Auto-Play Next Episode
+        <HelpTooltip title="Auto-Play Next Episode" description="Automatically starts playing the next episode in a series when the current one ends. A countdown timer gives you a chance to cancel before the next episode starts." examples={["Set countdown to 5-10 seconds for a comfortable buffer", "Disable for movies — this mainly applies to TV series", "Works with watched/unwatched tracking"]} />
       </h3>
 
       <div className="space-y-4">
@@ -307,6 +312,7 @@ const DetectionTab = ({ settings, setSettings, chromaprintStatus, analyzing, han
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <Zap className="w-5 h-5 text-violet-400" />
         Intro Detection (Chromaprint)
+        <HelpTooltip title="Chromaprint Intro Detection" description="Uses audio fingerprinting technology to automatically detect intro and credit segments by analyzing audio patterns across episodes. Requires the Chromaprint library to be installed on the server." examples={["Status shows if Chromaprint is installed and working", "Once enabled, WatchNexus analyzes episodes in the background", "Results are cached so detection only runs once per episode"]} />
       </h3>
 
       {/* Chromaprint status */}
@@ -384,6 +390,7 @@ const PlayerTab = ({ settings, setSettings }) => (
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <Volume2 className="w-5 h-5 text-violet-400" />
         Audio Settings
+        <HelpTooltip title="Audio Settings" description="Configure default audio playback behavior including volume level, preferred language track, and audio normalization." examples={["Default volume: Set to 80-100 for typical use", "Audio language: Choose your preferred language for multi-track media", "Audio normalization: Evens out loud and quiet parts"]} />
       </h3>
 
       <div className="space-y-4">
@@ -419,6 +426,7 @@ const PlayerTab = ({ settings, setSettings }) => (
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <Maximize className="w-5 h-5 text-violet-400" />
         Display Options
+        <HelpTooltip title="Display Options" description="Control how the video player renders content including subtitle appearance, default fullscreen behavior, and aspect ratio handling." examples={["Default subtitle size: Adjust for your screen distance", "Auto-fullscreen: Automatically enter fullscreen when playback starts", "Aspect ratio: Keep 'Auto' to preserve the original video ratio"]} />
       </h3>
 
       <div className="space-y-4">
@@ -516,6 +524,7 @@ const HistoryTab = () => {
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <History className="w-5 h-5 text-violet-400" />
               Watch History
+              <HelpTooltip title="Watch History" description="View and manage your watch history. This tracks every movie and episode you've watched, including progress. You can clear individual items or wipe the entire history." examples={["Click an item to resume watching from where you left off", "Use the trash icon to remove individual entries", "'Clear All' permanently deletes your entire watch history"]} />
             </h3>
             <p className="text-sm text-gray-400 mt-1">
               {watchHistory.length} item{watchHistory.length !== 1 ? 's' : ''} in your watch history

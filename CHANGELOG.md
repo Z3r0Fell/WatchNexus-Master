@@ -1,5 +1,18 @@
 # WatchNexus Changelog
 
+## 2026-03-22 - v2.8.2 (Help Tooltips & Sidebar UX Fix)
+
+### New Features
+- **Help Tooltips** — Added visible question-mark help icons next to every settings section heading and key individual settings. Clicking the icon opens a popover with a detailed description of the feature, what it does, and setup examples. Covers General, Playback, Downloads, Subtitles, Streaming, IPTV, Integrations, Gelatin, Theme Forge, Users, Maintenance, API Management, Indexers, Libraries, Media Health, Quality Profiles, and Gadgets settings
+- **Reusable HelpTooltip component** — New `HelpTooltip` and `SectionHelp` components at `/components/ui/HelpTooltip.jsx` for easy addition of help content throughout the app
+
+### Bug Fixes
+- **Sidebar scroll persistence** — Fixed the sidebar jumping back to the top every time a menu item is clicked. The scroll position is now preserved across navigation using a ref-based approach
+
+### Improvements
+- **SettingsTabHeader** now accepts an optional `help` prop, making it easy to add help content to any tabbed settings page
+- All module versions bumped to 2.8.2
+
 ## 2026-03-22 - v2.8.1 (Bug Fixes & New Frontend Pages)
 
 ### Bug Fixes

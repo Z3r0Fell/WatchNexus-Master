@@ -13,6 +13,7 @@ import { Switch } from '../ui/switch';
 import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { useGadgets } from '../../context/GadgetContext';
 
 const categoryIcons = {
@@ -258,7 +259,7 @@ export const PluginsSettings = () => {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold" data-testid="gadgets-title">Gadgets</h2>
+              <h2 className="text-xl font-bold" data-testid="gadgets-title">Gadgets <HelpTooltip title="Gadgets" description="Gadgets are modular features that extend WatchNexus functionality. Browse the marketplace to discover new gadgets, or manage your installed ones. Gadgets can be installed, activated, or deactivated without affecting core functionality." examples={["Install a gadget from the marketplace to add new features", "Deactivate a gadget to temporarily disable it without removing data", "Uninstall removes the gadget and its associated settings"]} /></h2>
               <p className="text-sm text-gray-400">Extend WatchNexus with powerful add-ons</p>
             </div>
           </div>

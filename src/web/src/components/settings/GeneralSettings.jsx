@@ -7,6 +7,7 @@ import {
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
 import axios from 'axios';
 import { BACKEND_URL } from '../../lib/config';
@@ -163,6 +164,7 @@ export const GeneralSettings = ({
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-gray-600 to-gray-700"
+        help={{ title: "General Settings", description: "Core application settings including file storage locations, quality preferences, sidebar customization, and display options. Changes are saved per-user and sync across sessions.", examples: ["Storage Paths: Set where downloads and libraries are stored", "Quality: Default resolution for media downloads", "Sidebar: Toggle which pages appear in navigation"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>
@@ -179,11 +181,23 @@ const PathsTab = ({ settings, setSettings, onSave, saving, onOpenFileBrowser }) 
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Folder className="w-5 h-5 text-violet-400" />
         Storage Paths
+        <HelpTooltip
+          title="Storage Paths"
+          description="Configure where WatchNexus stores your media files. The download path is used for temporary storage during downloads, and the library path is where your organized media collection lives."
+          examples={[
+            "Download Path: /media/downloads or D:\\Downloads\\WatchNexus",
+            "Library Path: /media/library or D:\\Media\\Library",
+            "Ensure the paths exist and the application has read/write access"
+          ]}
+        />
       </h3>
 
       <div className="grid gap-4">
         <div>
-          <label className="text-sm text-gray-400 mb-2 block">Download Path</label>
+          <label className="text-sm text-gray-400 mb-2 block">
+            Download Path
+            <HelpTooltip title="Download Path" description="The folder where media is temporarily stored while downloading. Files are moved to the library path after processing is complete." examples={["Linux: /media/downloads", "Windows: D:\\Downloads\\WatchNexus"]} />
+          </label>
           <div className="flex gap-2">
             <Input
               value={settings.download_path}
@@ -205,7 +219,10 @@ const PathsTab = ({ settings, setSettings, onSave, saving, onOpenFileBrowser }) 
         </div>
 
         <div>
-          <label className="text-sm text-gray-400 mb-2 block">Library Path</label>
+          <label className="text-sm text-gray-400 mb-2 block">
+            Library Path
+            <HelpTooltip title="Library Path" description="The main folder where your organized media collection is stored. WatchNexus scans this directory to populate your library with movies, TV shows, and other media." examples={["Linux: /media/library", "Windows: D:\\Media\\Library", "Network: /mnt/nas/media"]} />
+          </label>
           <div className="flex gap-2">
             <Input
               value={settings.library_path}
@@ -227,7 +244,10 @@ const PathsTab = ({ settings, setSettings, onSave, saving, onOpenFileBrowser }) 
         </div>
 
         <div>
-          <label className="text-sm text-gray-400 mb-2 block">Quality Preference</label>
+          <label className="text-sm text-gray-400 mb-2 block">
+            Quality Preference
+            <HelpTooltip title="Quality Preference" description="Sets the default video quality for downloads and streaming. Higher quality means larger file sizes and more bandwidth usage." examples={["4K (2160p): Best quality, ~20-60 GB per movie", "1080p: Great quality, ~5-15 GB per movie", "720p: Good quality, ~2-5 GB per movie", "480p: Standard, ~1-2 GB per movie"]} />
+          </label>
           <select
             value={settings.quality_preference}
             onChange={(e) => setSettings({ ...settings, quality_preference: e.target.value })}
@@ -258,6 +278,11 @@ const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabV
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <LayoutDashboard className="w-5 h-5 text-pink-400" />
             Sidebar Visibility
+            <HelpTooltip
+              title="Sidebar Visibility"
+              description="Control which navigation items appear in your sidebar. Toggle items on or off to customize your experience. Home, Downloads, and Settings are always visible and cannot be hidden."
+              examples={["Click a tab to toggle its visibility", "Use 'Show All' to enable everything at once", "Changes sync to your account across all devices"]}
+            />
           </h3>
           <p className="text-sm text-gray-400 mt-1">
             Choose which tabs appear in your sidebar. Home, Downloads, and Settings are always visible.
@@ -344,6 +369,11 @@ const PreferencesTab = () => (
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Sliders className="w-5 h-5 text-blue-400" />
         Display Preferences
+        <HelpTooltip
+          title="Display Preferences"
+          description="Customize how media information is displayed throughout the application. These settings affect all pages and views."
+          examples={["Enable ratings to see TMDB scores on cards", "Compact mode reduces card sizes for more items per row", "24-hour time shows 14:30 instead of 2:30 PM"]}
+        />
       </h3>
       
       <div className="grid gap-4 sm:grid-cols-2">
@@ -393,6 +423,11 @@ const PreferencesTab = () => (
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Bell className="w-5 h-5 text-amber-400" />
         Notifications
+        <HelpTooltip
+          title="Notification Preferences"
+          description="Control which events trigger in-app notifications. For external notification channels (Discord, email, webhooks), visit the Notifications page."
+          examples={["Enable 'Download Complete' to be notified when a download finishes", "Enable 'New Episodes' to know when tracked shows release new episodes"]}
+        />
       </h3>
       
       <div className="grid gap-4 sm:grid-cols-2">
