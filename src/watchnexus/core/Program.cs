@@ -66,8 +66,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ── Background Services (Bot loops: inactivity, token drip, featured film) ──
+// ── Background Services ──
 builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>();
+builder.Services.AddHostedService<WatchNexus.Core.Services.TrayIconService>();
 
 // CORS
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
@@ -202,6 +203,6 @@ Fortress.Initialize(app);
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
 var separated = ModuleLoader.SeparatedModules.Count;
-Console.WriteLine($"[WatchNexus] v2.8.2.1 starting on port {port}");
+Console.WriteLine($"[WatchNexus] v2.8.2.2 starting on port {port}");
 Console.WriteLine($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {separated} separated, {discovered - external - separated} built-in)");
 app.Run($"http://0.0.0.0:{port}");

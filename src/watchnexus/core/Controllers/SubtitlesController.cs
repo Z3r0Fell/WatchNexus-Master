@@ -142,7 +142,7 @@ public class SubtitlesController : ControllerBase
         var results = new List<SubtitleResult>();
         var http = this.Http();
         http.DefaultRequestHeaders.Add("Api-Key", apiKey);
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.8.2.1");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.8.2.2");
         var url = $"https://api.opensubtitles.com/api/v1/subtitles?query={Uri.EscapeDataString(query)}&languages={languages}";
         if (season.HasValue) url += $"&season_number={season}";
         if (episode.HasValue) url += $"&episode_number={episode}";
