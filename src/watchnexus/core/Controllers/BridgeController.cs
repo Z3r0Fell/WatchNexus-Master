@@ -169,7 +169,7 @@ public class MarmaladeBridgeController : ControllerBase
         return Ok(new
         {
             status = "running",
-            version = "2.8.2",
+            version = "2.8.2.1",
             total_libraries = await _db.Libraries.CountAsync(),
             total_media = await _db.MediaItems.CountAsync(),
             total_size = await _db.MediaItems.SumAsync(m => m.FileSize),

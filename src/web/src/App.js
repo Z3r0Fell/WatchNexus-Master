@@ -52,6 +52,7 @@ import RequestsPage from "./pages/gadgets/RequestsPage";
 import ParentalControlsPage from "./pages/gadgets/ParentalControlsPage";
 import ProcessingPage from "./pages/gadgets/ProcessingPage";
 import UsenetPage from "./pages/gadgets/UsenetPage";
+import HelpPage from "./pages/HelpPage";
 
 import "./App.css";
 
@@ -454,6 +455,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <UsenetPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <HelpPage />
           </ProtectedRoute>
         }
       />

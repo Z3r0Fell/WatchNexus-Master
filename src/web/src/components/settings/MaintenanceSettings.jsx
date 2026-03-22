@@ -121,7 +121,7 @@ export const MaintenanceSettings = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-orange-600 to-red-500"
-        version={systemStats?.app?.version || '2.8.2'}
+        version={systemStats?.app?.version || '2.8.2.1'}
         help={{ title: "System Maintenance", description: "Monitor server health, view resource usage, manage the database, and view application logs. Use this section to troubleshoot issues and keep your server running smoothly.", examples: ["System: CPU, RAM, and disk usage at a glance", "Database: Check SQLite health, size, and run optimizations", "Logs: View application logs to diagnose issues"] }}
       />
 

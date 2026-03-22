@@ -40,6 +40,7 @@ import {
   Lock,
   Cog,
   HardDrive,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -51,7 +52,7 @@ const ICON_MAP = {
   Home, Film, Tv, Music, BookOpen, Download, Settings,
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
   Shield, Wifi, Server, FileText, Library, Store, Key,
-  BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive,
+  BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive, HelpCircle,
 };
 
 // Media navigation items
@@ -312,6 +313,9 @@ export const Sidebar = () => {
 
           {/* Downloads - always visible */}
           {renderNavItem({ icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true })}
+
+          {/* Help - always visible */}
+          {renderNavItem({ icon: HelpCircle, label: 'Help', path: '/help', alwaysVisible: true })}
 
           {/* Settings Section with collapsible sub-items */}
           <li>
