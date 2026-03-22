@@ -415,3 +415,7 @@ src/web/node_modules/.cache/default-development/3.pack
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
