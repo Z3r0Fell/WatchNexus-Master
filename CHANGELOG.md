@@ -1,5 +1,33 @@
 # WatchNexus Changelog
 
+## 2026-03-22 - v2.8.1 (Bug Fixes & New Frontend Pages)
+
+### Bug Fixes
+- **Dropdown CSS** — Fixed unreadable select dropdowns (white text on white background) with global CSS rule ensuring dark backgrounds and light text on all platforms
+- **Settings Not Saving** — Backend `PUT /api/settings/{key}` now accepts both `{"value":"..."}` wrapper and raw JSON objects. Added bulk `PUT /api/settings` endpoint
+- **User Preferences** — Fixed frontend sending preferences as query params instead of JSON body
+- **Media Playback Pipeline** — Added 10 missing Marmalade endpoints: `/status`, `/media/{id}`, `/media/search`, `/continue-watching`, `/tv-series`, `/libraries/{id}/refresh-metadata`, `/media/{id}/progress`, `/media/{id}/watched`, `/stream/{id}`, `/stream/{id}/file`
+- **Meringue Requests** — `tmdb_id` no longer required; users can now submit requests by title only
+- **Pepper Notifications** — Added missing `POST /api/pepper/channels` endpoint for channel creation
+- **Version Mismatch** — Fixed SystemController still reporting v2.7.3
+
+### New Frontend Pages
+- **Analytics** (`/analytics`) — View watch stats, top genres, recent activity with configurable time periods
+- **Notifications** (`/notifications`) — Manage notification channels (webhook, email, discord, pushover), view history
+- **Requests** (`/requests`) — Submit and track media requests with status workflow
+- **Parental Controls** (`/parental-controls`) — Configure PIN, max rating, blocked genres
+- **Processing** (`/processing`) — Submit and monitor transcode jobs
+- **Usenet** (`/usenet`) — Configure Brine indexer (Prowlarr) and Ladle downloader (SABnzbd), search Usenet
+
+### Version Bump
+- All modules updated from 2.8.0 → 2.8.1
+- User-Agent strings updated to v2.8.1
+- Sidebar navigation updated with 6 new gadget items
+
+### Testing
+- iteration_11.json: 16/16 backend + all frontend = 100%
+- All 45 API endpoints verified via curl
+
 ## 2026-03-19 - v2.8.0 (Five New Native Features)
 
 ### New Features

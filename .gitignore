@@ -410,3 +410,4 @@ Alpha/src/web/node_modules/electron/dist/electron
 # Environment files
 *.env
 *.env.*
+src/web/node_modules/.cache/default-development/3.pack

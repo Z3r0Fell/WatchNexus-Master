@@ -39,7 +39,44 @@ const TIER_BADGES = {
 
 // Complete Release History
 const RELEASES = [
-  // 2.5.x Series - Current
+  // 2.8.x Series - Current
+  {
+    version: '2.8.1', date: '2026-03-22', type: 'patch', title: 'Bug Fixes & New Frontend Pages',
+    highlights: ['Fixed dropdown readability', 'Settings save fixed', 'Media playback pipeline restored', '6 new gadget pages'],
+    changes: [
+      { type: 'fix', text: 'Fixed unreadable dropdown menus — select options now have proper dark backgrounds on all platforms' },
+      { type: 'fix', text: 'Settings now save correctly — backend accepts both raw JSON and {value: ...} wrapper format' },
+      { type: 'fix', text: 'Added bulk PUT /api/settings endpoint for saving multiple settings at once' },
+      { type: 'fix', text: 'Fixed user preferences not persisting (was sending query params instead of JSON body)' },
+      { type: 'fix', text: 'Restored media playback pipeline — added 10 missing Marmalade endpoints including /stream/{id}' },
+      { type: 'fix', text: 'Meringue requests no longer require TMDB ID — users can submit by title only' },
+      { type: 'fix', text: 'Added missing POST /api/pepper/channels for notification channel creation' },
+      { type: 'feature', text: 'New Analytics page (/analytics) — watch stats, top genres, recent activity' },
+      { type: 'feature', text: 'New Notifications page (/notifications) — channel management, test, history' },
+      { type: 'feature', text: 'New Requests page (/requests) — submit and track media requests' },
+      { type: 'feature', text: 'New Parental Controls page (/parental-controls) — PIN, rating limits, genre blocking' },
+      { type: 'feature', text: 'New Processing page (/processing) — submit and monitor transcode jobs' },
+      { type: 'feature', text: 'New Usenet page (/usenet) — Brine indexer & Ladle downloader config + search' },
+      { type: 'improvement', text: 'Sidebar updated with 6 new navigation items for all new gadget pages' },
+      { type: 'improvement', text: 'All module versions bumped to 2.8.1' },
+    ]
+  },
+  {
+    version: '2.8.0', date: '2026-03-19', type: 'minor', title: 'Five New Native Features + Usenet',
+    highlights: ['Watch Analytics (Truffle)', 'Notifications (Pepper)', 'User Requests (Meringue)', 'Parental Controls (Rind)', 'Media Processing (Crucible)', 'Usenet support (Brine + Ladle)'],
+    changes: [
+      { type: 'feature', text: 'Truffle: Watch Analytics with play tracking, stats by type/hour/day, Year Wrapped' },
+      { type: 'feature', text: 'Pepper: Notification Hub — Discord, Telegram, Slack, Pushover with 7 event types' },
+      { type: 'feature', text: 'Meringue: User Request System with admin approve/reject/fulfill workflow' },
+      { type: 'feature', text: 'Rind: Parental Controls — rating filters, genre restrictions, PIN lock' },
+      { type: 'feature', text: 'Crucible: Media Processing Pipeline — 7 transcode profiles, job queue, FFprobe analysis' },
+      { type: 'feature', text: 'Brine: Usenet Indexer — Prowlarr/Newznab-compatible proxy with NZB search' },
+      { type: 'feature', text: 'Ladle: Usenet Downloader — SABnzbd proxy with queue management and speed controls' },
+      { type: 'improvement', text: 'All Jellyfin references removed, functionality preserved as Media Bridge (Custard)' },
+      { type: 'improvement', text: '31 total modules registered' },
+    ]
+  },
+  // 2.5.x Series
   {
     version: '2.5.13', date: '2025-02-25', type: 'patch', title: 'Theme Mode Sync',
     highlights: ['Dark/Light mode syncs across devices', 'Complete settings sync'],
@@ -304,7 +341,7 @@ const RELEASES = [
 export const AboutSettings = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [systemInfo, setSystemInfo] = useState(null);
-  const [expandedVersion, setExpandedVersion] = useState('2.5.10');
+  const [expandedVersion, setExpandedVersion] = useState('2.8.1');
 
   useEffect(() => {
     const fetchSystemInfo = async () => {
@@ -360,7 +397,7 @@ export const AboutSettings = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold">About WatchNexus</h2>
-            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.5.10'}</p>
+            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.8.1'}</p>
           </div>
         </div>
 
@@ -407,7 +444,7 @@ const OverviewTab = ({ systemInfo }) => (
     <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-2xl p-6">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.5.10'}</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.8.1'}</h3>
           <p className="text-gray-300">Unified Media Pipeline - Your Personal Media Server</p>
           <p className="text-sm text-gray-400 mt-2">A self-hosted media server that replaces Sonarr, Radarr, Prowlarr, qBittorrent, and Bazarr.</p>
         </div>
@@ -446,10 +483,10 @@ const OverviewTab = ({ systemInfo }) => (
       </h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Backend', value: 'FastAPI + Python' },
+          { label: 'Backend', value: 'C# / .NET 10' },
           { label: 'Frontend', value: 'React + Tailwind' },
-          { label: 'Database', value: 'SQLite (WAL)' },
-          { label: 'Torrent Engine', value: 'LTorrent' },
+          { label: 'Database', value: 'SQLite (EF Core)' },
+          { label: 'Torrent Engine', value: 'Built-in + qBit' },
         ].map(item => (
           <div key={item.label} className="bg-black/30 border border-white/10 rounded-xl p-4">
             <p className="text-sm text-gray-400">{item.label}</p>
