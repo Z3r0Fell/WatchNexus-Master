@@ -3,7 +3,7 @@
 ## Overview
 WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backend and React frontend. It provides a comprehensive media management experience with 31+ features (called "gadgets") including library management, streaming, indexing, analytics, notifications, parental controls, and more.
 
-## Version: 2.8.0
+## Version: 2.8.1
 
 ## Architecture
 - **Backend**: C#/.NET 10 ASP.NET Core server (port 8002)
