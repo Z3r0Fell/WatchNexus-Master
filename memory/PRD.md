@@ -86,6 +86,7 @@ WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backen
 - **Windows (win-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-win-x64.zip` (72MB, 472 files, self-contained + WinForms)
 - **Linux (linux-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-linux-x64.zip` (59MB, 381 files, self-contained)
 - Both include: executable, .NET runtime, React frontend build, CHANGELOG.md
+- **Alpha folder** (`/app/Alpha/`): Updated to v2.8.2.2 — README, CHANGELOG, and all scripts (build-release, build-arch, install-windows, install-linux, install-mac) rewritten for .NET 10 self-contained architecture
 
 ## Upcoming Tasks (P1)
 - **Glaze** - Trakt + Last.fm Scrobbling
