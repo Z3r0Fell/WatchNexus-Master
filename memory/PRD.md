@@ -3,7 +3,7 @@
 ## Overview
 WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backend and React frontend. It provides a comprehensive media management experience with 31+ features (called "gadgets") including library management, streaming, indexing, analytics, notifications, parental controls, and more.
 
-## Version: 2.8.2
+## Version: 2.8.2.1
 
 ## Architecture
 - **Backend**: C#/.NET 10 ASP.NET Core server (port 8002)
@@ -75,11 +75,15 @@ WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backen
 - **Frontend**: All pages load and function correctly
 - **Testing Agent**: 16/16 tests passed, 100% success rate
 
+## Release Builds (v2.8.2.1)
+- **Windows (win-x64)**: `/app/release_builds/WatchNexus-v2.8.2.1-win-x64.zip` (59MB, 384 files, self-contained)
+- **Linux (linux-x64)**: `/app/release_builds/WatchNexus-v2.8.2.1-linux-x64.zip` (59MB, 381 files, self-contained)
+- Both include: executable, .NET runtime, React frontend build, CHANGELOG.md
+
 ## Upcoming Tasks (P1)
 - **Glaze** - Trakt + Last.fm Scrobbling
 - **Roux** - Collections & Smart Playlists
 - **Simmer** - Scheduled Tasks Engine
-- Rebuild self-contained release packages for Windows/Linux
 
 ## Future Tasks (P2)
 - **Sprout** - RSS Feed Generator

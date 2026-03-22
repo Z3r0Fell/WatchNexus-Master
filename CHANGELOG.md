@@ -1,5 +1,14 @@
 # WatchNexus Changelog
 
+## 2026-03-22 - v2.8.2.1 (Searchable Help & Documentation Page)
+
+### New Features
+- **Help & Documentation Page** (`/help`) — A dedicated, searchable reference guide that aggregates all help content into one browsable page. Features full-text search across 40+ topics organized into 13 categories with expandable/collapsible sections and practical examples
+- **Help sidebar link** — Quick-access Help link added to the sidebar navigation, visible from any page
+
+### Version Bump
+- All modules updated from 2.8.2 to 2.8.2.1
+
 ## 2026-03-22 - v2.8.2 (Help Tooltips & Sidebar UX Fix)
 
 ### New Features
