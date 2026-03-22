@@ -103,10 +103,10 @@ export const GeneralSettings = ({
     try {
       setSavingTabs(true);
       const token = localStorage.getItem('token');
-      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { visible_tabs: JSON.stringify(visibleTabs) }
-      });
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, 
+        { visible_tabs: visibleTabs },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
       // Also update localStorage for backwards compatibility and immediate sidebar update
       localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));
       window.dispatchEvent(new Event('watchnexus_tabs_updated'));

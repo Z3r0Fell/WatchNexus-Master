@@ -37,17 +37,49 @@ public class SettingsController : ControllerBase
     public async Task<IActionResult> Get(string key)
     {
         var s = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && (s.UserId == UserId || s.UserId == null));
-        return s == null ? Ok(new { key, value = (string?)null }) : Ok(new { key, s.Value });
+        if (s == null || s.Value == null) return Ok(new { key, value = (string?)null });
+        // Try to return as parsed JSON if possible
+        try
+        {
+            var doc = JsonDocument.Parse(s.Value);
+            return Content(s.Value, "application/json");
+        }
+        catch
+        {
+            return Ok(new { key, value = s.Value });
+        }
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> SetBulk([FromBody] JsonElement body)
+    {
+        foreach (var prop in body.EnumerateObject())
+        {
+            var key = prop.Name;
+            var value = prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString()! : prop.Value.GetRawText();
+            var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
+            if (existing != null) existing.Value = value;
+            else _db.Settings.Add(new AppSetting { Key = key, Value = value, UserId = UserId });
+        }
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "saved" });
     }
 
     [HttpPut("{key}")]
-    public async Task<IActionResult> Set(string key, [FromBody] SettingValue req)
+    public async Task<IActionResult> Set(string key, [FromBody] JsonElement body)
     {
+        // Accept both {"value": "..."} and arbitrary JSON objects
+        string value;
+        if (body.TryGetProperty("value", out var v) || body.TryGetProperty("Value", out v))
+            value = v.ValueKind == JsonValueKind.String ? v.GetString()! : v.GetRawText();
+        else
+            value = body.GetRawText();
+
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
-        if (existing != null) existing.Value = req.Value;
-        else _db.Settings.Add(new AppSetting { Key = key, Value = req.Value, UserId = UserId });
+        if (existing != null) existing.Value = value;
+        else _db.Settings.Add(new AppSetting { Key = key, Value = value, UserId = UserId });
         await _db.SaveChangesAsync();
-        return Ok(new { key, value = req.Value });
+        return Ok(new { key, value });
     }
 
     [HttpGet("integrations")]

@@ -20,7 +20,7 @@ public class SystemController : ControllerBase
         var proc = System.Diagnostics.Process.GetCurrentProcess();
         return Ok(new
         {
-            version = "2.7.3",
+            version = "2.8.0",
             hostname = Environment.MachineName,
             platform = Environment.OSVersion.VersionString,
             architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),

@@ -46,6 +46,12 @@ import PodcastsPage from "./pages/gadgets/PodcastsPage";
 import RadioPage from "./pages/gadgets/RadioPage";
 import PhotosPage from "./pages/gadgets/PhotosPage";
 import WebVideoPage from "./pages/gadgets/WebVideoPage";
+import AnalyticsPage from "./pages/gadgets/AnalyticsPage";
+import NotificationsPage from "./pages/gadgets/NotificationsPage";
+import RequestsPage from "./pages/gadgets/RequestsPage";
+import ParentalControlsPage from "./pages/gadgets/ParentalControlsPage";
+import ProcessingPage from "./pages/gadgets/ProcessingPage";
+import UsenetPage from "./pages/gadgets/UsenetPage";
 
 import "./App.css";
 
@@ -400,6 +406,54 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <MediaBrowserPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/requests"
+        element={
+          <ProtectedRoute>
+            <RequestsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parental-controls"
+        element={
+          <ProtectedRoute>
+            <ParentalControlsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/processing"
+        element={
+          <ProtectedRoute>
+            <ProcessingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/usenet"
+        element={
+          <ProtectedRoute>
+            <UsenetPage />
           </ProtectedRoute>
         }
       />
