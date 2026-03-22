@@ -3,7 +3,7 @@
 ## Overview
 WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backend and React frontend. It provides a comprehensive media management experience with 31+ features (called "gadgets") including library management, streaming, indexing, analytics, notifications, parental controls, and more.
 
-## Version: 2.8.1
+## Version: 2.8.2
 
 ## Architecture
 - **Backend**: C#/.NET 10 ASP.NET Core server (port 8002)
@@ -52,6 +52,14 @@ WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backen
 - Weather, Podcasts, Radio, Photos, Web Video
 - **NEW**: Analytics, Notifications, Requests, Parental Controls, Processing, Usenet
 - Settings, Security, VPN Portal, System, Library Manager, Log Viewer, Browse Media, Marketplace, Themes
+
+## Bugs Fixed (v2.8.2)
+1. **Sidebar scroll persistence** — Sidebar no longer jumps to top when navigating. Uses sessionStorage to save/restore scroll position.
+
+## UX Enhancements (v2.8.2)
+1. **Help Tooltips** — Visible question-mark icons next to every settings section heading and key individual options. Clicking opens a popover with description, purpose, and setup examples.
+2. **HelpTooltip component** — Reusable component at `/components/ui/HelpTooltip.jsx`.
+3. **SettingsTabHeader help prop** — All tabbed settings pages support a `help` prop for section-level tooltips.
 
 ## Bugs Fixed (v2.8.0 patch)
 1. **Dropdown CSS** - Select option text was unreadable (white on white). Fixed with global CSS rule.
