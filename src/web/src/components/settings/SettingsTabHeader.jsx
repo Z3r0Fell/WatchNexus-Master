@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { HelpTooltip } from '../ui/HelpTooltip';
 
 /**
  * Reusable tabbed header component for Settings pages
@@ -9,6 +10,7 @@ import { motion } from 'framer-motion';
  * @param {string} activeTab - Currently active tab ID
  * @param {Function} setActiveTab - Function to change active tab
  * @param {string} version - Optional version badge text
+ * @param {object} help - Optional { title, description, examples } for help tooltip
  */
 export const SettingsTabHeader = ({ 
   title, 
@@ -18,6 +20,7 @@ export const SettingsTabHeader = ({
   activeTab, 
   setActiveTab,
   version,
+  help,
   iconColor = 'text-violet-400',
   iconBgColor = 'from-violet-600 to-fuchsia-500'
 }) => {
@@ -35,6 +38,7 @@ export const SettingsTabHeader = ({
                 {version}
               </span>
             )}
+            {help && <HelpTooltip title={help.title || title} description={help.description} examples={help.examples} />}
           </h2>
           <p className="text-sm text-gray-400">{subtitle}</p>
         </div>

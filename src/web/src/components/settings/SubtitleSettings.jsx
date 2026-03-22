@@ -140,6 +140,7 @@ export const SubtitleSettings = () => {
         setActiveTab={setActiveTab}
         iconBgColor="from-green-600 to-emerald-500"
         version="Garnish"
+        help={{ title: "Subtitle Settings", description: "Configure automatic subtitle downloading from multiple providers. Set your preferred languages and providers will be searched in priority order. Supports OpenSubtitles, Addic7ed, Subscene, and more.", examples: ["Add your preferred languages in order of priority", "OpenSubtitles requires a free API key from opensubtitles.com", "Enable auto-download to fetch subtitles when media is added"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>

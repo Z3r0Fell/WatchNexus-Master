@@ -117,6 +117,7 @@ export const ThemeForgeSettings = () => {
         setActiveTab={setActiveTab}
         iconBgColor="from-violet-600 to-purple-500"
         version="Milk"
+        help={{ title: "Theme Forge", description: "Personalize the look and feel of WatchNexus. Switch between dark and light modes, choose from community-created themes, or customize accent colors to match your style.", examples: ["Dark Mode: Best for home theater and low-light environments", "Light Mode: Better readability in bright rooms", "Community themes: Browse and install themes from other users"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>

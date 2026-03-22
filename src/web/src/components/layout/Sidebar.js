@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -209,6 +209,33 @@ export const Sidebar = () => {
   const isSettingsActive = location.pathname === '/settings';
   const isAnySubActive = settingsSubItems.some(item => location.pathname === item.path);
 
+  // Sidebar scroll persistence using sessionStorage
+  const navRef = useRef(null);
+  const SCROLL_KEY = 'watchnexus_sidebar_scroll';
+
+  const handleNavScroll = () => {
+    if (navRef.current) {
+      // Save to sessionStorage on every scroll
+      sessionStorage.setItem(SCROLL_KEY, navRef.current.scrollTop.toString());
+    }
+  };
+
+  // Restore scroll position after component mounts and on route change
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem(SCROLL_KEY);
+    if (navRef.current && savedScroll) {
+      const scrollValue = parseInt(savedScroll, 10);
+      if (scrollValue > 0) {
+        // Use setTimeout to ensure DOM is fully rendered
+        setTimeout(() => {
+          if (navRef.current) {
+            navRef.current.scrollTop = scrollValue;
+          }
+        }, 50);
+      }
+    }
+  }, [location.pathname]);
+
   return (
     <motion.aside
       data-testid="sidebar"
@@ -271,7 +298,11 @@ export const Sidebar = () => {
       </AnimatePresence>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">
+      <nav
+        ref={navRef}
+        className="flex-1 py-4 overflow-y-auto hide-scrollbar"
+        onScroll={handleNavScroll}
+      >
         <ul className="space-y-1 px-3">
           {/* Media Items */}
           {visibleMedia.map(renderNavItem)}

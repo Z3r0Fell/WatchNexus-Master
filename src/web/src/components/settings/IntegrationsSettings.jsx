@@ -101,6 +101,7 @@ export const IntegrationsSettings = () => {
         setActiveTab={setActiveTab}
         iconColor="text-blue-400"
         iconBgColor="from-blue-600 to-cyan-500"
+        help={{ title: "Integrations", description: "Connect WatchNexus to external services for metadata, artwork, and media information. TMDB provides movie/TV data, and Matrix enables federated chat functionality.", examples: ["TMDB: Get a free API key at themoviedb.org/settings/api", "Matrix: Connect to a Matrix homeserver for social features", "API keys are stored securely on your server"] }}
       />
 
       {activeTab === 'tmdb' && (

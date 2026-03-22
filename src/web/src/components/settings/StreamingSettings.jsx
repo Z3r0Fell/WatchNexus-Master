@@ -113,6 +113,7 @@ export const StreamingSettings = () => {
         setActiveTab={setActiveTab}
         iconBgColor="from-blue-600 to-indigo-500"
         version="Cream"
+        help={{ title: "Streaming Services", description: "Store login credentials for your streaming service subscriptions (Netflix, Disney+, etc.). These are used for tracking availability and can be shared with household members through WatchNexus.", examples: ["Add your Netflix, Hulu, or Disney+ credentials", "Credentials are stored encrypted on your server", "Share access with other WatchNexus users in your household"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>

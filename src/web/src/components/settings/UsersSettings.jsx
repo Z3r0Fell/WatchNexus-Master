@@ -72,6 +72,7 @@ export const UsersSettings = ({
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-blue-600 to-cyan-500"
+        help={{ title: "Users & Access", description: "Manage who can access your WatchNexus server. Create accounts for household members, assign roles (admin or user), and control what each person can see and do.", examples: ["Admin: Full access to all settings, users, and media management", "User: Can browse, play, and request media but can't change settings", "Invite codes: Generate one-time codes for new users to register"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>

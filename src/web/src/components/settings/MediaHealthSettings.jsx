@@ -4,6 +4,7 @@ import { HardDrive, RefreshCw, FileSearch, Wrench, Clock, Calendar, Plus, Trash2
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { mediaHealthApi } from '../../services/api';
 import FolderBrowser from '../FolderBrowser';
 
@@ -114,6 +115,7 @@ export const MediaHealthSettings = () => {
           <h2 className="text-xl font-bold flex items-center gap-2">
             <HardDrive className="w-5 h-5 text-violet-400" />
             Media Health Checker
+            <HelpTooltip title="Media Health Checker" description="Scans your media library for corrupted, incomplete, or problematic files. Identifies issues like truncated downloads, missing audio streams, or unplayable formats so you can re-download or fix them." examples={["Enter the path to scan, e.g., /media/movies or D:\\Media", "Results show file integrity status for each item", "Use filters to view only items with issues"]} />
           </h2>
           <p className="text-sm text-gray-400 mt-1">Scan for corrupted or incomplete files</p>
         </div>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { MediaManagementSubTab, QualityProfilesSubTab, MassEditorSubTab } from './MediaManagement';
 
 export const LibrarySettings = ({
@@ -90,6 +91,7 @@ const LibrariesTab = ({
           <h2 className="text-xl font-bold flex items-center gap-2">
             <FolderOpen className="w-5 h-5 text-violet-400" />
             Media Libraries (Marmalade)
+            <HelpTooltip title="Media Libraries (Marmalade)" description="Add and manage folders containing your media files. WatchNexus scans these directories to discover movies, TV shows, music, and other media. Each library is configured for a specific media type." examples={["Movies: Point to a folder like /media/movies or D:\\Movies", "TV Shows: Point to a folder organized by series name", "Scan: Click the refresh icon to re-scan a library for new files", "Metadata: WatchNexus auto-fetches posters, descriptions, and ratings"]} />
           </h2>
           <p className="text-sm text-gray-400 mt-1">Add folders to scan for media content</p>
         </div>

@@ -10,6 +10,7 @@ import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { HelpTooltip } from '../ui/HelpTooltip';
 
 // Quality definitions (like Sonarr/Radarr)
 const QUALITY_DEFINITIONS = [
@@ -263,6 +264,7 @@ export const QualityProfilesSettings = () => {
             <Gauge className="w-5 h-5 text-orange-400" />
             Quality Profiles
             <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full">Preserve</span>
+            <HelpTooltip title="Quality Profiles (Preserve)" description="Define which video/audio qualities are acceptable for downloads, similar to Sonarr and Radarr profiles. Set minimum and maximum quality thresholds and preferred formats. Higher priority qualities are downloaded first when available." examples={["HD Profile: Allows 720p-1080p, prefers Bluray sources", "4K Profile: Allows 2160p only, requires HDR", "Any Profile: Accepts all qualities, upgrades when better available", "Drag to reorder priority — top items are preferred"]} />
           </h2>
           <p className="text-gray-400 text-sm mt-1">Define quality preferences for downloads (like Sonarr/Radarr)</p>
         </div>

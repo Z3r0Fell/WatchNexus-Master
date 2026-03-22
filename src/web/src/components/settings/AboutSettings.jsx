@@ -41,6 +41,18 @@ const TIER_BADGES = {
 const RELEASES = [
   // 2.8.x Series - Current
   {
+    version: '2.8.2', date: '2026-03-22', type: 'patch', title: 'Help Tooltips & Sidebar UX Fix',
+    highlights: ['Help icons on every settings page', 'Sidebar scroll position preserved'],
+    changes: [
+      { type: 'feature', text: 'Added visible help icons (question marks) next to every settings section heading and individual options' },
+      { type: 'feature', text: 'Clicking a help icon opens a detailed popover with description, purpose, and setup examples' },
+      { type: 'feature', text: 'Help coverage: General, Playback, Downloads, Subtitles, Streaming, IPTV, Integrations, Gelatin, Themes, Users, Maintenance, API Management, Indexers, Libraries, Media Health, Quality Profiles, and Gadgets' },
+      { type: 'fix', text: 'Fixed sidebar jumping to the top when navigating — scroll position now persists across page changes' },
+      { type: 'improvement', text: 'New reusable HelpTooltip component for consistent help UX across the app' },
+      { type: 'improvement', text: 'SettingsTabHeader now supports a help prop for easy help integration' },
+    ]
+  },
+  {
     version: '2.8.1', date: '2026-03-22', type: 'patch', title: 'Bug Fixes & New Frontend Pages',
     highlights: ['Fixed dropdown readability', 'Settings save fixed', 'Media playback pipeline restored', '6 new gadget pages'],
     changes: [
@@ -341,7 +353,7 @@ const RELEASES = [
 export const AboutSettings = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [systemInfo, setSystemInfo] = useState(null);
-  const [expandedVersion, setExpandedVersion] = useState('2.8.1');
+  const [expandedVersion, setExpandedVersion] = useState('2.8.2');
 
   useEffect(() => {
     const fetchSystemInfo = async () => {
@@ -397,7 +409,7 @@ export const AboutSettings = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold">About WatchNexus</h2>
-            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.8.1'}</p>
+            <p className="text-sm text-gray-400">Version {systemInfo?.version || '2.8.2'}</p>
           </div>
         </div>
 
@@ -444,7 +456,7 @@ const OverviewTab = ({ systemInfo }) => (
     <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-2xl p-6">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.8.1'}</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">WatchNexus v{systemInfo?.version || '2.8.2'}</h3>
           <p className="text-gray-300">Unified Media Pipeline - Your Personal Media Server</p>
           <p className="text-sm text-gray-400 mt-2">A self-hosted media server that replaces Sonarr, Radarr, Prowlarr, qBittorrent, and Bazarr.</p>
         </div>

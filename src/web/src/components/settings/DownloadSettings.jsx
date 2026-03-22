@@ -8,6 +8,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import { torrentEngineApi, qbittorrentApi } from '../../services/api';
 import axios from 'axios';
 import { BACKEND_URL } from '../../lib/config';
@@ -97,7 +98,7 @@ export const DownloadSettings = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" data-testid="download-settings">
       {/* Mode Selection */}
       <div className="glass-card rounded-xl p-6">
-        <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Download className="w-5 h-5 text-violet-400" /> Download Client</h2>
+        <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Download className="w-5 h-5 text-violet-400" /> Download Client <HelpTooltip title="Download Client" description="Choose which torrent client WatchNexus uses to download media. The built-in engine requires no external software. qBittorrent requires a separate installation but offers more advanced features." examples={["Built-in: Zero setup, works out of the box, recommended for most users", "qBittorrent: Install from qbittorrent.org, enable Web UI in settings", "Only one client can be active at a time"]} /></h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <button onClick={() => handleSetDownloadMode('builtin')}
             className={`p-4 rounded-xl border-2 text-left transition-all ${downloadClientMode === 'builtin' ? 'border-violet-500 bg-violet-500/10' : 'border-white/10 bg-surface hover:border-white/20'}`}>
@@ -167,7 +168,7 @@ export const DownloadSettings = () => {
           </div>
 
           <div className="glass-card rounded-xl p-6">
-            <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-yellow-400" /> Speed Limits</h3>
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-yellow-400" /> Speed Limits <HelpTooltip title="Speed Limits" description="Control how much bandwidth the torrent engine uses. Set limits to prevent WatchNexus from saturating your internet connection." examples={["Set download limit to 80% of your connection speed", "Upload limit of 0 = unlimited seeding", "Seed ratio of 1.0 means upload as much as you download"]} /></h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 { key: 'max_download_rate', label: 'Max Download Speed (KB/s)' },
@@ -295,7 +296,7 @@ export const DownloadSettings = () => {
       {/* qBittorrent */}
       {downloadClientMode === 'qbittorrent' && (
         <div className="glass-card rounded-xl p-6 space-y-6">
-          <h3 className="text-lg font-bold flex items-center gap-2"><Package className="w-5 h-5 text-blue-400" /> qBittorrent Connection</h3>
+          <h3 className="text-lg font-bold flex items-center gap-2"><Package className="w-5 h-5 text-blue-400" /> qBittorrent Connection <HelpTooltip title="qBittorrent Connection" description="Connect to an external qBittorrent instance running on your network. You must have qBittorrent installed and its Web UI enabled." examples={["URL: http://localhost:8080 (default qBittorrent Web UI)", "Username/Password: Set in qBittorrent's Web UI settings", "Test the connection after entering your details"]} /></h3>
           <div className={`p-4 rounded-xl border ${qbitStatus?.success ? 'bg-green-500/10 border-green-500/30' : 'bg-surface border-white/10'}`}>
             <div className="flex items-center gap-3">
               {qbitStatus?.success ? <Wifi className="w-5 h-5 text-green-400" /> : <WifiOff className="w-5 h-5 text-gray-400" />}
