@@ -1,102 +1,88 @@
-# WatchNexus - Product Requirements Document
+# WatchNexus - Product Requirements Document (PRD)
 
-## Original Problem Statement
-Build a unified, self-hosted media pipeline called "WatchNexus". All features must be fully functional with real-world APIs. Every component has a codename following a food/kitchen/pantry theme.
+## Overview
+WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backend and React frontend. It provides a comprehensive media management experience with 31+ features (called "gadgets") including library management, streaming, indexing, analytics, notifications, parental controls, and more.
 
-## Tech Stack
-- **Backend:** C#/.NET 10, ASP.NET Core, Entity Framework Core 10, SQLite
-- **Frontend:** React 18, TailwindCSS, Framer Motion, Shadcn UI
-- **Auth:** JWT Bearer Tokens
-- **Dev Proxy:** Python FastAPI reverse proxy (port 8001 → C# server port 8002)
-
-## Current Version: 2.8.0 | Total Modules: 31
-
-## Implemented Features
-
-### Core Modules (Built-in)
-| Codename | Module | Route |
-|----------|--------|-------|
-| Marmalade | Bridge/Dashboard | /api/bridge |
-| Bastion | Security | /api/security |
-| Tunnel | VPN/WireGuard | /api/vpn |
-| Zest | Utility/Adapter | /api/utility |
-| Fondue | Settings/Logs | /api/settings |
-| Sourdough | Auth | /api/auth |
-| Taffy | IPTV/M3U/EPG | /api/iptv |
-| Churro | qBittorrent | /api/gadgets/qbit |
-| Saffron | Subtitles | /api/subs |
-| Pantry | Filesystem | /api/files |
-| Nutmeg | System Stats | /api/system |
-| Crumbs | API Management | /api/crumbs |
-| Fortress | Code Protection | /api/fortress |
-| Custard | Media Bridge | /api/gadgets/media-bridge |
-| Ripen | Plugin Manager | /api/ripen |
-
-### Gadgets
-| Codename | Gadget | Route |
-|----------|--------|-------|
-| Sorbet | Weather | /api/gadgets/weather |
-| Brioche | Podcasts | /api/gadgets/podcasts |
-| Nectar | Internet Radio | /api/gadgets/radio |
-| Ganache | Photo Gallery | /api/gadgets/photos |
-| Bisque | Web Video | /api/gadgets/webvideo |
-| Marzipan | Matrix Chat | /api/gadgets/matrix |
-| Cinnamon | Synapse Admin | /api/gadgets/synapse |
-| Waffle | Movie Quiz | /api/gadgets/gamebot |
-| Yeast | Background Automation | /api/gadgets/bot |
-
-### New Features (v2.7.3)
-| Codename | Feature | Route | Status |
-|----------|---------|-------|--------|
-| Truffle | Watch Analytics & Year Wrapped | /api/truffle | Active |
-| Pepper | Notification Hub (Discord/Telegram/Slack/Pushover) | /api/pepper | Active |
-| Meringue | User Request System | /api/meringue | Active |
-| Rind | Parental Controls | /api/rind | Active |
-| Crucible | Media Processing Pipeline (FFmpeg) | /api/crucible | Active |
-| Brine | Usenet Indexer (Prowlarr/Newznab) | /api/gadgets/brine | Active |
-| Ladle | Usenet Downloader (SABnzbd) | /api/gadgets/ladle | Active |
-
-## Backlog (Codenames Assigned)
-
-### P1 — Next Up
-| Codename | Feature | Description |
-|----------|---------|-------------|
-| Glaze | Trakt + Last.fm Scrobbling | Sync watch/listen history to external tracking |
-| Roux | Collections & Smart Playlists | Dynamic auto-generated collections with overlay badges |
-| Simmer | Scheduled Tasks Engine | User-configurable cron with visual scheduler UI |
-
-### P2 — Strong Differentiators
-| Codename | Feature | Description |
-|----------|---------|-------------|
-| Sprout | RSS Feed Generator | Publish/subscribe RSS feeds for library additions |
-| Biscotti | Ebook/Audiobook/Comics | OPDS server, chapter tracking, manga support |
-| Treacle | Music Library & Player | Full music library with playlists, gapless playback |
-
-### P3 — Future
-| Codename | Feature | Description |
-|----------|---------|-------------|
-| Sage | AI Metadata & Recommendations | Local LLM auto-tagging, smart recommendations |
-| Terrine | Live TV DVR | EPG recording, timeshift, commercial skip |
-| Popsicle | Offline Sync / Mobile | Download for offline viewing, device transcoding |
-| Preserves | S3/Cloud Backup | One-click metadata backup to S3/Backblaze/NAS |
-| Marshmallow | Cloud Sync | Re-implement cloud sync on .NET stack |
-
-## Testing Status
-- iteration_10: 34/34 tests passed (100%) — all 5 new features
-- iteration_9: 11/11 tests passed — Jellyfin removal verification
-- Zero Jellyfin references in any source, docs, or API response
-
-## Credentials
-- Source: admin@watchnexus.local / admin (seeded if no users)
-- Alpha: admin@watchnexus.ca / password123, admin@friendlymedia.net / password123
-- Test: test@test.com / password
-
-## Release Packages
-- Main: `/app/release_builds/` (linux-x64 + win-x64, self-contained)
-- Alpha: `/app/Alpha/release_builds/` (linux-x64 + win-x64, self-contained)
+## Version: 2.8.0
 
 ## Architecture
-- Dev: Python FastAPI proxy (8001) → C# WatchNexus server (8002)
-- Release: C# server directly on 8001 (no proxy)
-- DB: SQLite with EF Core Migrations
-- Modules: 10 separated DLLs loaded dynamically at startup
+- **Backend**: C#/.NET 10 ASP.NET Core server (port 8002)
+- **Proxy**: Python FastAPI reverse proxy (port 8001) for ingress routing
+- **Frontend**: React + Vite (port 3000)
+- **Database**: SQLite via Entity Framework Core
+- **Deployment**: Self-contained release builds for Windows + Linux
+
+## Core Features Implemented
+### Original Features
+1. **Auth System** - JWT-based authentication with login/register/logout
+2. **Library Management** - Media library CRUD, scanning, metadata refresh
+3. **TMDB Integration** - Movie/TV search, trending, details, genres
+4. **Watchlist & Progress** - Track watch progress, continue watching
+5. **Downloads** - Built-in torrent engine, qBittorrent integration
+6. **IPTV** - Live TV channel management
+7. **Playlists** (Drizzle) - User playlists with media items
+8. **Weather** - Weather forecasts with location search
+9. **Podcasts** - Podcast search, subscribe, episodes
+10. **Radio** - Radio station search, favorites
+11. **Photos** - Photo library management
+12. **Web Video** - Video bookmarks and history
+13. **Subtitles** - Multi-source subtitle search and download
+14. **VPN** - WireGuard VPN portal management
+15. **Security** - IP rules, API keys, audit logs
+16. **External Access** (Gelatin) - Tunnels, share links
+17. **Themes** (Milk) - Theme marketplace
+18. **Plugin Marketplace** (Ripen) - Gadget management
+19. **System Stats** (Nutmeg) - System monitoring
+20. **Media Bridge** (Custard) - External media server integration
+21. **Fortress** - Code protection with audit trail
+22. **GameBot** - Movie quiz generator
+
+### New Features (v2.8.0)
+23. **Watch Analytics** (Truffle) - Viewing stats, play history, top genres
+24. **Notification Hub** (Pepper) - Multi-channel notifications (webhook, email, discord, pushover)
+25. **User Requests** (Meringue) - Media request system with approval workflow
+26. **Parental Controls** (Rind) - PIN protection, rating limits, genre blocking
+27. **Media Processing** (Crucible) - FFmpeg-based transcode jobs (MOCKED - requires ffmpeg)
+28. **Usenet Indexer** (Brine) - Prowlarr-compatible Usenet search proxy
+29. **Usenet Downloader** (Ladle) - SABnzbd-compatible download proxy
+
+## Frontend Pages
+- Dashboard, Library, Movies, TV Shows, Anime, Music, Audiobooks, Live TV, Streaming
+- Downloads, Indexers, Playlists, Search, Watchlist, History, Discover, DVR
+- Weather, Podcasts, Radio, Photos, Web Video
+- **NEW**: Analytics, Notifications, Requests, Parental Controls, Processing, Usenet
+- Settings, Security, VPN Portal, System, Library Manager, Log Viewer, Browse Media, Marketplace, Themes
+
+## Bugs Fixed (v2.8.0 patch)
+1. **Dropdown CSS** - Select option text was unreadable (white on white). Fixed with global CSS rule.
+2. **Settings not saving** - Backend PUT /api/settings/{key} expected {"value":"..."} but frontend sent raw JSON. Fixed to accept both formats. Added bulk PUT /api/settings endpoint.
+3. **User preferences** - Frontend sent preferences as query params, backend expected JSON body. Fixed frontend.
+4. **Missing marmalade endpoints** - Added /status, /media/{id}, /media/search, /continue-watching, /tv-series, /libraries/{id}/refresh-metadata, /media/{id}/progress, /media/{id}/watched, /stream/{id}, /stream/{id}/file
+5. **Meringue request** - tmdb_id was required; made optional (title-only requests now work).
+6. **Pepper channel creation** - POST /api/pepper/channels endpoint was missing. Added.
+7. **Version mismatch** - SystemController still showed 2.7.3; updated to 2.8.0.
+
+## Test Status
+- **Backend**: 45/45 API endpoints pass (iteration_11)
+- **Frontend**: All pages load and function correctly
+- **Testing Agent**: 16/16 tests passed, 100% success rate
+
+## Upcoming Tasks (P1)
+- **Glaze** - Trakt + Last.fm Scrobbling
+- **Roux** - Collections & Smart Playlists
+- **Simmer** - Scheduled Tasks Engine
+- Rebuild self-contained release packages for Windows/Linux
+
+## Future Tasks (P2)
+- **Sprout** - RSS Feed Generator
+- **Biscotti** - Ebook/Audiobook/Comics Support
+- **Treacle** - Music Library & Player
+- **Sage** - AI Metadata & Recommendations
+- **Terrine** - Live TV DVR
+- **Popsicle** - Offline Sync / Mobile
+- **Preserves** - S3/Cloud Backup
+- Re-implement **Marshmallow** Cloud Sync
+
+## Credentials
+- Admin: admin@watchnexus.local / admin
+- Test: test@test.com / password
