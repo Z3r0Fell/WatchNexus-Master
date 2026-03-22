@@ -53,6 +53,17 @@ public class PepperController : ControllerBase
         return Ok(channels);
     }
 
+    [HttpPost("channels")]
+    public async Task<IActionResult> CreateChannel([FromBody] JsonElement body)
+    {
+        var uid = this.UserId();
+        var channelId = Guid.NewGuid().ToString("N")[..8];
+        var key = $"pepper_channel:{channelId}";
+        _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, Value = body.GetRawText(), UserId = uid });
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "created", id = channelId });
+    }
+
     [HttpPut("channels/{channelId}")]
     public async Task<IActionResult> SaveChannel(string channelId, [FromBody] JsonElement body)
     {

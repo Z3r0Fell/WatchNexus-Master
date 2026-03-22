@@ -23,12 +23,20 @@ public class MeringueController : ControllerBase
     public async Task<IActionResult> Submit([FromBody] JsonElement body)
     {
         var uid = this.UserId();
-        var tmdbId = body.TryGetProperty("tmdb_id", out var tid) ? tid.GetInt32() : 0;
-        if (tmdbId == 0) return BadRequest(new { detail = "tmdb_id is required" });
+        var tmdbId = body.TryGetProperty("tmdb_id", out var tid) && tid.ValueKind == JsonValueKind.Number ? tid.GetInt32() : 0;
+        var title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
+        
+        if (tmdbId == 0 && string.IsNullOrWhiteSpace(title))
+            return BadRequest(new { detail = "Either tmdb_id or title is required" });
 
-        // Check for duplicate
-        var existing = await _db.MediaRequests
-            .FirstOrDefaultAsync(r => r.TmdbId == tmdbId && r.UserId == uid && r.Status == "pending");
+        // Check for duplicate by tmdb_id or title
+        MediaRequest? existing = null;
+        if (tmdbId > 0)
+            existing = await _db.MediaRequests
+                .FirstOrDefaultAsync(r => r.TmdbId == tmdbId && r.UserId == uid && r.Status == "pending");
+        else
+            existing = await _db.MediaRequests
+                .FirstOrDefaultAsync(r => r.Title == title && r.UserId == uid && r.Status == "pending");
         if (existing != null) return Ok(new { status = "already_requested", id = existing.Id });
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == uid);
@@ -38,9 +46,9 @@ public class MeringueController : ControllerBase
             Username = user?.Username ?? "unknown",
             TmdbId = tmdbId,
             MediaType = body.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movie" : "movie",
-            Title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
+            Title = title,
             PosterUrl = body.TryGetProperty("poster_url", out var p) ? p.GetString() : null,
-            Overview = body.TryGetProperty("overview", out var o) ? o.GetString() : null,
+            Overview = body.TryGetProperty("overview", out var o) || body.TryGetProperty("description", out o) ? o.GetString() : null,
         };
         _db.MediaRequests.Add(req);
         await _db.SaveChangesAsync();

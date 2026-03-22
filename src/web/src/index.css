@@ -282,6 +282,27 @@ code, .mono {
     display: none;
 }
 
+/* Fix dropdown option visibility on all platforms (Electron, dark themes, Windows) */
+select {
+    appearance: auto;
+    color: var(--text-primary, #F3F4F6);
+}
+
+select option {
+    background-color: #1a1a1a;
+    color: #F3F4F6;
+}
+
+select option:checked {
+    background-color: #2d1b69;
+    color: #F3F4F6;
+}
+
+select option:hover {
+    background-color: #2a2a2a;
+    color: #F3F4F6;
+}
+
 /* Custom Focus Styles */
 *:focus-visible {
     outline: 2px solid var(--primary);

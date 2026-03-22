@@ -34,6 +34,12 @@ import {
   Library,
   Store,
   Key,
+  BarChart3,
+  Bell,
+  MessageSquare,
+  Lock,
+  Cog,
+  HardDrive,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -45,6 +51,7 @@ const ICON_MAP = {
   Home, Film, Tv, Music, BookOpen, Download, Settings,
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
   Shield, Wifi, Server, FileText, Library, Store, Key,
+  BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive,
 };
 
 // Media navigation items
@@ -69,6 +76,12 @@ const gadgetNavItems = [
   { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
   { icon: Image, label: 'Photos', path: '/photos', hideable: true, isGadget: true },
   { icon: Video, label: 'Web Video', path: '/webvideo', hideable: true, isGadget: true },
+  { icon: BarChart3, label: 'Analytics', path: '/analytics', hideable: true, isGadget: true },
+  { icon: Bell, label: 'Notifications', path: '/notifications', hideable: true, isGadget: true },
+  { icon: MessageSquare, label: 'Requests', path: '/requests', hideable: true, isGadget: true },
+  { icon: Lock, label: 'Parental', path: '/parental-controls', hideable: true, isGadget: true },
+  { icon: Cog, label: 'Processing', path: '/processing', hideable: true, isGadget: true },
+  { icon: HardDrive, label: 'Usenet', path: '/usenet', hideable: true, isGadget: true },
 ];
 
 // Admin/Tools items (shown under Settings sub-menu)
@@ -86,6 +99,7 @@ const settingsSubItems = [
 const defaultVisibleTabs = [
   'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks',
   'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
+  'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
 ];
 

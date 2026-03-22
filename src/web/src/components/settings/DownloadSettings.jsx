@@ -65,10 +65,10 @@ export const DownloadSettings = () => {
     // Save to backend
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { download_mode: mode }
-      });
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, 
+        { download_mode: mode },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
       // Also save to localStorage for backwards compatibility
       localStorage.setItem('watchnexus_download_mode', mode);
     } catch (error) {

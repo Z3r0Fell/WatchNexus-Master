@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
+using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -161,6 +162,220 @@ public class MarmaladeBridgeController : ControllerBase
             .Select(m => new { m.Id, m.Title, m.Year, m.Rating, poster_url = m.PosterUrl,
                 backdrop_url = m.BackdropUrl, media_type = m.MediaType, m.Overview })
             .ToListAsync());
+
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus()
+    {
+        return Ok(new
+        {
+            status = "running",
+            version = "2.8.0",
+            total_libraries = await _db.Libraries.CountAsync(),
+            total_media = await _db.MediaItems.CountAsync(),
+            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
+        });
+    }
+
+    [HttpGet("media/{id}")]
+    public async Task<IActionResult> GetMediaItem(string id)
+    {
+        var m = await _db.MediaItems.FindAsync(id);
+        if (m == null) return NotFound(new { detail = "Media item not found" });
+        return Ok(new
+        {
+            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
+            m.Genres, m.Year, m.Runtime, library_id = m.LibraryId,
+            created_at = m.CreatedAt
+        });
+    }
+
+    [HttpGet("media/search")]
+    public async Task<IActionResult> SearchMedia(string? query = null, int limit = 50)
+    {
+        var q = _db.MediaItems.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(query))
+            q = q.Where(m => m.Title != null && m.Title.ToLower().Contains(query.ToLower()));
+        var items = await q.OrderBy(m => m.Title).Take(limit).ToListAsync();
+        return Ok(items.Select(m => new
+        {
+            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
+            m.Genres, m.Year, m.Runtime
+        }));
+    }
+
+    [HttpGet("continue-watching")]
+    public async Task<IActionResult> ContinueWatching(int limit = 10)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var items = await _db.Settings
+            .Where(s => s.UserId == userId && s.Key.StartsWith("progress:"))
+            .OrderByDescending(s => s.Key)
+            .Take(limit)
+            .ToListAsync();
+        var list = items.Select(s => {
+            try { return System.Text.Json.JsonSerializer.Deserialize<object>(s.Value ?? "{}"); }
+            catch { return null; }
+        }).Where(x => x != null).ToList();
+        return Ok(list);
+    }
+
+    [HttpGet("tv-series")]
+    public async Task<IActionResult> GetTVSeries(string? library_id = null)
+    {
+        var q = _db.MediaItems.Where(m => m.MediaType == "tv");
+        if (!string.IsNullOrEmpty(library_id)) q = q.Where(m => m.LibraryId == library_id);
+        var items = await q.OrderBy(m => m.Title).ToListAsync();
+        // Group by title (series name)
+        var series = items.GroupBy(m => m.Title?.Split(" - ").FirstOrDefault() ?? m.Title)
+            .Select(g => new
+            {
+                title = g.Key,
+                episodes = g.Select(m => new
+                {
+                    m.Id, m.Title, m.FilePath, file_size = m.FileSize,
+                    poster_url = m.PosterUrl, m.Year, m.Runtime
+                }).ToList(),
+                total_episodes = g.Count()
+            }).ToList();
+        return Ok(series);
+    }
+
+    [HttpPost("libraries/{id}/refresh-metadata")]
+    public async Task<IActionResult> RefreshMetadata(string id)
+    {
+        var lib = await _db.Libraries.FindAsync(id);
+        if (lib == null) return NotFound(new { detail = "Library not found" });
+        // Get TMDB API key from settings
+        var tmdbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb");
+        if (tmdbSetting == null || string.IsNullOrEmpty(tmdbSetting.Value))
+            return Ok(new { status = "skipped", reason = "No TMDB API key configured" });
+
+        var items = await _db.MediaItems.Where(m => m.LibraryId == id).ToListAsync();
+        var updated = 0;
+        var http = _httpFactory.CreateClient();
+        foreach (var item in items)
+        {
+            if (item.TmdbId != null) { updated++; continue; }
+            try
+            {
+                var searchUrl = $"https://api.themoviedb.org/3/search/{(lib.MediaType == "tv" ? "tv" : "movie")}?api_key={tmdbSetting.Value}&query={Uri.EscapeDataString(item.Title ?? "")}";
+                var resp = await http.GetStringAsync(searchUrl);
+                var doc = System.Text.Json.JsonDocument.Parse(resp);
+                var results = doc.RootElement.GetProperty("results");
+                if (results.GetArrayLength() > 0)
+                {
+                    var first = results[0];
+                    item.TmdbId = first.GetProperty("id").GetInt32();
+                    if (first.TryGetProperty("poster_path", out var poster) && poster.ValueKind == System.Text.Json.JsonValueKind.String)
+                        item.PosterUrl = $"https://image.tmdb.org/t/p/w500{poster.GetString()}";
+                    if (first.TryGetProperty("backdrop_path", out var backdrop) && backdrop.ValueKind == System.Text.Json.JsonValueKind.String)
+                        item.BackdropUrl = $"https://image.tmdb.org/t/p/w1280{backdrop.GetString()}";
+                    if (first.TryGetProperty("overview", out var overview))
+                        item.Overview = overview.GetString();
+                    if (first.TryGetProperty("vote_average", out var rating))
+                        item.Rating = (float)rating.GetDouble();
+                    updated++;
+                }
+            }
+            catch { /* skip failed items */ }
+        }
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "completed", updated, total = items.Count });
+    }
+
+    [HttpPost("media/{id}/progress")]
+    public async Task<IActionResult> UpdateProgress(string id, float progress = 0)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var media = await _db.MediaItems.FindAsync(id);
+        if (media == null) return NotFound();
+        var key = $"progress:local:{id}";
+        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == userId);
+        var json = System.Text.Json.JsonSerializer.Serialize(new {
+            media_id = id, title = media.Title, media_type = media.MediaType,
+            progress, tmdb_id = media.TmdbId, poster_url = media.PosterUrl,
+            backdrop_path = media.BackdropUrl
+        });
+        if (existing != null)
+            existing.Value = json;
+        else
+            _db.Settings.Add(new Shared.AppSetting { Key = key, Value = json, UserId = userId });
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "updated" });
+    }
+
+    [HttpPost("media/{id}/watched")]
+    public async Task<IActionResult> MarkWatched(string id, bool watched = true)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var media = await _db.MediaItems.FindAsync(id);
+        if (media == null) return NotFound();
+        var key = $"progress:local:{id}";
+        if (watched)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new {
+                media_id = id, title = media.Title, media_type = media.MediaType,
+                progress = 100.0, tmdb_id = media.TmdbId
+            });
+            var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == userId);
+            if (existing != null) existing.Value = json;
+            else _db.Settings.Add(new Shared.AppSetting { Key = key, Value = json, UserId = userId });
+        }
+        else
+        {
+            var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == userId);
+            if (existing != null) _db.Settings.Remove(existing);
+        }
+        await _db.SaveChangesAsync();
+        return Ok(new { status = watched ? "watched" : "unwatched" });
+    }
+
+    [HttpGet("stream/{id}")]
+    public async Task<IActionResult> GetStreamInfo(string id, string quality = "original")
+    {
+        var media = await _db.MediaItems.FindAsync(id);
+        if (media == null) return NotFound(new { detail = "Media not found" });
+        if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
+            return Ok(new { error = "File not found on disk", file_path = media.FilePath });
+        var fi = new FileInfo(media.FilePath);
+        return Ok(new
+        {
+            media.Id, media.Title, file_path = media.FilePath,
+            file_size = fi.Length, media_type = media.MediaType,
+            stream_url = $"/api/marmalade/stream/{id}/file",
+            quality, format = System.IO.Path.GetExtension(media.FilePath).TrimStart('.')
+        });
+    }
+
+    [HttpGet("stream/{id}/file")]
+    [AllowAnonymous]
+    public async Task<IActionResult> StreamFile(string id)
+    {
+        var media = await _db.MediaItems.FindAsync(id);
+        if (media == null) return NotFound();
+        if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
+            return NotFound(new { detail = "File not found" });
+        var ext = System.IO.Path.GetExtension(media.FilePath).ToLower();
+        var mime = ext switch
+        {
+            ".mp4" => "video/mp4",
+            ".mkv" => "video/x-matroska",
+            ".avi" => "video/x-msvideo",
+            ".mov" => "video/quicktime",
+            ".webm" => "video/webm",
+            ".mp3" => "audio/mpeg",
+            ".flac" => "audio/flac",
+            ".wav" => "audio/wav",
+            ".m4a" => "audio/mp4",
+            _ => "application/octet-stream"
+        };
+        var stream = new FileStream(media.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return File(stream, mime, enableRangeProcessing: true);
+    }
 }
 
 /// <summary>Preferences endpoint for user settings persistence</summary>
