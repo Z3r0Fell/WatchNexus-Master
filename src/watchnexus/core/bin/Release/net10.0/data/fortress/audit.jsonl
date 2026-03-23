@@ -25,3 +25,5 @@
 {"Timestamp":"2026-03-23T20:57:24.4879599Z","Action":"runtime_check","Result":"pass","Detail":"Request #101","InstanceId":"WN-19a88355bfd9008e"}
 {"Timestamp":"2026-03-23T20:58:45.9035226Z","Action":"runtime_check","Result":"pass","Detail":"Request #203","InstanceId":"WN-19a88355bfd9008e"}
 {"Timestamp":"2026-03-23T21:01:00.0672641Z","Action":"runtime_check","Result":"pass","Detail":"Request #301","InstanceId":"WN-19a88355bfd9008e"}
+{"Timestamp":"2026-03-23T21:03:45.6212326Z","Action":"activation","Result":"verified","Detail":"Instance WN-19a88355bfd9008e valid","InstanceId":"WN-19a88355bfd9008e"}
+{"Timestamp":"2026-03-23T21:03:45.6256915Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-19a88355bfd9008e","InstanceId":"WN-19a88355bfd9008e"}

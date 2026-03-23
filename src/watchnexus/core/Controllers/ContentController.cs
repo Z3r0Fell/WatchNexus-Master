@@ -14,14 +14,40 @@ public class TmdbProxyController : ControllerBase
 {
     private readonly IHttpClientFactory _http;
     private readonly AppDbContext _db;
+    private readonly IConfiguration _config;
     private const string TMDB_BASE = "https://api.themoviedb.org/3";
 
-    public TmdbProxyController(IHttpClientFactory http, AppDbContext db) { _http = http; _db = db; }
+    public TmdbProxyController(IHttpClientFactory http, AppDbContext db, IConfiguration config) { _http = http; _db = db; _config = config; }
 
     private async Task<string?> GetApiKey()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key");
-        return setting?.Value;
+        // Check DB first (user-configured key)
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
+        if (setting?.Value != null)
+        {
+            try
+            {
+                var doc = JsonDocument.Parse(setting.Value);
+                if (doc.RootElement.TryGetProperty("api_key", out var ak))
+                    return ak.GetString();
+            }
+            catch { }
+            return setting.Value;
+        }
+        // Check legacy crumbs_tmdb key
+        var crumbs = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null);
+        if (crumbs?.Value != null)
+        {
+            try
+            {
+                var doc = JsonDocument.Parse(crumbs.Value);
+                if (doc.RootElement.TryGetProperty("api_key", out var ak))
+                    return ak.GetString();
+            }
+            catch { }
+        }
+        // Fall back to environment/config
+        return _config["TMDB_API_KEY"];
     }
 
     private async Task<IActionResult> ProxyGet(string path, Dictionary<string, string>? extra = null)
