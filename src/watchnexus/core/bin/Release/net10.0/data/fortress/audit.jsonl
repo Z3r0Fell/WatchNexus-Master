@@ -59,3 +59,8 @@
 {"Timestamp":"2026-03-23T23:39:16.2569662Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-4416cdf94ddc3e1e","InstanceId":"WN-4416cdf94ddc3e1e"}
 {"Timestamp":"2026-03-23T23:44:19.8924597Z","Action":"runtime_check","Result":"pass","Detail":"Request #102","InstanceId":"WN-4416cdf94ddc3e1e"}
 {"Timestamp":"2026-03-23T23:45:13.6027703Z","Action":"runtime_check","Result":"pass","Detail":"Request #200","InstanceId":"WN-4416cdf94ddc3e1e"}
+{"Timestamp":"2026-03-23T23:47:38.6197782Z","Action":"activation","Result":"verified","Detail":"Instance WN-4416cdf94ddc3e1e valid","InstanceId":"WN-4416cdf94ddc3e1e"}
+{"Timestamp":"2026-03-23T23:47:38.6238521Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-4416cdf94ddc3e1e","InstanceId":"WN-4416cdf94ddc3e1e"}
+{"Timestamp":"2026-03-23T23:48:49.4959898Z","Action":"activation","Result":"verified","Detail":"Instance WN-4416cdf94ddc3e1e valid","InstanceId":"WN-4416cdf94ddc3e1e"}
+{"Timestamp":"2026-03-23T23:48:49.500045Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-4416cdf94ddc3e1e","InstanceId":"WN-4416cdf94ddc3e1e"}
+{"Timestamp":"2026-03-23T23:50:36.2900459Z","Action":"runtime_check","Result":"pass","Detail":"Request #100","InstanceId":"WN-4416cdf94ddc3e1e"}

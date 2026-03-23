@@ -1,96 +1,81 @@
 # WatchNexus - Product Requirements Document
 
 ## Overview
-WatchNexus is a self-hosted media pipeline application (C#/.NET 10 + React) modeled after Jellyfin/Emby with full *arr ecosystem integration. It manages personal media libraries with TMDB metadata, torrenting, streaming, and a comprehensive set of 33 active modules.
+WatchNexus is a self-hosted media management pipeline combining features from Jellyfin and the *arr ecosystem into a unified platform. It uses a C#/.NET 10 backend with React frontend.
 
 ## Current Version: 2.8.3
 
 ## Architecture
-- **Backend**: C#/.NET 10, ASP.NET Core, EF Core + SQLite
-- **Frontend**: React (Create React App), served as static files via Kestrel
-- **Proxy**: FastAPI proxy on port 8001 → .NET backend on port 8002
-- **Build**: Self-contained single-file executables for Windows and Linux
+- **Backend**: C#/.NET 10 (ASP.NET Core) on port 8002
+- **Proxy**: FastAPI on port 8001 (forwards /api/* to .NET backend)
+- **Frontend**: React (CRA) on port 3000
+- **Database**: SQLite via Entity Framework Core
+- **Auth**: JWT-based (admin@watchnexus.local / admin)
 
-## Module Registry (33 Active Modules)
+## Module Codenames & Status
 
-### Core Modules
-| Codename | Name | Description |
-|----------|------|-------------|
-| marmalade | Media Server | Libraries, scanning, streaming |
-| bastion | Advanced Auth | LDAP, SSO, 2FA, session management |
-| tunnel | Network Config | Reverse proxy, UPnP, SSL, dynamic DNS |
-| fondue | Movie Automation | Auto-grab, monitor, upgrade (Radarr-like) |
-| sourdough | Backup & Restore | Snapshots, config export/import |
-| taffy | Metadata Agents | TMDB, TVDB, IMDb, MusicBrainz |
-| churro | Download Clients | qBittorrent, SABnzbd, Transmission |
-| saffron | Scheduled Tasks | Library scans, metadata refresh, cleanup |
-| pantry | Storage Manager | Disk monitoring, path mappings |
-| nutmeg | Recommendations | AI-powered picks from TMDB |
-| crumbs | API Management | Third-party integration keys |
-| fortress | Security | Code protection, obfuscation |
-| zest | Health Monitor | Logs, system health |
-| glaze | Scrobbling | Trakt.tv + Last.fm integration |
-| setup | Setup Wizard | First-run configuration |
+### Core Media (Active)
+| Module | Codename | Status | Description |
+|--------|----------|--------|-------------|
+| Libraries | marmalade | Active | Media library management, TV grouping |
+| Media Server | media | Active | Streaming, transcoding |
+| Content Discovery | content | Active | TMDB integration, search, trending |
+| Downloads | crucible | Active | Download processing pipeline |
 
-### Gadget Modules
-| Codename | Name | Route |
-|----------|------|-------|
-| sorbet | Weather | /api/gadgets/weather |
-| brioche | Podcasts | /api/gadgets/podcasts |
-| nectar | Internet Radio | /api/gadgets/radio |
-| ganache | Photo Gallery | /api/gadgets/photos |
-| bisque | Web Video | /api/gadgets/webvideo |
-| marzipan | Playlists/Collections | /api/marzipan |
-| cinnamon | Synapse Admin | /api/gadgets/synapse-admin |
-| waffle | Movie Quiz | /api/gadgets/gamebot |
-| custard | Media Bridge | /api/gadgets/media-bridge |
-| yeast | Background Bot | /api/gadgets/bot |
+### Newly Implemented P1 Modules (Active)
+| Module | Codename | Status | Description |
+|--------|----------|--------|-------------|
+| Scrobbling | glaze | Active | Trakt.tv & Last.fm integration |
+| Scheduled Tasks | saffron | Active | Library scans, metadata refresh, cleanup |
+| Movie Automation | fondue | Active | Radarr-like movie monitoring & auto-grab |
+| Backup & Restore | sourdough | Active | Config backups, scheduled backups |
+| Download Clients | churro | Active | Torrent/Usenet client management |
+| Collections | roux | Active | Smart & manual collections, presets |
+| RSS Feeds | sprout | Active | RSS/Atom feed generator for library |
 
-### Analytics & Social
-| Codename | Name |
-|----------|------|
-| truffle | Watch Analytics |
-| pepper | Notification Hub |
-| meringue | User Requests |
-| rind | Parental Controls |
-| crucible | Media Processing |
-| brine | Usenet Indexer |
-| ladle | Usenet Downloader |
-| ripen | Plugin Marketplace |
+### Scaffolded Modules (Placeholder)
+| Module | Codename | Status | Description |
+|--------|----------|--------|-------------|
+| Advanced Auth | bastion | Placeholder | LDAP, 2FA |
+| VPN | tunnel | Placeholder | VPN portal |
+| Subtitles | taffy | Placeholder | Multi-language subtitles |
+| Path Management | pantry | Placeholder | Storage path mappings |
+| Recommendations | nutmeg | Placeholder | AI-powered suggestions |
 
-## Verification Status
-- **136/136 endpoints passing** (comprehensive curl audit)
-- **32/32 codename status endpoints** resolving correctly
-- **33 modules** reported active in system info
-- **28 plugins** listed in gadget catalogue
-- **Frontend: 100%** pass rate on testing agent
-- **TMDB integration**: Trending, Search, Discover, poster generation all working
-- **Poster generation**: Both LibrariesController and MarmaladeBridgeController scan paths fetch TMDB metadata
-- **Tray icon**: Fully wired (Stop/Restart/Preferences/Quit all functional)
-- **Alpha builds**: Available at /app/release_builds/
-
-## Alpha Build Credentials
-- Email: admin@watchnexus.local
-- Password: admin
-
-## Upcoming Tasks (P1)
-- Glaze deeper integration (actual Trakt OAuth flow)
-- Roux — Collections & Smart Playlists (deeper implementation)
-- Simmer/Saffron — Execute scheduled tasks (currently task definitions only)
-
-## Future Tasks (P2)
-- Sprout (RSS Feed Generator)
-- Biscotti (Ebook/Audiobook/Comics Support)
+### Future Modules (Not Started)
+- Biscotti (Ebook/Audiobook/Comics)
 - Treacle (Music Library & Player)
 - Sage (AI Metadata & Recommendations)
 - Terrine (Live TV DVR)
 - Popsicle (Offline Sync / Mobile)
 - Preserves (S3/Cloud Backup)
-- Marshmallow Cloud Sync
+- Marshmallow (Cloud Sync)
 
 ## Key Files
-- `/app/src/watchnexus/core/Controllers/CoreModuleControllers.cs` — 9 new core modules
-- `/app/src/watchnexus/core/Controllers/CodeNameAliasControllers.cs` — Aliases + Setup + Glaze + Playlists
-- `/app/src/watchnexus/core/Controllers/SystemController.cs` — System info with 33 modules
-- `/app/src/watchnexus/core/Controllers/FeatureControllers.cs` — 28-plugin catalogue
-- `/app/release_builds/` — Alpha builds
+- `/app/src/watchnexus/core/Controllers/` - All backend controllers
+- `/app/frontend/src/pages/` - All frontend pages
+- `/app/frontend/src/components/layout/Sidebar.js` - Navigation
+- `/app/frontend/src/App.js` - Router configuration
+
+## Bug Fixes Completed
+1. Gadgets tab populated (GadgetsCatalogueController.cs)
+2. YTS indexer URL updated (MediaControllers.cs)
+3. Theme tab functional (FeatureControllers.cs)
+4. TV shows grouped by Series > Season > Episode (BridgeController.cs)
+5. AppSetting UserId composite key fix (all controllers)
+
+## API Endpoints
+- Auth: POST /api/auth/login
+- System: GET /api/system/info
+- Libraries: GET /api/marmalade/tv-series, /api/marmalade/media/recent
+- Roux: GET/POST /api/roux/collections, GET /api/roux/presets, POST /api/roux/filter
+- Sprout: GET/PUT /api/sprout/config, GET /api/sprout/feeds, POST /api/sprout/generate-key, GET /api/sprout/feed/{type}
+- Glaze: GET/PUT /api/glaze/config, POST /api/glaze/trakt/sync
+- Saffron: GET /api/saffron/tasks, POST /api/saffron/tasks/{id}/run
+- Fondue: GET /api/fondue/movies, GET /api/fondue/queue, GET /api/fondue/config
+- Sourdough: GET /api/sourdough/backups, POST /api/sourdough/backup, GET /api/sourdough/config/export
+- Churro: GET /api/churro/clients, POST /api/churro/clients/{id}/test
+
+## Known Issues
+- .NET SDK not persistent across environment restarts (workaround: reinstall + restart supervisor)
+- RSS feed URLs show internal hostname (expected in preview; correct in production)

@@ -70,7 +70,7 @@ public class RouxController : ControllerBase
 
         var raw = JsonSerializer.Serialize(collections);
         if (setting != null) setting.Value = raw;
-        else _db.Settings.Add(new AppSetting { Key = "roux_collections", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = "", Key = "roux_collections", Value = raw });
         await _db.SaveChangesAsync();
 
         return Ok(new { status = "created", collection = newCol });
