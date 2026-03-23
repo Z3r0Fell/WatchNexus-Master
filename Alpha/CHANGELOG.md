@@ -1,5 +1,23 @@
 # WatchNexus Changelog
 
+## 2026-03-23 - v2.8.3 (Deep Dive Stability & Poster Fix)
+
+### Critical Bug Fixes
+- **94 Endpoints Verified** — Comprehensive endpoint audit ensuring 94/94 backend endpoints return 200 OK
+- **Poster Generation Fix** — Both library scan paths (LibrariesController and MarmaladeBridgeController) now correctly fetch TMDB metadata including poster art, backdrops, ratings, and overviews
+- **TMDB Key Consistency** — Fixed TMDB API key lookup to check all 3 storage sources (env config, `tmdb_api_key` in DB, legacy `crumbs_tmdb` in DB) across all scan and metadata endpoints
+- **Dashboard Poster Rendering** — Fixed "Recently Added" section to display poster images from library items (was checking `poster_path` instead of `poster_url`)
+- **Continue Watching NaN Fix** — Fixed "NaN:NaN / NaN:NaN" display when progress data only has percentage (no duration/current_time)
+- **Library Alias Route** — Added `/api/library` endpoint alias matching frontend expectations (was returning 404)
+- **TV Show Title Parsing** — Fixed Marmalade scan to strip season/episode tags (e.g., S01E01) and quality tags before TMDB search
+
+### Improvements
+- **Marmalade Scan Enhanced** — Now fetches full TMDB metadata during scan (previously only stored file names with no poster art)
+- **System Tray Icon** — Confirmed all menu items (Stop/Restart/Preferences/Quit) are fully wired with real functionality
+
+### Version Bump
+- All modules updated from 2.8.2.2 to 2.8.3
+
 ## 2026-03-22 - v2.8.2.2 (System Tray Icon)
 
 ### New Features
@@ -15,7 +33,7 @@
 - Linux tray helper script is generated at runtime and launched as a managed subprocess
 
 ### Version Bump
-- All modules updated from 2.8.2.1 to 2.8.2.2
+- All modules updated from 2.8.2.1 to 2.8.3
 
 ## 2026-03-22 - v2.8.2.1 (Searchable Help & Documentation Page)
 

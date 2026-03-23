@@ -1,7 +1,7 @@
 #!/bin/bash
 #===============================================================================
 # WatchNexus Installation Script for Linux (Debian/Ubuntu/Fedora/Arch)
-# v2.8.2.2 — Self-contained .NET 10 build (no runtime dependencies needed)
+# v2.8.3 — Self-contained .NET 10 build (no runtime dependencies needed)
 #===============================================================================
 
 set -e
@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 INSTALL_DIR="/opt/watchnexus"
-VERSION="2.8.2.2"
+VERSION="2.8.3"
 SERVICE_NAME="watchnexus"
 USER="watchnexus"
 PORT=8002

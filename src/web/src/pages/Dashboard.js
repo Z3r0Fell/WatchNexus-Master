@@ -12,10 +12,28 @@ import { formatTime, getTitle, getMediaType } from '../lib/utils';
 
 const ContinueWatchingCard = ({ item, index, onRemove }) => {
   const getRemainingTime = () => {
+    if (!item.duration || !item.current_time) {
+      const pct = item.progress || 0;
+      return pct > 0 ? `${Math.round(100 - pct)}% left` : '';
+    }
     const remaining = item.duration - item.current_time;
     if (remaining < 60) return `${remaining}s left`;
     if (remaining < 3600) return `${Math.floor(remaining / 60)}m left`;
     return `${Math.floor(remaining / 3600)}h ${Math.floor((remaining % 3600) / 60)}m left`;
+  };
+
+  const getProgressPct = () => {
+    if (item.progress) return item.progress;
+    if (item.duration && item.current_time) return (item.current_time / item.duration) * 100;
+    return 0;
+  };
+
+  const getTimeDisplay = () => {
+    if (item.current_time != null && item.duration != null) {
+      return `${formatTime(item.current_time)} / ${formatTime(item.duration)}`;
+    }
+    const pct = item.progress || 0;
+    return `${Math.round(pct)}% watched`;
   };
 
   const handleRemove = (e) => {
@@ -36,9 +54,9 @@ const ContinueWatchingCard = ({ item, index, onRemove }) => {
         className="relative group rounded-xl overflow-hidden glass-card hover:ring-2 hover:ring-violet-500/50 transition-all block"
       >
         <div className="aspect-video relative">
-          {item.backdrop_path ? (
+          {(item.backdrop_path || item.backdrop_url || item.poster_url) ? (
             <img
-              src={`https://image.tmdb.org/t/p/w500${item.backdrop_path}`}
+              src={item.backdrop_url || item.poster_url || `https://image.tmdb.org/t/p/w500${item.backdrop_path}`}
               alt={item.title}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -75,13 +93,13 @@ const ContinueWatchingCard = ({ item, index, onRemove }) => {
               <motion.div
                 className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full"
                 initial={{ width: 0 }}
-                animate={{ width: `${item.progress}%` }}
+                animate={{ width: `${getProgressPct()}%` }}
                 transition={{ duration: 0.5 }}
               />
             </div>
             
             <div className="flex justify-between items-center mt-1.5">
-              <p className="text-xs text-gray-400">{formatTime(item.current_time)} / {formatTime(item.duration)}</p>
+              <p className="text-xs text-gray-400">{getTimeDisplay()}</p>
               <p className="text-xs text-violet-400 font-medium">{getRemainingTime()}</p>
             </div>
           </div>
@@ -287,8 +305,8 @@ export const Dashboard = () => {
               {recentlyAdded.slice(0, 8).map((item, index) => (
                 <motion.div key={item.id || `recent-${index}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.03 }}>
                   <Link to={`/${item.media_type || 'movie'}/${item.tmdb_id || item.id}`} data-testid={`recent-${item.id}`} className="aspect-[2/3] rounded-xl overflow-hidden media-card block relative group">
-                    {item.poster_path ? (
-                      <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    {(item.poster_url || item.poster_path) ? (
+                      <img src={item.poster_url || `https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-green-900/50 to-violet-900/50 flex items-center justify-center">
                         <Film className="w-8 h-8 text-gray-500" />

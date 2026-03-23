@@ -1,7 +1,7 @@
 #!/bin/bash
 #===============================================================================
 # WatchNexus Build Script for Arch Linux
-# v2.8.2.2 — Builds self-contained .NET 10 release and creates PKGBUILD
+# v2.8.3 — Builds self-contained .NET 10 release and creates PKGBUILD
 #===============================================================================
 
 set -e
@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_ROOT/build"
-VERSION="2.8.2.2"
+VERSION="2.8.3"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

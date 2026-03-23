@@ -1,4 +1,4 @@
-# WatchNexus v2.8.2.2-alpha
+# WatchNexus v2.8.3-alpha
 
 > **ALPHA BUILD — CONFIDENTIAL — NOT FOR PUBLIC DISTRIBUTION**
 
@@ -8,8 +8,8 @@ This is a pre-release alpha build for internal testing purposes only. Do not red
 
 | Platform | Archive | Size |
 |----------|---------|------|
-| Windows x64 | `WatchNexus-v2.8.2.2-win-x64.zip` | ~72MB |
-| Linux x64 | `WatchNexus-v2.8.2.2-linux-x64.zip` | ~59MB |
+| Windows x64 | `WatchNexus-v2.8.3-win-x64.zip` | ~72MB |
+| Linux x64 | `WatchNexus-v2.8.3-linux-x64.zip` | ~59MB |
 
 Both archives are **self-contained** — no .NET runtime installation required.
 
@@ -17,14 +17,14 @@ Both archives are **self-contained** — no .NET runtime installation required.
 
 ### Windows
 ```
-1. Extract WatchNexus-v2.8.2.2-win-x64.zip
+1. Extract WatchNexus-v2.8.3-win-x64.zip
 2. Double-click WatchNexus.Core.exe
 3. A system tray icon will appear — double-click it or open http://localhost:8002
 ```
 
 ### Linux
 ```bash
-unzip WatchNexus-v2.8.2.2-linux-x64.zip
+unzip WatchNexus-v2.8.3-linux-x64.zip
 cd linux-x64
 chmod +x WatchNexus.Core
 ./WatchNexus.Core
@@ -50,7 +50,7 @@ These accounts are created automatically on first launch:
 
 You can also create additional accounts via the "Sign Up" page.
 
-## What's New in v2.8.2.2
+## What's New in v2.8.3
 
 - **System Tray Icon** — Tray icon now loads on launch (Windows: native NotifyIcon; Linux: GTK AppIndicator3)
 - **Help & Documentation** — Searchable `/help` page with 40+ topics across 13 categories
@@ -102,7 +102,7 @@ When filing a bug, include:
 
 ## Version Identification
 
-All banners, endpoints, and module manifests are tagged `2.8.2.2`. 
+All banners, endpoints, and module manifests are tagged `2.8.3`. 
 
 Verify via: `GET /api/health` or `GET /api/system/info`
 
