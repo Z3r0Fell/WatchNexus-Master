@@ -1,0 +1,2 @@
+{"Timestamp":"2026-03-23T19:43:28.5870656Z","Action":"activation","Result":"new","Detail":"Instance WN-724eb81976d30d6a activated","InstanceId":"WN-724eb81976d30d6a"}
+{"Timestamp":"2026-03-23T19:43:28.5907648Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-724eb81976d30d6a","InstanceId":"WN-724eb81976d30d6a"}
