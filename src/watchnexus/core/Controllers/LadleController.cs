@@ -11,6 +11,7 @@ namespace WatchNexus.Core.Controllers;
 /// Proxies to SABnzbd for NZB downloading, queue management, history, and server status.
 /// </summary>
 [Route("api/ladle")]
+[Route("api/gadgets/ladle")]
 [ApiController]
 [Authorize]
 public class LadleController : ControllerBase

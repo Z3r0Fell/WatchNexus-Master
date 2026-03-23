@@ -208,11 +208,30 @@ public class MarmaladeBridgeController : ControllerBase
     }
 
     [HttpGet("media/recent")]
-    public async Task<IActionResult> RecentMedia(int limit = 20) =>
-        Ok(await _db.MediaItems.OrderByDescending(m => m.CreatedAt).Take(limit)
+    public async Task<IActionResult> RecentMedia(int limit = 20)
+    {
+        var items = await _db.MediaItems.OrderByDescending(m => m.CreatedAt).Take(limit * 3)
             .Select(m => new { m.Id, m.Title, m.Year, m.Rating, poster_url = m.PosterUrl,
-                backdrop_url = m.BackdropUrl, media_type = m.MediaType, m.Overview })
-            .ToListAsync());
+                backdrop_url = m.BackdropUrl, media_type = m.MediaType, m.Overview, tmdb_id = m.TmdbId })
+            .ToListAsync();
+
+        // Deduplicate TV shows by TMDB ID — show series once, not each episode
+        var seen = new HashSet<string>();
+        var result = new List<object>();
+        foreach (var item in items)
+        {
+            if (result.Count >= limit) break;
+            var key = (item.tmdb_id.HasValue && (item.media_type == "tv" || item.media_type == "episode"))
+                ? $"tv:{item.tmdb_id}" : $"item:{item.Id}";
+            if (seen.Contains(key)) continue;
+            seen.Add(key);
+
+            // For TV shows, relabel media_type
+            var mediaType = (item.media_type == "episode") ? "tv" : item.media_type;
+            result.Add(new { item.Id, item.Title, item.Year, item.Rating, item.poster_url, item.backdrop_url, media_type = mediaType, item.Overview });
+        }
+        return Ok(result);
+    }
 
     [HttpGet("status")]
     public async Task<IActionResult> GetStatus()
@@ -277,21 +296,83 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("tv-series")]
     public async Task<IActionResult> GetTVSeries(string? library_id = null)
     {
-        var q = _db.MediaItems.Where(m => m.MediaType == "tv");
+        var q = _db.MediaItems.Where(m => m.MediaType == "tv" || m.MediaType == "episode");
         if (!string.IsNullOrEmpty(library_id)) q = q.Where(m => m.LibraryId == library_id);
         var items = await q.OrderBy(m => m.Title).ToListAsync();
-        // Group by title (series name)
-        var series = items.GroupBy(m => m.Title?.Split(" - ").FirstOrDefault() ?? m.Title)
-            .Select(g => new
+
+        // Parse season/episode from file names and titles
+        var episodeRegex = new System.Text.RegularExpressions.Regex(
+            @"[Ss](\d{1,2})[Ee](\d{1,2})", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Group by TMDB ID first, then by series name for items without TMDB ID
+        var grouped = new Dictionary<string, List<(MediaItem item, int season, int episode)>>();
+
+        foreach (var item in items)
+        {
+            // Extract season/episode
+            int seasonNum = 1, episodeNum = 0;
+            var match = episodeRegex.Match(item.FilePath ?? item.Title ?? "");
+            if (match.Success)
             {
-                title = g.Key,
-                episodes = g.Select(m => new
+                seasonNum = int.Parse(match.Groups[1].Value);
+                episodeNum = int.Parse(match.Groups[2].Value);
+            }
+
+            // Extract series name (title before S01E01, or TMDB title, or cleaned filename)
+            var seriesName = item.Title ?? "Unknown";
+            var nameMatch = System.Text.RegularExpressions.Regex.Match(
+                item.FilePath ?? "", @"[/\\]?([^/\\]+?)\s*[Ss]\d{1,2}[Ee]\d{1,2}",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (nameMatch.Success)
+                seriesName = nameMatch.Groups[1].Value.Replace('.', ' ').Replace('_', ' ').Trim();
+            else if (item.TmdbId.HasValue)
+                seriesName = item.Title ?? seriesName;
+
+            // Group key: prefer TMDB ID, fall back to series name
+            var key = item.TmdbId.HasValue ? $"tmdb:{item.TmdbId}" : $"name:{seriesName.ToLower()}";
+            if (!grouped.ContainsKey(key))
+                grouped[key] = new List<(MediaItem, int, int)>();
+            grouped[key].Add((item, seasonNum, episodeNum));
+        }
+
+        // Build series response
+        var series = grouped.Select(kvp =>
+        {
+            var firstItem = kvp.Value.First().item;
+            var seriesName = firstItem.Title ?? "Unknown";
+
+            // Group by season
+            var seasons = kvp.Value
+                .GroupBy(e => e.season)
+                .OrderBy(g => g.Key)
+                .Select(seasonGroup => new
                 {
-                    m.Id, m.Title, m.FilePath, file_size = m.FileSize,
-                    poster_url = m.PosterUrl, m.Year, m.Runtime
-                }).ToList(),
-                total_episodes = g.Count()
-            }).ToList();
+                    season_number = seasonGroup.Key,
+                    episode_count = seasonGroup.Count(),
+                    episodes = seasonGroup.OrderBy(e => e.episode).Select(e => new
+                    {
+                        e.item.Id,
+                        title = e.item.Title ?? $"Episode {e.episode}",
+                        episode_number = e.episode > 0 ? e.episode : (int?)null,
+                        size = e.item.FileSize,
+                        watched = false,
+                        file_path = e.item.FilePath,
+                    }).ToList()
+                }).ToList();
+
+            return new
+            {
+                series_name = seriesName,
+                tmdb_id = firstItem.TmdbId,
+                poster_url = firstItem.PosterUrl,
+                backdrop_url = firstItem.BackdropUrl,
+                overview = firstItem.Overview,
+                rating = firstItem.Rating,
+                total_episodes = kvp.Value.Count,
+                seasons
+            };
+        }).OrderBy(s => s.series_name).ToList();
+
         return Ok(series);
     }
 

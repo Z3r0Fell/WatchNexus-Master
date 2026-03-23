@@ -47,15 +47,29 @@ public class LibrariesController : ControllerBase
     {
         var items = await _db.MediaItems
             .OrderByDescending(m => m.Id)
-            .Take(limit)
+            .Take(limit * 3)
             .ToListAsync();
-        return Ok(items.Select(m => new
+
+        // Deduplicate TV shows by TMDB ID — show series once, not each episode
+        var seen = new HashSet<string>();
+        var result = new List<object>();
+        foreach (var m in items)
         {
-            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
-            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
-            m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
-            m.Genres, m.Year, m.Runtime
-        }));
+            if (result.Count >= limit) break;
+            var key = (m.TmdbId.HasValue && (m.MediaType == "tv" || m.MediaType == "episode"))
+                ? $"tv:{m.TmdbId}" : $"item:{m.Id}";
+            if (seen.Contains(key)) continue;
+            seen.Add(key);
+            result.Add(new
+            {
+                m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+                media_type = (m.MediaType == "episode") ? "tv" : m.MediaType,
+                tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+                m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
+                m.Genres, m.Year, m.Runtime
+            });
+        }
+        return Ok(result);
     }
 
     [HttpGet("{id}")]

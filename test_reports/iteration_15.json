@@ -1,0 +1,95 @@
+{
+  "summary": "WatchNexus v2.8.3 Testing Complete - 7 new P1 modules tested. Backend: 34/38 tests passed (89%). Frontend: All 7 new module pages load correctly. P0 fixes verified: Gadgets (30 plugins), Theme Forge, Library page all working.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/roux/collections",
+        "issue": "Returns 500 - AppSetting entity requires UserId but controllers don't set it when creating new settings",
+        "priority": "HIGH",
+        "root_cause": "AppSetting has composite primary key (Key, UserId) but controllers add settings with null UserId"
+      },
+      {
+        "endpoint": "POST /api/sprout/generate-key",
+        "issue": "Returns 500 - Same AppSetting UserId issue + potential substring index out of range",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "PUT /api/sprout/config",
+        "issue": "Returns 500 - AppSetting UserId tracking issue",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "PUT /api/glaze/config",
+        "issue": "Returns 500 - AppSetting UserId tracking issue",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "backend": {
+      "total_tests": 38,
+      "passed": 34,
+      "failed": 4,
+      "pass_rate": "89%",
+      "modules_tested": ["Roux", "Sprout", "Glaze", "Saffron", "Fondue", "Sourdough", "Churro", "Bastion", "Tunnel", "Taffy", "Pantry", "Nutmeg"]
+    },
+    "frontend": {
+      "login": "PASS - admin@watchnexus.local / admin works",
+      "dashboard": "PASS - Loads with sidebar showing Collections and Automation",
+      "collections_page": "PASS - Shows 5 default smart collections and 5 presets",
+      "automation_page": "PASS - Shows movie automation with Library, Queue, Settings tabs",
+      "rss_page": "PASS - Shows 3 RSS feeds (Recently Added, Movies, TV Shows) with Settings tab",
+      "tasks_page": "PASS - Shows 8 scheduled tasks with Run buttons",
+      "backups_page": "PASS - Shows Create Backup and Export Config buttons",
+      "download_clients_page": "PASS - Shows 1 download client (qBittorrent) with Test/Remove buttons",
+      "scrobbling_page": "PASS - Shows Trakt.tv and Last.fm configuration tabs",
+      "settings_submenu": "PASS - Tasks, DL Clients, Backups, Scrobbling, RSS Feeds all visible",
+      "p0_gadgets": "PASS - Settings > Gadgets shows 30 installed plugins (exceeds 29+ requirement)",
+      "p0_themes": "PASS - Settings > Theme Forge loads with Light/Dark mode options",
+      "p0_library": "PASS - Library page shows Movies (3 items) and TV Shows (1 item) with proper grouping"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_watchnexus_v283_modules.py",
+    "/app/test_reports/pytest/pytest_v283_modules.xml"
+  ],
+  "action_items": [
+    "FIX CRITICAL: Update RouxController, SproutController, and GlazeController to set UserId when creating/updating AppSetting entities. The AppSetting entity has a composite primary key (Key, UserId) - controllers must provide a valid UserId (e.g., 'system' or the current user's ID) when adding new settings.",
+    "FIX: In SproutController.GenerateApiKey(), ensure the base64 string is long enough before calling substring [..32]"
+  ],
+  "critical_code_review_comments": [
+    "AppSetting entity has composite key (Key, UserId) but new module controllers (Roux, Sprout, Glaze) don't set UserId when creating settings - causes 500 errors on POST/PUT operations",
+    "All GET endpoints work correctly - only write operations fail",
+    "Frontend pages are well-designed with proper data-testid attributes for testing"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_watchnexus_v283_modules.py"
+  ],
+  "success_rate": {
+    "backend": "89% (34/38 tests passed)",
+    "frontend": "100% (all pages load correctly)"
+  },
+  "test_credentials": {
+    "email": "admin@watchnexus.local",
+    "password": "admin"
+  },
+  "seed_data_creation": "None - using existing test media",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "WatchNexus v2.8.3 has 7 new module pages (Glaze, Saffron, Fondue, Sourdough, Churro, Roux, Sprout) all loading correctly. Backend GET endpoints work but POST/PUT operations on Roux, Sprout, Glaze fail with 500 due to AppSetting UserId issue. P0 fixes verified: Gadgets (30 plugins), Theme Forge, Library page all working. Test file: /app/backend/tests/test_watchnexus_v283_modules.py",
+  "rca_of_the_issue": {
+    "root_cause": "AppSetting entity in /app/src/watchnexus/shared/Module.cs has composite primary key (Key, UserId) configured in AppDbContext. When controllers like RouxController, SproutController, GlazeController create new AppSetting records, they don't set the UserId property, causing EF Core to throw 'Unable to track an entity of type AppSetting because its primary key property UserId is null'",
+    "affected_controllers": [
+      "/app/src/watchnexus/core/Controllers/RouxController.cs - CreateCollection method",
+      "/app/src/watchnexus/core/Controllers/SproutController.cs - UpdateConfig, GenerateApiKey methods",
+      "/app/src/watchnexus/core/Controllers/GlazeController.cs (if exists) - UpdateConfig method"
+    ],
+    "fix_suggestion": "When creating new AppSetting, set UserId to a system value like 'system' or extract user ID from JWT claims: new AppSetting { Key = 'key', Value = 'value', UserId = 'system' }"
+  }
+}
