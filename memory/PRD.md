@@ -77,10 +77,12 @@ WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backen
 
 ## New Features (v2.8.2.2)
 30. **System Tray Icon** — Cross-platform tray icon that loads on launch
-    - Windows: Native WinForms NotifyIcon with branded icon, double-click to open browser, context menu (Open/Quit)
+    - Windows: Native WinForms NotifyIcon with branded icon, double-click to open browser
     - Linux: Embedded Python helper using GTK AppIndicator3 (ayatana + legacy support)
     - Headless environments gracefully skip tray initialization
     - TrayIconService registered as BackgroundService; csproj conditional UseWindowsForms for win-x64
+    - **Enhanced Tray Menu**: Open WatchNexus, Stop Server, Restart Server, Preferences submenu (Server Port, Settings Page, Port Forwarding/UPnP, Edit appsettings.json, Log Folder, Data Folder), Quit
+31. **Standalone Frontend Build Fix** — Frontend is now rebuilt with empty `REACT_APP_BACKEND_URL` during `dotnet publish`, ensuring the alpha release uses same-origin API requests instead of hardcoded preview URLs. This was the root cause of auth failures in the alpha build.
 
 ## Release Builds (v2.8.2.2)
 - **Windows (win-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-win-x64.zip` (72MB, 472 files, self-contained + WinForms)
