@@ -152,6 +152,7 @@ public class LogsController : ControllerBase
     private static readonly string LogDir = Path.Combine(AppContext.BaseDirectory, "logs");
 
     [HttpGet]
+    [HttpGet("list")]
     public IActionResult GetFiles()
     {
         if (!Directory.Exists(LogDir)) return Ok(Array.Empty<object>());

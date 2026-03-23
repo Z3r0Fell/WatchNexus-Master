@@ -41,6 +41,10 @@ import {
   Cog,
   HardDrive,
   HelpCircle,
+  Activity,
+  Timer,
+  Archive,
+  Rss,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -53,6 +57,7 @@ const ICON_MAP = {
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
   Shield, Wifi, Server, FileText, Library, Store, Key,
   BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive, HelpCircle,
+  Activity, Timer, Archive, Rss,
 };
 
 // Media navigation items
@@ -63,11 +68,13 @@ const mediaNavItems = [
   { icon: Tv, label: 'TV Shows', path: '/tv', hideable: true },
   { icon: Sparkles, label: 'Anime', path: '/anime', hideable: true },
   { icon: ListVideo, label: 'Playlists', path: '/playlists', hideable: true },
+  { icon: Layers, label: 'Collections', path: '/collections', hideable: true },
   { icon: Music, label: 'Music', path: '/music', hideable: true },
   { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks', hideable: true },
   { icon: Radio, label: 'Live TV', path: '/live', hideable: true },
   { icon: Layers, label: 'Streaming', path: '/streaming', hideable: true },
   { icon: Compass, label: 'Indexers', path: '/indexers', hideable: true },
+  { icon: Film, label: 'Automation', path: '/automation', hideable: true },
 ];
 
 // Gadget page items
@@ -94,14 +101,20 @@ const settingsSubItems = [
   { icon: FileText, label: 'Log Viewer', path: '/log-viewer', hideable: true },
   { icon: Server, label: 'System', path: '/system', hideable: true },
   { icon: Store, label: 'Marketplace', path: '/plugins', hideable: true },
+  { icon: Timer, label: 'Tasks', path: '/tasks', hideable: true },
+  { icon: Download, label: 'DL Clients', path: '/download-clients', hideable: true },
+  { icon: Archive, label: 'Backups', path: '/backups', hideable: true },
+  { icon: Activity, label: 'Scrobbling', path: '/scrobbling', hideable: true },
+  { icon: Rss, label: 'RSS Feeds', path: '/rss', hideable: true },
 ];
 
 // Default visible tabs
 const defaultVisibleTabs = [
-  'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks',
-  'Streaming', 'Indexers', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
+  'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Collections', 'Music', 'Audiobooks',
+  'Streaming', 'Indexers', 'Automation', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
+  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds',
 ];
 
 // Get visible tabs from localStorage

@@ -52,6 +52,8 @@ public class SystemController : ControllerBase
             new { name = "Ladle", codename = "ladle", version = "2.8.3", status = "active" },
             new { name = "Ripen", codename = "ripen", version = "2.8.3", status = "active" },
             new { name = "Glaze", codename = "glaze", version = "2.8.3", status = "active" },
+            new { name = "Roux", codename = "roux", version = "2.8.3", status = "active" },
+            new { name = "Sprout", codename = "sprout", version = "2.8.3", status = "active" },
             new { name = "Setup Wizard", codename = "setup", version = "2.8.3", status = "active" },
         };
         return Ok(new

@@ -133,14 +133,18 @@ public class CompoteController : ControllerBase
     public IActionResult SetupGuide() => Ok(new { guide = "Configure indexers in Settings > Integrations to search for content." });
 
     [HttpGet("default-indexers")]
-    public IActionResult DefaultIndexers() => Ok(new[]
+    public IActionResult DefaultIndexers()
     {
-        new { name = "1337x", type = "torznab", url = "https://1337x.to", cloudflare_protected = true },
-        new { name = "YTS Movies", type = "torznab", url = "https://yts.mx", cloudflare_protected = false },
-        new { name = "EZTV", type = "torznab", url = "https://eztv.re", cloudflare_protected = false },
-        new { name = "Nyaa", type = "torznab", url = "https://nyaa.si", cloudflare_protected = false },
-        new { name = "ShowRSS", type = "rss", url = "https://showrss.info/other/all.rss", cloudflare_protected = false },
-    });
+        var indexers = new List<object>
+        {
+            new { name = "1337x", type = "torznab", url = "https://1337x.to", alt_urls = Array.Empty<string>(), cloudflare_protected = true },
+            new { name = "YTS Movies", type = "torznab", url = "https://yts.mx", alt_urls = new[] { "https://yts.rs", "https://yts.lt" }, cloudflare_protected = false },
+            new { name = "EZTV", type = "torznab", url = "https://eztv.re", alt_urls = Array.Empty<string>(), cloudflare_protected = false },
+            new { name = "Nyaa", type = "torznab", url = "https://nyaa.si", alt_urls = Array.Empty<string>(), cloudflare_protected = false },
+            new { name = "ShowRSS", type = "rss", url = "https://showrss.info/other/all.rss", alt_urls = Array.Empty<string>(), cloudflare_protected = false },
+        };
+        return Ok(indexers);
+    }
 
     [HttpPost("indexers")]
     public async Task<IActionResult> AddIndexer(

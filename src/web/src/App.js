@@ -54,6 +54,15 @@ import ProcessingPage from "./pages/gadgets/ProcessingPage";
 import UsenetPage from "./pages/gadgets/UsenetPage";
 import HelpPage from "./pages/HelpPage";
 
+// Module Pages
+import GlazePage from "./pages/GlazePage";
+import SaffronPage from "./pages/SaffronPage";
+import FonduePage from "./pages/FonduePage";
+import SourdoughPage from "./pages/SourdoughPage";
+import ChurroPage from "./pages/ChurroPage";
+import RouxPage from "./pages/RouxPage";
+import SproutPage from "./pages/SproutPage";
+
 import "./App.css";
 
 // Gadget Pages - Currently none are functional
@@ -463,6 +472,64 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <HelpPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module Pages */}
+      <Route
+        path="/scrobbling"
+        element={
+          <ProtectedRoute>
+            <GlazePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <SaffronPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/automation"
+        element={
+          <ProtectedRoute>
+            <FonduePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/backups"
+        element={
+          <ProtectedRoute>
+            <SourdoughPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/download-clients"
+        element={
+          <ProtectedRoute>
+            <ChurroPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/collections"
+        element={
+          <ProtectedRoute>
+            <RouxPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rss"
+        element={
+          <ProtectedRoute>
+            <SproutPage />
           </ProtectedRoute>
         }
       />

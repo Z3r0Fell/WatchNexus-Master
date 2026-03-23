@@ -11,6 +11,7 @@ namespace WatchNexus.Core.Controllers;
 /// Proxies to Prowlarr or any Newznab-compatible indexer for NZB searching.
 /// </summary>
 [Route("api/brine")]
+[Route("api/gadgets/brine")]
 [ApiController]
 [Authorize]
 public class BrineController : ControllerBase

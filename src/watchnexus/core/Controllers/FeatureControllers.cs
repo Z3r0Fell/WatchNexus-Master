@@ -151,12 +151,30 @@ public class MilkController : ControllerBase
     {
         var userId = this.UserId();
         var active = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "active_theme");
-        var custom = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_css");
+        var custom = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_theme_colors");
+        var activeTheme = active?.Value ?? "default";
+
+        var builtInThemes = new[]
+        {
+            new { type = "default", name = "Default Dark", description = "Classic WatchNexus dark theme", preview_colors = new { primary = "#8B5CF6", secondary = "#EC4899", background = "#0F0F0F", surface = "#1A1A1A" } },
+            new { type = "ocean", name = "Ocean Blue", description = "Cool, calming ocean tones", preview_colors = new { primary = "#3B82F6", secondary = "#06B6D4", background = "#0A1628", surface = "#0F1D32" } },
+            new { type = "forest", name = "Forest Green", description = "Nature-inspired earthy palette", preview_colors = new { primary = "#22C55E", secondary = "#84CC16", background = "#0A1A0A", surface = "#0F240F" } },
+            new { type = "sunset", name = "Sunset", description = "Warm sunset oranges and reds", preview_colors = new { primary = "#F97316", secondary = "#EF4444", background = "#1A0F0A", surface = "#241808" } },
+            new { type = "midnight", name = "Midnight", description = "Deep indigo and violet hues", preview_colors = new { primary = "#6366F1", secondary = "#8B5CF6", background = "#0A0A1A", surface = "#0F0F24" } },
+            new { type = "rose", name = "Rose Gold", description = "Elegant rose and gold accents", preview_colors = new { primary = "#F43F5E", secondary = "#FB923C", background = "#1A0A0F", surface = "#240F14" } },
+        };
+
+        object? currentThemeColors = null;
+        if (custom?.Value != null) {
+            try { currentThemeColors = JsonSerializer.Deserialize<object>(custom.Value); } catch { }
+        }
+
         return Ok(new
         {
-            themes = GetThemes(),
-            active_theme = active?.Value ?? "default",
-            custom_css = custom?.Value ?? ""
+            built_in_themes = builtInThemes,
+            current_theme = new { type = activeTheme, colors = currentThemeColors },
+            themes = GetThemes(), // backward compatibility
+            active_theme = activeTheme,
         });
     }
 
