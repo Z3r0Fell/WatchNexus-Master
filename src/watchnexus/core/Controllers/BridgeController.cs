@@ -95,6 +95,22 @@ public class MarmaladeBridgeController : ControllerBase
                 .Where(f => extensions.Contains(System.IO.Path.GetExtension(f)))
                 .ToList();
 
+            // Resolve TMDB API key for metadata fetching
+            var tmdbKey = _config["TMDB_API_KEY"] ?? "";
+            if (string.IsNullOrEmpty(tmdbKey))
+            {
+                var ts = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
+                if (ts != null) {
+                    try { var d = System.Text.Json.JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; else tmdbKey = ts.Value ?? ""; } catch { tmdbKey = ts.Value ?? ""; }
+                }
+            }
+            if (string.IsNullOrEmpty(tmdbKey))
+            {
+                var cs = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null);
+                if (cs != null) { try { var d = System.Text.Json.JsonDocument.Parse(cs.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { } }
+            }
+
+            var http = _httpFactory.CreateClient();
             long totalSize = 0;
             foreach (var file in files)
             {
@@ -103,15 +119,50 @@ public class MarmaladeBridgeController : ControllerBase
                 var existing = await _db.MediaItems.FirstOrDefaultAsync(m => m.FilePath == file && m.LibraryId == id);
                 if (existing != null) { updated++; continue; }
 
-                var cleanName = System.IO.Path.GetFileNameWithoutExtension(file)
+                var rawName = System.IO.Path.GetFileNameWithoutExtension(file)
                     .Replace('.', ' ').Replace('_', ' ');
+                // Parse out quality tags and year
+                var cleanName = System.Text.RegularExpressions.Regex.Replace(rawName,
+                    @"\b(S\d{1,2}E\d{1,2}|[Ss]\d{1,2}|1080p|720p|480p|2160p|4K|BluRay|WEB|HDRip|BRRip|HDTV|x264|x265|HEVC|AAC|DTS)\b.*", "",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                if (string.IsNullOrEmpty(cleanName)) cleanName = rawName;
 
-                _db.MediaItems.Add(new MediaItem
+                var item = new MediaItem
                 {
                     LibraryId = id, Title = cleanName,
                     FilePath = file, FileSize = fi.Length,
                     MediaType = lib.MediaType,
-                });
+                };
+
+                // Fetch TMDB metadata for poster/backdrop
+                if (!string.IsNullOrEmpty(tmdbKey))
+                {
+                    try
+                    {
+                        var searchType = lib.MediaType == "tv" ? "tv" : "movie";
+                        var searchResp = await http.GetStringAsync($"https://api.themoviedb.org/3/search/{searchType}?api_key={tmdbKey}&query={Uri.EscapeDataString(cleanName)}");
+                        var doc = System.Text.Json.JsonDocument.Parse(searchResp);
+                        var results = doc.RootElement.GetProperty("results");
+                        if (results.GetArrayLength() > 0)
+                        {
+                            var first = results[0];
+                            item.TmdbId = first.GetProperty("id").GetInt32();
+                            var titleProp = searchType == "tv" ? "name" : "title";
+                            if (first.TryGetProperty(titleProp, out var t)) item.Title = t.GetString() ?? cleanName;
+                            if (first.TryGetProperty("poster_path", out var pp) && pp.ValueKind == System.Text.Json.JsonValueKind.String)
+                                item.PosterUrl = $"https://image.tmdb.org/t/p/w500{pp.GetString()}";
+                            if (first.TryGetProperty("backdrop_path", out var bp) && bp.ValueKind == System.Text.Json.JsonValueKind.String)
+                                item.BackdropUrl = $"https://image.tmdb.org/t/p/w1280{bp.GetString()}";
+                            if (first.TryGetProperty("overview", out var ov))
+                                item.Overview = ov.GetString();
+                            if (first.TryGetProperty("vote_average", out var ra))
+                                item.Rating = (float)ra.GetDouble();
+                        }
+                    }
+                    catch { /* skip metadata fetch errors */ }
+                }
+
+                _db.MediaItems.Add(item);
                 newCount++;
             }
 
@@ -169,7 +220,7 @@ public class MarmaladeBridgeController : ControllerBase
         return Ok(new
         {
             status = "running",
-            version = "2.8.2.2",
+            version = "2.8.3",
             total_libraries = await _db.Libraries.CountAsync(),
             total_media = await _db.MediaItems.CountAsync(),
             total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
@@ -249,9 +300,41 @@ public class MarmaladeBridgeController : ControllerBase
     {
         var lib = await _db.Libraries.FindAsync(id);
         if (lib == null) return NotFound(new { detail = "Library not found" });
-        // Get TMDB API key from settings
-        var tmdbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb");
-        if (tmdbSetting == null || string.IsNullOrEmpty(tmdbSetting.Value))
+        // Get TMDB API key from settings - check multiple sources
+        var tmdbApiKey = "";
+        var tmdbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
+        if (tmdbSetting != null)
+        {
+            try
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(tmdbSetting.Value ?? "{}");
+                if (doc.RootElement.TryGetProperty("api_key", out var ak))
+                    tmdbApiKey = ak.GetString() ?? "";
+                else
+                    tmdbApiKey = tmdbSetting.Value ?? "";
+            }
+            catch { tmdbApiKey = tmdbSetting.Value ?? ""; }
+        }
+        if (string.IsNullOrEmpty(tmdbApiKey))
+        {
+            // Check legacy crumbs_tmdb key
+            var crumbsSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null);
+            if (crumbsSetting != null)
+            {
+                try
+                {
+                    var doc = System.Text.Json.JsonDocument.Parse(crumbsSetting.Value ?? "{}");
+                    if (doc.RootElement.TryGetProperty("api_key", out var ak))
+                        tmdbApiKey = ak.GetString() ?? "";
+                }
+                catch { }
+            }
+        }
+        if (string.IsNullOrEmpty(tmdbApiKey))
+        {
+            tmdbApiKey = _config["TMDB_API_KEY"] ?? "";
+        }
+        if (string.IsNullOrEmpty(tmdbApiKey))
             return Ok(new { status = "skipped", reason = "No TMDB API key configured" });
 
         var items = await _db.MediaItems.Where(m => m.LibraryId == id).ToListAsync();
@@ -262,7 +345,7 @@ public class MarmaladeBridgeController : ControllerBase
             if (item.TmdbId != null) { updated++; continue; }
             try
             {
-                var searchUrl = $"https://api.themoviedb.org/3/search/{(lib.MediaType == "tv" ? "tv" : "movie")}?api_key={tmdbSetting.Value}&query={Uri.EscapeDataString(item.Title ?? "")}";
+                var searchUrl = $"https://api.themoviedb.org/3/search/{(lib.MediaType == "tv" ? "tv" : "movie")}?api_key={tmdbApiKey}&query={Uri.EscapeDataString(item.Title ?? "")}";
                 var resp = await http.GetStringAsync(searchUrl);
                 var doc = System.Text.Json.JsonDocument.Parse(resp);
                 var results = doc.RootElement.GetProperty("results");
@@ -375,6 +458,55 @@ public class MarmaladeBridgeController : ControllerBase
         };
         var stream = new FileStream(media.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return File(stream, mime, enableRangeProcessing: true);
+    }
+}
+
+/// <summary>Alias for /api/library → delegates to /api/libraries endpoints</summary>
+[ApiController]
+[Route("api/library")]
+[Authorize]
+public class LibraryAliasController : ControllerBase
+{
+    private readonly AppDbContext _db;
+    public LibraryAliasController(AppDbContext db) => _db = db;
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] string? media_type = null)
+    {
+        var q = _db.MediaItems.AsQueryable();
+        if (!string.IsNullOrEmpty(media_type)) q = q.Where(m => m.MediaType == media_type);
+        var items = await q.OrderBy(m => m.Title).ToListAsync();
+        return Ok(items.Select(m => new
+        {
+            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
+            m.Genres, m.Year, m.Runtime
+        }));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Add([FromBody] System.Text.Json.JsonElement item)
+    {
+        var mediaItem = new MediaItem
+        {
+            Title = item.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
+            MediaType = item.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movies" : "movies",
+            FilePath = item.TryGetProperty("file_path", out var fp) && fp.GetString() != null ? fp.GetString()! : "",
+            Overview = item.TryGetProperty("overview", out var o) ? o.GetString() : null,
+            PosterUrl = item.TryGetProperty("poster_url", out var p) ? p.GetString() : null,
+            BackdropUrl = item.TryGetProperty("backdrop_url", out var b) ? b.GetString() : null,
+            TmdbId = item.TryGetProperty("tmdb_id", out var tid) && tid.ValueKind == System.Text.Json.JsonValueKind.Number ? tid.GetInt32() : null,
+            Year = item.TryGetProperty("year", out var y) && y.ValueKind == System.Text.Json.JsonValueKind.Number ? y.GetInt32() : null,
+        };
+        _db.MediaItems.Add(mediaItem);
+        await _db.SaveChangesAsync();
+        return Ok(new
+        {
+            mediaItem.Id, mediaItem.Title, media_type = mediaItem.MediaType,
+            poster_url = mediaItem.PosterUrl, backdrop_url = mediaItem.BackdropUrl,
+            status = "added"
+        });
     }
 }
 

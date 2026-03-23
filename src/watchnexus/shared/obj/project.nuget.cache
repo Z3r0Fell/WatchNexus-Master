@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "Jrpd1V6ROU8=",
+  "dgSpecHash": "XhjjPjZdDbY=",
   "success": true,
   "projectFilePath": "/app/src/watchnexus/shared/WatchNexus.Shared.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/root/.nuget/packages/microsoft.net.illink.tasks/10.0.5/microsoft.net.illink.tasks.10.0.5.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.netcore.app.runtime.linux-x64/10.0.5/microsoft.netcore.app.runtime.linux-x64.10.0.5.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/10.0.5/microsoft.aspnetcore.app.runtime.linux-x64.10.0.5.nupkg.sha512"
+  ],
   "logs": []
 }

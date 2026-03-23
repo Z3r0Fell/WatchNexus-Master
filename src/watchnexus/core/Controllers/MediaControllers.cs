@@ -213,7 +213,7 @@ public class CompoteController : ControllerBase
             if (string.IsNullOrEmpty(url)) return Ok(new { success = false, error = "No URL configured" });
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.2.2");
+            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.3");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var response = await http.GetAsync(url);
             sw.Stop();

@@ -195,12 +195,45 @@ public class LibrariesController : ControllerBase
                 .Where(f => extensions.Contains(System.IO.Path.GetExtension(f)))
                 .ToList();
 
-            var tmdbKey = _config["TMDB_API_KEY"] ?? "";
             long totalSize = 0;
 
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var httpFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+
+            // Check multiple sources for TMDB key: env/config first, then DB
+            var tmdbKey = _config["TMDB_API_KEY"] ?? "";
+            if (string.IsNullOrEmpty(tmdbKey))
+            {
+                var tmdbSetting = await db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
+                if (tmdbSetting != null)
+                {
+                    try
+                    {
+                        var doc = System.Text.Json.JsonDocument.Parse(tmdbSetting.Value ?? "{}");
+                        if (doc.RootElement.TryGetProperty("api_key", out var ak))
+                            tmdbKey = ak.GetString() ?? "";
+                        else
+                            tmdbKey = tmdbSetting.Value ?? "";
+                    }
+                    catch { tmdbKey = tmdbSetting.Value ?? ""; }
+                }
+            }
+            if (string.IsNullOrEmpty(tmdbKey))
+            {
+                // Also check legacy crumbs_tmdb key
+                var crumbsSetting = await db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null);
+                if (crumbsSetting != null)
+                {
+                    try
+                    {
+                        var doc = System.Text.Json.JsonDocument.Parse(crumbsSetting.Value ?? "{}");
+                        if (doc.RootElement.TryGetProperty("api_key", out var ak))
+                            tmdbKey = ak.GetString() ?? "";
+                    }
+                    catch { }
+                }
+            }
 
             foreach (var file in files)
             {
