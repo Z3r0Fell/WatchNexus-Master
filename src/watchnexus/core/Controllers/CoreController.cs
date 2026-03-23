@@ -135,6 +135,14 @@ public class AuthController : ControllerBase
         if (user == null) return NotFound();
         return Ok(new { user.Id, user.Email, user.Username, user.Avatar, user.Role, user.CreatedAt });
     }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public IActionResult Logout() => Ok(new { status = "logged_out" });
+
+    [HttpPost("google/session")]
+    public IActionResult GoogleSession() => BadRequest(new { detail = "Google auth not configured in standalone mode" });
+
 }
 
 [ApiController]

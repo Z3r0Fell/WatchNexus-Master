@@ -53,6 +53,21 @@ public class SubtitlesController : ControllerBase
         return Ok(new { status = "saved" });
     }
 
+    // Generic search endpoint — delegates to movie or tv based on media_type
+    [HttpGet("search")]
+    public Task<IActionResult> Search(
+        [FromQuery] string? query = null,
+        [FromQuery] string? media_type = "movie",
+        [FromQuery] int? year = null,
+        [FromQuery] string? imdb_id = null,
+        [FromQuery] string languages = "en")
+    {
+        if (media_type == "tv")
+            return SearchTv(show_name: query ?? "", languages: languages);
+        return SearchMovie(movie_name: query ?? "", year: year, imdb_id: imdb_id, languages: languages);
+    }
+
+
     [HttpGet("search/movie")]
     public async Task<IActionResult> SearchMovie([FromQuery] string movie_name = "",
         [FromQuery] int? year = null, [FromQuery] string? imdb_id = null, [FromQuery] string languages = "en")
@@ -108,22 +123,24 @@ public class SubtitlesController : ControllerBase
     }
 
     [HttpPost("download")]
-    public async Task<IActionResult> DownloadSubtitle([FromBody] JsonElement body)
+    public async Task<IActionResult> DownloadSubtitle(
+        [FromQuery] string? download_url,
+        [FromQuery] string? source,
+        [FromQuery] string? media_id,
+        [FromQuery] string? media_path)
     {
-        var downloadUrl = body.TryGetProperty("download_url", out var du) ? du.GetString() : null;
-        var mediaPath = body.TryGetProperty("media_path", out var mp) ? mp.GetString() : null;
-        if (string.IsNullOrEmpty(downloadUrl)) return BadRequest(new { detail = "download_url required" });
+        if (string.IsNullOrEmpty(download_url)) return BadRequest(new { detail = "download_url required" });
         try
         {
             var http = this.Http();
-            var data = await http.GetByteArrayAsync(downloadUrl);
-            if (!string.IsNullOrEmpty(mediaPath))
+            var data = await http.GetByteArrayAsync(download_url);
+            if (!string.IsNullOrEmpty(media_path))
             {
-                var srtPath = Path.ChangeExtension(mediaPath, ".srt");
+                var srtPath = Path.ChangeExtension(media_path, ".srt");
                 await System.IO.File.WriteAllBytesAsync(srtPath, data);
-                return Ok(new { status = "downloaded", path = srtPath, size = data.Length });
+                return Ok(new { status = "downloaded", path = srtPath, size = data.Length, source, media_id });
             }
-            return Ok(new { status = "downloaded", size = data.Length, data_base64 = Convert.ToBase64String(data) });
+            return Ok(new { status = "downloaded", size = data.Length, source, media_id, data_base64 = Convert.ToBase64String(data) });
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }

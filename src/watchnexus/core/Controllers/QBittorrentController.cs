@@ -56,12 +56,10 @@ public class QBittorrentController : ControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<IActionResult> Add([FromBody] JsonElement body)
+    public async Task<IActionResult> Add([FromQuery] string? url, [FromQuery] string? magnet, [FromQuery] string? category)
     {
         var cfgVal = await GetQbitConfig();
         if (cfgVal == null) return BadRequest(new { detail = "qBittorrent not configured" });
-        var url = body.TryGetProperty("url", out var u) ? u.GetString() : null;
-        var magnet = body.TryGetProperty("magnet", out var m) ? m.GetString() : null;
         var link = magnet ?? url ?? "";
         try
         {
@@ -71,6 +69,7 @@ public class QBittorrentController : ControllerBase
             http.DefaultRequestHeaders.Add("Cookie", cookie);
             var content = new MultipartFormDataContent();
             content.Add(new StringContent(link), "urls");
+            if (!string.IsNullOrEmpty(category)) content.Add(new StringContent(category), "category");
             await http.PostAsync($"http://{host}:{port}/api/v2/torrents/add", content);
             return Ok(new { status = "added" });
         }
@@ -104,15 +103,19 @@ public class QBittorrentController : ControllerBase
 
     [HttpPost("test")]
     [AllowAnonymous]
-    public async Task<IActionResult> Test([FromBody] JsonElement body)
+    public async Task<IActionResult> Test(
+        [FromQuery] string? host,
+        [FromQuery] int? port,
+        [FromQuery] string? username,
+        [FromQuery] string? password)
     {
-        var host = body.TryGetProperty("host", out var h) ? h.GetString() ?? "localhost" : "localhost";
-        var port = body.TryGetProperty("port", out var p) ? p.GetInt32() : 8080;
+        var h = host ?? "localhost";
+        var p = port ?? 8080;
         try
         {
             var http = this.Http();
             http.Timeout = TimeSpan.FromSeconds(5);
-            var resp = await http.GetAsync($"http://{host}:{port}/api/v2/app/version");
+            var resp = await http.GetAsync($"http://{h}:{p}/api/v2/app/version");
             if (resp.IsSuccessStatusCode)
                 return Ok(new { success = true, version = await resp.Content.ReadAsStringAsync() });
             return Ok(new { success = false, error = $"HTTP {resp.StatusCode}" });

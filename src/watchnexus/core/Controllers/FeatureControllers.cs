@@ -196,13 +196,17 @@ public class GelatinController : ControllerBase
     [HttpGet("lan-url")]
     public IActionResult LanUrl() => Ok(new { url = $"http://{Environment.MachineName}:8001" });
     [HttpPost("tunnel/create")]
-    public IActionResult CreateTunnel() => Ok(new { tunnel_id = Guid.NewGuid().ToString(), status = "created" });
+    public IActionResult CreateTunnel([FromQuery] string? provider = "built_in") =>
+        Ok(new { tunnel_id = Guid.NewGuid().ToString(), status = "created", provider });
     [HttpGet("tunnels")]
     public IActionResult Tunnels() => Ok(Array.Empty<object>());
     [HttpDelete("tunnel/{id}")]
     public IActionResult CloseTunnel(string id) => Ok(new { status = "closed" });
     [HttpPost("access-token")]
-    public IActionResult AccessToken() => Ok(new { token = Guid.NewGuid().ToString("N"), permissions = "view,watch_party" });
+    public IActionResult AccessToken(
+        [FromQuery] string? permissions = "view,watch_party",
+        [FromQuery] int expires_hours = 24) =>
+        Ok(new { token = Guid.NewGuid().ToString("N"), permissions, expires_hours });
     [HttpGet("share-link")]
     public IActionResult ShareLink([FromQuery] string party_code = "") => Ok(new { link = $"/party/{party_code}" });
     [HttpGet("discover")]
@@ -240,20 +244,30 @@ public class StreamingLoginsController : ControllerBase
         return Ok(logins.Select(l => new { service_id = l.Key.Replace("streaming_login:", ""), has_credentials = !string.IsNullOrEmpty(l.Value) }));
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Add([FromBody] JsonElement body)
+    [HttpGet("configured")]
+    public async Task<IActionResult> Configured()
     {
-        var serviceId = body.TryGetProperty("service_id", out var si) ? si.GetString() ?? "" : "";
-        var email = body.TryGetProperty("email", out var e) ? e.GetString() ?? "" : "";
-        var password = body.TryGetProperty("password", out var p) ? p.GetString() ?? "" : "";
-        var key = $"streaming_login:{serviceId}";
+        var logins = await _db.Settings
+            .Where(s => s.UserId == this.UserId() && s.Key.StartsWith("streaming_login:"))
+            .ToListAsync();
+        return Ok(logins.Select(l => new { service_id = l.Key.Replace("streaming_login:", ""), has_credentials = !string.IsNullOrEmpty(l.Value) }));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Add(
+        [FromQuery] string? service_id,
+        [FromQuery] string? email,
+        [FromQuery] string? password)
+    {
+        var svcId = service_id ?? "";
+        var key = $"streaming_login:{svcId}";
         var userId = this.UserId();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
-        var value = JsonSerializer.Serialize(new { email, password });
+        var value = JsonSerializer.Serialize(new { email = email ?? "", password = password ?? "" });
         if (existing != null) existing.Value = value;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, Value = value, UserId = userId });
         await _db.SaveChangesAsync();
-        return Ok(new { status = "added" });
+        return Ok(new { status = "added", service_id = svcId });
     }
 
     [HttpDelete("{serviceId}")]
@@ -290,7 +304,8 @@ public class StreamingServicesController : ControllerBase
         new { id = "amazon", name = "Prime Video", enabled = false },
     });
     [HttpPut("{serviceId}")]
-    public IActionResult Update(string serviceId) => Ok(new { status = "updated" });
+    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username) =>
+        Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
 }
 
 // ── Watch Party ──────────────────────────────────
@@ -302,7 +317,20 @@ public class WatchPartyController : ControllerBase
     [HttpGet("list")]
     public IActionResult List() => Ok(Array.Empty<object>());
     [HttpPost("create")]
-    public IActionResult Create() => Ok(new { party_code = Guid.NewGuid().ToString("N")[..8] });
+    public IActionResult Create(
+        [FromQuery] string? media_id,
+        [FromQuery] string? media_title,
+        [FromQuery] string? media_type)
+    {
+        return Ok(new
+        {
+            party_code = Guid.NewGuid().ToString("N")[..8],
+            media_id,
+            media_title,
+            media_type = media_type ?? "movie",
+            status = "waiting",
+        });
+    }
     [HttpGet("{partyCode}")]
     public IActionResult Get(string partyCode) => Ok(new { party_code = partyCode, status = "waiting" });
 }

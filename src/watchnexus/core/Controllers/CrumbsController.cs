@@ -189,6 +189,18 @@ public class CrumbsController : ControllerBase
     [HttpGet("configured")]
     public async Task<IActionResult> GetConfigured()
     {
+        return Ok(await GetConfiguredList());
+    }
+
+    // Frontend alias
+    [HttpGet("api-keys")]
+    public async Task<IActionResult> GetApiKeys()
+    {
+        return Ok(await GetConfiguredList());
+    }
+
+    private async Task<List<object>> GetConfiguredList()
+    {
         var configs = await _db.Settings
             .Where(s => s.UserId == UserId && s.Key.StartsWith("crumbs:"))
             .ToListAsync();
@@ -232,7 +244,7 @@ public class CrumbsController : ControllerBase
             }
             catch { }
         }
-        return Ok(result);
+        return result;
     }
 
     // ── Save/update a service configuration ──────────────────

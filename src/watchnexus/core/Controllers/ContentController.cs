@@ -52,9 +52,17 @@ public class TmdbProxyController : ControllerBase
     public Task<IActionResult> Search(string query, int page = 1, string media_type = "multi") =>
         ProxyGet($"/search/{media_type}", new() { ["query"] = query, ["page"] = page.ToString() });
 
+    [HttpGet("trending")]
+    public Task<IActionResult> TrendingDefault() =>
+        ProxyGet("/trending/all/day");
+
     [HttpGet("trending/{mediaType}/{timeWindow}")]
     public Task<IActionResult> Trending(string mediaType, string timeWindow) =>
         ProxyGet($"/trending/{mediaType}/{timeWindow}");
+
+    [HttpGet("popular/{mediaType}")]
+    public Task<IActionResult> Popular(string mediaType, int page = 1) =>
+        ProxyGet($"/{mediaType}/popular", new() { ["page"] = page.ToString() });
 
     [HttpGet("movie/now_playing")]
     public Task<IActionResult> NowPlaying(int page = 1) =>
@@ -153,6 +161,20 @@ public class WatchProgressController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> Get()
+    {
+        var items = await _db.Settings
+            .Where(s => s.UserId == UserId && s.Key.StartsWith("progress:"))
+            .ToListAsync();
+        var list = items.Select(s =>
+        {
+            try { return JsonSerializer.Deserialize<object>(s.Value); }
+            catch { return null; }
+        }).Where(x => x != null).ToList();
+        return Ok(list);
+    }
+
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAll()
     {
         var items = await _db.Settings
             .Where(s => s.UserId == UserId && s.Key.StartsWith("progress:"))

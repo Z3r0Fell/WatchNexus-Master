@@ -22,6 +22,10 @@ public class RindController : ControllerBase
     private const string PinKey = "rind_pin";
 
     // ── Get Profile ──────────────────────────────────
+    // Frontend alias
+    [HttpGet("profiles")]
+    public Task<IActionResult> GetProfiles() => GetProfile();
+
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
