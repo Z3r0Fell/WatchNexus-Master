@@ -10,7 +10,7 @@ namespace WatchNexus.Core.Controllers;
 /// Ladle — Usenet Downloader.
 /// Proxies to SABnzbd for NZB downloading, queue management, history, and server status.
 /// </summary>
-[Route("api/gadgets/ladle")]
+[Route("api/ladle")]
 [ApiController]
 [Authorize]
 public class LadleController : ControllerBase
@@ -210,6 +210,12 @@ public class LadleController : ControllerBase
         var priority = body.TryGetProperty("priority", out var p) ? p.GetInt32() : 0;
         return await SabApi(cfg, "queue", $"&name=priority&value={nzoId}&value2={priority}");
     }
+
+    // Frontend compatibility alias
+    [HttpGet("downloads")]
+    public Task<IActionResult> Downloads([FromQuery] int start = 0, [FromQuery] int limit = 50)
+        => Queue(start, limit);
+
 
     // ── Helpers ──────────────────────────────────
     private async Task<(string? url, string? apiKey)> GetSabConfig()

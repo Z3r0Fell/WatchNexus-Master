@@ -196,13 +196,111 @@ public class DownloadsController : ControllerBase
     public DownloadsController(AppDbContext db) { _db = db; }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(string? status = null)
+    public async Task<IActionResult> GetAll([FromQuery] string? status = null)
     {
         var q = _db.Downloads.AsQueryable();
         if (!string.IsNullOrEmpty(status)) q = q.Where(d => d.Status == status);
         return Ok(await q.OrderByDescending(d => d.CreatedAt).ToListAsync());
     }
 
+    [HttpPost]
+    public async Task<IActionResult> Add(
+        [FromQuery] string? title,
+        [FromQuery] string? media_type,
+        [FromQuery] int? tmdb_id,
+        [FromQuery] long? size)
+    {
+        var dl = new DownloadItem
+        {
+            Name = title ?? "Unknown",
+            Url = $"tmdb:{tmdb_id}:{media_type}",
+            Status = "queued",
+            Progress = 0,
+            Size = size ?? 0,
+            CreatedAt = DateTime.UtcNow,
+        };
+        _db.Downloads.Add(dl);
+        await _db.SaveChangesAsync();
+        return Ok(new { id = dl.Id, name = dl.Name, status = dl.Status });
+    }
+
+    [HttpPatch("{downloadId}")]
+    public async Task<IActionResult> Update(string downloadId, [FromQuery] string? status, [FromQuery] double? progress)
+    {
+        var dl = await _db.Downloads.FindAsync(downloadId);
+        if (dl == null) return NotFound(new { error = "Download not found" });
+        if (!string.IsNullOrEmpty(status)) dl.Status = status;
+        if (progress.HasValue) dl.Progress = progress.Value;
+        await _db.SaveChangesAsync();
+        return Ok(new { id = dl.Id, status = dl.Status, progress = dl.Progress });
+    }
+
+    [HttpDelete("{downloadId}")]
+    public async Task<IActionResult> Delete(string downloadId)
+    {
+        var dl = await _db.Downloads.FindAsync(downloadId);
+        if (dl != null) { _db.Downloads.Remove(dl); await _db.SaveChangesAsync(); }
+        return Ok(new { status = "deleted" });
+    }
+
+    // ── Built-in Download Engine ────────────────────────
     [HttpGet("engine/status")]
     public IActionResult EngineStatus() => Ok(new { engine = "built-in", status = "idle", active_downloads = 0 });
+
+    [HttpGet("engine/torrents")]
+    public IActionResult EngineTorrents() => Ok(Array.Empty<object>());
+
+    [HttpGet("engine/{torrentId}")]
+    public IActionResult EngineTorrent(string torrentId) => Ok(new { id = torrentId, status = "unknown" });
+
+    [HttpPost("engine/add")]
+    public IActionResult EngineAdd(
+        [FromQuery] string? magnet,
+        [FromQuery] string? save_path,
+        [FromQuery] bool sequential = false,
+        [FromQuery] string? category = "watchnexus")
+    {
+        if (string.IsNullOrEmpty(magnet)) return BadRequest(new { detail = "magnet link required" });
+        return Ok(new { status = "added", magnet = magnet[..Math.Min(50, magnet.Length)] + "...", category });
+    }
+
+    [HttpGet("engine/{torrentId}/files")]
+    public IActionResult EngineFiles(string torrentId) => Ok(Array.Empty<object>());
+
+    [HttpPost("engine/{torrentId}/pause")]
+    public IActionResult EnginePause(string torrentId) => Ok(new { status = "paused", id = torrentId });
+
+    [HttpPost("engine/{torrentId}/resume")]
+    public IActionResult EngineResume(string torrentId) => Ok(new { status = "resumed", id = torrentId });
+
+    [HttpDelete("engine/{torrentId}")]
+    public IActionResult EngineRemove(string torrentId, [FromQuery] bool delete_files = false) =>
+        Ok(new { status = "removed", id = torrentId, files_deleted = delete_files });
+
+    [HttpPost("engine/{torrentId}/sequential")]
+    public IActionResult EngineSequential(string torrentId, [FromQuery] bool enabled = true) =>
+        Ok(new { status = "updated", id = torrentId, sequential = enabled });
+
+    [HttpGet("engine/settings")]
+    public IActionResult EngineSettings() => Ok(new
+    {
+        download_path = Path.Combine(AppContext.BaseDirectory, "downloads"),
+        max_concurrent = 3,
+        sequential_download = false,
+        auto_start = true,
+        seed_ratio_limit = 1.0,
+    });
+
+    [HttpPut("engine/settings")]
+    public IActionResult EngineUpdateSettings([FromBody] JsonElement body) => Ok(new { status = "updated" });
+
+    [HttpPost("engine/pause-all")]
+    public IActionResult EnginePauseAll() => Ok(new { status = "all_paused" });
+
+    [HttpPost("engine/resume-all")]
+    public IActionResult EngineResumeAll() => Ok(new { status = "all_resumed" });
+
+    [HttpPost("engine/remove-completed")]
+    public IActionResult EngineRemoveCompleted([FromQuery] bool delete_files = false) =>
+        Ok(new { status = "completed_removed", files_deleted = delete_files });
 }

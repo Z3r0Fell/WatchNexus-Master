@@ -10,7 +10,7 @@ namespace WatchNexus.Core.Controllers;
 /// Brine — Usenet Indexer/Search.
 /// Proxies to Prowlarr or any Newznab-compatible indexer for NZB searching.
 /// </summary>
-[Route("api/gadgets/brine")]
+[Route("api/brine")]
 [ApiController]
 [Authorize]
 public class BrineController : ControllerBase

@@ -28,18 +28,18 @@ public class IptvController : ControllerBase
     }
 
     [HttpPost("sources")]
-    public async Task<IActionResult> AddSource([FromBody] JsonElement body)
+    public async Task<IActionResult> AddSource(
+        [FromQuery] string? name,
+        [FromQuery] string? url,
+        [FromQuery] string? epg_url)
     {
-        var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-        var url = body.TryGetProperty("url", out var u) ? u.GetString() ?? "" : "";
-        var epgUrl = body.TryGetProperty("epg_url", out var e) ? e.GetString() : null;
-        var source = new IptvSource { Name = name, Url = url, EpgUrl = epgUrl };
+        var source = new IptvSource { Name = name ?? "", Url = url ?? "", EpgUrl = epg_url };
         _db.IptvSources.Add(source);
         await _db.SaveChangesAsync();
         try
         {
             var http = this.Http();
-            var content = await http.GetStringAsync(url);
+            var content = await http.GetStringAsync(url ?? "");
             var channels = ParseM3U(content, source.Id);
             _db.IptvChannels.AddRange(channels);
             source.ChannelCount = channels.Count;

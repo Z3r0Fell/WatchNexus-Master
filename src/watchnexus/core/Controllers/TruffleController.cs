@@ -86,6 +86,11 @@ public class TruffleController : ControllerBase
         });
     }
 
+    // Frontend alias
+    [HttpGet("activity")]
+    public Task<IActionResult> Activity([FromQuery] int limit = 25) => Recent(limit);
+
+
     // ── Recent Activity ──────────────────────────────────
     [HttpGet("recent")]
     public async Task<IActionResult> Recent([FromQuery] int limit = 25)
