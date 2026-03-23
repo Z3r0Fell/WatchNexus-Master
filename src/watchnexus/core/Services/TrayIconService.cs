@@ -96,6 +96,44 @@ public sealed class TrayIconService : BackgroundService
         _lifetime.StopApplication();
     }
 
+    private void RestartServer()
+    {
+        _logger.LogInformation("[Tray] Restart requested via tray icon");
+        // Relaunch self then exit
+        var exe = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+        if (exe != null)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exe,
+                WorkingDirectory = AppContext.BaseDirectory,
+                UseShellExecute = true,
+            });
+        }
+        _lifetime.StopApplication();
+    }
+
+    private static string GetConfigPath()
+    {
+        return Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+    }
+
+    private void OpenPreferencesInBrowser()
+    {
+        var url = $"http://localhost:{_port}/settings";
+        try
+        {
+            if (OperatingSystem.IsWindows())
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            else if (OperatingSystem.IsLinux())
+                Process.Start("xdg-open", url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Tray] Failed to open preferences");
+        }
+    }
+
     private void SafeRunTray(string? iconPath, CancellationToken ct)
     {
         try
@@ -183,6 +221,7 @@ public sealed class TrayIconService : BackgroundService
     {
         var menu = new System.Windows.Forms.ContextMenuStrip();
 
+        // ── Header ──
         menu.Items.Add(new System.Windows.Forms.ToolStripLabel($"WatchNexus v{AppVersion}")
         {
             ForeColor = System.Drawing.Color.Gray,
@@ -190,6 +229,7 @@ public sealed class TrayIconService : BackgroundService
         });
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
 
+        // ── Open Browser ──
         var open = new System.Windows.Forms.ToolStripMenuItem("Open WatchNexus");
         open.Font = new System.Drawing.Font("Segoe UI", 9, System.Drawing.FontStyle.Bold);
         open.Click += (_, _) => OpenBrowser();
@@ -197,11 +237,96 @@ public sealed class TrayIconService : BackgroundService
 
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
 
+        // ── Server Control ──
+        var serverLabel = new System.Windows.Forms.ToolStripLabel("Server")
+        {
+            ForeColor = System.Drawing.Color.DimGray,
+            Font = new System.Drawing.Font("Segoe UI", 8, System.Drawing.FontStyle.Bold)
+        };
+        menu.Items.Add(serverLabel);
+
+        var stop = new System.Windows.Forms.ToolStripMenuItem("Stop Server");
+        stop.Click += (_, _) => RequestShutdown();
+        menu.Items.Add(stop);
+
+        var restart = new System.Windows.Forms.ToolStripMenuItem("Restart Server");
+        restart.Click += (_, _) => RestartServer();
+        menu.Items.Add(restart);
+
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+
+        // ── Preferences Submenu ──
+        var prefs = new System.Windows.Forms.ToolStripMenuItem("Preferences");
+
+        var portItem = new System.Windows.Forms.ToolStripMenuItem($"Server Port: {_port}");
+        portItem.Enabled = false;
+        prefs.DropDownItems.Add(portItem);
+
+        prefs.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
+
+        var openSettings = new System.Windows.Forms.ToolStripMenuItem("Open Settings Page");
+        openSettings.Click += (_, _) => OpenPreferencesInBrowser();
+        prefs.DropDownItems.Add(openSettings);
+
+        var portForward = new System.Windows.Forms.ToolStripMenuItem("Port Forwarding (UPnP)");
+        portForward.Click += (_, _) => OpenPortForwardingUrl();
+        prefs.DropDownItems.Add(portForward);
+
+        var editConfig = new System.Windows.Forms.ToolStripMenuItem("Edit appsettings.json");
+        editConfig.Click += (_, _) => OpenConfigFile();
+        prefs.DropDownItems.Add(editConfig);
+
+        prefs.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
+
+        var openLogs = new System.Windows.Forms.ToolStripMenuItem("Open Log Folder");
+        openLogs.Click += (_, _) => OpenLogFolder();
+        prefs.DropDownItems.Add(openLogs);
+
+        var openDataDir = new System.Windows.Forms.ToolStripMenuItem("Open Data Folder");
+        openDataDir.Click += (_, _) => OpenDataFolder();
+        prefs.DropDownItems.Add(openDataDir);
+
+        menu.Items.Add(prefs);
+
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+
+        // ── Quit ──
         var quit = new System.Windows.Forms.ToolStripMenuItem("Quit WatchNexus");
         quit.Click += (_, _) => RequestShutdown();
         menu.Items.Add(quit);
 
         return menu;
+    }
+
+    private void OpenPortForwardingUrl()
+    {
+        // Open the Gelatin external access page which handles UPnP / port forwarding
+        var url = $"http://localhost:{_port}/settings?tab=gelatin";
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch (Exception ex) { _logger.LogWarning(ex, "[Tray] Failed to open port forwarding page"); }
+    }
+
+    private void OpenConfigFile()
+    {
+        var path = GetConfigPath();
+        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch (Exception ex) { _logger.LogWarning(ex, "[Tray] Failed to open config file"); }
+    }
+
+    private void OpenLogFolder()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "logs");
+        Directory.CreateDirectory(path);
+        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch (Exception ex) { _logger.LogWarning(ex, "[Tray] Failed to open log folder"); }
+    }
+
+    private void OpenDataFolder()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "data");
+        Directory.CreateDirectory(path);
+        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch (Exception ex) { _logger.LogWarning(ex, "[Tray] Failed to open data folder"); }
     }
 #endif
 
@@ -224,10 +349,12 @@ public sealed class TrayIconService : BackgroundService
         var scriptPath = Path.Combine(AppContext.BaseDirectory, "watchnexus-tray.py");
         File.WriteAllText(scriptPath, GetLinuxTrayScript());
 
+        var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
+
         var psi = new ProcessStartInfo
         {
             FileName = "python3",
-            ArgumentList = { scriptPath, _port.ToString(), iconPath ?? "" },
+            ArgumentList = { scriptPath, _port.ToString(), iconPath ?? "", exePath },
             UseShellExecute = false,
             RedirectStandardError = true,
             RedirectStandardOutput = true,
@@ -288,6 +415,7 @@ import sys, os, subprocess, signal
 def main():
     port = sys.argv[1] if len(sys.argv) > 1 else ""8002""
     icon_path = sys.argv[2] if len(sys.argv) > 2 else """"
+    exe_path = sys.argv[3] if len(sys.argv) > 3 else """"
     ppid = os.getppid()
 
     try:
@@ -326,21 +454,76 @@ def main():
     menu.append(header)
     menu.append(Gtk.SeparatorMenuItem())
 
+    # Open in browser
     item_open = Gtk.MenuItem(label=""Open WatchNexus"")
     item_open.connect(""activate"", lambda _: subprocess.Popen([""xdg-open"", f""http://localhost:{{port}}""]))
     menu.append(item_open)
 
     menu.append(Gtk.SeparatorMenuItem())
 
-    def on_quit(_):
-        try:
-            os.kill(ppid, signal.SIGTERM)
-        except Exception:
-            pass
+    # Server control
+    item_stop = Gtk.MenuItem(label=""Stop Server"")
+    def on_stop(_):
+        try: os.kill(ppid, signal.SIGTERM)
+        except: pass
         Gtk.main_quit()
+    item_stop.connect(""activate"", on_stop)
+    menu.append(item_stop)
 
+    item_restart = Gtk.MenuItem(label=""Restart Server"")
+    def on_restart(_):
+        if exe_path and os.path.isfile(exe_path):
+            base_dir = os.path.dirname(exe_path)
+            subprocess.Popen([exe_path], cwd=base_dir)
+        try: os.kill(ppid, signal.SIGTERM)
+        except: pass
+        Gtk.main_quit()
+    item_restart.connect(""activate"", on_restart)
+    menu.append(item_restart)
+
+    menu.append(Gtk.SeparatorMenuItem())
+
+    # Preferences submenu
+    prefs = Gtk.MenuItem(label=""Preferences"")
+    prefs_menu = Gtk.Menu()
+
+    port_info = Gtk.MenuItem(label=f""Server Port: {{port}}"")
+    port_info.set_sensitive(False)
+    prefs_menu.append(port_info)
+    prefs_menu.append(Gtk.SeparatorMenuItem())
+
+    item_settings = Gtk.MenuItem(label=""Open Settings Page"")
+    item_settings.connect(""activate"", lambda _: subprocess.Popen([""xdg-open"", f""http://localhost:{{port}}/settings""]))
+    prefs_menu.append(item_settings)
+
+    item_port_fwd = Gtk.MenuItem(label=""Port Forwarding (UPnP)"")
+    item_port_fwd.connect(""activate"", lambda _: subprocess.Popen([""xdg-open"", f""http://localhost:{{port}}/settings?tab=gelatin""]))
+    prefs_menu.append(item_port_fwd)
+
+    prefs_menu.append(Gtk.SeparatorMenuItem())
+
+    if exe_path:
+        base_dir = os.path.dirname(exe_path)
+        item_logs = Gtk.MenuItem(label=""Open Log Folder"")
+        log_dir = os.path.join(base_dir, ""logs"")
+        os.makedirs(log_dir, exist_ok=True)
+        item_logs.connect(""activate"", lambda _: subprocess.Popen([""xdg-open"", log_dir]))
+        prefs_menu.append(item_logs)
+
+        item_data = Gtk.MenuItem(label=""Open Data Folder"")
+        data_dir = os.path.join(base_dir, ""data"")
+        os.makedirs(data_dir, exist_ok=True)
+        item_data.connect(""activate"", lambda _: subprocess.Popen([""xdg-open"", data_dir]))
+        prefs_menu.append(item_data)
+
+    prefs.set_submenu(prefs_menu)
+    menu.append(prefs)
+
+    menu.append(Gtk.SeparatorMenuItem())
+
+    # Quit
     item_quit = Gtk.MenuItem(label=""Quit WatchNexus"")
-    item_quit.connect(""activate"", on_quit)
+    item_quit.connect(""activate"", on_stop)
     menu.append(item_quit)
 
     menu.show_all()
