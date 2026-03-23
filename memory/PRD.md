@@ -1,7 +1,7 @@
 # WatchNexus - Product Requirements Document
 
 ## Overview
-WatchNexus is a self-hosted media pipeline application (C#/.NET 10 + React) that manages personal media libraries with TMDB metadata, torrenting, streaming, and a rich set of media management tools.
+WatchNexus is a self-hosted media pipeline application (C#/.NET 10 + React) modeled after Jellyfin/Emby with full *arr ecosystem integration. It manages personal media libraries with TMDB metadata, torrenting, streaming, and a comprehensive set of 33 active modules.
 
 ## Current Version: 2.8.3
 
@@ -11,61 +11,72 @@ WatchNexus is a self-hosted media pipeline application (C#/.NET 10 + React) that
 - **Proxy**: FastAPI proxy on port 8001 → .NET backend on port 8002
 - **Build**: Self-contained single-file executables for Windows and Linux
 
-## Core Features (Implemented)
-- Authentication (JWT, seeded admin account)
-- Media library management with folder scanning
-- TMDB metadata integration (poster art, ratings, overviews, backdrops)
-- Torrent management (qBittorrent integration)
-- Indexer management (Compote/Syrup module)
-- Streaming service credentials
-- Subtitle search (OpenSubtitles, Addic7ed, etc.)
-- IPTV channel management
-- System tray icon (Windows + Linux) with Start/Stop/Restart/Preferences
-- Watch progress tracking
-- Watchlist management
-- Analytics (Truffle module)
-- Notifications (Pepper module)
-- Media requests (Meringue module)
-- Parental controls (Rind module)
-- Media processing (Crucible module)
-- Usenet support (Brine indexer + Ladle downloader)
-- Help & Documentation page
-- Gadgets: Podcasts, Radio, Photos, Weather, Web Video, GameBot
+## Module Registry (33 Active Modules)
 
-## What's Been Implemented
+### Core Modules
+| Codename | Name | Description |
+|----------|------|-------------|
+| marmalade | Media Server | Libraries, scanning, streaming |
+| bastion | Advanced Auth | LDAP, SSO, 2FA, session management |
+| tunnel | Network Config | Reverse proxy, UPnP, SSL, dynamic DNS |
+| fondue | Movie Automation | Auto-grab, monitor, upgrade (Radarr-like) |
+| sourdough | Backup & Restore | Snapshots, config export/import |
+| taffy | Metadata Agents | TMDB, TVDB, IMDb, MusicBrainz |
+| churro | Download Clients | qBittorrent, SABnzbd, Transmission |
+| saffron | Scheduled Tasks | Library scans, metadata refresh, cleanup |
+| pantry | Storage Manager | Disk monitoring, path mappings |
+| nutmeg | Recommendations | AI-powered picks from TMDB |
+| crumbs | API Management | Third-party integration keys |
+| fortress | Security | Code protection, obfuscation |
+| zest | Health Monitor | Logs, system health |
+| glaze | Scrobbling | Trakt.tv + Last.fm integration |
+| setup | Setup Wizard | First-run configuration |
 
-### v2.8.3 (2026-03-23)
-- Fixed TMDB API key lookup across all sources (env, tmdb_api_key DB, crumbs_tmdb DB)
-- Fixed TmdbProxyController to use IConfiguration fallback (trending/search/discover were returning empty)
-- Fixed Dashboard poster rendering (poster_url vs poster_path)
-- Fixed Continue Watching NaN display
-- Added /api/library alias route
-- Enhanced Marmalade scan to fetch TMDB metadata including posters
-- Fixed TV show title parsing for TMDB search
-- All 94 backend endpoints verified passing
-- Frontend testing: 85%+ pass rate, all core features working
-- Alpha builds created (Windows x64, Linux x64)
+### Gadget Modules
+| Codename | Name | Route |
+|----------|------|-------|
+| sorbet | Weather | /api/gadgets/weather |
+| brioche | Podcasts | /api/gadgets/podcasts |
+| nectar | Internet Radio | /api/gadgets/radio |
+| ganache | Photo Gallery | /api/gadgets/photos |
+| bisque | Web Video | /api/gadgets/webvideo |
+| marzipan | Playlists/Collections | /api/marzipan |
+| cinnamon | Synapse Admin | /api/gadgets/synapse-admin |
+| waffle | Movie Quiz | /api/gadgets/gamebot |
+| custard | Media Bridge | /api/gadgets/media-bridge |
+| yeast | Background Bot | /api/gadgets/bot |
 
-### v2.8.2.2 (2026-03-22)
-- Deep dive audit fixing dozens of [FromBody] vs [FromQuery] mismatches
-- Auth failure fix for standalone builds (hardcoded REACT_APP_BACKEND_URL)
-- System tray icon implementation (Windows WinForms + Linux GTK)
-- Complete Compote/Indexer controller rewrite
-- Downloads controller implementation
+### Analytics & Social
+| Codename | Name |
+|----------|------|
+| truffle | Watch Analytics |
+| pepper | Notification Hub |
+| meringue | User Requests |
+| rind | Parental Controls |
+| crucible | Media Processing |
+| brine | Usenet Indexer |
+| ladle | Usenet Downloader |
+| ripen | Plugin Marketplace |
 
-### v2.8.2.1 - Help & Documentation Page
-### v2.8.2 - Help Tooltips & Sidebar UX Fix
-### v2.8.1 - Bug Fixes & New Frontend Pages
-### v2.8.0 - Five New Native Features (Truffle, Pepper, Meringue, Rind, Crucible, Brine, Ladle)
+## Verification Status
+- **136/136 endpoints passing** (comprehensive curl audit)
+- **32/32 codename status endpoints** resolving correctly
+- **33 modules** reported active in system info
+- **28 plugins** listed in gadget catalogue
+- **Frontend: 100%** pass rate on testing agent
+- **TMDB integration**: Trending, Search, Discover, poster generation all working
+- **Poster generation**: Both LibrariesController and MarmaladeBridgeController scan paths fetch TMDB metadata
+- **Tray icon**: Fully wired (Stop/Restart/Preferences/Quit all functional)
+- **Alpha builds**: Available at /app/release_builds/
 
 ## Alpha Build Credentials
 - Email: admin@watchnexus.local
 - Password: admin
 
 ## Upcoming Tasks (P1)
-- **Glaze** — Trakt + Last.fm Scrobbling
-- **Roux** — Collections & Smart Playlists
-- **Simmer** — Scheduled Tasks Engine
+- Glaze deeper integration (actual Trakt OAuth flow)
+- Roux — Collections & Smart Playlists (deeper implementation)
+- Simmer/Saffron — Execute scheduled tasks (currently task definitions only)
 
 ## Future Tasks (P2)
 - Sprout (RSS Feed Generator)
@@ -75,16 +86,11 @@ WatchNexus is a self-hosted media pipeline application (C#/.NET 10 + React) that
 - Terrine (Live TV DVR)
 - Popsicle (Offline Sync / Mobile)
 - Preserves (S3/Cloud Backup)
-- Re-implement Marshmallow Cloud Sync
+- Marshmallow Cloud Sync
 
 ## Key Files
-- `/app/src/watchnexus/core/Controllers/` - All backend controllers
-- `/app/src/watchnexus/core/Services/TrayIconService.cs` - System tray
-- `/app/src/watchnexus/core/WatchNexus.Core.csproj` - Build config
-- `/app/frontend/src/services/api.js` - Frontend API definitions
-- `/app/frontend/src/pages/Dashboard.js` - Main dashboard
-- `/app/release_builds/` - Alpha builds
-
-## Known Environment Issue
-- .NET SDK at `/opt/dotnet/` is not persistent. Must reinstall on environment restart:
-  `curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 10.0 --install-dir /opt/dotnet`
+- `/app/src/watchnexus/core/Controllers/CoreModuleControllers.cs` — 9 new core modules
+- `/app/src/watchnexus/core/Controllers/CodeNameAliasControllers.cs` — Aliases + Setup + Glaze + Playlists
+- `/app/src/watchnexus/core/Controllers/SystemController.cs` — System info with 33 modules
+- `/app/src/watchnexus/core/Controllers/FeatureControllers.cs` — 28-plugin catalogue
+- `/app/release_builds/` — Alpha builds
