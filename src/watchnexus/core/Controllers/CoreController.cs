@@ -67,6 +67,8 @@ public class CoreController : ControllerBase
             new { name = "Brine", codename = "brine", version = "2.8.3", status = "active" },
             new { name = "Ladle", codename = "ladle", version = "2.8.3", status = "active" },
             new { name = "Ripen", codename = "ripen", version = "2.8.3", status = "active" },
+            new { name = "Glaze", codename = "glaze", version = "2.8.3", status = "active" },
+            new { name = "Setup Wizard", codename = "setup", version = "2.8.3", status = "active" },
         };
 
         return Ok(new
@@ -79,7 +81,7 @@ public class CoreController : ControllerBase
             cpu_count = Environment.ProcessorCount,
             memory_used = process.WorkingSet64,
             uptime = (DateTime.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds,
-            modules = builtIn.Concat(modules)
+            modules = builtIn.Concat(modules).ToList()
         });
     }
 }

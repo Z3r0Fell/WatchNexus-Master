@@ -1,22 +1,40 @@
 # WatchNexus Changelog
 
-## 2026-03-23 - v2.8.3 (Deep Dive Stability & Poster Fix)
+## 2026-03-23 - v2.8.3 (Full Module Audit + Poster Fix)
 
 ### Critical Bug Fixes
-- **94 Endpoints Verified** — Comprehensive endpoint audit ensuring 94/94 backend endpoints return 200 OK
-- **Poster Generation Fix** — Both library scan paths (LibrariesController and MarmaladeBridgeController) now correctly fetch TMDB metadata including poster art, backdrops, ratings, and overviews
-- **TMDB Key Consistency** — Fixed TMDB API key lookup to check all 3 storage sources (env config, `tmdb_api_key` in DB, legacy `crumbs_tmdb` in DB) across all scan and metadata endpoints
-- **Dashboard Poster Rendering** — Fixed "Recently Added" section to display poster images from library items (was checking `poster_path` instead of `poster_url`)
-- **Continue Watching NaN Fix** — Fixed "NaN:NaN / NaN:NaN" display when progress data only has percentage (no duration/current_time)
-- **Library Alias Route** — Added `/api/library` endpoint alias matching frontend expectations (was returning 404)
-- **TV Show Title Parsing** — Fixed Marmalade scan to strip season/episode tags (e.g., S01E01) and quality tags before TMDB search
+- **136 Endpoints Verified** — Most comprehensive audit in WatchNexus history. Every single API endpoint returns 200 OK
+- **32 Codename Status Endpoints** — EVERY registered module now resolves to a `/api/{codename}/status` endpoint
+- **33 Modules Active** — System info reports all 33 modules loaded and active
+- **28 Plugins in Catalogue** — All plugins listed with proper codenames, descriptions, and categories
+- **TMDB Proxy Fix** — Trending, Search, Discover now work (was only checking DB for key, not env/config)
+- **Poster Generation** — Both scan paths fetch TMDB metadata. Fixed title parsing for TV shows
+- **Dashboard Fix** — Recently Added shows poster art, Continue Watching shows proper progress
+
+### New Controllers (9 Core Modules)
+- **Bastion** — Advanced Auth: LDAP, SSO, 2FA, session management
+- **Tunnel** — Network Config: reverse proxy, UPnP, SSL certificates, dynamic DNS
+- **Fondue** — Movie Automation: auto-grab, monitor, upgrade (Radarr equivalent)
+- **Sourdough** — Backup & Restore: full backups, scheduled snapshots, config export/import
+- **Taffy** — Metadata Agents: TMDB, TVDB, IMDb, MusicBrainz provider management
+- **Churro** — Download Clients: qBittorrent, SABnzbd, Transmission management
+- **Saffron** — Scheduled Tasks: library scans, metadata refresh, cleanup jobs
+- **Pantry** — Storage Manager: disk monitoring, file cleanup, path mappings
+- **Nutmeg** — Smart Recommendations: AI-powered picks from TMDB based on watch history
+
+### New Features
+- **Glaze** — Trakt.tv and Last.fm scrobbling, watch history sync
+- **Setup Wizard** — Jellyfin-style first-run configuration wizard
+- **Playlists API** — Backend for playlist creation and management
+- **Marzipan** — Playlists & Collections management endpoint
+
+### Codename Alias Routes (10 Gadgets)
+All gadgets now resolve via codename: sorbet, brioche, nectar, ganache, bisque, marzipan, cinnamon, waffle, custard, yeast
 
 ### Improvements
-- **Marmalade Scan Enhanced** — Now fetches full TMDB metadata during scan (previously only stored file names with no poster art)
-- **System Tray Icon** — Confirmed all menu items (Stop/Restart/Preferences/Quit) are fully wired with real functionality
-
-### Version Bump
-- All modules updated from 2.8.2.2 to 2.8.3
+- **System Info** now includes full module list with 33 active modules
+- **Gadgets Catalogue** expanded to 28 plugins across all categories
+- Added `/status` endpoints to: crumbs, truffle, pepper, meringue, rind, crucible, brine, ripen
 
 ## 2026-03-22 - v2.8.2.2 (System Tray Icon)
 

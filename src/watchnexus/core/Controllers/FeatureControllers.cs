@@ -15,6 +15,9 @@ public class RipenController : ControllerBase
     private readonly AppDbContext _db;
     public RipenController(AppDbContext db) => _db = db;
 
+    [HttpGet("status")]
+    public IActionResult Status() => Ok(new { module = "ripen", version = "2.8.3", status = "active", description = "Plugin marketplace and gadget management" });
+
     private static readonly List<Dictionary<string, string>> AllGadgets = new()
     {
         new() { ["gadget_id"] = "weather", ["codename"] = "sorbet", ["name"] = "Weather", ["version"] = "1.0.0", ["category"] = "weather", ["description"] = "Weather dashboard powered by Open-Meteo" },
@@ -34,6 +37,16 @@ public class RipenController : ControllerBase
         new() { ["gadget_id"] = "crucible", ["codename"] = "crucible", ["name"] = "Media Processing", ["version"] = "1.0.0", ["category"] = "processing", ["description"] = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis" },
         new() { ["gadget_id"] = "brine", ["codename"] = "brine", ["name"] = "Usenet Indexer", ["version"] = "1.0.0", ["category"] = "usenet", ["description"] = "Search NZBs via Prowlarr or Newznab-compatible indexers" },
         new() { ["gadget_id"] = "ladle", ["codename"] = "ladle", ["name"] = "Usenet Downloader", ["version"] = "1.0.0", ["category"] = "usenet", ["description"] = "SABnzbd queue management, downloads, history, and speed control" },
+        new() { ["gadget_id"] = "glaze", ["codename"] = "glaze", ["name"] = "Scrobbling", ["version"] = "1.0.0", ["category"] = "social", ["description"] = "Trakt.tv and Last.fm scrobbling, watch history sync" },
+        new() { ["gadget_id"] = "fondue", ["codename"] = "fondue", ["name"] = "Movie Automation", ["version"] = "1.0.0", ["category"] = "automation", ["description"] = "Auto-grab, monitor, and upgrade movies (Radarr-like)" },
+        new() { ["gadget_id"] = "bastion", ["codename"] = "bastion", ["name"] = "Advanced Auth", ["version"] = "1.0.0", ["category"] = "security", ["description"] = "LDAP, SSO, 2FA, and session management" },
+        new() { ["gadget_id"] = "tunnel", ["codename"] = "tunnel", ["name"] = "Network Config", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Reverse proxy, UPnP, SSL certificates, and dynamic DNS" },
+        new() { ["gadget_id"] = "sourdough", ["codename"] = "sourdough", ["name"] = "Backup & Restore", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Full backups, scheduled snapshots, config export/import" },
+        new() { ["gadget_id"] = "taffy", ["codename"] = "taffy", ["name"] = "Metadata Agents", ["version"] = "1.0.0", ["category"] = "metadata", ["description"] = "TMDB, TVDB, IMDb, MusicBrainz provider management" },
+        new() { ["gadget_id"] = "churro", ["codename"] = "churro", ["name"] = "Download Clients", ["version"] = "1.0.0", ["category"] = "downloads", ["description"] = "qBittorrent, SABnzbd, Transmission, Deluge client management" },
+        new() { ["gadget_id"] = "saffron", ["codename"] = "saffron", ["name"] = "Scheduled Tasks", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Library scans, metadata refresh, cleanup, and custom schedules" },
+        new() { ["gadget_id"] = "pantry", ["codename"] = "pantry", ["name"] = "Storage Manager", ["version"] = "1.0.0", ["category"] = "system", ["description"] = "Disk monitoring, file cleanup, path mappings, storage analytics" },
+        new() { ["gadget_id"] = "nutmeg", ["codename"] = "nutmeg", ["name"] = "Recommendations", ["version"] = "1.0.0", ["category"] = "discovery", ["description"] = "AI-powered recommendations based on watch history" },
     };
 
     [HttpGet("installed")]

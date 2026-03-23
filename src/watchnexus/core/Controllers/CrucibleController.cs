@@ -19,6 +19,9 @@ public class CrucibleController : ControllerBase
     private readonly AppDbContext _db;
     public CrucibleController(AppDbContext db) => _db = db;
 
+    [HttpGet("status")]
+    public IActionResult Status() => Ok(new { module = "crucible", version = "2.8.3", status = "active", description = "Media processing: FFmpeg transcoding, H.265 conversion, subtitle extraction" });
+
     // ── Transcode Profiles ──────────────────────────────────
     [HttpGet("profiles")]
     public IActionResult Profiles() => Ok(new[]

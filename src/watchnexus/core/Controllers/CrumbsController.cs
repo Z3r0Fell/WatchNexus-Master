@@ -27,6 +27,9 @@ public class CrumbsController : ControllerBase
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
+    [HttpGet("status")]
+    public IActionResult Status() => Ok(new { module = "crumbs", version = "2.8.3", status = "active", description = "Integration & API key management for third-party services" });
+
     // ── Service Registry (all available services) ──────────────────
     [HttpGet("services")]
     public IActionResult GetServiceRegistry()
