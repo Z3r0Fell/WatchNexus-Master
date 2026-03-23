@@ -18,6 +18,9 @@ public class TruffleController : ControllerBase
     private readonly AppDbContext _db;
     public TruffleController(AppDbContext db) => _db = db;
 
+    [HttpGet("status")]
+    public IActionResult Status() => Ok(new { module = "truffle", version = "2.8.3", status = "active", description = "Watch analytics, play tracking, and viewing statistics" });
+
     // ── Record Play Event ──────────────────────────────────
     [HttpPost("play")]
     public async Task<IActionResult> RecordPlay([FromBody] JsonElement body)
