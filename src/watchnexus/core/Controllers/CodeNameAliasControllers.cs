@@ -218,7 +218,7 @@ public class GlazeController : ControllerBase
     {
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config");
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = "glaze_config", Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "glaze_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -292,12 +292,12 @@ public class SetupWizardController : ControllerBase
         var key = $"setup_step_{stepNumber}_data";
         var raw = data.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = key, Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = key, Value = raw });
 
         // Update current step
         var stepSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_current_step");
         var nextStep = (stepNumber + 1).ToString();
-        if (stepSetting != null) stepSetting.Value = nextStep; else _db.Settings.Add(new AppSetting { Key = "setup_current_step", Value = nextStep });
+        if (stepSetting != null) stepSetting.Value = nextStep; else _db.Settings.Add(new AppSetting { UserId = "", Key = "setup_current_step", Value = nextStep });
 
         await _db.SaveChangesAsync();
         return Ok(new { status = "ok", completed_step = stepNumber, next_step = stepNumber + 1 });
@@ -308,7 +308,7 @@ public class SetupWizardController : ControllerBase
     public async Task<IActionResult> Complete()
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_completed");
-        if (existing != null) existing.Value = "true"; else _db.Settings.Add(new AppSetting { Key = "setup_completed", Value = "true" });
+        if (existing != null) existing.Value = "true"; else _db.Settings.Add(new AppSetting { UserId = "", Key = "setup_completed", Value = "true" });
         await _db.SaveChangesAsync();
         return Ok(new { status = "completed", message = "WatchNexus is ready! Enjoy your media." });
     }

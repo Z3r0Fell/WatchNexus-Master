@@ -49,7 +49,7 @@ public class BastionController : ControllerBase
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_config");
         if (existing != null) existing.Value = raw;
-        else _db.Settings.Add(new AppSetting { Key = "bastion_config", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = "", Key = "bastion_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -118,7 +118,7 @@ public class TunnelController : ControllerBase
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tunnel_config");
         if (existing != null) existing.Value = raw;
-        else _db.Settings.Add(new AppSetting { Key = "tunnel_config", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = "", Key = "tunnel_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -235,7 +235,7 @@ public class FondueController : ControllerBase
     {
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "fondue_config");
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = "fondue_config", Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "fondue_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -318,7 +318,7 @@ public class SourdoughController : ControllerBase
     {
         var raw = schedule.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sourdough_schedule");
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = "sourdough_schedule", Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "sourdough_schedule", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -367,7 +367,7 @@ public class TaffyController : ControllerBase
         var key = $"taffy_provider_{providerId}";
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = key, Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = key, Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved", provider = providerId });
     }
@@ -398,7 +398,7 @@ public class TaffyController : ControllerBase
     {
         var lang = body.TryGetProperty("language", out var l) ? l.GetString() ?? "en" : "en";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "taffy_language");
-        if (existing != null) existing.Value = lang; else _db.Settings.Add(new AppSetting { Key = "taffy_language", Value = lang });
+        if (existing != null) existing.Value = lang; else _db.Settings.Add(new AppSetting { UserId = "", Key = "taffy_language", Value = lang });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved", language = lang });
     }
@@ -590,7 +590,7 @@ public class PantryController : ControllerBase
     {
         var raw = mappings.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "pantry_path_mappings");
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = "pantry_path_mappings", Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "pantry_path_mappings", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -688,7 +688,7 @@ public class NutmegController : ControllerBase
     {
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "nutmeg_config");
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { Key = "nutmeg_config", Value = raw });
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "nutmeg_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }

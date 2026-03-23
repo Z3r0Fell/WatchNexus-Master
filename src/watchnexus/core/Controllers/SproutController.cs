@@ -64,7 +64,7 @@ public class SproutController : ControllerBase
         var raw = config.GetRawText();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
         if (existing != null) existing.Value = raw;
-        else _db.Settings.Add(new AppSetting { Key = "sprout_config", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = "", Key = "sprout_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -113,26 +113,47 @@ public class SproutController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GenerateApiKey()
     {
-        var key = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24))
-            .Replace("+", "").Replace("/", "").Replace("=", "")[..32];
+        var raw = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32))
+            .Replace("+", "x").Replace("/", "y").Replace("=", "");
+        var key = raw.Length >= 32 ? raw[..32] : raw;
 
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
-        if (setting?.Value != null)
+        if (setting != null)
         {
             try
             {
-                var doc = JsonDocument.Parse(setting.Value);
-                var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(setting.Value) ?? new();
-                dict["api_key"] = key;
-                setting.Value = JsonSerializer.Serialize(dict);
+                using var doc = JsonDocument.Parse(setting.Value ?? "{}");
+                var dict = new Dictionary<string, JsonElement>();
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                    dict[prop.Name] = prop.Value.Clone();
+
+                // Build new JSON with api_key injected
+                using var stream = new System.IO.MemoryStream();
+                using (var writer = new Utf8JsonWriter(stream))
+                {
+                    writer.WriteStartObject();
+                    foreach (var kv in dict)
+                    {
+                        if (kv.Key == "api_key") continue;
+                        writer.WritePropertyName(kv.Key);
+                        kv.Value.WriteTo(writer);
+                    }
+                    writer.WriteString("api_key", key);
+                    writer.WriteEndObject();
+                }
+                setting.Value = System.Text.Encoding.UTF8.GetString(stream.ToArray());
                 await _db.SaveChangesAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                setting.Value = JsonSerializer.Serialize(new { enabled = true, api_key = key, items_per_feed = 50 });
+                await _db.SaveChangesAsync();
+            }
         }
         else
         {
             var config = new { enabled = true, api_key = key, items_per_feed = 50 };
-            _db.Settings.Add(new AppSetting { Key = "sprout_config", Value = JsonSerializer.Serialize(config) });
+            _db.Settings.Add(new AppSetting { UserId = "", Key = "sprout_config", Value = JsonSerializer.Serialize(config) });
             await _db.SaveChangesAsync();
         }
 
