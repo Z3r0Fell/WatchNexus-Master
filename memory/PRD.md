@@ -1,110 +1,90 @@
-# WatchNexus - Product Requirements Document (PRD)
+# WatchNexus - Product Requirements Document
 
 ## Overview
-WatchNexus is a unified, self-hosted media pipeline built with C#/.NET 10 backend and React frontend. It provides a comprehensive media management experience with 31+ features (called "gadgets") including library management, streaming, indexing, analytics, notifications, parental controls, and more.
+WatchNexus is a self-hosted media pipeline application (C#/.NET 10 + React) that manages personal media libraries with TMDB metadata, torrenting, streaming, and a rich set of media management tools.
 
-## Version: 2.8.2.2
+## Current Version: 2.8.3
 
 ## Architecture
-- **Backend**: C#/.NET 10 ASP.NET Core server (port 8002)
-- **Proxy**: Python FastAPI reverse proxy (port 8001) for ingress routing
-- **Frontend**: React + Vite (port 3000)
-- **Database**: SQLite via Entity Framework Core
-- **Deployment**: Self-contained release builds for Windows + Linux
+- **Backend**: C#/.NET 10, ASP.NET Core, EF Core + SQLite
+- **Frontend**: React (Create React App), served as static files via Kestrel
+- **Proxy**: FastAPI proxy on port 8001 → .NET backend on port 8002
+- **Build**: Self-contained single-file executables for Windows and Linux
 
-## Core Features Implemented
-### Original Features
-1. **Auth System** - JWT-based authentication with login/register/logout
-2. **Library Management** - Media library CRUD, scanning, metadata refresh
-3. **TMDB Integration** - Movie/TV search, trending, details, genres
-4. **Watchlist & Progress** - Track watch progress, continue watching
-5. **Downloads** - Built-in torrent engine, qBittorrent integration
-6. **IPTV** - Live TV channel management
-7. **Playlists** (Drizzle) - User playlists with media items
-8. **Weather** - Weather forecasts with location search
-9. **Podcasts** - Podcast search, subscribe, episodes
-10. **Radio** - Radio station search, favorites
-11. **Photos** - Photo library management
-12. **Web Video** - Video bookmarks and history
-13. **Subtitles** - Multi-source subtitle search and download
-14. **VPN** - WireGuard VPN portal management
-15. **Security** - IP rules, API keys, audit logs
-16. **External Access** (Gelatin) - Tunnels, share links
-17. **Themes** (Milk) - Theme marketplace
-18. **Plugin Marketplace** (Ripen) - Gadget management
-19. **System Stats** (Nutmeg) - System monitoring
-20. **Media Bridge** (Custard) - External media server integration
-21. **Fortress** - Code protection with audit trail
-22. **GameBot** - Movie quiz generator
+## Core Features (Implemented)
+- Authentication (JWT, seeded admin account)
+- Media library management with folder scanning
+- TMDB metadata integration (poster art, ratings, overviews, backdrops)
+- Torrent management (qBittorrent integration)
+- Indexer management (Compote/Syrup module)
+- Streaming service credentials
+- Subtitle search (OpenSubtitles, Addic7ed, etc.)
+- IPTV channel management
+- System tray icon (Windows + Linux) with Start/Stop/Restart/Preferences
+- Watch progress tracking
+- Watchlist management
+- Analytics (Truffle module)
+- Notifications (Pepper module)
+- Media requests (Meringue module)
+- Parental controls (Rind module)
+- Media processing (Crucible module)
+- Usenet support (Brine indexer + Ladle downloader)
+- Help & Documentation page
+- Gadgets: Podcasts, Radio, Photos, Weather, Web Video, GameBot
 
-### New Features (v2.8.0)
-23. **Watch Analytics** (Truffle) - Viewing stats, play history, top genres
-24. **Notification Hub** (Pepper) - Multi-channel notifications (webhook, email, discord, pushover)
-25. **User Requests** (Meringue) - Media request system with approval workflow
-26. **Parental Controls** (Rind) - PIN protection, rating limits, genre blocking
-27. **Media Processing** (Crucible) - FFmpeg-based transcode jobs (MOCKED - requires ffmpeg)
-28. **Usenet Indexer** (Brine) - Prowlarr-compatible Usenet search proxy
-29. **Usenet Downloader** (Ladle) - SABnzbd-compatible download proxy
+## What's Been Implemented
 
-## Frontend Pages
-- Dashboard, Library, Movies, TV Shows, Anime, Music, Audiobooks, Live TV, Streaming
-- Downloads, Indexers, Playlists, Search, Watchlist, History, Discover, DVR
-- Weather, Podcasts, Radio, Photos, Web Video
-- **NEW**: Analytics, Notifications, Requests, Parental Controls, Processing, Usenet
-- Settings, Security, VPN Portal, System, Library Manager, Log Viewer, Browse Media, Marketplace, Themes
+### v2.8.3 (2026-03-23)
+- Fixed TMDB API key lookup across all sources (env, tmdb_api_key DB, crumbs_tmdb DB)
+- Fixed TmdbProxyController to use IConfiguration fallback (trending/search/discover were returning empty)
+- Fixed Dashboard poster rendering (poster_url vs poster_path)
+- Fixed Continue Watching NaN display
+- Added /api/library alias route
+- Enhanced Marmalade scan to fetch TMDB metadata including posters
+- Fixed TV show title parsing for TMDB search
+- All 94 backend endpoints verified passing
+- Frontend testing: 85%+ pass rate, all core features working
+- Alpha builds created (Windows x64, Linux x64)
 
-## Bugs Fixed (v2.8.2)
-1. **Sidebar scroll persistence** — Sidebar no longer jumps to top when navigating. Uses sessionStorage to save/restore scroll position.
+### v2.8.2.2 (2026-03-22)
+- Deep dive audit fixing dozens of [FromBody] vs [FromQuery] mismatches
+- Auth failure fix for standalone builds (hardcoded REACT_APP_BACKEND_URL)
+- System tray icon implementation (Windows WinForms + Linux GTK)
+- Complete Compote/Indexer controller rewrite
+- Downloads controller implementation
 
-## UX Enhancements (v2.8.2)
-1. **Help Tooltips** — Visible question-mark icons next to every settings section heading and key individual options. Clicking opens a popover with description, purpose, and setup examples.
-2. **HelpTooltip component** — Reusable component at `/components/ui/HelpTooltip.jsx`.
-3. **SettingsTabHeader help prop** — All tabbed settings pages support a `help` prop for section-level tooltips.
+### v2.8.2.1 - Help & Documentation Page
+### v2.8.2 - Help Tooltips & Sidebar UX Fix
+### v2.8.1 - Bug Fixes & New Frontend Pages
+### v2.8.0 - Five New Native Features (Truffle, Pepper, Meringue, Rind, Crucible, Brine, Ladle)
 
-## Bugs Fixed (v2.8.0 patch)
-1. **Dropdown CSS** - Select option text was unreadable (white on white). Fixed with global CSS rule.
-2. **Settings not saving** - Backend PUT /api/settings/{key} expected {"value":"..."} but frontend sent raw JSON. Fixed to accept both formats. Added bulk PUT /api/settings endpoint.
-3. **User preferences** - Frontend sent preferences as query params, backend expected JSON body. Fixed frontend.
-4. **Missing marmalade endpoints** - Added /status, /media/{id}, /media/search, /continue-watching, /tv-series, /libraries/{id}/refresh-metadata, /media/{id}/progress, /media/{id}/watched, /stream/{id}, /stream/{id}/file
-5. **Meringue request** - tmdb_id was required; made optional (title-only requests now work).
-6. **Pepper channel creation** - POST /api/pepper/channels endpoint was missing. Added.
-7. **Version mismatch** - SystemController still showed 2.7.3; updated to 2.8.0.
-
-## Test Status
-- **Backend**: 45/45 API endpoints pass (iteration_11)
-- **Frontend**: All pages load and function correctly
-- **Testing Agent**: 16/16 tests passed, 100% success rate
-
-## New Features (v2.8.2.2)
-30. **System Tray Icon** — Cross-platform tray icon that loads on launch
-    - Windows: Native WinForms NotifyIcon with branded icon, double-click to open browser
-    - Linux: Embedded Python helper using GTK AppIndicator3 (ayatana + legacy support)
-    - Headless environments gracefully skip tray initialization
-    - TrayIconService registered as BackgroundService; csproj conditional UseWindowsForms for win-x64
-    - **Enhanced Tray Menu**: Open WatchNexus, Stop Server, Restart Server, Preferences submenu (Server Port, Settings Page, Port Forwarding/UPnP, Edit appsettings.json, Log Folder, Data Folder), Quit
-31. **Standalone Frontend Build Fix** — Frontend is now rebuilt with empty `REACT_APP_BACKEND_URL` during `dotnet publish`, ensuring the alpha release uses same-origin API requests instead of hardcoded preview URLs. This was the root cause of auth failures in the alpha build.
-
-## Release Builds (v2.8.2.2)
-- **Windows (win-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-win-x64.zip` (72MB, 472 files, self-contained + WinForms)
-- **Linux (linux-x64)**: `/app/release_builds/WatchNexus-v2.8.2.2-linux-x64.zip` (59MB, 381 files, self-contained)
-- Both include: executable, .NET runtime, React frontend build, CHANGELOG.md
-- **Alpha folder** (`/app/Alpha/`): Updated to v2.8.2.2 — README, CHANGELOG, and all scripts (build-release, build-arch, install-windows, install-linux, install-mac) rewritten for .NET 10 self-contained architecture
+## Alpha Build Credentials
+- Email: admin@watchnexus.local
+- Password: admin
 
 ## Upcoming Tasks (P1)
-- **Glaze** - Trakt + Last.fm Scrobbling
-- **Roux** - Collections & Smart Playlists
-- **Simmer** - Scheduled Tasks Engine
+- **Glaze** — Trakt + Last.fm Scrobbling
+- **Roux** — Collections & Smart Playlists
+- **Simmer** — Scheduled Tasks Engine
 
 ## Future Tasks (P2)
-- **Sprout** - RSS Feed Generator
-- **Biscotti** - Ebook/Audiobook/Comics Support
-- **Treacle** - Music Library & Player
-- **Sage** - AI Metadata & Recommendations
-- **Terrine** - Live TV DVR
-- **Popsicle** - Offline Sync / Mobile
-- **Preserves** - S3/Cloud Backup
-- Re-implement **Marshmallow** Cloud Sync
+- Sprout (RSS Feed Generator)
+- Biscotti (Ebook/Audiobook/Comics Support)
+- Treacle (Music Library & Player)
+- Sage (AI Metadata & Recommendations)
+- Terrine (Live TV DVR)
+- Popsicle (Offline Sync / Mobile)
+- Preserves (S3/Cloud Backup)
+- Re-implement Marshmallow Cloud Sync
 
-## Credentials
-- Admin: admin@watchnexus.local / admin
-- Test: test@test.com / password
+## Key Files
+- `/app/src/watchnexus/core/Controllers/` - All backend controllers
+- `/app/src/watchnexus/core/Services/TrayIconService.cs` - System tray
+- `/app/src/watchnexus/core/WatchNexus.Core.csproj` - Build config
+- `/app/frontend/src/services/api.js` - Frontend API definitions
+- `/app/frontend/src/pages/Dashboard.js` - Main dashboard
+- `/app/release_builds/` - Alpha builds
+
+## Known Environment Issue
+- .NET SDK at `/opt/dotnet/` is not persistent. Must reinstall on environment restart:
+  `curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 10.0 --install-dir /opt/dotnet`
