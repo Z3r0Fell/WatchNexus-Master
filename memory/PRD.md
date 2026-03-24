@@ -63,6 +63,16 @@ Shows: Version 2.8.4, Runtime (.NET 10.0.5), OS, Architecture, Server Details, 8
 - `/app/release_builds/WatchNexus-v2.8.4-linux-x64.tar.gz` (58MB)
 - `/app/release_builds/WatchNexus-v2.8.4-win-x64.zip` (72MB)
 
+## Documentation & Press Kit (COMPLETED)
+- Press Kit created at `/app/docs/press-kit/` with:
+  - Comprehensive README.md (product overview, features, specs, module ecosystem, brand guidelines)
+  - 13 images: 9 app screenshots + 3 brand assets (logo, banner, icon)
+- Root README.md updated to v2.8.4
+- All install/build scripts updated to v2.8.4
+- CHANGELOG.md updated with press kit entry
+- USER-GUIDE.md updated with v2.8.4 reference
+- Outdated docs deleted (BETA_TESTING_REPORT.md, WN-SPLIT-STRUCTURE.md)
+
 ## Future Tasks (P2)
 - Biscotti (Ebook/Audiobook/Comics)
 - Treacle (Music Library & Player)

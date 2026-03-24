@@ -1,6 +1,6 @@
 #===============================================================================
 # WatchNexus Installation Script for Windows
-# v2.8.3 — Self-contained .NET 10 build (no runtime dependencies needed)
+# v2.8.4 — Self-contained .NET 10 build (no runtime dependencies needed)
 # Run as Administrator
 #===============================================================================
 
@@ -14,7 +14,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 $InstallDir = "$env:ProgramFiles\WatchNexus"
 $DataDir = "$env:LOCALAPPDATA\WatchNexus"
-$Version = "2.8.3"
+$Version = "2.8.4"
 $ServiceName = "WatchNexus"
 $Port = 8002
 

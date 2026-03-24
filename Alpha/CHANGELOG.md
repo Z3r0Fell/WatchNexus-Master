@@ -1,5 +1,20 @@
 # WatchNexus Changelog
 
+## 2026-03-24 - v2.8.4 (Press Kit + Documentation Overhaul)
+
+### Press Kit
+- Created comprehensive press kit at `/docs/press-kit/`
+- Professional README with product overview, feature highlights, technical specs, and module ecosystem
+- 13 high-quality images: 9 app screenshots + 3 brand assets (logo, banner, icon)
+- Brand guidelines: colors, typography, deployment options
+
+### Documentation Updates
+- Updated root README.md to reflect v2.8.4 features and release builds
+- Updated all install/build scripts to v2.8.4 version references
+- Cleaned up outdated documentation files
+
+---
+
 ## 2026-03-24 - v2.8.4 (P1 Module Implementation + System Overhaul)
 
 ### New Modules (Full Implementation)

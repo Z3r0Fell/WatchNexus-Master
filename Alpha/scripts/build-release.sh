@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/release_builds"
-VERSION="2.8.3"
+VERSION="2.8.4"
 PROJECT_DIR="$ROOT_DIR/src/watchnexus/core"
 
 echo "=== WatchNexus v${VERSION} Release Builder ==="
@@ -72,7 +72,7 @@ cat > "$BUILD_DIR/win-x64/start-watchnexus.bat" << 'WINEOF'
 @echo off
 title WatchNexus Server
 echo ================================================
-echo  WatchNexus v2.8.3 - Self-Hosted Media Pipeline
+echo  WatchNexus v2.8.4 - Self-Hosted Media Pipeline
 echo ================================================
 echo.
 echo Starting WatchNexus on http://localhost:8002 ...
@@ -86,7 +86,7 @@ WINEOF
 cat > "$BUILD_DIR/linux-x64/start-watchnexus.sh" << 'LXEOF'
 #!/bin/bash
 echo "================================================"
-echo " WatchNexus v2.8.3 - Self-Hosted Media Pipeline"
+echo " WatchNexus v2.8.4 - Self-Hosted Media Pipeline"
 echo "================================================"
 echo ""
 echo "Starting WatchNexus on http://localhost:8002 ..."

@@ -1,14 +1,14 @@
 #!/bin/bash
 #===============================================================================
 # WatchNexus Installation Script for macOS
-# v2.8.3 — Self-contained .NET 10 build (no runtime dependencies needed)
+# v2.8.4 — Self-contained .NET 10 build (no runtime dependencies needed)
 # Note: macOS builds are not currently produced. This script is a placeholder
 # for future osx-x64 / osx-arm64 self-contained builds.
 #===============================================================================
 
 set -e
 
-VERSION="2.8.3"
+VERSION="2.8.4"
 INSTALL_DIR="/Applications/WatchNexus"
 DATA_DIR="$HOME/Library/Application Support/WatchNexus"
 DAEMON_PLIST="/Library/LaunchDaemons/ca.watchnexus.server.plist"

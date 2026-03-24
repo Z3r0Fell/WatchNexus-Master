@@ -1,16 +1,18 @@
-# WatchNexus v2.8.0
+# WatchNexus v2.8.4
 
 > Unified, self-hosted media pipeline. Request, acquire, organize, and watch your media.
 
-**QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
+**QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)  
+**Press Kit:** [docs/press-kit/](docs/press-kit/)
 
-## What's New in 2.8.0
+## What's New in 2.8.4
 
-- **EF Core Migrations** — Versioned, incremental database schema management (replaces `EnsureCreated`)
-- **Dynamic Module Loading** — Separated modules in `/separated/` are compiled and loaded as DLLs at startup
-- **Fortress Security** — Assembly integrity verification, runtime anti-tampering, license/activation validation
-- **Fortress Audit Log** — Persistent security event log with API access (`/api/fortress/audit`)
-- **Release Builds** — Self-contained Windows x64 and Linux x64 archives (no .NET runtime required)
+- **Real Indexer Search Engine** — Live RSS parsing across Nyaa.si, YTS, EZTV, Torznab, and generic RSS with quality/codec detection
+- **TOTP 2FA** — Full two-factor authentication with Base32 secrets, QR code URIs, and backup codes (Bastion)
+- **7 New Module Pages** — Glaze (Scrobbling), Saffron (Tasks), Fondue (Automation), Sourdough (Backups), Churro (Download Clients), Roux (Collections), Sprout (RSS Feeds)
+- **System Dashboard Overhaul** — Real runtime metrics, 8 security feature indicators, 35 module listing
+- **Configuration Cleanup** — All hardcoded placeholders removed, replaced with database-driven config
+- **Enhanced VPN (Tunnel)** — WireGuard peer management, SSL certs, bandwidth monitoring, connectivity testing
 
 ## Repository Structure
 
@@ -44,8 +46,8 @@ WatchNexus/
 │   └── beacon/              # System Tray
 │
 ├── release_builds/          # Distributable archives
-│   ├── watchnexus-2.8.0-win-x64.tar.gz
-│   └── watchnexus-2.8.0-linux-x64.tar.gz
+│   ├── WatchNexus-v2.8.4-win-x64.zip
+│   └── WatchNexus-v2.8.4-linux-x64.tar.gz
 │
 ├── scripts/                 # Build & install scripts
 ├── CHANGELOG.md
@@ -103,13 +105,13 @@ Fortress computes SHA-256 baselines for all WatchNexus assemblies at startup, pe
 ### From Release Build
 ```bash
 # Linux
-tar xzf watchnexus-2.8.0-linux-x64.tar.gz
-cd watchnexus-2.8.0-linux-x64
+tar xzf WatchNexus-v2.8.4-linux-x64.tar.gz
+cd WatchNexus-v2.8.4-linux-x64
 sudo bash install.sh
 # Open http://localhost:8001
 
 # Windows
-# Extract watchnexus-2.8.0-win-x64.tar.gz
+# Extract WatchNexus-v2.8.4-win-x64.zip
 # Run start-watchnexus.bat
 # Open http://localhost:8001
 ```
