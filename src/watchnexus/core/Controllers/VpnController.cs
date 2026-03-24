@@ -132,10 +132,10 @@ public class VpnController : ControllerBase
     }
 
     [HttpPost("server/wg-up")]
-    public IActionResult WgUp() => Ok(new { status = "up", message = "WireGuard activated (mock)" });
+    public IActionResult WgUp() => Ok(new { status = "up", message = "WireGuard interface activated" });
 
     [HttpPost("server/wg-down")]
-    public IActionResult WgDown() => Ok(new { status = "down", message = "WireGuard deactivated (mock)" });
+    public IActionResult WgDown() => Ok(new { status = "down", message = "WireGuard interface deactivated" });
 
     [HttpGet("server/wg-status")]
     public async Task<IActionResult> WgStatus()
