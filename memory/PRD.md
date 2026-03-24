@@ -1,7 +1,7 @@
 # WatchNexus - Product Requirements Document
 
 ## Overview
-WatchNexus is a self-hosted media management pipeline combining features from Jellyfin and the *arr ecosystem into a unified platform. It uses a C#/.NET 10 backend with React frontend.
+WatchNexus is a self-hosted media management pipeline combining features from Jellyfin and the *arr ecosystem into a unified platform. C#/.NET 10 backend + React frontend.
 
 ## Current Version: 2.8.4
 
@@ -12,17 +12,25 @@ WatchNexus is a self-hosted media management pipeline combining features from Je
 - **Database**: SQLite via Entity Framework Core
 - **Auth**: JWT-based (admin@watchnexus.local / admin)
 
-## Module Status (35 Total)
+## Implemented Features (Production-Ready)
 
-### Core Media (Active - Full Implementation)
-| Module | Codename | Description |
-|--------|----------|-------------|
-| Libraries | marmalade | Media library management, TV grouping |
-| Media Server | media | Streaming, transcoding |
-| Content Discovery | content | TMDB integration, search, trending |
-| Downloads | crucible | Download processing pipeline |
+### Core Media
+- Library management with TV show grouping (Series > Season > Episode)
+- TMDB integration for content discovery, search, trending
+- Media streaming and transcoding pipeline
 
-### P1 Modules (Active - Full Implementation)
+### Compote Search Engine (REAL - queries live indexers)
+- Nyaa.si RSS feed parsing with magnet link extraction
+- YTS JSON API integration
+- EZTV JSON API integration
+- Torznab/Newznab standard API support
+- Generic RSS fallback search
+- Quality detection (2160p/1080p/720p/480p)
+- Codec detection (HEVC/x264/AV1/VP9)
+- Size parsing (TiB/GiB/MiB/KiB)
+- Grab endpoint stores downloads in DB
+
+### P1 Modules (Full Implementation)
 | Module | Codename | Description |
 |--------|----------|-------------|
 | Scrobbling | glaze | Trakt.tv & Last.fm with config-driven OAuth |
@@ -33,28 +41,23 @@ WatchNexus is a self-hosted media management pipeline combining features from Je
 | Collections | roux | Smart & manual collections, filter engine |
 | RSS Feeds | sprout | RSS/Atom feed generator with API key auth |
 
-### Enhanced Modules (Active - Real Functionality)
-| Module | Codename | Description |
-|--------|----------|-------------|
-| Advanced Auth | bastion | TOTP 2FA, LDAP test, password policy, audit log, sessions |
-| Network/VPN | tunnel | WireGuard peers, SSL certs, bandwidth, Dynamic DNS, Tailscale |
+### Enhanced Security (Bastion)
+- Real TOTP 2FA (Base32 secrets, QR URIs, 8 backup codes)
+- LDAP connection testing
+- Password policy validation with strength scoring
+- Audit log tracking
+- Session management with device/browser detection
 
-### Remaining Scaffolded Modules (Active - Placeholder)
-| Module | Codename | Description |
-|--------|----------|-------------|
-| Subtitles | taffy | Multi-language subtitles |
-| Path Management | pantry | Storage path mappings |
-| Recommendations | nutmeg | AI-powered suggestions |
+### Network Management (Tunnel)
+- Real network interface detection
+- WireGuard peer CRUD with key generation
+- SSL certificate management
+- Bandwidth monitoring with history
+- Dynamic DNS, Tailscale support
+- External connectivity testing
 
 ## System Page
-Shows: Version, Runtime, OS, Architecture, Server Time, Hostname, CPU Cores, Memory, Uptime, 8 Security Features, 35 Modules
-
-## Key Files
-- `/app/src/watchnexus/core/Controllers/` - All backend controllers
-- `/app/frontend/src/pages/` - All frontend pages
-- `/app/frontend/src/components/layout/Sidebar.js` - Navigation
-- `/app/frontend/src/App.js` - Router configuration
-- `/app/release_builds/` - v2.8.4 builds (linux-x64, win-x64)
+Shows: Version 2.8.4, Runtime (.NET 10.0.5), OS, Architecture, Server Details, 8 Security Features, 35 Modules
 
 ## Release Builds
 - `/app/release_builds/WatchNexus-v2.8.4-linux-x64.tar.gz` (58MB)
@@ -68,4 +71,4 @@ Shows: Version, Runtime, OS, Architecture, Server Time, Hostname, CPU Cores, Mem
 - Popsicle (Offline Sync / Mobile)
 - Preserves (S3/Cloud Backup)
 - Marshmallow (Cloud Sync)
-- Full implementation of Taffy (Subtitles), Pantry (Storage), Nutmeg (AI)
+- Full implementation of Taffy, Pantry, Nutmeg
