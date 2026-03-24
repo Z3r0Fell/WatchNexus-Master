@@ -28,7 +28,7 @@ public class PepperController : ControllerBase
     }
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "pepper", version = "2.8.3", status = "active", description = "Notification hub: Discord, Telegram, Slack, and Pushover alerts" });
+    public IActionResult Status() => Ok(new { module = "pepper", version = "2.8.4", status = "active", description = "Notification hub: Discord, Telegram, Slack, and Pushover alerts" });
 
     // ── Configuration ──────────────────────────────────
     [HttpGet("channels")]

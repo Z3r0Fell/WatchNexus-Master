@@ -19,7 +19,7 @@ public class MeringueController : ControllerBase
     public MeringueController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "meringue", version = "2.8.3", status = "active", description = "Media request system: users request movies/TV shows, admins approve" });
+    public IActionResult Status() => Ok(new { module = "meringue", version = "2.8.4", status = "active", description = "Media request system: users request movies/TV shows, admins approve" });
 
     // ── Submit Request ──────────────────────────────────
     [HttpPost("request")]
