@@ -1,116 +1,100 @@
-# WatchNexus v2.8.3-alpha
+# WatchNexus v2.8.4-alpha
 
-> **ALPHA BUILD — CONFIDENTIAL — NOT FOR PUBLIC DISTRIBUTION**
+Self-hosted media management pipeline with Jellyfin + *arr ecosystem features.
 
-This is a pre-release alpha build for internal testing purposes only. Do not redistribute or share publicly.
+## Downloads
 
-## Release Artifacts
-
-| Platform | Archive | Size |
-|----------|---------|------|
-| Windows x64 | `WatchNexus-v2.8.3-win-x64.zip` | ~72MB |
-| Linux x64 | `WatchNexus-v2.8.3-linux-x64.zip` | ~59MB |
-
-Both archives are **self-contained** — no .NET runtime installation required.
+| Platform | File | Size |
+|----------|------|------|
+| Windows x64 | `WatchNexus-v2.8.4-win-x64.zip` | ~72MB |
+| Linux x64 | `WatchNexus-v2.8.4-linux-x64.tar.gz` | ~58MB |
 
 ## Quick Start
 
 ### Windows
-```
-1. Extract WatchNexus-v2.8.3-win-x64.zip
-2. Double-click WatchNexus.Core.exe
-3. A system tray icon will appear — double-click it or open http://localhost:8002
-```
+1. Extract WatchNexus-v2.8.4-win-x64.zip
+2. Run `WatchNexus.Core.exe`
+3. Open browser to `http://localhost:8002`
+4. Login: `admin@watchnexus.local` / `admin`
 
 ### Linux
 ```bash
-unzip WatchNexus-v2.8.3-linux-x64.zip
-cd linux-x64
+tar -xzf WatchNexus-v2.8.4-linux-x64.tar.gz
 chmod +x WatchNexus.Core
 ./WatchNexus.Core
-# Open http://localhost:8002
 ```
 
-For tray icon support on Linux, install:
-```bash
-# Ubuntu/Debian
-sudo apt install gir1.2-ayatanaappindicator3-0.1 python3-gi
+## What's New in v2.8.4
 
-# Fedora
-sudo dnf install libayatana-appindicator-gtk3 python3-gobject
-```
+### Implemented Modules (P1)
+- **Glaze** — Trakt.tv & Last.fm scrobbling with TOTP-signed OAuth
+- **Saffron** — 8 scheduled tasks (library scan, metadata, cleanup, etc.)
+- **Fondue** — Movie automation with monitoring, search, queue
+- **Sourdough** — Backup & restore with scheduling, config export
+- **Churro** — Download client management (torrent/usenet)
+- **Roux** — Smart & manual collections with filter engine
+- **Sprout** — RSS/Atom feed generator with API key auth
 
-## Pre-Seeded Admin Accounts
+### Enhanced Modules
+- **Bastion** — Real TOTP 2FA (Base32 secrets, backup codes, QR URIs), LDAP test, password policy, audit log, session tracking
+- **Tunnel** — Real network detection, WireGuard peer management, SSL certificates, bandwidth monitoring, Dynamic DNS, Tailscale support
 
-These accounts are created automatically on first launch:
+### Fixes
+- All `CONFIGURE_ME` strings replaced with config-driven values
+- `AppSetting` UserId composite key fix across all controllers
+- Trakt/Last.fm auth now reads client credentials from saved config
 
-| Email | Password | Role |
-|-------|----------|------|
-| `admin@watchnexus.local` | `admin` | admin |
+### System Page Overhaul
+- Shows Runtime (.NET version), OS, Architecture
+- Server Details: hostname, CPU cores, memory, uptime
+- Security Features grid (8 features)
+- Full 35-module listing with codenames and versions
 
-You can also create additional accounts via the "Sign Up" page.
+### Version
+All banners, endpoints, and module manifests are tagged `2.8.4`.
 
-## What's New in v2.8.3
+## Modules (35 Total)
+All modules report `active` status at their `/api/{codename}/status` endpoints.
 
-- **System Tray Icon** — Tray icon now loads on launch (Windows: native NotifyIcon; Linux: GTK AppIndicator3)
-- **Help & Documentation** — Searchable `/help` page with 40+ topics across 13 categories
-- **Help Tooltips** — Question-mark icons on every settings page with detailed descriptions
-- **Sidebar Fix** — Scroll position persists across navigation
-- **7 New Gadgets** — Analytics, Notifications, Requests, Parental Controls, Processing, Usenet (Brine + Ladle)
-- **Critical Bug Fixes** — Dropdown readability, settings saving, media playback pipeline, and more
+| Module | Codename | Category |
+|--------|----------|----------|
+| Marmalade | marmalade | Library |
+| Bastion | bastion | Auth |
+| Tunnel | tunnel | Network |
+| Zest | zest | Metadata |
+| Fondue | fondue | Automation |
+| Sorbet | sorbet | Media |
+| Brioche | brioche | Playback |
+| Nectar | nectar | Content |
+| Ganache | ganache | Themes |
+| Bisque | bisque | Search |
+| Marzipan | marzipan | Sync |
+| Cinnamon | cinnamon | Analytics |
+| Waffle | waffle | Streaming |
+| Yeast | yeast | Scheduling |
+| Sourdough | sourdough | Backup |
+| Taffy | taffy | Subtitles |
+| Churro | churro | Downloads |
+| Saffron | saffron | Tasks |
+| Pantry | pantry | Storage |
+| Nutmeg | nutmeg | AI |
+| Crumbs | crumbs | Integration |
+| Fortress | fortress | Security |
+| Custard | custard | Users |
+| Truffle | truffle | Analytics |
+| Pepper | pepper | Notifications |
+| Meringue | meringue | Requests |
+| Rind | rind | Parental |
+| Crucible | crucible | Processing |
+| Brine | brine | Usenet |
+| Ladle | ladle | Torrents |
+| Ripen | ripen | Marketplace |
+| Glaze | glaze | Scrobbling |
+| Roux | roux | Collections |
+| Sprout | sprout | RSS |
+| Setup Wizard | setup | System |
 
-See `CHANGELOG.md` for full details.
-
-## What to Test
-
-- **System Tray Icon** — Verify the icon appears in the system tray on launch (both Windows and Linux)
-  - Right-click should show context menu (Open WatchNexus / Quit)
-  - Double-click (Windows) should open browser
-- **Authentication** — Register, login, session persistence
-- **Library Management** — Add libraries, scan media, browse
-- **Settings** — Change settings and verify they save correctly
-- **Media Playback** — Play media files, check progress tracking
-- **Help Page** — Navigate to `/help`, search for topics
-- **Help Tooltips** — Click `?` icons on settings pages for contextual help
-- **All Gadgets** — Analytics, Notifications, Requests, Parental Controls, Processing, Usenet
-- **API Management (Crumbs)** — Service key storage, test connections
-- **Weather / Radio / Podcasts** — Real-time data from external APIs
-
-## Architecture
-
-```
-WatchNexus.Core(.exe)     # Self-contained .NET 10 server
-├── web/build/            # React frontend (served as static files)
-├── data/                 # SQLite database (created on first run)
-├── logs/                 # Application logs
-└── appsettings.json      # Configuration
-```
-
-- **Backend**: C#/.NET 10 ASP.NET Core (self-contained, no runtime needed)
-- **Database**: SQLite (auto-created in `data/watchnexus.db`)
-- **Frontend**: React SPA served from `web/build/`
-- **Default Port**: 8002 (set `WATCHNEXUS_PORT` env var to change)
-
-## Reporting Issues
-
-When filing a bug, include:
-1. Steps to reproduce
-2. Expected vs actual behavior
-3. Browser + OS version
-4. Screenshots if applicable
-5. Console output from the server
-
-## Version Identification
-
-All banners, endpoints, and module manifests are tagged `2.8.3`. 
-
-Verify via: `GET /api/health` or `GET /api/system/info`
-
-## System Requirements
-
-| | Windows | Linux |
-|--|---------|-------|
-| OS | Windows 10/11 or Server 2019+ | Any x86_64 with glibc 2.17+ |
-| RAM | 512MB min, 1GB recommended | 512MB min, 1GB recommended |
-| Disk | ~150MB for installation | ~120MB for installation |
-| Dependencies | None (self-contained) | None (self-contained; python3 + GTK for tray icon) |
+## Configuration
+- Default port: `8002`
+- Default credentials: `admin@watchnexus.local` / `admin`
+- TMDB API key: Set via Settings > Integrations

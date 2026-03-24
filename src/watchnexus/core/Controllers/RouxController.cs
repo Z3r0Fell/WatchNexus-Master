@@ -22,7 +22,7 @@ public class RouxController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "roux", version = "2.8.3", status = "active",
+        module = "roux", version = "2.8.4", status = "active",
         description = "Collections & Smart Playlists: auto-curated media groups",
         features = new[] { "smart_collections", "manual_collections", "auto_playlists", "filters", "sorting" }
     });

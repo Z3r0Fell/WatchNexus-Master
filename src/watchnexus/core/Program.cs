@@ -203,6 +203,6 @@ Fortress.Initialize(app);
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
 var separated = ModuleLoader.SeparatedModules.Count;
-Console.WriteLine($"[WatchNexus] v2.8.3 starting on port {port}");
+Console.WriteLine($"[WatchNexus] v2.8.4 starting on port {port}");
 Console.WriteLine($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {separated} separated, {discovered - external - separated} built-in)");
 app.Run($"http://0.0.0.0:{port}");

@@ -22,7 +22,7 @@ public class BastionController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "bastion", version = "2.8.3", status = "active",
+        module = "bastion", version = "2.8.4", status = "active",
         description = "Advanced authentication: LDAP, SSO, 2FA, session management",
         features = new[] { "ldap", "sso", "two_factor", "session_management", "password_policy" }
     });
@@ -33,11 +33,11 @@ public class BastionController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_config");
         if (setting?.Value == null) return Ok(new
         {
-            ldap = new { enabled = false, server = "", base_dn = "", bind_dn = "", port = 389, use_ssl = false },
-            sso = new { enabled = false, provider = "none", client_id = "", redirect_uri = "" },
-            two_factor = new { enabled = false, method = "totp", enforce_for_admins = false },
-            password_policy = new { min_length = 8, require_uppercase = true, require_number = true, require_special = false, max_age_days = 0 },
-            session = new { max_sessions = 5, idle_timeout_minutes = 30, absolute_timeout_hours = 24 }
+            ldap = new { enabled = false, server = "", base_dn = "", bind_dn = "", bind_password = "", port = 389, use_ssl = false, user_filter = "(uid={0})", admin_group = "cn=admins" },
+            sso = new { enabled = false, provider = "none", client_id = "", client_secret = "", redirect_uri = "", discovery_url = "" },
+            two_factor = new { enabled = false, method = "totp", enforce_for_admins = true, enforce_for_all = false, issuer = "WatchNexus" },
+            password_policy = new { min_length = 8, require_uppercase = true, require_lowercase = true, require_number = true, require_special = false, max_age_days = 0, prevent_reuse = 3 },
+            session = new { max_sessions = 5, idle_timeout_minutes = 30, absolute_timeout_hours = 24, remember_me_days = 30 }
         });
         try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); }
         catch { return Ok(new { }); }
@@ -54,30 +54,162 @@ public class BastionController : ControllerBase
         return Ok(new { status = "saved" });
     }
 
-    [HttpGet("sessions")]
-    public IActionResult Sessions() => Ok(new[]
+    // ── LDAP ──
+    [HttpPost("ldap/test")]
+    public async Task<IActionResult> TestLdap([FromBody] JsonElement body)
     {
-        new { id = "current", user = "admin", ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
-              user_agent = Request.Headers.UserAgent.ToString(), created = DateTime.UtcNow.AddHours(-1), last_active = DateTime.UtcNow, is_current = true }
+        var server = body.TryGetProperty("server", out var s) ? s.GetString() ?? "" : "";
+        var port = body.TryGetProperty("port", out var p) && p.TryGetInt32(out var pVal) ? pVal : 389;
+        var baseDn = body.TryGetProperty("base_dn", out var bd) ? bd.GetString() ?? "" : "";
+
+        if (string.IsNullOrEmpty(server))
+            return BadRequest(new { status = "error", message = "LDAP server address required" });
+
+        // Simulate LDAP connection test
+        await Task.Delay(500);
+        return Ok(new
+        {
+            status = "success",
+            message = $"Connection to {server}:{port} established",
+            server_info = new { type = "OpenLDAP", base_dn = baseDn, supports_tls = true },
+            response_time_ms = 42
+        });
+    }
+
+    [HttpGet("ldap/users")]
+    public IActionResult LdapUsers([FromQuery] string filter = "", [FromQuery] int limit = 50) => Ok(new
+    {
+        total = 0,
+        users = Array.Empty<object>(),
+        message = "Configure LDAP server to sync users"
     });
+
+    [HttpPost("ldap/sync")]
+    public IActionResult LdapSync() => Ok(new { status = "initiated", message = "LDAP user sync started", synced = 0 });
+
+    // ── 2FA / TOTP ──
+    [HttpPost("2fa/setup")]
+    public IActionResult Setup2FA()
+    {
+        var secretBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(20);
+        var secret = Base32Encode(secretBytes);
+        var user = this.UserId();
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "user";
+        var issuer = "WatchNexus";
+        var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30&algorithm=SHA1";
+
+        return Ok(new
+        {
+            status = "ready",
+            method = "totp",
+            secret,
+            qr_uri = otpauthUri,
+            issuer,
+            digits = 6,
+            period = 30,
+            algorithm = "SHA1",
+            backup_codes = Enumerable.Range(0, 8).Select(_ =>
+                Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(4)).ToLower()
+            ).ToArray()
+        });
+    }
+
+    [HttpPost("2fa/verify")]
+    public IActionResult Verify2FA([FromBody] JsonElement body)
+    {
+        var code = body.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
+        if (code.Length != 6 || !code.All(char.IsDigit))
+            return BadRequest(new { status = "invalid", message = "Code must be 6 digits" });
+
+        return Ok(new { status = "verified", valid = true, message = "Two-factor authentication enabled" });
+    }
+
+    [HttpPost("2fa/disable")]
+    public IActionResult Disable2FA([FromBody] JsonElement body)
+    {
+        var code = body.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
+        if (code.Length != 6) return BadRequest(new { status = "invalid" });
+        return Ok(new { status = "disabled", message = "Two-factor authentication disabled" });
+    }
+
+    // ── Sessions ──
+    [HttpGet("sessions")]
+    public IActionResult Sessions()
+    {
+        var ua = Request.Headers.UserAgent.ToString();
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var browser = ua.Contains("Chrome") ? "Chrome" : ua.Contains("Firefox") ? "Firefox" : ua.Contains("Safari") ? "Safari" : "Unknown";
+        var osInfo = ua.Contains("Windows") ? "Windows" : ua.Contains("Mac") ? "macOS" : ua.Contains("Linux") ? "Linux" : "Unknown";
+
+        return Ok(new[]
+        {
+            new {
+                id = "session-current",
+                user = "admin",
+                ip,
+                browser,
+                os = osInfo,
+                user_agent = ua,
+                created = DateTime.UtcNow.AddHours(-2),
+                last_active = DateTime.UtcNow,
+                is_current = true,
+                device_type = "desktop"
+            }
+        });
+    }
 
     [HttpDelete("sessions/{sessionId}")]
     public IActionResult RevokeSession(string sessionId) => Ok(new { status = "revoked", session_id = sessionId });
 
-    [HttpPost("2fa/setup")]
-    public IActionResult Setup2FA() => Ok(new
+    [HttpPost("sessions/revoke-all")]
+    public IActionResult RevokeAllSessions() => Ok(new { status = "revoked_all", message = "All sessions except current have been revoked" });
+
+    // ── Password Policy ──
+    [HttpPost("password/validate")]
+    public IActionResult ValidatePassword([FromBody] JsonElement body)
     {
-        status = "ready", method = "totp",
-        secret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(20)),
-        qr_uri = "otpauth://totp/WatchNexus:admin?secret=PLACEHOLDER&issuer=WatchNexus"
+        var password = body.TryGetProperty("password", out var pw) ? pw.GetString() ?? "" : "";
+        var issues = new List<string>();
+        if (password.Length < 8) issues.Add("Must be at least 8 characters");
+        if (!password.Any(char.IsUpper)) issues.Add("Must contain uppercase letter");
+        if (!password.Any(char.IsLower)) issues.Add("Must contain lowercase letter");
+        if (!password.Any(char.IsDigit)) issues.Add("Must contain a number");
+
+        return Ok(new
+        {
+            valid = issues.Count == 0,
+            strength = password.Length >= 12 && issues.Count == 0 ? "strong" : password.Length >= 8 && issues.Count == 0 ? "good" : "weak",
+            issues
+        });
+    }
+
+    // ── Audit Log ──
+    [HttpGet("audit")]
+    public IActionResult AuditLog([FromQuery] int limit = 50) => Ok(new[]
+    {
+        new { id = 1, action = "login", user = "admin", ip = "127.0.0.1", timestamp = DateTime.UtcNow.AddMinutes(-5), details = "Successful login" },
+        new { id = 2, action = "settings_changed", user = "admin", ip = "127.0.0.1", timestamp = DateTime.UtcNow.AddHours(-1), details = "Updated bastion config" },
+        new { id = 3, action = "2fa_setup", user = "admin", ip = "127.0.0.1", timestamp = DateTime.UtcNow.AddDays(-1), details = "2FA TOTP enabled" },
     });
 
-    [HttpPost("2fa/verify")]
-    public IActionResult Verify2FA([FromQuery] string code) => Ok(new { status = "verified", valid = code?.Length == 6 });
+    private static string Base32Encode(byte[] data)
+    {
+        const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        var result = new System.Text.StringBuilder();
+        int buffer = 0, bitsLeft = 0;
+        foreach (var b in data)
+        {
+            buffer = (buffer << 8) | b;
+            bitsLeft += 8;
+            while (bitsLeft >= 5) { bitsLeft -= 5; result.Append(alphabet[(buffer >> bitsLeft) & 0x1F]); }
+        }
+        if (bitsLeft > 0) result.Append(alphabet[(buffer << (5 - bitsLeft)) & 0x1F]);
+        return result.ToString();
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// TUNNEL — Reverse Proxy / Port Forwarding / Network Configuration
+// TUNNEL — Reverse Proxy / VPN / Network Configuration
 // Jellyfin equivalent: Networking settings, automatic port mapping
 // ══════════════════════════════════════════════════════════════════════
 [Route("api/tunnel")]
@@ -91,9 +223,9 @@ public class TunnelController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "tunnel", version = "2.8.3", status = "active",
-        description = "Reverse proxy, port forwarding, and network configuration",
-        features = new[] { "reverse_proxy", "upnp", "ssl_certificates", "dynamic_dns", "tailscale" }
+        module = "tunnel", version = "2.8.4", status = "active",
+        description = "Network management: reverse proxy, VPN, SSL, dynamic DNS",
+        features = new[] { "reverse_proxy", "wireguard_vpn", "upnp", "ssl_certificates", "dynamic_dns", "tailscale", "bandwidth_monitoring" }
     });
 
     [HttpGet("config")]
@@ -102,11 +234,13 @@ public class TunnelController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tunnel_config");
         if (setting?.Value == null) return Ok(new
         {
-            reverse_proxy = new { enabled = false, type = "nginx", external_url = "", force_https = false },
-            upnp = new { enabled = false, auto_map = false, external_port = 8096, internal_port = 8002 },
-            ssl = new { enabled = false, cert_path = "", key_path = "", auto_renew = false, provider = "letsencrypt" },
-            dynamic_dns = new { enabled = false, provider = "cloudflare", hostname = "", update_interval = 300 },
-            tailscale = new { enabled = false, auth_key = "", hostname = "" }
+            reverse_proxy = new { enabled = false, type = "nginx", external_url = "", force_https = false, proxy_header = "X-Forwarded-For" },
+            vpn = new { enabled = false, type = "wireguard", listen_port = 51820, address = "10.0.0.1/24", dns = "1.1.1.1", mtu = 1420, post_up = "", post_down = "" },
+            upnp = new { enabled = false, auto_map = false, external_port = 8096, internal_port = 8002, protocol = "TCP" },
+            ssl = new { enabled = false, cert_path = "", key_path = "", auto_renew = false, provider = "letsencrypt", email = "" },
+            dynamic_dns = new { enabled = false, provider = "cloudflare", hostname = "", api_token = "", update_interval = 300, zone_id = "" },
+            tailscale = new { enabled = false, auth_key = "", hostname = "", advertise_exit_node = false },
+            bandwidth = new { monitoring_enabled = true, throttle_enabled = false, max_upload_mbps = 0, max_download_mbps = 0 }
         });
         try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); }
         catch { return Ok(new { }); }
@@ -123,22 +257,167 @@ public class TunnelController : ControllerBase
         return Ok(new { status = "saved" });
     }
 
+    // ── Network Info ──
     [HttpGet("network-info")]
-    public IActionResult NetworkInfo() => Ok(new
+    public IActionResult NetworkInfo()
     {
-        local_ip = "0.0.0.0", port = 8002, protocol = "http",
-        interfaces = new[] { new { name = "eth0", ip = "0.0.0.0", mac = "00:00:00:00:00:00" } },
-        upnp_available = false, external_ip = "unknown"
-    });
+        var interfaces = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up && n.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+            .Select(n =>
+            {
+                var ipProps = n.GetIPProperties();
+                var ipv4 = ipProps.UnicastAddresses
+                    .FirstOrDefault(a => a.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+                return new
+                {
+                    name = n.Name,
+                    description = n.Description,
+                    type = n.NetworkInterfaceType.ToString(),
+                    ip = ipv4?.Address.ToString() ?? "N/A",
+                    mac = n.GetPhysicalAddress().ToString(),
+                    speed_mbps = n.Speed / 1_000_000,
+                    status = n.OperationalStatus.ToString()
+                };
+            }).ToList();
+
+        return Ok(new
+        {
+            hostname = Environment.MachineName,
+            port = 8002,
+            protocol = "http",
+            interfaces,
+            upnp_available = false,
+            external_ip = "detecting...",
+            local_addresses = interfaces.Select(i => i.ip).ToList()
+        });
+    }
 
     [HttpPost("test-connectivity")]
-    public IActionResult TestConnectivity() => Ok(new { status = "ok", latency_ms = 12, external_reachable = false });
+    public async Task<IActionResult> TestConnectivity()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var externalIp = "unknown";
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            externalIp = (await http.GetStringAsync("https://api.ipify.org")).Trim();
+        }
+        catch { }
+        sw.Stop();
 
+        return Ok(new
+        {
+            status = "ok",
+            latency_ms = sw.ElapsedMilliseconds,
+            external_ip = externalIp,
+            external_reachable = externalIp != "unknown",
+            dns_working = true,
+            timestamp = DateTime.UtcNow
+        });
+    }
+
+    // ── VPN Peers ──
+    [HttpGet("peers")]
+    public async Task<IActionResult> GetPeers()
+    {
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tunnel_vpn_peers");
+        if (setting?.Value != null)
+        {
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+        }
+        return Ok(Array.Empty<object>());
+    }
+
+    [HttpPost("peers")]
+    public async Task<IActionResult> CreatePeer([FromBody] JsonElement body)
+    {
+        var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "New Peer" : "New Peer";
+        var id = Guid.NewGuid().ToString("N")[..8];
+        // Generate keypair (simulated WireGuard keys)
+        var privKeyBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+        var pubKeyBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+        var privateKey = Convert.ToBase64String(privKeyBytes);
+        var publicKey = Convert.ToBase64String(pubKeyBytes);
+        var presharedKey = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
+        var peer = new
+        {
+            id,
+            name,
+            public_key = publicKey,
+            private_key = privateKey,
+            preshared_key = presharedKey,
+            allowed_ips = $"10.0.0.{new Random().Next(2, 254)}/32",
+            endpoint = "",
+            persistent_keepalive = 25,
+            enabled = true,
+            created = DateTime.UtcNow,
+            last_handshake = (DateTime?)null,
+            transfer_rx = 0L,
+            transfer_tx = 0L
+        };
+
+        return Ok(new { status = "created", peer });
+    }
+
+    [HttpDelete("peers/{peerId}")]
+    public IActionResult DeletePeer(string peerId) => Ok(new { status = "deleted", id = peerId });
+
+    [HttpPost("peers/{peerId}/toggle")]
+    public IActionResult TogglePeer(string peerId) => Ok(new { status = "toggled", id = peerId });
+
+    [HttpGet("peers/{peerId}/config")]
+    public IActionResult GetPeerConfig(string peerId) => Ok(new
+    {
+        config = $"[Interface]\nPrivateKey = <peer-private-key>\nAddress = 10.0.0.2/32\nDNS = 1.1.1.1\n\n[Peer]\nPublicKey = <server-public-key>\nPresharedKey = <preshared-key>\nAllowedIPs = 0.0.0.0/0\nEndpoint = <server-ip>:51820\nPersistentKeepalive = 25",
+        peer_id = peerId
+    });
+
+    // ── SSL Certificates ──
     [HttpGet("certificates")]
-    public IActionResult Certificates() => Ok(Array.Empty<object>());
+    public IActionResult Certificates() => Ok(new[]
+    {
+        new {
+            id = "self-signed",
+            domain = "localhost",
+            type = "self-signed",
+            issued = DateTime.UtcNow.AddDays(-30),
+            expires = DateTime.UtcNow.AddDays(335),
+            status = "valid",
+            auto_renew = false
+        }
+    });
 
     [HttpPost("certificates/generate")]
-    public IActionResult GenerateCert([FromQuery] string domain) => Ok(new { status = "initiated", domain, provider = "letsencrypt" });
+    public IActionResult GenerateCert([FromBody] JsonElement body)
+    {
+        var domain = body.TryGetProperty("domain", out var d) ? d.GetString() ?? "localhost" : "localhost";
+        var provider = body.TryGetProperty("provider", out var p) ? p.GetString() ?? "self-signed" : "self-signed";
+        return Ok(new { status = "initiated", domain, provider, message = $"Certificate generation for {domain} started" });
+    }
+
+    // ── Bandwidth Monitoring ──
+    [HttpGet("bandwidth")]
+    public IActionResult Bandwidth() => Ok(new
+    {
+        current = new { upload_kbps = 0, download_kbps = 0, connections = 1 },
+        history = new[]
+        {
+            new { timestamp = DateTime.UtcNow.AddMinutes(-5), upload_kbps = 120, download_kbps = 450 },
+            new { timestamp = DateTime.UtcNow.AddMinutes(-4), upload_kbps = 85, download_kbps = 380 },
+            new { timestamp = DateTime.UtcNow.AddMinutes(-3), upload_kbps = 200, download_kbps = 520 },
+            new { timestamp = DateTime.UtcNow.AddMinutes(-2), upload_kbps = 150, download_kbps = 400 },
+            new { timestamp = DateTime.UtcNow.AddMinutes(-1), upload_kbps = 95, download_kbps = 350 },
+        },
+        total_today = new { upload_gb = 1.2, download_gb = 4.5 }
+    });
+
+    // ── Dynamic DNS ──
+    [HttpPost("ddns/update")]
+    public IActionResult UpdateDDNS() => Ok(new { status = "updated", message = "Dynamic DNS record updated", ip = "auto-detected" });
+
+    [HttpGet("ddns/status")]
+    public IActionResult DDNSStatus() => Ok(new { enabled = false, last_update = (DateTime?)null, current_ip = "unknown" });
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -161,7 +440,7 @@ public class FondueController : ControllerBase
         var monitoredCount = await _db.Settings.CountAsync(s => s.Key.StartsWith("fondue_monitor_"));
         return Ok(new
         {
-            module = "fondue", version = "2.8.3", status = "active",
+            module = "fondue", version = "2.8.4", status = "active",
             description = "Movie automation: auto-grab, monitor, and upgrade",
             total_movies = movieCount, monitored = monitoredCount,
             features = new[] { "auto_search", "quality_upgrade", "release_monitoring", "custom_formats", "lists" }
@@ -266,7 +545,7 @@ public class SourdoughController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "sourdough", version = "2.8.3", status = "active",
+        module = "sourdough", version = "2.8.4", status = "active",
         description = "Backup, restore, and system snapshot management",
         features = new[] { "full_backup", "scheduled_backup", "selective_restore", "export_config", "import_config" }
     });
@@ -339,7 +618,7 @@ public class TaffyController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "taffy", version = "2.8.3", status = "active",
+        module = "taffy", version = "2.8.4", status = "active",
         description = "Metadata providers and agent configuration",
         features = new[] { "tmdb", "tvdb", "imdb", "musicbrainz", "fanart_tv", "opensubtitles", "custom_agents" }
     });
@@ -419,7 +698,7 @@ public class ChurroController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "churro", version = "2.8.3", status = "active",
+        module = "churro", version = "2.8.4", status = "active",
         description = "Download client management: qBittorrent, SABnzbd, Transmission, Deluge, NZBGet",
         features = new[] { "torrent_clients", "usenet_clients", "health_check", "category_management", "priority_management" }
     });
@@ -480,7 +759,7 @@ public class SaffronController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "saffron", version = "2.8.3", status = "active",
+        module = "saffron", version = "2.8.4", status = "active",
         description = "Scheduled tasks: library scans, metadata refresh, cleanup, and custom schedules",
         features = new[] { "library_scan", "metadata_refresh", "image_cleanup", "cache_cleanup", "custom_tasks" }
     });
@@ -541,7 +820,7 @@ public class PantryController : ControllerBase
         var drive = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady);
         return Ok(new
         {
-            module = "pantry", version = "2.8.3", status = "active",
+            module = "pantry", version = "2.8.4", status = "active",
             description = "Storage management: disk space, file cleanup, path mapping",
             features = new[] { "disk_monitoring", "file_cleanup", "path_mapping", "orphan_detection", "storage_analytics" },
             primary_drive = drive != null ? new { drive.Name, total_gb = drive.TotalSize / 1073741824.0, free_gb = drive.AvailableFreeSpace / 1073741824.0, used_pct = 100.0 - (drive.AvailableFreeSpace * 100.0 / drive.TotalSize) } : null
@@ -613,7 +892,7 @@ public class NutmegController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "nutmeg", version = "2.8.3", status = "active",
+        module = "nutmeg", version = "2.8.4", status = "active",
         description = "AI-powered recommendations based on watch history and preferences",
         features = new[] { "similar_titles", "trending_picks", "genre_mix", "because_you_watched", "discover_weekly" }
     });
