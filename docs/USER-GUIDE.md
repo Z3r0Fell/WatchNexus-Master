@@ -1,4 +1,4 @@
-# WatchNexus User Guide
+# WatchNexus User Guide (v2.8.4)
 
 > **Complete guide to using WatchNexus - your unified media pipeline**
 
