@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - WatchNexus</title>
+  <meta name="description" content="Frequently asked questions about WatchNexus - the self-hosted media pipeline.">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
+    WatchNexus
+  </a>
+  <ul class="nav-links">
+    <li><a href="features.html">Features</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank" rel="noopener">Support</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#" class="nav-github" onclick="return false;" style="cursor:default;opacity:0.4;">GitHub</a>
+    <a href="download.html" class="btn btn-primary">Download</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <h1>Frequently Asked <span class="gradient-text">Questions</span></h1>
+  <p>Everything you need to know about WatchNexus.</p>
+</div>
+
+<section class="section" style="max-width:760px;padding-top:2rem">
+
+  <!-- General -->
+  <h3 style="color:var(--accent-light);font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1rem"><i class="fa-solid fa-circle-question"></i> General</h3>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      What is WatchNexus?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus is a unified, self-hosted media management pipeline. It consolidates what typically requires 5-6 separate applications (Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyfin) into a single application with 35 integrated modules. Built on C#/.NET 10 with a React frontend.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Is WatchNexus free?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus is currently in active development. Pricing and licensing details will be announced closer to the public release. The software is designed to be self-hosted on your own hardware.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      What does WatchNexus replace?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus can replace your entire media stack: Sonarr (TV automation), Radarr (movie automation), Prowlarr (indexer management), qBittorrent (downloads), Bazarr (subtitles), and Jellyfin (library/playback). Instead of managing 6+ apps with separate databases and configs, you manage one application with a shared database.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Does WatchNexus require an internet connection?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus runs entirely on your local network. An internet connection is only needed for features that inherently require it: fetching metadata from TMDB, searching indexers, and downloading content. Library browsing and local playback work offline.
+    </div></div>
+  </div>
+
+  <!-- Technical -->
+  <h3 style="color:var(--accent-light);font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin:2rem 0 1rem"><i class="fa-solid fa-code"></i> Technical</h3>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      What are the system requirements?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      <strong>Minimum:</strong> 4 GB RAM, 2 GB disk space (plus your media storage), any 64-bit Linux or Windows 10+.<br><br>
+      <strong>Recommended:</strong> 8 GB RAM, SSD for the application and database, Ubuntu 22.04+ or Debian 12+.<br><br>
+      The release build is a self-contained binary (58 MB for Linux, 72 MB for Windows) that includes the .NET 10 runtime. No additional software installation is required.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Does it support Docker?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      Official Docker images are coming soon with multi-architecture support (amd64, arm64, arm/v7). Currently, WatchNexus is available as bare-metal release builds with a systemd install script for Linux and a batch script for Windows.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Can it run on a Raspberry Pi?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      ARM64 support is planned. The current release builds target x86_64 (amd64). Once Docker images are available, Raspberry Pi 4/5 (with 4+ GB RAM) will be officially supported via the arm64 image.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      What database does it use?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus uses SQLite via Entity Framework Core 10. This means zero database setup -- the database file is created automatically on first run. All 35 modules share a single database, which is one of the key advantages over running separate applications.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Does it support hardware transcoding?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      Hardware transcoding (Intel QSV, NVIDIA NVENC, AMD VA-API) is on the roadmap but not yet implemented. Direct play works for all supported formats. If you need transcoding today, you can run WatchNexus alongside Jellyfin -- they complement each other well.
+    </div></div>
+  </div>
+
+  <!-- Security -->
+  <h3 style="color:var(--accent-light);font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin:2rem 0 1rem"><i class="fa-solid fa-shield-halved"></i> Security</h3>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      How is authentication handled?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus uses JWT (JSON Web Tokens) for session management, with optional TOTP two-factor authentication. The 2FA implementation follows RFC 6238, is compatible with any standard authenticator app (Google Authenticator, Authy, 1Password, Bitwarden), and provides 8 backup codes during setup.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Is it safe to expose WatchNexus to the internet?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus includes multiple security layers: TOTP 2FA, IP filtering, rate limiting on authentication endpoints, audit logging, and session management. The Tunnel module also provides built-in WireGuard VPN management, so you can access your server securely without port forwarding. That said, we always recommend placing any self-hosted application behind a reverse proxy (Nginx, Caddy, Traefik) with HTTPS.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      What is the Fortress module?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      Fortress is WatchNexus's runtime integrity verification system. At startup, it computes SHA-256 hashes of all application assemblies (DLLs). A background service periodically re-verifies these hashes. If any file has been modified (potential tampering), the API automatically locks and logs the security event. It's a detection layer that catches corruption and unauthorized modifications.
+    </div></div>
+  </div>
+
+  <!-- Indexers -->
+  <h3 style="color:var(--accent-light);font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin:2rem 0 1rem"><i class="fa-solid fa-magnifying-glass"></i> Indexer Search</h3>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Which indexers are supported?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      WatchNexus supports multiple indexer types:<br><br>
+      <strong>Built-in:</strong> Nyaa.si (anime/Asian media), YTS (movies), EZTV (TV shows)<br>
+      <strong>Standard:</strong> Any Torznab or Newznab compatible indexer (works with Jackett)<br>
+      <strong>Generic:</strong> Any RSS feed can be used as a search source<br><br>
+      Search results include quality detection (4K/1080p/720p/480p), codec parsing (HEVC/x264/AV1/VP9), file size normalization, and seeder/leecher counts.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      Do I still need Jackett or Prowlarr?
+      <i class="fa-solid fa-chevron-down faq-chevron"></i>
+    </button>
+    <div class="faq-answer"><div class="faq-answer-inner">
+      For many use cases, no. WatchNexus has built-in support for several popular indexers and the Torznab/Newznab standard. However, if you use indexers that require Jackett's specific scraping capabilities, you can still connect Jackett to WatchNexus via the Torznab protocol.
+    </div></div>
+  </div>
+
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="section-title" style="position:relative">Still have questions?</h2>
+  <p style="color:var(--text-secondary);margin:1rem auto 2rem;max-width:440px;position:relative">
+    Check our QA portal or reach out to the community.
+  </p>
+  <div style="display:flex;gap:1rem;justify-content:center;position:relative;flex-wrap:wrap">
+    <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank" class="btn btn-primary btn-lg"><i class="fa-solid fa-life-ring"></i> QA &amp; Support</a>
+    <a href="download.html" class="btn btn-outline btn-lg"><i class="fa-solid fa-download"></i> Download</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="index.html" class="nav-logo" style="margin-bottom:0.5rem">
+        <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
+        WatchNexus
+      </a>
+      <p>Unified, self-hosted media pipeline.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="features.html">Features</a>
+      <a href="download.html">Download</a>
+      <a href="faq.html">FAQ</a>
+      <a href="press.html">Press Kit</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">QA &amp; Testing</a>
+      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">Report Issue</a>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <a href="#" onclick="return false;" style="opacity:0.4">GitHub</a>
+      <a href="#" onclick="return false;" style="opacity:0.4">Discord</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <span>v2.8.4</span>
+  </div>
+</footer>
+
+<script>
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const answer = item.querySelector('.faq-answer');
+  const isOpen = item.classList.contains('open');
+  
+  // Close all
+  document.querySelectorAll('.faq-item.open').forEach(i => {
+    i.classList.remove('open');
+    i.querySelector('.faq-answer').style.maxHeight = '0';
+  });
+  
+  // Toggle clicked
+  if (!isOpen) {
+    item.classList.add('open');
+    answer.style.maxHeight = answer.scrollHeight + 'px';
+  }
+}
+</script>
+
+</body>
+</html>

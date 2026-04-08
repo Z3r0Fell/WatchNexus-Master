@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WatchNexus - Your Complete Media Pipeline</title>
+  <meta name="description" content="WatchNexus is your unified, self-hosted media pipeline. Replace Sonarr, Radarr, Jellyfin, and more with a single powerful application.">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
+    WatchNexus
+  </a>
+  <ul class="nav-links">
+    <li><a href="features.html">Features</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank" rel="noopener">Support</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#" class="nav-github" onclick="return false;" style="cursor:default;opacity:0.4;">GitHub</a>
+    <a href="download.html" class="btn btn-primary">Download</a>
+  </div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <span class="hero-badge animate-in">
+    <i class="fa-solid fa-bolt" style="font-size:0.7rem"></i>
+    v2.8.4 &mdash; 35 Modules, One Application
+  </span>
+
+  <h1 class="animate-in delay-1">
+    Your Complete<br><span class="gradient-text">Media Pipeline</span>
+  </h1>
+
+  <p class="hero-sub animate-in delay-2">
+    One application to request, acquire, organize, and watch your media.<br>
+    Replace Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with WatchNexus.
+  </p>
+
+  <div class="hero-cta animate-in delay-3">
+    <a href="download.html" class="btn btn-primary btn-lg">
+      <i class="fa-solid fa-download"></i> Download Now
+    </a>
+    <a href="features.html" class="btn btn-outline btn-lg">
+      <i class="fa-solid fa-sparkles"></i> Explore Features
+    </a>
+  </div>
+
+  <div class="module-strip animate-in delay-4">
+    <span class="module-pill"><span class="pill-icon" style="background:#ef444420;color:#f87171"><i class="fa-solid fa-flask"></i></span> Syrup &mdash; Media Acquisition</span>
+    <span class="module-pill"><span class="pill-icon" style="background:#f59e0b20;color:#fbbf24"><i class="fa-solid fa-jar"></i></span> Marmalade &mdash; Library Manager</span>
+    <span class="module-pill"><span class="pill-icon" style="background:#3b82f620;color:#60a5fa"><i class="fa-solid fa-palette"></i></span> Juice &mdash; UI Engine</span>
+    <span class="module-pill"><span class="pill-icon" style="background:#10b98120;color:#34d399"><i class="fa-solid fa-magnifying-glass"></i></span> Compote &mdash; Indexer Search</span>
+    <span class="module-pill"><span class="pill-icon" style="background:#ec489920;color:#f472b6"><i class="fa-solid fa-newspaper"></i></span> Pulp &mdash; Usenet Handler</span>
+    <span class="module-pill"><span class="pill-icon" style="background:#8b5cf620;color:#a78bfa"><i class="fa-solid fa-globe"></i></span> Gelatin &mdash; Remote Access</span>
+  </div>
+</section>
+
+<!-- ── SCREENSHOT SHOWCASE ── -->
+<section class="section section-center">
+  <div class="screenshot-showcase animate-in">
+    <div class="screenshot-tabs">
+      <button class="screenshot-tab active" onclick="switchScreenshot(this, 'dashboard')">Dashboard</button>
+      <button class="screenshot-tab" onclick="switchScreenshot(this, 'library')">Library</button>
+      <button class="screenshot-tab" onclick="switchScreenshot(this, 'indexer')">Indexer Search</button>
+      <button class="screenshot-tab" onclick="switchScreenshot(this, 'system')">System</button>
+      <button class="screenshot-tab" onclick="switchScreenshot(this, 'security')">Security</button>
+      <button class="screenshot-tab" onclick="switchScreenshot(this, 'settings')">Settings</button>
+    </div>
+    <img id="showcase-img" src="assets/images/dashboard.png" alt="WatchNexus Dashboard" loading="lazy">
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section section-center" id="features">
+  <span class="section-label"><i class="fa-solid fa-cube"></i> Everything You Need</span>
+  <h2 class="section-title">A complete replacement for your<br>entire media stack</h2>
+  <p class="section-desc">
+    35 purpose-built modules working together through a shared database. No more cross-app API key juggling.
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+      <h3>Smart Discovery</h3>
+      <p>Search across Nyaa.si, YTS, EZTV, and Torznab indexers simultaneously. Automatic quality detection (4K/1080p/720p), codec parsing (HEVC/x264/AV1), and intelligent release selection.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-download"></i></div>
+      <h3>Built-in Downloading</h3>
+      <p>No external client needed. Our download engine handles torrents with configurable limits, smart queuing, and qBittorrent integration for power users.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-film"></i></div>
+      <h3>Library Management</h3>
+      <p>Marmalade organizes your media beautifully. Scan directories, fetch TMDB metadata, auto-organize into Movies, TV Shows, and Anime with poster art.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-play"></i></div>
+      <h3>Streaming Server</h3>
+      <p>Watch anywhere on your network. Built-in video player with subtitle support, continue watching across devices, and Watch Party for synchronized viewing.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h3>Enterprise Security</h3>
+      <p>TOTP two-factor authentication, LDAP integration, IP filtering, API key management, audit logging, and session tracking. Not the typical "JWT and hope" approach.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-network-wired"></i></div>
+      <h3>Built-in VPN</h3>
+      <p>WireGuard VPN management from the web UI. Add peers, generate keys, monitor bandwidth, manage SSL certificates, and test external connectivity.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<section class="section">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number">35</div>
+      <div class="stat-label">Integrated Modules</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">136</div>
+      <div class="stat-label">API Endpoints</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">58 MB</div>
+      <div class="stat-label">Linux Binary</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">2 min</div>
+      <div class="stat-label">Install Time</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── REPLACES ── -->
+<section class="section section-center">
+  <span class="section-label"><i class="fa-solid fa-arrows-rotate"></i> Replaces Your Entire Stack</span>
+  <h2 class="section-title">One app instead of managing<br>multiple services</h2>
+  <p class="section-desc">
+    Stop juggling 6+ applications with separate databases, configs, and update cycles. WatchNexus unifies everything.
+  </p>
+
+  <div class="replace-grid">
+    <div class="replace-card">
+      <div class="replace-icon" style="background:#3b82f620;color:#60a5fa"><i class="fa-solid fa-tv"></i></div>
+      <span>Sonarr</span>
+    </div>
+    <div class="replace-card">
+      <div class="replace-icon" style="background:#f59e0b20;color:#fbbf24"><i class="fa-solid fa-clapperboard"></i></div>
+      <span>Radarr</span>
+    </div>
+    <div class="replace-card">
+      <div class="replace-icon" style="background:#10b98120;color:#34d399"><i class="fa-solid fa-magnifying-glass"></i></div>
+      <span>Prowlarr</span>
+    </div>
+    <div class="replace-card">
+      <div class="replace-icon" style="background:#ef444420;color:#f87171"><i class="fa-solid fa-download"></i></div>
+      <span>qBittorrent</span>
+    </div>
+    <div class="replace-card">
+      <div class="replace-icon" style="background:#ec489920;color:#f472b6"><i class="fa-solid fa-closed-captioning"></i></div>
+      <span>Bazarr</span>
+    </div>
+    <div class="replace-card">
+      <div class="replace-icon" style="background:#8b5cf620;color:#a78bfa"><i class="fa-solid fa-photo-film"></i></div>
+      <span>Jellyfin</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── TECH ── -->
+<section class="section">
+  <span class="section-label"><i class="fa-solid fa-microchip"></i> Technical Specs</span>
+  <h2 class="section-title">Built for performance</h2>
+  <p class="section-desc">Modern stack, self-contained deployment, zero runtime dependencies.</p>
+
+  <table class="specs-table">
+    <thead>
+      <tr><th>Component</th><th>Technology</th><th>Details</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Backend</td><td>C# / .NET 10</td><td>ASP.NET Core with 35 controllers</td></tr>
+      <tr><td>Frontend</td><td>React 18</td><td>TailwindCSS + Shadcn UI components</td></tr>
+      <tr><td>Database</td><td>SQLite</td><td>Entity Framework Core 10 with migrations</td></tr>
+      <tr><td>Authentication</td><td>JWT + TOTP 2FA</td><td>RFC 6238 compliant, 8 backup codes</td></tr>
+      <tr><td>Metadata</td><td>TMDB API</td><td>Movies, TV shows, anime metadata</td></tr>
+      <tr><td>Downloads</td><td>qBittorrent API</td><td>Built-in engine + external client support</td></tr>
+      <tr><td>VPN</td><td>WireGuard</td><td>Peer management, SSL, bandwidth monitoring</td></tr>
+      <tr><td>Integrity</td><td>Fortress</td><td>SHA-256 assembly verification at runtime</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <h2 class="section-title" style="position:relative">Ready to Simplify?</h2>
+  <p style="color:var(--text-secondary);margin:1rem auto 2rem;max-width:440px;position:relative">
+    Download WatchNexus and unify your media experience. One binary, zero dependencies, two-minute setup.
+  </p>
+  <div style="display:flex;gap:1rem;justify-content:center;position:relative;flex-wrap:wrap">
+    <a href="download.html" class="btn btn-primary btn-lg"><i class="fa-solid fa-download"></i> Download Now</a>
+    <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank" class="btn btn-outline btn-lg"><i class="fa-solid fa-bug"></i> Report an Issue</a>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="index.html" class="nav-logo" style="margin-bottom:0.5rem">
+        <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
+        WatchNexus
+      </a>
+      <p>Unified, self-hosted media pipeline. Request, acquire, organize, and watch your media. All in one application.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="features.html">Features</a>
+      <a href="download.html">Download</a>
+      <a href="faq.html">FAQ</a>
+      <a href="press.html">Press Kit</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">QA &amp; Testing</a>
+      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">Report Issue</a>
+      <a href="#" onclick="return false;" style="opacity:0.4">Documentation</a>
+      <a href="#" onclick="return false;" style="opacity:0.4">API Reference</a>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <a href="#" onclick="return false;" style="opacity:0.4">GitHub</a>
+      <a href="#" onclick="return false;" style="opacity:0.4">Discord</a>
+      <a href="#" onclick="return false;" style="opacity:0.4">Reddit</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <span>v2.8.4</span>
+  </div>
+</footer>
+
+<script>
+function switchScreenshot(btn, name) {
+  document.querySelectorAll('.screenshot-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const img = document.getElementById('showcase-img');
+  img.style.opacity = '0';
+  setTimeout(() => {
+    const map = {
+      dashboard: 'assets/images/dashboard.png',
+      library: 'assets/images/library.png',
+      indexer: 'assets/images/indexer-search.png',
+      system: 'assets/images/system.png',
+      security: 'assets/images/security.png',
+      settings: 'assets/images/settings.png'
+    };
+    img.src = map[name] || map.dashboard;
+    img.alt = 'WatchNexus ' + name;
+    img.style.opacity = '1';
+  }, 150);
+}
+document.getElementById('showcase-img').style.transition = 'opacity 0.15s ease';
+
+// Intersection Observer for scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; }});
+}, { threshold: 0.1 });
+document.querySelectorAll('.feature-card, .stat-card, .replace-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
