@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download - WatchNexus</title>
+  <meta name="description" content="Download WatchNexus v2.8.4 for Linux and Windows. Self-contained binaries with zero runtime dependencies.">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
+    WatchNexus
+  </a>
+  <ul class="nav-links">
+    <li><a href="features.html">Features</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank" rel="noopener">Support</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#" class="nav-github" onclick="return false;" style="cursor:default;opacity:0.4;">GitHub</a>
+    <a href="download.html" class="btn btn-primary">Download</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <h1>Download <span class="gradient-text">WatchNexus</span></h1>
+  <p>Self-contained binaries with zero runtime dependencies. Extract, run, done.</p>
+</div>
+
+<!-- Downloads -->
+<section class="section" style="padding-top:2rem">
+  <div class="download-grid">
+    <div class="download-card">
+      <div class="dl-icon"><i class="fa-brands fa-linux" style="color:#fbbf24"></i></div>
+      <h3>Linux x64</h3>
+      <div class="dl-version">v2.8.4</div>
+      <div class="dl-size">58 MB &middot; Self-contained &middot; No runtime needed</div>
+      <a href="#" class="btn btn-primary" onclick="alert('Downloads will be available soon. Check back for the official release.');return false;">
+        <i class="fa-solid fa-download"></i> Download .tar.gz
+      </a>
+      <p style="color:var(--text-muted);font-size:0.75rem;margin-top:0.75rem">Supports Ubuntu 22.04+, Debian 12+, Fedora 38+, Arch</p>
+    </div>
+    <div class="download-card">
+      <div class="dl-icon"><i class="fa-brands fa-windows" style="color:#60a5fa"></i></div>
+      <h3>Windows x64</h3>
+      <div class="dl-version">v2.8.4</div>
+      <div class="dl-size">72 MB &middot; Self-contained &middot; No runtime needed</div>
+      <a href="#" class="btn btn-primary" onclick="alert('Downloads will be available soon. Check back for the official release.');return false;">
+        <i class="fa-solid fa-download"></i> Download .zip
+      </a>
+      <p style="color:var(--text-muted);font-size:0.75rem;margin-top:0.75rem">Supports Windows 10+ (64-bit)</p>
+    </div>
+  </div>
+</section>
+
+<!-- Docker -->
+<section class="section section-center">
+  <span class="section-label"><i class="fa-brands fa-docker"></i> Docker</span>
+  <h2 class="section-title">Container deployment</h2>
+  <p class="section-desc">Official Docker images are coming soon. Multi-architecture support for amd64, arm64, and arm/v7.</p>
+
+  <div style="max-width:680px;margin:2rem auto 0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;text-align:left">
+    <p style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">docker-compose.yml (preview)</p>
+    <pre style="color:var(--text-secondary);font-size:0.85rem;line-height:1.7;font-family:'JetBrains Mono',monospace;overflow-x:auto"><code>version: '3.8'
+services:
+  watchnexus:
+    image: watchnexus/server:2.8.4
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./config:/app/data
+      - /path/to/media:/media
+    environment:
+      - TZ=America/New_York
+    restart: unless-stopped</code></pre>
+  </div>
+</section>
+
+<!-- Installation -->
+<section class="section">
+  <span class="section-label"><i class="fa-solid fa-terminal"></i> Quick Start</span>
+  <h2 class="section-title">Install in 2 minutes</h2>
+  <p class="section-desc">Three commands to a running media pipeline.</p>
+
+  <div style="max-width:680px;margin-top:2rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem">
+      <p style="color:var(--accent-light);font-size:0.8rem;font-weight:600;margin-bottom:0.75rem">Linux Installation</p>
+      <pre style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;font-family:'JetBrains Mono',monospace;overflow-x:auto"><code># Download the latest release
+tar xzf WatchNexus-v2.8.4-linux-x64.tar.gz
+
+# Install as systemd service
+cd WatchNexus-v2.8.4-linux-x64
+sudo bash install.sh
+
+# Open http://localhost:8001</code></pre>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem">
+      <p style="color:var(--accent-light);font-size:0.8rem;font-weight:600;margin-bottom:0.75rem">Windows Installation</p>
+      <pre style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;font-family:'JetBrains Mono',monospace;overflow-x:auto"><code># Extract the zip archive
+# Run start-watchnexus.bat
+# Open http://localhost:8001</code></pre>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem">
+      <p style="color:var(--accent-light);font-size:0.8rem;font-weight:600;margin-bottom:0.75rem">Default Credentials</p>
+      <p style="color:var(--text-secondary);font-size:0.9rem">
+        <strong style="color:var(--text-primary)">Email:</strong> admin@watchnexus.local<br>
+        <strong style="color:var(--text-primary)">Password:</strong> admin<br>
+        <span style="color:var(--text-muted);font-size:0.8rem">Change these immediately after first login. Enable 2FA in Security &rarr; Bastion.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- System Requirements -->
+<section class="section">
+  <span class="section-label"><i class="fa-solid fa-microchip"></i> System Requirements</span>
+  <h2 class="section-title">What you need</h2>
+
+  <table class="specs-table" style="max-width:680px">
+    <thead>
+      <tr><th>Requirement</th><th>Minimum</th><th>Recommended</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>RAM</td><td>4 GB</td><td>8 GB</td></tr>
+      <tr><td>Disk Space</td><td>2 GB + media</td><td>10 GB + media (SSD)</td></tr>
+      <tr><td>Operating System</td><td>Any 64-bit Linux / Windows 10+</td><td>Ubuntu 22.04+ / Debian 12+</td></tr>
+      <tr><td>Architecture</td><td>x86_64 (amd64)</td><td>x86_64</td></tr>
+      <tr><td>Runtime</td><td colspan="2">None required (included in binary)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Previous Releases -->
+<section class="section section-center">
+  <span class="section-label"><i class="fa-solid fa-clock-rotate-left"></i> Release History</span>
+  <h2 class="section-title">Previous versions</h2>
+
+  <div style="max-width:600px;margin:2rem auto 0;text-align:left">
+    <div style="padding:1rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <strong>v2.8.4</strong> <span style="color:var(--accent-light);font-size:0.75rem;font-weight:600;background:rgba(147,51,234,0.1);padding:0.15rem 0.5rem;border-radius:6px;margin-left:0.5rem">Latest</span>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-top:0.25rem">Press Kit, TOTP 2FA, live indexer search, 7 new modules, system overhaul</p>
+      </div>
+      <span style="color:var(--text-muted);font-size:0.8rem">Mar 2026</span>
+    </div>
+    <div style="padding:1rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <strong>v2.8.3</strong>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-top:0.25rem">Full module audit, 136 endpoints tested, poster fixes</p>
+      </div>
+      <span style="color:var(--text-muted);font-size:0.8rem">Mar 2026</span>
+    </div>
+    <div style="padding:1rem 0;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <strong>v2.8.2</strong>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-top:0.25rem">Authentication and indexer fixes, initial module framework</p>
+      </div>
+      <span style="color:var(--text-muted);font-size:0.8rem">Mar 2026</span>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="index.html" class="nav-logo" style="margin-bottom:0.5rem">
+        <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
+        WatchNexus
+      </a>
+      <p>Unified, self-hosted media pipeline.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="features.html">Features</a>
+      <a href="download.html">Download</a>
+      <a href="faq.html">FAQ</a>
+      <a href="press.html">Press Kit</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">QA &amp; Testing</a>
+      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">Report Issue</a>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <a href="#" onclick="return false;" style="opacity:0.4">GitHub</a>
+      <a href="#" onclick="return false;" style="opacity:0.4">Discord</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <span>v2.8.4</span>
+  </div>
+</footer>
+
+</body>
+</html>
