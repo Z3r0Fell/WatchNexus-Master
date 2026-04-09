@@ -12,76 +12,51 @@ WatchNexus is a self-hosted media management pipeline combining features from Je
 - **Database**: SQLite via Entity Framework Core
 - **Auth**: JWT-based (admin@watchnexus.local / admin)
 
-## Implemented Features (Production-Ready)
+## Implemented Features
 
 ### Core Media
-- Library management with TV show grouping (Series > Season > Episode)
-- TMDB integration for content discovery, search, trending
+- Library management with TV show grouping
+- TMDB integration for content discovery
 - Media streaming and transcoding pipeline
 
-### Compote Search Engine (REAL - queries live indexers)
-- Nyaa.si RSS feed parsing with magnet link extraction
-- YTS JSON API integration, EZTV JSON API integration
-- Torznab/Newznab standard API support, Generic RSS fallback
-- Quality detection (2160p/1080p/720p/480p), Codec detection (HEVC/x264/AV1/VP9)
-- Size parsing (TiB/GiB/MiB/KiB), Grab endpoint stores downloads in DB
+### Compote Search Engine (REAL)
+- Nyaa.si RSS, YTS JSON, EZTV JSON, Torznab/Newznab, Generic RSS
+- Quality/codec detection, size parsing, magnet extraction, grab endpoint
 
-### P1 Modules (Full Implementation)
+### P1 Modules (Full)
 | Module | Codename | Description |
 |--------|----------|-------------|
-| Scrobbling | glaze | Trakt.tv & Last.fm with config-driven OAuth |
-| Scheduled Tasks | saffron | 8 task types with run/history |
-| Movie Automation | fondue | Radarr-like monitoring, search, queue |
-| Backup & Restore | sourdough | Config backups, scheduling, export |
-| Download Clients | churro | Torrent/Usenet client management |
-| Collections | roux | Smart & manual collections, filter engine |
-| RSS Feeds | sprout | RSS/Atom feed generator with API key auth |
+| Scrobbling | glaze | Trakt.tv & Last.fm |
+| Scheduled Tasks | saffron | 8 task types with history |
+| Movie Automation | fondue | Radarr-like monitoring |
+| Backup & Restore | sourdough | Config backups, scheduling |
+| Download Clients | churro | Torrent/Usenet management |
+| Collections | roux | Smart & manual collections |
+| RSS Feeds | sprout | RSS/Atom feed generator |
 
-### Enhanced Security (Bastion)
-- Real TOTP 2FA (Base32 secrets, QR URIs, 8 backup codes)
-- LDAP, IP filtering, audit logging, session management
+### Security (Bastion) & Network (Tunnel)
+- TOTP 2FA, LDAP, IP filtering, audit logging, sessions
+- WireGuard VPN, SSL certs, bandwidth monitoring
 
-### Network Management (Tunnel)
-- WireGuard peer CRUD, SSL certs, bandwidth monitoring, DNS, Tailscale
+### Strudel — Optical Disc Ripping (NEW - April 9, 2026)
+Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
+- **Investigation doc**: `/app/docs/STRUDEL-INVESTIGATION.md` — 8-section deep analysis of MakeMKV CLI, HandBrake CLI, robot mode parsing, pipeline architecture, data models, 17 API endpoints, legal considerations, 5 implementation phases
+- **Backend controller**: `/app/src/watchnexus/core/Controllers/StrudelController.cs` — 17 endpoints: status, drives, scan (async w/ makemkvcon robot mode parser), rip (full pipeline: rip → transcode → import), jobs CRUD, profiles, history, config, eject
+- **Frontend page**: `/app/frontend/src/pages/StrudelPage.jsx` — 4-tab UI (Rip Disc, Job Queue, Profiles, History), drive panel, scan results with expandable title/stream info, profile selector, progress bars, legal disclaimer
+- **7 built-in transcode profiles**: Direct Copy, 1080p HEVC CRF20, 1080p H.264 CRF18, 720p Compact, 4K Passthrough, NVENC GPU, QuickSync
+- **Tested**: 13/13 backend tests passed, all frontend elements verified
 
-## Press Kit (COMPLETED - March 24, 2026)
-Located at `/app/docs/press-kit/`:
-- Comprehensive README.md with product overview, specs, brand guidelines
-- 13 images: 9 app screenshots + 3 AI-generated brand assets
-- **8 targeted articles** for high-exposure publications:
-  1. Hacker News (Show HN) - Technical launch post
-  2. Reddit r/selfhosted - Community post, replaces 6 apps angle
-  3. Dev.to - .NET 10 architecture deep-dive with code snippets
-  4. It's FOSS / LinuxHandbook - Linux installation tutorial
-  5. Product Hunt / BetaList / OpenHunts - Product launch copy
-  6. Smashing Magazine / CSS-Tricks - Frontend engineering case study
-  7. ServeTheHome / r/homelab - Infrastructure/resource comparison
-  8. The Hacker News (THN) / DarkReading - Security architecture article
-- Submission tracker with URLs, guidelines, and cross-promotion strategy
+## Press Kit (COMPLETED)
+- `/app/docs/press-kit/` — README, 13 images, 8 targeted articles, submission tracker
 
-## Marketing Website (COMPLETED - April 8, 2026)
-Located at `/app/website/` - static site ready for upload to watchnexus.ca:
-- **index.html**: Landing page (hero, screenshot showcase with tabs, 6 feature cards, 4 stats, replacement grid, tech specs table, CTA, footer)
-- **features.html**: All 35 modules organized by category with codenames and badges
-- **download.html**: Linux/Windows download cards (placeholder), Docker preview, quick start guide, system requirements, release history
-- **faq.html**: 14 FAQ items in 4 categories with accordion behavior
-- **press.html**: Brand guidelines, color swatches, screenshot gallery, logo assets
-- Consistent dark theme, Font Awesome icons, scroll animations, responsive design
-- GitHub link disabled, downloads show placeholder alerts, issue reporting links to QA site
-- **Tested: 100% pass rate** across all pages
+## Marketing Website (COMPLETED)
+- `/app/website/` — 5-page static site (landing, features, download, FAQ, press)
 
 ## Release Builds
-- `/app/release_builds/WatchNexus-v2.8.4-linux-x64.tar.gz` (58MB)
-- `/app/release_builds/WatchNexus-v2.8.4-win-x64.zip` (72MB)
+- Linux x64 (58MB), Windows x64 (72MB) self-contained binaries
 
 ## Future Tasks (P2)
-- Biscotti (Ebook/Audiobook/Comics)
-- Treacle (Music Library & Player)
-- Sage (AI Metadata & Recommendations)
-- Terrine (Live TV DVR)
-- Popsicle (Offline Sync / Mobile)
-- Preserves (S3/Cloud Backup)
-- Marshmallow (Cloud Sync)
-- Full implementation of Taffy, Pantry, Nutmeg
-- Docker image publication
-- Hardware transcoding (QSV/NVENC)
+- Strudel Phase 2-5: Job queue async processing, real MakeMKV/HandBrake pipeline, library auto-import, udev automation
+- Biscotti (Ebook/Audiobook/Comics), Treacle (Music), Sage (AI Recommendations)
+- Terrine (Live TV DVR), Popsicle (Offline Sync), Preserves (S3 Backup), Marshmallow (Cloud Sync)
+- Docker image publication, hardware transcoding
