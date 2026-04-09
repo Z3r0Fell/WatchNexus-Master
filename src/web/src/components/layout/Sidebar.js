@@ -45,6 +45,7 @@ import {
   Timer,
   Archive,
   Rss,
+  Disc,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -106,6 +107,7 @@ const settingsSubItems = [
   { icon: Archive, label: 'Backups', path: '/backups', hideable: true },
   { icon: Activity, label: 'Scrobbling', path: '/scrobbling', hideable: true },
   { icon: Rss, label: 'RSS Feeds', path: '/rss', hideable: true },
+  { icon: Disc, label: 'Disc Ripping', path: '/disc-ripping', hideable: true },
 ];
 
 // Default visible tabs
@@ -114,7 +116,7 @@ const defaultVisibleTabs = [
   'Streaming', 'Indexers', 'Automation', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
-  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds',
+  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping',
 ];
 
 // Get visible tabs from localStorage

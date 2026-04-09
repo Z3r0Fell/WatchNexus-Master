@@ -62,6 +62,7 @@ import SourdoughPage from "./pages/SourdoughPage";
 import ChurroPage from "./pages/ChurroPage";
 import RouxPage from "./pages/RouxPage";
 import SproutPage from "./pages/SproutPage";
+import StrudelPage from "./pages/StrudelPage";
 
 import "./App.css";
 
@@ -530,6 +531,15 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <SproutPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/disc-ripping"
+        element={
+          <ProtectedRoute>
+            <StrudelPage />
           </ProtectedRoute>
         }
       />
