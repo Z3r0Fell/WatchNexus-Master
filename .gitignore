@@ -469,3 +469,7 @@ src/web/node_modules/.cache/default-development/9.pack
 *.env
 *.env.*
 src/web/node_modules/.cache/default-development/3.pack_
+-e 
+# Environment files
+*.env
+*.env.*
