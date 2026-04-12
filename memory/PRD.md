@@ -55,6 +55,14 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 ## Release Builds
 - Linux x64 (58MB), Windows x64 (72MB) self-contained binaries
 
+## Project Cellar — Tiered Licensing Pivot (In Progress)
+- **Module Audit:** COMPLETED — `/app/docs/CELLAR-MODULE-AUDIT.md`
+  - 65+ modules audited across 42 controller files (~11,000 LOC)
+  - 5 stubs identified (Kodi, Adapter, Garnish, Torrent status, Next-up)
+  - 9 codename alias redirects documented
+  - Draft tier assignments proposed (Standard/Pro/Ultra)
+- **Next:** User assigns modules to tiers → Remove stubs → Implement licensing system → UI tier locking
+
 ## Future Tasks (P2)
 - Strudel Phase 2-5: Job queue async processing, real MakeMKV/HandBrake pipeline, library auto-import, udev automation
 - Biscotti (Ebook/Audiobook/Comics), Treacle (Music), Sage (AI Recommendations)
