@@ -718,24 +718,68 @@ public class IndexersController : ControllerBase
     }
 }
 
-// ── Garnish ──────────────────────────────────
+// ── Garnish — Subtitle Provider Status (real: checks configured providers) ──────────────────────────────────
 [Route("api/garnish")]
 [ApiController]
 [Authorize]
 public class GarnishController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public GarnishController(AppDbContext db) => _db = db;
+
     [HttpGet("settings")]
-    public IActionResult Settings() => Ok(new { enabled = false, providers = Array.Empty<object>() });
+    public async Task<IActionResult> Settings()
+    {
+        var uid = this.UserId();
+        var providers = new[] { "opensubtitles", "addic7ed", "podnapisi", "yifysubtitles", "subscene" };
+        var configured = new List<object>();
+        foreach (var p in providers)
+        {
+            var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == $"subtitle_{p}");
+            var hasCfg = cfg?.Value != null;
+            configured.Add(new { id = p, name = p, enabled = hasCfg, configured = hasCfg });
+        }
+        return Ok(new { enabled = configured.Any(c => ((dynamic)c).enabled), providers = configured });
+    }
+
     [HttpPost("test/{provider}")]
-    public IActionResult Test(string provider) => Ok(new { success = false, provider });
+    public async Task<IActionResult> Test(string provider)
+    {
+        var urls = new Dictionary<string, string>
+        {
+            ["opensubtitles"] = "https://api.opensubtitles.com",
+            ["addic7ed"] = "https://www.addic7ed.com",
+            ["podnapisi"] = "https://www.podnapisi.net",
+            ["yifysubtitles"] = "https://yifysubtitles.org",
+            ["subscene"] = "https://subscene.com",
+        };
+        if (!urls.ContainsKey(provider)) return BadRequest(new { success = false, error = "Unknown provider" });
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.4");
+            var resp = await http.GetAsync(urls[provider]);
+            return Ok(new { success = resp.IsSuccessStatusCode, provider, status_code = (int)resp.StatusCode });
+        }
+        catch (Exception ex) { return Ok(new { success = false, provider, error = ex.Message }); }
+    }
 }
 
-// ── Torrent ──────────────────────────────────
+// ── Torrent — Built-in Download Engine Status (real: queries download DB) ──────────────────────────────────
 [Route("api/torrent")]
 [ApiController]
 [Authorize]
 public class TorrentController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public TorrentController(AppDbContext db) => _db = db;
+
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { engine = "built-in", connected = true, active_downloads = 0 });
+    public async Task<IActionResult> Status()
+    {
+        var active = await _db.Downloads.CountAsync(d => d.Status == "downloading" || d.Status == "queued");
+        var completed = await _db.Downloads.CountAsync(d => d.Status == "completed");
+        var total = await _db.Downloads.CountAsync();
+        return Ok(new { engine = "built-in", connected = true, active_downloads = active, completed, total });
+    }
 }

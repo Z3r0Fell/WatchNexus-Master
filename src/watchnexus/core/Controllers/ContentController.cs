@@ -248,12 +248,50 @@ public class WatchProgressController : ControllerBase
     }
 }
 
-/// <summary>Next-up — returns the next episode/item to watch</summary>
+/// <summary>Next-up — returns the next episode/item to watch based on progress</summary>
 [ApiController]
 [Route("api/next-up")]
 [Authorize]
 public class NextUpController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public NextUpController(AppDbContext db) => _db = db;
+
     [HttpGet]
-    public IActionResult Get() => Ok(Array.Empty<object>());
+    public async Task<IActionResult> Get([FromQuery] int limit = 10)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        // Get in-progress items (started but not finished)
+        var progressItems = await _db.Settings
+            .Where(s => s.UserId == userId && s.Key.StartsWith("progress:"))
+            .OrderByDescending(s => s.Key)
+            .Take(limit * 2)
+            .ToListAsync();
+
+        var nextUp = new List<object>();
+        foreach (var item in progressItems)
+        {
+            if (nextUp.Count >= limit) break;
+            try
+            {
+                var doc = JsonDocument.Parse(item.Value ?? "{}").RootElement;
+                var progress = doc.TryGetProperty("progress", out var p) ? p.GetDouble() : 0;
+                // Include items between 5% and 95% progress (started but not finished)
+                if (progress > 5 && progress < 95)
+                {
+                    nextUp.Add(new
+                    {
+                        title = doc.TryGetProperty("title", out var t) ? t.GetString() : "Unknown",
+                        media_type = doc.TryGetProperty("media_type", out var mt) ? mt.GetString() : "movie",
+                        tmdb_id = doc.TryGetProperty("tmdb_id", out var tid) ? tid.ToString() : null,
+                        poster_url = doc.TryGetProperty("poster_url", out var pu) ? pu.GetString() : null,
+                        backdrop_path = doc.TryGetProperty("backdrop_path", out var bp) ? bp.GetString() : null,
+                        progress = Math.Round(progress, 1),
+                    });
+                }
+            }
+            catch { }
+        }
+        return Ok(nextUp);
+    }
 }

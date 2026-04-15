@@ -83,6 +83,7 @@ export const ActivationSettings = () => {
         toast.success(res.data.message);
         await fetchStatus();
         setSerial('');
+        window.dispatchEvent(new Event('watchnexus_license_changed'));
       } else {
         toast.error(res.data.message || 'Activation failed');
       }
@@ -100,6 +101,7 @@ export const ActivationSettings = () => {
       if (res.data.success) {
         toast.success(res.data.message);
         await fetchStatus();
+        window.dispatchEvent(new Event('watchnexus_license_changed'));
       }
     } catch {
       toast.error('Failed to deactivate');

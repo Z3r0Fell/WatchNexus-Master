@@ -3,6 +3,7 @@ import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { GadgetProvider, useGadgets } from "./context/GadgetContext";
+import { LicenseProvider } from "./context/LicenseContext";
 import { lazy, Suspense } from "react";
 
 // Pages
@@ -53,6 +54,7 @@ import ParentalControlsPage from "./pages/gadgets/ParentalControlsPage";
 import ProcessingPage from "./pages/gadgets/ProcessingPage";
 import UsenetPage from "./pages/gadgets/UsenetPage";
 import HelpPage from "./pages/HelpPage";
+import { TierGate } from "./components/TierGate";
 
 // Module Pages
 import GlazePage from "./pages/GlazePage";
@@ -102,6 +104,17 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return children;
+};
+
+// Protected + Tier-gated Route
+const TierRoute = ({ children, path }) => {
+  return (
+    <ProtectedRoute>
+      <TierGate path={path}>
+        {children}
+      </TierGate>
+    </ProtectedRoute>
+  );
 };
 
 // Public Route (redirect to home if logged in)
@@ -186,14 +199,7 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/indexers"
-        element={
-          <ProtectedRoute>
-            <IndexerSearchPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/indexers" element={<TierRoute path="/indexers"><IndexerSearchPage /></TierRoute>} />
       <Route
         path="/downloads"
         element={
@@ -234,14 +240,7 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/streaming"
-        element={
-          <ProtectedRoute>
-            <StreamingPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/streaming" element={<TierRoute path="/streaming"><StreamingPage /></TierRoute>} />
       <Route
         path="/music"
         element={
@@ -258,14 +257,7 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/live"
-        element={
-          <ProtectedRoute>
-            <LiveTVPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/live" element={<TierRoute path="/live"><LiveTVPage /></TierRoute>} />
       <Route
         path="/party/:partyCode"
         element={
@@ -372,22 +364,8 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/security"
-        element={
-          <ProtectedRoute>
-            <SecurityPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/vpn"
-        element={
-          <ProtectedRoute>
-            <VpnPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/security" element={<TierRoute path="/security"><SecurityPage /></TierRoute>} />
+      <Route path="/vpn" element={<TierRoute path="/vpn"><VpnPage /></TierRoute>} />
       <Route
         path="/system"
         element={
@@ -420,54 +398,12 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/analytics"
-        element={
-          <ProtectedRoute>
-            <AnalyticsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notifications"
-        element={
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/requests"
-        element={
-          <ProtectedRoute>
-            <RequestsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/parental-controls"
-        element={
-          <ProtectedRoute>
-            <ParentalControlsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/processing"
-        element={
-          <ProtectedRoute>
-            <ProcessingPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/usenet"
-        element={
-          <ProtectedRoute>
-            <UsenetPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/analytics" element={<TierRoute path="/analytics"><AnalyticsPage /></TierRoute>} />
+      <Route path="/notifications" element={<TierRoute path="/notifications"><NotificationsPage /></TierRoute>} />
+      <Route path="/requests" element={<TierRoute path="/requests"><RequestsPage /></TierRoute>} />
+      <Route path="/parental-controls" element={<TierRoute path="/parental-controls"><ParentalControlsPage /></TierRoute>} />
+      <Route path="/processing" element={<TierRoute path="/processing"><ProcessingPage /></TierRoute>} />
+      <Route path="/usenet" element={<TierRoute path="/usenet"><UsenetPage /></TierRoute>} />
       <Route
         path="/help"
         element={
@@ -478,71 +414,14 @@ function AppRouter() {
       />
 
       {/* Module Pages */}
-      <Route
-        path="/scrobbling"
-        element={
-          <ProtectedRoute>
-            <GlazePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tasks"
-        element={
-          <ProtectedRoute>
-            <SaffronPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/automation"
-        element={
-          <ProtectedRoute>
-            <FonduePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/backups"
-        element={
-          <ProtectedRoute>
-            <SourdoughPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/download-clients"
-        element={
-          <ProtectedRoute>
-            <ChurroPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/collections"
-        element={
-          <ProtectedRoute>
-            <RouxPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/rss"
-        element={
-          <ProtectedRoute>
-            <SproutPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/disc-ripping"
-        element={
-          <ProtectedRoute>
-            <StrudelPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/scrobbling" element={<ProtectedRoute><GlazePage /></ProtectedRoute>} />
+      <Route path="/tasks" element={<TierRoute path="/tasks"><SaffronPage /></TierRoute>} />
+      <Route path="/automation" element={<TierRoute path="/automation"><FonduePage /></TierRoute>} />
+      <Route path="/backups" element={<TierRoute path="/backups"><SourdoughPage /></TierRoute>} />
+      <Route path="/download-clients" element={<ProtectedRoute><ChurroPage /></ProtectedRoute>} />
+      <Route path="/collections" element={<ProtectedRoute><RouxPage /></ProtectedRoute>} />
+      <Route path="/rss" element={<TierRoute path="/rss"><SproutPage /></TierRoute>} />
+      <Route path="/disc-ripping" element={<TierRoute path="/disc-ripping"><StrudelPage /></TierRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -557,17 +436,19 @@ function App() {
         <AuthProvider>
           <ThemeProvider>
             <GadgetProvider>
-              <AppRouter />
-              <Toaster 
-                position="bottom-right" 
-                toastOptions={{
-                  style: {
-                    background: '#1E1E1E',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#F3F4F6',
-                  },
-                }}
-              />
+              <LicenseProvider>
+                <AppRouter />
+                <Toaster 
+                  position="bottom-right" 
+                  toastOptions={{
+                    style: {
+                      background: '#1E1E1E',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#F3F4F6',
+                    },
+                  }}
+                />
+              </LicenseProvider>
             </GadgetProvider>
           </ThemeProvider>
         </AuthProvider>
