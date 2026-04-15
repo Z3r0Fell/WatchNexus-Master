@@ -76,7 +76,20 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
   - Tier comparison grid (Standard/Pro/Ultra)
   - Activate/Deactivate flow
 - **Pretzel:** Registered as codename for Gaming Console module (Ultra tier)
-- **Next:** User to source license management/generation system. Then implement UI tier locking (conditional Sidebar/routes).
+- **UI Tier Locking:** IMPLEMENTED
+  - Created `LicenseContext.js` with route-to-module mapping for 50+ routes
+  - Created `TierGate.jsx` upgrade prompt component (shows lock, tier name, "Enter Serial Number" button)
+  - Sidebar.js shows lock icons on tier-locked items (dimmed text + lock icon)
+  - App.js wraps Pro/Ultra routes with `TierRoute` (auth + tier gate)
+  - License changes propagate instantly via event system
+- **Stub Removal:** COMPLETED
+  - Kodi controller: DELETED (dead-end, no Kodi integration)
+  - Adapter (FFmpeg): Now delegates to Crucible transcode pipeline with real file validation
+  - Garnish (Subtitle providers): Now queries DB for configured providers with real test endpoints
+  - Torrent status: Now queries actual download counts from DB
+  - Next-up: Now computes from watch progress data (5%-95% completion filter)
+  - Zest health: Now returns real process uptime, memory, thread count
+- **Next:** User to source LaaS for license key generation/management. When ready, integrate validation endpoint.
 
 ## Future Tasks (P2)
 - Strudel Phase 2-5: Job queue async processing, real MakeMKV/HandBrake pipeline, library auto-import, udev automation

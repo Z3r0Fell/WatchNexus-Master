@@ -41,21 +41,7 @@ public class UserPreferencesController : ControllerBase
     }
 }
 
-// ── Kodi ──────────────────────────────────
-[Route("api/kodi")]
-[ApiController]
-[Authorize]
-public class KodiController : ControllerBase
-{
-    [HttpGet("addons")]
-    public IActionResult Addons() => Ok(Array.Empty<object>());
-    [HttpGet("addons/popular")]
-    public IActionResult Popular() => Ok(Array.Empty<object>());
-    [HttpGet("categories")]
-    public IActionResult Categories() => Ok(Array.Empty<object>());
-    [HttpGet("refresh")]
-    public IActionResult Refresh() => Ok(new { status = "refreshed" });
-}
+// ── Kodi — REMOVED (no longer a stub; Kodi addon browsing requires a live Kodi instance) ──
 
 // ── Zest (Log/Health viewer) ──────────────────────────────────
 [Route("api/zest")]
@@ -64,21 +50,77 @@ public class KodiController : ControllerBase
 public class ZestController : ControllerBase
 {
     [HttpGet("health")]
-    public IActionResult Health() => Ok(new { status = "healthy" });
+    public IActionResult Health()
+    {
+        var process = System.Diagnostics.Process.GetCurrentProcess();
+        return Ok(new
+        {
+            status = "healthy",
+            uptime_seconds = (DateTime.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds,
+            memory_mb = Math.Round(process.WorkingSet64 / 1048576.0, 1),
+            threads = process.Threads.Count,
+            timestamp = DateTime.UtcNow
+        });
+    }
     [HttpGet("stats")]
-    public IActionResult Stats() => Ok(new { protected_files = 0, last_scan = (string?)null });
+    public IActionResult Stats()
+    {
+        var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
+        var logFiles = Directory.Exists(logDir) ? Directory.GetFiles(logDir, "*.log*") : Array.Empty<string>();
+        return Ok(new { log_files = logFiles.Length, total_log_size = logFiles.Sum(f => new FileInfo(f).Length), last_scan = (string?)null });
+    }
     [HttpGet("logs")]
-    public IActionResult Logs() => Ok(Array.Empty<object>());
+    public IActionResult Logs([FromQuery] int lines = 100)
+    {
+        var logFile = Path.Combine(AppContext.BaseDirectory, "logs", "watchnexus.log");
+        if (!System.IO.File.Exists(logFile)) return Ok(Array.Empty<object>());
+        var allLines = System.IO.File.ReadAllLines(logFile);
+        return Ok(allLines.TakeLast(lines).Select(l => new { line = l, timestamp = DateTime.UtcNow }));
+    }
     [HttpPost("logs/clear")]
-    public IActionResult ClearLogs() => Ok(new { status = "cleared" });
+    public IActionResult ClearLogs()
+    {
+        var logFile = Path.Combine(AppContext.BaseDirectory, "logs", "watchnexus.log");
+        if (System.IO.File.Exists(logFile)) System.IO.File.WriteAllText(logFile, "");
+        return Ok(new { status = "cleared" });
+    }
 }
 
-// ── Adapter (FFmpeg) ──────────────────────────────────
+// ── Adapter (FFmpeg) — delegates to Crucible pipeline ──────────────────────────────────
 [Route("api/adapter")]
 [ApiController]
 [Authorize]
 public class AdapterController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public AdapterController(AppDbContext db) => _db = db;
+
     [HttpPost("convert")]
-    public IActionResult Convert() => Ok(new { status = "not_implemented", message = "FFmpeg required" });
+    public async Task<IActionResult> Convert([FromBody] JsonElement body)
+    {
+        var sourcePath = body.TryGetProperty("source_path", out var sp) ? sp.GetString() ?? "" : "";
+        var profile = body.TryGetProperty("profile", out var pr) ? pr.GetString() ?? "h265-default" : "h265-default";
+        if (string.IsNullOrEmpty(sourcePath))
+            return BadRequest(new { status = "error", message = "source_path is required" });
+        if (!System.IO.File.Exists(sourcePath))
+            return NotFound(new { status = "error", message = $"File not found: {sourcePath}" });
+
+        // Check if FFmpeg is installed
+        var ffmpeg = new[] { "/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg" }
+            .FirstOrDefault(System.IO.File.Exists);
+        if (ffmpeg == null)
+            return Ok(new { status = "error", message = "FFmpeg is not installed. Install FFmpeg to use media conversion.", install_hint = "sudo apt install ffmpeg" });
+
+        // Create a transcode job via Crucible's data model
+        var job = new TranscodeJob
+        {
+            UserId = this.UserId(),
+            SourcePath = sourcePath,
+            Profile = profile,
+            SourceSize = new FileInfo(sourcePath).Length,
+        };
+        _db.TranscodeJobs.Add(job);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "queued", job_id = job.Id, source = sourcePath, profile, message = "Conversion job queued. Monitor via /api/crucible/jobs" });
+    }
 }

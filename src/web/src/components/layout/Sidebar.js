@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
+import { useLicense, ROUTE_MODULE_MAP } from '../../context/LicenseContext';
 import { cn } from '../../lib/utils';
 
 // Icon mapping for dynamic gadget sidebar entries
@@ -137,6 +138,7 @@ export const Sidebar = () => {
   const location = useLocation();
   const { logout, user } = useAuth();
   const { hooks } = useGadgets();
+  const { isRouteUnlocked, getRouteRequiredTier } = useLicense();
 
   // Listen for changes from settings page
   useEffect(() => {
@@ -183,6 +185,8 @@ export const Sidebar = () => {
   const renderNavItem = (item) => {
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
+    const locked = !isRouteUnlocked(item.path);
+    const requiredTier = locked ? getRouteRequiredTier(item.path) : null;
     return (
       <li key={item.path}>
         <Link
@@ -190,27 +194,31 @@ export const Sidebar = () => {
           data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
+            locked ? "text-gray-600 hover:text-gray-500 hover:bg-white/[0.02]" :
             isActive ? "text-white" : "text-gray-400 hover:text-white hover:bg-white/5"
           )}
-          style={isActive ? {
+          style={(!locked && isActive) ? {
             backgroundColor: 'color-mix(in srgb, var(--primary, #8B5CF6) 20%, transparent)',
             color: 'var(--primary, #8B5CF6)',
           } : {}}
         >
-          <Icon className="w-5 h-5" style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}} />
+          <Icon className="w-5 h-5" style={(!locked && isActive) ? { color: 'var(--primary, #8B5CF6)' } : locked ? { opacity: 0.35 } : {}} />
           <AnimatePresence>
             {expanded && (
               <motion.span
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="text-sm font-medium"
+                className="text-sm font-medium flex-1"
               >
                 {item.label}
               </motion.span>
             )}
           </AnimatePresence>
-          {isActive && expanded && (
+          {locked && expanded && (
+            <Lock className="w-3.5 h-3.5 text-gray-600" />
+          )}
+          {!locked && isActive && expanded && (
             <motion.div
               layoutId="activeIndicator"
               className="ml-auto w-1.5 h-1.5 rounded-full"
@@ -387,6 +395,7 @@ export const Sidebar = () => {
                     {visibleSettingsSubs.map((item) => {
                       const isActive = location.pathname === item.path;
                       const Icon = item.icon;
+                      const locked = !isRouteUnlocked(item.path);
                       return (
                         <li key={item.path}>
                           <Link
@@ -394,11 +403,13 @@ export const Sidebar = () => {
                             data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                             className={cn(
                               "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-200 text-sm",
+                              locked ? "text-gray-600 hover:text-gray-500" :
                               isActive ? "text-white bg-white/10" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
                             )}
                           >
-                            <Icon className="w-4 h-4" style={isActive ? { color: 'var(--primary, #8B5CF6)' } : {}} />
-                            <span className="font-medium">{item.label}</span>
+                            <Icon className="w-4 h-4" style={(!locked && isActive) ? { color: 'var(--primary, #8B5CF6)' } : locked ? { opacity: 0.35 } : {}} />
+                            <span className="font-medium flex-1">{item.label}</span>
+                            {locked && <Lock className="w-3 h-3 text-gray-600" />}
                           </Link>
                         </li>
                       );
