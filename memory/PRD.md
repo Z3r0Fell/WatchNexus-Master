@@ -60,8 +60,23 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
   - 65+ modules audited across 42 controller files (~11,000 LOC)
   - 5 stubs identified (Kodi, Adapter, Garnish, Torrent status, Next-up)
   - 9 codename alias redirects documented
-  - Draft tier assignments proposed (Standard/Pro/Ultra)
-- **Next:** User assigns modules to tiers → Remove stubs → Implement licensing system → UI tier locking
+- **Tier Assignments:** CONFIRMED by user
+  - Standard (31 modules): Core platform, media library, basic gadgets, downloads, collections, scrobbling
+  - Pro (14 modules): Indexer search, movie automation, scheduled tasks, backup, advanced auth, analytics, network, RSS, playlists, requests, recommendations, streaming, IPTV
+  - Ultra (18 modules): Security, parental controls, notifications, media processing, disc ripping, integrations, metadata agents, Synapse, Quiz, Media Bridge, Bot, Usenet, Watch Party, VPN, qBittorrent, Subtitles, Pretzel (Gaming Console)
+- **Cellar Controller:** IMPLEMENTED — `/app/src/watchnexus/core/Controllers/CellarController.cs`
+  - `GET /api/cellar/status` — Current license tier and unlocked modules
+  - `POST /api/cellar/activate` — Serial number activation (WNX-PRO-/WNX-ULT- format)
+  - `POST /api/cellar/deactivate` — Revert to Standard
+  - `GET /api/cellar/tiers` — Full tier manifest with module lists
+  - `GET /api/cellar/check/{module}` — Check if specific module is unlocked
+- **Activation UI:** IMPLEMENTED — Settings > Activation tab
+  - Current tier banner with module count
+  - Serial number input with format validation
+  - Tier comparison grid (Standard/Pro/Ultra)
+  - Activate/Deactivate flow
+- **Pretzel:** Registered as codename for Gaming Console module (Ultra tier)
+- **Next:** User to source license management/generation system. Then implement UI tier locking (conditional Sidebar/routes).
 
 ## Future Tasks (P2)
 - Strudel Phase 2-5: Job queue async processing, real MakeMKV/HandBrake pipeline, library auto-import, udev automation
