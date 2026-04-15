@@ -1,6 +1,0 @@
-/tmp/linux-publish/appsettings.Development.json
-/tmp/linux-publish/appsettings.json
-/tmp/linux-publish/WatchNexus.Core.pdb
-/tmp/linux-publish/libe_sqlite3.so
-/tmp/linux-publish/WatchNexus.Shared.pdb
-/tmp/linux-publish/WatchNexus.Core

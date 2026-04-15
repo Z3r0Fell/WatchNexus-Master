@@ -1,7 +1,0 @@
-/tmp/win-publish/appsettings.Development.json
-/tmp/win-publish/appsettings.json
-/tmp/win-publish/WatchNexus.Core.pdb
-/tmp/win-publish/aspnetcorev2_inprocess.dll
-/tmp/win-publish/e_sqlite3.dll
-/tmp/win-publish/WatchNexus.Shared.pdb
-/tmp/win-publish/WatchNexus.Core.exe

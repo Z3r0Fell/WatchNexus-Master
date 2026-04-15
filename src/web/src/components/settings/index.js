@@ -16,3 +16,4 @@ export { PlaybackSettings } from './PlaybackSettings';
 export { AboutSettings } from './AboutSettings';
 export { QualityProfilesSettings } from './QualityProfilesSettings';
 export { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
+export { ActivationSettings } from './ActivationSettings';
