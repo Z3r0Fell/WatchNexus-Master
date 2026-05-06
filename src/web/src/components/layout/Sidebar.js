@@ -109,6 +109,7 @@ const settingsSubItems = [
   { icon: Activity, label: 'Scrobbling', path: '/scrobbling', hideable: true },
   { icon: Rss, label: 'RSS Feeds', path: '/rss', hideable: true },
   { icon: Disc, label: 'Disc Ripping', path: '/disc-ripping', hideable: true },
+  { icon: MonitorPlay, label: 'Jellyseerr', path: '/jellyseerr', hideable: true },
 ];
 
 // Default visible tabs
@@ -117,7 +118,7 @@ const defaultVisibleTabs = [
   'Streaming', 'Indexers', 'Automation', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
-  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping',
+  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr',
 ];
 
 // Get visible tabs from localStorage

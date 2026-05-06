@@ -65,6 +65,7 @@ import ChurroPage from "./pages/ChurroPage";
 import RouxPage from "./pages/RouxPage";
 import SproutPage from "./pages/SproutPage";
 import StrudelPage from "./pages/StrudelPage";
+import ParfaitPage from "./pages/ParfaitPage";
 
 import "./App.css";
 
@@ -422,6 +423,7 @@ function AppRouter() {
       <Route path="/collections" element={<ProtectedRoute><RouxPage /></ProtectedRoute>} />
       <Route path="/rss" element={<TierRoute path="/rss"><SproutPage /></TierRoute>} />
       <Route path="/disc-ripping" element={<TierRoute path="/disc-ripping"><StrudelPage /></TierRoute>} />
+      <Route path="/jellyseerr" element={<TierRoute path="/jellyseerr"><ParfaitPage /></TierRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

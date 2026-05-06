@@ -89,6 +89,10 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
   - Torrent status: Now queries actual download counts from DB
   - Next-up: Now computes from watch progress data (5%-95% completion filter)
   - Zest health: Now returns real process uptime, memory, thread count
+- **Parfait (Jellyseerr):** IMPLEMENTED — Ultra tier
+  - Backend: `ParfaitController.cs` — Full Jellyseerr API proxy (status, config, requests CRUD, approve/decline, discover, search, movie/TV details, users, stats)
+  - Frontend: `ParfaitPage.jsx` — Config panel, request management with approve/decline/delete, discover tab with trending, search with request buttons, stats bar
+  - Route: `/jellyseerr` → `/api/parfait/*`
 - **Next:** User to source LaaS for license key generation/management. When ready, integrate validation endpoint.
 
 ## Future Tasks (P2)
