@@ -59,7 +59,7 @@ const ICON_MAP = {
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
   Shield, Wifi, Server, FileText, Library, Store, Key,
   BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive, HelpCircle,
-  Activity, Timer, Archive, Rss,
+  Activity, Timer, Archive, Rss, Clapperboard,
 };
 
 // Media navigation items
@@ -110,6 +110,7 @@ const settingsSubItems = [
   { icon: Rss, label: 'RSS Feeds', path: '/rss', hideable: true },
   { icon: Disc, label: 'Disc Ripping', path: '/disc-ripping', hideable: true },
   { icon: MonitorPlay, label: 'Jellyseerr', path: '/jellyseerr', hideable: true },
+  { icon: Clapperboard, label: 'Requests', path: '/requests-manager', hideable: true },
 ];
 
 // Default visible tabs
@@ -118,7 +119,7 @@ const defaultVisibleTabs = [
   'Streaming', 'Indexers', 'Automation', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
-  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr',
+  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr', 'Requests',
 ];
 
 // Get visible tabs from localStorage
