@@ -53,6 +53,7 @@ export const ROUTE_MODULE_MAP = {
   '/rss': 'sprout',
   '/disc-ripping': 'strudel',
   '/jellyseerr': 'parfait',
+  '/requests-manager': 'menu',
   '/themes': 'milk',
   '/dvr': 'iptv',
 };
@@ -79,7 +80,7 @@ const MODULE_TIER = {
   strudel: 'ultra', crumbs: 'ultra', taffy: 'ultra',
   cinnamon: 'ultra', waffle: 'ultra', custard: 'ultra', yeast: 'ultra',
   brine: 'ultra', ladle: 'ultra', 'watch-party': 'ultra', vpn: 'ultra',
-  qbittorrent: 'ultra', subtitles: 'ultra', pretzel: 'ultra', parfait: 'ultra',
+  qbittorrent: 'ultra', subtitles: 'ultra', pretzel: 'ultra', parfait: 'ultra', menu: 'ultra',
 };
 
 const TIER_RANK = { standard: 0, pro: 1, ultra: 2 };

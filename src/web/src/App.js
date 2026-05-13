@@ -66,6 +66,7 @@ import RouxPage from "./pages/RouxPage";
 import SproutPage from "./pages/SproutPage";
 import StrudelPage from "./pages/StrudelPage";
 import ParfaitPage from "./pages/ParfaitPage";
+import MenuPage from "./pages/MenuPage";
 
 import "./App.css";
 
@@ -424,6 +425,7 @@ function AppRouter() {
       <Route path="/rss" element={<TierRoute path="/rss"><SproutPage /></TierRoute>} />
       <Route path="/disc-ripping" element={<TierRoute path="/disc-ripping"><StrudelPage /></TierRoute>} />
       <Route path="/jellyseerr" element={<TierRoute path="/jellyseerr"><ParfaitPage /></TierRoute>} />
+      <Route path="/requests-manager" element={<TierRoute path="/requests-manager"><MenuPage /></TierRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
