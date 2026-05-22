@@ -68,6 +68,7 @@ import SproutPage from "./pages/SproutPage";
 import StrudelPage from "./pages/StrudelPage";
 import ParfaitPage from "./pages/ParfaitPage";
 import MenuPage from "./pages/MenuPage";
+import PretzelPage from "./pages/PretzelPage";
 
 import "./App.css";
 
@@ -427,6 +428,7 @@ function AppRouter() {
       <Route path="/disc-ripping" element={<TierRoute path="/disc-ripping"><StrudelPage /></TierRoute>} />
       <Route path="/jellyseerr" element={<TierRoute path="/jellyseerr"><ParfaitPage /></TierRoute>} />
       <Route path="/requests-manager" element={<TierRoute path="/requests-manager"><MenuPage /></TierRoute>} />
+      <Route path="/gaming" element={<TierRoute path="/gaming"><PretzelPage /></TierRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

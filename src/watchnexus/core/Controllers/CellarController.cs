@@ -43,13 +43,15 @@ public class CellarController : ControllerBase
         {
             "compote", "fondue", "saffron", "sourdough", "bastion", "truffle", "tunnel",
             "sprout", "drizzle", "meringue", "nutmeg",
-            "streaming-logins", "streaming-services", "iptv"
+            "streaming-logins", "streaming-services", "iptv",
+            "biscotti", "treacle", "sage", "terrine"
         },
         ["ultra"] = new[]
         {
             "security", "rind", "pepper", "crucible", "strudel", "crumbs", "taffy",
             "cinnamon", "waffle", "custard", "yeast", "brine", "ladle",
-            "watch-party", "vpn", "qbittorrent", "subtitles", "pretzel", "parfait", "menu"
+            "watch-party", "vpn", "qbittorrent", "subtitles", "pretzel", "parfait", "menu",
+            "popsicle", "preserves", "marshmallow"
         }
     };
 

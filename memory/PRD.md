@@ -113,7 +113,16 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 - **Next:** Configure `LICENSE_SERVER_URL` and `LICENSE_SERVER_API_KEY` in appsettings.json to connect to https://github.com/Z3r0Fell/WN-License-Server
 
 ## Future Tasks (P2)
-- Strudel Phase 2-5: Job queue async processing, real MakeMKV/HandBrake pipeline, library auto-import, udev automation
-- Biscotti (Ebook/Audiobook/Comics), Treacle (Music), Sage (AI Recommendations)
-- Terrine (Live TV DVR), Popsicle (Offline Sync), Preserves (S3 Backup), Marshmallow (Cloud Sync)
-- Docker image publication, hardware transcoding
+- Docker image publication per tier (Standard/Pro/Ultra)
+- Hardware transcoding integration
+- Strudel Phase 2-5: Real async MakeMKV/HandBrake pipeline, udev automation
+
+## Completed Backlog (This Session)
+- **Pretzel (Gaming Console):** 15 retro systems, ROM library, scan/import, save states, play tracking, favorites, EmulatorJS integration
+- **Biscotti (Ebooks/Audiobooks/Comics):** Library management, scan, progress tracking, epub/pdf/cbz/m4b support
+- **Treacle (Music):** Track library, artist/album management, scan, mp3/flac/ogg/m4a support
+- **Sage (AI Recommendations):** TMDB-powered, filters out watched content, trending + top-rated sources
+- **Terrine (Live TV DVR):** Recording scheduler, EPG integration, status tracking
+- **Popsicle (Offline Sync):** Download queue, quality selection, expiry management
+- **Preserves (S3 Backup):** S3/object storage config, backup creation/listing, multi-provider support
+- **Marshmallow (Cloud Sync):** Cross-device sync for watchlist/progress/settings, sync history
