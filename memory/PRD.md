@@ -113,9 +113,8 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 - **Next:** Configure `LICENSE_SERVER_URL` and `LICENSE_SERVER_API_KEY` in appsettings.json to connect to https://github.com/Z3r0Fell/WN-License-Server
 
 ## Future Tasks (P2)
-- Docker image publication per tier (Standard/Pro/Ultra)
-- Hardware transcoding integration
-- Strudel Phase 2-5: Real async MakeMKV/HandBrake pipeline, udev automation
+- Production deployment and CI/CD pipeline
+- Automated testing suite per tier
 
 ## Completed Backlog (This Session)
 - **Pretzel (Gaming Console):** 15 retro systems, ROM library, scan/import, save states, play tracking, favorites, EmulatorJS integration
@@ -131,3 +130,12 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 
 ## All Frontend Pages Complete
 Every module now has a working frontend page — zero scaffolding remaining.
+
+## Docker Image Publication — COMPLETE
+- **Dockerfile:** Multi-stage build (node:20-alpine → .NET 10 SDK → .NET 10 runtime). Accepts `TIER` build arg.
+- **docker-compose.yml:** Three services with profiles (standard/pro/ultra). Volume mounts for data, media, rips, transcoded, offline. NVIDIA GPU passthrough for Ultra.
+- **build/docker-build.sh:** Build + push all tiers. Tags: `watchnexus/watchnexus:2.8.4-{tier}`, `latest-{tier}`, ultra = `latest`.
+- **build/copy-tier-controllers.sh:** Selectively copies controllers per tier during Docker build.
+- **build/build-tiers.sh:** Local tier packaging (non-Docker). Standard: 14 controllers/26 pages. Pro: 23/41. Ultra: 46/57.
+- **.dockerignore:** Excludes node_modules, .git, docs, website, build artifacts.
+- Images: `watchnexus/watchnexus:2.8.4-standard`, `watchnexus/watchnexus:2.8.4-pro`, `watchnexus/watchnexus:2.8.4-ultra`
