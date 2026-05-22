@@ -1,0 +1,93 @@
+# ══════════════════════════════════════════════════════════════════════
+# WatchNexus — Docker Compose (Multi-Tier)
+# Usage:
+#   docker compose --profile standard up -d
+#   docker compose --profile pro up -d
+#   docker compose --profile ultra up -d
+# Or build all: docker compose build
+# ══════════════════════════════════════════════════════════════════════
+
+services:
+  # ── Standard Edition ─────────────────────────────────────────────
+  watchnexus-standard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TIER: standard
+    image: watchnexus/watchnexus:2.8.4-standard
+    container_name: watchnexus-standard
+    profiles: ["standard"]
+    ports:
+      - "8002:8002"
+    volumes:
+      - watchnexus-data-std:/app/data
+      - media-library:/data/media
+    environment:
+      - WATCHNEXUS_TIER=standard
+      - JWT_SECRET=${JWT_SECRET:-WatchNexus_DefaultSecret_ChangeInProduction_32chars!}
+      - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+    restart: unless-stopped
+
+  # ── Pro Edition ──────────────────────────────────────────────────
+  watchnexus-pro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TIER: pro
+    image: watchnexus/watchnexus:2.8.4-pro
+    container_name: watchnexus-pro
+    profiles: ["pro"]
+    ports:
+      - "8002:8002"
+    volumes:
+      - watchnexus-data-pro:/app/data
+      - media-library:/data/media
+      - rips:/data/rips
+    environment:
+      - WATCHNEXUS_TIER=pro
+      - JWT_SECRET=${JWT_SECRET:-WatchNexus_DefaultSecret_ChangeInProduction_32chars!}
+      - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+    restart: unless-stopped
+
+  # ── Ultra Edition ────────────────────────────────────────────────
+  watchnexus-ultra:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TIER: ultra
+    image: watchnexus/watchnexus:2.8.4-ultra
+    container_name: watchnexus-ultra
+    profiles: ["ultra"]
+    ports:
+      - "8002:8002"
+    volumes:
+      - watchnexus-data-ultra:/app/data
+      - media-library:/data/media
+      - rips:/data/rips
+      - transcoded:/data/transcoded
+      - offline:/data/offline
+    environment:
+      - WATCHNEXUS_TIER=ultra
+      - JWT_SECRET=${JWT_SECRET:-WatchNexus_DefaultSecret_ChangeInProduction_32chars!}
+      - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+    # GPU passthrough for hardware transcoding (NVIDIA)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  watchnexus-data-std:
+  watchnexus-data-pro:
+  watchnexus-data-ultra:
+  media-library:
+  rips:
+  transcoded:
+  offline:

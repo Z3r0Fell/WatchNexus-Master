@@ -1,0 +1,29 @@
+# Ignore development files
+node_modules
+.git
+.emergent
+*.log
+tmp/
+dist/
+test_reports/
+
+# Ignore build artifacts
+src/watchnexus/core/bin/
+src/watchnexus/core/obj/
+src/watchnexus/shared/bin/
+src/watchnexus/shared/obj/
+frontend/node_modules/
+frontend/build/
+
+# Ignore docs/website (not needed in container)
+docs/
+website/
+Alpha/
+separated/
+memory/
+
+# Ignore other
+*.md
+LICENSE
+.env*
+yarn-error.log
