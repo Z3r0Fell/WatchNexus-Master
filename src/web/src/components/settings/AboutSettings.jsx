@@ -22,8 +22,12 @@ const ABOUT_TABS = [
 
 // Credits data
 const CREDITS = {
-  foundingMembers: { title: "Founding Members", icon: Crown, color: "from-yellow-500 to-amber-600", description: "The visionaries who believed from day one", members: [] },
-  superSponsors: { title: "Super Sponsors", icon: Gem, color: "from-violet-500 to-purple-600", description: "Extraordinary supporters who made this possible", members: [] },
+  foundingMembers: { title: "Founding Members", icon: Crown, color: "from-yellow-500 to-amber-600", description: "The visionaries who believed from day one", members: [
+    { name: "James Lightner", role: "Founding Member", note: "Also credited for the use of JellyLooter code in the Ultra Tier" },
+  ] },
+  superSponsors: { title: "Super Sponsors", icon: Gem, color: "from-violet-500 to-purple-600", description: "Extraordinary supporters who made this possible", members: [
+    { name: "Joseph Betty", role: "Super Sponsor" },
+  ] },
   codeContributors: { title: "Code Contributors", icon: Code, color: "from-blue-500 to-cyan-600", description: "The developers who shaped WatchNexus", members: [] },
   backers: { title: "Backers", icon: Heart, color: "from-pink-500 to-rose-600", description: "Our amazing crowdfunding supporters", members: [] },
   superFans: { title: "Super Fans", icon: Star, color: "from-orange-500 to-red-600", description: "Community champions and early adopters", members: [] }
@@ -743,7 +747,8 @@ const CreditTier = ({ tier, badge }) => {
                 {member.avatar ? <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">{member.name.charAt(0).toUpperCase()}</div>}
               </div>
               <p className="text-sm font-medium text-white text-center truncate">{member.name}</p>
-              {member.title && <p className="text-xs text-gray-500 text-center truncate">{member.title}</p>}
+              {(member.title || member.role) && <p className="text-xs text-gray-500 text-center truncate">{member.title || member.role}</p>}
+              {member.note && <p className="text-[10px] text-gray-600 text-center mt-1 leading-tight">{member.note}</p>}
             </div>
           ))}
         </div>
