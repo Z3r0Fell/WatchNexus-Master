@@ -51,7 +51,7 @@ public class CellarController : ControllerBase
             "security", "rind", "pepper", "crucible", "strudel", "crumbs", "taffy",
             "cinnamon", "waffle", "custard", "yeast", "brine", "ladle",
             "watch-party", "vpn", "qbittorrent", "subtitles", "pretzel", "parfait", "menu",
-            "popsicle", "preserves", "marshmallow"
+            "popsicle", "preserves", "marshmallow", "chowder"
         }
     };
 

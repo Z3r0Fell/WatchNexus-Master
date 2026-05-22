@@ -76,6 +76,7 @@ import TerrinePage from "./pages/TerrinePage";
 import PopsiclePage from "./pages/PopsiclePage";
 import PreservesPage from "./pages/PreservesPage";
 import MarshmallowPage from "./pages/MarshmallowPage";
+import ChowderPage from "./pages/ChowderPage";
 
 import "./App.css";
 
@@ -443,6 +444,7 @@ function AppRouter() {
       <Route path="/offline" element={<TierRoute path="/offline"><PopsiclePage /></TierRoute>} />
       <Route path="/cloud-backup" element={<TierRoute path="/cloud-backup"><PreservesPage /></TierRoute>} />
       <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
+      <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

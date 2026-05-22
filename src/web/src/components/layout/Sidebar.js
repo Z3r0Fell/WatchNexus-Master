@@ -47,6 +47,7 @@ import {
   Rss,
   Disc,
   Clapperboard,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -120,6 +121,7 @@ const settingsSubItems = [
   { icon: Download, label: 'Offline', path: '/offline', hideable: true },
   { icon: Cloud, label: 'Backup', path: '/cloud-backup', hideable: true },
   { icon: Cloud, label: 'Sync', path: '/cloud-sync', hideable: true },
+  { icon: ArrowDownToLine, label: 'Media Sync', path: '/media-sync', hideable: true },
 ];
 
 // Default visible tabs
@@ -129,7 +131,7 @@ const defaultVisibleTabs = [
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
   'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr', 'Requests', 'Gaming',
-  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync',
+  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync', 'Media Sync',
 ];
 
 // Get visible tabs from localStorage
