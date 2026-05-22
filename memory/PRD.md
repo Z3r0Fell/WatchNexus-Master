@@ -116,7 +116,23 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 - Automated testing suite per tier
 - Helm chart for Kubernetes deployment
 
-## CI/CD & Container Registry — COMPLETE
+## Update System — COMPLETE
+- **UpdateController.cs** — 7 endpoints at `/api/system/updates/*`:
+  - `GET /check` — Dual-source check: license server manifest + GitHub private repo for hotfix patches
+  - `GET /current` — Current version, tier, last check time, channel status
+  - `GET /settings` & `POST /settings` — Auto-check, interval, auto-install patches, channel (stable/beta/nightly)
+  - `GET /history` — Update application log
+  - `POST /apply-patch` — Apply GitHub-hosted silent hotfix patches
+  - `POST /dismiss` — Dismiss update notification
+- **UpdateSettings.jsx** — Settings > Updates sub-tab with:
+  - Version card (v2.9.0, Ultra Edition, tier icon)
+  - "Check for Updates" button with loading state
+  - Update available banner with release notes, download URL, docker pull command
+  - Hotfix patch banner with severity coloring and one-click apply
+  - "You're up to date" green confirmation
+  - Update Preferences panel (auto-check, interval, auto-install patches, channel)
+  - Update History log
+- **Config**: `PATCH_REPO_URL` and `PATCH_REPO_TOKEN` in appsettings.json for private GitHub repo
 - **GitHub Container Registry:** Images published to `ghcr.io/<owner>/watchnexus:{version}-{tier}`
 - **docker-publish.yml:** Triggered by `v*.*.*` tags or manual dispatch. Builds all 3 tiers in parallel, multi-arch (amd64+arm64), with GHA build cache. Tags ultra as `latest`. Auto-creates GitHub Release with tier comparison table and install instructions.
 - **pr-check.yml:** Validates all 3 tiers compile on PRs to main/develop.
