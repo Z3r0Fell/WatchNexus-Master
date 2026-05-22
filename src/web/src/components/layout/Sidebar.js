@@ -285,7 +285,7 @@ export const Sidebar = () => {
       {/* Logo */}
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/watchnexus-logo.svg" alt="WatchNexus" className="w-10 h-10 rounded-xl" />
+          <img src="/watchnexus-logo.png" alt="WatchNexus" className="w-10 h-10 rounded-xl" />
           <AnimatePresence>
             {expanded && (
               <motion.span

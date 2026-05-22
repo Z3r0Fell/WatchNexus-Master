@@ -691,3 +691,150 @@ body {
 .delay-3 { animation-delay: 0.3s; }
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
+
+
+/* ── TIER CARDS ── */
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+.tier-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.3s, border-color 0.3s;
+}
+.tier-card:hover { transform: translateY(-4px); border-color: var(--border-hover); }
+.tier-featured { border-color: #3b82f6; box-shadow: 0 0 40px rgba(59, 130, 246, 0.15); }
+.tier-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: #3b82f6;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  z-index: 2;
+}
+.tier-header {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: white;
+}
+.tier-header h3 { font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0.25rem; }
+.tier-price { font-size: 2rem; font-weight: 900; }
+.tier-price span { font-size: 0.85rem; font-weight: 400; opacity: 0.8; }
+.tier-body { padding: 1.5rem; }
+.tier-desc { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; }
+.tier-features { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+.tier-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.tier-features li i { color: #34d399; font-size: 0.75rem; margin-top: 0.2rem; flex-shrink: 0; }
+.btn-block { display: block; width: 100%; text-align: center; }
+
+/* ── COMPARISON TABLE ── */
+.comparison-table-wrap { overflow-x: auto; padding: 0 2rem; max-width: 72rem; margin: 0 auto; }
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.comparison-table th, .comparison-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.comparison-table th.feature-col, .comparison-table td:first-child { text-align: left; }
+.comparison-table thead th {
+  background: var(--bg-surface);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 1.25rem 1rem;
+  position: sticky;
+  top: 64px;
+  z-index: 10;
+}
+.tier-col { min-width: 100px; }
+.tier-standard { color: #9ca3af; }
+.tier-pro { color: #60a5fa; }
+.tier-ultra { color: #a78bfa; }
+.comparison-table .c-yes { color: #34d399; }
+.comparison-table .c-no { color: #374151; }
+.section-row td {
+  background: var(--bg-elevated);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.6rem 1rem;
+}
+
+/* ── FAQ ── */
+.faq-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.faq-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.faq-item[open] { border-color: var(--border-hover); }
+.faq-item summary {
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+  content: '\f078';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.faq-item[open] summary::after { transform: rotate(180deg); }
+.faq-item p {
+  padding: 0 1.25rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+/* ── DOWNLOAD SECTION ── */
+.download-section { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.download-section h4 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+.code-block {
+  display: block;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  word-break: break-all;
+  overflow-x: auto;
+}

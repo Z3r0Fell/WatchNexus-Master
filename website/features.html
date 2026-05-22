@@ -4,335 +4,103 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Features - WatchNexus</title>
-  <meta name="description" content="Explore all 35 modules of WatchNexus - from indexer search to VPN management to automated backups.">
+  <meta name="description" content="Explore WatchNexus features across Standard, Pro, and Ultra tiers.">
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
 <nav class="nav">
-  <a href="index.html" class="nav-logo">
-    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
-    WatchNexus
-  </a>
-  <ul class="nav-links">
-    <li><a href="features.html">Features</a></li>
-    <li><a href="download.html">Download</a></li>
-    <li><a href="faq.html">FAQ</a></li>
-    <li><a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank" rel="noopener">Support</a></li>
-  </ul>
-  <div class="nav-right">
-    <a href="#" class="nav-github" onclick="return false;" style="cursor:default;opacity:0.4;">GitHub</a>
-    <a href="download.html" class="btn btn-primary">Download</a>
-  </div>
+  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
+  <ul class="nav-links"><li><a href="features.html" class="active">Features</a></li><li><a href="download.html">Download</a></li><li><a href="faq.html">FAQ</a></li><li><a href="support.html">Support</a></li></ul>
+  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
 </nav>
 
-<div class="page-header">
-  <h1>All <span class="gradient-text">35 Modules</span></h1>
-  <p>Every feature in WatchNexus is a first-class module with its own codename, controller, and API endpoints.</p>
-</div>
+<section class="hero" style="padding-bottom:3rem;">
+  <h1 class="animate-in">Every Feature,<br><span class="gradient-text">Every Tier</span></h1>
+  <p class="hero-sub animate-in delay-1">73 modules across three tiers. Start free, unlock more with a serial number.</p>
+</section>
 
-<!-- Core Modules -->
+<!-- FULL TIER COMPARISON TABLE -->
 <section class="section">
-  <span class="section-label"><i class="fa-solid fa-cube"></i> Core Platform</span>
-  <h2 class="section-title">Foundation modules</h2>
-  <p class="section-desc">The essential modules that power every WatchNexus installation.</p>
+  <div class="comparison-table-wrap animate-in">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th class="feature-col">Feature</th>
+          <th class="tier-col tier-standard"><i class="fa-solid fa-shield-halved"></i><br>Standard<br><small>Free</small></th>
+          <th class="tier-col tier-pro"><i class="fa-solid fa-bolt"></i><br>Pro<br><small>$35 CAD</small></th>
+          <th class="tier-col tier-ultra"><i class="fa-solid fa-crown"></i><br>Ultra<br><small>$60 CAD</small></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section-row"><td colspan="4">Core Platform</td></tr>
+        <tr><td>Media library with TMDB metadata</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Video streaming with range support</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Download manager (built-in torrent engine)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Watchlist, continue watching, playlists</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Collections with smart filters (Roux)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Scrobbling &mdash; Trakt.tv / Last.fm (Glaze)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Theme engine with 6 themes + custom CSS (Milk)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Gadgets: Weather, Podcasts, Radio, Photos, Web Video</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>File browser, system info, logs</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Setup wizard & user management</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
 
-  <div class="module-grid">
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Media Library</h3>
-        <span class="codename">marmalade</span>
-        <span class="module-badge badge-core">Core</span>
-      </div>
-      <p>Scan local directories, fetch TMDB metadata, organize into Movies, TV Shows, and Anime. Progress tracking, poster art, and recently added feeds.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Security Center</h3>
-        <span class="codename">bastion</span>
-        <span class="module-badge badge-security">Security</span>
-      </div>
-      <p>TOTP 2FA with QR setup, LDAP integration, IP filtering, API key management, full audit logging, and session monitoring with device detection.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>VPN Portal</h3>
-        <span class="codename">tunnel</span>
-        <span class="module-badge badge-security">Security</span>
-      </div>
-      <p>WireGuard peer CRUD with auto key generation, SSL certificates, bandwidth monitoring, Dynamic DNS, Tailscale, and connectivity testing.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Code Protection</h3>
-        <span class="codename">fortress</span>
-        <span class="module-badge badge-security">Security</span>
-      </div>
-      <p>SHA-256 assembly integrity verification at startup with periodic runtime checks. Auto-locks the API on tampering detection.</p>
-    </div>
+        <tr class="section-row"><td colspan="4">Automation & Analytics (Pro+)</td></tr>
+        <tr><td>Indexer search engine &mdash; Nyaa, YTS, EZTV, Torznab (Compote)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Movie automation with TMDB (Fondue)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Scheduled tasks &mdash; 8 task types (Saffron)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Backup & restore with retention (Sourdough)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Advanced auth &mdash; TOTP 2FA, session management (Bastion)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Watch analytics & Year Wrapped (Truffle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Network config &mdash; VPN peers, SSL, DDNS (Tunnel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>RSS feed generation (Sprout)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>User request system (Meringue)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>AI recommendations (Sage)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Live TV / IPTV with EPG (IPTV)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Live TV DVR recording (Terrine)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Ebook, audiobook & comic library (Biscotti)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Music library management (Treacle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Streaming service credentials</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+
+        <tr class="section-row"><td colspan="4">Ultra Suite</td></tr>
+        <tr><td>Security center &mdash; IP rules, API keys, audit (Security)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Parental controls with PIN lock (Rind)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Notification hub &mdash; Discord, Telegram, Slack (Pepper)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Hardware transcoding &mdash; NVENC, QSV, VAAPI (Crucible)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Optical disc ripping &mdash; MakeMKV + HandBrake (Strudel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Media sync from Jellyfin/Emby (Chowder)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Jellyseerr integration (Parfait)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Built-in Seerr &mdash; discover & request (Menu)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Gaming console &mdash; 15 retro systems (Pretzel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>S3 / cloud backup (Preserves)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Offline sync & download (Popsicle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Cloud sync across devices (Marshmallow)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Matrix chat integration</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Usenet indexer & downloader (Brine + Ladle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Subtitle manager &mdash; 5 providers</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Watch party & VPN manager</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+
+        <tr class="section-row"><td colspan="4">Modules</td></tr>
+        <tr><td><strong>Total modules</strong></td><td><strong>31</strong></td><td><strong>49</strong></td><td><strong>73</strong></td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
-<!-- Media Acquisition -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-download"></i> Media Acquisition</span>
-  <h2 class="section-title">Find and download content</h2>
-  <p class="section-desc">Search, grab, and automate your media acquisition pipeline.</p>
-
-  <div class="module-grid">
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Indexer Search</h3>
-        <span class="codename">compote</span>
-        <span class="module-badge badge-media">Media</span>
-      </div>
-      <p>Multi-indexer search across Nyaa.si, YTS, EZTV, Torznab/Newznab, and generic RSS. Quality/codec detection, size parsing, magnet extraction.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Movie Automation</h3>
-        <span class="codename">fondue</span>
-        <span class="module-badge badge-auto">Automation</span>
-      </div>
-      <p>Radarr-style movie monitoring with quality profile matching, download queue management, and automated acquisition.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Download Clients</h3>
-        <span class="codename">churro</span>
-        <span class="module-badge badge-media">Media</span>
-      </div>
-      <p>Manage torrent and Usenet clients. Built-in download engine plus qBittorrent integration with category support.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Scrapers</h3>
-        <span class="codename">syrup</span>
-        <span class="module-badge badge-media">Media</span>
-      </div>
-      <p>Live content scrapers for additional acquisition sources beyond standard indexers.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Organization & Automation -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-gears"></i> Organization &amp; Automation</span>
-  <h2 class="section-title">Organize and automate</h2>
-  <p class="section-desc">Smart collections, scheduled tasks, backups, and scrobbling integration.</p>
-
-  <div class="module-grid">
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Collections</h3>
-        <span class="codename">roux</span>
-        <span class="module-badge badge-auto">Organization</span>
-      </div>
-      <p>Smart and manual collections with auto-refresh. 5 preset templates: Top Rated, New Releases, Unwatched, 4K, and Short Films.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Scheduled Tasks</h3>
-        <span class="codename">saffron</span>
-        <span class="module-badge badge-auto">Automation</span>
-      </div>
-      <p>8 task types for background automation: library scans, indexer checks, metadata refresh, and maintenance. Full run history.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Backup &amp; Restore</h3>
-        <span class="codename">sourdough</span>
-        <span class="module-badge badge-auto">Automation</span>
-      </div>
-      <p>Automated backup scheduling with configuration export. Point at a directory and schedule daily/weekly backups.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Scrobbling</h3>
-        <span class="codename">glaze</span>
-        <span class="module-badge badge-auto">Integration</span>
-      </div>
-      <p>Trakt.tv OAuth integration and Last.fm scrobbling. Config-driven client IDs with scrobble history viewer.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>RSS Feeds</h3>
-        <span class="codename">sprout</span>
-        <span class="module-badge badge-auto">Publishing</span>
-      </div>
-      <p>RSS 2.0 feed generator for your library. Recent additions, Movies, TV Shows feeds with API key authentication.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Playlists</h3>
-        <span class="codename">drizzle</span>
-        <span class="module-badge badge-media">Playback</span>
-      </div>
-      <p>Queue management, custom playlists, and skip markers for seamless media playback.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Playback & Gadgets -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-podcast"></i> Playback &amp; Gadgets</span>
-  <h2 class="section-title">Beyond media management</h2>
-  <p class="section-desc">Built-in gadgets for weather, podcasts, radio, photos, and more.</p>
-
-  <div class="module-grid">
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Weather</h3>
-        <span class="codename">sorbet</span>
-        <span class="module-badge badge-gadget">Gadget</span>
-      </div>
-      <p>Weather dashboard powered by Open-Meteo API. Current conditions, forecasts, and alerts.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Podcasts</h3>
-        <span class="codename">brioche</span>
-        <span class="module-badge badge-gadget">Gadget</span>
-      </div>
-      <p>Podcast player with iTunes search and RSS feed subscription support.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Internet Radio</h3>
-        <span class="codename">nectar</span>
-        <span class="module-badge badge-gadget">Gadget</span>
-      </div>
-      <p>Live radio streams via Radio Browser API with search, favorites, and now-playing info.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Photo Gallery</h3>
-        <span class="codename">ganache</span>
-        <span class="module-badge badge-gadget">Gadget</span>
-      </div>
-      <p>Browse and view photos from local libraries with thumbnail generation and album organization.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Web Video</h3>
-        <span class="codename">bisque</span>
-        <span class="module-badge badge-gadget">Gadget</span>
-      </div>
-      <p>Web video bookmarks, watch history, and YouTube metadata integration.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>IPTV</h3>
-        <span class="codename">taffy</span>
-        <span class="module-badge badge-gadget">Gadget</span>
-      </div>
-      <p>Live TV channel streams with M3U playlist support and EPG guide integration.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Infrastructure -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-server"></i> Infrastructure</span>
-  <h2 class="section-title">System &amp; monitoring</h2>
-  <p class="section-desc">Diagnostic tools, API management, marketplace, and the system tray app.</p>
-
-  <div class="module-grid">
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Log Viewer</h3>
-        <span class="codename">zest</span>
-        <span class="module-badge badge-core">Diagnostics</span>
-      </div>
-      <p>Application log browser with search, filtering, and real-time log tailing.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>System Stats</h3>
-        <span class="codename">nutmeg</span>
-        <span class="module-badge badge-core">Monitoring</span>
-      </div>
-      <p>CPU, memory, disk, and process monitoring from the System dashboard.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>API Management</h3>
-        <span class="codename">crumbs</span>
-        <span class="module-badge badge-core">Infrastructure</span>
-      </div>
-      <p>Centralized API key management for 11 integrated services.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Marketplace</h3>
-        <span class="codename">ripen</span>
-        <span class="module-badge badge-core">Extensions</span>
-      </div>
-      <p>Module marketplace, Kodi repository integration, and plugin management.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>System Tray</h3>
-        <span class="codename">beacon</span>
-        <span class="module-badge badge-core">Desktop</span>
-      </div>
-      <p>System tray controller for desktop deployments with quick access and notifications.</p>
-    </div>
-    <div class="module-card">
-      <div class="module-card-header">
-        <h3>Transcoding</h3>
-        <span class="codename">gelatin</span>
-        <span class="module-badge badge-media">Media</span>
-      </div>
-      <p>Media transcoding engine with quality profiles and FFmpeg pipeline management.</p>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta-section">
-  <h2 class="section-title" style="position:relative">35 Modules. One Binary.</h2>
-  <p style="color:var(--text-secondary);margin:1rem auto 2rem;max-width:440px;position:relative">
-    58 MB for Linux. 72 MB for Windows. Zero dependencies. Two-minute install.
-  </p>
-  <div style="display:flex;gap:1rem;justify-content:center;position:relative;flex-wrap:wrap">
-    <a href="download.html" class="btn btn-primary btn-lg"><i class="fa-solid fa-download"></i> Download Now</a>
-  </div>
+<section class="section section-center" style="padding:4rem 2rem;">
+  <a href="download.html" class="btn btn-primary btn-lg"><i class="fa-solid fa-download"></i> Get WatchNexus</a>
 </section>
 
 <footer class="footer">
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <a href="index.html" class="nav-logo" style="margin-bottom:0.5rem">
-        <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#7c3aed"/><path d="M11 8l8 6-8 6V8z" fill="#fff"/></svg>
-        WatchNexus
-      </a>
-      <p>Unified, self-hosted media pipeline.</p>
-    </div>
-    <div class="footer-col">
-      <h4>Product</h4>
-      <a href="features.html">Features</a>
-      <a href="download.html">Download</a>
-      <a href="faq.html">FAQ</a>
-      <a href="press.html">Press Kit</a>
-    </div>
-    <div class="footer-col">
-      <h4>Resources</h4>
-      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">QA &amp; Testing</a>
-      <a href="https://z3r0fell.github.io/watchnexus-qa/" target="_blank">Report Issue</a>
-    </div>
-    <div class="footer-col">
-      <h4>Community</h4>
-      <a href="#" onclick="return false;" style="opacity:0.4">GitHub</a>
-      <a href="#" onclick="return false;" style="opacity:0.4">Discord</a>
-    </div>
+  <div class="footer-inner">
+    <div class="footer-brand"><div class="nav-logo" style="margin-bottom:0.5rem;"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;"> WatchNexus</div><p>Your complete, self-hosted media pipeline.</p></div>
+    <div class="footer-links"><div><h4>Product</h4><a href="features.html">Features</a><a href="download.html">Download</a><a href="faq.html">FAQ</a></div><div><h4>Resources</h4><a href="support.html">Support</a><a href="press.html">Press Kit</a></div><div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div></div>
   </div>
-  <div class="footer-bottom">
-    <span>&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
-    <span>v2.9.0</span>
-  </div>
+  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved. v2.9.0</div>
 </footer>
-
+<script>const obs=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.animate-in').forEach(el=>obs.observe(el));</script>
 </body>
 </html>
