@@ -93,7 +93,24 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
   - Backend: `ParfaitController.cs` — Full Jellyseerr API proxy (status, config, requests CRUD, approve/decline, discover, search, movie/TV details, users, stats)
   - Frontend: `ParfaitPage.jsx` — Config panel, request management with approve/decline/delete, discover tab with trending, search with request buttons, stats bar
   - Route: `/jellyseerr` → `/api/parfait/*`
-- **Next:** User to source LaaS for license key generation/management. When ready, integrate validation endpoint.
+- **Menu (Built-in Seerr):** IMPLEMENTED — Ultra tier (codename: Menu)
+  - Backend: `MenuController.cs` — TMDB discovery (trending/popular/upcoming/search), request management (CRUD + approve/decline/fulfill), Sonarr/Radarr integration (config, add, profiles, root folders), automatic fulfillment pipeline
+  - Frontend: `MenuPage.jsx` — Discover tab with poster grid, request management with filters, Sonarr/Radarr config panel, search
+  - Route: `/requests-manager` → `/api/menu/*`
+- **WN-License-Server Integration:** IMPLEMENTED
+  - CellarController talks to external license server at `LICENSE_SERVER_URL` via `POST /api/integrate/activate`
+  - Validates license key → gets `plan` field → maps to Standard/Pro/Ultra tier
+  - Stores activation_id and activation_token for periodic validation
+  - Falls back to format-based validation (WNX-PRO-/WNX-ULT-) when server unavailable
+- **Upgrade Paths:** IMPLEMENTED
+  - Standard → Pro, Standard → Ultra, Pro → Ultra (only upgrades allowed, downgrades blocked)
+  - Previous tier tracked in license data
+- **First-Launch Unlock:** IMPLEMENTED
+  - `GET /api/cellar/first-launch` (no auth) — checks if license exists
+  - `POST /api/cellar/activate-first-launch` (no auth) — enter serial or skip to Standard
+  - `FirstLaunchGate.jsx` wraps entire app — shows welcome screen with serial input on first launch
+- **Tier Manifests:** Created `/app/docs/TIER-MANIFESTS.md` — maps every controller to its tier for build packaging
+- **Next:** Configure `LICENSE_SERVER_URL` and `LICENSE_SERVER_API_KEY` in appsettings.json to connect to https://github.com/Z3r0Fell/WN-License-Server
 
 ## Future Tasks (P2)
 - Strudel Phase 2-5: Job queue async processing, real MakeMKV/HandBrake pipeline, library auto-import, udev automation

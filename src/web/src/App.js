@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { GadgetProvider, useGadgets } from "./context/GadgetContext";
 import { LicenseProvider } from "./context/LicenseContext";
+import { FirstLaunchGate } from "./components/FirstLaunchGate";
 import { lazy, Suspense } from "react";
 
 // Pages
@@ -441,7 +442,9 @@ function App() {
           <ThemeProvider>
             <GadgetProvider>
               <LicenseProvider>
-                <AppRouter />
+                <FirstLaunchGate>
+                  <AppRouter />
+                </FirstLaunchGate>
                 <Toaster 
                   position="bottom-right" 
                   toastOptions={{
