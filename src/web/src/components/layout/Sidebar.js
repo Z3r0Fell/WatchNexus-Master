@@ -46,6 +46,7 @@ import {
   Archive,
   Rss,
   Disc,
+  Clapperboard,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
