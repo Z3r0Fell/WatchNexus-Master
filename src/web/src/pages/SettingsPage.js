@@ -10,6 +10,7 @@ import {
   MaintenanceSettings, PlaybackSettings, AboutSettings,
   QualityProfilesSettings, ActivationSettings
 } from '../components/settings';
+import { UpdateSettings } from '../components/settings/UpdateSettings';
 import { ZestSettings } from '../components/settings/ZestSettings';
 import { CrumbsSettings } from '../components/settings/CrumbsSettings';
 import { Layout } from '../components/layout/Layout';
@@ -267,6 +268,7 @@ export const SettingsPage = () => {
       case 'maintenance': return <MaintenanceSettings />;
       case 'about': return <AboutSettings />;
       case 'activation': return <ActivationSettings />;
+      case 'updates': return <UpdateSettings />;
       default: return null;
     }
   };
@@ -363,6 +365,7 @@ export const SettingsPage = () => {
               <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">About</h3>
               <div className="space-y-0.5">
                 <NavButton id="activation" label="Activation" />
+                <NavButton id="updates" label="Updates" />
                 <NavButton id="about" label="About & Releases" />
               </div>
             </div>
@@ -373,7 +376,7 @@ export const SettingsPage = () => {
         <main className="flex-1 min-h-screen">
           {/* Content Header */}
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
-            <h2 className="font-medium capitalize">{activeSection === 'plugins' ? 'Gadgets' : activeSection === 'integrations' ? 'API Management' : activeSection === 'activation' ? 'License Activation' : activeSection.replace('-', ' ')} Settings</h2>
+            <h2 className="font-medium capitalize">{activeSection === 'plugins' ? 'Gadgets' : activeSection === 'integrations' ? 'API Management' : activeSection === 'activation' ? 'License Activation' : activeSection === 'updates' ? 'Software Updates' : activeSection.replace('-', ' ')} Settings</h2>
           </div>
 
           {/* Content */}
