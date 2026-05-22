@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support - WatchNexus</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
+  <ul class="nav-links"><li><a href="features.html">Features</a></li><li><a href="download.html">Download</a></li><li><a href="faq.html">FAQ</a></li><li><a href="support.html" class="active">Support</a></li></ul>
+  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
+</nav>
+
+<section class="hero" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;">
+  <div style="text-align:center;">
+    <div style="width:80px;height:80px;margin:0 auto 1.5rem;border-radius:1.5rem;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;">
+      <i class="fa-solid fa-headset" style="font-size:2rem;color:white;"></i>
+    </div>
+    <h1 class="animate-in" style="font-size:3rem;">Support</h1>
+    <div class="animate-in delay-1" style="margin:2rem auto;max-width:28rem;">
+      <span style="display:inline-block;padding:0.5rem 1.5rem;border-radius:999px;background:linear-gradient(135deg,rgba(124,58,234,0.15),rgba(168,85,247,0.15));border:1px solid rgba(124,58,234,0.3);color:#a78bfa;font-weight:600;font-size:1.1rem;letter-spacing:0.03em;">
+        Coming Soon
+      </span>
+    </div>
+    <p class="hero-sub animate-in delay-2" style="max-width:30rem;margin:0 auto;">
+      We're building a dedicated support portal with documentation, community forums, and ticket-based assistance.
+    </p>
+    <div class="animate-in delay-3" style="margin-top:2.5rem;">
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem;">In the meantime:</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <a href="faq.html" class="btn btn-outline"><i class="fa-solid fa-circle-question"></i> Check the FAQ</a>
+        <a href="download.html" class="btn btn-primary"><i class="fa-solid fa-download"></i> Get WatchNexus</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand"><div class="nav-logo" style="margin-bottom:0.5rem;"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;"> WatchNexus</div><p>Your complete, self-hosted media pipeline.</p></div>
+    <div class="footer-links"><div><h4>Product</h4><a href="features.html">Features</a><a href="download.html">Download</a><a href="faq.html">FAQ</a></div><div><h4>Resources</h4><a href="support.html">Support</a><a href="press.html">Press Kit</a></div><div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div></div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved. v2.9.0</div>
+</footer>
+<script>const obs=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.animate-in').forEach(el=>obs.observe(el));</script>
+</body>
+</html>
