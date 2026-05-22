@@ -69,6 +69,13 @@ import StrudelPage from "./pages/StrudelPage";
 import ParfaitPage from "./pages/ParfaitPage";
 import MenuPage from "./pages/MenuPage";
 import PretzelPage from "./pages/PretzelPage";
+import BiscottiPage from "./pages/BiscottiPage";
+import TreaclePage from "./pages/TreaclePage";
+import SagePage from "./pages/SagePage";
+import TerrinePage from "./pages/TerrinePage";
+import PopsiclePage from "./pages/PopsiclePage";
+import PreservesPage from "./pages/PreservesPage";
+import MarshmallowPage from "./pages/MarshmallowPage";
 
 import "./App.css";
 
@@ -429,6 +436,13 @@ function AppRouter() {
       <Route path="/jellyseerr" element={<TierRoute path="/jellyseerr"><ParfaitPage /></TierRoute>} />
       <Route path="/requests-manager" element={<TierRoute path="/requests-manager"><MenuPage /></TierRoute>} />
       <Route path="/gaming" element={<TierRoute path="/gaming"><PretzelPage /></TierRoute>} />
+      <Route path="/ebooks" element={<TierRoute path="/ebooks"><BiscottiPage /></TierRoute>} />
+      <Route path="/music-library" element={<TierRoute path="/music-library"><TreaclePage /></TierRoute>} />
+      <Route path="/for-you" element={<TierRoute path="/for-you"><SagePage /></TierRoute>} />
+      <Route path="/dvr" element={<TierRoute path="/dvr"><TerrinePage /></TierRoute>} />
+      <Route path="/offline" element={<TierRoute path="/offline"><PopsiclePage /></TierRoute>} />
+      <Route path="/cloud-backup" element={<TierRoute path="/cloud-backup"><PreservesPage /></TierRoute>} />
+      <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

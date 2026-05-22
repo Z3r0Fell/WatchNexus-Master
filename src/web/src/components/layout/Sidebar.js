@@ -113,6 +113,13 @@ const settingsSubItems = [
   { icon: MonitorPlay, label: 'Jellyseerr', path: '/jellyseerr', hideable: true },
   { icon: Clapperboard, label: 'Requests', path: '/requests-manager', hideable: true },
   { icon: Gamepad2, label: 'Gaming', path: '/gaming', hideable: true },
+  { icon: BookOpen, label: 'Ebooks', path: '/ebooks', hideable: true },
+  { icon: Music, label: 'Music Lib', path: '/music-library', hideable: true },
+  { icon: Sparkles, label: 'For You', path: '/for-you', hideable: true },
+  { icon: Tv, label: 'DVR', path: '/dvr', hideable: true },
+  { icon: Download, label: 'Offline', path: '/offline', hideable: true },
+  { icon: Cloud, label: 'Backup', path: '/cloud-backup', hideable: true },
+  { icon: Cloud, label: 'Sync', path: '/cloud-sync', hideable: true },
 ];
 
 // Default visible tabs
@@ -122,6 +129,7 @@ const defaultVisibleTabs = [
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
   'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr', 'Requests', 'Gaming',
+  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync',
 ];
 
 // Get visible tabs from localStorage

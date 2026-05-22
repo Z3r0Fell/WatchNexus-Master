@@ -119,10 +119,15 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 
 ## Completed Backlog (This Session)
 - **Pretzel (Gaming Console):** 15 retro systems, ROM library, scan/import, save states, play tracking, favorites, EmulatorJS integration
-- **Biscotti (Ebooks/Audiobooks/Comics):** Library management, scan, progress tracking, epub/pdf/cbz/m4b support
-- **Treacle (Music):** Track library, artist/album management, scan, mp3/flac/ogg/m4a support
-- **Sage (AI Recommendations):** TMDB-powered, filters out watched content, trending + top-rated sources
-- **Terrine (Live TV DVR):** Recording scheduler, EPG integration, status tracking
-- **Popsicle (Offline Sync):** Download queue, quality selection, expiry management
-- **Preserves (S3 Backup):** S3/object storage config, backup creation/listing, multi-provider support
-- **Marshmallow (Cloud Sync):** Cross-device sync for watchlist/progress/settings, sync history
+- **Biscotti (Ebooks/Audiobooks/Comics):** Library management, scan, progress tracking, epub/pdf/cbz/m4b support. Frontend: BiscottiPage.jsx at /ebooks
+- **Treacle (Music):** Track library, artist/album management, scan, mp3/flac/ogg/m4a support. Frontend: TreaclePage.jsx at /music-library
+- **Sage (AI Recommendations):** TMDB-powered, filters out watched content, trending + top-rated sources. Frontend: SagePage.jsx at /for-you
+- **Terrine (Live TV DVR):** Recording scheduler, EPG integration, status tracking. Frontend: TerrinePage.jsx at /dvr
+- **Popsicle (Offline Sync):** Download queue, quality selection, expiry management. Frontend: PopsiclePage.jsx at /offline
+- **Preserves (S3 Backup):** S3/object storage config, backup creation/listing, multi-provider (S3/B2/MinIO/Wasabi/R2). Frontend: PreservesPage.jsx at /cloud-backup
+- **Marshmallow (Cloud Sync):** Cross-device sync for watchlist/progress/settings, sync history. Frontend: MarshmallowPage.jsx at /cloud-sync
+- **Strudel Phase 2-5:** Async job queue with background processing, real MakeMKV robot mode + progress parsing, HandBrake CLI integration with progress, auto-import to library, udev auto-detection rules + install, pipeline stats
+- **Hardware Transcoding:** GPU detection (NVIDIA/Intel QSV/VAAPI/AMD AMF/Apple VideoToolbox), 8 HW encode profiles, FFmpeg encoder enumeration, hardware transcode job submission
+
+## All Frontend Pages Complete
+Every module now has a working frontend page — zero scaffolding remaining.
