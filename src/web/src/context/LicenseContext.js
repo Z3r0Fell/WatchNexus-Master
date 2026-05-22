@@ -55,6 +55,13 @@ export const ROUTE_MODULE_MAP = {
   '/jellyseerr': 'parfait',
   '/requests-manager': 'menu',
   '/gaming': 'pretzel',
+  '/ebooks': 'biscotti',
+  '/music-library': 'treacle',
+  '/for-you': 'sage',
+  '/dvr': 'terrine',
+  '/offline': 'popsicle',
+  '/cloud-backup': 'preserves',
+  '/cloud-sync': 'marshmallow',
   '/themes': 'milk',
   '/dvr': 'iptv',
 };
