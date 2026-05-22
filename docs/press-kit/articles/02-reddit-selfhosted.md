@@ -113,7 +113,7 @@ The system page shows real metrics, not placeholder data:
 - **Auth**: JWT + TOTP 2FA
 - **Release**: Self-contained binaries (58 MB Linux, 72 MB Windows)
 
-### What's Honest-to-God Working Right Now (v2.8.4)
+### What's Honest-to-God Working Right Now (v2.9.0)
 
 - Library management with TMDB metadata
 - Multi-indexer search returning real results
@@ -145,8 +145,8 @@ I'm being transparent:
 
 ```bash
 # Linux
-tar xzf WatchNexus-v2.8.4-linux-x64.tar.gz
-cd WatchNexus-v2.8.4-linux-x64
+tar xzf WatchNexus-v2.9.0-linux-x64.tar.gz
+cd WatchNexus-v2.9.0-linux-x64
 sudo bash install.sh
 # Visit http://localhost:8001
 ```

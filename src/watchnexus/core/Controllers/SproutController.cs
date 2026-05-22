@@ -24,7 +24,7 @@ public class SproutController : ControllerBase
     [Authorize]
     public IActionResult Status() => Ok(new
     {
-        module = "sprout", version = "2.8.4", status = "active",
+        module = "sprout", version = "2.9.0", status = "active",
         description = "RSS/Atom feed generator for library content",
         features = new[] { "rss_2.0", "atom", "custom_feeds", "media_enclosures", "category_feeds", "api_key_auth" }
     });
@@ -238,7 +238,7 @@ public class SproutController : ControllerBase
                     new XElement("link", baseUrl),
                     new XElement("language", "en-us"),
                     new XElement("lastBuildDate", DateTime.UtcNow.ToString("R")),
-                    new XElement("generator", "WatchNexus Sprout v2.8.4"),
+                    new XElement("generator", "WatchNexus Sprout v2.9.0"),
                     items.Select(item =>
                     {
                         var elements = new List<object>

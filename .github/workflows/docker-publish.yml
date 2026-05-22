@@ -3,14 +3,14 @@
 # Builds and pushes Docker images for all 3 tiers on release tags.
 #
 # Triggers:
-#   - Push tag matching v*.*.* (e.g., v2.8.4)
+#   - Push tag matching v*.*.* (e.g., v2.9.0)
 #   - Manual workflow dispatch
 #
 # Publishes to GitHub Container Registry (ghcr.io)
 # Images:
-#   ghcr.io/<owner>/watchnexus:2.8.4-standard
-#   ghcr.io/<owner>/watchnexus:2.8.4-pro
-#   ghcr.io/<owner>/watchnexus:2.8.4-ultra
+#   ghcr.io/<owner>/watchnexus:2.9.0-standard
+#   ghcr.io/<owner>/watchnexus:2.9.0-pro
+#   ghcr.io/<owner>/watchnexus:2.9.0-ultra
 #   ghcr.io/<owner>/watchnexus:latest
 # ══════════════════════════════════════════════════════════════════════
 

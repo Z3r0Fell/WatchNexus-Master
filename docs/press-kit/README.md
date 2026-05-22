@@ -4,7 +4,7 @@
 
 **WatchNexus** is a self-hosted, unified media management pipeline that combines the best of media servers like Jellyfin with the automation power of the *arr ecosystem -- all in a single application. Built with C#/.NET 10 and React, it gives users complete control over their media libraries without relying on third-party cloud services.
 
-**Current Version:** 2.8.4  
+**Current Version:** 2.9.0  
 **Platform:** Self-hosted (Linux, Windows, macOS, Docker)  
 **License:** Proprietary  
 **Website:** [watchnexus.local](http://watchnexus.local)
@@ -207,7 +207,7 @@ Browse and manage your movie collection with library organization and TMDB disco
 
 ## Release History
 
-### v2.8.4 (Current - March 2026)
+### v2.9.0 (Current - March 2026)
 - Real TOTP 2FA implementation in Bastion module
 - Live indexer search engine replacing placeholder stubs
 - 7 new fully-implemented module pages
@@ -232,8 +232,8 @@ Browse and manage your movie collection with library organization and TMDB disco
 - **Bare Metal:** Direct installation on Linux or Windows with systemd/service integration
 - **Docker:** Official Docker Compose with multi-container setup
 - **Release Builds:** Self-contained archives (no runtime required)
-  - `WatchNexus-v2.8.4-linux-x64.tar.gz` (58 MB)
-  - `WatchNexus-v2.8.4-win-x64.zip` (72 MB)
+  - `WatchNexus-v2.9.0-linux-x64.tar.gz` (58 MB)
+  - `WatchNexus-v2.9.0-win-x64.zip` (72 MB)
 
 ---
 
@@ -242,10 +242,10 @@ Browse and manage your movie collection with library organization and TMDB disco
 For press inquiries, partnership opportunities, or technical questions:
 
 - **Project:** WatchNexus
-- **Version:** 2.8.4
+- **Version:** 2.9.0
 - **Build Date:** March 2026
 - **Architecture:** C#/.NET 10 + React 18
 
 ---
 
-*This press kit was last updated on March 24, 2026 for WatchNexus v2.8.4.*
+*This press kit was last updated on March 24, 2026 for WatchNexus v2.9.0.*

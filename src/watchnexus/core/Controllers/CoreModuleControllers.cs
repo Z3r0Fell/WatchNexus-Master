@@ -22,7 +22,7 @@ public class BastionController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "bastion", version = "2.8.4", status = "active",
+        module = "bastion", version = "2.9.0", status = "active",
         description = "Advanced authentication: LDAP, SSO, 2FA, session management",
         features = new[] { "ldap", "sso", "two_factor", "session_management", "password_policy" }
     });
@@ -223,7 +223,7 @@ public class TunnelController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "tunnel", version = "2.8.4", status = "active",
+        module = "tunnel", version = "2.9.0", status = "active",
         description = "Network management: reverse proxy, VPN, SSL, dynamic DNS",
         features = new[] { "reverse_proxy", "wireguard_vpn", "upnp", "ssl_certificates", "dynamic_dns", "tailscale", "bandwidth_monitoring" }
     });
@@ -440,7 +440,7 @@ public class FondueController : ControllerBase
         var monitoredCount = await _db.Settings.CountAsync(s => s.Key.StartsWith("fondue_monitor_"));
         return Ok(new
         {
-            module = "fondue", version = "2.8.4", status = "active",
+            module = "fondue", version = "2.9.0", status = "active",
             description = "Movie automation: auto-grab, monitor, and upgrade",
             total_movies = movieCount, monitored = monitoredCount,
             features = new[] { "auto_search", "quality_upgrade", "release_monitoring", "custom_formats", "lists" }
@@ -545,7 +545,7 @@ public class SourdoughController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "sourdough", version = "2.8.4", status = "active",
+        module = "sourdough", version = "2.9.0", status = "active",
         description = "Backup, restore, and system snapshot management",
         features = new[] { "full_backup", "scheduled_backup", "selective_restore", "export_config", "import_config" }
     });
@@ -618,7 +618,7 @@ public class TaffyController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "taffy", version = "2.8.4", status = "active",
+        module = "taffy", version = "2.9.0", status = "active",
         description = "Metadata providers and agent configuration",
         features = new[] { "tmdb", "tvdb", "imdb", "musicbrainz", "fanart_tv", "opensubtitles", "custom_agents" }
     });
@@ -698,7 +698,7 @@ public class ChurroController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "churro", version = "2.8.4", status = "active",
+        module = "churro", version = "2.9.0", status = "active",
         description = "Download client management: qBittorrent, SABnzbd, Transmission, Deluge, NZBGet",
         features = new[] { "torrent_clients", "usenet_clients", "health_check", "category_management", "priority_management" }
     });
@@ -759,7 +759,7 @@ public class SaffronController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "saffron", version = "2.8.4", status = "active",
+        module = "saffron", version = "2.9.0", status = "active",
         description = "Scheduled tasks: library scans, metadata refresh, cleanup, and custom schedules",
         features = new[] { "library_scan", "metadata_refresh", "image_cleanup", "cache_cleanup", "custom_tasks" }
     });
@@ -820,7 +820,7 @@ public class PantryController : ControllerBase
         var drive = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady);
         return Ok(new
         {
-            module = "pantry", version = "2.8.4", status = "active",
+            module = "pantry", version = "2.9.0", status = "active",
             description = "Storage management: disk space, file cleanup, path mapping",
             features = new[] { "disk_monitoring", "file_cleanup", "path_mapping", "orphan_detection", "storage_analytics" },
             primary_drive = drive != null ? new { drive.Name, total_gb = drive.TotalSize / 1073741824.0, free_gb = drive.AvailableFreeSpace / 1073741824.0, used_pct = 100.0 - (drive.AvailableFreeSpace * 100.0 / drive.TotalSize) } : null
@@ -892,7 +892,7 @@ public class NutmegController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "nutmeg", version = "2.8.4", status = "active",
+        module = "nutmeg", version = "2.9.0", status = "active",
         description = "AI-powered recommendations based on watch history and preferences",
         features = new[] { "similar_titles", "trending_picks", "genre_mix", "because_you_watched", "discover_weekly" }
     });

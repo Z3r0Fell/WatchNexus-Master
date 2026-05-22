@@ -3,7 +3,7 @@
 ## Overview
 WatchNexus is a self-hosted media management pipeline combining features from Jellyfin and the *arr ecosystem into a unified platform. C#/.NET 10 backend + React frontend.
 
-## Current Version: 2.8.4
+## Current Version: 2.9.0
 
 ## Architecture
 - **Backend**: C#/.NET 10 (ASP.NET Core) on port 8002
@@ -120,7 +120,7 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 - **GitHub Container Registry:** Images published to `ghcr.io/<owner>/watchnexus:{version}-{tier}`
 - **docker-publish.yml:** Triggered by `v*.*.*` tags or manual dispatch. Builds all 3 tiers in parallel, multi-arch (amd64+arm64), with GHA build cache. Tags ultra as `latest`. Auto-creates GitHub Release with tier comparison table and install instructions.
 - **pr-check.yml:** Validates all 3 tiers compile on PRs to main/develop.
-- **Release flow:** `git tag v2.8.4 && git push --tags` → builds 6 images (3 tiers x 2 archs) → pushes to GHCR → creates release
+- **Release flow:** `git tag v2.9.0 && git push --tags` → builds 6 images (3 tiers x 2 archs) → pushes to GHCR → creates release
 
 ## Completed Backlog (This Session)
 - **Pretzel (Gaming Console):** 15 retro systems, ROM library, scan/import, save states, play tracking, favorites, EmulatorJS integration
@@ -146,8 +146,8 @@ Every module now has a working frontend page — zero scaffolding remaining.
 ## Docker Image Publication — COMPLETE
 - **Dockerfile:** Multi-stage build (node:20-alpine → .NET 10 SDK → .NET 10 runtime). Accepts `TIER` build arg.
 - **docker-compose.yml:** Three services with profiles (standard/pro/ultra). Volume mounts for data, media, rips, transcoded, offline. NVIDIA GPU passthrough for Ultra.
-- **build/docker-build.sh:** Build + push all tiers. Tags: `watchnexus/watchnexus:2.8.4-{tier}`, `latest-{tier}`, ultra = `latest`.
+- **build/docker-build.sh:** Build + push all tiers. Tags: `watchnexus/watchnexus:2.9.0-{tier}`, `latest-{tier}`, ultra = `latest`.
 - **build/copy-tier-controllers.sh:** Selectively copies controllers per tier during Docker build.
 - **build/build-tiers.sh:** Local tier packaging (non-Docker). Standard: 14 controllers/26 pages. Pro: 23/41. Ultra: 46/57.
 - **.dockerignore:** Excludes node_modules, .git, docs, website, build artifacts.
-- Images: `watchnexus/watchnexus:2.8.4-standard`, `watchnexus/watchnexus:2.8.4-pro`, `watchnexus/watchnexus:2.8.4-ultra`
+- Images: `watchnexus/watchnexus:2.9.0-standard`, `watchnexus/watchnexus:2.9.0-pro`, `watchnexus/watchnexus:2.9.0-ultra`

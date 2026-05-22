@@ -16,7 +16,7 @@ public class RipenController : ControllerBase
     public RipenController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "ripen", version = "2.8.4", status = "active", description = "Plugin marketplace and gadget management" });
+    public IActionResult Status() => Ok(new { module = "ripen", version = "2.9.0", status = "active", description = "Plugin marketplace and gadget management" });
 
     private static readonly List<Dictionary<string, string>> AllGadgets = new()
     {

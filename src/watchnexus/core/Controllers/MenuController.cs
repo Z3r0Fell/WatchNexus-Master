@@ -484,7 +484,7 @@ public class MenuController : ControllerBase
         {
             using var http = _httpFactory.CreateClient();
             http.Timeout = TimeSpan.FromSeconds(10);
-            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.4 Menu");
+            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0 Menu");
             var resp = await http.GetAsync(url);
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");

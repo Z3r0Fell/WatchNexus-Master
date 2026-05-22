@@ -19,3 +19,5 @@
 {"Timestamp":"2026-05-22T18:07:49.4503294Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-cd2be7702f363999","InstanceId":"WN-cd2be7702f363999"}
 {"Timestamp":"2026-05-22T18:18:04.0946752Z","Action":"runtime_check","Result":"pass","Detail":"Request #101","InstanceId":"WN-cd2be7702f363999"}
 {"Timestamp":"2026-05-22T18:22:36.8633247Z","Action":"runtime_check","Result":"pass","Detail":"Request #200","InstanceId":"WN-cd2be7702f363999"}
+{"Timestamp":"2026-05-22T18:27:25.9813502Z","Action":"activation","Result":"verified","Detail":"Instance WN-cd2be7702f363999 valid","InstanceId":"WN-cd2be7702f363999"}
+{"Timestamp":"2026-05-22T18:27:25.9854844Z","Action":"startup","Result":"pass","Detail":"Fortress initialized \u2014 tracking 12 assemblies, instance WN-cd2be7702f363999","InstanceId":"WN-cd2be7702f363999"}

@@ -217,11 +217,11 @@ At startup, SHA-256 hashes are computed for every assembly. A background service
 - **4 GB minimum RAM** (realistic for the target audience)
 - **100% test pass rate** on the latest comprehensive test suite
 
-The codebase is at version 2.8.4. The .NET 10 foundation has held up well -- the performance characteristics, the deployment story, and the ecosystem (EF Core, ASP.NET Core) were the right fit for this problem space.
+The codebase is at version 2.9.0. The .NET 10 foundation has held up well -- the performance characteristics, the deployment story, and the ecosystem (EF Core, ASP.NET Core) were the right fit for this problem space.
 
 ---
 
-*WatchNexus is a self-hosted media management pipeline. Version 2.8.4 release builds are available for Linux x64 and Windows x64.*
+*WatchNexus is a self-hosted media management pipeline. Version 2.9.0 release builds are available for Linux x64 and Windows x64.*
 
 ---
 

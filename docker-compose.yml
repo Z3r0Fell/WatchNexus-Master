@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: standard
-    image: watchnexus/watchnexus:2.8.4-standard
+    image: watchnexus/watchnexus:2.9.0-standard
     container_name: watchnexus-standard
     profiles: ["standard"]
     ports:
@@ -36,7 +36,7 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: pro
-    image: watchnexus/watchnexus:2.8.4-pro
+    image: watchnexus/watchnexus:2.9.0-pro
     container_name: watchnexus-pro
     profiles: ["pro"]
     ports:
@@ -58,7 +58,7 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: ultra
-    image: watchnexus/watchnexus:2.8.4-ultra
+    image: watchnexus/watchnexus:2.9.0-ultra
     container_name: watchnexus-ultra
     profiles: ["ultra"]
     ports:
