@@ -536,7 +536,7 @@ public class ChowderController : ControllerBase
         http.Timeout = TimeSpan.FromSeconds(30);
         var header = serverType == "emby" ? "X-Emby-Token" : "X-MediaBrowser-Token";
         http.DefaultRequestHeaders.Add(header, apiKey);
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.4 Chowder");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0 Chowder");
         return http;
     }
 }

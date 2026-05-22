@@ -1,4 +1,4 @@
-# WatchNexus v2.8.4 — Project Cellar Module Audit
+# WatchNexus v2.9.0 — Project Cellar Module Audit
 
 > Compiled for tier assignment (Standard / Pro / Ultra).
 > Each module classified as **FUNCTIONAL** (real logic, DB, external APIs) or **STUB** (placeholder/scaffold).
@@ -297,4 +297,4 @@ Every module below has a corresponding frontend page in `/app/frontend/src/pages
 ---
 
 *Document generated for Project Cellar tier assignment review.*
-*WatchNexus v2.8.4 — 42 controller files, ~11,000 lines of C#.*
+*WatchNexus v2.9.0 — 42 controller files, ~11,000 lines of C#.*

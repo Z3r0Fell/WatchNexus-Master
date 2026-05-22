@@ -272,7 +272,7 @@ public class SageController : ControllerBase
         try
         {
             using var http = _httpFactory.CreateClient();
-            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.4 Sage");
+            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0 Sage");
             // Trending
             var trendResp = await http.GetStringAsync($"https://api.themoviedb.org/3/trending/all/week?api_key={tmdbKey}");
             var trendData = JsonDocument.Parse(trendResp).RootElement;

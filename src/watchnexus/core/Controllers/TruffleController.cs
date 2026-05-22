@@ -19,7 +19,7 @@ public class TruffleController : ControllerBase
     public TruffleController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "truffle", version = "2.8.4", status = "active", description = "Watch analytics, play tracking, and viewing statistics" });
+    public IActionResult Status() => Ok(new { module = "truffle", version = "2.9.0", status = "active", description = "Watch analytics, play tracking, and viewing statistics" });
 
     // ── Record Play Event ──────────────────────────────────
     [HttpPost("play")]

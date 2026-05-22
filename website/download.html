@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Download - WatchNexus</title>
-  <meta name="description" content="Download WatchNexus v2.8.4 for Linux and Windows. Self-contained binaries with zero runtime dependencies.">
+  <meta name="description" content="Download WatchNexus v2.9.0 for Linux and Windows. Self-contained binaries with zero runtime dependencies.">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -38,7 +38,7 @@
     <div class="download-card">
       <div class="dl-icon"><i class="fa-brands fa-linux" style="color:#fbbf24"></i></div>
       <h3>Linux x64</h3>
-      <div class="dl-version">v2.8.4</div>
+      <div class="dl-version">v2.9.0</div>
       <div class="dl-size">58 MB &middot; Self-contained &middot; No runtime needed</div>
       <a href="#" class="btn btn-primary" onclick="alert('Downloads will be available soon. Check back for the official release.');return false;">
         <i class="fa-solid fa-download"></i> Download .tar.gz
@@ -48,7 +48,7 @@
     <div class="download-card">
       <div class="dl-icon"><i class="fa-brands fa-windows" style="color:#60a5fa"></i></div>
       <h3>Windows x64</h3>
-      <div class="dl-version">v2.8.4</div>
+      <div class="dl-version">v2.9.0</div>
       <div class="dl-size">72 MB &middot; Self-contained &middot; No runtime needed</div>
       <a href="#" class="btn btn-primary" onclick="alert('Downloads will be available soon. Check back for the official release.');return false;">
         <i class="fa-solid fa-download"></i> Download .zip
@@ -69,7 +69,7 @@
     <pre style="color:var(--text-secondary);font-size:0.85rem;line-height:1.7;font-family:'JetBrains Mono',monospace;overflow-x:auto"><code>version: '3.8'
 services:
   watchnexus:
-    image: watchnexus/server:2.8.4
+    image: watchnexus/server:2.9.0
     ports:
       - "8001:8001"
     volumes:
@@ -91,10 +91,10 @@ services:
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem">
       <p style="color:var(--accent-light);font-size:0.8rem;font-weight:600;margin-bottom:0.75rem">Linux Installation</p>
       <pre style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;font-family:'JetBrains Mono',monospace;overflow-x:auto"><code># Download the latest release
-tar xzf WatchNexus-v2.8.4-linux-x64.tar.gz
+tar xzf WatchNexus-v2.9.0-linux-x64.tar.gz
 
 # Install as systemd service
-cd WatchNexus-v2.8.4-linux-x64
+cd WatchNexus-v2.9.0-linux-x64
 sudo bash install.sh
 
 # Open http://localhost:8001</code></pre>
@@ -145,7 +145,7 @@ sudo bash install.sh
   <div style="max-width:600px;margin:2rem auto 0;text-align:left">
     <div style="padding:1rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div>
-        <strong>v2.8.4</strong> <span style="color:var(--accent-light);font-size:0.75rem;font-weight:600;background:rgba(147,51,234,0.1);padding:0.15rem 0.5rem;border-radius:6px;margin-left:0.5rem">Latest</span>
+        <strong>v2.9.0</strong> <span style="color:var(--accent-light);font-size:0.75rem;font-weight:600;background:rgba(147,51,234,0.1);padding:0.15rem 0.5rem;border-radius:6px;margin-left:0.5rem">Latest</span>
         <p style="color:var(--text-muted);font-size:0.8rem;margin-top:0.25rem">Press Kit, TOTP 2FA, live indexer search, 7 new modules, system overhaul</p>
       </div>
       <span style="color:var(--text-muted);font-size:0.8rem">Mar 2026</span>
@@ -196,7 +196,7 @@ sudo bash install.sh
   </div>
   <div class="footer-bottom">
     <span>&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
-    <span>v2.8.4</span>
+    <span>v2.9.0</span>
   </div>
 </footer>
 

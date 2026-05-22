@@ -214,7 +214,7 @@ The security architecture isn't perfect -- no consumer application's is. But it 
 
 ---
 
-*WatchNexus v2.8.4. Full security architecture documentation available in the press kit.*
+*WatchNexus v2.9.0. Full security architecture documentation available in the press kit.*
 
 ---
 

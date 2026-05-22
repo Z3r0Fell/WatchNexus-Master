@@ -3,7 +3,7 @@
 ## Module Identity
 - **Name:** Optical Disc Ripping
 - **Codename:** Strudel
-- **Version:** 2.8.4
+- **Version:** 2.9.0
 - **Category:** Media Acquisition
 - **Priority:** P1
 
@@ -465,4 +465,4 @@ WatchNexus does **not** include or distribute any decryption libraries or copy p
 
 ---
 
-*Document created: April 8, 2026 | Module: Strudel v2.8.4*
+*Document created: April 8, 2026 | Module: Strudel v2.9.0*

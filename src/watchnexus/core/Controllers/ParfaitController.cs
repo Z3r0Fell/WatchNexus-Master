@@ -47,7 +47,7 @@ public class ParfaitController : ControllerBase
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(15);
         http.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.8.4 Parfait");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0 Parfait");
         return http;
     }
 

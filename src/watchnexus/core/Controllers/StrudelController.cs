@@ -37,7 +37,7 @@ public class StrudelController : ControllerBase
         return Ok(new
         {
             module = "strudel",
-            version = "2.8.4",
+            version = "2.9.0",
             status = "active",
             description = "Optical Disc Ripping & Transcoding Pipeline",
             features = new[] { "dvd_ripping", "bluray_ripping", "transcoding", "subtitle_extraction", "library_import", "queue_management" },
