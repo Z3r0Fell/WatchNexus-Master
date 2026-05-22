@@ -62,6 +62,7 @@ export const ROUTE_MODULE_MAP = {
   '/offline': 'popsicle',
   '/cloud-backup': 'preserves',
   '/cloud-sync': 'marshmallow',
+  '/media-sync': 'chowder',
   '/themes': 'milk',
   '/dvr': 'iptv',
 };
@@ -90,7 +91,7 @@ const MODULE_TIER = {
   cinnamon: 'ultra', waffle: 'ultra', custard: 'ultra', yeast: 'ultra',
   brine: 'ultra', ladle: 'ultra', 'watch-party': 'ultra', vpn: 'ultra',
   qbittorrent: 'ultra', subtitles: 'ultra', pretzel: 'ultra', parfait: 'ultra', menu: 'ultra',
-  popsicle: 'ultra', preserves: 'ultra', marshmallow: 'ultra',
+  popsicle: 'ultra', preserves: 'ultra', marshmallow: 'ultra', chowder: 'ultra',
 };
 
 const TIER_RANK = { standard: 0, pro: 1, ultra: 2 };

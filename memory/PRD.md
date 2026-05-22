@@ -113,8 +113,14 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 - **Next:** Configure `LICENSE_SERVER_URL` and `LICENSE_SERVER_API_KEY` in appsettings.json to connect to https://github.com/Z3r0Fell/WN-License-Server
 
 ## Future Tasks (P2)
-- Production deployment and CI/CD pipeline
 - Automated testing suite per tier
+- Helm chart for Kubernetes deployment
+
+## CI/CD & Container Registry — COMPLETE
+- **GitHub Container Registry:** Images published to `ghcr.io/<owner>/watchnexus:{version}-{tier}`
+- **docker-publish.yml:** Triggered by `v*.*.*` tags or manual dispatch. Builds all 3 tiers in parallel, multi-arch (amd64+arm64), with GHA build cache. Tags ultra as `latest`. Auto-creates GitHub Release with tier comparison table and install instructions.
+- **pr-check.yml:** Validates all 3 tiers compile on PRs to main/develop.
+- **Release flow:** `git tag v2.8.4 && git push --tags` → builds 6 images (3 tiers x 2 archs) → pushes to GHCR → creates release
 
 ## Completed Backlog (This Session)
 - **Pretzel (Gaming Console):** 15 retro systems, ROM library, scan/import, save states, play tracking, favorites, EmulatorJS integration
@@ -127,6 +133,12 @@ Full investigation + scaffold + prototype for DVD/Blu-ray ripping module:
 - **Marshmallow (Cloud Sync):** Cross-device sync for watchlist/progress/settings, sync history. Frontend: MarshmallowPage.jsx at /cloud-sync
 - **Strudel Phase 2-5:** Async job queue with background processing, real MakeMKV robot mode + progress parsing, HandBrake CLI integration with progress, auto-import to library, udev auto-detection rules + install, pipeline stats
 - **Hardware Transcoding:** GPU detection (NVIDIA/Intel QSV/VAAPI/AMD AMF/Apple VideoToolbox), 8 HW encode profiles, FFmpeg encoder enumeration, hardware transcode job submission
+
+- **Chowder (Media Sync — JellyLooter Pro):** IMPLEMENTED — Ultra tier (codename: Chowder)
+  - Backend: `ChowderController.cs` — Multi-server Jellyfin/Emby connection with API test, library browsing with poster/rating/resolution/codec metadata, download queue (add/remove/pause/resume), auto-sync mappings with scheduling, download history, bandwidth scheduling, per-server worker pools, duplicate detection
+  - Frontend: `ChowderPage.jsx` at `/media-sync` — 4-tab UI (Servers/Browse/Queue/History), remote library poster grid with download buttons, server config panel, queue management with pause/resume, stats dashboard
+  - 17 API endpoints at `/api/chowder/*`
+  - Pro features included: Unlimited servers, download resume, scheduling, bandwidth control, *arr integration hooks
 
 ## All Frontend Pages Complete
 Every module now has a working frontend page — zero scaffolding remaining.
