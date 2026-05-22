@@ -54,6 +54,7 @@ export const ROUTE_MODULE_MAP = {
   '/disc-ripping': 'strudel',
   '/jellyseerr': 'parfait',
   '/requests-manager': 'menu',
+  '/gaming': 'pretzel',
   '/themes': 'milk',
   '/dvr': 'iptv',
 };
@@ -75,12 +76,14 @@ const MODULE_TIER = {
   bastion: 'pro', truffle: 'pro', tunnel: 'pro', sprout: 'pro',
   drizzle: 'pro', meringue: 'pro', nutmeg: 'pro',
   'streaming-logins': 'pro', 'streaming-services': 'pro', iptv: 'pro',
+  biscotti: 'pro', treacle: 'pro', sage: 'pro', terrine: 'pro',
   // Ultra
   security: 'ultra', rind: 'ultra', pepper: 'ultra', crucible: 'ultra',
   strudel: 'ultra', crumbs: 'ultra', taffy: 'ultra',
   cinnamon: 'ultra', waffle: 'ultra', custard: 'ultra', yeast: 'ultra',
   brine: 'ultra', ladle: 'ultra', 'watch-party': 'ultra', vpn: 'ultra',
   qbittorrent: 'ultra', subtitles: 'ultra', pretzel: 'ultra', parfait: 'ultra', menu: 'ultra',
+  popsicle: 'ultra', preserves: 'ultra', marshmallow: 'ultra',
 };
 
 const TIER_RANK = { standard: 0, pro: 1, ultra: 2 };
