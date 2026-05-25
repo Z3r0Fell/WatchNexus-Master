@@ -1,6 +1,6 @@
 # WatchNexus — InstallBuilder Packaging Guide
 
-> Target: **WatchNexus v2.9.0**
+> Target: **WatchNexus v1.0.0**
 > Tooling: **BitRock InstallBuilder Enterprise** (≥ 24.x)
 > Build host: **Ubuntu 22.04 / 24.04 LTS VPS** (any recent Ubuntu works)
 > Scope: Windows, Linux (Fedora / Debian / Arch), Docker
@@ -81,11 +81,11 @@ The `builder` CLI auto-detects it. Confirm with:
                 └────────────┬─────────────┘
                              ▼
                 /app/release/{tier}/{platform}/
-                   ├── watchnexus-{tier}-2.9.0-windows-x64.exe
-                   ├── watchnexus-{tier}-2.9.0-linux-x64.rpm
-                   ├── watchnexus-{tier}-2.9.0-linux-x64.deb
-                   ├── watchnexus-{tier}-2.9.0-linux-x64.pkg.tar.zst
-                   └── watchnexus-{tier}-2.9.0-docker.tar
+                   ├── watchnexus-{tier}-1.0.0-windows-x64.exe
+                   ├── watchnexus-{tier}-1.0.0-linux-x64.rpm
+                   ├── watchnexus-{tier}-1.0.0-linux-x64.deb
+                   ├── watchnexus-{tier}-1.0.0-linux-x64.pkg.tar.zst
+                   └── watchnexus-{tier}-1.0.0-docker.tar
 ```
 
 ---
@@ -160,19 +160,19 @@ PROJECT=/app/build/installbuilder/watchnexus.xml
 
 # Windows EXE (cross-built from Linux)
 $BUILDER build $PROJECT windows-x64 \
-  --setvars tier=ultra productVersion=2.9.0
+  --setvars tier=ultra productVersion=1.0.0
 
 # Linux RPM (Fedora, RHEL)
 $BUILDER build $PROJECT rpm \
-  --setvars tier=ultra productVersion=2.9.0
+  --setvars tier=ultra productVersion=1.0.0
 
 # Linux DEB (Debian, Ubuntu)
 $BUILDER build $PROJECT deb \
-  --setvars tier=ultra productVersion=2.9.0
+  --setvars tier=ultra productVersion=1.0.0
 
 # Generic Linux tarball (used as input for the Arch PKGBUILD)
 $BUILDER build $PROJECT linux-x64 \
-  --setvars tier=ultra productVersion=2.9.0
+  --setvars tier=ultra productVersion=1.0.0
 ```
 
 Output lands in `/app/release/<tier>/<platform>/`.
@@ -183,7 +183,7 @@ Output lands in `/app/release/<tier>/<platform>/`.
 for TIER in standard pro ultra; do
   for TARGET in windows-x64 rpm deb linux-x64; do
     $BUILDER build $PROJECT $TARGET \
-      --setvars tier=$TIER productVersion=2.9.0
+      --setvars tier=$TIER productVersion=1.0.0
   done
 done
 ```
@@ -201,16 +201,16 @@ done
   osslsigncode sign -pkcs12 /opt/signing/watchnexus.pfx \
     -pass "$WN_SIGN_PASS" -n "WatchNexus" -i https://watchnexus.ca \
     -t http://timestamp.digicert.com \
-    -in  /app/release/ultra/windows/watchnexus-ultra-2.9.0-windows-x64.exe \
-    -out /app/release/ultra/windows/watchnexus-ultra-2.9.0-windows-x64-signed.exe
+    -in  /app/release/ultra/windows/watchnexus-ultra-1.0.0-windows-x64.exe \
+    -out /app/release/ultra/windows/watchnexus-ultra-1.0.0-windows-x64-signed.exe
   ```
 
 - The installer writes `HKLM\Software\WatchNexus\Tier` so the Fortress integrity check (`Program.cs`) can validate the running tier matches the installed tier.
 
 ### 5.2 Linux — Fedora (RPM)
 
-- `rpm` target output: `/app/release/<tier>/rpm/watchnexus-<tier>-2.9.0-1.x86_64.rpm`.
-- Install: `sudo dnf install ./watchnexus-ultra-2.9.0-1.x86_64.rpm`.
+- `rpm` target output: `/app/release/<tier>/rpm/watchnexus-<tier>-1.0.0-1.x86_64.rpm`.
+- Install: `sudo dnf install ./watchnexus-ultra-1.0.0-1.x86_64.rpm`.
 - The RPM `%post` scriptlet (defined in `scripts/post-install.sh`) does:
   1. Creates the `watchnexus` system user
   2. Installs the systemd unit `/etc/systemd/system/watchnexus.service`
@@ -218,8 +218,8 @@ done
 
 ### 5.3 Linux — Debian (DEB)
 
-- `deb` target output: `/app/release/<tier>/deb/watchnexus-<tier>_2.9.0_amd64.deb`.
-- Install: `sudo apt install ./watchnexus-ultra_2.9.0_amd64.deb`.
+- `deb` target output: `/app/release/<tier>/deb/watchnexus-<tier>_1.0.0_amd64.deb`.
+- Install: `sudo apt install ./watchnexus-ultra_1.0.0_amd64.deb`.
 - Same systemd post-install hook as the RPM (InstallBuilder shares the script across both targets).
 
 ### 5.4 Linux — Arch (PKGBUILD wrapper inside a container)
@@ -227,9 +227,9 @@ done
 InstallBuilder does not produce a native `.pkg.tar.zst`, and Ubuntu cannot run `makepkg`. The shipped Arch flow wraps the `linux-x64` tarball with a `PKGBUILD` inside a disposable `archlinux:latest` Docker container.
 
 ```bash
-# After: $BUILDER build $PROJECT linux-x64 --setvars tier=ultra productVersion=2.9.0
+# After: $BUILDER build $PROJECT linux-x64 --setvars tier=ultra productVersion=1.0.0
 TIER=ultra
-VERSION=2.9.0
+VERSION=1.0.0
 
 docker run --rm \
   -v /app/build/installbuilder/arch:/work \
@@ -239,35 +239,35 @@ docker run --rm \
     useradd -m builder && echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers &&
     su - builder -c 'cd /work && WATCHNEXUS_VERSION=${VERSION} bash build-arch.sh ${TIER}'
   "
-# → /app/release/ultra/arch/watchnexus-ultra-2.9.0-1-x86_64.pkg.tar.zst
+# → /app/release/ultra/arch/watchnexus-ultra-1.0.0-1-x86_64.pkg.tar.zst
 ```
 
 The `PKGBUILD` template lives at `/app/build/installbuilder/arch/PKGBUILD.in` and is rendered per tier by `scripts/build-arch.sh` inside the container. No Arch packages need to be installed on the Ubuntu host.
 
 ### 5.5 Docker
 
-The Docker installer is a **loadable image tarball** built from the InstallBuilder `linux-x64` payload. The Dockerfile at `/app/build/installbuilder/docker/Dockerfile` consumes `/app/release/<tier>/linux/watchnexus-<tier>-2.9.0-linux-x64-installer.run`.
+The Docker installer is a **loadable image tarball** built from the InstallBuilder `linux-x64` payload. The Dockerfile at `/app/build/installbuilder/docker/Dockerfile` consumes `/app/release/<tier>/linux/watchnexus-<tier>-1.0.0-linux-x64-installer.run`.
 
 ```bash
 TIER=ultra
 docker buildx build \
   --build-arg TIER=$TIER \
-  --build-arg VERSION=2.9.0 \
-  -t watchnexus/$TIER:2.9.0 \
+  --build-arg VERSION=1.0.0 \
+  -t watchnexus/$TIER:1.0.0 \
   -f /app/build/installbuilder/docker/Dockerfile \
   /app/release/$TIER/linux
 
-docker save watchnexus/$TIER:2.9.0 \
-  -o /app/release/$TIER/docker/watchnexus-$TIER-2.9.0-docker.tar
+docker save watchnexus/$TIER:1.0.0 \
+  -o /app/release/$TIER/docker/watchnexus-$TIER-1.0.0-docker.tar
 ```
 
 Consumers load it with:
 
 ```bash
-docker load -i watchnexus-ultra-2.9.0-docker.tar
+docker load -i watchnexus-ultra-1.0.0-docker.tar
 docker run -d --name watchnexus -p 8001:8001 \
   -v /srv/watchnexus:/var/lib/watchnexus \
-  watchnexus/ultra:2.9.0
+  watchnexus/ultra:1.0.0
 ```
 
 ---
@@ -293,11 +293,11 @@ Smoke test each installer in a disposable VM/container before publishing:
 
 | Platform | Test command |
 |---|---|
-| Windows | `powershell -c "Start-Process -Wait .\watchnexus-ultra-2.9.0-windows-x64.exe /S"` |
-| Fedora | `sudo dnf install ./watchnexus-ultra-2.9.0-1.x86_64.rpm && systemctl status watchnexus` |
-| Debian | `sudo apt install ./watchnexus-ultra_2.9.0_amd64.deb && systemctl status watchnexus` |
-| Arch | `sudo pacman -U ./watchnexus-ultra-2.9.0-1-x86_64.pkg.tar.zst && systemctl status watchnexus` |
-| Docker | `docker run --rm -p 8001:8001 watchnexus/ultra:2.9.0` then `curl http://localhost:8001/api/cellar/first-launch` |
+| Windows | `powershell -c "Start-Process -Wait .\watchnexus-ultra-1.0.0-windows-x64.exe /S"` |
+| Fedora | `sudo dnf install ./watchnexus-ultra-1.0.0-1.x86_64.rpm && systemctl status watchnexus` |
+| Debian | `sudo apt install ./watchnexus-ultra_1.0.0_amd64.deb && systemctl status watchnexus` |
+| Arch | `sudo pacman -U ./watchnexus-ultra-1.0.0-1-x86_64.pkg.tar.zst && systemctl status watchnexus` |
+| Docker | `docker run --rm -p 8001:8001 watchnexus/ultra:1.0.0` then `curl http://localhost:8001/api/cellar/first-launch` |
 
 All five must respond on `/api/cellar/first-launch` before the artifact is considered shippable.
 
@@ -322,7 +322,7 @@ build-installers:
         /opt/installbuilder/bin/builder build \
           /app/build/installbuilder/watchnexus.xml \
           ${{ matrix.target }} \
-          --setvars tier=${{ matrix.tier }} productVersion=2.9.0
+          --setvars tier=${{ matrix.tier }} productVersion=1.0.0
     - uses: actions/upload-artifact@v4
       with:
         name: watchnexus-${{ matrix.tier }}-${{ matrix.target }}
@@ -343,7 +343,7 @@ build-arch:
           archlinux:latest bash -c "
             pacman -Syu --noconfirm base-devel sudo &&
             useradd -m builder && echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers &&
-            su - builder -c 'cd /work && WATCHNEXUS_VERSION=2.9.0 bash build-arch.sh ${{ matrix.tier }}'
+            su - builder -c 'cd /work && WATCHNEXUS_VERSION=1.0.0 bash build-arch.sh ${{ matrix.tier }}'
           "
 ```
 
@@ -358,5 +358,5 @@ build-arch:
 - [ ] Windows EXE signed with `osslsigncode`
 - [ ] `fortress-build.sh sign /app/release` produced `SHA256SUMS.txt` for every tier
 - [ ] Smoke test passed for all 12 installers
-- [ ] Artifacts uploaded to `https://releases.watchnexus.ca/v2.9.0/`
-- [ ] Licence server updated with new SHA256 hashes for v2.9.0
+- [ ] Artifacts uploaded to `https://releases.watchnexus.ca/v1.0.0/`
+- [ ] Licence server updated with new SHA256 hashes for v1.0.0

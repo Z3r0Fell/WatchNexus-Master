@@ -44,11 +44,11 @@ The release build is a self-contained binary. No .NET runtime installation requi
 
 ```bash
 # Download the latest release
-wget https://github.com/watchnexus/releases/download/v2.9.0/WatchNexus-v2.9.0-linux-x64.tar.gz
+wget https://github.com/watchnexus/releases/download/v1.0.0/WatchNexus-v1.0.0-linux-x64.tar.gz
 
 # Extract
-tar xzf WatchNexus-v2.9.0-linux-x64.tar.gz
-cd WatchNexus-v2.9.0-linux-x64
+tar xzf WatchNexus-v1.0.0-linux-x64.tar.gz
+cd WatchNexus-v1.0.0-linux-x64
 
 # Install as a systemd service
 sudo bash install.sh
@@ -87,7 +87,7 @@ yarn start
 version: '3.8'
 services:
   watchnexus:
-    image: watchnexus/server:2.9.0
+    image: watchnexus/server:1.0.0
     ports:
       - "8001:8001"
     volumes:
@@ -174,7 +174,7 @@ In the interest of transparency:
 
 WatchNexus won't replace Jellyfin's playback quality or Sonarr's automation maturity overnight. But if you're tired of managing six applications that barely talk to each other, and you want a single installation that handles the full media lifecycle with genuine security features, it's worth a look.
 
-Version 2.9.0 is available now. 58 MB download, two-minute installation, 35 modules ready to go.
+Version 1.0.0 is available now. 58 MB download, two-minute installation, 35 modules ready to go.
 
 ---
 

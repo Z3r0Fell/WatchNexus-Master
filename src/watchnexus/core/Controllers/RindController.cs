@@ -19,7 +19,7 @@ public class RindController : ControllerBase
     public RindController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "rind", version = "2.9.0", status = "active", description = "Parental controls: content rating filters, PIN locks, and per-user restrictions" });
+    public IActionResult Status() => Ok(new { module = "rind", version = "1.0.0", status = "active", description = "Parental controls: content rating filters, PIN locks, and per-user restrictions" });
 
     private const string ProfileKey = "rind_profile";
     private const string PinKey = "rind_pin";

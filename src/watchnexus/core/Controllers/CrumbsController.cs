@@ -28,7 +28,7 @@ public class CrumbsController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "crumbs", version = "2.9.0", status = "active", description = "Integration & API key management for third-party services" });
+    public IActionResult Status() => Ok(new { module = "crumbs", version = "1.0.0", status = "active", description = "Integration & API key management for third-party services" });
 
     // ── Service Registry (all available services) ──────────────────
     [HttpGet("services")]
@@ -495,7 +495,7 @@ public class CrumbsController : ControllerBase
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         http.DefaultRequestHeaders.Add("Api-Key", apiKey);
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v2.9.0");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v1.0.0");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {

@@ -194,3 +194,15 @@ Every module now has a working frontend page — zero scaffolding remaining.
 - **Build host switched from Arch → Ubuntu 22.04/24.04 LTS** throughout `installbuilder.md` (apt-based prerequisites, NodeSource repo, Microsoft `dotnet-sdk-10.0` repo). Arch packaging now flows through a disposable `archlinux:latest` Docker container (Ubuntu cannot run `makepkg` natively).
 - **`fortress-build.sh sign <release_dir>` subcommand added.** Walks `*.exe / *.rpm / *.deb / *.pkg.tar.zst / *.tar / *.run` under `/app/release/<tier>/`, emits `SHA256SUMS.txt` per tier. When `WN_UPLOAD_HASHES=1` + `WN_LICENSE_TOKEN=...` are set, POSTs the hashes to `https://licenses.watchnexus.ca/api/releases/hashes`. Smoke-tested end-to-end.
 - Windows signing flow documented via `osslsigncode` against `/opt/signing/watchnexus.pfx`.
+
+## RTP 1.0.0 Release Cut (2026-02)
+- **Version bump**: Internal `Dev 3.0` build line released as **Release to Public v1.0.0**. All `2.9.0` strings replaced with `1.0.0` across 56 operational files (controllers, frontend, build scripts, InstallBuilder XML, Docker, Unraid templates, press kit, docs). Verified live: `/api/system/updates/current` reports `1.0.0`, all 35 backend module versions report `1.0.0`.
+- **Side-fix**: `FortressController.cs` was missing `using WatchNexus.Shared;` — added (pre-existing build break unrelated to version bump).
+- **Changelog**: New `v3.0.0 → RTP 1.0.0` entry prepended to `/app/CHANGELOG.md` with headline features and migration note.
+- **New artifacts shipped**
+  - `/app/build/prepare-installers.sh` — Arch laptop staging script: runs `build-tiers.sh`, `dotnet publish win-x64+linux-x64`, `yarn build` (tier-baked), writes `tier.json`, copies LICENSE/README into `stage/<tier>/`. Validated via `bash -n`.
+  - `/app/docs/INSTALLBUILDER-STEPS.md` — 8-step InstallBuilder 26 runbook (setup → stage → build matrix → Arch → sign → hash/upload → smoke → rsync to Ubuntu VPS), plus troubleshooting cheatsheet.
+  - `/app/LICENSE.txt` + `/app/LICENSE.html` — 10-section EULA, plain text + branded HTML (print-friendly CSS).
+  - `/app/README.md` — production README (old dev README archived to `docs/README-DEV-ARCHIVED.md`).
+  - `/app/build/installbuilder/watchnexus.xml` — now accepts `--setvars payload_root=...` from `prepare-installers.sh` (overrides default `stage/<tier>` path).
+- **Architecture clarified**: Arch laptop = build host (runs InstallBuilder 26 natively, `makepkg` works directly). Ubuntu VPS = storage/distribution only (rsync target).

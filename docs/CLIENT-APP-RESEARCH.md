@@ -186,7 +186,7 @@ WatchNexus Roku Channel
 ```gradle
 implementation 'androidx.leanback:leanback:1.0.0'
 implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
-implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+implementation 'com.squareup.retrofit2:retrofit:1.0.0'
 ```
 
 ### D-pad Navigation
