@@ -183,3 +183,14 @@ Every module now has a working frontend page — zero scaffolding remaining.
 | Standard | ✓ | ✓ | ✓ | ✓ | ✓ (note: only 3 platform installers per tier, not 4 — Docker is separate flow) |
 | Pro | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Ultra | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+
+## InstallBuilder — Branding Assets + Ubuntu Host + Sign Step (2026-02 follow-up)
+- **Branded installer assets dropped into `/app/build/installbuilder/resources/`:**
+  - `watchnexus.ico` — multi-resolution Windows icon (16/24/32/48/64/128/256), generated from `website/assets/images/watchnexus-icon-light.png`
+  - `installer-left.png` — 164×314 InstallBuilder side panel (dark slate backdrop + centred brand mark)
+  - `watchnexus-logo.png` — 400×377 wizard header logo (downsized from the 4088×3848 master)
+  - `watchnexus-banner.png` — 300×70 wordmark strip (auxiliary)
+- **Build host switched from Arch → Ubuntu 22.04/24.04 LTS** throughout `installbuilder.md` (apt-based prerequisites, NodeSource repo, Microsoft `dotnet-sdk-10.0` repo). Arch packaging now flows through a disposable `archlinux:latest` Docker container (Ubuntu cannot run `makepkg` natively).
+- **`fortress-build.sh sign <release_dir>` subcommand added.** Walks `*.exe / *.rpm / *.deb / *.pkg.tar.zst / *.tar / *.run` under `/app/release/<tier>/`, emits `SHA256SUMS.txt` per tier. When `WN_UPLOAD_HASHES=1` + `WN_LICENSE_TOKEN=...` are set, POSTs the hashes to `https://licenses.watchnexus.ca/api/releases/hashes`. Smoke-tested end-to-end.
+- Windows signing flow documented via `osslsigncode` against `/opt/signing/watchnexus.pfx`.
