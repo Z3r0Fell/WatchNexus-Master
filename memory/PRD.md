@@ -167,3 +167,19 @@ Every module now has a working frontend page — zero scaffolding remaining.
 - **build/build-tiers.sh:** Local tier packaging (non-Docker). Standard: 14 controllers/26 pages. Pro: 23/41. Ultra: 46/57.
 - **.dockerignore:** Excludes node_modules, .git, docs, website, build artifacts.
 - Images: `watchnexus/watchnexus:2.9.0-standard`, `watchnexus/watchnexus:2.9.0-pro`, `watchnexus/watchnexus:2.9.0-ultra`
+
+
+## InstallBuilder Packaging — COMPLETE (2026-02)
+- **/app/docs/installbuilder.md**: Canonical packaging guide. Three separate installers per platform per tier (Standard/Pro/Ultra × Windows/Fedora/Debian/Arch/Docker). Includes prerequisites, dotnet publish + yarn build prep stages, InstallBuilder CLI matrix, signing (osslsigncode), Arch PKGBUILD wrapper flow, Docker save flow, verification checklist, and CI snippet for the self-hosted Arch runner. macOS intentionally excluded per directive.
+- **/app/build/installbuilder/watchnexus.xml**: Real BitRock InstallBuilder project. Tier-aware via `--setvars tier=`. Validated well-formed XML. Components: backend payload (linux-x64 / win-x64), web bundle, tier.json manifest. Post-install hooks register systemd unit (Linux) and Windows service + tier registry key. Pre-uninstall hooks tear them down.
+- **/app/build/installbuilder/scripts/{post-install,pre-uninstall}.sh**: Idempotent service-user creation, systemd unit emission, tier.lock + version.lock files (Fortress integrity check inputs).
+- **/app/build/installbuilder/docker/Dockerfile**: Consumes the InstallBuilder `linux-x64-installer.run` payload, runs unattended, exposes 8001, tini entrypoint, tier/version as labels + env vars.
+- **/app/build/installbuilder/arch/{PKGBUILD.in,build-arch.sh}**: Renders a per-tier PKGBUILD that wraps the InstallBuilder Linux tarball and produces `.pkg.tar.zst` via `makepkg`.
+- **/app/build/installbuilder/resources/{EULA.txt,README.txt}**: Required installer assets (icons/PNGs to be supplied alongside).
+
+### Release matrix (12 artifacts per release)
+| Tier | Windows EXE | Fedora RPM | Debian DEB | Arch pkg.tar.zst | Docker tar |
+|---|---|---|---|---|---|
+| Standard | ✓ | ✓ | ✓ | ✓ | ✓ (note: only 3 platform installers per tier, not 4 — Docker is separate flow) |
+| Pro | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ultra | ✓ | ✓ | ✓ | ✓ | ✓ |

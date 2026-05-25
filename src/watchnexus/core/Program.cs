@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using WatchNexus.Core;
 using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +63,11 @@ builder.Services.AddScoped<AuthService>();
 
 // ── Services ──────────────────────────────────────────────────
 builder.Services.AddHttpClient();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // ── FORTRESS PROTOCOL: API-level tier enforcement ──
+    options.Filters.Add<FortressFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -95,6 +100,16 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     Console.WriteLine($"[WatchNexus] Database migrated and ready at {dbPath}");
+
+    // ── FORTRESS PROTOCOL: Integrity verification ──
+    var (integrityValid, violations) = FortressIntegrity.VerifyIntegrity(db).GetAwaiter().GetResult();
+    if (integrityValid)
+        Console.WriteLine("[Fortress] Integrity check PASSED");
+    else
+    {
+        Console.WriteLine($"[Fortress] WARNING: Integrity violations detected ({violations.Count}):");
+        foreach (var v in violations) Console.WriteLine($"  - {v}");
+    }
 
     // Seed default accounts if none exist
     SeedAccounts(db);
