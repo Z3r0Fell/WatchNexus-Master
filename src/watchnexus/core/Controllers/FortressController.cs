@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WatchNexus.Core.Data;
+using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
 // FORTRESS PROTOCOL v1.0
 // Anti-tamper, integrity verification, license enforcement hardening.
-// Applied globally to WatchNexus v2.9.0.
+// Applied globally to WatchNexus v1.0.0.
 // ══════════════════════════════════════════════════════════════════════
 
 /// <summary>
@@ -126,7 +127,7 @@ public static class FortressIntegrity
         {
             version = FORTRESS_VERSION,
             sealed_at = DateTime.UtcNow.ToString("o"),
-            app_version = "2.9.0",
+            app_version = "1.0.0",
             file_hashes = hashes,
             machine_id = Environment.MachineName,
         });
@@ -209,7 +210,7 @@ public class FortressController : ControllerBase
         return Ok(new
         {
             fortress_version = "1.0",
-            app_version = "2.9.0",
+            app_version = "1.0.0",
             integrity_valid = valid,
             violations = violations.Count > 0 ? violations : null,
             sealed_at = sealedAt,

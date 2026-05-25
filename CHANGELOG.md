@@ -1,5 +1,38 @@
 # WatchNexus Changelog
 
+## 2026-02 — v3.0.0 → Release to Public **v1.0.0** 🎉
+
+> **Issued Release to Public version 1.0.0** — internal build `3.0.0` is the basis of the first general-availability release. From this point on, the public version line resets to `1.0.0` (RTP) while the internal build sequence continues independently.
+
+### Headline
+- **First Release To Public (RTP) of WatchNexus.** Standard, Pro, and Ultra tiers are now generally available.
+- All scaffolding/placeholders removed across backend and frontend (no stubs remain).
+- License key activation against `https://licenses.watchnexus.ca` is the single source of tier truth.
+- Fortress Protocol integrity verification active on startup for every tier.
+
+### What's new vs. 2.x dev line
+- **Physical tier separation** — three independent installers per platform (Standard / Pro / Ultra) produced via `build-tiers.sh` + BitRock InstallBuilder 26.
+- **Cross-platform installers** — Windows EXE, Fedora RPM, Debian DEB, Arch `pkg.tar.zst`, and Docker image, all tier-aware.
+- **System tray icon** (Windows + Linux) with quick web-UI launch and graceful quit.
+- **Searchable Help & Documentation page** at `/help` aggregating 40+ topics.
+- **Tooltip-driven UX** for new-user guidance across all modules.
+- **73 fully wired modules** end-to-end (Standard 31 / +Pro 18 / +Ultra 24).
+- **Strudel** MakeMKV + HandBrake pipeline with hardware-transcoding profiles (NVENC, QSV, VAAPI, AMF, VideoToolbox).
+- **Chowder** multi-server Jellyfin/Emby sync with queue + scheduling (Ultra).
+- **Parfait** (Jellyseerr-based) + **Menu** (Seerr-style discovery) + **Pretzel** retro-console emulator (Ultra).
+- **Biscotti / Treacle / Sage / Terrine / Popsicle / Preserves / Marshmallow** backlog modules all completed.
+- **Fortress Protocol** sealed-build script: stripped PDBs/source-maps, SHA-256 manifest, runtime integrity check, license-server hash registry (`fortress-build.sh sign /app/release`).
+
+### Operations
+- `prepare-installers.sh` — new staging script for the Arch laptop build flow.
+- `INSTALLBUILDER-STEPS.md` — explicit step-by-step InstallBuilder 26 guide.
+- Production `README.md` + `LICENSE.txt` + `LICENSE.html` shipped with every installer.
+
+### Version Bump
+- All internal version strings moved from `2.9.0` → `1.0.0` across backend controllers, frontend, build scripts, Docker artifacts, Unraid templates, InstallBuilder project, and press kit.
+
+---
+
 ## 2026-03-22 - v2.8.2.2 (System Tray Icon)
 
 ### New Features

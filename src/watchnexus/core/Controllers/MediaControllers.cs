@@ -218,7 +218,7 @@ public class CompoteController : ControllerBase
             if (string.IsNullOrEmpty(url)) return Ok(new { success = false, error = "No URL configured" });
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0");
+            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var response = await http.GetAsync(url);
             sw.Stop();
@@ -251,7 +251,7 @@ public class CompoteController : ControllerBase
         var allResults = new List<Dictionary<string, object?>>();
 
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0");
+        http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
 
         var tasks = new List<Task>();
         foreach (var idx in indexers)
@@ -757,7 +757,7 @@ public class GarnishController : ControllerBase
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/2.9.0");
+            http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
             var resp = await http.GetAsync(urls[provider]);
             return Ok(new { success = resp.IsSuccessStatusCode, provider, status_code = (int)resp.StatusCode });
         }

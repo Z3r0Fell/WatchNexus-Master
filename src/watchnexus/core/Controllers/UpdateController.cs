@@ -28,7 +28,7 @@ public class UpdateController : ControllerBase
         _config = config;
     }
 
-    private const string CURRENT_VERSION = "2.9.0";
+    private const string CURRENT_VERSION = "1.0.0";
 
     // ── Check for Updates ───────────────────────────────────────────
     [HttpGet("check")]

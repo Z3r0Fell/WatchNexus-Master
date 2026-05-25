@@ -1,167 +1,138 @@
-# WatchNexus v2.8.4
+<!--
+  WatchNexus — Production README
+  Ships alongside every installer; copied into stage/<tier>/ by prepare-installers.sh.
+-->
 
-> Unified, self-hosted media pipeline. Request, acquire, organize, and watch your media.
+<p align="center">
+  <img src="build/installbuilder/resources/watchnexus-logo.png" alt="WatchNexus" width="220">
+</p>
 
-**QA & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)  
-**Press Kit:** [docs/press-kit/](docs/press-kit/)
+<h1 align="center">WatchNexus</h1>
 
-## What's New in 2.8.4
+<p align="center">
+  <strong>Release To Public — v1.0.0</strong><br>
+  A unified, self-hosted media server with tier-locked module licensing.
+</p>
 
-- **Real Indexer Search Engine** — Live RSS parsing across Nyaa.si, YTS, EZTV, Torznab, and generic RSS with quality/codec detection
-- **TOTP 2FA** — Full two-factor authentication with Base32 secrets, QR code URIs, and backup codes (Bastion)
-- **7 New Module Pages** — Glaze (Scrobbling), Saffron (Tasks), Fondue (Automation), Sourdough (Backups), Churro (Download Clients), Roux (Collections), Sprout (RSS Feeds)
-- **System Dashboard Overhaul** — Real runtime metrics, 8 security feature indicators, 35 module listing
-- **Configuration Cleanup** — All hardcoded placeholders removed, replaced with database-driven config
-- **Enhanced VPN (Tunnel)** — WireGuard peer management, SSL certs, bandwidth monitoring, connectivity testing
+<p align="center">
+  <a href="https://watchnexus.ca">Website</a> ·
+  <a href="https://docs.watchnexus.ca">Documentation</a> ·
+  <a href="https://licenses.watchnexus.ca">License Portal</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
-## Repository Structure
+---
 
-```
-WatchNexus/
-├── src/                     # Source code
-│   ├── watchnexus/          # C#/.NET 10 backend
-│   │   ├── core/            # ASP.NET Core server (entry point)
-│   │   │   ├── Data/        # AppDbContext + EF Core Migrations
-│   │   │   ├── Controllers/ # API controllers (12+ files)
-│   │   │   ├── Fortress.cs  # Code protection & integrity system
-│   │   │   └── ModuleLoader.cs # Dynamic module compilation & loading
-│   │   ├── shared/          # Shared interfaces (IWatchNexusModule)
-│   │   └── modules/         # Module manifests
-│   └── web/                 # React frontend (SPA)
-│       ├── src/pages/       # Page components
-│       ├── src/components/  # Reusable UI (Shadcn)
-│       ├── src/services/    # API client layer
-│       └── electron/        # Desktop app wrapper
-│
-├── separated/               # Standalone module projects (compiled at startup)
-│   ├── marmalade/           # Library Manager
-│   ├── bastion/             # Security
-│   ├── tunnel/              # VPN Portal
-│   ├── fondue/              # Downloads
-│   ├── zest/                # Log Viewer
-│   ├── drizzle/             # Playlists
-│   ├── compote/             # Indexers
-│   ├── gelatin/             # Transcoding
-│   ├── syrup/               # Scrapers
-│   └── beacon/              # System Tray
-│
-├── release_builds/          # Distributable archives
-│   ├── WatchNexus-v2.8.4-win-x64.zip
-│   └── WatchNexus-v2.8.4-linux-x64.tar.gz
-│
-├── scripts/                 # Build & install scripts
-├── CHANGELOG.md
-└── README.md
-```
+## What is WatchNexus?
 
-## Features
+WatchNexus is a C#/.NET 10 + React 18 media server that consolidates the
+*arr stack, Jellyfin-style playback, Jellyseerr-style discovery, retro
+gaming, ebook/audiobook management, live-TV DVR, hardware transcoding,
+and cloud sync into **one cohesive product**. It is licensed in three
+tiers — **Standard**, **Pro**, **Ultra** — with physical, tier-specific
+installers so a Standard install never ships Pro/Ultra binaries.
 
-| Module | Codename | Description |
-|--------|----------|-------------|
-| Media Library | **Marmalade** | Scan directories, fetch TMDB metadata, organize collections |
-| Security | **Bastion** | Audit logs, IP filtering, API keys, session management |
-| VPN Portal | **Tunnel** | WireGuard server/peer management, QR configs |
-| Downloads | **Fondue** | Built-in torrent engine + qBittorrent integration |
-| Marketplace | **Ripen** | Module marketplace, Kodi repository, plugin management |
-| Playlists | **Drizzle** | Queue management, playlists, skip markers |
-| Indexers | **Compote** | Torrent indexer management, search |
-| Transcoding | **Gelatin** | Media transcoding and quality profiles |
-| Log Viewer | **Zest** | Application log browser and system diagnostics |
-| Scrapers | **Syrup** | Live content scrapers |
-| Tray App | **Beacon** | System tray controller for desktop |
-| API Management | **Crumbs** | Centralized API key management for 11 services |
-| Code Protection | **Fortress** | Assembly integrity, anti-tampering, license validation |
-| Weather | **Sorbet** | Weather dashboard powered by Open-Meteo |
-| Podcasts | **Brioche** | Podcast player with iTunes search and RSS feeds |
-| Internet Radio | **Nectar** | Live radio streams via Radio Browser API |
-| Photo Gallery | **Ganache** | Browse and view photos from local libraries |
-| Web Video | **Bisque** | Web video bookmarks, history, and YouTube info |
-| Matrix Chat | **Marzipan** | Matrix messaging, room management, and event sync |
-| Synapse Admin | **Cinnamon** | Synapse homeserver user, room, and media management |
-| Movie Quiz | **Waffle** | Guess-the-poster games with blur and reveal effects |
-| Background Automation | **Yeast** | Inactivity checks, token drip, featured film rotation |
-| Auth | **Sourdough** | JWT authentication, registration, session management |
-| IPTV | **Taffy** | Live TV channel streams and EPG management |
-| qBittorrent | **Churro** | Torrent client integration and download management |
-| Subtitles | **Saffron** | Subtitle search and download from OpenSubtitles |
-| Filesystem | **Pantry** | File and directory browser for media storage |
-| System Stats | **Nutmeg** | CPU, memory, disk, and process monitoring |
+## Tier overview
 
-## Fortress Security
+| Tier      | Modules | Highlights |
+|-----------|---------|------------|
+| Standard  | 31      | Libraries, playback, scrobbling, discovery, weather, podcasts, radio, photos, basic settings |
+| Pro       | +18 (49 total) | *arr automation (Fondue/Saffron/Sprout), backups (Sourdough), download clients (Churro), collections (Roux), live TV DVR, analytics |
+| Ultra     | +24 (73 total) | Bastion 2FA, Tunnel VPN, Strudel rip pipeline, hardware transcoding, Parfait/Menu discovery, Chowder sync, Pretzel emulator, S3 backup, cloud sync |
 
-WatchNexus includes a built-in code protection system:
+A complete module matrix lives in [`docs/TIER-MANIFESTS.md`](docs/TIER-MANIFESTS.md).
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/fortress/status` | GET | Current security status, assembly count, license info |
-| `/api/fortress/verify` | POST | Manual integrity re-check of all tracked assemblies |
-| `/api/fortress/audit` | GET | Security event log (`?limit=50&offset=0`) |
-| `/api/fortress/audit/export` | GET | Full audit log as JSON download |
+## Installation
 
-Fortress computes SHA-256 baselines for all WatchNexus assemblies at startup, performs periodic runtime integrity checks, and auto-locks the API if tampering is detected. All events are persisted to `data/fortress/audit.jsonl`.
+Pre-built installers for v1.0.0 are published at
+<https://releases.watchnexus.ca/v1.0.0/>:
 
-## Quick Start
+| Platform | File |
+|---|---|
+| Windows  | `watchnexus-<tier>-1.0.0-windows-x64.exe` |
+| Fedora   | `watchnexus-<tier>-1.0.0-1.x86_64.rpm` |
+| Debian   | `watchnexus-<tier>_1.0.0_amd64.deb` |
+| Arch     | `watchnexus-<tier>-1.0.0-1-x86_64.pkg.tar.zst` |
+| Docker   | `docker pull watchnexus/watchnexus:1.0.0-<tier>` |
+| Unraid   | Community Apps → search "WatchNexus" |
 
-### From Release Build
+After install, browse to `http://<host>:8001` and enter your license key
+on the first-launch screen.
+
+## First-launch checklist
+
+1. Open `http://<host>:8001`.
+2. Activate your license key (Standard / Pro / Ultra).
+3. Settings → Libraries → add at least one media root.
+4. Settings → Integrations → paste your **TMDB v3 API key**.
+5. Settings → System → confirm Fortress integrity status is **Green**.
+6. *(Pro/Ultra only)* Settings → Download Clients → connect Churro to
+   qBittorrent / SABnzbd / NZBGet.
+7. *(Ultra only)* Settings → Security → enable Bastion 2FA.
+
+## Service management
+
+| Platform | Command |
+|---|---|
+| Linux (systemd) | `sudo systemctl {start\|stop\|status\|restart} watchnexus` |
+| Windows         | `services.msc` &rarr; `WatchNexusCore` |
+| Docker          | `docker {start\|stop\|restart} watchnexus` |
+
+Logs:
+
 ```bash
-# Linux
-tar xzf WatchNexus-v2.8.4-linux-x64.tar.gz
-cd WatchNexus-v2.8.4-linux-x64
-sudo bash install.sh
-# Open http://localhost:8001
-
-# Windows
-# Extract WatchNexus-v2.8.4-win-x64.zip
-# Run start-watchnexus.bat
-# Open http://localhost:8001
+journalctl -u watchnexus -f          # Linux
+docker logs -f watchnexus            # Docker
 ```
 
-### From Source
-```bash
-# Backend
-cd src/watchnexus/core
-dotnet run
+## Data layout
 
-# Frontend (separate terminal)
-cd src/web
-yarn install
-yarn build        # production build
-yarn start        # dev server
-```
+| Path | Purpose |
+|---|---|
+| `/var/lib/watchnexus/`     | Database (SQLite), thumbnails, transcode cache |
+| `/var/lib/watchnexus/data` | Persistent user data (Linux/Docker) |
+| `%PROGRAMDATA%\WatchNexus` | Same, on Windows |
+| `/opt/watchnexus/`         | Installed binaries (Linux) |
+| `C:\Program Files\WatchNexus\` | Installed binaries (Windows) |
 
-### Docker
-```bash
-cd installers/docker
-docker compose up -d
-```
+Back up `/var/lib/watchnexus/data` regularly — that single directory
+captures all user state.
 
-### Platform Installers
-```bash
-# Linux (systemd)
-sudo bash scripts/install-linux.sh
+## Upgrading
 
-# Windows (Run as Admin)
-powershell -ExecutionPolicy Bypass -File scripts\install-windows.ps1
-```
+Updates flow from the license server:
 
-All installers register WatchNexus as a **system service** that auto-starts on boot and restarts on crash.
+* In-app: **Settings → Updates → Check now**.
+* CLI / package manager: same as the original install method.
 
-## Tech Stack
+The Fortress integrity manifest is re-validated after every upgrade.
 
-- **Backend:** C#/.NET 10, ASP.NET Core, Entity Framework Core 10, SQLite
-- **Frontend:** React 18, TailwindCSS, Framer Motion, Shadcn UI
-- **Auth:** JWT Bearer Tokens
-- **Database:** SQLite with EF Core Migrations
-- **Metadata:** TMDB API, OMDB API
-- **Downloads:** qBittorrent Web API
-- **Messaging:** Matrix Client-Server API
-- **Weather:** Open-Meteo API
-- **Security:** Fortress (assembly integrity, anti-tampering, license validation)
+## Building from source
 
-## Testing
+If you have access to the source tree, see
+[`docs/INSTALLBUILDER-STEPS.md`](docs/INSTALLBUILDER-STEPS.md) for the
+canonical step-by-step build procedure (Arch laptop &rarr; tier
+staging &rarr; InstallBuilder 26 &rarr; signing &rarr; upload).
 
-**QA Dashboard & Testing Reports:** [https://z3r0fell.github.io/watchnexus-qa/](https://z3r0fell.github.io/watchnexus-qa/)
+The full reference manual is [`docs/installbuilder.md`](docs/installbuilder.md).
+
+## Support
+
+| Channel | URL |
+|---|---|
+| Documentation | <https://docs.watchnexus.ca> |
+| Issue tracker | <https://github.com/watchnexus/watchnexus/issues> |
+| Email support | <support@watchnexus.ca> |
+| License sales | <https://watchnexus.ca/pricing> |
 
 ## License
 
-Private - All rights reserved.
+WatchNexus is proprietary software licensed per-tier. See
+[`LICENSE.txt`](LICENSE.txt) or [`LICENSE.html`](LICENSE.html) for the
+full End User License Agreement.
+
+Third-party component notices: <https://watchnexus.ca/legal/notices>.
+
+---
+
+<p align="center"><sub>WatchNexus &middot; v1.0.0 (RTP) &middot; Built with care for self-hosters.</sub></p>

@@ -1,0 +1,75 @@
+WatchNexus End User License Agreement
+Version 1.0.0 (Release To Public)
+Copyright (c) 2026 WatchNexus Media Systems. All rights reserved.
+
+1. GRANT OF LICENSE
+   WatchNexus is licensed, not sold. Subject to your acceptance of and
+   compliance with this Agreement, WatchNexus Media Systems ("Licensor")
+   grants you ("Licensee") a non-exclusive, non-transferable, revocable
+   license to install and use the WatchNexus software (the "Software") on
+   one or more devices that you own or control, solely in the tier
+   (Standard, Pro, or Ultra) that is unlocked by the license key issued
+   to you.
+
+2. TIER ENFORCEMENT
+   The Software contacts https://licenses.watchnexus.ca during activation
+   and at runtime to verify the tier associated with your license key.
+   Modules and features outside of your activated tier remain locked and
+   may not be enabled by any means.
+
+3. RESTRICTIONS
+   You may not, and may not permit any third party to:
+     (a) reverse engineer, decompile, disassemble, or otherwise attempt to
+         derive the source code of the Software, except to the extent
+         expressly permitted by applicable law;
+     (b) modify, adapt, translate, or create derivative works of the
+         Software;
+     (c) circumvent, disable, or interfere with the licensing,
+         activation, integrity (Fortress Protocol), or copy-protection
+         features of the Software;
+     (d) rent, lease, sell, sublicense, distribute, transfer, or assign
+         the Software, license keys, or activation tokens;
+     (e) remove or alter any proprietary notices, branding, or labels on
+         or in the Software.
+
+4. INTEGRITY VERIFICATION
+   The Software performs cryptographic integrity verification of its own
+   binaries on startup ("Fortress Protocol"). If the verification fails,
+   the Software will refuse to start. This is a security feature; do not
+   defeat it.
+
+5. THIRD-PARTY COMPONENTS
+   The Software incorporates open-source components under their
+   respective licenses. A consolidated NOTICES file is available at
+   https://watchnexus.ca/legal/notices.
+
+6. WARRANTY DISCLAIMER
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+   NON-INFRINGEMENT. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY
+   CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+7. LIMITATION OF LIABILITY
+   To the maximum extent permitted by applicable law, the Licensor's
+   aggregate liability under or in connection with this Agreement will
+   not exceed the amount you paid for the license to the Software in the
+   twelve (12) months preceding the event giving rise to liability.
+
+8. TERMINATION
+   This Agreement terminates automatically if you breach any of its
+   terms. Upon termination, you must cease all use of the Software and
+   destroy all copies in your possession or control.
+
+9. GOVERNING LAW
+   This Agreement is governed by the laws of the province of Ontario,
+   Canada, without regard to conflict-of-laws principles.
+
+10. CONTACT
+    legal@watchnexus.ca
+    https://watchnexus.ca/legal/eula
+
+By installing or using the Software, you acknowledge that you have read,
+understood, and agree to be bound by this Agreement.
