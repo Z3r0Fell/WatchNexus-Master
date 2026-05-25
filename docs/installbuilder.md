@@ -2,27 +2,30 @@
 
 > Target: **WatchNexus v2.9.0**
 > Tooling: **BitRock InstallBuilder Enterprise** (≥ 24.x)
+> Build host: **Ubuntu 22.04 / 24.04 LTS VPS** (any recent Ubuntu works)
 > Scope: Windows, Linux (Fedora / Debian / Arch), Docker
 > Tiers: **Standard**, **Pro**, **Ultra** — packaged as **three independent installers per platform**
 
-This document is the canonical reference for producing release artifacts on the Arch Linux build VPS (or any host with InstallBuilder installed). The output of this guide is twelve installer artifacts per release cycle (3 tiers × 4 platform groups).
+This document is the canonical reference for producing release artifacts on the Ubuntu build VPS. The output of this guide is twelve installer artifacts per release cycle (3 tiers × 4 platform groups).
 
 ---
 
 ## 1. Prerequisites
 
-### 1.1 Host requirements (Arch Linux VPS recommended)
+### 1.1 Host requirements (Ubuntu 22.04 / 24.04 LTS)
 
-| Component | Version | Install command (Arch) |
+| Component | Version | Install command (Ubuntu) |
 |---|---|---|
 | InstallBuilder Enterprise | ≥ 24.x | Download from `https://installbuilder.com/download.html`, extract to `/opt/installbuilder` |
-| .NET SDK | 10.0 | `pacman -S dotnet-sdk` (or `/opt/dotnet/dotnet` symlink) |
-| Node.js | ≥ 20 LTS | `pacman -S nodejs npm yarn` |
-| Yarn | ≥ 1.22 | `npm i -g yarn` |
-| Docker (for Docker installers) | ≥ 24 | `pacman -S docker docker-buildx && systemctl enable --now docker` |
-| rpmbuild | latest | `pacman -S rpm-tools` |
-| dpkg-deb | latest | `pacman -S dpkg` |
-| makepkg (PKGBUILD) | bundled | included with `base-devel` |
+| .NET SDK | 10.0 | `wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb && sudo dpkg -i packages-microsoft-prod.deb && sudo apt update && sudo apt install -y dotnet-sdk-10.0` |
+| Node.js | ≥ 20 LTS | `curl -fsSL https://deb.nodesource.com/setup_20.x \| sudo -E bash - && sudo apt install -y nodejs` |
+| Yarn | ≥ 1.22 | `sudo npm i -g yarn` |
+| Docker (for Docker installers) | ≥ 24 | `curl -fsSL https://get.docker.com \| sh && sudo systemctl enable --now docker` |
+| rpmbuild | latest | `sudo apt install -y rpm` |
+| dpkg-deb | latest | preinstalled on Ubuntu |
+| Arch packaging toolchain | latest | Run inside an `archlinux:latest` Docker container (see §5.4) — Ubuntu cannot run `makepkg` natively |
+| Code-signing tool | latest | `sudo apt install -y osslsigncode` |
+| XML/utility tools | — | `sudo apt install -y libxml2-utils zip unzip jq` |
 
 ### 1.2 InstallBuilder licence
 
@@ -219,22 +222,27 @@ done
 - Install: `sudo apt install ./watchnexus-ultra_2.9.0_amd64.deb`.
 - Same systemd post-install hook as the RPM (InstallBuilder shares the script across both targets).
 
-### 5.4 Linux — Arch (PKGBUILD wrapper)
+### 5.4 Linux — Arch (PKGBUILD wrapper inside a container)
 
-InstallBuilder does not produce a native `.pkg.tar.zst`. Instead, the shipped Arch flow wraps the `linux-x64` tarball with a `PKGBUILD`.
+InstallBuilder does not produce a native `.pkg.tar.zst`, and Ubuntu cannot run `makepkg`. The shipped Arch flow wraps the `linux-x64` tarball with a `PKGBUILD` inside a disposable `archlinux:latest` Docker container.
 
 ```bash
 # After: $BUILDER build $PROJECT linux-x64 --setvars tier=ultra productVersion=2.9.0
 TIER=ultra
-cp /app/release/$TIER/linux/watchnexus-$TIER-2.9.0-linux-x64-installer.run \
-   /app/build/installbuilder/arch/$TIER/
+VERSION=2.9.0
 
-cd /app/build/installbuilder/arch/$TIER
-makepkg -f --sign --noconfirm
-# → watchnexus-ultra-2.9.0-1-x86_64.pkg.tar.zst
+docker run --rm \
+  -v /app/build/installbuilder/arch:/work \
+  -v /app/release:/release \
+  archlinux:latest bash -c "
+    pacman -Syu --noconfirm base-devel sudo &&
+    useradd -m builder && echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers &&
+    su - builder -c 'cd /work && WATCHNEXUS_VERSION=${VERSION} bash build-arch.sh ${TIER}'
+  "
+# → /app/release/ultra/arch/watchnexus-ultra-2.9.0-1-x86_64.pkg.tar.zst
 ```
 
-The `PKGBUILD` template lives at `/app/build/installbuilder/arch/PKGBUILD.in` and is rendered per tier by the loop in `scripts/build-arch.sh` (created on first run; not required for non-Arch outputs).
+The `PKGBUILD` template lives at `/app/build/installbuilder/arch/PKGBUILD.in` and is rendered per tier by `scripts/build-arch.sh` inside the container. No Arch packages need to be installed on the Ubuntu host.
 
 ### 5.5 Docker
 
@@ -269,10 +277,17 @@ docker run -d --name watchnexus -p 8001:8001 \
 After every build, run the Fortress checksum step:
 
 ```bash
+# Local hashing only
 /app/build/fortress-build.sh sign /app/release
+
+# Hash + upload to the licence server
+WN_UPLOAD_HASHES=1 \
+WN_LICENSE_TOKEN="<your-release-publishing-token>" \
+WN_LICENSE_API="https://licenses.watchnexus.ca" \
+  /app/build/fortress-build.sh sign /app/release
 ```
 
-This walks all installer files and writes `SHA256SUMS.txt` per tier folder. The licence server (`https://licenses.watchnexus.ca`) verifies these hashes during activation.
+This walks every `*.exe`, `*.rpm`, `*.deb`, `*.pkg.tar.zst`, `*.tar`, and `*.run` under `/app/release/<tier>/` and writes a `SHA256SUMS.txt` per tier folder. When `WN_UPLOAD_HASHES=1`, the checksums are POSTed to `POST /api/releases/hashes` on the licence server so client activations can verify integrity at runtime.
 
 Smoke test each installer in a disposable VM/container before publishing:
 
@@ -290,11 +305,11 @@ All five must respond on `/api/cellar/first-launch` before the artifact is consi
 
 ## 7. CI integration
 
-The existing `.github/workflows/docker-publish.yml` builds Docker images. To extend to InstallBuilder artifacts, add a second job that runs on the self-hosted Arch VPS:
+The existing `.github/workflows/docker-publish.yml` builds Docker images. To extend to InstallBuilder artifacts, add a second job that runs on the self-hosted Ubuntu VPS:
 
 ```yaml
 build-installers:
-  runs-on: [self-hosted, arch, installbuilder]
+  runs-on: [self-hosted, ubuntu, installbuilder]
   needs: build-tiers
   strategy:
     matrix:
@@ -312,6 +327,24 @@ build-installers:
       with:
         name: watchnexus-${{ matrix.tier }}-${{ matrix.target }}
         path: /app/release/${{ matrix.tier }}/
+
+build-arch:
+  runs-on: [self-hosted, ubuntu, installbuilder]
+  needs: build-installers
+  strategy:
+    matrix:
+      tier: [standard, pro, ultra]
+  steps:
+    - name: Build Arch package in container
+      run: |
+        docker run --rm \
+          -v /app/build/installbuilder/arch:/work \
+          -v /app/release:/release \
+          archlinux:latest bash -c "
+            pacman -Syu --noconfirm base-devel sudo &&
+            useradd -m builder && echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers &&
+            su - builder -c 'cd /work && WATCHNEXUS_VERSION=2.9.0 bash build-arch.sh ${{ matrix.tier }}'
+          "
 ```
 
 ---
