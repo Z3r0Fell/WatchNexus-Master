@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>WatchNexus</Name>
+  <Repository>watchnexus/watchnexus:1.0.0-standard</Repository>
+  <Registry>https://hub.docker.com/r/watchnexus/watchnexus</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://watchnexus.ca/support</Support>
+  <Project>https://watchnexus.ca</Project>
+  <Overview>
+WatchNexus is your complete, self-hosted media pipeline. Replace Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, and Jellyfin with a single application.
+
+Features:
+- 31+ modules in Standard (free), 49 in Pro, 73 in Ultra
+- Media library with TMDB metadata and streaming
+- Download management with built-in torrent engine
+- Indexer search, movie automation, scheduled tasks
+- AI recommendations, Live TV/IPTV, DVR
+- Hardware GPU transcoding (NVENC, QSV, VAAPI)
+- Optical disc ripping, gaming console, media sync
+- Built-in update system with license activation
+
+Start free with Standard. Enter a serial number in Settings to unlock Pro ($35 CAD) or Ultra ($60 CAD).
+  </Overview>
+  <Category>MediaServer:Video MediaServer:Music MediaServer:Books MediaServer:Other</Category>
+  <WebUI>http://[IP]:[PORT:8002]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Z3r0Fell/watchnexus-unraid/main/watchnexus.xml</TemplateURL>
+  <Icon>https://watchnexus.ca/assets/images/watchnexus-logo.png</Icon>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText>Support WatchNexus</DonateText>
+  <DonateLink>https://watchnexus.ca/download</DonateLink>
+  <Requires/>
+  <Config Name="Web UI Port" Target="8002" Default="8002" Mode="tcp" Description="WatchNexus web interface port" Type="Port" Display="always" Required="true" Mask="false">8002</Config>
+  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data (database, settings, logs)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
+  <Config Name="Media Library" Target="/data/media" Default="/mnt/user/media" Mode="rw" Description="Path to your media files (movies, TV shows, music)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media</Config>
+  <Config Name="Rips Output" Target="/data/rips" Default="/mnt/user/appdata/watchnexus/rips" Mode="rw" Description="Output directory for disc rips (Ultra tier)" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/rips</Config>
+  <Config Name="Transcoded Output" Target="/data/transcoded" Default="/mnt/user/appdata/watchnexus/transcoded" Mode="rw" Description="Output directory for transcoded files (Ultra tier)" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/transcoded</Config>
+  <Config Name="Offline Downloads" Target="/data/offline" Default="/mnt/user/appdata/watchnexus/offline" Mode="rw" Description="Offline sync storage (Ultra tier)" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/offline</Config>
+  <Config Name="JWT Secret" Target="JWT_SECRET" Default="ChangeThisToASecureRandomString32!" Mode="" Description="JWT authentication secret (change this!)" Type="Variable" Display="always" Required="true" Mask="true">ChangeThisToASecureRandomString32!</Config>
+  <Config Name="License Server URL" Target="LICENSE_SERVER_URL" Default="https://licenses.watchnexus.ca" Mode="" Description="WatchNexus license server URL" Type="Variable" Display="advanced" Required="false" Mask="false">https://licenses.watchnexus.ca</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="TZ" Target="TZ" Default="America/Toronto" Mode="" Description="Timezone" Type="Variable" Display="advanced" Required="false" Mask="false">America/Toronto</Config>
+</Container>

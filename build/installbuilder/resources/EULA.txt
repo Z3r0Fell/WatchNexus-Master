@@ -1,0 +1,11 @@
+WATCHNEXUS END USER LICENSE AGREEMENT
+Copyright (c) WatchNexus Media Systems. All rights reserved.
+
+This software is licensed, not sold. Use of WatchNexus is governed by the
+tier-specific license key you obtained from https://watchnexus.ca. Activation
+contacts https://licenses.watchnexus.ca to validate the key and unlock the
+corresponding tier (Standard, Pro, or Ultra). Reverse engineering,
+redistribution, or circumvention of the licensing system is prohibited.
+
+By installing WatchNexus you agree to the terms published at
+https://watchnexus.ca/legal/eula.

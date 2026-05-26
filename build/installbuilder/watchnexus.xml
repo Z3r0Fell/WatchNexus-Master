@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WatchNexus InstallBuilder Project (v1.0.0)
+  Tier-aware (standard | pro | ultra). Build with:
+      builder build watchnexus.xml TARGET setvars tier=TIER productVersion=1.0.0
+  Targets: windows-x64, rpm, deb, linux-x64
+  Inputs : /app/dist/TIER/publish/{win-x64,linux-x64,web}
+  Output : /app/release/TIER/PLATFORM/
+-->
+<project>
+    <shortName>watchnexus-${tier}</shortName>
+    <fullName>WatchNexus ${tier_display}</fullName>
+    <version>${productVersion}</version>
+    <installerName>watchnexus-${tier}-${productVersion}-${platform_name}</installerName>
+    <vendor>WatchNexus Media Systems</vendor>
+    <description>WatchNexus ${tier_display} — modular media server, v${productVersion}</description>
+    <productDisplayIcon>${build_project_directory}/resources/watchnexus.ico</productDisplayIcon>
+
+    <leftImage>${build_project_directory}/resources/installer-left.png</leftImage>
+    <logoImage>${build_project_directory}/resources/watchnexus-logo.png</logoImage>
+
+    <licenseFile>${build_project_directory}/resources/EULA.txt</licenseFile>
+    <readmeFile>${build_project_directory}/resources/README.txt</readmeFile>
+
+    <enableRollback>1</enableRollback>
+    <enableTimestamp>1</enableTimestamp>
+    <compressionAlgorithm>lzma-ultra</compressionAlgorithm>
+
+    <outputDirectory>/app/release/${tier}/${platform_name}</outputDirectory>
+
+    <!-- Variables derived from CLI setvars tier=TIER -->
+    <initializationActionList>
+        <setInstallerVariable name="tier_display" value="Standard">
+            <ruleList>
+                <compareText text="${tier}" logic="equals" value="standard"/>
+            </ruleList>
+        </setInstallerVariable>
+        <setInstallerVariable name="tier_display" value="Pro">
+            <ruleList>
+                <compareText text="${tier}" logic="equals" value="pro"/>
+            </ruleList>
+        </setInstallerVariable>
+        <setInstallerVariable name="tier_display" value="Ultra">
+            <ruleList>
+                <compareText text="${tier}" logic="equals" value="ultra"/>
+            </ruleList>
+        </setInstallerVariable>
+
+        <setInstallerVariable name="payload_root" value="${build_project_directory}/../../stage/${tier}">
+            <ruleList>
+                <compareText text="${payload_root}" logic="equals" value=""/>
+            </ruleList>
+        </setInstallerVariable>
+        <setInstallerVariable name="service_name" value="watchnexus"/>
+        <setInstallerVariable name="default_port" value="8001"/>
+    </initializationActionList>
+
+    <!-- Pre-build verify -->
+    <preBuildActionList>
+        <throwError text="Tier payload not found at ${payload_root}. Run build/prepare-installers.sh ${tier} first.">
+            <ruleList>
+                <fileTest path="${payload_root}/publish/web/index.html" condition="not_exists"/>
+            </ruleList>
+        </throwError>
+    </preBuildActionList>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Parameters: install path + port
+    ════════════════════════════════════════════════════════════════ -->
+    <parameterList>
+        <directoryParameter>
+            <name>installdir</name>
+            <description>Installation directory</description>
+            <explanation>Where WatchNexus ${tier_display} will be installed</explanation>
+            <value/>
+            <default>${platform_install_prefix}/WatchNexus</default>
+            <allowEmptyValue>0</allowEmptyValue>
+            <cliOptionName>prefix</cliOptionName>
+            <mustBeWritable>1</mustBeWritable>
+            <mustExist>0</mustExist>
+            <width>40</width>
+        </directoryParameter>
+
+        <stringParameter>
+            <name>http_port</name>
+            <description>HTTP port</description>
+            <explanation>Port the WatchNexus core API will listen on</explanation>
+            <value>8001</value>
+            <default>8001</default>
+            <allowEmptyValue>0</allowEmptyValue>
+            <cliOptionName>port</cliOptionName>
+            <width>10</width>
+        </stringParameter>
+
+        <stringParameter>
+            <name>license_key</name>
+            <description>License key (optional)</description>
+            <explanation>Activate now or skip and enter via the UI on first launch</explanation>
+            <value/>
+            <default/>
+            <allowEmptyValue>1</allowEmptyValue>
+            <cliOptionName>license</cliOptionName>
+            <width>40</width>
+        </stringParameter>
+    </parameterList>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Components — payload differs by platform
+    ════════════════════════════════════════════════════════════════ -->
+    <componentList>
+        <component>
+            <name>core</name>
+            <description>WatchNexus ${tier_display} Core</description>
+            <canBeEdited>0</canBeEdited>
+            <selected>1</selected>
+            <show>1</show>
+
+            <folderList>
+                <!-- Linux backend payload -->
+                <folder>
+                    <description>Backend binaries (Linux)</description>
+                    <destination>${installdir}/bin</destination>
+                    <name>backend_linux</name>
+                    <platforms>linux linux-x64</platforms>
+                    <distributionFileList>
+                        <distributionDirectory>
+                            <origin>${payload_root}/publish/linux-x64</origin>
+                        </distributionDirectory>
+                    </distributionFileList>
+                </folder>
+
+                <!-- Windows backend payload -->
+                <folder>
+                    <description>Backend binaries (Windows)</description>
+                    <destination>${installdir}\bin</destination>
+                    <name>backend_windows</name>
+                    <platforms>windows</platforms>
+                    <distributionFileList>
+                        <distributionDirectory>
+                            <origin>${payload_root}/publish/win-x64</origin>
+                        </distributionDirectory>
+                    </distributionFileList>
+                </folder>
+
+                <!-- Frontend bundle (all platforms) -->
+                <folder>
+                    <description>Web UI bundle</description>
+                    <destination>${installdir}/web</destination>
+                    <name>frontend</name>
+                    <platforms>all</platforms>
+                    <distributionFileList>
+                        <distributionDirectory>
+                            <origin>${payload_root}/publish/web</origin>
+                        </distributionDirectory>
+                    </distributionFileList>
+                </folder>
+
+                <!-- Tier manifest -->
+                <folder>
+                    <description>Tier manifest</description>
+                    <destination>${installdir}</destination>
+                    <name>manifest</name>
+                    <platforms>all</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${payload_root}/tier.json</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+            </folderList>
+
+            <!-- ──────── Post-install actions ──────── -->
+            <postInstallationActionList>
+                <!-- Write license key (if provided) -->
+                <writeFile>
+                    <path>${installdir}/license.key</path>
+                    <text>${license_key}</text>
+                    <ruleList>
+                        <compareText text="${license_key}" logic="does_not_equal" value=""/>
+                    </ruleList>
+                </writeFile>
+
+                <!-- Linux: install systemd unit + create user + enable service -->
+                <runProgram>
+                    <program>bash</program>
+                    <programArguments>${build_project_directory}/scripts/post-install.sh "${installdir}" "${http_port}" "${tier}"</programArguments>
+                    <platforms>linux linux-x64</platforms>
+                </runProgram>
+
+                <!-- Windows: register service via sc.exe + write registry tier marker -->
+                <runProgram>
+                    <program>sc.exe</program>
+                    <programArguments>create WatchNexusCore binPath= "\"${installdir}\\bin\\WatchNexus.Core.exe\" --urls http://0.0.0.0:${http_port}" start= auto DisplayName= "WatchNexus ${tier_display}"</programArguments>
+                    <platforms>windows</platforms>
+                </runProgram>
+                <runProgram>
+                    <program>reg.exe</program>
+                    <programArguments>add HKLM\Software\WatchNexus /v Tier /t REG_SZ /d ${tier} /f</programArguments>
+                    <platforms>windows</platforms>
+                </runProgram>
+                <runProgram>
+                    <program>reg.exe</program>
+                    <programArguments>add HKLM\Software\WatchNexus /v Version /t REG_SZ /d ${productVersion} /f</programArguments>
+                    <platforms>windows</platforms>
+                </runProgram>
+                <runProgram>
+                    <program>sc.exe</program>
+                    <programArguments>start WatchNexusCore</programArguments>
+                    <platforms>windows</platforms>
+                    <abortOnError>0</abortOnError>
+                </runProgram>
+            </postInstallationActionList>
+
+            <!-- ──────── Pre-uninstall actions ──────── -->
+            <preUninstallationActionList>
+                <runProgram>
+                    <program>bash</program>
+                    <programArguments>${build_project_directory}/scripts/pre-uninstall.sh "${installdir}"</programArguments>
+                    <platforms>linux linux-x64</platforms>
+                    <abortOnError>0</abortOnError>
+                </runProgram>
+                <runProgram>
+                    <program>sc.exe</program>
+                    <programArguments>stop WatchNexusCore</programArguments>
+                    <platforms>windows</platforms>
+                    <abortOnError>0</abortOnError>
+                </runProgram>
+                <runProgram>
+                    <program>sc.exe</program>
+                    <programArguments>delete WatchNexusCore</programArguments>
+                    <platforms>windows</platforms>
+                    <abortOnError>0</abortOnError>
+                </runProgram>
+            </preUninstallationActionList>
+        </component>
+    </componentList>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Platform-specific packaging hints
+    ════════════════════════════════════════════════════════════════ -->
+    <platformOptionsList>
+        <platformOptions>
+            <platform>linux-x64</platform>
+            <rpmPackaging>
+                <rpmFileName>watchnexus-${tier}-${productVersion}-1.x86_64.rpm</rpmFileName>
+                <rpmGroup>Applications/Multimedia</rpmGroup>
+                <rpmDescription>WatchNexus ${tier_display} modular media server</rpmDescription>
+                <rpmDependencies>libicu, krb5-libs, zlib</rpmDependencies>
+            </rpmPackaging>
+            <debPackaging>
+                <debFileName>watchnexus-${tier}_${productVersion}_amd64.deb</debFileName>
+                <debSection>video</debSection>
+                <debPriority>optional</debPriority>
+                <debDescription>WatchNexus ${tier_display} modular media server</debDescription>
+                <debDependencies>libicu-dev | libicu70 | libicu71 | libicu72, libkrb5-3, zlib1g</debDependencies>
+            </debPackaging>
+        </platformOptions>
+        <platformOptions>
+            <platform>windows</platform>
+            <windowsExecutableIcon>${build_project_directory}/resources/watchnexus.ico</windowsExecutableIcon>
+            <windowsSoftwareRegistryPrefix>SOFTWARE\WatchNexus</windowsSoftwareRegistryPrefix>
+        </platformOptions>
+    </platformOptionsList>
+
+    <!-- Allowed targets; invoke via: builder build PROJECT TARGET -->
+    <allowedPlatforms>windows windows-x64 linux linux-x64 rpm deb</allowedPlatforms>
+</project>
