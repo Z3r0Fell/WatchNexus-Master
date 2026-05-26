@@ -1,0 +1,42 @@
+# Maintainer: WatchNexus Media Systems <build@watchnexus.ca>
+# Generated PKGBUILD — rendered per tier by scripts/build-arch.sh
+pkgname=watchnexus-@TIER@
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc="WatchNexus @TIER_DISPLAY@ — modular media server"
+arch=('x86_64')
+url="https://watchnexus.ca"
+license=('custom:Proprietary')
+depends=('icu' 'krb5' 'zlib')
+options=('!strip' '!debug')
+source=("watchnexus-@TIER@-@VERSION@-linux-x64-installer.run")
+sha256sums=('SKIP')
+
+package() {
+    cd "$srcdir"
+    chmod +x "watchnexus-@TIER@-@VERSION@-linux-x64-installer.run"
+    "./watchnexus-@TIER@-@VERSION@-linux-x64-installer.run" \
+        --mode unattended \
+        --prefix "$pkgdir/opt/watchnexus" \
+        --port 8001
+
+    # systemd unit
+    install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/watchnexus.service" <<UNIT
+[Unit]
+Description=WatchNexus @TIER_DISPLAY@ Core
+After=network.target
+
+[Service]
+Type=simple
+User=watchnexus
+Group=watchnexus
+WorkingDirectory=/opt/watchnexus
+ExecStart=/opt/watchnexus/bin/WatchNexus.Core --urls http://0.0.0.0:8001
+Restart=on-failure
+Environment=DOTNET_NOLOGO=1
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+}

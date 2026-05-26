@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>WatchNexus-Pro</Name>
+  <Repository>watchnexus/watchnexus:1.0.0-pro</Repository>
+  <Registry>https://hub.docker.com/r/watchnexus/watchnexus</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://watchnexus.ca/support</Support>
+  <Project>https://watchnexus.ca</Project>
+  <Overview>
+WatchNexus Pro — 49 modules. Includes everything in Standard plus indexer search, movie automation, scheduled tasks, watch analytics, AI recommendations, Live TV/IPTV, DVR, ebooks, music library, RSS feeds, backup/restore, and 2FA.
+
+Requires a Pro serial number ($35 CAD one-time) from licenses.watchnexus.ca
+  </Overview>
+  <Category>MediaServer:Video MediaServer:Music MediaServer:Books MediaServer:Other</Category>
+  <WebUI>http://[IP]:[PORT:8002]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Z3r0Fell/watchnexus-unraid/main/watchnexus-pro.xml</TemplateURL>
+  <Icon>https://watchnexus.ca/assets/images/watchnexus-logo.png</Icon>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <Config Name="Web UI Port" Target="8002" Default="8002" Mode="tcp" Description="WatchNexus web interface port" Type="Port" Display="always" Required="true" Mask="false">8002</Config>
+  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
+  <Config Name="Media Library" Target="/data/media" Default="/mnt/user/media" Mode="rw" Description="Media files" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media</Config>
+  <Config Name="Rips Output" Target="/data/rips" Default="/mnt/user/appdata/watchnexus/rips" Mode="rw" Description="Disc rips output" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/rips</Config>
+  <Config Name="JWT Secret" Target="JWT_SECRET" Default="ChangeThisToASecureRandomString32!" Mode="" Description="JWT secret" Type="Variable" Display="always" Required="true" Mask="true">ChangeThisToASecureRandomString32!</Config>
+  <Config Name="License Server URL" Target="LICENSE_SERVER_URL" Default="https://licenses.watchnexus.ca" Mode="" Description="License server" Type="Variable" Display="advanced" Required="false" Mask="false">https://licenses.watchnexus.ca</Config>
+  <Config Name="TZ" Target="TZ" Default="America/Toronto" Mode="" Description="Timezone" Type="Variable" Display="advanced" Required="false" Mask="false">America/Toronto</Config>
+</Container>
