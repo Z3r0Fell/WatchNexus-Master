@@ -10,7 +10,9 @@ node_modules/
 # Build outputs
 /.next/
 /out/
-/build
+# Frontend production bundle (output of `yarn build`) — NOT our /build release tooling dir
+/frontend/build/
+/src/web/build/
 next-env.d.ts
 *.tsbuildinfo
 
