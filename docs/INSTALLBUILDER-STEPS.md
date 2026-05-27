@@ -41,8 +41,18 @@ Drop your Authenticode `.pfx` for Windows signing at
 cd ~
 git clone https://github.com/watchnexus/watchnexus.git
 cd watchnexus
-git checkout v1.0.0           # or the tag for this release
+
+# Pick ONE of the following:
+git checkout v1.0.0     # preferred: the tagged release (after the tag has been pushed)
+# OR
+git checkout main       # fallback: main branch is the v1.0.0 release cut
 ```
+
+> **Heads-up:** the tag must be pushed from the dev machine via *Save to Github*
+> before it shows up on a fresh clone. If you see
+> `pathspec 'v1.0.0' did not match any file(s) known to git`, the tag hasn't
+> propagated yet — use `git checkout main` for now (it points at the same commit),
+> or run `git fetch --tags` after the push completes.
 
 If you received the release as a tarball, extract it instead:
 
@@ -53,6 +63,17 @@ tar -xzf ~/Downloads/watchnexus-1.0.0-src.tar.gz --strip-components=1
 
 You should now have `build/`, `src/`, `frontend/`, `docs/`, `README.md`,
 `LICENSE.txt`, `LICENSE.html`, `CHANGELOG.md` at the repo root.
+
+### Creating future release tags
+
+For subsequent releases, cut the tag on the dev machine **before** Save to Github:
+
+```bash
+git tag -a v1.0.1 -m "WatchNexus v1.0.1 — bug-fix release"
+# Save to Github pushes commits AND tags
+```
+
+The `git fetch --tags` on the Arch laptop will then surface the new tag.
 
 ---
 
