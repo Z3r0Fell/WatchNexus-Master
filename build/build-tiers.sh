@@ -157,12 +157,22 @@ build_tier() {
     done
   fi
 
-  # Copy shared infrastructure
-  cp -r "$SRC_DIR/Data" "$OUT/backend/" 2>/dev/null || true
-  cp -r "$SRC_DIR/Models" "$OUT/backend/" 2>/dev/null || true
+  # Copy shared infrastructure that EVERY tier needs to compile
+  cp -r "$SRC_DIR/Data"        "$OUT/backend/" 2>/dev/null || true
+  cp -r "$SRC_DIR/Models"      "$OUT/backend/" 2>/dev/null || true
+  cp -r "$SRC_DIR/Auth"        "$OUT/backend/" 2>/dev/null || true     # AuthService.cs
+  cp -r "$SRC_DIR/Services"    "$OUT/backend/" 2>/dev/null || true     # TrayIconService, BotBackgroundService
+  cp -r "$SRC_DIR/Properties"  "$OUT/backend/" 2>/dev/null || true     # launchSettings, etc.
   cp "$SRC_DIR/WatchNexus.Core.csproj" "$OUT/backend/" 2>/dev/null || true
-  cp "$SRC_DIR/Program.cs" "$OUT/backend/" 2>/dev/null || true
-  cp "$SRC_DIR/appsettings.json" "$OUT/backend/" 2>/dev/null || true
+  cp "$SRC_DIR/Program.cs"             "$OUT/backend/" 2>/dev/null || true
+  cp "$SRC_DIR/appsettings.json"       "$OUT/backend/" 2>/dev/null || true
+  cp "$SRC_DIR/appsettings.Development.json" "$OUT/backend/" 2>/dev/null || true
+
+  # The csproj references ../shared/WatchNexus.Shared.csproj — replicate that layout
+  rm -rf "$OUT/shared"
+  mkdir -p "$OUT/shared"
+  cp "$ROOT_DIR/src/watchnexus/shared/"*.cs      "$OUT/shared/" 2>/dev/null || true
+  cp "$ROOT_DIR/src/watchnexus/shared/"*.csproj  "$OUT/shared/" 2>/dev/null || true
 
   # Write tier manifest
   cat > "$OUT/tier.json" <<EOF
@@ -171,13 +181,13 @@ build_tier() {
   "version": "1.0.0",
   "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "controllers": $(ls "$OUT/backend/Controllers/" 2>/dev/null | wc -l),
-  "pages": $(find "$OUT/frontend/pages" -name "*.js" -o -name "*.jsx" 2>/dev/null | wc -l)
+  "pages": $(find "$OUT/frontend/pages" \( -name "*.js" -o -name "*.jsx" \) 2>/dev/null | wc -l)
 }
 EOF
 
   echo "  Output: $OUT"
   echo "  Controllers: $(ls "$OUT/backend/Controllers/" 2>/dev/null | wc -l)"
-  echo "  Pages: $(find "$OUT/frontend/pages" -name "*.js" -o -name "*.jsx" 2>/dev/null | wc -l)"
+  echo "  Pages: $(find "$OUT/frontend/pages" \( -name "*.js" -o -name "*.jsx" \) 2>/dev/null | wc -l)"
   echo ""
 }
 

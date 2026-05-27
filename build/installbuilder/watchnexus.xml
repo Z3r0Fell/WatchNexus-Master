@@ -155,15 +155,24 @@
                     </distributionFileList>
                 </folder>
 
-                <!-- Tier manifest -->
+                <!-- Tier manifest + production docs -->
                 <folder>
-                    <description>Tier manifest</description>
+                    <description>Tier manifest + production docs</description>
                     <destination>${installdir}</destination>
                     <name>manifest</name>
                     <platforms>all</platforms>
                     <distributionFileList>
                         <distributionFile>
                             <origin>${payload_root}/tier.json</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${payload_root}/LICENSE.txt</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${payload_root}/LICENSE.html</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${payload_root}/README.md</origin>
                         </distributionFile>
                     </distributionFileList>
                 </folder>
