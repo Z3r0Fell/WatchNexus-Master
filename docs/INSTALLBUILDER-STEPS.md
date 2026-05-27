@@ -87,10 +87,25 @@ chmod +x build/prepare-installers.sh
 This produces:
 
 ```
-stage/standard/   publish/{win-x64,linux-x64,web}/  tier.json  LICENSE.*  README.md
+stage/standard/   publish/{win-x64,linux-x64,web}/  tier.json  LICENSE.txt  LICENSE.html  README.md
 stage/pro/        ...
 stage/ultra/      ...
 ```
+
+What the script actually does (for transparency):
+
+1. **Backend publish (shared)** — runs `dotnet publish` against
+   `src/watchnexus/core/WatchNexus.Core.csproj` *once* per RID
+   (`win-x64`, `linux-x64`). The full backend goes into every tier
+   because tier enforcement is performed at runtime by `CellarController`
+   talking to `https://licenses.watchnexus.ca`.
+2. **Frontend bundle (per tier)** — runs `yarn build` against
+   `src/web/` three times with `REACT_APP_TIER=<tier>` and
+   `REACT_APP_VERSION=1.0.0` baked in, then copies the bundle into
+   `stage/<tier>/publish/web/`.
+3. **Stage assembly** — copies the shared backend binaries into each
+   tier's `publish/`, writes `tier.json`, and drops the
+   `LICENSE.txt` / `LICENSE.html` / `README.md` next to them.
 
 Expect ~5–10 minutes on first run (yarn install + dotnet restore). The
 script prints sizes per tier; if any is missing or empty, stop and
@@ -243,6 +258,8 @@ the launch list.
 | `dotnet: command not found` | `sudo pacman -S dotnet-sdk` (must be ≥10.0) |
 | `yarn build` fails on memory | `NODE_OPTIONS=--max-old-space-size=4096 yarn build` |
 | `builder build` complains *"Tier payload not found"* | Re-run `prepare-installers.sh <tier>`; verify `stage/<tier>/publish/web/index.html` exists |
+| `error CS0234: namespace 'Shared' does not exist` | Old fragmented staging script — pull `main`, this is fixed in the v1.0.0 cut; the new `prepare-installers.sh` uses full-source publish |
+| `Pages: 0` in build-tiers output | The `frontend/` symlink in the repo points at `src/web/` — make sure your clone preserved symlinks (`git config --global core.symlinks true` on Windows; Linux/macOS clones it correctly by default) |
 | Signed EXE flagged by SmartScreen | Submit the EXE to <https://www.microsoft.com/en-us/wdsi/filesubmission> for reputation seeding |
 | Arch package build fails as root | Run `build-arch.sh` as a regular user (`makepkg` refuses root) |
 | License-server upload returns 401 | Regenerate `WN_LICENSE_TOKEN` in the license portal (Settings → Publishing tokens) |
