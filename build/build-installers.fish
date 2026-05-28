@@ -20,22 +20,23 @@
 #      set -Ux PATH (ruby -e 'puts Gem.user_dir')/bin \$PATH
 # ══════════════════════════════════════════════════════════════════════
 
-set -l SCRIPT_DIR (dirname (status -f))
-set -l ROOT_DIR (realpath "$SCRIPT_DIR/..")
-set -l STAGE_DIR "$ROOT_DIR/stage"
-set -l RELEASE_DIR "$ROOT_DIR/release"
-set -l NSIS_TEMPLATE "$SCRIPT_DIR/packaging/nsis/watchnexus.nsi.in"
-set -l FPM_HOOKS_DIR "$SCRIPT_DIR/packaging/fpm"
-set -l VERSION "1.0.0"
-set -l VENDOR "WatchNexus Media Systems"
-set -l URL "https://watchnexus.ca"
-set -l LICENSE "Proprietary"
-set -l MAINTAINER "Auz Larocque <support@watchnexus.ca>"
+set -g SCRIPT_DIR (dirname (status -f))
+set -g ROOT_DIR (realpath "$SCRIPT_DIR/..")
+set -g STAGE_DIR "$ROOT_DIR/stage"
+set -g RELEASE_DIR "$ROOT_DIR/release"
+set -g NSIS_TEMPLATE "$SCRIPT_DIR/packaging/nsis/watchnexus.nsi.in"
+set -g FPM_HOOKS_DIR "$SCRIPT_DIR/packaging/fpm"
+set -g VERSION "1.0.0"
+set -g VENDOR "WatchNexus Media Systems"
+set -g URL "https://watchnexus.ca"
+set -g LICENSE "Proprietary"
+set -g MAINTAINER "Auz Larocque <support@watchnexus.ca>"
 
 # ── Parse args ──────────────────────────────────────────────────────
 set -l TARGET "all"
-set -l DO_SIGN 0
-set -l DO_UPLOAD 0
+set -g DO_SIGN 0
+set -g DO_UPLOAD 0
+set -g SKIP_STAGE 0
 for arg in $argv
     switch $arg
         case standard pro ultra all
@@ -44,17 +45,19 @@ for arg in $argv
             set DO_SIGN 1
         case --upload
             set DO_UPLOAD 1
+        case --skip-stage
+            set SKIP_STAGE 1
         case '*'
             echo "Unknown arg: $arg"
-            echo "Usage: "(status -f)" [standard|pro|ultra|all] [--sign] [--upload]"
+            echo "Usage: "(status -f)" [standard|pro|ultra|all] [--sign] [--upload] [--skip-stage]"
             exit 1
     end
 end
 
 if test "$TARGET" = "all"
-    set TIERS standard pro ultra
+    set -g TIERS standard pro ultra
 else
-    set TIERS $TARGET
+    set -g TIERS $TARGET
 end
 
 # ── Pre-flight checks ───────────────────────────────────────────────
@@ -98,13 +101,24 @@ echo "  Upload   : $DO_UPLOAD"
 echo "══════════════════════════════════════════════════"
 
 # ── Step 1: Stage tier payloads (delegates to bash script) ──────────
-echo ""
-echo "[1/5] Staging tier payloads via prepare-installers.sh..."
-chmod +x "$SCRIPT_DIR/prepare-installers.sh"
-bash "$SCRIPT_DIR/prepare-installers.sh" $TARGET
-or begin
-    echo "[!] prepare-installers.sh failed"
-    exit 1
+if test "$SKIP_STAGE" = "1"
+    echo ""
+    echo "[1/5] Skipping staging (--skip-stage); reusing existing $STAGE_DIR"
+    for tier in $TIERS
+        if not test -f "$STAGE_DIR/$tier/publish/web/index.html"
+            echo "  [!] stage/$tier looks incomplete — cannot --skip-stage. Run without the flag."
+            exit 1
+        end
+    end
+else
+    echo ""
+    echo "[1/5] Staging tier payloads via prepare-installers.sh..."
+    chmod +x "$SCRIPT_DIR/prepare-installers.sh"
+    bash "$SCRIPT_DIR/prepare-installers.sh" $TARGET
+    or begin
+        echo "[!] prepare-installers.sh failed"
+        exit 1
+    end
 end
 
 # ── Step 2: Per-tier Linux packages via fpm ─────────────────────────
@@ -119,7 +133,9 @@ function build_linux_packages -a tier
     set -l tier_title (string upper -- (string sub -l 1 -- $tier))(string sub -s 2 -- $tier)
 
     if not test -d "$payload"
-        echo "  [!] Missing payload: $payload — run prepare-installers.sh first"
+        echo "  [!] Missing payload: $payload"
+        echo "      STAGE_DIR=$STAGE_DIR  RELEASE_DIR=$RELEASE_DIR"
+        echo "      Did prepare-installers.sh complete? Inspect $STAGE_DIR/$tier/ tree."
         return 1
     end
 

@@ -72,6 +72,18 @@ To build a single tier:
 ./build/build-installers.fish ultra
 ```
 
+### Re-running without redoing the slow staging step
+
+If a previous run already produced `stage/{standard,pro,ultra}/publish/...`,
+skip the 7-minute publish/yarn phase and jump straight to packaging:
+
+```fish
+./build/build-installers.fish all --skip-stage
+```
+
+Use this whenever you're iterating on the `.deb` / NSIS / signing logic
+and don't need to recompile the backend.
+
 ---
 
 ## 3. Sign Windows EXEs (if you have an EV cert)
