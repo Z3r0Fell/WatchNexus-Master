@@ -79,14 +79,50 @@ require fakeroot       "sudo pacman -S fakeroot"
 
 if test "$DO_SIGN" = "1"
     require osslsigncode "sudo pacman -S osslsigncode"
-    if test -z "$WN_SIGN_PASS"
-        echo "[!] --sign requires WN_SIGN_PASS env var (pfx passphrase)"
-        echo "    set -x WN_SIGN_PASS 'your-pfx-passphrase'"
+    require openssl      "sudo pacman -S openssl"
+
+    # Resolve the .pfx path (env override → default)
+    if test -z "$WN_PFX_PATH"
+        set -g WN_PFX_PATH "/opt/signing/watchnexus.pfx"
+    end
+    if not test -f "$WN_PFX_PATH"
+        echo "[!] --sign needs a PKCS12 (.pfx) certificate."
+        echo "    Looked at: $WN_PFX_PATH"
+        echo "    Override with:  set -x WN_PFX_PATH /path/to/your.pfx"
         exit 1
     end
-    if not test -f /opt/signing/watchnexus.pfx
-        echo "[!] --sign requires /opt/signing/watchnexus.pfx"
-        exit 1
+
+    # Prompt for passphrase if not already in the environment.
+    # Reads silently (no echo) — fish's read -s.
+    if test -z "$WN_SIGN_PASS"
+        echo ""
+        echo "PFX file: $WN_PFX_PATH"
+        read -sP "Enter PFX passphrase (input hidden): " WN_SIGN_PASS
+        echo ""
+        if test -z "$WN_SIGN_PASS"
+            echo "[!] Empty passphrase — aborting."
+            exit 1
+        end
+
+        # Verify the passphrase opens the .pfx before we kick off a long build
+        echo -n "Verifying passphrase... "
+        if openssl pkcs12 -in "$WN_PFX_PATH" -passin "pass:$WN_SIGN_PASS" \
+                          -nokeys -noout > /dev/null 2>&1
+            echo "ok."
+        else
+            echo "FAILED."
+            echo "[!] The passphrase did not open $WN_PFX_PATH. Aborting."
+            set -e WN_SIGN_PASS
+            exit 1
+        end
+        set -gx WN_SIGN_PASS $WN_SIGN_PASS
+    else
+        echo "PFX passphrase: using \$WN_SIGN_PASS from environment."
+    end
+
+    # Timestamp server (override-able)
+    if test -z "$WN_TIMESTAMP_URL"
+        set -g WN_TIMESTAMP_URL "http://timestamp.digicert.com"
     end
 end
 
@@ -296,26 +332,56 @@ end
 if test "$DO_SIGN" = "1"
     echo ""
     echo "[4/5] Signing Windows installers with osslsigncode..."
+    echo "      PFX        : $WN_PFX_PATH"
+    echo "      Timestamp  : $WN_TIMESTAMP_URL"
+    set -l SIGN_OK 0
+    set -l SIGN_FAIL 0
     for tier in $TIERS
-        set -l infile "$RELEASE_DIR/$tier/windows/watchnexus-$tier-$VERSION-windows-x64.exe"
-        set -l outfile "$RELEASE_DIR/$tier/windows/watchnexus-$tier-$VERSION-windows-x64-signed.exe"
+        set -l tier_title (string upper -- (string sub -l 1 -- $tier))(string sub -s 2 -- $tier)
+        set -l infile  "$RELEASE_DIR/$tier/windows/watchnexus-$tier-$VERSION-windows-x64.exe"
+        set -l tmpfile "$RELEASE_DIR/$tier/windows/watchnexus-$tier-$VERSION-windows-x64-signed.exe"
+
         if not test -f "$infile"
-            echo "  [!] $tier: unsigned exe missing"
+            echo "  [$tier] [!] unsigned exe missing — skipping"
+            set SIGN_FAIL (math $SIGN_FAIL + 1)
             continue
         end
+
         echo "  [$tier] signing..."
         osslsigncode sign \
-            -pkcs12 /opt/signing/watchnexus.pfx \
-            -pass "$WN_SIGN_PASS" \
-            -n "WatchNexus "(string upper -- (string sub -l 1 -- $tier))(string sub -s 2 -- $tier) \
-            -i "$URL" \
-            -t http://timestamp.digicert.com \
-            -in  "$infile" \
-            -out "$outfile"
-        and mv "$outfile" "$infile"
-        and echo "    signed → $infile"
-        or  echo "    [!] sign failed for $tier"
+            -pkcs12 "$WN_PFX_PATH" \
+            -pass   "$WN_SIGN_PASS" \
+            -h      sha256 \
+            -n      "WatchNexus $tier_title" \
+            -i      "$URL" \
+            -ts     "$WN_TIMESTAMP_URL" \
+            -in     "$infile" \
+            -out    "$tmpfile"
+        set -l sign_status $status
+
+        if test $sign_status -eq 0
+            mv "$tmpfile" "$infile"
+            # Verify the signature actually attached
+            if osslsigncode verify "$infile" > /dev/null 2>&1
+                set -l size (du -h "$infile" | cut -f1)
+                echo "    signed + verified ($size) → "(basename "$infile")
+                set SIGN_OK (math $SIGN_OK + 1)
+            else
+                echo "    [!] sign succeeded but verify failed for $tier"
+                set SIGN_FAIL (math $SIGN_FAIL + 1)
+            end
+        else
+            echo "    [!] osslsigncode exited $sign_status for $tier"
+            rm -f "$tmpfile"
+            set SIGN_FAIL (math $SIGN_FAIL + 1)
+        end
     end
+    echo ""
+    echo "  Signing summary: $SIGN_OK signed, $SIGN_FAIL failed"
+
+    # Scrub the passphrase from environment so it doesn't leak into
+    # subsequent commands or process listings.
+    set -e WN_SIGN_PASS
 else
     echo ""
     echo "[4/5] Skipping Windows signing (pass --sign to enable)"

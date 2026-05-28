@@ -89,13 +89,41 @@ and don't need to recompile the backend.
 ## 3. Sign Windows EXEs (if you have an EV cert)
 
 ```fish
+./build/build-installers.fish all --sign
+```
+
+The script will:
+
+1. Verify `osslsigncode` and `openssl` are installed.
+2. Look for the certificate at `/opt/signing/watchnexus.pfx`
+   (override with `set -x WN_PFX_PATH /elsewhere/yours.pfx`).
+3. **Prompt you for the passphrase** (input is hidden as you type).
+4. Verify the passphrase opens the `.pfx` *before* doing any work, so
+   you don't waste 12 minutes only to find out you typoed.
+5. Run the full build pipeline.
+6. Sign every Windows EXE with `osslsigncode` (SHA-256 digest,
+   DigiCert timestamp server by default).
+7. Re-verify the attached signature on each EXE.
+8. Wipe the passphrase out of the environment when done.
+
+If you'd rather skip the prompt (e.g. in CI), pre-set the env var:
+
+```fish
 set -x WN_SIGN_PASS 'your-pfx-passphrase'
 ./build/build-installers.fish all --sign
 ```
 
-This re-runs the entire pipeline, then signs every Windows EXE with
-`osslsigncode` against `/opt/signing/watchnexus.pfx` (DigiCert
-timestamp server).
+The script detects an already-set `$WN_SIGN_PASS` and uses it without
+prompting (it still verifies the passphrase against the cert before
+the build runs).
+
+### Other knobs
+
+| Variable | Default | Notes |
+|---|---|---|
+| `WN_PFX_PATH` | `/opt/signing/watchnexus.pfx` | Path to your `.pfx` certificate |
+| `WN_SIGN_PASS` | *(prompts)* | PFX passphrase |
+| `WN_TIMESTAMP_URL` | `http://timestamp.digicert.com` | RFC-3161 timestamp server. Sectigo: `http://timestamp.sectigo.com`. SSL.com: `http://ts.ssl.com` |
 
 > If you don't have the EV cert yet, **skip --sign** and ship the
 > unsigned `.exe`. Backers will see one SmartScreen "More info → Run
