@@ -16,6 +16,27 @@ node_modules/
 next-env.d.ts
 *.tsbuildinfo
 
+# C# / .NET build artifacts
+**/bin/
+**/obj/
+*.pdb
+*.dll
+!**/build/installbuilder/**/*.dll
+*.cache
+*.nupkg
+*.suo
+.vs/
+
+# Runtime data (created on first launch — should never be committed)
+/src/watchnexus/core/bin/Release/net10.0/data/
+/src/watchnexus/core/bin/Release/net10.0/logs/
+/src/watchnexus/core/data/
+/src/watchnexus/core/logs/
+/release/
+/stage/
+/dist/
+/.publish-shared/
+
 # Environment files
 .env
 .env.*

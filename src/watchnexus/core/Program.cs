@@ -8,7 +8,52 @@ using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Core.Controllers;
 
+// ══════════════════════════════════════════════════════════════════════
+//  Crash-safe boot logger
+//  Writes to %PROGRAMDATA%\WatchNexus\logs (Win) or
+//  $WATCHNEXUS_DATA_DIR/logs (Linux/Docker, env-overridable),
+//  falling back to <app>/logs. Catches any startup crash and dumps
+//  the full exception so the user has something to send to support.
+// ══════════════════════════════════════════════════════════════════════
+static string ResolveLogDir()
+{
+    var envDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR");
+    if (!string.IsNullOrWhiteSpace(envDir))
+        return Path.Combine(envDir, "logs");
+
+    if (OperatingSystem.IsWindows())
+    {
+        var pd = Environment.GetEnvironmentVariable("PROGRAMDATA")
+                 ?? @"C:\ProgramData";
+        return Path.Combine(pd, "WatchNexus", "logs");
+    }
+
+    return Path.Combine(AppContext.BaseDirectory, "logs");
+}
+
+var logDir = ResolveLogDir();
+Directory.CreateDirectory(logDir);
+var bootLogPath = Path.Combine(logDir, $"boot-{DateTime.UtcNow:yyyyMMdd-HHmmss}.log");
+var bootLog = new StreamWriter(bootLogPath, append: false) { AutoFlush = true };
+
+void Log(string msg)
+{
+    var line = $"[{DateTime.UtcNow:HH:mm:ss.fff}] {msg}";
+    Console.WriteLine(line);
+    try { bootLog.WriteLine(line); } catch { /* never fail because of logging */ }
+}
+
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+{
+    Log($"[FATAL] Unhandled exception: {e.ExceptionObject}");
+    try { bootLog.Flush(); } catch { }
+};
+
+try
+{
+
 var builder = WebApplication.CreateBuilder(args);
+Log($"[WatchNexus] Boot log: {bootLogPath}");
 
 // ── Resolve project root (works from bin/Debug, published, or installed) ──
 static string FindRepoRoot()
@@ -16,29 +61,46 @@ static string FindRepoRoot()
     var dir = new DirectoryInfo(AppContext.BaseDirectory);
     while (dir != null)
     {
-        // Check if this directory contains src/watchnexus/modules
         if (Directory.Exists(Path.Combine(dir.FullName, "src", "watchnexus", "modules")))
             return dir.FullName;
-        // Check if this directory contains separated/ (repo root marker)
-        if (Directory.Exists(Path.Combine(dir.FullName, "separated")))
+        if (Directory.Exists(Path.Combine(dir.FullName, "modules")))
             return dir.FullName;
         dir = dir.Parent;
     }
     return AppContext.BaseDirectory;
 }
 var repoRoot = FindRepoRoot();
-Console.WriteLine($"[WatchNexus] Repo root: {repoRoot}");
+Log($"[WatchNexus] Repo root: {repoRoot}");
 
 // ── Configuration ─────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? Environment.GetEnvironmentVariable("JWT_SECRET")
     ?? "WatchNexus_DefaultSecret_ChangeInProduction_32chars!";
-var port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8002;
+var port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8001;
 
 // ── Database ──────────────────────────────────────────────────
-var dataDir = Path.Combine(AppContext.BaseDirectory, "data");
+// Production: write the SQLite DB into the data dir (writable),
+// not next to the binaries (which live in Program Files and can't
+// be written to without elevation).
+var dataDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR");
+if (string.IsNullOrWhiteSpace(dataDir))
+{
+    if (OperatingSystem.IsWindows())
+    {
+        var pd = Environment.GetEnvironmentVariable("PROGRAMDATA") ?? @"C:\ProgramData";
+        dataDir = Path.Combine(pd, "WatchNexus");
+    }
+    else
+    {
+        // Linux service user has /var/lib/watchnexus; standalone runs use ./data
+        dataDir = Directory.Exists("/var/lib/watchnexus")
+            ? "/var/lib/watchnexus"
+            : Path.Combine(AppContext.BaseDirectory, "data");
+    }
+}
 Directory.CreateDirectory(dataDir);
 var dbPath = Path.Combine(dataDir, "watchnexus.db");
+Log($"[WatchNexus] Data dir: {dataDir}");
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlite($"Data Source={dbPath}"));
@@ -80,16 +142,19 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 // ── Load external modules ─────────────────────────────────────
-var modulesPath = Path.Combine(repoRoot, "src", "watchnexus", "modules");
+// Production installs (Program Files / /opt/watchnexus) ship pre-built
+// module DLLs alongside the binaries — no source compilation at runtime.
+var modulesPath = Path.Combine(AppContext.BaseDirectory, "modules");
 if (!Directory.Exists(modulesPath))
-    modulesPath = Path.Combine(repoRoot, "modules"); // published layout
-ModuleLoader.DiscoverAndRegister(builder.Services, modulesPath);
+    modulesPath = Path.Combine(repoRoot, "src", "watchnexus", "modules"); // dev tree
+if (Directory.Exists(modulesPath))
+    ModuleLoader.DiscoverAndRegister(builder.Services, modulesPath);
+else
+    Log($"[WatchNexus] No external modules directory found ({modulesPath}) — built-in modules only");
 
-// ── Load separated modules (dynamic DLL compilation & loading) ─
-var separatedPath = Path.Combine(repoRoot, "separated");
-if (!Directory.Exists(separatedPath))
-    separatedPath = Path.Combine(repoRoot, "src", "separated"); // alt layout
-ModuleLoader.CompileAndLoadSeparated(builder.Services, separatedPath);
+// Note: the legacy "separated modules" runtime DLL-compile path was removed
+// in v1.0.0 RTP. Production installs do not ship the .NET SDK and cannot
+// invoke `dotnet build` at startup. All tiered modules are built-in.
 
 // ── Build app ─────────────────────────────────────────────────
 var app = builder.Build();
@@ -133,9 +198,8 @@ static void SeedAccounts(AppDbContext db)
     }
 }
 
-// ── Logging directory ─────────────────────────────────────────
-var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
-Directory.CreateDirectory(logDir);
+// ── Logging directory (already created at top of file) ────────
+// logDir + bootLog already set up at top of Program.cs
 
 // ── Middleware ─────────────────────────────────────────────────
 app.UseCors();
@@ -153,10 +217,11 @@ app.Use(async (ctx, next) =>
 // ── Serve Frontend (SPA) — MUST be before auth so static files load without tokens
 var frontendSearchPaths = new[]
 {
-    Path.Combine(repoRoot, "src", "web", "build"),
-    Path.Combine(repoRoot, "web", "build"),
-    Path.Combine(AppContext.BaseDirectory, "web", "build"),
+    Path.Combine(AppContext.BaseDirectory, "web"),         // production install layout
+    Path.Combine(AppContext.BaseDirectory, "..", "web"),   // alt production layout
     Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+    Path.Combine(repoRoot, "src", "web", "build"),         // dev tree
+    Path.Combine(repoRoot, "web", "build"),
 };
 var webRoot = frontendSearchPaths.FirstOrDefault(p => Directory.Exists(p));
 if (webRoot != null)
@@ -217,7 +282,46 @@ Fortress.Initialize(app);
 // ── Start ─────────────────────────────────────────────────────
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
-var separated = ModuleLoader.SeparatedModules.Count;
-Console.WriteLine($"[WatchNexus] v1.0.0 starting on port {port}");
-Console.WriteLine($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {separated} separated, {discovered - external - separated} built-in)");
+Log($"[WatchNexus] v1.0.0 starting on port {port}");
+Log($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
+Log($"[WatchNexus] Logs at: {logDir}");
+Log($"[WatchNexus] Open http://localhost:{port} in your browser to begin.");
 app.Run($"http://0.0.0.0:{port}");
+
+}
+catch (Exception ex)
+{
+    Log("");
+    Log("══════════════════════════════════════════════════════════════════════");
+    Log("[WatchNexus] FATAL — startup failed.");
+    Log($"  Type:        {ex.GetType().FullName}");
+    Log($"  Message:     {ex.Message}");
+    Log($"  Stack trace:");
+    foreach (var line in (ex.StackTrace ?? "").Split('\n'))
+        Log($"    {line.TrimEnd()}");
+    if (ex.InnerException != null)
+    {
+        Log("  Inner exception:");
+        Log($"    {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
+    }
+    Log("══════════════════════════════════════════════════════════════════════");
+    Log($"  Full log saved to: {bootLogPath}");
+    Log("  Please attach this file when reporting the issue at:");
+    Log("    https://github.com/z3r0fell/watchnexus/issues");
+    Log("══════════════════════════════════════════════════════════════════════");
+
+    // On Windows, double-clicked .exe closes immediately on exit — give
+    // the user a chance to read the message before the window vanishes.
+    if (OperatingSystem.IsWindows() && Environment.UserInteractive)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Press any key to close...");
+        try { Console.ReadKey(intercept: true); } catch { /* no console attached */ }
+    }
+
+    Environment.ExitCode = 1;
+}
+finally
+{
+    try { bootLog?.Flush(); bootLog?.Dispose(); } catch { }
+}

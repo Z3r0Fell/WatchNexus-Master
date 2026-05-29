@@ -1,4 +1,0 @@
-/tmp/wn-test-publish/appsettings.Development.json
-/tmp/wn-test-publish/appsettings.json
-/tmp/wn-test-publish/libe_sqlite3.so
-/tmp/wn-test-publish/WatchNexus.Core

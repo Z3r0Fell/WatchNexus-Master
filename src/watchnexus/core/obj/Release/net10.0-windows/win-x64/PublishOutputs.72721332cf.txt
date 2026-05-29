@@ -1,5 +1,0 @@
-/app/.publish-shared/win-x64/appsettings.Development.json
-/app/.publish-shared/win-x64/appsettings.json
-/app/.publish-shared/win-x64/aspnetcorev2_inprocess.dll
-/app/.publish-shared/win-x64/e_sqlite3.dll
-/app/.publish-shared/win-x64/WatchNexus.Core.exe

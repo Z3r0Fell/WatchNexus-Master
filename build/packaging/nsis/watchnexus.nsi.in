@@ -69,6 +69,13 @@ Section "Core (required)" SecCore
     File "@STAGE_ROOT@\LICENSE.html"
     File "@STAGE_ROOT@\README.md"
 
+    ; Helper script that opens the logs folder (used by Start-menu shortcut)
+    FileOpen $0 "$INSTDIR\OpenLogs.cmd" w
+    FileWrite $0 "@echo off$\r$\n"
+    FileWrite $0 "if not exist \"%PROGRAMDATA%\WatchNexus\logs\" mkdir \"%PROGRAMDATA%\WatchNexus\logs\"$\r$\n"
+    FileWrite $0 "start \"\" explorer.exe \"%PROGRAMDATA%\WatchNexus\logs\"$\r$\n"
+    FileClose $0
+
     ; Drop tier/version locks for Fortress integrity check
     FileOpen $0 "$INSTDIR\tier.lock" w
     FileWrite $0 "@TIER@"
@@ -118,13 +125,29 @@ Section "Core (required)" SecCore
     ; Generate uninstaller
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-    ; Start-menu shortcut to open the web UI
+    ; Start-menu shortcuts
     CreateDirectory "$SMPROGRAMS\WatchNexus"
     CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus Web UI.lnk" \
         "http://localhost:${DEFAULT_PORT}" \
-        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0
+        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        SW_SHOWNORMAL "" "Open WatchNexus in your browser"
+    CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus (Console mode).lnk" \
+        "$INSTDIR\bin\WatchNexus.Core.exe" \
+        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        SW_SHOWNORMAL "" "Run WatchNexus in a console window (for troubleshooting)"
+    CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus Logs Folder.lnk" \
+        "$INSTDIR\OpenLogs.cmd" \
+        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        SW_SHOWMINIMIZED "" "Open the WatchNexus log folder"
     CreateShortcut "$SMPROGRAMS\WatchNexus\Uninstall WatchNexus.lnk" \
-        "$INSTDIR\Uninstall.exe"
+        "$INSTDIR\Uninstall.exe" \
+        "" "$INSTDIR\Uninstall.exe" 0
+
+    ; Desktop shortcut (single shortcut to the web UI)
+    CreateShortcut "$DESKTOP\WatchNexus.lnk" \
+        "http://localhost:${DEFAULT_PORT}" \
+        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        SW_SHOWNORMAL "" "Open WatchNexus in your browser"
 SectionEnd
 
 ; ══════════════════════════════════════════════════════════════════════
@@ -149,14 +172,18 @@ Section "Uninstall"
     Delete   "$INSTDIR\LICENSE.html"
     Delete   "$INSTDIR\README.md"
     Delete   "$INSTDIR\license.key"
+    Delete   "$INSTDIR\OpenLogs.cmd"
     RMDir /r "$INSTDIR\bin"
     RMDir /r "$INSTDIR\web"
     RMDir    "$INSTDIR"
 
     ; Remove shortcuts
     Delete   "$SMPROGRAMS\WatchNexus\WatchNexus Web UI.lnk"
+    Delete   "$SMPROGRAMS\WatchNexus\WatchNexus (Console mode).lnk"
+    Delete   "$SMPROGRAMS\WatchNexus\WatchNexus Logs Folder.lnk"
     Delete   "$SMPROGRAMS\WatchNexus\Uninstall WatchNexus.lnk"
     RMDir    "$SMPROGRAMS\WatchNexus"
+    Delete   "$DESKTOP\WatchNexus.lnk"
 
     ; Remove registry keys
     DeleteRegKey HKLM "Software\WatchNexus"

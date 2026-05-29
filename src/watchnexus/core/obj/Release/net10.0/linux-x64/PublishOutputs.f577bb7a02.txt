@@ -1,4 +1,0 @@
-/app/.publish-shared/linux-x64/appsettings.Development.json
-/app/.publish-shared/linux-x64/appsettings.json
-/app/.publish-shared/linux-x64/libe_sqlite3.so
-/app/.publish-shared/linux-x64/WatchNexus.Core
