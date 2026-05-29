@@ -236,14 +236,19 @@ Neither needs fpm or NSIS.
 
 | Symptom | Fix |
 |---|---|
+| Windows: app crashes on launch looking for `src\separated` | You're running a pre-v1.0.0 build. The runtime DLL-compile path was removed. Update to the current `main`. |
+| No Start-Menu icon / no Desktop icon | You ran `WatchNexus.Core.exe` directly instead of installing via the NSIS `.exe`. Run the NSIS installer (it creates Start-Menu + Desktop shortcuts automatically). |
+| Where are the Windows logs? | `%PROGRAMDATA%\WatchNexus\logs\boot-*.log` — also reachable via Start Menu → WatchNexus → "WatchNexus Logs Folder" |
+| Where are the Linux logs? | `/var/lib/watchnexus/logs/boot-*.log` (systemd) or `<install dir>/logs/boot-*.log` (standalone). Also `journalctl -u watchnexus`. |
+| App opens a console window and immediately closes | Should now pause with "Press any key to close..." before exiting on Windows interactive launches. If it still vanishes, you're on a pre-v1.0.0 build. |
 | `fpm: command not found` | `gem install --user-install fpm` and add `~/.local/share/gem/.../bin` to PATH |
 | `makensis: command not found` | `sudo pacman -S nsis` |
 | `dotnet publish` fails: "SDK not found" | `sudo pacman -S dotnet-sdk` (must be ≥10.0) |
 | `fpm` says "Need package 'fakeroot'" | `sudo pacman -S fakeroot` |
-| NSIS errors out on missing icon | Run `prepare-installers.sh` first — the icon lives at `build/installbuilder/resources/watchnexus.ico` |
-| `osslsigncode` signing fails | Verify `/opt/signing/watchnexus.pfx` exists and `$WN_SIGN_PASS` is set in your current fish session |
+| NSIS errors out on missing icon | Run `prepare-installers.sh` first — the icon lives at `build/packaging/resources/watchnexus.ico` |
+| `osslsigncode` signing fails | Verify `$WN_PFX_PATH` (default `/opt/signing/watchnexus.pfx`) exists; the script pre-validates the passphrase before running |
 | Windows EXE flagged by SmartScreen on a fresh test machine | Normal until ~2,500 unique downloads accumulate reputation. Sign the EXE and trust the process. |
-| Service fails to start on Linux post-install | `journalctl -u watchnexus -n 50` — check `/var/lib/watchnexus` perms and that the `watchnexus` user exists |
+| Service fails to start on Linux post-install | `journalctl -u watchnexus -n 50` — check `/var/lib/watchnexus` perms and that the `watchnexus` user exists. Also `/var/lib/watchnexus/logs/boot-*.log`. |
 
 ---
 
