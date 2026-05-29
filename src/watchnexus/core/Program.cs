@@ -101,9 +101,53 @@ if (string.IsNullOrWhiteSpace(dataDir))
 Directory.CreateDirectory(dataDir);
 var dbPath = Path.Combine(dataDir, "watchnexus.db");
 Log($"[WatchNexus] Data dir: {dataDir}");
+Log($"[WatchNexus] DB path : {dbPath}");
+
+// ── Pre-flight: verify the data dir is actually writable ─────
+// EF Core's Migrate() opens SQLite + writes a __EFMigrationsLock table.
+// If that fails with "attempt to write a readonly database" the user
+// has no actionable signal. So we test write access NOW and emit a
+// clear log line + actionable instruction.
+try
+{
+    var writeProbe = Path.Combine(dataDir, ".write-probe");
+    File.WriteAllText(writeProbe, "ok");
+    File.Delete(writeProbe);
+    // Also clear any readonly attribute on a pre-existing db file (an old
+    // install or a manual copy can leave the file flagged read-only, which
+    // is the most common cause of SQLite Error 8 on Windows services).
+    if (File.Exists(dbPath))
+    {
+        var attrs = File.GetAttributes(dbPath);
+        if ((attrs & FileAttributes.ReadOnly) != 0)
+        {
+            File.SetAttributes(dbPath, attrs & ~FileAttributes.ReadOnly);
+            Log($"[WatchNexus] Cleared ReadOnly attribute from existing DB file.");
+        }
+    }
+}
+catch (Exception probeEx)
+{
+    Log($"[WatchNexus] [FATAL] Data dir is not writable: {dataDir}");
+    Log($"[WatchNexus]   {probeEx.GetType().Name}: {probeEx.Message}");
+    Log($"[WatchNexus]   On Windows, the WatchNexusCore service runs as LocalSystem and should");
+    Log($"[WatchNexus]   have write access to C:\\ProgramData\\WatchNexus. If you're seeing this,");
+    Log($"[WatchNexus]   either the folder ACL is broken or the service is running as a less-");
+    Log($"[WatchNexus]   privileged account. Run this from an elevated PowerShell to repair:");
+    Log($"[WatchNexus]     icacls \"{dataDir}\" /grant \"NT AUTHORITY\\SYSTEM:(OI)(CI)F\" /T");
+    throw;
+}
+
+// Build the connection string explicitly:
+//   Mode=ReadWriteCreate  → create the file if it doesn't exist (default,
+//                           but stated explicitly for clarity on Windows services).
+//   Cache=Shared          → share the page cache across the EF Core pool.
+//   Foreign Keys=True     → enforce FK constraints.
+var connString = $"Data Source={dbPath};Mode=ReadWriteCreate;Cache=Shared;Foreign Keys=True";
+Log($"[WatchNexus] DB conn : {connString}");
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlite($"Data Source={dbPath}"));
+    opt.UseSqlite(connString));
 
 // ── Auth ──────────────────────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

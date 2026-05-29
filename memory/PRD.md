@@ -244,3 +244,35 @@ Every module now has a working frontend page — zero scaffolding remaining.
 - P1: macOS native build plotting (currently a $25K crowdfunding stretch goal).
 - P2: Helm chart for Kubernetes deployment.
 - P2: Automated per-tier test suite.
+
+## v1.0.0 RTP — Icon + Readonly-DB Hotfix (2026-02)
+### Brand icon now propagates everywhere
+- New 1024×1024 brand mark (trident on #07060b) supplied by user; baked into:
+  - `/app/build/packaging/resources/watchnexus.ico` — 7-size multi-res .ico (16/24/32/48/64/128/256) for the installer EXE + shell shortcuts.
+  - `/app/build/packaging/resources/watchnexus-logo.png` — wizard header (400×).
+  - `/app/build/packaging/resources/installer-left.png` — wizard side panel (164×314, dark backdrop, centred mark).
+  - `/app/build/packaging/resources/watchnexus-banner.png` — top strip (300×70).
+  - `/app/src/web/public/favicon.png`, `logo192.png`, `logo512.png`, `watchnexus-logo.png` — PWA + browser tab icons refreshed in lockstep.
+- `WatchNexus.Core.csproj` now declares `<ApplicationIcon>` (Windows-only via `Condition=$(RuntimeIdentifier.StartsWith('win'))`) so `dotnet publish -r win-x64` embeds the icon directly into `WatchNexus.Core.exe`. Added `AssemblyTitle / Product / Company / Copyright` metadata while we were there.
+- `watchnexus.nsi.in`:
+  - Explicit `Icon` and `UninstallIcon` directives alongside `MUI_ICON / MUI_UNICON` (some NSIS builds silently ignore the MUI ones).
+  - Ships `watchnexus.ico` into `$INSTDIR\` and every shortcut (Start Menu + Desktop + Uninstall + Add/Remove Programs `DisplayIcon`) points at it instead of the .NET binary.
+  - Uninstaller deletes the .ico.
+
+### SQLite "attempt to write a readonly database" — fixed
+User reported `WatchNexus.Core.exe` crashing on first Windows launch with `SQLite Error 8: 'attempt to write a readonly database'` (full stack: `SqliteHistoryRepository.AcquireDatabaseLock()` → `Migrator.Migrate()`).
+- `Program.cs` now:
+  - Logs the full DB path + connection string before opening.
+  - Runs a `.write-probe` test in the data dir; on failure emits an `icacls` repair command the user can copy-paste from the boot log.
+  - Strips the `ReadOnly` file attribute off a pre-existing `watchnexus.db` (the #1 cause of SQLite Error 8 on Windows: file inherited the attribute from a prior install or restore).
+  - Connection string now explicitly sets `Mode=ReadWriteCreate;Cache=Shared;Foreign Keys=True`.
+- `watchnexus.nsi.in` installer now pre-creates `%PROGRAMDATA%\WatchNexus` and `…\logs`, then grants `(OI)(CI)F` to **SID S-1-5-18** (LocalSystem) and **S-1-5-32-544** (Administrators) via `icacls`. Well-known SIDs are used so the grant works on every Windows locale.
+
+### Files touched
+- `/app/build/packaging/resources/watchnexus.ico` (regenerated)
+- `/app/build/packaging/resources/{watchnexus-logo,watchnexus-banner,installer-left}.png` (regenerated)
+- `/app/src/web/public/{favicon,logo192,logo512,watchnexus-logo}.png` (regenerated)
+- `/app/src/watchnexus/core/WatchNexus.Core.csproj` (+ApplicationIcon, +metadata)
+- `/app/src/watchnexus/core/Program.cs` (write-probe, attribute clear, explicit conn string)
+- `/app/build/packaging/nsis/watchnexus.nsi.in` (Icon/UninstallIcon, ico shipped, shortcuts retargeted, icacls grant)
+
