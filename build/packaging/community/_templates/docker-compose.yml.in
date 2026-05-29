@@ -1,0 +1,44 @@
+version: "3.8"
+
+# ══════════════════════════════════════════════════════════════════════
+#  WatchNexus @TIER_TITLE@ — Reference Docker Compose
+#  ──────────────────────────────────────────────────────────────────
+#  Image is published to:
+#    docker pull watchnexus/watchnexus:@VERSION@-@TIER@
+#    docker pull watchnexus/watchnexus:latest-@TIER@   (alias)
+#
+#  Drop this file in /srv/watchnexus/docker-compose.yml then:
+#    docker compose up -d
+# ══════════════════════════════════════════════════════════════════════
+
+services:
+  watchnexus:
+    image: watchnexus/watchnexus:@VERSION@-@TIER@
+    container_name: watchnexus
+    restart: unless-stopped
+
+    ports:
+      - "8001:8001"                          # web UI + API
+
+    environment:
+      WATCHNEXUS_TIER: "@TIER@"
+      WATCHNEXUS_DATA_DIR: "/data"
+      WATCHNEXUS_PORT: "8001"
+      ASPNETCORE_ENVIRONMENT: "Production"
+      TZ: "America/Toronto"                  # change to your timezone
+
+    volumes:
+      - watchnexus-data:/data                # SQLite DB, settings, thumbnails
+      - /srv/watchnexus/media:/media:ro      # your media library (read-only)
+      - /srv/watchnexus/downloads:/downloads # incoming downloads (rw)
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8001/api/system/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  watchnexus-data:
+    driver: local

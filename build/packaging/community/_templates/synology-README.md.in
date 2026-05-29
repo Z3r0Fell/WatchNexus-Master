@@ -1,0 +1,63 @@
+# WatchNexus @TIER_TITLE@ on Synology DSM 7 (Container Manager)
+
+## Quick start
+
+1. Open **Container Manager** → **Image** → **Add** → **Add from URL**:
+   ```
+   watchnexus/watchnexus:@VERSION@-@TIER@
+   ```
+
+2. Once pulled, **Container** → **Create**:
+   - **Network**: bridge
+   - **Container Name**: `watchnexus-@TIER@`
+   - **Auto-restart**: ✓ enabled
+
+3. **Port settings**:
+   | Container Port | Local Port | Type |
+   |---|---|---|
+   | 8001 | 8001 | TCP |
+
+4. **Volume settings** (Add Folder):
+   | Mount Path | File/Folder |
+   |---|---|
+   | `/data` | `docker/watchnexus-@TIER@` (created automatically) |
+   | `/media` | wherever your media library lives, **read-only** |
+   | `/downloads` | wherever your downloads land, read-write |
+
+5. **Environment** (click the gear → Environment tab):
+   ```
+   WATCHNEXUS_TIER=@TIER@
+   WATCHNEXUS_DATA_DIR=/data
+   WATCHNEXUS_PORT=8001
+   TZ=America/Toronto
+   ```
+
+6. **Apply** → **Run**.
+
+7. Browse to `http://<your-nas>:8001` and enter your @TIER@ tier
+   licence key on the first-launch screen.
+
+## DSM 6 (legacy Docker app)
+
+Same steps, but the menu is **Docker** → **Image** → **Add** → **Add from URL**.
+
+## Updating
+
+```bash
+docker pull watchnexus/watchnexus:@VERSION@-@TIER@
+# Container Manager → Container → watchnexus-@TIER@ → Action → Reset
+```
+
+Or via SSH (DSM 7):
+```bash
+sudo docker stop watchnexus-@TIER@
+sudo docker rm watchnexus-@TIER@
+# Recreate from the updated image via Container Manager.
+```
+
+## Resource notes
+
+Synology DS220+ / DS920+ / DS1520+ comfortably run WatchNexus @TIER@.
+For hardware-transcoding on Strudel (Ultra tier), you need a model with
+Intel Quick Sync — see https://watchnexus.ca/hardware/synology for the
+current compatibility matrix.

@@ -37,6 +37,8 @@ set -l TARGET "all"
 set -g DO_SIGN 0
 set -g DO_UPLOAD 0
 set -g SKIP_STAGE 0
+set -g DO_DOCKER 0
+set -g DO_COMMUNITY 1
 for arg in $argv
     switch $arg
         case standard pro ultra all
@@ -47,9 +49,13 @@ for arg in $argv
             set DO_UPLOAD 1
         case --skip-stage
             set SKIP_STAGE 1
+        case --docker
+            set DO_DOCKER 1
+        case --no-community
+            set DO_COMMUNITY 0
         case '*'
             echo "Unknown arg: $arg"
-            echo "Usage: "(status -f)" [standard|pro|ultra|all] [--sign] [--upload] [--skip-stage]"
+            echo "Usage: "(status -f)" [standard|pro|ultra|all] [--sign] [--upload] [--skip-stage] [--docker] [--no-community]"
             exit 1
     end
 end
@@ -129,18 +135,20 @@ end
 
 echo "══════════════════════════════════════════════════"
 echo "  WatchNexus Installer Build  (v$VERSION)"
-echo "  Root     : $ROOT_DIR"
-echo "  Stage    : $STAGE_DIR"
-echo "  Release  : $RELEASE_DIR"
-echo "  Tiers    : $TIERS"
-echo "  Sign     : $DO_SIGN"
-echo "  Upload   : $DO_UPLOAD"
+echo "  Root      : $ROOT_DIR"
+echo "  Stage     : $STAGE_DIR"
+echo "  Release   : $RELEASE_DIR"
+echo "  Tiers     : $TIERS"
+echo "  Sign      : $DO_SIGN"
+echo "  Upload    : $DO_UPLOAD"
+echo "  Docker    : $DO_DOCKER"
+echo "  Community : $DO_COMMUNITY"
 echo "══════════════════════════════════════════════════"
 
 # ── Step 1: Stage tier payloads (delegates to bash script) ──────────
 if test "$SKIP_STAGE" = "1"
     echo ""
-    echo "[1/5] Skipping staging (--skip-stage); reusing existing $STAGE_DIR"
+    echo "[1/7] Skipping staging (--skip-stage); reusing existing $STAGE_DIR"
     for tier in $TIERS
         if not test -f "$STAGE_DIR/$tier/publish/web/index.html"
             echo "  [!] stage/$tier looks incomplete — cannot --skip-stage. Run without the flag."
@@ -149,7 +157,7 @@ if test "$SKIP_STAGE" = "1"
     end
 else
     echo ""
-    echo "[1/5] Staging tier payloads via prepare-installers.sh..."
+    echo "[1/7] Staging tier payloads via prepare-installers.sh..."
     chmod +x "$SCRIPT_DIR/prepare-installers.sh"
     bash "$SCRIPT_DIR/prepare-installers.sh" $TARGET
     or begin
@@ -160,7 +168,7 @@ end
 
 # ── Step 2: Per-tier Linux packages via fpm ─────────────────────────
 echo ""
-echo "[2/5] Building Linux packages via fpm..."
+echo "[2/7] Building Linux packages via fpm..."
 
 function build_linux_packages -a tier
     set -l payload "$STAGE_DIR/$tier/publish/linux-x64"
@@ -291,7 +299,7 @@ end
 
 # ── Step 3: Windows EXE via NSIS ────────────────────────────────────
 echo ""
-echo "[3/5] Building Windows installers via NSIS..."
+echo "[3/7] Building Windows installers via NSIS..."
 
 function build_windows_installer -a tier
     set -l payload "$STAGE_DIR/$tier/publish/win-x64"
@@ -335,10 +343,87 @@ for tier in $TIERS
     build_windows_installer "$tier"
 end
 
-# ── Step 4: Sign Windows installers (optional) ──────────────────────
+# ── Step 4: Docker image build (optional, --docker) ─────────────────
+if test "$DO_DOCKER" = "1"
+    echo ""
+    echo "[4/7] Building Docker images..."
+    require docker "https://docs.docker.com/engine/install/"
+    for tier in $TIERS
+        set -l img "watchnexus/watchnexus:$VERSION-$tier"
+        set -l latest "watchnexus/watchnexus:latest-$tier"
+        echo "  [$tier] → $img"
+        docker build \
+            --build-arg TIER=$tier \
+            -t "$img" \
+            -t "$latest" \
+            -f "$ROOT_DIR/Dockerfile" \
+            "$ROOT_DIR" 2>&1 | tail -3
+        if test $status -ne 0
+            echo "  [!] Docker build failed for $tier"
+            continue
+        end
+        # Export as a loadable tarball for offline distribution
+        mkdir -p "$RELEASE_DIR/$tier/docker"
+        set -l tarball "$RELEASE_DIR/$tier/docker/watchnexus-$tier-$VERSION-docker.tar"
+        docker save "$img" -o "$tarball" 2>&1 | tail -1
+        and echo "    saved tarball: "(basename "$tarball")"  ("(du -h "$tarball" | cut -f1)")"
+    end
+else
+    echo ""
+    echo "[4/7] Skipping Docker build (pass --docker to enable)"
+end
+
+# ── Step 5: Community-hub artifacts (Unraid / HexOS / TrueNAS / CasaOS / Portainer / Synology)
+if test "$DO_COMMUNITY" = "1"
+    echo ""
+    echo "[5/7] Generating community-hub artifacts..."
+    set -g COMMUNITY_TEMPLATES "$SCRIPT_DIR/packaging/community/_templates"
+
+    function render -a src dst tier
+        set -l tier_title (string upper -- (string sub -l 1 -- $tier))(string sub -s 2 -- $tier)
+        set -l tier_features
+        switch $tier
+            case standard
+                set tier_features "31 modules: libraries, playback, scrobbling, discovery, podcasts, radio, photos."
+            case pro
+                set tier_features "49 modules: everything in Standard plus *arr automation, backups, download clients, collections, live-TV DVR, analytics."
+            case ultra
+                set tier_features "73 modules: everything in Pro plus Bastion 2FA, Tunnel VPN, Strudel rip pipeline, hardware transcoding, Parfait/Menu discovery, Chowder sync, Pretzel emulator, S3 backup, cloud sync."
+        end
+        sed -e "s|@TIER@|$tier|g" \
+            -e "s|@TIER_TITLE@|$tier_title|g" \
+            -e "s|@VERSION@|$VERSION|g" \
+            -e "s|@TIER_FEATURES@|$tier_features|g" \
+            "$src" > "$dst"
+    end
+
+    for tier in $TIERS
+        set -l hub "$RELEASE_DIR/$tier/community-hubs"
+        rm -rf "$hub"
+        mkdir -p "$hub/truenas"
+
+        render "$COMMUNITY_TEMPLATES/docker-compose.yml.in"          "$hub/docker-compose.yml"           $tier
+        render "$COMMUNITY_TEMPLATES/unraid-template.xml.in"         "$hub/unraid-watchnexus-$tier.xml"  $tier
+        render "$COMMUNITY_TEMPLATES/casaos-app.json.in"             "$hub/casaos-app.json"              $tier
+        render "$COMMUNITY_TEMPLATES/hexos-compose.yml.in"           "$hub/hexos-compose.yml"            $tier
+        render "$COMMUNITY_TEMPLATES/portainer-template.json.in"     "$hub/portainer-template.json"      $tier
+        render "$COMMUNITY_TEMPLATES/portainer-stack.yml.in"         "$hub/portainer-stack.yml"          $tier
+        render "$COMMUNITY_TEMPLATES/synology-README.md.in"          "$hub/synology-README.md"           $tier
+        render "$COMMUNITY_TEMPLATES/truenas/Chart.yaml.in"          "$hub/truenas/Chart.yaml"           $tier
+        render "$COMMUNITY_TEMPLATES/truenas/values.yaml.in"         "$hub/truenas/values.yaml"          $tier
+
+        set -l count (find "$hub" -type f | wc -l)
+        echo "  [$tier] $count files → $hub"
+    end
+else
+    echo ""
+    echo "[5/7] Skipping community-hub artifacts (pass --no-community to opt out)"
+end
+
+# ── Step 6: Sign Windows installers (optional) ──────────────────────
 if test "$DO_SIGN" = "1"
     echo ""
-    echo "[4/5] Signing Windows installers with osslsigncode..."
+    echo "[6/7] Signing Windows installers with osslsigncode..."
     echo "      PFX        : $WN_PFX_PATH"
     echo "      Timestamp  : $WN_TIMESTAMP_URL"
     set -l SIGN_OK 0
@@ -391,12 +476,12 @@ if test "$DO_SIGN" = "1"
     set -e WN_SIGN_PASS
 else
     echo ""
-    echo "[4/5] Skipping Windows signing (pass --sign to enable)"
+    echo "[6/7] Skipping Windows signing (pass --sign to enable)"
 end
 
 # ── Step 5: SHA-256 manifest + optional license-server upload ───────
 echo ""
-echo "[5/5] Generating SHA256SUMS and (optionally) uploading..."
+echo "[7/7] Generating SHA256SUMS and (optionally) uploading..."
 set -l fortress_args sign "$RELEASE_DIR"
 if test "$DO_UPLOAD" = "1"
     set -x WN_UPLOAD_HASHES 1
@@ -421,12 +506,16 @@ for tier in $TIERS
     test -d "$tier_dir"; or continue
     set -l tier_count 0
     echo "    [$tier]"
-    for f in "$tier_dir"/deb/*.deb "$tier_dir"/rpm/*.rpm "$tier_dir"/arch/*.pkg.tar.zst "$tier_dir"/windows/*.exe
+    for f in "$tier_dir"/deb/*.deb "$tier_dir"/rpm/*.rpm "$tier_dir"/arch/*.pkg.tar.zst "$tier_dir"/windows/*.exe "$tier_dir"/docker/*.tar
         test -f "$f"; or continue
         set -l size (du -h "$f" | cut -f1)
         echo "      $size  "(basename "$f")
         set tier_count (math $tier_count + 1)
         set TOTAL_ARTIFACTS (math $TOTAL_ARTIFACTS + 1)
+    end
+    if test -d "$tier_dir/community-hubs"
+        set -l hub_count (find "$tier_dir/community-hubs" -type f | wc -l)
+        echo "      "(string trim "$hub_count")"   community-hub files in community-hubs/"
     end
     if test $tier_count -eq 0
         echo "      (no artifacts produced — check fpm/makensis output above)"
