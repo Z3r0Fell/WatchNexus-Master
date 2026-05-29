@@ -6,6 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     <WebRoot>..\..\web</WebRoot>
+    <!-- Windows-only: embed the WatchNexus icon in WatchNexus.Core.exe so
+         shell shortcuts, taskbar, Alt-Tab, and the Add/Remove Programs
+         entry all show the brand mark. The path is resolved relative to
+         this .csproj (../../../build/packaging/resources/watchnexus.ico). -->
+    <ApplicationIcon Condition="$(RuntimeIdentifier.StartsWith('win'))">..\..\..\build\packaging\resources\watchnexus.ico</ApplicationIcon>
+    <AssemblyTitle>WatchNexus</AssemblyTitle>
+    <Product>WatchNexus</Product>
+    <Company>WatchNexus Media Systems</Company>
+    <Copyright>Copyright (c) 2026 WatchNexus Media Systems</Copyright>
   </PropertyGroup>
 
   <!-- Windows: upgrade TFM to net10.0-windows and enable WinForms for system tray icon -->
