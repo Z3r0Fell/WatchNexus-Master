@@ -27,6 +27,30 @@ public sealed class TrayIconService : BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // ── Session 0 / non-interactive guard ──
+        // Windows Services run in Session 0 with no desktop, so NotifyIcon
+        // would silently fail. The user-session tray is now spawned via
+        // `WatchNexus.Core.exe --tray` from the HKLM\...\Run autostart
+        // (Windows) or `/etc/xdg/autostart/watchnexus-tray.desktop` (Linux),
+        // both handled by TrayController. So if we're not interactive,
+        // just no-op here.
+        if (!Environment.UserInteractive)
+        {
+            _logger.LogInformation("[Tray] In-service tray skipped (not user-interactive). "
+                + "The user-session controller is launched separately by the installer.");
+            return Task.CompletedTask;
+        }
+        if (OperatingSystem.IsLinux())
+        {
+            var disp = Environment.GetEnvironmentVariable("DISPLAY")
+                    ?? Environment.GetEnvironmentVariable("WAYLAND_DISPLAY");
+            if (string.IsNullOrEmpty(disp))
+            {
+                _logger.LogInformation("[Tray] No DISPLAY/WAYLAND_DISPLAY — running headless, skipping in-process tray.");
+                return Task.CompletedTask;
+            }
+        }
+
         var iconPath = ResolveIconPath();
 
         var thread = new Thread(() => SafeRunTray(iconPath, stoppingToken))

@@ -276,3 +276,37 @@ User reported `WatchNexus.Core.exe` crashing on first Windows launch with `SQLit
 - `/app/src/watchnexus/core/Program.cs` (write-probe, attribute clear, explicit conn string)
 - `/app/build/packaging/nsis/watchnexus.nsi.in` (Icon/UninstallIcon, ico shipped, shortcuts retargeted, icacls grant)
 
+## v1.0.0 RTP — User-Session Tray Controller (2026-02)
+User reported the systray icon and "controller process" never launched despite `TrayIconService.cs` being registered. Root cause: **Windows Services run in Session 0** (a non-interactive, no-desktop session) since Vista — any `NotifyIcon` created from inside the service is invisible to the logged-in user. Same problem on Linux: systemd services run as a non-GUI user.
+
+### Fix: dual-mode `WatchNexus.Core.exe`
+- New `--tray` (alias `--tray-only`) command-line flag short-circuits Program.cs **before** `WebApplication.CreateBuilder()`. Skips Kestrel, EF Core, module loading. Runs only the tray.
+- New service: `/app/src/watchnexus/core/Services/TrayController.cs` — static `Run(port, log)` entry point.
+  - **Windows**: WinForms `NotifyIcon` on STA thread. Menu: Open WatchNexus, Open Settings, Stop/Start/Restart Service (via elevated `sc.exe`), Open Logs/Data Folder, About, Quit.
+  - **Linux**: Drops a Python AppIndicator3 helper to `/tmp` and execs it. Menu mirrors Windows; Service control via `pkexec systemctl`.
+- Existing `TrayIconService` (in-service `BackgroundService`) now no-ops when `!Environment.UserInteractive` (Windows Service) or `$DISPLAY` is empty (Linux headless), avoiding wasted threads + log noise.
+
+### Wiring across all install paths
+**Windows (`watchnexus.nsi.in`)**:
+- HKLM\…\Run autostart entry: `WatchNexusTray = "$INSTDIR\bin\WatchNexus.Core.exe" --tray` (every user gets the tray at login).
+- `$INSTDIR\WatchNexus-Tray.cmd` — visible "controller" launcher in Program Files for users who want to invoke it manually.
+- Post-install `cmd /c start "" explorer.exe WatchNexus-Tray.cmd` — fires the tray in the interactive user's session immediately, so the user doesn't have to log out/in.
+- Start Menu shortcut "WatchNexus Tray Controller" added.
+- Uninstaller: `taskkill /F /IM WatchNexus.Core.exe` first, then deletes the Run key, the `.cmd`, and the shortcut.
+
+**Linux (fpm `.deb / .rpm / .pkg.tar.zst`)**:
+- New file `/usr/bin/watchnexus-tray` — shell wrapper that exec's `/opt/watchnexus/bin/WatchNexus.Core --tray` (skips if no DISPLAY).
+- New file `/etc/xdg/autostart/watchnexus-tray.desktop` — every GNOME/KDE/XFCE user gets the tray on GUI login.
+- App-launcher entry at `/usr/share/applications/watchnexus.desktop`.
+- Hicolor icon at `/usr/share/icons/hicolor/256x256/apps/watchnexus.png`.
+- `.ico` copied to `/opt/watchnexus/watchnexus.ico` so TrayController's resolver finds it.
+- `after-install.sh` makes the wrapper executable and prints user-facing instructions.
+
+### Build pipeline updates
+- `build-installers.fish`: fpm staging tree now creates `usr/bin/`, `etc/xdg/autostart/`, `usr/share/applications/`, `usr/share/icons/hicolor/256x256/apps/` and the `fpm` `-C "$root"` source list now includes `etc` (so the autostart .desktop ships).
+- Verified: `dotnet build -c Release` succeeds for **both** Linux (`net10.0`) and Windows (`net10.0-windows -r win-x64`) with 0 errors and only the 12 pre-existing nullable-reference warnings.
+
+### Files added / touched
+- **Added**: `/app/src/watchnexus/core/Services/TrayController.cs`, `/app/build/packaging/fpm/bin/watchnexus-tray`, `/app/build/packaging/fpm/xdg-autostart/watchnexus-tray.desktop`.
+- **Modified**: `Program.cs` (early `--tray` dispatch), `TrayIconService.cs` (UserInteractive guard), `watchnexus.nsi.in` (Run key, .cmd, post-install launch, shortcut, uninstall cleanup), `build-installers.fish` (staging dirs, fpm source list), `fpm/after-install.sh`.
+

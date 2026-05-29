@@ -52,8 +52,27 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 try
 {
 
-var builder = WebApplication.CreateBuilder(args);
 Log($"[WatchNexus] Boot log: {bootLogPath}");
+
+// ══════════════════════════════════════════════════════════════════════
+//  --tray  →  user-session controller process
+//  ----------------------------------------------------------------
+//  Windows Services run in Session 0 — there is no desktop and any
+//  NotifyIcon created from inside the service is invisible. So at user
+//  login we re-launch ourselves with `--tray`, which skips the entire
+//  web host and only shows the systray icon. It talks to the running
+//  service over http://localhost:<port>/api/* for Stop / Restart / etc.
+// ══════════════════════════════════════════════════════════════════════
+if (args.Contains("--tray") || args.Contains("--tray-only"))
+{
+    Log("[WatchNexus] --tray mode: starting user-session controller (no web host).");
+    var trayPort = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var tp) ? tp : 8001;
+    var exitCode = WatchNexus.Core.Services.TrayController.Run(trayPort, Log);
+    try { bootLog.Flush(); bootLog.Dispose(); } catch { }
+    Environment.Exit(exitCode);
+}
+
+var builder = WebApplication.CreateBuilder(args);
 
 // ── Resolve project root (works from bin/Debug, published, or installed) ──
 static string FindRepoRoot()
