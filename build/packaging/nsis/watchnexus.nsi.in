@@ -72,8 +72,8 @@ Section "Core (required)" SecCore
     ; Helper script that opens the logs folder (used by Start-menu shortcut)
     FileOpen $0 "$INSTDIR\OpenLogs.cmd" w
     FileWrite $0 "@echo off$\r$\n"
-    FileWrite $0 "if not exist \"%PROGRAMDATA%\WatchNexus\logs\" mkdir \"%PROGRAMDATA%\WatchNexus\logs\"$\r$\n"
-    FileWrite $0 "start \"\" explorer.exe \"%PROGRAMDATA%\WatchNexus\logs\"$\r$\n"
+    FileWrite $0 "if not exist $\"%PROGRAMDATA%\WatchNexus\logs$\" mkdir $\"%PROGRAMDATA%\WatchNexus\logs$\"$\r$\n"
+    FileWrite $0 "start $\"$\" explorer.exe $\"%PROGRAMDATA%\WatchNexus\logs$\"$\r$\n"
     FileClose $0
 
     ; Drop tier/version locks for Fortress integrity check

@@ -74,8 +74,9 @@ require jq             "sudo pacman -S jq"
 require fpm            "gem install --user-install fpm"
 require makensis       "sudo pacman -S nsis"
 require rpmbuild       "sudo pacman -S rpm-tools"
-require makepkg        "(comes with base-devel)"
-require fakeroot       "sudo pacman -S fakeroot"
+# Note: fpm's pacman target uses bsdtar + zstd internally; no need for
+# makepkg. fakeroot is only needed if you're cross-building debs as a
+# non-root user; modern fpm handles dpkg-deb directly.
 
 if test "$DO_SIGN" = "1"
     require osslsigncode "sudo pacman -S osslsigncode"
@@ -222,18 +223,19 @@ function build_linux_packages -a tier
     mkdir -p "$out/deb"
     fpm -s dir -t deb \
         $common_args \
-        --depends "libicu (>= 60)" \
+        --depends "libicu70 | libicu71 | libicu72 | libicu74" \
         --depends "libkrb5-3" \
         --depends "zlib1g" \
-        --deb-systemd-enable \
-        --deb-systemd-auto-start \
         --deb-priority optional \
         --deb-compression xz \
         --category "video" \
         --package "$out/deb/" \
         -C "$root" \
-        opt usr
-    or echo "  [!] DEB build failed for $tier"
+        opt usr 2>&1
+    set -l deb_status $status
+    if test $deb_status -ne 0
+        echo "  [!] fpm deb exited $deb_status for $tier"
+    end
 
     # ── RPM ────────────────────────────────────────────────────────
     echo "  [$tier] → .rpm"
@@ -245,12 +247,14 @@ function build_linux_packages -a tier
         --depends "zlib" \
         --rpm-summary "WatchNexus $tier_title media server" \
         --rpm-os linux \
-        --rpm-tag "Group: Applications/Multimedia" \
         --rpm-compression xz \
         --package "$out/rpm/" \
         -C "$root" \
-        opt usr
-    or echo "  [!] RPM build failed for $tier"
+        opt usr 2>&1
+    set -l rpm_status $status
+    if test $rpm_status -ne 0
+        echo "  [!] fpm rpm exited $rpm_status for $tier"
+    end
 
     # ── Arch pkg.tar.zst (fpm target 'pacman') ─────────────────────
     echo "  [$tier] → .pkg.tar.zst"
@@ -263,8 +267,11 @@ function build_linux_packages -a tier
         --pacman-compression zstd \
         --package "$out/arch/" \
         -C "$root" \
-        opt usr
-    or echo "  [!] Arch pkg build failed for $tier"
+        opt usr 2>&1
+    set -l pac_status $status
+    if test $pac_status -ne 0
+        echo "  [!] fpm pacman exited $pac_status for $tier"
+    end
 
     # ── Cleanup the fpm root ───────────────────────────────────────
     rm -rf "$root"
@@ -408,19 +415,36 @@ echo "════════════════════════�
 echo "  Build complete."
 echo ""
 echo "  Output tree:"
+set -g TOTAL_ARTIFACTS 0
 for tier in $TIERS
     set -l tier_dir "$RELEASE_DIR/$tier"
     test -d "$tier_dir"; or continue
+    set -l tier_count 0
     echo "    [$tier]"
     for f in "$tier_dir"/deb/*.deb "$tier_dir"/rpm/*.rpm "$tier_dir"/arch/*.pkg.tar.zst "$tier_dir"/windows/*.exe
         test -f "$f"; or continue
         set -l size (du -h "$f" | cut -f1)
         echo "      $size  "(basename "$f")
+        set tier_count (math $tier_count + 1)
+        set TOTAL_ARTIFACTS (math $TOTAL_ARTIFACTS + 1)
+    end
+    if test $tier_count -eq 0
+        echo "      (no artifacts produced — check fpm/makensis output above)"
     end
 end
 echo ""
-echo "  Next:"
-echo "    1. Smoke-test each installer in a disposable VM/container."
-echo "    2. rsync release/ to releases.watchnexus.ca:/srv/releases/v$VERSION/"
-echo "    3. Flip the 'latest' symlink on the VPS."
+echo "  Total artifacts: $TOTAL_ARTIFACTS"
+echo ""
+if test $TOTAL_ARTIFACTS -eq 0
+    echo "  ⚠ Nothing was produced. Scroll up for the actual fpm/makensis errors."
+    echo "    Common causes:"
+    echo "      • fpm flags incompatible with your fpm/rpmbuild/dpkg versions"
+    echo "      • Stage payload missing (re-run without --skip-stage)"
+    echo "      • NSIS template syntax error (check the .nsi in release/<tier>/windows/)"
+else
+    echo "  Next:"
+    echo "    1. Smoke-test each installer in a disposable VM/container."
+    echo "    2. rsync release/ to releases.watchnexus.ca:/srv/releases/v$VERSION/"
+    echo "    3. Flip the 'latest' symlink on the VPS."
+end
 echo "══════════════════════════════════════════════════"
