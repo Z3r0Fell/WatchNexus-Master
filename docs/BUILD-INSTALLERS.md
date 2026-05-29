@@ -16,8 +16,8 @@ Open a fish shell and run:
 sudo pacman -S --needed ruby dotnet-sdk nodejs npm yarn jq \
     osslsigncode rpm-tools nsis fakeroot base-devel
 
-# fpm (Ruby gem)
-gem install --user-install fpm
+# fpm (Ruby gem) — plus stdlib gems that Ruby 3.4 split out of core
+gem install --user-install fpm erb mutex_m getoptlong base64 fiddle
 
 # Add the user-install gem bin dir to PATH (fish-style)
 set -Ux PATH (ruby -e 'puts Gem.user_dir')/bin $PATH
@@ -285,6 +285,7 @@ Neither needs fpm or NSIS.
 | Where are the Linux logs? | `/var/lib/watchnexus/logs/boot-*.log` (systemd) or `<install dir>/logs/boot-*.log` (standalone). Also `journalctl -u watchnexus`. |
 | App opens a console window and immediately closes | Should now pause with "Press any key to close..." before exiting on Windows interactive launches. If it still vanishes, you're on a pre-v1.0.0 build. |
 | `fpm: command not found` | `gem install --user-install fpm` and add `~/.local/share/gem/.../bin` to PATH |
+| `fpm` dies with `cannot load such file -- erb (LoadError)` (and similar for `mutex_m`, `getoptlong`, `base64`, `fiddle`) | Ruby 3.4 split these out of stdlib. `build-installers.fish` now auto-installs them as user gems on first run. Manual fix: `gem install --user-install erb mutex_m getoptlong base64 fiddle` |
 | `makensis: command not found` | `sudo pacman -S nsis` |
 | `dotnet publish` fails: "SDK not found" | `sudo pacman -S dotnet-sdk` (must be ≥10.0) |
 | `fpm` says "Need package 'fakeroot'" | `sudo pacman -S fakeroot` |

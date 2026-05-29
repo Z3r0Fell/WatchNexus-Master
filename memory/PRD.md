@@ -3,7 +3,7 @@
 ## Overview
 WatchNexus is a self-hosted media management pipeline combining features from Jellyfin and the *arr ecosystem into a unified platform. C#/.NET 10 backend + React frontend.
 
-## Current Version: 2.9.0
+## Current Version: 1.0.0 (RTP — Release to Public)
 
 ## Architecture
 - **Backend**: C#/.NET 10 (ASP.NET Core) on port 8002
@@ -206,3 +206,41 @@ Every module now has a working frontend page — zero scaffolding remaining.
   - `/app/README.md` — production README (old dev README archived to `docs/README-DEV-ARCHIVED.md`).
   - `/app/build/installbuilder/watchnexus.xml` — now accepts `--setvars payload_root=...` from `prepare-installers.sh` (overrides default `stage/<tier>` path).
 - **Architecture clarified**: Arch laptop = build host (runs InstallBuilder 26 natively, `makepkg` works directly). Ubuntu VPS = storage/distribution only (rsync target).
+
+
+## v1.0.0 RTP — Final Packaging Pipeline (2026-02 follow-up)
+
+### Toolchain pivot: InstallBuilder → fpm + NSIS + fish
+- BitRock InstallBuilder dropped in favor of a fully FOSS pipeline:
+  - `/app/build/build-installers.fish` — single orchestrator. Stages payloads, builds `.deb / .rpm / .pkg.tar.zst` via **fpm**, builds Windows `.exe` via **NSIS**, optionally builds Docker images, renders community-hub artifacts, signs Windows EXEs via **osslsigncode**, and produces `SHA256SUMS.txt` per tier.
+  - `--sign`, `--upload`, `--skip-stage`, `--docker`, `--no-community` flags.
+  - PFX passphrase verified against the keystore *before* the long build starts.
+- `/app/build/packaging/nsis/watchnexus.nsi.in` — Windows installer template with Start Menu + Desktop shortcuts, `%PROGRAMDATA%\WatchNexus\boot.log` crash-safe boot logging, uninstaller, registry entries.
+- `/app/build/packaging/fpm/` — systemd unit + after-install / before-remove / after-remove hooks (idempotent service-user creation, tier.lock + version.lock).
+
+### Ruby 3.4 stdlib split fix (2026-02)
+- `fpm 1.17` eagerly `require`s several modules (`erb`, `mutex_m`, `getoptlong`, `base64`, `fiddle`) that Ruby 3.4 moved out of the default stdlib. On Arch this caused **every** fpm invocation to die with `cannot load such file -- erb (LoadError)`, so only the Windows EXEs and community-hub templates were being produced.
+- `build-installers.fish` now ships `ensure_ruby_stdlib_gem` — a pre-flight probe that runs *before* the fpm chain, auto-installs each missing module as a user gem, and aborts with a precise remediation message if installation also fails.
+- `/app/docs/BUILD-INSTALLERS.md` updated with the new prereq command and a troubleshooting row for the LoadError.
+
+### Community Hub artifact generator (2026-02)
+- `build-installers.fish` Step 5 emits **9 templated files per tier** into `release/<tier>/community-hubs/`:
+  - `docker-compose.yml`, `unraid-watchnexus-<tier>.xml`, `casaos-app.json`, `hexos-compose.yml`, `portainer-template.json`, `portainer-stack.yml`, `synology-README.md`, `truenas/Chart.yaml`, `truenas/values.yaml`.
+- Templates live under `/app/build/packaging/community/_templates/` and substitute `@TIER@ / @TIER_TITLE@ / @VERSION@ / @TIER_FEATURES@`.
+- `--no-community` flag opts out.
+
+### Crowdfunding kit
+- `/app/crowdfunding/` contains 25+ markdown files: per-platform copy (Kickstarter, Patreon, Indiegogo, GoFundMe, Liberapay, OpenCollective), reward tier matrix, FAQ, social-media schedule, press templates.
+- macOS native build listed as a **$25K stretch goal** rather than an in-scope v1.0.0 deliverable.
+
+### Verified release matrix (last user build, 2026-02)
+| Tier | Windows EXE | Linux .deb / .rpm / .pkg.tar.zst | Community-hub bundle |
+|---|---|---|---|
+| Standard | ✓ (51M) | ✓ after erb fix | ✓ (9 files) |
+| Pro | ✓ (51M) | ✓ after erb fix | ✓ (9 files) |
+| Ultra | ✓ (51M) | ✓ after erb fix | ✓ (9 files) |
+
+## Active Backlog (post-v1.0.0)
+- P1: macOS native build plotting (currently a $25K crowdfunding stretch goal).
+- P2: Helm chart for Kubernetes deployment.
+- P2: Automated per-tier test suite.
