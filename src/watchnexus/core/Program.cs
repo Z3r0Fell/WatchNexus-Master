@@ -192,6 +192,10 @@ builder.Services.AddControllers(options =>
 {
     // ── FORTRESS PROTOCOL: API-level tier enforcement ──
     options.Filters.Add<FortressFilter>();
+})
+.AddJsonOptions(opt =>
+{
+    opt.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

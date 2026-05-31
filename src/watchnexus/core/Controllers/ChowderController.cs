@@ -277,16 +277,16 @@ public class ChowderController : ControllerBase
                 };
             }
             catch { return null; }
-        }).Where(x => x != null).ToList();
+        }).Where(x => x != null).Cast<dynamic>().ToList();
 
         return Ok(new
         {
             items,
             total = items.Count,
-            downloading = items.Count(i => ((dynamic)i).status == "downloading"),
-            queued = items.Count(i => ((dynamic)i).status == "queued"),
-            completed = items.Count(i => ((dynamic)i).status == "completed"),
-            failed = items.Count(i => ((dynamic)i).status == "failed"),
+            downloading = items.Count(i => i.status == "downloading"),
+            queued = items.Count(i => i.status == "queued"),
+            completed = items.Count(i => i.status == "completed"),
+            failed = items.Count(i => i.status == "failed"),
         });
     }
 

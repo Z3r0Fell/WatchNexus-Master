@@ -192,8 +192,8 @@ public class CellarController : ControllerBase
         {
             // ── Offline/local validation (format-based fallback) ──
             var upper = serial.ToUpperInvariant();
-            tier = ValidateSerialFormat(upper);
-            if (tier == null)
+            tier = ValidateSerialFormat(upper) ?? "unknown";
+            if (tier == "unknown")
                 return BadRequest(new { success = false, message = "Invalid serial number. Connect to license server or use format WNX-PRO-XXXX-XXXX-XXXX / WNX-ULT-XXXX-XXXX-XXXX" });
         }
 
