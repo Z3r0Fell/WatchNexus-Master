@@ -1,0 +1,19 @@
+{
+  "timestamp": "20260531_092559",
+  "static": 0,
+  "ai": 0,
+  "skip": 3,
+  "fail": 0,
+  "files": [
+    {
+      "file": "src/watchnexus/core/Controllers/BridgeController.cs",
+      "type": "ai_needed",
+      "issues": 2
+    },
+    {
+      "file": "src/watchnexus/core/Controllers/ChowderController.cs",
+      "type": "ai_needed",
+      "issues": 1
+    }
+  ]
+}
