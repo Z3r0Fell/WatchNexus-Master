@@ -48,6 +48,7 @@ const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
 const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
 const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
 const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+const SpotdlPage = lazy(() => import("./pages/gadgets/SpotdlPage"));
 const AnalyticsPage = lazy(() => import("./pages/gadgets/AnalyticsPage"));
 const NotificationsPage = lazy(() => import("./pages/gadgets/NotificationsPage"));
 const RequestsPage = lazy(() => import("./pages/gadgets/RequestsPage"));
@@ -378,6 +379,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <WebVideoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/spotdl"
+        element={
+          <ProtectedRoute>
+            <SpotdlPage />
           </ProtectedRoute>
         }
       />

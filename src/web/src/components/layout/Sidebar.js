@@ -88,6 +88,7 @@ const gadgetNavItems = [
   { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
   { icon: Image, label: 'Photos', path: '/photos', hideable: true, isGadget: true },
   { icon: Video, label: 'Web Video', path: '/webvideo', hideable: true, isGadget: true },
+  { icon: Music, label: 'Spotify DL', path: '/spotdl', hideable: true, isGadget: true },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', hideable: true, isGadget: true },
   { icon: Bell, label: 'Notifications', path: '/notifications', hideable: true, isGadget: true },
   { icon: MessageSquare, label: 'Requests', path: '/requests', hideable: true, isGadget: true },

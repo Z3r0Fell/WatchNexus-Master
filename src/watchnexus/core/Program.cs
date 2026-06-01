@@ -205,6 +205,8 @@ builder.Services.AddSwaggerGen();
 // ── Background Services ──
 builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>();
 builder.Services.AddHostedService<WatchNexus.Core.Services.TrayIconService>();
+builder.Services.AddHostedService<WatchNexus.Core.Services.SpotdlBackgroundService>();
+builder.Services.AddSingleton<WatchNexus.Core.Services.SpotdlKeyManager>();
 
 // CORS
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>

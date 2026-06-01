@@ -32,6 +32,8 @@ public class AppDbContext : DbContext
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
     public DbSet<MediaRequest> MediaRequests => Set<MediaRequest>();
     public DbSet<TranscodeJob> TranscodeJobs => Set<TranscodeJob>();
+    public DbSet<SpotdlDownload> SpotdlDownloads => Set<SpotdlDownload>();
+    public DbSet<SpotdlKey> SpotdlKeys => Set<SpotdlKey>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -66,6 +68,20 @@ public class AppDbContext : DbContext
         b.Entity<NotificationLog>(e => { e.HasKey(n => n.Id); e.HasIndex(n => n.SentAt); });
         b.Entity<MediaRequest>(e => { e.HasKey(r => r.Id); e.HasIndex(r => r.UserId); e.HasIndex(r => r.Status); });
         b.Entity<TranscodeJob>(e => { e.HasKey(t => t.Id); e.HasIndex(t => t.Status); });
+
+        // Spotdl — Spotify/YouTube Music Downloader
+        b.Entity<SpotdlDownload>(e =>
+        {
+            e.HasKey(d => d.Id);
+            e.HasIndex(d => d.UserId);
+            e.HasIndex(d => d.Status);
+        });
+        b.Entity<SpotdlKey>(e =>
+        {
+            e.HasKey(k => k.Id);
+            e.HasIndex(k => k.Service);
+            e.HasIndex(k => k.IsActive);
+        });
     }
 }
 
@@ -354,4 +370,35 @@ public class TranscodeJob
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+}
+
+// Spotdl — Spotify/YouTube Music Downloader
+public class SpotdlDownload
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Artist { get; set; }
+    public string Status { get; set; } = "queued";
+    public string Format { get; set; } = "mp3";
+    public double Progress { get; set; }
+    public string? OutputPath { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string? KeyUsed { get; set; }
+    public int RetryCount { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? CompletedAt { get; set; }
+}
+
+public class SpotdlKey
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string KeyValue { get; set; } = "";
+    public string Service { get; set; } = "spotify";
+    public bool IsActive { get; set; } = true;
+    public DateTime? LastUsedAt { get; set; }
+    public int FailureCount { get; set; }
+    public int MaxFailures { get; set; } = 5;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

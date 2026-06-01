@@ -5,24 +5,16 @@ Documentation=https://watchnexus.ca
 
 [Service]
 Type=simple
-User=watchnexus
-Group=watchnexus
 WorkingDirectory=/opt/watchnexus
 ExecStart=/opt/watchnexus/bin/WatchNexus.Core --urls http://0.0.0.0:8001
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=20
-KillMode=mixed
+KillMode=process
 Environment=DOTNET_NOLOGO=1
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=WATCHNEXUS_DATA_DIR=/var/lib/watchnexus
-
-# Hardening
-NoNewPrivileges=true
-ProtectSystem=full
-ProtectHome=true
-PrivateTmp=true
-ReadWritePaths=/var/lib/watchnexus /opt/watchnexus/tier.lock /opt/watchnexus/version.lock
+Environment=ASPNETCORE_CONTENTROOT=/opt/watchnexus/bin
 
 [Install]
 WantedBy=multi-user.target
