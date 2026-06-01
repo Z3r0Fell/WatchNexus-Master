@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -51,7 +53,7 @@ public class PepperController : ControllerBase
                     enabled = doc.TryGetProperty("enabled", out var e) && e.GetBoolean(),
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[PepperController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(channels);
     }
@@ -167,7 +169,7 @@ public class PepperController : ControllerBase
                 });
                 if (result.Item1) sent++; else failed++;
             }
-            catch { failed++; }
+            catch { Log.Error("[PepperController] operation failed"); failed++; }
         }
         await _db.SaveChangesAsync();
         return Ok(new { sent, failed });

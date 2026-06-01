@@ -55,14 +55,14 @@ const MenuPage = () => {
       const params = filter !== 'all' ? `?status=${filter}` : '';
       const res = await axios.get(`${API}/api/menu/requests${params}`);
       setRequests(res.data.results || []);
-    } catch {}
+    } catch { console.error('[MenuPage] Failed to fetch requests'); }
   }, [filter]);
 
   const fetchStats = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/api/menu/requests/stats`);
       setStats(res.data);
-    } catch {}
+    } catch { console.error('[MenuPage] Failed to fetch stats'); }
   }, []);
 
   useEffect(() => { fetchDiscover(subTab); }, [subTab, fetchDiscover]);

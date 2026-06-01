@@ -47,7 +47,7 @@ export default function LogViewerPage() {
       setLogs(res.data.lines || []);
       setTotalLines(res.data.total || 0);
       setLogFile(res.data.file || '');
-    } catch { /* silent */ }
+    } catch { console.error('[LogViewerPage] Failed to load logs'); }
     finally { setLoading(false); }
   }, [level]);
 
@@ -55,14 +55,14 @@ export default function LogViewerPage() {
     try {
       const res = await logsApi.getFiles();
       setLogFiles(res.data || []);
-    } catch { /* silent */ }
+    } catch { console.error('[LogViewerPage] Failed to load files'); }
   }, []);
 
   const loadSystem = useCallback(async () => {
     try {
       const res = await logsApi.getSystem();
       setSystemInfo(res.data);
-    } catch { /* silent */ }
+    } catch { console.error('[LogViewerPage] Failed to load system info'); }
   }, []);
 
   useEffect(() => {

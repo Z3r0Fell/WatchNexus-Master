@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -90,7 +92,7 @@ public class MarzipanController : ControllerBase
     public async Task<IActionResult> GetPlaylists()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "marzipan_playlists");
-        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { } }
+        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[SorbetAliasController] GetPlaylists failed"); } }
         return Ok(Array.Empty<object>());
     }
 
@@ -121,7 +123,7 @@ public class MarzipanController : ControllerBase
     public async Task<IActionResult> GetCollections()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "marzipan_collections");
-        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { } }
+        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[SorbetAliasController] GetCollections failed"); } }
         return Ok(Array.Empty<object>());
     }
 
@@ -210,7 +212,7 @@ public class GlazeController : ControllerBase
             trakt = new { enabled = false, client_id = "", access_token = "", auto_scrobble = true, sync_collection = false, sync_watchlist = false },
             lastfm = new { enabled = false, api_key = "", session_key = "", auto_scrobble = true }
         });
-        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { return Ok(new { }); }
+        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[SorbetAliasController] operation failed"); return Ok(new { }); }
     }
 
     [HttpPut("config")]
@@ -236,7 +238,7 @@ public class GlazeController : ControllerBase
                 if (doc.RootElement.TryGetProperty("trakt", out var trakt) && trakt.TryGetProperty("client_id", out var cid))
                     clientId = cid.GetString() ?? "";
             }
-            catch { }
+            catch { Log.Error("[SorbetAliasController] operation failed"); }
         }
 
         if (string.IsNullOrEmpty(clientId))
@@ -267,7 +269,7 @@ public class GlazeController : ControllerBase
                 if (doc.RootElement.TryGetProperty("lastfm", out var lf) && lf.TryGetProperty("api_key", out var ak))
                     apiKey = ak.GetString() ?? "";
             }
-            catch { }
+            catch { Log.Error("[SorbetAliasController] operation failed"); }
         }
 
         if (string.IsNullOrEmpty(apiKey))
@@ -385,7 +387,7 @@ public class PlaylistsController : ControllerBase
     {
         var userId = this.UserId();
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"playlists_{userId}");
-        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { } }
+        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[SorbetAliasController] GetAll failed"); } }
         return Ok(Array.Empty<object>());
     }
 

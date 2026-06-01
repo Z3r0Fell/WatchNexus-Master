@@ -6,6 +6,8 @@ using System.Diagnostics;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -49,7 +51,7 @@ public class StrudelPipelineController : ControllerBase
                     auto_import = d.TryGetProperty("auto_import", out var ai) && ai.GetBoolean(),
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[StrudelPipelineController] operation failed"); return null; }
         }).Where(x => x != null).Cast<dynamic>().ToList();
 
         return Ok(new { jobs = result, total = result.Count, active = result.Count(j => j.phase == "ripping" || j.phase == "transcoding") });
@@ -235,10 +237,7 @@ public class StrudelPipelineController : ControllerBase
             // Mark completed
             await UpdateJobComplete(key, totalSize);
         }
-        catch (Exception ex)
-        {
-            await UpdateJobError(key, ex.Message);
-        }
+        catch (Exception ex) { Log.Error(ex, "[StrudelPipelineController] Mark completed"); await UpdateJobError(key, ex.Message); }
     }
 
     // ── Cancel Job ──────────────────────────────────────────────────
@@ -354,7 +353,7 @@ public class StrudelPipelineController : ControllerBase
                 switch (phase) { case "queued": queued++; break; case "ripping": ripping++; break; case "transcoding": transcoding++; break; case "completed": completed++; break; case "failed": failed++; break; }
                 totalSize += d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0;
             }
-            catch { }
+            catch { Log.Error("[StrudelPipelineController] operation failed"); }
         }
         return Ok(new { total = jobs.Count, queued, ripping, transcoding, completed, failed, total_size_gb = Math.Round(totalSize / 1073741824.0, 2) });
     }
@@ -455,7 +454,7 @@ public class CrucibleHardwareController : ControllerBase
                     if (output.Contains("hevc_videotoolbox")) hwEncoders.Add("hevc_videotoolbox");
                 }
             }
-            catch { }
+            catch { Log.Error("[StrudelPipelineController] operation failed"); }
         }
 
         return Ok(new
@@ -562,7 +561,7 @@ public class CrucibleHardwareController : ControllerBase
                     created_at = d.TryGetProperty("created_at", out var ca) ? ca.GetString() : "",
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[StrudelPipelineController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(new { jobs = result, total = result.Count });
     }
@@ -585,7 +584,7 @@ public class CrucibleHardwareController : ControllerBase
                 }
             }
         }
-        catch { }
+        catch { Log.Error("[StrudelPipelineController] operation failed"); }
         return (false, null, null, false);
     }
 
@@ -602,7 +601,7 @@ public class CrucibleHardwareController : ControllerBase
                     using var proc = Process.Start(psi);
                     if (proc != null) { proc.WaitForExit(); if (proc.ExitCode == 0) return (true, dev); }
                 }
-                catch { }
+                catch { Log.Error("[StrudelPipelineController] operation failed"); }
             }
         }
         return (false, null);

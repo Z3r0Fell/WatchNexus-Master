@@ -7,6 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Services;
 
 /// <summary>
@@ -103,7 +105,7 @@ public class BotBackgroundService : BackgroundService
                                 }
                             }
                         }
-                        catch { }
+                        catch { Log.Error("[BotBackgroundService] operation failed"); }
                     }
 
                     if (inactiveRooms.Count > 0)
@@ -223,7 +225,7 @@ public class BotBackgroundService : BackgroundService
                 var doc = JsonDocument.Parse(tmdbConfig.Value).RootElement;
                 tmdbApiKey = doc.TryGetProperty("api_key", out var ak) ? ak.GetString() : null;
             }
-            catch { }
+            catch { Log.Error("[BotBackgroundService] Get TMDB API key from settings"); }
         }
 
         // Fallback: check crumbs for TMDB key
@@ -238,7 +240,7 @@ public class BotBackgroundService : BackgroundService
                     var doc = JsonDocument.Parse(crumbsCfg.Value).RootElement;
                     tmdbApiKey = doc.TryGetProperty("api_key", out var ak) ? ak.GetString() : null;
                 }
-                catch { }
+                catch { Log.Error("[BotBackgroundService] operation failed"); }
             }
         }
 

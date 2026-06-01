@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 
@@ -148,13 +148,15 @@ export const LicenseProvider = ({ children }) => {
     return mod ? (MODULE_TIER[mod] || 'standard') : 'standard';
   }, []);
 
+  const value = useMemo(() => ({
+    tier, unlockedModules, loading,
+    isModuleUnlocked, isRouteUnlocked,
+    getRequiredTier, getRouteRequiredTier,
+    refreshLicense: fetchLicense,
+  }), [tier, unlockedModules, loading, isModuleUnlocked, isRouteUnlocked, getRequiredTier, getRouteRequiredTier, fetchLicense]);
+
   return (
-    <LicenseContext.Provider value={{
-      tier, unlockedModules, loading,
-      isModuleUnlocked, isRouteUnlocked,
-      getRequiredTier, getRouteRequiredTier,
-      refreshLicense: fetchLicense,
-    }}>
+    <LicenseContext.Provider value={value}>
       {children}
     </LicenseContext.Provider>
   );

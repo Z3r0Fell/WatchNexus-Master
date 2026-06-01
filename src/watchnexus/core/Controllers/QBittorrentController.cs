@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Churro (qBittorrent) ────────────────────────────────────
@@ -35,7 +37,7 @@ public class QBittorrentController : ControllerBase
             }
             return Ok(new { connected = false, status = "unreachable" });
         }
-        catch (Exception ex) { return Ok(new { connected = false, status = "error", error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[QBittorrentController] operation failed"); return Ok(new { connected = false, status = "error", error = ex.Message }); }
     }
 
     [HttpGet("torrents")]
@@ -52,7 +54,7 @@ public class QBittorrentController : ControllerBase
             var resp = await http.GetStringAsync($"http://{host}:{port}/api/v2/torrents/info");
             return Content(resp, "application/json");
         }
-        catch { return Ok(Array.Empty<object>()); }
+        catch { Log.Error("[QBittorrentController] operation failed"); return Ok(Array.Empty<object>()); }
     }
 
     [HttpPost("add")]
@@ -73,7 +75,7 @@ public class QBittorrentController : ControllerBase
             await http.PostAsync($"http://{host}:{port}/api/v2/torrents/add", content);
             return Ok(new { status = "added" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[QBittorrentController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("pause/{hash}")]
@@ -98,7 +100,7 @@ public class QBittorrentController : ControllerBase
             var resp = await http.GetStringAsync($"http://{host}:{port}/api/v2/torrents/files?hash={hash}");
             return Content(resp, "application/json");
         }
-        catch { return Ok(Array.Empty<object>()); }
+        catch { Log.Error("[QBittorrentController] operation failed"); return Ok(Array.Empty<object>()); }
     }
 
     [HttpPost("test")]
@@ -120,7 +122,7 @@ public class QBittorrentController : ControllerBase
                 return Ok(new { success = true, version = await resp.Content.ReadAsStringAsync() });
             return Ok(new { success = false, error = $"HTTP {resp.StatusCode}" });
         }
-        catch (Exception ex) { return Ok(new { success = false, error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[QBittorrentController] operation failed"); return Ok(new { success = false, error = ex.Message }); }
     }
 
     private async Task<JsonElement?> GetQbitConfig()
@@ -161,6 +163,6 @@ public class QBittorrentController : ControllerBase
             await http.PostAsync($"http://{host}:{port}/api/v2/{path}", null);
             return Ok(new { status = "ok" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[QBittorrentController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 }

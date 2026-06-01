@@ -6,6 +6,8 @@ using System.Security.Cryptography;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -123,10 +125,7 @@ public class CellarController : ControllerBase
                 can_upgrade_to = upgrades
             });
         }
-        catch
-        {
-            return Ok(new { tier = "standard", tier_name = "Standard", activated = false, serial = (string?)null, activated_at = (string?)null, activation_id = (string?)null, modules_unlocked = TierModules["standard"], total_modules = TierModules["standard"].Length, can_upgrade_to = new[] { "pro", "ultra" } });
-        }
+        catch { Log.Error("[CellarController] operation failed"); return Ok(new { tier = "standard", tier_name = "Standard", activated = false, serial = (string?)null, activated_at = (string?)null, activation_id = (string?)null, modules_unlocked = TierModules["standard"], total_modules = TierModules["standard"].Length, can_upgrade_to = new[] { "pro", "ultra" } }); }
     }
 
     // ── Activate Serial Number (integrates with WN-License-Server) ──
@@ -174,7 +173,7 @@ public class CellarController : ControllerBase
                         var detail = err.TryGetProperty("detail", out var d) ? d.GetString() : resBody;
                         return BadRequest(new { success = false, message = detail ?? "License server rejected the key" });
                     }
-                    catch { return BadRequest(new { success = false, message = $"License server error: HTTP {(int)resp.StatusCode}" }); }
+                    catch { Log.Error("[CellarController] Parse error from license server"); return BadRequest(new { success = false, message = $"License server error: HTTP {(int)resp.StatusCode}" }); }
                 }
 
                 var result = JsonDocument.Parse(resBody).RootElement;
@@ -183,10 +182,7 @@ public class CellarController : ControllerBase
                 var plan = result.TryGetProperty("license", out var lic) && lic.TryGetProperty("plan", out var p) ? p.GetString() : null;
                 tier = MapPlanToTier(plan);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" });
-            }
+            catch (Exception ex) { Log.Error(ex, "[CellarController] operation failed"); return StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" }); }
         }
         else
         {
@@ -278,7 +274,7 @@ public class CellarController : ControllerBase
                 if (!resp.IsSuccessStatusCode)
                 {
                     try { var err = JsonDocument.Parse(resBody).RootElement; return BadRequest(new { success = false, message = err.TryGetProperty("detail", out var d) ? d.GetString() : "Invalid key" }); }
-                    catch { return BadRequest(new { success = false, message = $"License server error" }); }
+                    catch { Log.Error("[CellarController] operation failed"); return BadRequest(new { success = false, message = $"License server error" }); }
                 }
                 var result = JsonDocument.Parse(resBody).RootElement;
                 activationId = result.TryGetProperty("activation_id", out var aid) ? aid.GetString() : null;
@@ -286,7 +282,7 @@ public class CellarController : ControllerBase
                 var plan = result.TryGetProperty("license", out var lic) && lic.TryGetProperty("plan", out var p) ? p.GetString() : null;
                 tier = MapPlanToTier(plan);
             }
-            catch (Exception ex) { return StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" }); }
+            catch (Exception ex) { Log.Error(ex, "[CellarController] operation failed"); return StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" }); }
         }
         else
         {
@@ -331,7 +327,7 @@ public class CellarController : ControllerBase
                     await http.PostAsync($"{lsUrl.TrimEnd('/')}/api/integrate/deactivate", new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
                 }
             }
-            catch { /* best effort */ }
+            catch { Log.Error("[CellarController] operation failed"); }
             _db.Settings.Remove(setting);
             await _db.SaveChangesAsync();
         }
@@ -386,7 +382,7 @@ public class CellarController : ControllerBase
             var doc = JsonDocument.Parse(setting.Value).RootElement;
             return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
         }
-        catch { return "standard"; }
+        catch { Log.Error("[CellarController] GetCurrentTier failed"); return "standard"; }
     }
 
     private static bool IsValidUpgrade(string current, string target)

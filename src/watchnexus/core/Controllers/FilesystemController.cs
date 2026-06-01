@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Pantry (Filesystem) ─────────────────────────────────────
@@ -37,10 +39,7 @@ public class FilesystemController : ControllerBase
         {
             currentPath = Path.GetFullPath(path);
         }
-        catch
-        {
-            return BadRequest(new { detail = $"Invalid path: {path}" });
-        }
+        catch { Log.Error("[FilesystemController] Resolve the path"); return BadRequest(new { detail = $"Invalid path: {path}" }); }
 
         if (!Directory.Exists(currentPath))
             return BadRequest(new { detail = $"Path does not exist: {currentPath}" });
@@ -88,8 +87,8 @@ public class FilesystemController : ControllerBase
                             }
                             childCount = count;
                         }
-                        catch (UnauthorizedAccessException) { permDenied = true; }
-                        catch (Exception) { childCount = 0; }
+                        catch (UnauthorizedAccessException) { Log.Error("[FilesystemController] access denied enumerating directory"); permDenied = true; }
+                        catch (Exception) { Log.Error("[FilesystemController] error counting directory entries"); childCount = 0; }
 
                         items.Add(new
                         {
@@ -107,17 +106,11 @@ public class FilesystemController : ControllerBase
                             mediaCount++;
                     }
                 }
-                catch { /* skip entries we can't access */ }
+                catch { Log.Error("[FilesystemController] operation failed"); /* skip entries we can't access */ }
             }
         }
-        catch (UnauthorizedAccessException)
-        {
-            return StatusCode(403, new { detail = $"Permission denied: {currentPath}" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { detail = $"Error reading directory: {ex.Message}" });
-        }
+        catch (UnauthorizedAccessException) { Log.Error("[FilesystemController] permission denied reading directory"); return StatusCode(403, new { detail = $"Permission denied: {currentPath}" }); }
+        catch (Exception ex) { Log.Error(ex, "[FilesystemController] error reading directory"); return StatusCode(500, new { detail = $"Error reading directory: {ex.Message}" }); }
 
         return Ok(new
         {
@@ -185,7 +178,7 @@ public class FilesystemController : ControllerBase
                             drives.Add(new { name = vol.Name, path = vol.FullName });
                     }
                 }
-                catch { }
+                catch { Log.Error("[FilesystemController] operation failed"); }
             }
         }
         else // Windows
@@ -197,7 +190,7 @@ public class FilesystemController : ControllerBase
             foreach (var (n, p) in new[] { ("Desktop", "Desktop"), ("Documents", "Documents"), ("Downloads", "Downloads"), ("Videos", "Videos") })
             {
                 var full = Path.Combine(homeDir, p);
-                try { if (Directory.Exists(full)) drives.Add(new { name = n, path = full }); } catch { }
+                try { if (Directory.Exists(full)) drives.Add(new { name = n, path = full }); } catch { Log.Error("[FilesystemController] operation failed"); }
             }
         }
 

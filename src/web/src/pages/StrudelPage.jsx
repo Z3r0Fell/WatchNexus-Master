@@ -93,7 +93,7 @@ export const StrudelPage = () => {
       try {
         const res = await axios.get(`${API}/api/strudel/jobs`, { headers: headers() });
         setJobs(res.data?.jobs || []);
-      } catch {}
+      } catch { console.error('[StrudelPage] Poll jobs failed'); }
     }, 5000);
     return () => clearInterval(interval);
   }, [jobs, headers]);
@@ -126,7 +126,7 @@ export const StrudelPage = () => {
               toast.error(scanRes.data?.Error || 'No titles found');
             }
           }
-        } catch {}
+        } catch { console.error('[StrudelPage] Poll scan results failed'); }
       }, 2000);
     } catch (e) {
       setScanning(false);

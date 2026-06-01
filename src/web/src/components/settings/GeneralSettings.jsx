@@ -83,7 +83,7 @@ export const GeneralSettings = ({
         try {
           const saved = localStorage.getItem('watchnexus_visible_tabs');
           if (saved) setVisibleTabs(JSON.parse(saved));
-        } catch {}
+        } catch { console.error('[GeneralSettings] Failed to parse visible tabs'); }
       } finally {
         setLoadingPrefs(false);
       }

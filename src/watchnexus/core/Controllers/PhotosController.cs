@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Ganache (Photo Gallery) ─────────────────────────────────
@@ -73,10 +75,7 @@ public class PhotosController : ControllerBase
                 photos.Add(new { path = f, name = fi.Name, size = fi.Length, modified = fi.LastWriteTimeUtc });
             }
         }
-        catch (Exception ex)
-        {
-            return Ok(new { lib.Id, lib.Name, lib.Path, photos = Array.Empty<object>(), error = ex.Message });
-        }
+        catch (Exception ex) { Log.Error(ex, "[PhotosController] operation failed"); return Ok(new { lib.Id, lib.Name, lib.Path, photos = Array.Empty<object>(), error = ex.Message }); }
         return Ok(new { lib.Id, lib.Name, lib.Path, photos, total = photos.Count });
     }
 
@@ -94,7 +93,7 @@ public class PhotosController : ControllerBase
             await _db.SaveChangesAsync();
             return Ok(new { lib.Id, photo_count = count, status = "scanned" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[PhotosController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("file/{*filePath}")]

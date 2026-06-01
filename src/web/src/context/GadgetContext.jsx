@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -72,37 +72,39 @@ export const GadgetProvider = ({ children }) => {
     };
   }, [refresh]);
 
-  const install = async (gadgetId) => {
+  const install = useCallback(async (gadgetId) => {
     const res = await axios.post(`${BACKEND_URL}/api/ripen/install/${gadgetId}`, {}, { headers: getAuth() });
     await refresh();
     return res.data;
-  };
+  }, [refresh]);
 
-  const uninstall = async (gadgetId) => {
+  const uninstall = useCallback(async (gadgetId) => {
     await axios.delete(`${BACKEND_URL}/api/ripen/uninstall/${gadgetId}`, { headers: getAuth() });
     await refresh();
-  };
+  }, [refresh]);
 
-  const activate = async (gadgetId) => {
+  const activate = useCallback(async (gadgetId) => {
     await axios.post(`${BACKEND_URL}/api/ripen/activate/${gadgetId}`, {}, { headers: getAuth() });
     await refresh();
-  };
+  }, [refresh]);
 
-  const deactivate = async (gadgetId) => {
+  const deactivate = useCallback(async (gadgetId) => {
     await axios.post(`${BACKEND_URL}/api/ripen/deactivate/${gadgetId}`, {}, { headers: getAuth() });
     await refresh();
-  };
+  }, [refresh]);
 
-  const isInstalled = (gadgetId) => installed.some(g => g.gadget_id === gadgetId);
-  const isActive = (gadgetId) => installed.some(g => g.gadget_id === gadgetId && g.status === 'active');
-  const getGadget = (gadgetId) => installed.find(g => g.gadget_id === gadgetId);
+  const isInstalled = useCallback((gadgetId) => installed.some(g => g.gadget_id === gadgetId), [installed]);
+  const isActive = useCallback((gadgetId) => installed.some(g => g.gadget_id === gadgetId && g.status === 'active'), [installed]);
+  const getGadget = useCallback((gadgetId) => installed.find(g => g.gadget_id === gadgetId), [installed]);
+
+  const value = useMemo(() => ({
+    installed, hooks, loading, refresh,
+    install, uninstall, activate, deactivate,
+    isInstalled, isActive, getGadget,
+  }), [installed, hooks, loading, refresh, install, uninstall, activate, deactivate, isInstalled, isActive, getGadget]);
 
   return (
-    <GadgetContext.Provider value={{
-      installed, hooks, loading, refresh,
-      install, uninstall, activate, deactivate,
-      isInstalled, isActive, getGadget,
-    }}>
+    <GadgetContext.Provider value={value}>
       {children}
     </GadgetContext.Provider>
   );

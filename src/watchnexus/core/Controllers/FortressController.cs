@@ -6,6 +6,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -88,7 +90,7 @@ public class FortressFilter : IAsyncActionFilter
             var doc = JsonDocument.Parse(setting.Value).RootElement;
             return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
         }
-        catch { return "standard"; }
+        catch { Log.Error("[FortressFilter] GetCurrentTier failed"); return "standard"; }
     }
 }
 
@@ -171,10 +173,7 @@ public static class FortressIntegrity
                     violations.Add($"TAMPERED: {prop.Name} (expected {expectedHash?[..12]}..., got {currentHash[..12]}...)");
             }
         }
-        catch (Exception ex)
-        {
-            violations.Add($"VERIFY_ERROR: {ex.Message}");
-        }
+        catch (Exception ex) { Log.Error(ex, "[FortressFilter] operation failed"); violations.Add($"VERIFY_ERROR: {ex.Message}"); }
 
         return (violations.Count == 0, violations);
     }
@@ -204,7 +203,7 @@ public class FortressController : ControllerBase
                 var doc = JsonDocument.Parse(manifest.Value).RootElement;
                 sealedAt = doc.TryGetProperty("sealed_at", out var sa) ? sa.GetString() : null;
             }
-            catch { }
+            catch { Log.Error("[FortressFilter] operation failed"); }
         }
 
         return Ok(new

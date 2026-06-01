@@ -4,6 +4,8 @@ using System.Runtime.Loader;
 using System.Text.Json;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core;
 
 /// <summary>Discovers, compiles, and loads WatchNexus modules from the modules and separated directories</summary>
@@ -313,7 +315,7 @@ public static class ModuleLoader
                     return output;
             }
         }
-        catch { }
+        catch { Log.Error("[ModuleLoadContext] operation failed"); }
 
         return null;
     }

@@ -6,6 +6,8 @@ using System.Xml.Linq;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -36,7 +38,7 @@ public class SproutController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
         if (setting?.Value != null)
         {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[SproutController] GetConfig failed"); }
         }
         return Ok(new
         {
@@ -83,7 +85,7 @@ public class SproutController : ControllerBase
                 var doc = JsonDocument.Parse(setting.Value);
                 if (doc.RootElement.TryGetProperty("api_key", out var ak)) apiKey = ak.GetString() ?? "";
             }
-            catch { }
+            catch { Log.Error("[SproutController] ListFeeds failed"); }
         }
 
         var keyParam = !string.IsNullOrEmpty(apiKey) ? $"?key={apiKey}" : "";
@@ -146,6 +148,8 @@ public class SproutController : ControllerBase
             }
             catch
             {
+                Log.Error("[SproutController] operation failed");
+
                 setting.Value = JsonSerializer.Serialize(new { enabled = true, api_key = key, items_per_feed = 50 });
                 await _db.SaveChangesAsync();
             }
@@ -221,7 +225,7 @@ public class SproutController : ControllerBase
             if (string.IsNullOrEmpty(storedKey)) return true; // No key set = allow
             return key == storedKey;
         }
-        catch { return true; }
+        catch { Log.Error("[SproutController] operation failed"); return true; }
     }
 
     private string BuildRssFeed(string title, string description, List<MediaItem> items)

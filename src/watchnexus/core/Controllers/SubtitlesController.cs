@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Saffron (Subtitles) ─────────────────────────────────────
@@ -87,9 +89,9 @@ public class SubtitlesController : ControllerBase
                         results.AddRange(await SearchOpenSubtitles(apiKey, movie_name, null, null, null, imdb_id, languages));
                 }
             }
-            catch { }
+            catch { Log.Error("[SubtitlesController] operation failed"); }
         }
-        try { results.AddRange(await SearchPodnapisi(movie_name, year, null, null, languages)); } catch { }
+        try { results.AddRange(await SearchPodnapisi(movie_name, year, null, null, languages)); } catch { Log.Error("[SubtitlesController] operation failed"); }
         return Ok(results.Select(r => new
         {
             r.Provider, r.Title, r.Language, download_url = r.DownloadUrl,
@@ -116,9 +118,9 @@ public class SubtitlesController : ControllerBase
                         results.AddRange(await SearchOpenSubtitles(apiKey, show_name, season, episode, null, null, languages));
                 }
             }
-            catch { }
+            catch { Log.Error("[SubtitlesController] operation failed"); }
         }
-        try { results.AddRange(await SearchPodnapisi(show_name, null, season, episode, languages)); } catch { }
+        try { results.AddRange(await SearchPodnapisi(show_name, null, season, episode, languages)); } catch { Log.Error("[SubtitlesController] operation failed"); }
         return Ok(results);
     }
 
@@ -142,7 +144,7 @@ public class SubtitlesController : ControllerBase
             }
             return Ok(new { status = "downloaded", size = data.Length, source, media_id, data_base64 = Convert.ToBase64String(data) });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SubtitlesController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("file/{*filePath}")]
@@ -186,7 +188,7 @@ public class SubtitlesController : ControllerBase
                 }
             }
         }
-        catch { }
+        catch { Log.Error("[SubtitlesController] operation failed"); }
         return results;
     }
 
@@ -216,7 +218,7 @@ public class SubtitlesController : ControllerBase
                 ));
             }
         }
-        catch { }
+        catch { Log.Error("[SubtitlesController] operation failed"); }
         return results;
     }
 

@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -86,7 +88,7 @@ public class PretzelController : ControllerBase
                     favorite = doc.TryGetProperty("favorite", out var fav) && fav.GetBoolean(),
                 });
             }
-            catch { }
+            catch { Log.Error("[PretzelController] operation failed"); }
         }
 
         return Ok(new { games = games.OrderByDescending(g => ((dynamic)g).last_played ?? "").ToList(), total = games.Count });
@@ -192,7 +194,7 @@ public class PretzelController : ControllerBase
                     created_at = doc.TryGetProperty("created_at", out var ca) ? ca.GetString() : "",
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[PretzelController] operation failed"); return null; }
         }).Where(x => x != null);
 
         return Ok(result);
@@ -229,7 +231,7 @@ public class PretzelController : ControllerBase
                 systemCounts[sys] = systemCounts.GetValueOrDefault(sys) + 1;
                 totalPlays += doc.TryGetProperty("play_count", out var pc) ? pc.GetInt32() : 0;
             }
-            catch { }
+            catch { Log.Error("[PretzelController] operation failed"); }
         }
         return Ok(new { total_games = games.Count, total_plays = totalPlays, systems = systemCounts, save_states = await _db.Settings.CountAsync(s => s.Key.StartsWith("pretzel_save:")) });
     }

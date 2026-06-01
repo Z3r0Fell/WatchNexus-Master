@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -49,7 +51,7 @@ public class RindController : ControllerBase
             var doc = JsonDocument.Parse(setting.Value);
             return Ok(doc.RootElement);
         }
-        catch { return Ok(new { configured = false }); }
+        catch { Log.Error("[RindController] operation failed"); return Ok(new { configured = false }); }
     }
 
     // ── Save Profile ──────────────────────────────────
@@ -162,7 +164,7 @@ public class RindController : ControllerBase
                 var doc = JsonDocument.Parse(p.Value);
                 return new { user_id = p.UserId, profile = (object)doc.RootElement.ToString() };
             }
-            catch { return null; }
+            catch { Log.Error("[RindController] AdminProfiles failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(result);
     }

@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Services;
 
 /// <summary>
@@ -78,7 +80,7 @@ public sealed class TrayIconService : BackgroundService
                 _logger.LogInformation("[Tray] Linux tray subprocess terminated");
             }
         }
-        catch { /* best-effort cleanup */ }
+        catch { Log.Error("[TrayIconService] StopAsync failed"); }
 
         await base.StopAsync(cancellationToken);
     }
@@ -193,7 +195,7 @@ public sealed class TrayIconService : BackgroundService
                 using var scaled = new System.Drawing.Bitmap(bmp, 32, 32);
                 icon = System.Drawing.Icon.FromHandle(scaled.GetHicon());
             }
-            catch { /* fall through to branded icon */ }
+            catch { Log.Error("[TrayIconService] Try loading from PNG file"); }
         }
 
         // Fallback: generate a branded "W" icon
@@ -238,7 +240,7 @@ public sealed class TrayIconService : BackgroundService
             g.DrawString("W", font, brush, 2, 2);
             return System.Drawing.Icon.FromHandle(bmp.GetHicon());
         }
-        catch { return null; }
+        catch { Log.Error("[TrayIconService] operation failed"); return null; }
     }
 
     private System.Windows.Forms.ContextMenuStrip BuildWindowsMenu()
@@ -407,7 +409,7 @@ public sealed class TrayIconService : BackgroundService
                         _linuxTrayProcess = null;
                     }
                 }
-                catch { }
+                catch { Log.Error("[TrayIconService] operation failed"); }
             });
 
             // Monitor stderr for diagnostic output
@@ -422,7 +424,7 @@ public sealed class TrayIconService : BackgroundService
                             _logger.LogDebug("[Tray/Py] {Line}", line);
                     }
                 }
-                catch { }
+                catch { Log.Error("[TrayIconService] Monitor stderr for diagnostic output"); }
             }, ct);
         }
         catch (Exception ex)

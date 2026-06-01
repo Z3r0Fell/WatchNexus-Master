@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Services;
 
 /// <summary>
@@ -36,13 +38,10 @@ public class UpdateCheckerService : BackgroundService
             {
                 await CheckForUpdates(stoppingToken);
             }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "[UpdateChecker] Update check cycle failed");
+                break;
             }
 
             // Default interval: 24 hours (read from settings)
@@ -59,7 +58,7 @@ public class UpdateCheckerService : BackgroundService
                         intervalHours = ci.GetInt32();
                 }
             }
-            catch { /* use default */ }
+            catch { Log.Error("[UpdateCheckerService] operation failed"); }
 
             _logger.LogDebug("[UpdateChecker] Next check in {Hours}h", intervalHours);
             await Task.Delay(TimeSpan.FromHours(intervalHours), stoppingToken);
@@ -82,7 +81,7 @@ public class UpdateCheckerService : BackgroundService
                 var doc = JsonDocument.Parse(setting.Value).RootElement;
                 tier = doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
             }
-            catch { /* use default */ }
+            catch { Log.Error("[UpdateCheckerService] Get current tier from license"); }
         }
 
         var lsUrl = _config["LICENSE_SERVER_URL"] ?? "";

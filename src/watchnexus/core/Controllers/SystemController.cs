@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Nutmeg (System Stats) ───────────────────────────────────
@@ -101,7 +103,7 @@ public class SystemController : ControllerBase
             var p = System.Diagnostics.Process.Start(psi);
             if (p != null) { p.WaitForExit(2000); installed = p.ExitCode == 0; }
         }
-        catch { }
+        catch { Log.Error("[SystemController] ChromaprintStatus failed"); }
         return Ok(new { installed, version = installed ? "detected" : (string?)null });
     }
 }

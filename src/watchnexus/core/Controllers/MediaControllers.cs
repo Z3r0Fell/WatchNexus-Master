@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Media Operations ──────────────────────────────────
@@ -122,7 +124,7 @@ public class CompoteController : ControllerBase
                 dict["id"] = i.Key.Replace("indexer:", "");
                 result.Add(dict);
             }
-            catch { }
+            catch { Log.Error("[MediaOpsController] Ensure 'id' is present (derived from key)"); }
         }
         return Ok(result);
     }
@@ -231,10 +233,7 @@ public class CompoteController : ControllerBase
                 message = response.IsSuccessStatusCode ? "Connection successful" : $"HTTP {(int)response.StatusCode}",
             });
         }
-        catch (Exception ex)
-        {
-            return Ok(new { success = false, error = ex.Message, response_time = 0 });
-        }
+        catch (Exception ex) { Log.Error(ex, "[MediaOpsController] operation failed"); return Ok(new { success = false, error = ex.Message, response_time = 0 }); }
     }
 
     [HttpGet("search")]
@@ -294,7 +293,7 @@ public class CompoteController : ControllerBase
                     }
                 }));
             }
-            catch { }
+            catch { Log.Error("[MediaOpsController] operation failed"); }
         }
 
         await Task.WhenAll(tasks);
@@ -545,7 +544,7 @@ public class CompoteController : ControllerBase
                 });
             }
         }
-        catch { }
+        catch { Log.Error("[MediaOpsController] operation failed"); }
         return results;
     }
 
@@ -582,7 +581,7 @@ public class CompoteController : ControllerBase
             if (s.Contains("KIB") || s.Contains("KB")) { var n = double.Parse(System.Text.RegularExpressions.Regex.Match(s, @"[\d.]+").Value); return (long)(n * 1024); }
             if (long.TryParse(s, out var bytes)) return bytes;
         }
-        catch { }
+        catch { Log.Error("[MediaOpsController] operation failed"); }
         return 0;
     }
 
@@ -667,7 +666,7 @@ public class IndexersController : ControllerBase
                     result.Add(doc);
                 }
             }
-            catch { }
+            catch { Log.Error("[MediaOpsController] operation failed"); }
         }
         return Ok(result);
     }
@@ -761,7 +760,7 @@ public class GarnishController : ControllerBase
             var resp = await http.GetAsync(urls[provider]);
             return Ok(new { success = resp.IsSuccessStatusCode, provider, status_code = (int)resp.StatusCode });
         }
-        catch (Exception ex) { return Ok(new { success = false, provider, error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MediaOpsController] operation failed"); return Ok(new { success = false, provider, error = ex.Message }); }
     }
 }
 

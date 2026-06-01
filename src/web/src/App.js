@@ -7,76 +7,76 @@ import { LicenseProvider } from "./context/LicenseContext";
 import { FirstLaunchGate } from "./components/FirstLaunchGate";
 import { lazy, Suspense } from "react";
 
-// Pages
-import { Dashboard } from "./pages/Dashboard";
-import { AuthPage } from "./pages/AuthPage";
-import { AuthCallback } from "./pages/AuthCallback";
-import { MoviesPage } from "./pages/MoviesPage";
-import { TVShowsPage } from "./pages/TVShowsPage";
-import { MediaDetails } from "./pages/MediaDetails";
-import { SearchPage } from "./pages/SearchPage";
-import { IndexerSearchPage } from "./pages/IndexerSearchPage";
-import { DownloadsPage } from "./pages/DownloadsPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { StreamingPage } from "./pages/StreamingPage";
-import { MusicPage } from "./pages/MusicPage";
-import { AudiobooksPage } from "./pages/AudiobooksPage";
-import { LiveTVPage } from "./pages/LiveTVPage";
-import { LibraryPage } from "./pages/LibraryPage";
-import { WatchPartyPage } from "./pages/WatchPartyPage";
-import { PluginMarketplacePage } from "./pages/PluginMarketplacePage";
-import { ThemeCommunityPage } from "./pages/ThemeCommunityPage";
-import { DVRPage } from "./pages/DVRPage";
-import PlaylistsPage from "./pages/PlaylistsPage";
-import AnimePage from "./pages/AnimePage";
+// Lazy-loaded Pages (React.lazy + Suspense for code splitting)
+const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
+const AuthPage = lazy(() => import("./pages/AuthPage").then(m => ({ default: m.AuthPage })));
+const AuthCallback = lazy(() => import("./pages/AuthCallback").then(m => ({ default: m.AuthCallback })));
+const MoviesPage = lazy(() => import("./pages/MoviesPage").then(m => ({ default: m.MoviesPage })));
+const TVShowsPage = lazy(() => import("./pages/TVShowsPage").then(m => ({ default: m.TVShowsPage })));
+const MediaDetails = lazy(() => import("./pages/MediaDetails").then(m => ({ default: m.MediaDetails })));
+const SearchPage = lazy(() => import("./pages/SearchPage").then(m => ({ default: m.SearchPage })));
+const IndexerSearchPage = lazy(() => import("./pages/IndexerSearchPage"));
+const DownloadsPage = lazy(() => import("./pages/DownloadsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const StreamingPage = lazy(() => import("./pages/StreamingPage").then(m => ({ default: m.StreamingPage })));
+const MusicPage = lazy(() => import("./pages/MusicPage").then(m => ({ default: m.MusicPage })));
+const AudiobooksPage = lazy(() => import("./pages/AudiobooksPage").then(m => ({ default: m.AudiobooksPage })));
+const LiveTVPage = lazy(() => import("./pages/LiveTVPage").then(m => ({ default: m.LiveTVPage })));
+const LibraryPage = lazy(() => import("./pages/LibraryPage"));
+const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage"));
+const PluginMarketplacePage = lazy(() => import("./pages/PluginMarketplacePage"));
+const ThemeCommunityPage = lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage })));
+const DVRPage = lazy(() => import("./pages/DVRPage").then(m => ({ default: m.DVRPage })));
+const PlaylistsPage = lazy(() => import("./pages/PlaylistsPage"));
+const AnimePage = lazy(() => import("./pages/AnimePage"));
 import VideoPlayer from "./components/VideoPlayer";
-import { WatchHistoryPage } from "./pages/WatchHistoryPage";
-import { WatchlistPage } from "./pages/WatchlistPage";
-import { DiscoverPage } from "./pages/DiscoverPage";
+const WatchHistoryPage = lazy(() => import("./pages/WatchHistoryPage"));
+const WatchlistPage = lazy(() => import("./pages/WatchlistPage"));
+const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 
 // Admin / Security / VPN / System
-import SecurityPage from "./pages/SecurityPage";
-import VpnPage from "./pages/VpnPage";
-import SystemPage from "./pages/SystemPage";
-import LibraryManagerPage from "./pages/LibraryManagerPage";
-import LogViewerPage from "./pages/LogViewerPage";
-import MediaBrowserPage from "./pages/MediaBrowserPage";
+const SecurityPage = lazy(() => import("./pages/SecurityPage"));
+const VpnPage = lazy(() => import("./pages/VpnPage"));
+const SystemPage = lazy(() => import("./pages/SystemPage"));
+const LibraryManagerPage = lazy(() => import("./pages/LibraryManagerPage"));
+const LogViewerPage = lazy(() => import("./pages/LogViewerPage"));
+const MediaBrowserPage = lazy(() => import("./pages/MediaBrowserPage"));
 
 // Gadget Pages
-import WeatherPage from "./pages/gadgets/WeatherPage";
-import PodcastsPage from "./pages/gadgets/PodcastsPage";
-import RadioPage from "./pages/gadgets/RadioPage";
-import PhotosPage from "./pages/gadgets/PhotosPage";
-import WebVideoPage from "./pages/gadgets/WebVideoPage";
-import AnalyticsPage from "./pages/gadgets/AnalyticsPage";
-import NotificationsPage from "./pages/gadgets/NotificationsPage";
-import RequestsPage from "./pages/gadgets/RequestsPage";
-import ParentalControlsPage from "./pages/gadgets/ParentalControlsPage";
-import ProcessingPage from "./pages/gadgets/ProcessingPage";
-import UsenetPage from "./pages/gadgets/UsenetPage";
-import HelpPage from "./pages/HelpPage";
+const WeatherPage = lazy(() => import("./pages/gadgets/WeatherPage"));
+const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
+const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
+const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
+const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+const AnalyticsPage = lazy(() => import("./pages/gadgets/AnalyticsPage"));
+const NotificationsPage = lazy(() => import("./pages/gadgets/NotificationsPage"));
+const RequestsPage = lazy(() => import("./pages/gadgets/RequestsPage"));
+const ParentalControlsPage = lazy(() => import("./pages/gadgets/ParentalControlsPage"));
+const ProcessingPage = lazy(() => import("./pages/gadgets/ProcessingPage"));
+const UsenetPage = lazy(() => import("./pages/gadgets/UsenetPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
 import { TierGate } from "./components/TierGate";
 
 // Module Pages
-import GlazePage from "./pages/GlazePage";
-import SaffronPage from "./pages/SaffronPage";
-import FonduePage from "./pages/FonduePage";
-import SourdoughPage from "./pages/SourdoughPage";
-import ChurroPage from "./pages/ChurroPage";
-import RouxPage from "./pages/RouxPage";
-import SproutPage from "./pages/SproutPage";
-import StrudelPage from "./pages/StrudelPage";
-import ParfaitPage from "./pages/ParfaitPage";
-import MenuPage from "./pages/MenuPage";
-import PretzelPage from "./pages/PretzelPage";
-import BiscottiPage from "./pages/BiscottiPage";
-import TreaclePage from "./pages/TreaclePage";
-import SagePage from "./pages/SagePage";
-import TerrinePage from "./pages/TerrinePage";
-import PopsiclePage from "./pages/PopsiclePage";
-import PreservesPage from "./pages/PreservesPage";
-import MarshmallowPage from "./pages/MarshmallowPage";
-import ChowderPage from "./pages/ChowderPage";
+const GlazePage = lazy(() => import("./pages/GlazePage"));
+const SaffronPage = lazy(() => import("./pages/SaffronPage"));
+const FonduePage = lazy(() => import("./pages/FonduePage"));
+const SourdoughPage = lazy(() => import("./pages/SourdoughPage"));
+const ChurroPage = lazy(() => import("./pages/ChurroPage"));
+const RouxPage = lazy(() => import("./pages/RouxPage"));
+const SproutPage = lazy(() => import("./pages/SproutPage"));
+const StrudelPage = lazy(() => import("./pages/StrudelPage"));
+const ParfaitPage = lazy(() => import("./pages/ParfaitPage"));
+const MenuPage = lazy(() => import("./pages/MenuPage"));
+const PretzelPage = lazy(() => import("./pages/PretzelPage"));
+const BiscottiPage = lazy(() => import("./pages/BiscottiPage"));
+const TreaclePage = lazy(() => import("./pages/TreaclePage"));
+const SagePage = lazy(() => import("./pages/SagePage"));
+const TerrinePage = lazy(() => import("./pages/TerrinePage"));
+const PopsiclePage = lazy(() => import("./pages/PopsiclePage"));
+const PreservesPage = lazy(() => import("./pages/PreservesPage"));
+const MarshmallowPage = lazy(() => import("./pages/MarshmallowPage"));
+const ChowderPage = lazy(() => import("./pages/ChowderPage"));
 
 import "./App.css";
 
@@ -155,10 +155,15 @@ function AppRouter() {
   // CRITICAL: Check URL fragment for session_id synchronously during render
   // This prevents race conditions by processing OAuth callback BEFORE checking existing auth
   if (location.hash?.includes('session_id=')) {
-    return <AuthCallback />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>}>
+        <AuthCallback />
+      </Suspense>
+    );
   }
 
   return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>}>
     <Routes>
       {/* Public Routes */}
       <Route
@@ -449,6 +454,7 @@ function AppRouter() {
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 

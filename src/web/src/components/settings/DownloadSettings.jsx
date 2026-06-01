@@ -37,7 +37,7 @@ export const DownloadSettings = () => {
   }, []);
 
   const fetchEngineSettings = useCallback(async () => {
-    try { const res = await torrentEngineApi.getSettings(); setEngineSettings(prev => ({ ...prev, ...res.data })); } catch {}
+    try { const res = await torrentEngineApi.getSettings(); setEngineSettings(prev => ({ ...prev, ...res.data })); } catch { console.error('[DownloadSettings] Failed to fetch engine settings'); }
   }, []);
 
   useEffect(() => {

@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -55,7 +57,7 @@ public class BiscottiController : ControllerBase
                     tags = doc.TryGetProperty("tags", out var tg) ? tg.GetString() : "",
                 });
             }
-            catch { }
+            catch { Log.Error("[BiscottiController] operation failed"); }
         }
         return Ok(new { items = items.OrderByDescending(i => ((dynamic)i).added_at).ToList(), total = items.Count });
     }
@@ -125,7 +127,7 @@ public class BiscottiController : ControllerBase
         int ebooks = 0, comics = 0, audiobooks = 0;
         foreach (var s in all)
         {
-            try { var doc = JsonDocument.Parse(s.Value ?? "{}").RootElement; var t = doc.TryGetProperty("type", out var ty) ? ty.GetString() : ""; if (t == "ebook") ebooks++; else if (t == "comic") comics++; else if (t == "audiobook") audiobooks++; } catch { }
+            try { var doc = JsonDocument.Parse(s.Value ?? "{}").RootElement; var t = doc.TryGetProperty("type", out var ty) ? ty.GetString() : ""; if (t == "ebook") ebooks++; else if (t == "comic") comics++; else if (t == "audiobook") audiobooks++; } catch { Log.Error("[BiscottiController] Stats failed"); }
         }
         return Ok(new { total = all.Count, ebooks, comics, audiobooks });
     }
@@ -173,7 +175,7 @@ public class TreacleController : ControllerBase
                     play_count = doc.TryGetProperty("play_count", out var pc) ? pc.GetInt32() : 0,
                 });
             }
-            catch { }
+            catch { Log.Error("[BiscottiController] operation failed"); }
         }
         return Ok(new { tracks, total = tracks.Count, artists = tracks.Select(t => ((dynamic)t).artist).Distinct().Count(), albums = tracks.Select(t => ((dynamic)t).album).Distinct().Count() });
     }
@@ -228,7 +230,7 @@ public class TreacleController : ControllerBase
     {
         var all = await _db.Settings.Where(s => s.Key.StartsWith("treacle:")).ToListAsync();
         var artists = new HashSet<string>(); var albums = new HashSet<string>();
-        foreach (var s in all) { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; if (d.TryGetProperty("artist", out var a)) artists.Add(a.GetString() ?? ""); if (d.TryGetProperty("album", out var al)) albums.Add(al.GetString() ?? ""); } catch { } }
+        foreach (var s in all) { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; if (d.TryGetProperty("artist", out var a)) artists.Add(a.GetString() ?? ""); if (d.TryGetProperty("album", out var al)) albums.Add(al.GetString() ?? ""); } catch { Log.Error("[BiscottiController] Stats failed"); } }
         return Ok(new { total_tracks = all.Count, artists = artists.Count, albums = albums.Count });
     }
 }
@@ -264,7 +266,7 @@ public class SageController : ControllerBase
                 var doc = JsonDocument.Parse(h.Value ?? "{}").RootElement;
                 if (doc.TryGetProperty("tmdb_id", out var tid)) watchedIds.Add(tid.GetInt32());
             }
-            catch { }
+            catch { Log.Error("[BiscottiController] operation failed"); }
         }
 
         // Fetch trending + popular and filter out already watched
@@ -321,7 +323,7 @@ public class SageController : ControllerBase
                 }
             }
         }
-        catch { }
+        catch { Log.Error("[BiscottiController] operation failed"); }
 
         return Ok(new { recommendations = recs, total = recs.Count, source = "tmdb_trending_toprated" });
     }
@@ -337,7 +339,7 @@ public class SageController : ControllerBase
             var resp = await http.GetStringAsync($"https://api.themoviedb.org/3/{mediaType}/{tmdbId}/similar?api_key={tmdbKey}");
             return Content(resp, "application/json");
         }
-        catch { return Ok(new { results = Array.Empty<object>() }); }
+        catch { Log.Error("[BiscottiController] operation failed"); return Ok(new { results = Array.Empty<object>() }); }
     }
 }
 
@@ -356,7 +358,7 @@ public class TerrineController : ControllerBase
     public async Task<IActionResult> GetRecordings()
     {
         var all = await _db.Settings.Where(s => s.Key.StartsWith("terrine_rec:")).ToListAsync();
-        var recs = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("terrine_rec:", ""), title = d.TryGetProperty("title", out var t) ? t.GetString() : "", channel = d.TryGetProperty("channel", out var c) ? c.GetString() : "", start_time = d.TryGetProperty("start_time", out var st) ? st.GetString() : "", end_time = d.TryGetProperty("end_time", out var et) ? et.GetString() : "", status = d.TryGetProperty("status", out var s2) ? s2.GetString() : "scheduled", file_path = d.TryGetProperty("file_path", out var fp) ? fp.GetString() : "", file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0 }; } catch { return null; } }).Where(x => x != null).ToList();
+        var recs = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("terrine_rec:", ""), title = d.TryGetProperty("title", out var t) ? t.GetString() : "", channel = d.TryGetProperty("channel", out var c) ? c.GetString() : "", start_time = d.TryGetProperty("start_time", out var st) ? st.GetString() : "", end_time = d.TryGetProperty("end_time", out var et) ? et.GetString() : "", status = d.TryGetProperty("status", out var s2) ? s2.GetString() : "scheduled", file_path = d.TryGetProperty("file_path", out var fp) ? fp.GetString() : "", file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0 }; } catch { Log.Error("[BiscottiController] operation failed"); return null; } }).Where(x => x != null).ToList();
         return Ok(new { recordings = recs, total = recs.Count });
     }
 
@@ -398,7 +400,7 @@ public class TerrineController : ControllerBase
     {
         var all = await _db.Settings.Where(s => s.Key.StartsWith("terrine_rec:")).ToListAsync();
         int scheduled = 0, recording = 0, completed = 0;
-        foreach (var s in all) { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; var st = d.TryGetProperty("status", out var v) ? v.GetString() : ""; if (st == "scheduled") scheduled++; else if (st == "recording") recording++; else if (st == "completed") completed++; } catch { } }
+        foreach (var s in all) { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; var st = d.TryGetProperty("status", out var v) ? v.GetString() : ""; if (st == "scheduled") scheduled++; else if (st == "recording") recording++; else if (st == "completed") completed++; } catch { Log.Error("[BiscottiController] Stats failed"); } }
         return Ok(new { total = all.Count, scheduled, recording, completed });
     }
 }
@@ -418,7 +420,7 @@ public class PopsicleController : ControllerBase
     public async Task<IActionResult> GetOfflineDownloads()
     {
         var all = await _db.Settings.Where(s => s.Key.StartsWith("popsicle:")).ToListAsync();
-        var items = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("popsicle:", ""), title = d.TryGetProperty("title", out var t) ? t.GetString() : "", media_type = d.TryGetProperty("media_type", out var mt) ? mt.GetString() : "", quality = d.TryGetProperty("quality", out var q) ? q.GetString() : "720p", status = d.TryGetProperty("status", out var st) ? st.GetString() : "pending", progress = d.TryGetProperty("progress", out var pr) ? pr.GetDouble() : 0, file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0, expires_at = d.TryGetProperty("expires_at", out var ea) ? ea.GetString() : null }; } catch { return null; } }).Where(x => x != null).ToList();
+        var items = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("popsicle:", ""), title = d.TryGetProperty("title", out var t) ? t.GetString() : "", media_type = d.TryGetProperty("media_type", out var mt) ? mt.GetString() : "", quality = d.TryGetProperty("quality", out var q) ? q.GetString() : "720p", status = d.TryGetProperty("status", out var st) ? st.GetString() : "pending", progress = d.TryGetProperty("progress", out var pr) ? pr.GetDouble() : 0, file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0, expires_at = d.TryGetProperty("expires_at", out var ea) ? ea.GetString() : null }; } catch { Log.Error("[BiscottiController] operation failed"); return null; } }).Where(x => x != null).ToList();
         return Ok(new { downloads = items, total = items.Count });
     }
 
@@ -486,7 +488,7 @@ public class PreservesController : ControllerBase
             var doc = JsonDocument.Parse(cfg.Value).RootElement;
             return Ok(new { configured = true, provider = doc.TryGetProperty("provider", out var p) ? p.GetString() : "", bucket = doc.TryGetProperty("bucket", out var b) ? b.GetString() : "", region = doc.TryGetProperty("region", out var r) ? r.GetString() : "", endpoint = doc.TryGetProperty("endpoint", out var e) ? e.GetString() : "", last_backup = doc.TryGetProperty("last_backup", out var lb) ? lb.GetString() : null });
         }
-        catch { return Ok(new { configured = false }); }
+        catch { Log.Error("[BiscottiController] operation failed"); return Ok(new { configured = false }); }
     }
 
     [HttpPost("config")]
@@ -503,7 +505,7 @@ public class PreservesController : ControllerBase
     public async Task<IActionResult> GetBackups()
     {
         var all = await _db.Settings.Where(s => s.Key.StartsWith("preserves_backup:")).OrderByDescending(s => s.Key).ToListAsync();
-        var backups = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("preserves_backup:", ""), name = d.TryGetProperty("name", out var n) ? n.GetString() : "", size = d.TryGetProperty("size", out var sz) ? sz.GetInt64() : 0, status = d.TryGetProperty("status", out var st) ? st.GetString() : "", created_at = d.TryGetProperty("created_at", out var ca) ? ca.GetString() : "", type = d.TryGetProperty("type", out var t) ? t.GetString() : "full" }; } catch { return null; } }).Where(x => x != null).ToList();
+        var backups = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("preserves_backup:", ""), name = d.TryGetProperty("name", out var n) ? n.GetString() : "", size = d.TryGetProperty("size", out var sz) ? sz.GetInt64() : 0, status = d.TryGetProperty("status", out var st) ? st.GetString() : "", created_at = d.TryGetProperty("created_at", out var ca) ? ca.GetString() : "", type = d.TryGetProperty("type", out var t) ? t.GetString() : "full" }; } catch { Log.Error("[BiscottiController] operation failed"); return null; } }).Where(x => x != null).ToList();
         return Ok(new { backups, total = backups.Count });
     }
 
@@ -559,7 +561,7 @@ public class MarshmallowController : ControllerBase
                 categories = doc.TryGetProperty("categories", out var c) ? c.GetString() : "watchlist,progress,settings",
             });
         }
-        catch { return Ok(new { enabled = false }); }
+        catch { Log.Error("[BiscottiController] operation failed"); return Ok(new { enabled = false }); }
     }
 
     [HttpPost("config")]
@@ -599,7 +601,7 @@ public class MarshmallowController : ControllerBase
     public async Task<IActionResult> SyncHistory()
     {
         var logs = await _db.Settings.Where(s => s.Key.StartsWith("marshmallow_log:")).OrderByDescending(s => s.Key).Take(20).ToListAsync();
-        var entries = logs.Select(s => { try { return JsonDocument.Parse(s.Value ?? "{}").RootElement; } catch { return default; } }).Where(x => x.ValueKind != JsonValueKind.Undefined).ToList();
+        var entries = logs.Select(s => { try { return JsonDocument.Parse(s.Value ?? "{}").RootElement; } catch { Log.Error("[BiscottiController] SyncHistory failed"); return default; } }).Where(x => x.ValueKind != JsonValueKind.Undefined).ToList();
         return Ok(new { history = entries, total = entries.Count });
     }
 }

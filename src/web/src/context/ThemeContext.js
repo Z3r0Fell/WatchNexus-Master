@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 
@@ -254,21 +254,16 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [fetchTheme, modeLoaded]);
 
+  const value = useMemo(() => ({
+    theme, themeType, mode, loading,
+    toggleMode, applyBuiltInTheme, applyCustomColors,
+    previewColors, resetToSaved,
+    refreshTheme: fetchTheme,
+    DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME,
+  }), [theme, themeType, mode, loading, toggleMode, applyBuiltInTheme, applyCustomColors, previewColors, resetToSaved, fetchTheme]);
+
   return (
-    <ThemeContext.Provider value={{
-      theme,
-      themeType,
-      mode,
-      loading,
-      toggleMode,
-      applyBuiltInTheme,
-      applyCustomColors,
-      previewColors,
-      resetToSaved,
-      refreshTheme: fetchTheme,
-      DEFAULT_DARK_THEME,
-      DEFAULT_LIGHT_THEME
-    }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

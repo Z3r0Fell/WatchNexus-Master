@@ -66,12 +66,6 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
   const fetchingRef = useRef(false);
   const lastFetchedPath = useRef('');
 
-  // Get auth token
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
   // Fetch directory contents
   const fetchDirectory = useCallback(async (path = '') => {
     // Prevent duplicate fetches
@@ -86,8 +80,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
 
     try {
       const response = await axios.get(`${API_URL}/api/filesystem/browse`, {
-        params: { path },
-        headers: getAuthHeaders()
+        params: { path }
       });
 
       const data = response.data;
@@ -118,7 +111,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [getAuthHeaders, onSelect]);
+  }, [onSelect]);
 
   // Initial load
   useEffect(() => {

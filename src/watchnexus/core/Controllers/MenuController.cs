@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -53,7 +55,7 @@ public class MenuController : ControllerBase
                 doc.TryGetProperty("api_key", out var k) ? k.GetString() : null
             );
         }
-        catch { return (null, null); }
+        catch { Log.Error("[MenuController] operation failed"); return (null, null); }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -161,7 +163,7 @@ public class MenuController : ControllerBase
                     vote_average = doc.TryGetProperty("vote_average", out var va) ? va.GetDouble() : 0,
                 });
             }
-            catch { }
+            catch { Log.Error("[MenuController] operation failed"); }
         }
 
         return Ok(new
@@ -246,7 +248,7 @@ public class MenuController : ControllerBase
                 else if (st == "declined") declined++;
                 else if (st == "available") available++;
             }
-            catch { }
+            catch { Log.Error("[MenuController] operation failed"); }
         }
         return Ok(new { total = all.Count, pending, approved, declined, available });
     }
@@ -299,7 +301,7 @@ public class MenuController : ControllerBase
                 return Ok(new { success = true, message = "Series added to Sonarr" });
             return StatusCode((int)resp.StatusCode, new { success = false, message = resBody });
         }
-        catch (Exception ex) { return StatusCode(500, new { success = false, message = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MenuController] operation failed"); return StatusCode(500, new { success = false, message = ex.Message }); }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -350,7 +352,7 @@ public class MenuController : ControllerBase
                 return Ok(new { success = true, message = "Movie added to Radarr" });
             return StatusCode((int)resp.StatusCode, new { success = false, message = resBody });
         }
-        catch (Exception ex) { return StatusCode(500, new { success = false, message = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MenuController] operation failed"); return StatusCode(500, new { success = false, message = ex.Message }); }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -398,7 +400,7 @@ public class MenuController : ControllerBase
                     if (!resp.IsSuccessStatusCode)
                         error = $"Radarr returned {(int)resp.StatusCode}";
                 }
-                catch (Exception ex) { error = ex.Message; }
+                catch (Exception ex) { Log.Error(ex, "[MenuController] operation failed"); error = ex.Message; }
             }
             else error = "Radarr not configured";
         }
@@ -439,7 +441,7 @@ public class MenuController : ControllerBase
                     if (!resp.IsSuccessStatusCode)
                         error = $"Sonarr returned {(int)resp.StatusCode}";
                 }
-                catch (Exception ex) { error = ex.Message; }
+                catch (Exception ex) { Log.Error(ex, "[MenuController] operation failed"); error = ex.Message; }
             }
             else error = "Sonarr not configured";
         }
@@ -475,7 +477,7 @@ public class MenuController : ControllerBase
             await _db.SaveChangesAsync();
             return Ok(new { success = true, status = newStatus, message = $"Request {newStatus}" });
         }
-        catch (Exception ex) { return StatusCode(500, new { success = false, message = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MenuController] operation failed"); return StatusCode(500, new { success = false, message = ex.Message }); }
     }
 
     private async Task<IActionResult> TmdbGet(string url)
@@ -489,7 +491,7 @@ public class MenuController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MenuController] TmdbGet failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     private async Task<IActionResult> SaveServiceConfig(string configKey, JsonElement body, string testPath)
@@ -509,10 +511,7 @@ public class MenuController : ControllerBase
             if (!resp.IsSuccessStatusCode)
                 return BadRequest(new { success = false, message = $"Connection failed (HTTP {(int)resp.StatusCode})" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { success = false, message = $"Connection error: {ex.Message}" });
-        }
+        catch (Exception ex) { Log.Error(ex, "[MenuController] Test connection"); return BadRequest(new { success = false, message = $"Connection error: {ex.Message}" }); }
 
         var configData = JsonSerializer.Serialize(new { url, api_key = apiKey });
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == configKey && s.UserId == "");
@@ -537,6 +536,6 @@ public class MenuController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch { return Ok(Array.Empty<object>()); }
+        catch { Log.Error("[MenuController] operation failed"); return Ok(Array.Empty<object>()); }
     }
 }

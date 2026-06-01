@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -58,10 +60,7 @@ public class MatrixController : ControllerBase
             var matrixUserId = doc.RootElement.TryGetProperty("user_id", out var uid) ? uid.GetString() : "unknown";
             return Ok(new { success = true, user_id = matrixUserId, homeserver });
         }
-        catch (Exception ex)
-        {
-            return Ok(new { success = false, error = ex.Message });
-        }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return Ok(new { success = false, error = ex.Message }); }
     }
 
     // ── Room Management ──────────────────────────────────
@@ -90,13 +89,13 @@ public class MatrixController : ControllerBase
                         var stateDoc = JsonDocument.Parse(stateResp);
                         name = stateDoc.RootElement.TryGetProperty("name", out var n) ? n.GetString() : null;
                     }
-                    catch { }
+                    catch { Log.Error("[MatrixController] operation failed"); }
                     rooms.Add(new { room_id = id, name = name ?? id });
                 }
             }
             return Ok(rooms);
         }
-        catch (Exception ex) { return Ok(new { error = ex.Message, rooms = Array.Empty<object>() }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return Ok(new { error = ex.Message, rooms = Array.Empty<object>() }); }
     }
 
     [HttpPost("rooms/create")]
@@ -113,7 +112,7 @@ public class MatrixController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("rooms/{roomId}/invite")]
@@ -130,7 +129,7 @@ public class MatrixController : ControllerBase
                 $"{homeserver}/_matrix/client/v3/rooms/{Uri.EscapeDataString(roomId)}/invite", content);
             return Ok(new { status = resp.IsSuccessStatusCode ? "invited" : "failed" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("rooms/{roomId}/join")]
@@ -148,7 +147,7 @@ public class MatrixController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("rooms/{roomId}/leave")]
@@ -165,7 +164,7 @@ public class MatrixController : ControllerBase
                 new StringContent("{}", Encoding.UTF8, "application/json"));
             return Ok(new { status = "left" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("rooms/{roomId}/members")]
@@ -181,7 +180,7 @@ public class MatrixController : ControllerBase
                 $"{homeserver}/_matrix/client/v3/rooms/{Uri.EscapeDataString(roomId)}/members");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return Ok(new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return Ok(new { error = ex.Message }); }
     }
 
     // ── Messaging ──────────────────────────────────
@@ -218,7 +217,7 @@ public class MatrixController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("rooms/{roomId}/messages")]
@@ -234,7 +233,7 @@ public class MatrixController : ControllerBase
                 $"{homeserver}/_matrix/client/v3/rooms/{Uri.EscapeDataString(roomId)}/messages?limit={limit}&dir={dir}");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return Ok(new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return Ok(new { error = ex.Message }); }
     }
 
     // ── Event Sync ──────────────────────────────────
@@ -253,7 +252,7 @@ public class MatrixController : ControllerBase
             var resp = await http.GetStringAsync(url);
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return Ok(new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return Ok(new { error = ex.Message }); }
     }
 
     // ── User Lookup ──────────────────────────────────
@@ -273,7 +272,7 @@ public class MatrixController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return Ok(new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MatrixController] operation failed"); return Ok(new { error = ex.Message }); }
     }
 
     // ── Helpers ──────────────────────────────────

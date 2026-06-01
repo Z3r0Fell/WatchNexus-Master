@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -40,7 +42,7 @@ public class BastionController : ControllerBase
             session = new { max_sessions = 5, idle_timeout_minutes = 30, absolute_timeout_hours = 24, remember_me_days = 30 }
         });
         try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); }
-        catch { return Ok(new { }); }
+        catch { Log.Error("[BastionController] operation failed"); return Ok(new { }); }
     }
 
     [HttpPut("config")]
@@ -243,7 +245,7 @@ public class TunnelController : ControllerBase
             bandwidth = new { monitoring_enabled = true, throttle_enabled = false, max_upload_mbps = 0, max_download_mbps = 0 }
         });
         try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); }
-        catch { return Ok(new { }); }
+        catch { Log.Error("[BastionController] operation failed"); return Ok(new { }); }
     }
 
     [HttpPut("config")]
@@ -302,7 +304,7 @@ public class TunnelController : ControllerBase
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             externalIp = (await http.GetStringAsync("https://api.ipify.org")).Trim();
         }
-        catch { }
+        catch { Log.Error("[BastionController] TestConnectivity failed"); }
         sw.Stop();
 
         return Ok(new
@@ -323,7 +325,7 @@ public class TunnelController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tunnel_vpn_peers");
         if (setting?.Value != null)
         {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[BastionController] GetPeers failed"); }
         }
         return Ok(Array.Empty<object>());
     }
@@ -506,7 +508,7 @@ public class FondueController : ControllerBase
             minimum_availability = "released", auto_upgrade = false,
             lists = Array.Empty<object>()
         });
-        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { return Ok(new { }); }
+        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[BastionController] operation failed"); return Ok(new { }); }
     }
 
     [HttpPut("config")]
@@ -589,7 +591,7 @@ public class SourdoughController : ControllerBase
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sourdough_schedule");
         if (setting?.Value == null) return Ok(new { enabled = false, frequency = "daily", time = "03:00", keep_count = 7, include_media = false });
-        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { return Ok(new { }); }
+        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[BastionController] GetSchedule failed"); return Ok(new { }); }
     }
 
     [HttpPut("schedule")]
@@ -709,7 +711,7 @@ public class ChurroController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "churro_clients");
         if (setting?.Value != null)
         {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[BastionController] GetClients failed"); }
         }
         return Ok(new[]
         {
@@ -840,7 +842,7 @@ public class PantryController : ControllerBase
             }).ToList();
             return Ok(drives);
         }
-        catch { return Ok(Array.Empty<object>()); }
+        catch { Log.Error("[BastionController] operation failed"); return Ok(Array.Empty<object>()); }
     }
 
     [HttpGet("root-folders")]
@@ -860,7 +862,7 @@ public class PantryController : ControllerBase
     public async Task<IActionResult> PathMappings()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "pantry_path_mappings");
-        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { } }
+        if (setting?.Value != null) { try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[BastionController] PathMappings failed"); } }
         return Ok(Array.Empty<object>());
     }
 
@@ -904,7 +906,7 @@ public class NutmegController : ControllerBase
         if (string.IsNullOrEmpty(tmdbKey))
         {
             var ts = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
-            if (ts != null) { try { var d = JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { } }
+            if (ts != null) { try { var d = JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { Log.Error("[BastionController] GetRecommendations failed"); } }
         }
         if (string.IsNullOrEmpty(tmdbKey)) return Ok(new { recommendations = Array.Empty<object>(), source = "none", reason = "Configure TMDB API key for recommendations" });
 
@@ -930,7 +932,7 @@ public class NutmegController : ControllerBase
             }
             return Ok(new { recommendations = recs, source = "tmdb_trending", generated = DateTime.UtcNow });
         }
-        catch { return Ok(new { recommendations = Array.Empty<object>(), source = "error" }); }
+        catch { Log.Error("[BastionController] operation failed"); return Ok(new { recommendations = Array.Empty<object>(), source = "error" }); }
     }
 
     [HttpGet("similar/{mediaType}/{tmdbId}")]
@@ -940,7 +942,7 @@ public class NutmegController : ControllerBase
         if (string.IsNullOrEmpty(tmdbKey))
         {
             var ts = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
-            if (ts != null) { try { var d = JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { } }
+            if (ts != null) { try { var d = JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { Log.Error("[BastionController] Similar failed"); } }
         }
         if (string.IsNullOrEmpty(tmdbKey)) return Ok(Array.Empty<object>());
 
@@ -951,7 +953,7 @@ public class NutmegController : ControllerBase
             var resp = await client.GetStringAsync($"https://api.themoviedb.org/3/{type}/{tmdbId}/similar?api_key={tmdbKey}");
             return Content(resp, "application/json");
         }
-        catch { return Ok(Array.Empty<object>()); }
+        catch { Log.Error("[BastionController] operation failed"); return Ok(Array.Empty<object>()); }
     }
 
     [HttpGet("config")]
@@ -959,7 +961,7 @@ public class NutmegController : ControllerBase
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "nutmeg_config");
         if (setting?.Value == null) return Ok(new { enabled = true, include_trending = true, include_similar = true, include_genre_mix = true, refresh_interval_hours = 24 });
-        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { return Ok(new { }); }
+        try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[BastionController] GetConfig failed"); return Ok(new { }); }
     }
 
     [HttpPut("config")]

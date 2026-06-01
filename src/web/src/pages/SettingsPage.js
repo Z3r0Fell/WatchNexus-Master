@@ -202,7 +202,7 @@ export const SettingsPage = () => {
     try {
       const settingsRes = await settingsApi.get().catch(() => ({ data: settings }));
       setSettings(settingsRes.data || settings);
-    } catch {}
+    } catch { console.error('[SettingsPage] Failed to fetch settings'); }
   }, []);
 
   const handleSaveSettings = async () => {

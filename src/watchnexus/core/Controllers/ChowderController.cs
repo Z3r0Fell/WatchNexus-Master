@@ -6,6 +6,8 @@ using System.Net.Http.Headers;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -53,7 +55,7 @@ public class ChowderController : ControllerBase
                     library_count = d.TryGetProperty("library_count", out var lc) ? lc.GetInt32() : 0,
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[ChowderController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(new { servers, total = servers.Count });
     }
@@ -82,10 +84,7 @@ public class ChowderController : ControllerBase
             if (!resp.IsSuccessStatusCode)
                 return BadRequest(new { success = false, message = $"Cannot connect to {url} (HTTP {(int)resp.StatusCode})" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { success = false, message = $"Connection failed: {ex.Message}" });
-        }
+        catch (Exception ex) { Log.Error(ex, "[ChowderController] operation failed"); return BadRequest(new { success = false, message = $"Connection failed: {ex.Message}" }); }
 
         var id = Guid.NewGuid().ToString("N")[..8];
         var data = JsonSerializer.Serialize(new { name, url, api_key = apiKey, type = serverType, workers, status = "connected", added_at = DateTime.UtcNow.ToString("o"), library_count = 0 });
@@ -130,7 +129,7 @@ public class ChowderController : ControllerBase
                 os = info.TryGetProperty("OperatingSystem", out var os) ? os.GetString() : null,
             });
         }
-        catch (Exception ex) { return Ok(new { success = false, error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ChowderController] operation failed"); return Ok(new { success = false, error = ex.Message }); }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -170,7 +169,7 @@ public class ChowderController : ControllerBase
             }
             return Ok(new { libraries = results, user_id = userId });
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ChowderController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     [HttpGet("servers/{serverId}/browse/{libraryId}")]
@@ -241,7 +240,7 @@ public class ChowderController : ControllerBase
             var totalCount = data.TryGetProperty("TotalRecordCount", out var trc) ? trc.GetInt32() : items.Count;
             return Ok(new { items, total = totalCount, start, limit });
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ChowderController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -276,7 +275,7 @@ public class ChowderController : ControllerBase
                     retry_count = d.TryGetProperty("retry_count", out var rc) ? rc.GetInt32() : 0,
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[ChowderController] operation failed"); return null; }
         }).Where(x => x != null).Cast<dynamic>().ToList();
 
         return Ok(new
@@ -408,7 +407,7 @@ public class ChowderController : ControllerBase
                     items_synced = d.TryGetProperty("items_synced", out var isy) ? isy.GetInt32() : 0,
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[ChowderController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(new { mappings = maps, total = maps.Count });
     }
@@ -464,7 +463,7 @@ public class ChowderController : ControllerBase
                     resolution = d.TryGetProperty("resolution", out var r) ? r.GetString() : "",
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[ChowderController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(new { history = items, total = items.Count });
     }
@@ -482,7 +481,7 @@ public class ChowderController : ControllerBase
         var allHist = await _db.Settings.Where(s => s.Key.StartsWith("chowder_hist:")).ToListAsync();
         foreach (var h in allHist)
         {
-            try { var d = JsonDocument.Parse(h.Value ?? "{}").RootElement; totalBytes += d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0; } catch { }
+            try { var d = JsonDocument.Parse(h.Value ?? "{}").RootElement; totalBytes += d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0; } catch { Log.Error("[ChowderController] Calculate total downloaded from history"); }
         }
 
         return Ok(new

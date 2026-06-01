@@ -99,10 +99,7 @@ const VideoPlayer = () => {
   // Fetch skip segments (intro, credits, etc.)
   const fetchSkipSegments = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`);
       if (res.data && res.data.segments) {
         setSkipSegments(res.data.segments);
       }
@@ -115,10 +112,7 @@ const VideoPlayer = () => {
   // Fetch next episode in series
   const fetchNextEpisode = async (currentMedia) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`);
       if (res.data) {
         setNextEpisode(res.data);
       }
@@ -228,8 +222,6 @@ const VideoPlayer = () => {
       
       setSearchingSubtitles(true);
       try {
-        const token = localStorage.getItem('token');
-        
         // Determine if TV or movie
         const isTV = media.type === 'tv' || media.series_name;
         const endpoint = isTV ? '/api/subtitles/search/tv' : '/api/subtitles/search/movie';
@@ -243,10 +235,7 @@ const VideoPlayer = () => {
           year: media.year,
         };
         
-        const res = await axios.get(`${API_URL}${endpoint}`, {
-          params,
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await axios.get(`${API_URL}${endpoint}`, { params });
         
         if (res.data && res.data.length > 0) {
           setAvailableSubtitles(res.data);
@@ -264,14 +253,10 @@ const VideoPlayer = () => {
   // Load subtitle track
   const loadSubtitle = async (subtitle) => {
     try {
-      const token = localStorage.getItem('token');
-      
       // Download subtitle
       const res = await axios.post(`${API_URL}/api/subtitles/download`, {
         download_url: subtitle.download_url,
         media_id: mediaId,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       if (res.data.file_path) {
