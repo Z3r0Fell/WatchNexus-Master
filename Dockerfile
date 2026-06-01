@@ -30,11 +30,15 @@ COPY src/watchnexus/shared/ src/watchnexus/shared/
 
 # Copy core code (everything except controllers — we'll selectively copy those)
 COPY src/watchnexus/core/Program.cs src/watchnexus/core/
+COPY src/watchnexus/core/Log.cs src/watchnexus/core/
+COPY src/watchnexus/core/ModuleLoader.cs src/watchnexus/core/
+COPY src/watchnexus/core/Fortress.cs src/watchnexus/core/
 COPY src/watchnexus/core/appsettings.json src/watchnexus/core/
 COPY src/watchnexus/core/Data/ src/watchnexus/core/Data/
-COPY src/watchnexus/core/Models/ src/watchnexus/core/Models/
 COPY src/watchnexus/core/Auth/ src/watchnexus/core/Auth/
-COPY src/watchnexus/core/WatchNexus.Core.csproj src/watchnexus/core/
+COPY src/watchnexus/core/Services/ src/watchnexus/core/Services/
+COPY src/watchnexus/core/Middleware/ src/watchnexus/core/Middleware/
+COPY src/watchnexus/core/Settings/ src/watchnexus/core/Settings/
 
 # ── Tier-Based Controller Selection ─────────────────────────────────
 # Standard controllers (always included)
@@ -50,12 +54,16 @@ COPY src/watchnexus/core/Controllers/PodcastsController.cs src/watchnexus/core/C
 COPY src/watchnexus/core/Controllers/RadioController.cs src/watchnexus/core/Controllers/
 COPY src/watchnexus/core/Controllers/PhotosController.cs src/watchnexus/core/Controllers/
 COPY src/watchnexus/core/Controllers/WebVideoController.cs src/watchnexus/core/Controllers/
+COPY src/watchnexus/core/Controllers/SpotdlController.cs src/watchnexus/core/Controllers/
+COPY src/watchnexus/core/Controllers/UpdateController.cs src/watchnexus/core/Controllers/
+COPY src/watchnexus/core/Controllers/GadgetsCatalogueController.cs src/watchnexus/core/Controllers/
 COPY src/watchnexus/core/Controllers/CellarController.cs src/watchnexus/core/Controllers/
+COPY src/watchnexus/core/Controllers/FortressController.cs src/watchnexus/core/Controllers/
 COPY src/watchnexus/core/Controllers/Helpers.cs src/watchnexus/core/Controllers/
 
 # Use a script to conditionally copy Pro/Ultra controllers
 COPY build/copy-tier-controllers.sh /tmp/
-RUN chmod +x /tmp/copy-tier-controllers.sh && /tmp/copy-tier-controllers.sh ${TIER}
+RUN chmod +x /tmp/copy-tier-controllers.sh && /tmp/copy-tier-controllers.sh ${TIER} && rm -rf /build/src/watchnexus/core/Controllers_all
 
 # Publish
 ENV SkipFrontendBuild=true
