@@ -7,6 +7,8 @@ using WatchNexus.Core;
 using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Core.Controllers;
+using WatchNexus.Core.Services;
+using Microsoft.Extensions.Caching.Memory;
 
 // ══════════════════════════════════════════════════════════════════════
 //  Crash-safe boot logger
@@ -190,6 +192,8 @@ builder.Services.AddScoped<AuthService>();
 
 // ── Services ──────────────────────────────────────────────────
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ITierResolver, TierResolver>();
 builder.Services.AddControllers(options =>
 {
     // ── FORTRESS PROTOCOL: API-level tier enforcement ──

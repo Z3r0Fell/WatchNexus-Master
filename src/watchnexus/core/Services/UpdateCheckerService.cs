@@ -71,18 +71,9 @@ public class UpdateCheckerService : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var httpFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
-        // Get current tier from license
-        var setting = await db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "", ct);
-        var tier = "standard";
-        if (setting?.Value != null)
-        {
-            try
-            {
-                var doc = JsonDocument.Parse(setting.Value).RootElement;
-                tier = doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
-            }
-            catch { Log.Error("[UpdateCheckerService] Get current tier from license"); }
-        }
+        // Get current tier from TierResolver (env var → DB → standard)
+        var tierResolver = scope.ServiceProvider.GetRequiredService<ITierResolver>();
+        var tier = await tierResolver.GetCurrentTier();
 
         var lsUrl = _config["LICENSE_SERVER_URL"] ?? "";
         if (string.IsNullOrEmpty(lsUrl)) return;

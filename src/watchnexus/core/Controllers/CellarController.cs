@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Security.Cryptography;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Services;
 using WatchNexus.Shared;
 
 using static WatchNexus.Core.Log;
@@ -23,11 +24,13 @@ public class CellarController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpFactory;
     private readonly IConfiguration _config;
-    public CellarController(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config)
+    private readonly ITierResolver _tierResolver;
+    public CellarController(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config, ITierResolver tierResolver)
     {
         _db = db;
         _httpFactory = httpFactory;
         _config = config;
+        _tierResolver = tierResolver;
     }
 
     // ── Tier Module Definitions ─────────────────────────────────────
@@ -373,17 +376,7 @@ public class CellarController : ControllerBase
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
-    private async Task<string> GetCurrentTier()
-    {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
-        if (setting?.Value == null) return "standard";
-        try
-        {
-            var doc = JsonDocument.Parse(setting.Value).RootElement;
-            return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
-        }
-        catch { Log.Error("[CellarController] GetCurrentTier failed"); return "standard"; }
-    }
+    private async Task<string> GetCurrentTier() => await _tierResolver.GetCurrentTier();
 
     private static bool IsValidUpgrade(string current, string target)
     {

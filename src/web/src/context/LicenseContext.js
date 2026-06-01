@@ -32,6 +32,7 @@ export const ROUTE_MODULE_MAP = {
   '/radio': 'nectar',
   '/photos': 'ganache',
   '/webvideo': 'bisque',
+  '/spotdl': 'bisque',
   '/analytics': 'truffle',
   '/notifications': 'pepper',
   '/requests': 'meringue',
@@ -64,7 +65,7 @@ export const ROUTE_MODULE_MAP = {
   '/cloud-sync': 'marshmallow',
   '/media-sync': 'chowder',
   '/themes': 'milk',
-  '/dvr': 'iptv',
+  '/party': 'watch-party',
 };
 
 // Module → required tier

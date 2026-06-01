@@ -26,7 +26,7 @@ const LibraryPage = lazy(() => import("./pages/LibraryPage"));
 const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage"));
 const PluginMarketplacePage = lazy(() => import("./pages/PluginMarketplacePage"));
 const ThemeCommunityPage = lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage })));
-const DVRPage = lazy(() => import("./pages/DVRPage").then(m => ({ default: m.DVRPage })));
+
 const PlaylistsPage = lazy(() => import("./pages/PlaylistsPage"));
 const AnimePage = lazy(() => import("./pages/AnimePage"));
 import VideoPlayer from "./components/VideoPlayer";
@@ -276,14 +276,7 @@ function AppRouter() {
         }
       />
       <Route path="/live" element={<TierRoute path="/live"><LiveTVPage /></TierRoute>} />
-      <Route
-        path="/party/:partyCode"
-        element={
-          <ProtectedRoute>
-            <WatchPartyPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/party/:partyCode" element={<TierRoute path="/party"><WatchPartyPage /></TierRoute>} />
       <Route
         path="/plugins"
         element={
@@ -301,14 +294,6 @@ function AppRouter() {
         }
       />
       <Route
-        path="/dvr"
-        element={
-          <ProtectedRoute>
-            <DVRPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/playlists"
         element={
           <ProtectedRoute>
@@ -316,14 +301,7 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/history"
-        element={
-          <ProtectedRoute>
-            <WatchHistoryPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/history" element={<TierRoute path="/history"><WatchHistoryPage /></TierRoute>} />
       <Route
         path="/watchlist"
         element={
@@ -332,14 +310,7 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/discover"
-        element={
-          <ProtectedRoute>
-            <DiscoverPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/discover" element={<TierRoute path="/discover"><DiscoverPage /></TierRoute>} />
 
       {/* Gadget Pages */}
       <Route
