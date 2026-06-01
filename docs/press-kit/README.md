@@ -6,7 +6,7 @@
 
 **Current Version:** 1.0.0  
 **Platform:** Self-hosted (Linux, Windows, macOS, Docker)  
-**License:** Proprietary  
+**License:** MIT  
 **Website:** [watchnexus.local](http://watchnexus.local)
 
 ---

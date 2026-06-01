@@ -10,14 +10,14 @@
 <h1 align="center">WatchNexus</h1>
 
 <p align="center">
-  <strong>Release To Public — v1.0.0</strong><br>
-  A unified, self-hosted media server with tier-locked module licensing.
+  <strong>v1.0.0</strong><br>
+  A unified, open-source, self-hosted media server with tier-locked module licensing.
 </p>
 
 <p align="center">
   <a href="https://watchnexus.ca">Website</a> ·
   <a href="https://docs.watchnexus.ca">Documentation</a> ·
-  <a href="https://licenses.watchnexus.ca">License Portal</a> ·
+  <a href="https://github.com/Z3r0Fell/WatchNexus-Master">GitHub</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
@@ -31,6 +31,11 @@ gaming, ebook/audiobook management, live-TV DVR, hardware transcoding,
 and cloud sync into **one cohesive product**. It is licensed in three
 tiers — **Standard**, **Pro**, **Ultra** — with physical, tier-specific
 installers so a Standard install never ships Pro/Ultra binaries.
+
+Every component of WatchNexus is derived from open-source materials and
+built on a foundation of free and open-source software. The project source
+code is available on [GitHub](https://github.com/Z3r0Fell/WatchNexus-Master)
+under the MIT license (see [`LICENSE`](LICENSE)).
 
 ## Tier overview
 
@@ -74,9 +79,9 @@ on the first-launch screen.
 
 | Platform | Command |
 |---|---|
-| Linux (systemd) | `sudo systemctl {start\|stop\|status\|restart} watchnexus` |
-| Windows         | `services.msc` &rarr; `WatchNexusCore` |
-| Docker          | `docker {start\|stop\|restart} watchnexus` |
+| Linux (systemd) | `sudo systemctl {start|stop|status|restart} watchnexus` |
+| Windows         | `services.msc` → `WatchNexusCore` |
+| Docker          | `docker {start|stop|restart} watchnexus` |
 
 Logs:
 
@@ -109,30 +114,48 @@ The Fortress integrity manifest is re-validated after every upgrade.
 
 ## Building from source
 
-If you have access to the source tree, see
-[`docs/INSTALLBUILDER-STEPS.md`](docs/INSTALLBUILDER-STEPS.md) for the
-canonical step-by-step build procedure (Arch laptop &rarr; tier
-staging &rarr; InstallBuilder 26 &rarr; signing &rarr; upload).
+```bash
+git clone https://github.com/Z3r0Fell/WatchNexus-Master.git
+cd WatchNexus-Master
 
-The full reference manual is [`docs/installbuilder.md`](docs/installbuilder.md).
+# Build backend
+dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
+  -c Release -r linux-x64 --self-contained true \
+  -p:SkipFrontendBuild=true
+
+# Build frontend
+cd src/web && yarn build && cd ../..
+
+# Docker
+docker build --build-arg TIER=standard -t watchnexus:1.0.0-standard .
+```
+
+See [`build/build-installers.fish`](build/build-installers.fish) for the
+full installer pipeline (fpm + NSIS + signing).
+
+## Contributing
+
+WatchNexus is open source under the MIT license. Contributions, issues,
+and feature requests are welcome on
+[GitHub](https://github.com/Z3r0Fell/WatchNexus-Master).
 
 ## Support
 
 | Channel | URL |
 |---|---|
 | Documentation | <https://docs.watchnexus.ca> |
-| Issue tracker | <https://github.com/watchnexus/watchnexus/issues> |
-| Email support | <support@watchnexus.ca> |
-| License sales | <https://watchnexus.ca/pricing> |
+| Issue tracker | <https://github.com/Z3r0Fell/WatchNexus-Master/issues> |
+| Community | <https://github.com/Z3r0Fell/WatchNexus-Master/discussions> |
 
 ## License
 
-WatchNexus is proprietary software licensed per-tier. See
-[`LICENSE.txt`](LICENSE.txt) or [`LICENSE.html`](LICENSE.html) for the
-full End User License Agreement.
+WatchNexus is open-source software released under the MIT license. See
+[`LICENSE`](LICENSE) for the full text.
 
-Third-party component notices: <https://watchnexus.ca/legal/notices>.
+All components are derived from open-source materials. Third-party
+notices are available at
+<https://watchnexus.ca/legal/notices>.
 
 ---
 
-<p align="center"><sub>WatchNexus &middot; v1.0.0 (RTP) &middot; Built with care for self-hosters.</sub></p>
+<p align="center"><sub>WatchNexus &middot; v1.0.0 &middot; Built with open-source software.</sub></p>
