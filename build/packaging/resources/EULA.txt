@@ -1,14 +1,10 @@
-WATCHNEXUS — OPEN SOURCE SOFTWARE NOTICE
+WATCHNEXUS — LICENSE NOTICE
 Version 1.0.0
 Copyright (c) 2026 WatchNexus Media Systems
 
-WatchNexus is open-source software released under the MIT License.
-All components are derived from open-source materials.
+SOURCE CODE: MIT License — free to read, fork, modify, compile.
+BINARY INSTALLERS: Tier-licensed (Standard / Pro / Ultra).
+All components derived from open-source materials.
 
-Source code: https://github.com/Z3r0Fell/WatchNexus-Master
-
-You are free to use, modify, and distribute this software in
-accordance with the terms of the MIT License. The full license
-text is included in the LICENSE file distributed with this software.
-
-Third-party notices: https://watchnexus.ca/legal/notices
+https://github.com/Z3r0Fell/WatchNexus-Master
+https://watchnexus.ca/legal/notices

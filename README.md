@@ -11,7 +11,7 @@
 
 <p align="center">
   <strong>v1.0.0</strong><br>
-  A unified, open-source, self-hosted media server with tier-locked module licensing.
+  A unified, self-hosted media server with tier-locked module licensing.
 </p>
 
 <p align="center">
@@ -33,9 +33,10 @@ tiers — **Standard**, **Pro**, **Ultra** — with physical, tier-specific
 installers so a Standard install never ships Pro/Ultra binaries.
 
 Every component of WatchNexus is derived from open-source materials and
-built on a foundation of free and open-source software. The project source
-code is available on [GitHub](https://github.com/Z3r0Fell/WatchNexus-Master)
-under the MIT license (see [`LICENSE`](LICENSE)).
+built entirely on free and open-source software. The project source code is
+available on [GitHub](https://github.com/Z3r0Fell/WatchNexus-Master) under
+the MIT license (see [`LICENSE`](LICENSE)). Pre-built binary installers and
+official Docker images are tier-licensed (Standard / Pro / Ultra).
 
 ## Tier overview
 
@@ -135,9 +136,8 @@ full installer pipeline (fpm + NSIS + signing).
 
 ## Contributing
 
-WatchNexus is open source under the MIT license. Contributions, issues,
-and feature requests are welcome on
-[GitHub](https://github.com/Z3r0Fell/WatchNexus-Master).
+The core source code is MIT licensed. Contributions, issues, and feature
+requests are welcome on [GitHub](https://github.com/Z3r0Fell/WatchNexus-Master).
 
 ## Support
 
@@ -149,13 +149,14 @@ and feature requests are welcome on
 
 ## License
 
-WatchNexus is open-source software released under the MIT license. See
-[`LICENSE`](LICENSE) for the full text.
+The WatchNexus **source code** is released under the MIT license (see
+[`LICENSE`](LICENSE)). Pre-built binaries, official Docker images, and
+installer packages are tier-licensed — Standard, Pro, and Ultra tiers
+require a paid license key at runtime.
 
 All components are derived from open-source materials. Third-party
-notices are available at
-<https://watchnexus.ca/legal/notices>.
+notices are available at <https://watchnexus.ca/legal/notices>.
 
 ---
 
-<p align="center"><sub>WatchNexus &middot; v1.0.0 &middot; Built with open-source software.</sub></p>
+<p align="center"><sub>WatchNexus &middot; v1.0.0 &middot; Built with open-source components.</sub></p>

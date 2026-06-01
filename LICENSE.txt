@@ -1,19 +1,32 @@
-WatchNexus — Open Source License Notice
+WatchNexus — License Notice
 Version 1.0.0
 Copyright (c) 2026 WatchNexus Media Systems
 
-This software is open source, released under the MIT License.
-See the LICENSE file in the project root for the full license text.
+SOURCE CODE LICENSE
+The WatchNexus source code is released under the MIT License. See the
+LICENSE file in the project root for the full MIT license text.
 
-All components of WatchNexus are derived from open-source materials.
-The project is built entirely on free and open-source software.
+You are free to read, fork, modify, and compile the source. All
+components of WatchNexus are derived from open-source materials and
+built entirely on free and open-source software.
 
 Source code: https://github.com/Z3r0Fell/WatchNexus-Master
 
-Third-party component notices, including licenses for all bundled
-open-source dependencies, are available at:
-  https://watchnexus.ca/legal/notices
+BINARY INSTALLER LICENSE
+Pre-built binary installers, official Docker images, and packaged
+releases are tier-licensed. Use of the Standard, Pro, or Ultra tiers
+requires a valid license key obtained from https://watchnexus.ca.
 
+Tier enforcement is performed at compile time (Docker multi-stage build
+selects which controllers are included) and at runtime (Fortress
+integrity verification + license server validation). Circumventing
+tier enforcement is prohibited.
+
+THIRD-PARTY COMPONENTS
+This software incorporates open-source components under their respective
+licenses. Notices are available at https://watchnexus.ca/legal/notices.
+
+DISCLAIMER
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND

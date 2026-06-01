@@ -29,7 +29,7 @@ set -g FPM_HOOKS_DIR "$SCRIPT_DIR/packaging/fpm"
 set -g VERSION "1.0.0"
 set -g VENDOR "WatchNexus Media Systems"
 set -g URL "https://watchnexus.ca"
-set -g LICENSE "MIT"
+set -g LICENSE "Tier-Licensed — source code is MIT"
 set -g MAINTAINER "Auz Larocque <support@watchnexus.ca>"
 
 # ── Parse args ──────────────────────────────────────────────────────

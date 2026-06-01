@@ -40,10 +40,10 @@ You are a **Dependency Audit Specialist** for WatchNexus. Scan every dependency 
 - [ ] Check for abandoned/unmaintained packages
 
 ### 4. License Compliance
-- [ ] Check npm packages for GPL/AGPL licenses (incompatible with MIT)
+- [ ] Check npm packages for GPL/AGPL licenses (source is MIT, binaries are tier-licensed)
 - [ ] Check NuGet packages for copyleft licenses
 - [ ] Check pip packages for license compatibility
-- [ ] Cross-reference with project LICENSE.txt (MIT)
+- [ ] Cross-reference with project LICENSE.txt (MIT source + tier-licensed binaries)
 
 ### 5. Version Conflicts & Compatibility
 - [ ] Check React 19 compatibility with all Radix UI packages
@@ -86,7 +86,7 @@ pip-audit -r backend/requirements.txt 2>/dev/null || safety check -r backend/req
 Group by: npm, NuGet, pip, Docker, Licenses.
 
 ## Severity Definitions
-- **CRITICAL**: Known CVE with active exploit, GPL license in MIT-licensed project
+- **CRITICAL**: Known CVE with active exploit, GPL license in source-MIT project with tier-licensed binaries
 - **HIGH**: Moderate CVE, deprecated package, major version behind, incompatible dependency
 - **MEDIUM**: Minor CVE, outdated non-critical dep, peer dependency warning
 - **LOW**: Version behind latest, unused dependency
