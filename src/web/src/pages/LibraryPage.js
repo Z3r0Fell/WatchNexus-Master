@@ -62,6 +62,7 @@ export const LibraryPage = () => {
       setRecentMedia(recentRes.data);
     } catch (error) {
       console.error('Failed to fetch library data:', error);
+        toast.error('Failed to fetch library data:');
     } finally {
       setLoading(false);
     }
@@ -73,6 +74,7 @@ export const LibraryPage = () => {
       setMedia(res.data);
     } catch (error) {
       console.error('Failed to fetch media:', error);
+        toast.error('Failed to fetch media:');
     }
   }, []);
 
@@ -82,6 +84,7 @@ export const LibraryPage = () => {
       setTvSeries(res.data || []);
     } catch (error) {
       console.error('Failed to fetch TV series:', error);
+        toast.error('Failed to fetch TV series:');
     }
   }, []);
 

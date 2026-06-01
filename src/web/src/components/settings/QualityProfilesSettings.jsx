@@ -132,6 +132,7 @@ export const QualityProfilesSettings = () => {
       setProfiles(parsed);
     } catch (err) {
       console.error('Failed to fetch profiles:', err);
+        toast.error('Failed to fetch profiles:');
       setProfiles([]);
     } finally {
       setLoading(false);

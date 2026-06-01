@@ -44,6 +44,7 @@ export const AnalyticsPage = () => {
       setRecent(recentRes.data);
     } catch (e) {
       console.error('Analytics fetch error:', e);
+        toast.error('Analytics fetch error:');
     } finally {
       setLoading(false);
     }

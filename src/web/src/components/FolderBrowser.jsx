@@ -14,6 +14,7 @@ import { ScrollArea } from './ui/scroll-area';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { toast } from 'sonner';
 
 // OS-specific icons and colors
 const OS_CONFIG = {
@@ -104,6 +105,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
       
     } catch (err) {
       console.error('FolderBrowser fetch error:', err);
+        toast.error('FolderBrowser fetch error:');
       const errorMsg = err.response?.data?.detail || 'Failed to browse filesystem';
       setError(errorMsg);
       setItems([]);

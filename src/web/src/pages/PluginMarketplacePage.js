@@ -134,6 +134,7 @@ export const PluginMarketplacePage = () => {
       setCatalogueItems(res.data.items || []);
     } catch (err) {
       console.error('Failed to fetch catalogue:', err);
+        toast.error('Failed to fetch catalogue:');
     } finally {
       setLoadingCatalogue(false);
     }
@@ -145,6 +146,7 @@ export const PluginMarketplacePage = () => {
       setCatalogueCategories(res.data || {});
     } catch (err) {
       console.error('Failed to fetch catalogue categories:', err);
+        toast.error('Failed to fetch catalogue categories:');
     }
   }, []);
 
@@ -155,6 +157,7 @@ export const PluginMarketplacePage = () => {
       setKodiCategories(res.data.categories || {});
     } catch (err) {
       console.error('Failed to fetch Kodi categories:', err);
+        toast.error('Failed to fetch Kodi categories:');
     }
   }, []);
 
@@ -166,6 +169,7 @@ export const PluginMarketplacePage = () => {
       setPopularAddons(res.data.addons || []);
     } catch (err) {
       console.error('Failed to fetch popular addons:', err);
+        toast.error('Failed to fetch popular addons:');
     } finally {
       setLoadingKodi(false);
     }
@@ -183,6 +187,7 @@ export const PluginMarketplacePage = () => {
       setKodiAddons(res.data.addons || []);
     } catch (err) {
       console.error('Failed to fetch Kodi addons:', err);
+        toast.error('Failed to fetch Kodi addons:');
       toast.error('Failed to fetch addons');
     } finally {
       setLoadingKodi(false);
@@ -197,6 +202,7 @@ export const PluginMarketplacePage = () => {
       setInstalledPlugins(res.data || []);
     } catch (err) {
       console.error('Failed to fetch installed plugins:', err);
+        toast.error('Failed to fetch installed plugins:');
     } finally {
       setLoadingPlugins(false);
     }
@@ -274,6 +280,7 @@ export const PluginMarketplacePage = () => {
       setShowImportModal(false);
     } catch (err) {
       console.error('Import failed:', err);
+        toast.error('Import failed:');
       toast.error(err.response?.data?.detail || 'Failed to import plugin');
     } finally {
       setImporting(false);
@@ -305,6 +312,7 @@ export const PluginMarketplacePage = () => {
       setImportUrl('');
     } catch (err) {
       console.error('Import failed:', err);
+        toast.error('Import failed:');
       toast.error(err.response?.data?.detail || 'Failed to import plugin from URL');
     } finally {
       setImporting(false);

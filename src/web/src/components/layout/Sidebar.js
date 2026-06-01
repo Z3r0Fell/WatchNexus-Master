@@ -63,6 +63,7 @@ const ICON_MAP = {
   BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive, HelpCircle,
   Activity, Timer, Archive, Rss, Clapperboard,
 };
+import { toast } from 'sonner';
 
 // Media navigation items
 const mediaNavItems = [
@@ -142,6 +143,7 @@ const getVisibleTabs = () => {
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error('Error loading visible tabs:', e);
+      toast.error('Error loading visible tabs:');
   }
   return defaultVisibleTabs;
 };

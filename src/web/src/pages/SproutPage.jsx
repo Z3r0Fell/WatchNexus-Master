@@ -48,6 +48,7 @@ export const SproutPage = () => {
       setConfig(configRes.data);
     } catch (e) {
       console.error('Sprout fetch error:', e);
+        toast.error('Sprout fetch error:');
     } finally {
       setLoading(false);
     }

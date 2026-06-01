@@ -61,6 +61,7 @@ export const SaffronPage = () => {
       setHistoryItems(historyRes.data || []);
     } catch (e) {
       console.error('Saffron fetch error:', e);
+        toast.error('Saffron fetch error:');
     } finally {
       setLoading(false);
     }

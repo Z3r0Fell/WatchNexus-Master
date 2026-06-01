@@ -78,6 +78,7 @@ export const StrudelPage = () => {
       setConfig(configRes.data);
     } catch (e) {
       console.error('Strudel fetch error:', e);
+        toast.error('Strudel fetch error:');
     } finally {
       setLoading(false);
     }
@@ -93,7 +94,7 @@ export const StrudelPage = () => {
       try {
         const res = await axios.get(`${API}/api/strudel/jobs`, { headers: headers() });
         setJobs(res.data?.jobs || []);
-      } catch { console.error('[StrudelPage] Poll jobs failed'); }
+      } catch { console.error('[StrudelPage] Poll jobs failed'); toast.error('[StrudelPage] Poll jobs failed');; }
     }, 5000);
     return () => clearInterval(interval);
   }, [jobs, headers]);
@@ -126,7 +127,7 @@ export const StrudelPage = () => {
               toast.error(scanRes.data?.Error || 'No titles found');
             }
           }
-        } catch { console.error('[StrudelPage] Poll scan results failed'); }
+        } catch { console.error('[StrudelPage] Poll scan results failed'); toast.error('[StrudelPage] Poll scan results failed');; }
       }, 2000);
     } catch (e) {
       setScanning(false);

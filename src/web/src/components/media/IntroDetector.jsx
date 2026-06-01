@@ -52,6 +52,7 @@ export const IntroDetector = ({ seriesName, onDetectionComplete }) => {
             }
           } catch (e) {
             console.error('Failed to check status:', e);
+              toast.error('Failed to check status:');
           }
         }, 10000); // Check after 10 seconds
         
@@ -61,6 +62,7 @@ export const IntroDetector = ({ seriesName, onDetectionComplete }) => {
       }
     } catch (err) {
       console.error('Intro detection error:', err);
+        toast.error('Intro detection error:');
       toast.error(err.response?.data?.detail || 'Failed to detect intros');
       setStatus('error');
     } finally {

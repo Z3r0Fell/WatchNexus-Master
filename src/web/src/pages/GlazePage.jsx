@@ -48,6 +48,7 @@ export const GlazePage = () => {
       setHistory(historyRes.data || []);
     } catch (e) {
       console.error('Glaze fetch error:', e);
+        toast.error('Glaze fetch error:');
     } finally {
       setLoading(false);
     }

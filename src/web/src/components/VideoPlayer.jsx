@@ -85,6 +85,7 @@ const VideoPlayer = () => {
         }
       } catch (err) {
         console.error('Failed to load media:', err);
+          toast.error('Failed to load media:');
         setError('Failed to load media');
       } finally {
         setLoading(false);
@@ -242,6 +243,7 @@ const VideoPlayer = () => {
         }
       } catch (err) {
         console.error('Failed to search subtitles:', err);
+          toast.error('Failed to search subtitles:');
       } finally {
         setSearchingSubtitles(false);
       }
@@ -268,7 +270,7 @@ const VideoPlayer = () => {
       }
     } catch (err) {
       console.error('Failed to load subtitle:', err);
-      toast.error('Failed to load subtitle');
+      toast.error('Failed to load subtitle:');
     }
   };
 
@@ -278,7 +280,7 @@ const VideoPlayer = () => {
       progressInterval.current = setInterval(() => {
         if (videoRef.current) {
           marmaladeProgress.updateProgress(mediaId, videoRef.current.currentTime)
-            .catch(err => console.error('Failed to update progress:', err));
+            .catch(err => { console.error('Failed to update progress:', err); toast.error('Failed to update progress:'); });
         }
       }, 10000);
     }
@@ -326,7 +328,7 @@ const VideoPlayer = () => {
     setPlaying(false);
     marmaladeProgress.markWatched(mediaId, true)
       .then(() => toast.success('Marked as watched'))
-      .catch(err => console.error('Failed to mark watched:', err));
+      .catch(err => { console.error('Failed to mark watched:', err); toast.error('Failed to mark watched:'); });
   };
 
   const handleWaiting = () => setBuffering(true);

@@ -37,7 +37,7 @@ export const DownloadSettings = () => {
   }, []);
 
   const fetchEngineSettings = useCallback(async () => {
-    try { const res = await torrentEngineApi.getSettings(); setEngineSettings(prev => ({ ...prev, ...res.data })); } catch { console.error('[DownloadSettings] Failed to fetch engine settings'); }
+    try { const res = await torrentEngineApi.getSettings(); setEngineSettings(prev => ({ ...prev, ...res.data })); } catch { console.error('[DownloadSettings] Failed to fetch engine settings'); toast.error('[DownloadSettings] Failed to fetch engine settings');; }
   }, []);
 
   useEffect(() => {
@@ -74,6 +74,7 @@ export const DownloadSettings = () => {
       localStorage.setItem('watchnexus_download_mode', mode);
     } catch (error) {
       console.error('Failed to save download mode:', error);
+        toast.error('Failed to save download mode:');
     }
   };
 

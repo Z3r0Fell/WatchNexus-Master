@@ -37,6 +37,7 @@ export const IPTVSettings = () => {
       setIptvSources(response.data.sources || []);
     } catch (error) {
       console.error('Failed to fetch IPTV sources:', error);
+        toast.error('Failed to fetch IPTV sources:');
       toast.error('Failed to load IPTV sources');
     } finally {
       setLoading(false);
@@ -70,6 +71,7 @@ export const IPTVSettings = () => {
       toast.success('IPTV source added');
     } catch (error) {
       console.error('Failed to add IPTV source:', error);
+        toast.error('Failed to add IPTV source:');
       toast.error('Failed to add IPTV source');
     } finally {
       setSaving(false);
@@ -86,6 +88,7 @@ export const IPTVSettings = () => {
       toast.success('IPTV source removed');
     } catch (error) {
       console.error('Failed to delete IPTV source:', error);
+        toast.error('Failed to delete IPTV source:');
       toast.error('Failed to remove IPTV source');
     }
   };

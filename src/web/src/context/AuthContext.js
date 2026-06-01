@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../lib/config';
 
 const API = API_URL;
+import { toast } from 'sonner';
 
 const AuthContext = createContext(null);
 
@@ -54,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Failed to fetch user:', error);
+        toast.error('Failed to fetch user:');
       // Only logout on 401 Unauthorized, not on network errors
       if (error.response?.status === 401) {
         localStorage.removeItem('token');

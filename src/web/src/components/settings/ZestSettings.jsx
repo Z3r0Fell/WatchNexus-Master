@@ -83,6 +83,7 @@ export const ZestSettings = () => {
       setLogs(res.data.logs || []);
     } catch (err) {
       console.error('Failed to fetch logs:', err);
+        toast.error('Failed to fetch logs:');
     }
   }, [filters]);
 
@@ -92,6 +93,7 @@ export const ZestSettings = () => {
       setLogStats(res.data);
     } catch (err) {
       console.error('Failed to fetch log stats:', err);
+        toast.error('Failed to fetch log stats:');
     }
   };
 
@@ -101,6 +103,7 @@ export const ZestSettings = () => {
       setSystemHealth(res.data);
     } catch (err) {
       console.error('Failed to fetch system health:', err);
+        toast.error('Failed to fetch system health:');
     }
   };
 

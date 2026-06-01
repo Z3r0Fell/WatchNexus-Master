@@ -60,6 +60,7 @@ export const MediaDetails = () => {
       setSeason(response.data);
     } catch (error) {
       console.error('Failed to fetch season:', error);
+        toast.error('Failed to fetch season:');
     }
   };
 
@@ -69,6 +70,7 @@ export const MediaDetails = () => {
       setIsInWatchlist(response.data.some(w => w.tmdb_id === parseInt(id)));
     } catch (error) {
       console.error('Failed to check watchlist:', error);
+        toast.error('Failed to check watchlist:');
     }
   };
 

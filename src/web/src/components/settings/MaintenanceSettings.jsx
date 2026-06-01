@@ -53,15 +53,14 @@ export const MaintenanceSettings = () => {
       setCacheStats(cacheRes.data);
       setTorrentStatus(torrentRes.data);
       setLogFiles(logFilesRes.data?.logs || []);
-    } catch (error) { console.error('Failed to fetch stats:', error); }
-    finally { setLoading(false); }
+    } catch (error) { console.error('Failed to fetch stats:', error); toast.error('Failed to fetch stats:'); } finally { setLoading(false); }
   }, []);
 
   const fetchLogs = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/logs/view`, { params: { filename: selectedLogFile, lines: logLines } });
       setLogs(res.data?.lines || []);
-    } catch (error) { console.error('Failed to fetch logs:', error); }
+    } catch (error) { console.error('Failed to fetch logs:', error); toast.error('Failed to fetch logs:'); }
   }, [selectedLogFile, logLines]);
 
   useEffect(() => {

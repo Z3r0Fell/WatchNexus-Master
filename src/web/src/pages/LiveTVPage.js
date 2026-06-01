@@ -382,6 +382,7 @@ export const LiveTVPage = () => {
       setStats(res.data);
     } catch (err) {
       console.error('Failed to fetch IPTV stats:', err);
+        toast.error('Failed to fetch IPTV stats:');
     }
   }, []);
 
@@ -393,6 +394,7 @@ export const LiveTVPage = () => {
       setSources(res.data || []);
     } catch (err) {
       console.error('Failed to fetch IPTV sources:', err);
+        toast.error('Failed to fetch IPTV sources:');
     }
   }, []);
 
@@ -410,6 +412,7 @@ export const LiveTVPage = () => {
       setChannels(res.data || []);
     } catch (err) {
       console.error('Failed to fetch channels:', err);
+        toast.error('Failed to fetch channels:');
     }
   }, [selectedGroup, favoritesOnly, searchQuery]);
 
@@ -421,6 +424,7 @@ export const LiveTVPage = () => {
       setGroups(res.data || []);
     } catch (err) {
       console.error('Failed to fetch groups:', err);
+        toast.error('Failed to fetch groups:');
     }
   }, []);
 

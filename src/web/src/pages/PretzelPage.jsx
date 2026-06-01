@@ -35,21 +35,21 @@ const PretzelPage = () => {
       const params = selectedSystem !== 'all' ? `?system=${selectedSystem}` : '';
       const res = await axios.get(`${API}/api/pretzel/games${params}`);
       setGames(res.data.games || []);
-    } catch { console.error('[PretzelPage] Failed to fetch games'); } finally { setLoading(false); }
+    } catch { console.error('[PretzelPage] Failed to fetch games'); } finally { setLoading(false); toast.error('[PretzelPage] Failed to fetch games');; }
   }, [selectedSystem]);
 
   const fetchSystems = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/api/pretzel/systems`);
       setSystems(res.data || []);
-    } catch { console.error('[PretzelPage] Failed to fetch systems'); }
+    } catch { console.error('[PretzelPage] Failed to fetch systems'); toast.error('[PretzelPage] Failed to fetch systems');; }
   }, []);
 
   const fetchStats = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/api/pretzel/stats`);
       setStats(res.data);
-    } catch { console.error('[PretzelPage] Failed to fetch stats'); }
+    } catch { console.error('[PretzelPage] Failed to fetch stats'); toast.error('[PretzelPage] Failed to fetch stats');; }
   }, []);
 
   useEffect(() => { fetchSystems(); fetchStats(); }, [fetchSystems, fetchStats]);

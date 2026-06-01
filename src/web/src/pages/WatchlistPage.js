@@ -21,6 +21,7 @@ export const WatchlistPage = () => {
       setWatchlist(res.data || []);
     } catch (error) {
       console.error('Failed to fetch watchlist:', error);
+        toast.error('Failed to fetch watchlist:');
     } finally {
       setLoading(false);
     }

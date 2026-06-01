@@ -30,6 +30,7 @@ export const ParentalControlsPage = () => {
       if (res.data.blocked_genres) setBlockedGenres(Array.isArray(res.data.blocked_genres) ? res.data.blocked_genres.join(', ') : res.data.blocked_genres);
     } catch (e) {
       console.error('Failed to fetch parental profile:', e);
+        toast.error('Failed to fetch parental profile:');
     } finally {
       setLoading(false);
     }

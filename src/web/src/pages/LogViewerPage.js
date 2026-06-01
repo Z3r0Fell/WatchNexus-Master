@@ -47,22 +47,21 @@ export default function LogViewerPage() {
       setLogs(res.data.lines || []);
       setTotalLines(res.data.total || 0);
       setLogFile(res.data.file || '');
-    } catch { console.error('[LogViewerPage] Failed to load logs'); }
-    finally { setLoading(false); }
+    } catch { console.error('[LogViewerPage] Failed to load logs'); toast.error('[LogViewerPage] Failed to load logs'); } finally { setLoading(false); }
   }, [level]);
 
   const loadFiles = useCallback(async () => {
     try {
       const res = await logsApi.getFiles();
       setLogFiles(res.data || []);
-    } catch { console.error('[LogViewerPage] Failed to load files'); }
+    } catch { console.error('[LogViewerPage] Failed to load files'); toast.error('[LogViewerPage] Failed to load files');; }
   }, []);
 
   const loadSystem = useCallback(async () => {
     try {
       const res = await logsApi.getSystem();
       setSystemInfo(res.data);
-    } catch { console.error('[LogViewerPage] Failed to load system info'); }
+    } catch { console.error('[LogViewerPage] Failed to load system info'); toast.error('[LogViewerPage] Failed to load system info');; }
   }, []);
 
   useEffect(() => {

@@ -61,6 +61,7 @@ export const IndexerSearchPage = () => {
       }
     } catch (error) {
       console.error('Search failed:', error);
+        toast.error('Search failed:');
       toast.error('Search failed. Check your indexer configuration.');
     } finally {
       setSearching(false);
@@ -90,6 +91,7 @@ export const IndexerSearchPage = () => {
       }
     } catch (error) {
       console.error('Grab failed:', error);
+        toast.error('Grab failed:');
       toast.error('Failed to add download');
     } finally {
       setGrabbing(prev => ({ ...prev, [key]: false }));

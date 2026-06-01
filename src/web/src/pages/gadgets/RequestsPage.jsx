@@ -38,6 +38,7 @@ export const RequestsPage = () => {
       setRequests(res.data);
     } catch (e) {
       console.error('Failed to fetch requests:', e);
+        toast.error('Failed to fetch requests:');
     } finally {
       setLoading(false);
     }

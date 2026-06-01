@@ -66,6 +66,7 @@ export const TVShowsPage = () => {
       setTvSeries(seriesRes.data || []);
     } catch (error) {
       console.error('Failed to fetch TV library data:', error);
+        toast.error('Failed to fetch TV library data:');
     } finally {
       setLibraryLoading(false);
     }
@@ -127,6 +128,7 @@ export const TVShowsPage = () => {
       setGenres(response.data.genres || []);
     } catch (error) {
       console.error('Failed to fetch genres:', error);
+        toast.error('Failed to fetch genres:');
     }
   };
 
@@ -136,6 +138,7 @@ export const TVShowsPage = () => {
       setWatchlist(response.data || []);
     } catch (error) {
       console.error('Failed to fetch watchlist:', error);
+        toast.error('Failed to fetch watchlist:');
     }
   };
 

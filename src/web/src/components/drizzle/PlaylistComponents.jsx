@@ -168,6 +168,7 @@ export const ActiveQueuePanel = ({ onClose }) => {
       setQueueState(data);
     } catch (err) {
       console.error('Failed to fetch queue:', err);
+        toast.error('Failed to fetch queue:');
     } finally {
       setLoading(false);
     }
@@ -368,6 +369,7 @@ export const PlaylistsManager = () => {
       setPlaylists(data.playlists || []);
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
+        toast.error('Failed to fetch playlists:');
     } finally {
       setLoading(false);
     }

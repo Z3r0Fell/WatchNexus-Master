@@ -3,6 +3,7 @@ import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 
 const ThemeContext = createContext();
+import { toast } from 'sonner';
 
 // Default theme values
 const DEFAULT_DARK_THEME = {
@@ -173,6 +174,7 @@ export const ThemeProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to save theme mode:', error);
+        toast.error('Failed to save theme mode:');
     }
     
     // Also save to localStorage for backwards compatibility
@@ -209,6 +211,7 @@ export const ThemeProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error('Failed to apply theme:', err);
+        toast.error('Failed to apply theme:');
       return false;
     }
   }, [mode]);
@@ -229,6 +232,7 @@ export const ThemeProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error('Failed to apply custom theme:', err);
+        toast.error('Failed to apply custom theme:');
       return false;
     }
   }, [mode]);

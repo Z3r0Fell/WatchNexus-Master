@@ -24,6 +24,7 @@ export const WatchHistoryPage = () => {
       setHistory(sorted);
     } catch (error) {
       console.error('Failed to fetch watch history:', error);
+        toast.error('Failed to fetch watch history:');
     } finally {
       setLoading(false);
     }

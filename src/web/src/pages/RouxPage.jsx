@@ -44,6 +44,7 @@ export const RouxPage = () => {
       setPresets(Array.isArray(presetRes.data) ? presetRes.data : []);
     } catch (e) {
       console.error('Roux fetch error:', e);
+        toast.error('Roux fetch error:');
     } finally {
       setLoading(false);
     }

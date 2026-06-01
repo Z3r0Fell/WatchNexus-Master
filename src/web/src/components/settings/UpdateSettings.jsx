@@ -26,15 +26,15 @@ export const UpdateSettings = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   const fetchCurrent = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/current`); setCurrentInfo(res.data); } catch { console.error('[UpdateSettings] Failed to fetch current updates'); }
+    try { const res = await axios.get(`${API}/api/system/updates/current`); setCurrentInfo(res.data); } catch { console.error('[UpdateSettings] Failed to fetch current updates'); toast.error('[UpdateSettings] Failed to fetch current updates');; }
   }, []);
 
   const fetchSettings = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/settings`); setUpdateSettings(res.data); } catch { console.error('[UpdateSettings] Failed to fetch update settings'); }
+    try { const res = await axios.get(`${API}/api/system/updates/settings`); setUpdateSettings(res.data); } catch { console.error('[UpdateSettings] Failed to fetch update settings'); toast.error('[UpdateSettings] Failed to fetch update settings');; }
   }, []);
 
   const fetchHistory = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/history`); setUpdateHistory(res.data.history || []); } catch { console.error('[UpdateSettings] Failed to fetch update history'); }
+    try { const res = await axios.get(`${API}/api/system/updates/history`); setUpdateHistory(res.data.history || []); } catch { console.error('[UpdateSettings] Failed to fetch update history'); toast.error('[UpdateSettings] Failed to fetch update history');; }
   }, []);
 
   useEffect(() => {
@@ -73,11 +73,11 @@ export const UpdateSettings = () => {
   };
 
   const handleDismiss = async (version) => {
-    try { await axios.post(`${API}/api/system/updates/dismiss`, { version }); setUpdateResult(null); } catch { console.error('[UpdateSettings] Failed to dismiss update'); }
+    try { await axios.post(`${API}/api/system/updates/dismiss`, { version }); setUpdateResult(null); } catch { console.error('[UpdateSettings] Failed to dismiss update'); toast.error('[UpdateSettings] Failed to dismiss update');; }
   };
 
   const handleSaveSettings = async () => {
-    try { await axios.post(`${API}/api/system/updates/settings`, updateSettings); toast.success('Update settings saved'); setShowSettings(false); } catch { console.error('[UpdateSettings] Failed to save update settings'); }
+    try { await axios.post(`${API}/api/system/updates/settings`, updateSettings); toast.success('Update settings saved'); setShowSettings(false); } catch { console.error('[UpdateSettings] Failed to save update settings'); toast.error('[UpdateSettings] Failed to save update settings');; }
   };
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;

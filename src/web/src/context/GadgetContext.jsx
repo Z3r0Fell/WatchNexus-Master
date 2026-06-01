@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { toast } from 'sonner';
 const GadgetContext = createContext(null);
 
 export const useGadgets = () => {
@@ -41,6 +42,7 @@ export const GadgetProvider = ({ children }) => {
       setHooks(prev => hooksRes.data || prev);
     } catch (err) {
       console.error('Ripen: Failed to load gadgets:', err);
+        toast.error('Ripen: Failed to load gadgets:');
     } finally {
       setLoading(false);
     }

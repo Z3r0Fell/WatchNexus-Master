@@ -164,6 +164,7 @@ export const ThemeCommunityPage = () => {
       setInstalledThemes(customThemes);
     } catch (err) {
       console.error('Failed to fetch installed themes:', err);
+        toast.error('Failed to fetch installed themes:');
     }
   }, []);
 

@@ -43,7 +43,7 @@ export const IntegrationsSettings = () => {
       if (data.qbittorrent) {
         setQbitSettings(data.qbittorrent);
       }
-    } catch { console.error('[IntegrationsSettings] Failed to fetch settings'); }
+    } catch { console.error('[IntegrationsSettings] Failed to fetch settings'); toast.error('[IntegrationsSettings] Failed to fetch settings');; }
     finally { setLoading(false); }
   }, []);
 

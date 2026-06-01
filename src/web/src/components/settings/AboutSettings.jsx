@@ -11,6 +11,7 @@ import { Button } from '../ui/button';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { toast } from 'sonner';
 
 // Submenu tabs
 const ABOUT_TABS = [
@@ -389,6 +390,7 @@ export const AboutSettings = () => {
         setSystemInfo(res.data);
       } catch (error) {
         console.error('Failed to fetch system info:', error);
+          toast.error('Failed to fetch system info:');
       }
     };
     fetchSystemInfo();

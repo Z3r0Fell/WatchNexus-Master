@@ -35,6 +35,7 @@ export const SearchPage = () => {
       setWatchlist(response.data || []);
     } catch (error) {
       console.error('Failed to fetch watchlist:', error);
+        toast.error('Failed to fetch watchlist:');
     }
   };
 

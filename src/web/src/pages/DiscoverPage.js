@@ -41,6 +41,7 @@ export const DiscoverPage = () => {
       setContent(res.data.results || []);
     } catch (error) {
       console.error('Failed to fetch content:', error);
+        toast.error('Failed to fetch content:');
     } finally {
       setLoading(false);
     }
@@ -52,6 +53,7 @@ export const DiscoverPage = () => {
       setGenres(res.data.genres || []);
     } catch (error) {
       console.error('Failed to fetch genres:', error);
+        toast.error('Failed to fetch genres:');
     }
   }, [mediaType]);
 
@@ -61,6 +63,7 @@ export const DiscoverPage = () => {
       setWatchlist(res.data || []);
     } catch (error) {
       console.error('Failed to fetch watchlist:', error);
+        toast.error('Failed to fetch watchlist:');
     }
   };
 

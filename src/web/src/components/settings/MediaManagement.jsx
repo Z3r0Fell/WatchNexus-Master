@@ -299,6 +299,7 @@ export const QualityProfilesSubTab = () => {
       setDefinitions(data.quality_definitions || []);
     } catch (error) {
       console.error('Failed to fetch quality profiles:', error);
+        toast.error('Failed to fetch quality profiles:');
       toast.error('Failed to load quality profiles');
     } finally {
       setLoading(false);
@@ -351,6 +352,7 @@ export const QualityProfilesSubTab = () => {
       fetchProfiles();
     } catch (error) {
       console.error('Failed to save profile:', error);
+        toast.error('Failed to save profile:');
       toast.error('Failed to save profile');
     }
   };
@@ -368,6 +370,7 @@ export const QualityProfilesSubTab = () => {
       fetchProfiles();
     } catch (error) {
       console.error('Failed to delete profile:', error);
+        toast.error('Failed to delete profile:');
       toast.error('Failed to delete profile');
     }
   };
@@ -387,6 +390,7 @@ export const QualityProfilesSubTab = () => {
       fetchProfiles();
     } catch (error) {
       console.error('Failed to set default profile:', error);
+        toast.error('Failed to set default profile:');
       toast.error('Failed to set default profile');
     }
   };
