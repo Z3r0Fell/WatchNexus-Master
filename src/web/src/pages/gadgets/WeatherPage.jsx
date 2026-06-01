@@ -66,10 +66,14 @@ export const WeatherPage = () => {
   const loadSettings = useCallback(async () => {
     try {
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/weather/settings`, { headers: getAuth() });
-      setLocation(resp.data);
-      fetchWeather(resp.data.lat, resp.data.lon);
+      if (resp.data.location) {
+        const loc = typeof resp.data.location === 'string' ? JSON.parse(resp.data.location) : resp.data.location;
+        setLocation(loc);
+        fetchWeather(loc.lat, loc.lon);
+      } else {
+        fetchWeather(40.7128, -74.0060);
+      }
     } catch (err) {
-      // Use default
       fetchWeather(40.7128, -74.0060);
     }
   }, [fetchWeather]);
@@ -85,7 +89,7 @@ export const WeatherPage = () => {
         params: { q: searchQuery },
         headers: getAuth()
       });
-      setSearchResults(resp.data.results || []);
+      setSearchResults(Array.isArray(resp.data) ? resp.data : resp.data.results || []);
     } catch (err) {
       toast.error('Search failed');
     }
@@ -99,7 +103,7 @@ export const WeatherPage = () => {
     setSearchQuery('');
     
     try {
-      await axios.post(`${BACKEND_URL}/api/gadgets/weather/settings`, newLoc, { headers: getAuth() });
+      await axios.put(`${BACKEND_URL}/api/gadgets/weather/settings`, { location: newLoc }, { headers: getAuth() });
       fetchWeather(loc.lat, loc.lon);
       toast.success(`Location set to ${loc.name}`);
     } catch (err) {
