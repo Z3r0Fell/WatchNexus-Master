@@ -3,272 +3,230 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Press Kit - WatchNexus</title>
-  <meta name="description" content="WatchNexus press kit - brand assets, screenshots, product information, and media resources.">
+  <title>Press Kit — WatchNexus</title>
   <link rel="icon" type="image/png" href="assets/images/favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
+<body class="page">
 
-<nav class="nav">
-  <a href="index.html" class="nav-logo">
-    <img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;">
-    WatchNexus
-  </a>
-  <ul class="nav-links">
-    <li><a href="features.html">Features</a></li>
-    <li><a href="download.html">Download</a></li>
-    <li><a href="faq.html">FAQ</a></li>
-    <li><a href="support.html">Support</a></li>
-  </ul>
-  <div class="nav-right">
-    
-    <a href="download.html" class="btn btn-primary">Download</a>
+<section class="page-hero">
+  <div class="section-eyebrow animate-in"><i class="fa-solid fa-newspaper"></i> Media Resources</div>
+  <h1 class="animate-in delay-1"><span class="gradient-text">Press Kit</span></h1>
+  <p class="animate-in delay-2">Brand assets, product information, and screenshots for press coverage.</p>
+</section>
+
+<!-- ABOUT + FACTS -->
+<section class="section" style="padding-top:1rem">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:start" class="animate-in">
+
+    <div>
+      <div class="section-eyebrow"><i class="fa-solid fa-info-circle"></i> About</div>
+      <h2 class="section-heading" style="font-size:1.75rem;margin-bottom:1rem">About WatchNexus</h2>
+      <p style="color:var(--text-2);line-height:1.8;margin-bottom:1rem;font-size:.9rem">
+        <strong style="color:var(--text-1)">WatchNexus</strong> is a self-hosted, unified media pipeline that combines the best of media servers like Jellyfin with the automation power of the *arr ecosystem — all in a single Docker container.
+      </p>
+      <p style="color:var(--text-2);line-height:1.8;font-size:.9rem">
+        Built with C#/.NET 10 and React 18, it gives users complete control over their media libraries without relying on third-party cloud services. 73 modules, zero external dependencies, one binary.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1.75rem">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="color:var(--text-3);font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700">Version</div>
+          <div style="color:var(--text-1);font-weight:700;font-size:1.1rem;margin-top:.2rem">2.9.0</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="color:var(--text-3);font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700">Released</div>
+          <div style="color:var(--text-1);font-weight:700;font-size:1.1rem;margin-top:.2rem">March 2026</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="color:var(--text-3);font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700">Modules</div>
+          <div style="color:var(--accent-light);font-weight:800;font-size:1.3rem;margin-top:.2rem">73</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="color:var(--text-3);font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700">API Endpoints</div>
+          <div style="color:var(--text-1);font-weight:700;font-size:1.1rem;margin-top:.2rem">136</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-eyebrow"><i class="fa-solid fa-list-check"></i> Tech Specs</div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:1rem">
+        <table class="spec-table">
+          <tr><td>Platform</td><td>Linux, Windows, macOS, Docker</td></tr>
+          <tr><td>Backend</td><td>C# / .NET 10 (ASP.NET Core)</td></tr>
+          <tr><td>Frontend</td><td>React 18, TailwindCSS, Shadcn UI</td></tr>
+          <tr><td>Database</td><td>SQLite + Entity Framework Core 10</td></tr>
+          <tr><td>Authentication</td><td>JWT + TOTP 2FA (RFC 6238)</td></tr>
+          <tr><td>Binary size</td><td>58 MB (Linux) / 72 MB (Windows)</td></tr>
+          <tr><td>Dependencies</td><td style="color:#34d399;font-weight:600">Zero — fully self-contained</td></tr>
+        </table>
+      </div>
+    </div>
+
   </div>
-</nav>
+</section>
 
-<div class="page-header">
-  <h1><span class="gradient-text">Press Kit</span></h1>
-  <p>Brand assets, screenshots, product information, and media resources for press coverage.</p>
+<!-- BRAND COLORS -->
+<div class="band">
+  <section class="section">
+    <div class="section-eyebrow animate-in"><i class="fa-solid fa-palette"></i> Brand</div>
+    <h2 class="section-heading animate-in delay-1">Colors &amp; Typography</h2>
+
+    <div style="display:flex;flex-wrap:wrap;gap:1.1rem;margin-top:2rem" class="animate-in delay-2">
+      <div style="min-width:110px">
+        <div class="color-swatch" style="background:#07060b;border:1px solid var(--border)"></div>
+        <div class="color-meta"><div class="color-name">Background</div><div class="color-hex">#07060B</div></div>
+      </div>
+      <div style="min-width:110px">
+        <div class="color-swatch" style="background:#111019;border:1px solid var(--border)"></div>
+        <div class="color-meta"><div class="color-name">Card</div><div class="color-hex">#111019</div></div>
+      </div>
+      <div style="min-width:110px">
+        <div class="color-swatch" style="background:#9333ea;box-shadow:0 0 16px rgba(147,51,234,.4)"></div>
+        <div class="color-meta"><div class="color-name">Accent</div><div class="color-hex">#9333EA</div></div>
+      </div>
+      <div style="min-width:110px">
+        <div class="color-swatch" style="background:linear-gradient(135deg,#a855f7,#ec4899,#f97316)"></div>
+        <div class="color-meta"><div class="color-name">Gradient</div><div class="color-hex">Purple→Pink→Orange</div></div>
+      </div>
+      <div style="min-width:110px">
+        <div class="color-swatch" style="background:#10b981;box-shadow:0 0 16px rgba(16,185,129,.3)"></div>
+        <div class="color-meta"><div class="color-name">Success</div><div class="color-hex">#10B981</div></div>
+      </div>
+      <div style="min-width:110px">
+        <div class="color-swatch" style="background:#ef4444;box-shadow:0 0 16px rgba(239,68,68,.3)"></div>
+        <div class="color-meta"><div class="color-name">Error</div><div class="color-hex">#EF4444</div></div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-top:1.25rem;font-size:.85rem" class="animate-in">
+      <strong style="display:block;margin-bottom:.6rem">Typography</strong>
+      <span style="color:var(--text-2)"><strong style="color:var(--text-1)">Display:</strong> Syne (700, 800, 900) — headings &amp; hero</span>&emsp;
+      <span style="color:var(--text-2)"><strong style="color:var(--text-1)">Body:</strong> Inter (300–900) — all UI</span>&emsp;
+      <span style="color:var(--text-2)"><strong style="color:var(--text-1)">Code:</strong> JetBrains Mono — code blocks</span>
+    </div>
+  </section>
 </div>
 
-<!-- Overview -->
-<section class="section" style="padding-top:2rem">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start">
+<!-- SCREENSHOTS -->
+<section class="section">
+  <div class="section-eyebrow animate-in"><i class="fa-solid fa-images"></i> Screenshots</div>
+  <h2 class="section-heading animate-in delay-1">Application Screenshots</h2>
+  <p class="section-sub animate-in delay-2">High-resolution screenshots of WatchNexus v2.9.0 for press use.</p>
+
+  <div class="screenshot-grid animate-in delay-3" style="margin-top:2rem">
+    <div class="screenshot-card">
+      <img src="assets/images/dashboard.png" alt="Dashboard" loading="lazy">
+      <div class="screenshot-card-meta"><strong>Dashboard</strong><span>Hero banner, continue watching, recommendations</span></div>
+    </div>
+    <div class="screenshot-card">
+      <img src="assets/images/library.png" alt="Library" loading="lazy">
+      <div class="screenshot-card-meta"><strong>Library</strong><span>Media libraries with poster art grid</span></div>
+    </div>
+    <div class="screenshot-card">
+      <img src="assets/images/indexer-search.png" alt="Indexer Search" loading="lazy">
+      <div class="screenshot-card-meta"><strong>Indexer Search</strong><span>Multi-source search with quality detection</span></div>
+    </div>
+    <div class="screenshot-card">
+      <img src="assets/images/system.png" alt="System" loading="lazy">
+      <div class="screenshot-card-meta"><strong>System Dashboard</strong><span>Health, modules, security status</span></div>
+    </div>
+    <div class="screenshot-card">
+      <img src="assets/images/security.png" alt="Security" loading="lazy">
+      <div class="screenshot-card-meta"><strong>Security Center</strong><span>Audit logs, IP rules, sessions</span></div>
+    </div>
+    <div class="screenshot-card">
+      <img src="assets/images/settings.png" alt="Settings" loading="lazy">
+      <div class="screenshot-card-meta"><strong>Settings</strong><span>Deep configuration panel</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGOS -->
+<div class="band">
+  <section class="section">
+    <div class="section-eyebrow animate-in"><i class="fa-solid fa-star"></i> Logo Assets</div>
+    <h2 class="section-heading animate-in delay-1">Brand Assets</h2>
+    <p class="section-sub animate-in delay-2">Do not modify colors, proportions, or add effects.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.1rem;margin-top:2rem" class="animate-in delay-3">
+      <div class="logo-asset">
+        <div class="logo-preview" style="background:#0a0909">
+          <img src="assets/images/watchnexus-logo.png" alt="Logo" style="max-height:90px">
+        </div>
+        <div class="logo-asset-meta"><strong>Primary Logo</strong><span>Dark background · 1024×1024 PNG</span></div>
+      </div>
+      <div class="logo-asset">
+        <div class="logo-preview" style="background:#0a0909">
+          <img src="assets/images/watchnexus-banner.png" alt="Banner" style="max-height:90px;max-width:100%">
+        </div>
+        <div class="logo-asset-meta"><strong>Banner</strong><span>Marketing · 1536×1024 PNG</span></div>
+      </div>
+      <div class="logo-asset">
+        <div class="logo-preview" style="background:#f1f0f5">
+          <img src="assets/images/watchnexus-icon-light.png" alt="Light icon" style="max-height:90px">
+        </div>
+        <div class="logo-asset-meta"><strong>App Icon</strong><span>Light background · 1024×1024 PNG</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-body">
     <div>
-      <span class="section-label"><i class="fa-solid fa-info-circle"></i> About</span>
-      <h2 class="section-title" style="font-size:1.8rem">About WatchNexus</h2>
-      <p style="color:var(--text-secondary);line-height:1.8;margin-top:1rem">
-        <strong style="color:var(--text-primary)">WatchNexus</strong> is a self-hosted, unified media management pipeline that combines the best of media servers like Jellyfin with the automation power of the *arr ecosystem -- all in a single application.
-      </p>
-      <p style="color:var(--text-secondary);line-height:1.8;margin-top:1rem">
-        Built with C#/.NET 10 and React, it gives users complete control over their media libraries without relying on third-party cloud services. One binary, 35 modules, zero dependencies.
-      </p>
-
-      <div style="margin-top:2rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
-          <div style="color:var(--text-muted);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Version</div>
-          <div style="color:var(--text-primary);font-weight:700;margin-top:0.25rem">1.0.0</div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
-          <div style="color:var(--text-muted);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Build Date</div>
-          <div style="color:var(--text-primary);font-weight:700;margin-top:0.25rem">March 2026</div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
-          <div style="color:var(--text-muted);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Modules</div>
-          <div style="color:var(--text-primary);font-weight:700;margin-top:0.25rem">35</div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem">
-          <div style="color:var(--text-muted);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">API Endpoints</div>
-          <div style="color:var(--text-primary);font-weight:700;margin-top:0.25rem">136</div>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <span class="section-label"><i class="fa-solid fa-list-check"></i> Key Facts</span>
-      <div style="margin-top:1.5rem">
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-          <strong style="font-size:0.85rem">Platform</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">Self-hosted (Linux, Windows, macOS, Docker)</p>
-        </div>
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-          <strong style="font-size:0.85rem">Backend</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">C#/.NET 10 (ASP.NET Core)</p>
-        </div>
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-          <strong style="font-size:0.85rem">Frontend</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">React 18, TailwindCSS, Shadcn UI</p>
-        </div>
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-          <strong style="font-size:0.85rem">Database</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">SQLite with Entity Framework Core 10</p>
-        </div>
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-          <strong style="font-size:0.85rem">Authentication</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">JWT + TOTP 2FA (RFC 6238)</p>
-        </div>
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-          <strong style="font-size:0.85rem">Binary Size</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">58 MB (Linux) / 72 MB (Windows)</p>
-        </div>
-        <div style="padding:0.75rem 0">
-          <strong style="font-size:0.85rem">Dependencies</strong>
-          <p style="color:var(--text-secondary);font-size:0.85rem">Zero -- self-contained binary</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Brand Colors -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-palette"></i> Brand Guidelines</span>
-  <h2 class="section-title">Colors &amp; Typography</h2>
-
-  <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:2rem">
-    <div style="width:140px">
-      <div style="width:100%;height:80px;background:#0A0A0A;border-radius:10px;border:1px solid var(--border)"></div>
-      <p style="font-size:0.8rem;font-weight:600;margin-top:0.5rem">Background</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">#0A0A0A</p>
-    </div>
-    <div style="width:140px">
-      <div style="width:100%;height:80px;background:#1E1E1E;border-radius:10px;border:1px solid var(--border)"></div>
-      <p style="font-size:0.8rem;font-weight:600;margin-top:0.5rem">Surface</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">#1E1E1E</p>
-    </div>
-    <div style="width:140px">
-      <div style="width:100%;height:80px;background:#7C3AED;border-radius:10px"></div>
-      <p style="font-size:0.8rem;font-weight:600;margin-top:0.5rem">Primary</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">#7C3AED</p>
-    </div>
-    <div style="width:140px">
-      <div style="width:100%;height:80px;background:#6D28D9;border-radius:10px"></div>
-      <p style="font-size:0.8rem;font-weight:600;margin-top:0.5rem">Primary Hover</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">#6D28D9</p>
-    </div>
-    <div style="width:140px">
-      <div style="width:100%;height:80px;background:#10B981;border-radius:10px"></div>
-      <p style="font-size:0.8rem;font-weight:600;margin-top:0.5rem">Success</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">#10B981</p>
-    </div>
-    <div style="width:140px">
-      <div style="width:100%;height:80px;background:#EF4444;border-radius:10px"></div>
-      <p style="font-size:0.8rem;font-weight:600;margin-top:0.5rem">Error</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">#EF4444</p>
-    </div>
-  </div>
-
-  <div style="margin-top:2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem">
-    <p style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem">Typography</p>
-    <p style="color:var(--text-secondary);font-size:0.85rem"><strong style="color:var(--text-primary)">Brand Font:</strong> Inter / System UI stack</p>
-    <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:0.25rem"><strong style="color:var(--text-primary)">Heading Weight:</strong> Bold (700) / Extra Bold (800)</p>
-    <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:0.25rem"><strong style="color:var(--text-primary)">Body Weight:</strong> Regular (400)</p>
-  </div>
-</section>
-
-<!-- Screenshots -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-images"></i> Screenshots</span>
-  <h2 class="section-title">Application screenshots</h2>
-  <p class="section-desc">High-resolution screenshots of WatchNexus v1.0.0 for press use.</p>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.25rem;margin-top:2rem">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <img src="assets/images/dashboard.png" alt="Dashboard" style="width:100%;display:block" loading="lazy">
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Dashboard</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Hero banner, continue watching, recommendations</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <img src="assets/images/library.png" alt="Library" style="width:100%;display:block" loading="lazy">
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Library</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Media libraries with poster art</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <img src="assets/images/indexer-search.png" alt="Indexer Search" style="width:100%;display:block" loading="lazy">
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Indexer Search</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Multi-source search with quality detection</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <img src="assets/images/system.png" alt="System" style="width:100%;display:block" loading="lazy">
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">System Dashboard</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Health, modules, security status</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <img src="assets/images/security.png" alt="Security" style="width:100%;display:block" loading="lazy">
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Security Center</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Audit logs, IP rules, sessions</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <img src="assets/images/settings.png" alt="Settings" style="width:100%;display:block" loading="lazy">
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Settings</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Deep configuration panel</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Logo Assets -->
-<section class="section">
-  <span class="section-label"><i class="fa-solid fa-star"></i> Logo Assets</span>
-  <h2 class="section-title">Brand assets</h2>
-  <p class="section-desc">Official logo files for press use. Please do not modify colors or proportions.</p>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem;margin-top:2rem">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="background:#0a0a0a;padding:2rem;display:flex;align-items:center;justify-content:center">
-        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus Logo" style="max-height:120px" loading="lazy">
-      </div>
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Primary Logo</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Dark background &middot; 1024x1024 PNG</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="background:#0a0a0a;padding:2rem;display:flex;align-items:center;justify-content:center">
-        <img src="assets/images/watchnexus-banner.png" alt="WatchNexus Banner" style="max-height:120px" loading="lazy">
-      </div>
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">Banner</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Marketing banner &middot; 1536x1024 PNG</p>
-      </div>
-    </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="background:#f1f0f5;padding:2rem;display:flex;align-items:center;justify-content:center">
-        <img src="assets/images/watchnexus-icon-light.png" alt="WatchNexus Icon" style="max-height:120px" loading="lazy">
-      </div>
-      <div style="padding:0.75rem 1rem">
-        <p style="font-size:0.85rem;font-weight:600">App Icon</p>
-        <p style="color:var(--text-muted);font-size:0.75rem">Light background &middot; 1024x1024 PNG</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <a href="index.html" class="nav-logo" style="margin-bottom:0.5rem">
-        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;">
+      <a class="footer-brand-logo" onclick="window.parent.loadPage('home')">
+        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus">
         WatchNexus
       </a>
-      <p>Unified, self-hosted media pipeline.</p>
+      <p class="footer-brand-tagline">Your complete, self-hosted media pipeline. One app, 73 modules, zero subscriptions.</p>
+      <span class="footer-version"><i class="fa-solid fa-code-branch"></i> v2.9.0</span>
     </div>
-    <div class="footer-col">
-      <h4>Product</h4>
-      <a href="features.html">Features</a>
-      <a href="download.html">Download</a>
-      <a href="faq.html">FAQ</a>
-      <a href="press.html">Press Kit</a>
+    <div>
+      <p class="footer-col-title">Product</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('features')"><i class="fa-solid fa-layer-group"></i>Features &amp; Comparison</a>
+        <a onclick="window.parent.loadPage('download')"><i class="fa-solid fa-download"></i>Download</a>
+        <a onclick="window.parent.loadPage('faq')"><i class="fa-solid fa-circle-question"></i>FAQ</a>
+      </div>
     </div>
-    <div class="footer-col">
-      <h4>Resources</h4>
-      <a href="support.html">Support</a>
-      <a href="support.html">Report Issue</a>
+    <div>
+      <p class="footer-col-title">Resources</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-headset"></i>Support</a>
+        <a onclick="window.parent.loadPage('press')"><i class="fa-solid fa-newspaper"></i>Press Kit</a>
+        <a href="https://licenses.watchnexus.ca" target="_blank"><i class="fa-solid fa-key"></i>License Portal</a>
+      </div>
     </div>
-    <div class="footer-col">
-      <h4>Community</h4>
-      <a href="#" onclick="return false;" style="opacity:0.4">GitHub</a>
-      <a href="#" onclick="return false;" style="opacity:0.4">Discord</a>
+    <div>
+      <p class="footer-col-title">Community</p>
+      <div class="footer-col-links">
+        <a class="muted"><i class="fa-brands fa-discord"></i>Discord <small>(soon)</small></a>
+        <a class="muted"><i class="fa-brands fa-github"></i>GitHub <small>(soon)</small></a>
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-bug"></i>Report a Bug</a>
+      </div>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
-    <span>v1.0.0</span>
+    <span class="footer-copy">&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
   </div>
 </footer>
 
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.style.animationPlayState = 'running'; });
+}, { threshold: 0.08 });
+document.querySelectorAll('.animate-in').forEach(el => {
+  el.style.animationPlayState = 'paused';
+  io.observe(el);
+});
+</script>
 </body>
 </html>

@@ -3,104 +3,167 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Features - WatchNexus</title>
-  <meta name="description" content="Explore WatchNexus features across Standard, Pro, and Ultra tiers.">
+  <title>Features — WatchNexus</title>
   <link rel="icon" type="image/png" href="assets/images/favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
+<body class="page">
 
-<nav class="nav">
-  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
-  <ul class="nav-links"><li><a href="features.html" class="active">Features</a></li><li><a href="download.html">Download</a></li><li><a href="faq.html">FAQ</a></li><li><a href="support.html">Support</a></li></ul>
-  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
-  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
-</nav>
-
-<section class="hero" style="padding-bottom:3rem;">
-  <h1 class="animate-in">Every Feature,<br><span class="gradient-text">Every Tier</span></h1>
-  <p class="hero-sub animate-in delay-1">73 modules across three tiers. Start free, unlock more with a serial number.</p>
+<section class="page-hero">
+  <div class="section-eyebrow animate-in"><i class="fa-solid fa-layer-group"></i> All Features</div>
+  <h1 class="animate-in delay-1">Every Feature,<br><span class="gradient-text">Every Tier</span></h1>
+  <p class="animate-in delay-2">73 modules across three tiers. Start free, unlock more with a serial number.</p>
 </section>
 
-<!-- FULL TIER COMPARISON TABLE -->
-<section class="section">
-  <div class="comparison-table-wrap animate-in">
+<section class="section" style="padding-top:1rem">
+  <div class="table-wrap animate-in">
     <table class="comparison-table">
       <thead>
         <tr>
-          <th class="feature-col">Feature</th>
-          <th class="tier-col tier-standard"><i class="fa-solid fa-shield-halved"></i><br>Standard<br><small>Free</small></th>
-          <th class="tier-col tier-pro"><i class="fa-solid fa-bolt"></i><br>Pro<br><small>$35 CAD</small></th>
-          <th class="tier-col tier-ultra"><i class="fa-solid fa-crown"></i><br>Ultra<br><small>$60 CAD</small></th>
+          <th class="feat-col">Feature</th>
+          <th class="t-col t-standard">
+            <i class="fa-solid fa-shield-halved"></i><br>
+            Standard<br>
+            <small style="font-weight:400;font-size:.8rem">Free</small>
+          </th>
+          <th class="t-col t-pro">
+            <i class="fa-solid fa-bolt"></i><br>
+            Pro<br>
+            <small style="font-weight:400;font-size:.8rem">$35&nbsp;CAD</small>
+          </th>
+          <th class="t-col t-ultra">
+            <i class="fa-solid fa-crown"></i><br>
+            Ultra<br>
+            <small style="font-weight:400;font-size:.8rem">$60&nbsp;CAD</small>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr class="section-row"><td colspan="4">Core Platform</td></tr>
-        <tr><td>Media library with TMDB metadata</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Video streaming with range support</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Download manager (built-in torrent engine)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Watchlist, continue watching, playlists</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Collections with smart filters (Roux)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Scrobbling &mdash; Trakt.tv / Last.fm (Glaze)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Theme engine with 6 themes + custom CSS (Milk)</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Gadgets: Weather, Podcasts, Radio, Photos, Web Video</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>File browser, system info, logs</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Setup wizard & user management</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
 
-        <tr class="section-row"><td colspan="4">Automation & Analytics (Pro+)</td></tr>
-        <tr><td>Indexer search engine &mdash; Nyaa, YTS, EZTV, Torznab (Compote)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Movie automation with TMDB (Fondue)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Scheduled tasks &mdash; 8 task types (Saffron)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Backup & restore with retention (Sourdough)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Advanced auth &mdash; TOTP 2FA, session management (Bastion)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Watch analytics & Year Wrapped (Truffle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Network config &mdash; VPN peers, SSL, DDNS (Tunnel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>RSS feed generation (Sprout)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>User request system (Meringue)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>AI recommendations (Sage)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Live TV / IPTV with EPG (IPTV)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Live TV DVR recording (Terrine)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Ebook, audiobook & comic library (Biscotti)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Music library management (Treacle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Streaming service credentials</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr class="section-row"><td colspan="4">Core Platform</td></tr>
+        <tr><td>Media library with TMDB metadata</td>            <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Video streaming with range support</td>           <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Download manager (built-in torrent engine)</td>   <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Watchlist, continue watching, playlists</td>      <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Collections with smart filters (Roux)</td>        <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Scrobbling — Trakt.tv / Last.fm (Glaze)</td>      <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Theme engine — 6 themes + custom CSS (Milk)</td>  <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Gadgets: Weather, Podcasts, Radio, Photos, Web Video</td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>File browser, system info, logs</td>              <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Setup wizard &amp; user management</td>           <td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+
+        <tr class="section-row"><td colspan="4">Automation &amp; Analytics (Pro+)</td></tr>
+        <tr><td>Indexer search — Nyaa, YTS, EZTV, Torznab (Compote)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Movie automation with TMDB (Fondue)</td>          <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Scheduled tasks — 8 types (Saffron)</td>          <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Backup &amp; restore with retention (Sourdough)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Advanced auth — TOTP 2FA, sessions (Bastion)</td> <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Watch analytics &amp; Year Wrapped (Truffle)</td> <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Network config — VPN peers, SSL, DDNS (Tunnel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>RSS feed generation (Sprout)</td>                 <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>User request system (Meringue)</td>               <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>AI recommendations (Sage)</td>                    <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Live TV / IPTV with EPG</td>                      <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>DVR recording (Terrine)</td>                      <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Ebook, audiobook &amp; comic library (Biscotti)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Music library management (Treacle)</td>           <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Streaming service credentials</td>                <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
 
         <tr class="section-row"><td colspan="4">Ultra Suite</td></tr>
-        <tr><td>Security center &mdash; IP rules, API keys, audit (Security)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Parental controls with PIN lock (Rind)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Notification hub &mdash; Discord, Telegram, Slack (Pepper)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Hardware transcoding &mdash; NVENC, QSV, VAAPI (Crucible)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Optical disc ripping &mdash; MakeMKV + HandBrake (Strudel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Media sync from Jellyfin/Emby (Chowder)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Jellyseerr integration (Parfait)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Built-in Seerr &mdash; discover & request (Menu)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Gaming console &mdash; 15 retro systems (Pretzel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>S3 / cloud backup (Preserves)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Offline sync & download (Popsicle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Cloud sync across devices (Marshmallow)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Matrix chat integration</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Usenet indexer & downloader (Brine + Ladle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Subtitle manager &mdash; 5 providers</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
-        <tr><td>Watch party & VPN manager</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Security center — IP rules, API keys, audit</td>  <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Parental controls with PIN lock (Rind)</td>       <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Notifications — Discord, Telegram, Slack (Pepper)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Hardware transcoding — NVENC, QSV, VAAPI (Crucible)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Optical disc ripping — MakeMKV + HandBrake (Strudel)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Media sync from Jellyfin/Emby (Chowder)</td>      <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Jellyseerr integration (Parfait)</td>             <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Built-in Seerr — discover &amp; request (Menu)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Gaming console — 15 retro systems (Pretzel)</td>   <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>S3 / cloud backup (Preserves)</td>                <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Offline sync &amp; download (Popsicle)</td>       <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Cloud sync across devices (Marshmallow)</td>      <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Matrix chat integration</td>                      <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Usenet indexer &amp; downloader (Brine + Ladle)</td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Subtitle manager — 5 providers</td>               <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
+        <tr><td>Watch party &amp; VPN manager</td>                <td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-xmark c-no"></i></td><td><i class="fa-solid fa-check c-yes"></i></td></tr>
 
-        <tr class="section-row"><td colspan="4">Modules</td></tr>
-        <tr><td><strong>Total modules</strong></td><td><strong>31</strong></td><td><strong>49</strong></td><td><strong>73</strong></td></tr>
+        <tr class="section-row"><td colspan="4">Module Count</td></tr>
+        <tr>
+          <td><strong>Total modules included</strong></td>
+          <td><strong style="color:#9ca3af">31</strong></td>
+          <td><strong style="color:#60a5fa">49</strong></td>
+          <td><strong style="color:#a78bfa">73</strong></td>
+        </tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<section class="section section-center" style="padding:4rem 2rem;">
-  <a href="download.html" class="btn btn-primary btn-lg"><i class="fa-solid fa-download"></i> Get WatchNexus</a>
-</section>
-
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand"><div class="nav-logo" style="margin-bottom:0.5rem;"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;"> WatchNexus</div><p>Your complete, self-hosted media pipeline.</p></div>
-    <div class="footer-links"><div><h4>Product</h4><a href="features.html">Features</a><a href="download.html">Download</a><a href="faq.html">FAQ</a></div><div><h4>Resources</h4><a href="support.html">Support</a><a href="press.html">Press Kit</a></div><div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div></div>
+<!-- CTA -->
+<div class="cta-section">
+  <h2 class="cta-title animate-in">Ready to get started?</h2>
+  <p class="cta-sub animate-in delay-1">Standard is free forever. Pro and Ultra are one-time payments.</p>
+  <div class="hero-cta animate-in delay-2" style="margin-bottom:0">
+    <a class="btn btn-primary btn-lg" onclick="window.parent.loadPage('download')">
+      <i class="fa-solid fa-download"></i> Get WatchNexus
+    </a>
   </div>
-  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved. v1.0.0</div>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-body">
+    <div>
+      <a class="footer-brand-logo" onclick="window.parent.loadPage('home')">
+        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus">
+        WatchNexus
+      </a>
+      <p class="footer-brand-tagline">Your complete, self-hosted media pipeline. One app, 73 modules, zero subscriptions.</p>
+      <span class="footer-version"><i class="fa-solid fa-code-branch"></i> v2.9.0</span>
+    </div>
+    <div>
+      <p class="footer-col-title">Product</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('features')"><i class="fa-solid fa-layer-group"></i>Features &amp; Comparison</a>
+        <a onclick="window.parent.loadPage('download')"><i class="fa-solid fa-download"></i>Download</a>
+        <a onclick="window.parent.loadPage('faq')"><i class="fa-solid fa-circle-question"></i>FAQ</a>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Resources</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-headset"></i>Support</a>
+        <a onclick="window.parent.loadPage('press')"><i class="fa-solid fa-newspaper"></i>Press Kit</a>
+        <a href="https://licenses.watchnexus.ca" target="_blank"><i class="fa-solid fa-key"></i>License Portal</a>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Community</p>
+      <div class="footer-col-links">
+        <a class="muted"><i class="fa-brands fa-discord"></i>Discord <small>(soon)</small></a>
+        <a class="muted"><i class="fa-brands fa-github"></i>GitHub <small>(soon)</small></a>
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-bug"></i>Report a Bug</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+  </div>
 </footer>
-<script>const obs=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.animate-in').forEach(el=>obs.observe(el));</script>
+
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.style.animationPlayState = 'running'; });
+}, { threshold: 0.08 });
+document.querySelectorAll('.animate-in').forEach(el => {
+  el.style.animationPlayState = 'paused';
+  io.observe(el);
+});
+</script>
 </body>
 </html>

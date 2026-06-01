@@ -257,7 +257,7 @@ public static class TrayController
             };
             Process.Start(psi);
         }
-        catch { Log.Error("[TrayController] The NSIS installer creates a service called "WatchNexusCore""); }
+        catch { Log.Error("[TrayController] The NSIS installer creates a service called 'WatchNexusCore'"); }
     }
 #endif
 
