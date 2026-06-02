@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -245,7 +247,7 @@ public class CrumbsController : ControllerBase
                     created_at = createdAt, expires_at = expiresAt, fields
                 });
             }
-            catch { }
+            catch { Log.Error("[CrumbsController] operation failed"); }
         }
         return result;
     }
@@ -280,7 +282,7 @@ public class CrumbsController : ControllerBase
                 if (prev.TryGetProperty("last_used", out var lu)) config["last_used"] = lu.GetString()!;
                 if (prev.TryGetProperty("created_at", out var ca)) config["created_at"] = ca.GetString()!;
             }
-            catch { }
+            catch { Log.Error("[CrumbsController] operation failed"); }
         }
         if (!config.ContainsKey("created_at"))
             config["created_at"] = DateTime.UtcNow.ToString("o");
@@ -333,7 +335,7 @@ public class CrumbsController : ControllerBase
                     foreach (var prop in f.EnumerateObject())
                         fields[prop.Name] = prop.Value.GetString() ?? "";
             }
-            catch { }
+            catch { Log.Error("[CrumbsController] operation failed"); }
         }
 
         var (success, message, latencyMs) = serviceId switch
@@ -366,7 +368,7 @@ public class CrumbsController : ControllerBase
                 cfg.Value = JsonSerializer.Serialize(dict);
                 await _db.SaveChangesAsync();
             }
-            catch { }
+            catch { Log.Error("[CrumbsController] operation failed"); }
         }
 
         return Ok(new { success, message, latency_ms = latencyMs, tested_at = DateTime.UtcNow });
@@ -410,7 +412,7 @@ public class CrumbsController : ControllerBase
                 cfg.Value = JsonSerializer.Serialize(dict);
                 await _db.SaveChangesAsync();
             }
-            catch { }
+            catch { Log.Error("[CrumbsController] operation failed"); }
         }
         return Ok(new { status = "tracked" });
     }
@@ -463,7 +465,7 @@ public class CrumbsController : ControllerBase
                 return (true, "TMDB API connected successfully", (int)sw.ElapsedMilliseconds);
             return (false, $"TMDB returned HTTP {resp.StatusCode}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, $"Connection failed: {ex.Message}", (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, $"Connection failed: {ex.Message}", (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestQBittorrent(Dictionary<string, string> fields)
@@ -485,7 +487,7 @@ public class CrumbsController : ControllerBase
             }
             return (false, $"qBittorrent returned HTTP {resp.StatusCode}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, $"Connection failed: {ex.Message}", (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, $"Connection failed: {ex.Message}", (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestOpenSubtitles(Dictionary<string, string> fields)
@@ -505,7 +507,7 @@ public class CrumbsController : ControllerBase
                 return (true, "OpenSubtitles API connected", (int)sw.ElapsedMilliseconds);
             return (false, $"OpenSubtitles returned HTTP {resp.StatusCode}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, $"Connection failed: {ex.Message}", (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, $"Connection failed: {ex.Message}", (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestOpenWeatherMap(Dictionary<string, string> fields)
@@ -522,7 +524,7 @@ public class CrumbsController : ControllerBase
             if (resp.IsSuccessStatusCode) return (true, "OpenWeatherMap API connected", (int)sw.ElapsedMilliseconds);
             return (false, $"OpenWeatherMap returned HTTP {resp.StatusCode}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestUrl(string url, string name)
@@ -536,7 +538,7 @@ public class CrumbsController : ControllerBase
             sw.Stop();
             return (resp.IsSuccessStatusCode, $"{name} reachable (HTTP {(int)resp.StatusCode})", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] TestUrl failed"); sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestMatrix(Dictionary<string, string> fields)
@@ -557,7 +559,7 @@ public class CrumbsController : ControllerBase
             var userId = doc.RootElement.TryGetProperty("user_id", out var uid) ? uid.GetString() : "unknown";
             return (true, $"Connected as {userId}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestSynapse(Dictionary<string, string> fields)
@@ -578,7 +580,7 @@ public class CrumbsController : ControllerBase
             var ver = doc.RootElement.TryGetProperty("server_version", out var v) ? v.GetString() : "unknown";
             return (true, $"Synapse v{ver}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestMediaBridge(Dictionary<string, string> fields)
@@ -599,7 +601,7 @@ public class CrumbsController : ControllerBase
             var ver = doc.RootElement.TryGetProperty("Version", out var v) ? v.GetString() : "";
             return (true, $"Connected to {name} v{ver}", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
     private async Task<(bool, string, int)> TestOmdb(Dictionary<string, string> fields)
@@ -618,7 +620,7 @@ public class CrumbsController : ControllerBase
                 return (true, "OMDB API connected", (int)sw.ElapsedMilliseconds);
             return (false, "OMDB returned error — check API key", (int)sw.ElapsedMilliseconds);
         }
-        catch (Exception ex) { sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
+        catch (Exception ex) { Log.Error(ex, "[CrumbsController] operation failed"); sw.Stop(); return (false, ex.Message, (int)sw.ElapsedMilliseconds); }
     }
 
     // ── Sync to legacy settings for backward compatibility ──────────────────

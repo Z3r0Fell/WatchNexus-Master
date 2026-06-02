@@ -63,6 +63,7 @@ const ICON_MAP = {
   BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive, HelpCircle,
   Activity, Timer, Archive, Rss, Clapperboard,
 };
+import { toast } from 'sonner';
 
 // Media navigation items
 const mediaNavItems = [
@@ -88,6 +89,7 @@ const gadgetNavItems = [
   { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
   { icon: Image, label: 'Photos', path: '/photos', hideable: true, isGadget: true },
   { icon: Video, label: 'Web Video', path: '/webvideo', hideable: true, isGadget: true },
+  { icon: Music, label: 'Spotify DL', path: '/spotdl', hideable: true, isGadget: true },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', hideable: true, isGadget: true },
   { icon: Bell, label: 'Notifications', path: '/notifications', hideable: true, isGadget: true },
   { icon: MessageSquare, label: 'Requests', path: '/requests', hideable: true, isGadget: true },
@@ -141,6 +143,7 @@ const getVisibleTabs = () => {
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error('Error loading visible tabs:', e);
+      toast.error('Error loading visible tabs:');
   }
   return defaultVisibleTabs;
 };

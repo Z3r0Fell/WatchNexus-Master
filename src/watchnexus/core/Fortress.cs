@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core;
 
 /// <summary>
@@ -334,10 +336,7 @@ public static class Fortress
                 var json = File.ReadAllText(configPath);
                 _config = JsonSerializer.Deserialize<FortressConfig>(json) ?? new FortressConfig();
             }
-            catch
-            {
-                _config = new FortressConfig();
-            }
+            catch { Log.Error("[Fortress] LoadConfig failed"); _config = new FortressConfig(); }
         }
     }
 
@@ -397,7 +396,7 @@ public static class Fortress
             var line = JsonSerializer.Serialize(entry) + "\n";
             File.AppendAllText(auditPath, line);
         }
-        catch { /* non-critical */ }
+        catch { Log.Error("[Fortress] Persist to disk (append to JSONL file)"); }
     }
 }
 

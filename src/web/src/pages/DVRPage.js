@@ -138,6 +138,7 @@ export const DVRPage = () => {
       setChannels(res.data || []);
     } catch (err) {
       console.error('Failed to fetch channels:', err);
+        toast.error('Failed to fetch channels:');
     }
   }, []);
 

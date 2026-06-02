@@ -30,11 +30,11 @@ const BiscottiPage = () => {
       if (searchQuery) params.set('search', searchQuery);
       const res = await axios.get(`${API}/api/biscotti/items?${params}`);
       setItems(res.data.items || []);
-    } catch {} finally { setLoading(false); }
+    } catch { console.error('[BiscottiPage] Failed to fetch items'); } finally { setLoading(false); toast.error('[BiscottiPage] Failed to fetch items');; }
   }, [typeFilter, searchQuery]);
 
   const fetchStats = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/biscotti/stats`); setStats(res.data); } catch {}
+    try { const res = await axios.get(`${API}/api/biscotti/stats`); setStats(res.data); } catch { console.error('[BiscottiPage] Failed to fetch stats'); toast.error('[BiscottiPage] Failed to fetch stats');; }
   }, []);
 
   useEffect(() => { fetchItems(); fetchStats(); }, [fetchItems, fetchStats]);

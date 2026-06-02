@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -33,7 +35,7 @@ public class RouxController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections");
         if (setting?.Value != null)
         {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[RouxController] GetCollections failed"); }
         }
 
         // Return default smart collections
@@ -62,7 +64,7 @@ public class RouxController : ControllerBase
         var collections = new List<object>();
         if (setting?.Value != null)
         {
-            try { collections = JsonSerializer.Deserialize<List<object>>(setting.Value) ?? new List<object>(); } catch { }
+            try { collections = JsonSerializer.Deserialize<List<object>>(setting.Value) ?? new List<object>(); } catch { Log.Error("[RouxController] Load existing collections"); }
         }
 
         var newCol = new { id, name, type, icon, rules = JsonSerializer.Deserialize<object>(rulesRaw), item_count = 0, auto_refresh = type == "smart", created = DateTime.UtcNow };

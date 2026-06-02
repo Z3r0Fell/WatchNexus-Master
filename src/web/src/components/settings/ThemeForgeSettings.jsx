@@ -38,7 +38,7 @@ export const ThemeForgeSettings = () => {
         setSelectedTheme(res.data.current_theme.type);
         if (res.data.current_theme.colors) setCustomColors(res.data.current_theme.colors);
       }
-    } catch {}
+    } catch { console.error('[ThemeForgeSettings] Failed to fetch theme forge config'); toast.error('[ThemeForgeSettings] Failed to fetch theme forge config');; }
   }, []);
 
   useEffect(() => { fetchThemeForgeConfig(); }, [fetchThemeForgeConfig]);

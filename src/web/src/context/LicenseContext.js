@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 
@@ -32,6 +32,7 @@ export const ROUTE_MODULE_MAP = {
   '/radio': 'nectar',
   '/photos': 'ganache',
   '/webvideo': 'bisque',
+  '/spotdl': 'bisque',
   '/analytics': 'truffle',
   '/notifications': 'pepper',
   '/requests': 'meringue',
@@ -64,7 +65,7 @@ export const ROUTE_MODULE_MAP = {
   '/cloud-sync': 'marshmallow',
   '/media-sync': 'chowder',
   '/themes': 'milk',
-  '/dvr': 'iptv',
+  '/party': 'watch-party',
 };
 
 // Module → required tier
@@ -148,13 +149,15 @@ export const LicenseProvider = ({ children }) => {
     return mod ? (MODULE_TIER[mod] || 'standard') : 'standard';
   }, []);
 
+  const value = useMemo(() => ({
+    tier, unlockedModules, loading,
+    isModuleUnlocked, isRouteUnlocked,
+    getRequiredTier, getRouteRequiredTier,
+    refreshLicense: fetchLicense,
+  }), [tier, unlockedModules, loading, isModuleUnlocked, isRouteUnlocked, getRequiredTier, getRouteRequiredTier, fetchLicense]);
+
   return (
-    <LicenseContext.Provider value={{
-      tier, unlockedModules, loading,
-      isModuleUnlocked, isRouteUnlocked,
-      getRequiredTier, getRouteRequiredTier,
-      refreshLicense: fetchLicense,
-    }}>
+    <LicenseContext.Provider value={value}>
       {children}
     </LicenseContext.Provider>
   );

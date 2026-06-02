@@ -49,6 +49,7 @@ export const AudiobooksPage = () => {
       setRecentBooks(recentAudiobooks.slice(0, 8));
     } catch (error) {
       console.error('Failed to fetch audiobook data:', error);
+        toast.error('Failed to fetch audiobook data:');
     } finally {
       setLoading(false);
     }

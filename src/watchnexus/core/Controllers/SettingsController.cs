@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 [ApiController]
@@ -44,10 +46,7 @@ public class SettingsController : ControllerBase
             var doc = JsonDocument.Parse(s.Value);
             return Content(s.Value, "application/json");
         }
-        catch
-        {
-            return Ok(new { key, value = s.Value });
-        }
+        catch { Log.Error("[SettingsController] Try to return as parsed JSON if possible"); return Ok(new { key, value = s.Value }); }
     }
 
     [HttpPut]
@@ -110,7 +109,7 @@ public class SettingsController : ControllerBase
                 var resp = await client.GetAsync($"https://api.themoviedb.org/3/configuration?api_key={req.Api_key}");
                 if (!resp.IsSuccessStatusCode) return BadRequest(new { detail = "Invalid TMDB API key" });
             }
-            catch { return BadRequest(new { detail = "Could not verify TMDB API key" }); }
+            catch { Log.Error("[SettingsController] UpdateTmdb failed"); return BadRequest(new { detail = "Could not verify TMDB API key" }); }
         }
 
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.UserId == UserId);
@@ -140,7 +139,7 @@ public class SettingsController : ControllerBase
             var resp = await client.GetAsync($"http://{req.Host}:{req.Port}/api/v2/auth/login");
             return Ok(new { success = resp.IsSuccessStatusCode });
         }
-        catch { return Ok(new { success = false, error = "Connection failed" }); }
+        catch { Log.Error("[SettingsController] TestQbit failed"); return Ok(new { success = false, error = "Connection failed" }); }
     }
 }
 

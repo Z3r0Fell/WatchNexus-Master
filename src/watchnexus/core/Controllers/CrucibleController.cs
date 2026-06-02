@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -190,7 +192,7 @@ public class CrucibleController : ControllerBase
                     ffmpegVersion = output;
                 }
             }
-            catch { }
+            catch { Log.Error("[CrucibleController] operation failed"); }
         }
 
         return Ok(new
@@ -218,7 +220,7 @@ public class CrucibleController : ControllerBase
             proc?.WaitForExit();
             if (!string.IsNullOrEmpty(output) && System.IO.File.Exists(output)) return output;
         }
-        catch { }
+        catch { Log.Error("[CrucibleController] operation failed"); }
         return null;
     }
 
@@ -237,6 +239,6 @@ public class CrucibleController : ControllerBase
             await proc.WaitForExitAsync();
             return JsonDocument.Parse(output).RootElement;
         }
-        catch (Exception ex) { return new { error = ex.Message }; }
+        catch (Exception ex) { Log.Error(ex, "[CrucibleController] operation failed"); return new { error = ex.Message }; }
     }
 }

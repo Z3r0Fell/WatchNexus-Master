@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>Bridge routes for legacy /api/marmalade/* endpoints used by some frontend pages</summary>
@@ -101,13 +103,13 @@ public class MarmaladeBridgeController : ControllerBase
             {
                 var ts = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null);
                 if (ts != null) {
-                    try { var d = System.Text.Json.JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; else tmdbKey = ts.Value ?? ""; } catch { tmdbKey = ts.Value ?? ""; }
+                    try { var d = System.Text.Json.JsonDocument.Parse(ts.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; else tmdbKey = ts.Value ?? ""; } catch { Log.Error("[MarmaladeBridgeController] operation failed"); tmdbKey = ts.Value ?? ""; }
                 }
             }
             if (string.IsNullOrEmpty(tmdbKey))
             {
                 var cs = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null);
-                if (cs != null) { try { var d = System.Text.Json.JsonDocument.Parse(cs.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { } }
+                if (cs != null) { try { var d = System.Text.Json.JsonDocument.Parse(cs.Value ?? "{}"); if (d.RootElement.TryGetProperty("api_key", out var a)) tmdbKey = a.GetString() ?? ""; } catch { Log.Error("[MarmaladeBridgeController] operation failed"); } }
             }
 
             var http = _httpFactory.CreateClient();
@@ -159,7 +161,7 @@ public class MarmaladeBridgeController : ControllerBase
                                 item.Rating = (float)ra.GetDouble();
                         }
                     }
-                    catch { /* skip metadata fetch errors */ }
+                    catch { Log.Error("[MarmaladeBridgeController] operation failed"); }
                 }
 
                 _db.MediaItems.Add(item);
@@ -172,10 +174,7 @@ public class MarmaladeBridgeController : ControllerBase
             lib.LastScannedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
-        catch (Exception ex)
-        {
-            return Ok(new { @new = newCount, updated, total = newCount + updated, errors = new[] { ex.Message } });
-        }
+        catch (Exception ex) { Log.Error(ex, "[MarmaladeBridgeController] operation failed"); return Ok(new { @new = newCount, updated, total = newCount + updated, errors = new[] { ex.Message } }); }
 
         return Ok(new { @new = newCount, updated, total = newCount + updated, errors = Array.Empty<string>() });
     }
@@ -288,7 +287,7 @@ public class MarmaladeBridgeController : ControllerBase
             .ToListAsync();
         var list = items.Select(s => {
             try { return System.Text.Json.JsonSerializer.Deserialize<object>(s.Value ?? "{}"); }
-            catch { return null; }
+            catch { Log.Error("[MarmaladeBridgeController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(list);
     }
@@ -394,7 +393,7 @@ public class MarmaladeBridgeController : ControllerBase
                 else
                     tmdbApiKey = tmdbSetting.Value ?? "";
             }
-            catch { tmdbApiKey = tmdbSetting.Value ?? ""; }
+            catch { Log.Error("[MarmaladeBridgeController] operation failed"); tmdbApiKey = tmdbSetting.Value ?? ""; }
         }
         if (string.IsNullOrEmpty(tmdbApiKey))
         {
@@ -408,7 +407,7 @@ public class MarmaladeBridgeController : ControllerBase
                     if (doc.RootElement.TryGetProperty("api_key", out var ak))
                         tmdbApiKey = ak.GetString() ?? "";
                 }
-                catch { }
+                catch { Log.Error("[MarmaladeBridgeController] operation failed"); }
             }
         }
         if (string.IsNullOrEmpty(tmdbApiKey))
@@ -445,7 +444,7 @@ public class MarmaladeBridgeController : ControllerBase
                     updated++;
                 }
             }
-            catch { /* skip failed items */ }
+            catch { Log.Error("[MarmaladeBridgeController] operation failed"); /* skip failed items */ }
         }
         await _db.SaveChangesAsync();
         return Ok(new { status = "completed", updated, total = items.Count });

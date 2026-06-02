@@ -1,11 +1,10 @@
-WATCHNEXUS END USER LICENSE AGREEMENT
-Copyright (c) WatchNexus Media Systems. All rights reserved.
+WATCHNEXUS — LICENSE NOTICE
+Version 1.0.0
+Copyright (c) 2026 WatchNexus Media Systems
 
-This software is licensed, not sold. Use of WatchNexus is governed by the
-tier-specific license key you obtained from https://watchnexus.ca. Activation
-contacts https://licenses.watchnexus.ca to validate the key and unlock the
-corresponding tier (Standard, Pro, or Ultra). Reverse engineering,
-redistribution, or circumvention of the licensing system is prohibited.
+SOURCE CODE: MIT License — free to read, fork, modify, compile.
+BINARY INSTALLERS: Tier-licensed (Standard / Pro / Ultra).
+All components derived from open-source materials.
 
-By installing WatchNexus you agree to the terms published at
-https://watchnexus.ca/legal/eula.
+https://github.com/Z3r0Fell/WatchNexus-Master
+https://watchnexus.ca/legal/notices

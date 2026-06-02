@@ -79,11 +79,12 @@ export const GeneralSettings = ({
         }
       } catch (error) {
         console.error('Failed to fetch preferences:', error);
+          toast.error('Failed to fetch preferences:');
         // Fall back to localStorage for backwards compatibility
         try {
           const saved = localStorage.getItem('watchnexus_visible_tabs');
           if (saved) setVisibleTabs(JSON.parse(saved));
-        } catch {}
+        } catch { console.error('[GeneralSettings] Failed to parse visible tabs'); toast.error('[GeneralSettings] Failed to parse visible tabs');; }
       } finally {
         setLoadingPrefs(false);
       }
@@ -114,6 +115,7 @@ export const GeneralSettings = ({
       toast.success('Sidebar tabs updated and synced to your account');
     } catch (error) {
       console.error('Failed to save preferences:', error);
+        toast.error('Failed to save preferences:');
       toast.error('Failed to save tab preferences');
     } finally {
       setSavingTabs(false);

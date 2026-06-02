@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { API_URL } from '../lib/config';
 
 const API = API_URL;
+import { toast } from 'sonner';
 
 const AuthContext = createContext(null);
 
@@ -14,15 +15,22 @@ export const useAuth = () => {
   return context;
 };
 
+// Set axios auth header synchronously so it's available before React
+// effects run (other context providers like License, Theme, Gadget
+// call APIs on mount and need the header). Must run at module level.
+const initialToken = localStorage.getItem('token');
+if (initialToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(initialToken);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchUser();
     } else {
       setLoading(false);
@@ -47,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Failed to fetch user:', error);
+        toast.error('Failed to fetch user:');
       // Only logout on 401 Unauthorized, not on network errors
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
@@ -60,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
     const { access_token, user: userData } = response.data;
     localStorage.setItem('token', access_token);
@@ -69,9 +78,9 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setIsAuthenticated(true);
     return userData;
-  };
+  }, []);
 
-  const register = async (email, password, username) => {
+  const register = useCallback(async (email, password, username) => {
     const response = await axios.post(`${API}/auth/register`, { email, password, username });
     const { access_token, user: userData } = response.data;
     localStorage.setItem('token', access_token);
@@ -80,9 +89,9 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setIsAuthenticated(true);
     return userData;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await axios.post(`${API}/auth/logout`);
     } catch (error) {
@@ -93,20 +102,16 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    user, setUser, token, loading,
+    login, register, logout,
+    isAuthenticated, setIsAuthenticated,
+  }), [user, token, loading, isAuthenticated, login, register, logout]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      setUser,
-      token, 
-      loading, 
-      login, 
-      register, 
-      logout, 
-      isAuthenticated,
-      setIsAuthenticated 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

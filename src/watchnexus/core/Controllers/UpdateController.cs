@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Services;
 using WatchNexus.Shared;
+
+using static WatchNexus.Core.Log;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -21,11 +24,13 @@ public class UpdateController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpFactory;
     private readonly IConfiguration _config;
-    public UpdateController(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config)
+    private readonly ITierResolver _tierResolver;
+    public UpdateController(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config, ITierResolver tierResolver)
     {
         _db = db;
         _httpFactory = httpFactory;
         _config = config;
+        _tierResolver = tierResolver;
     }
 
     private const string CURRENT_VERSION = "1.0.0";
@@ -80,6 +85,8 @@ public class UpdateController : ControllerBase
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "[UpdateController] operation failed");
+
             mainUpdate = new { available = false, current_version = CURRENT_VERSION, latest_version = CURRENT_VERSION, tier, error = $"Cannot reach license server: {ex.Message}" };
             errors.Add($"License server: {ex.Message}");
         }
@@ -124,6 +131,8 @@ public class UpdateController : ControllerBase
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "[UpdateController] operation failed");
+
                 hotfixPatch = new { available = false, error = ex.Message };
                 errors.Add($"Patch repo: {ex.Message}");
             }
@@ -161,7 +170,7 @@ public class UpdateController : ControllerBase
         string? lastCheckedAt = null;
         if (lastCheck?.Value != null)
         {
-            try { var d = JsonDocument.Parse(lastCheck.Value).RootElement; lastCheckedAt = d.TryGetProperty("checked_at", out var ca) ? ca.GetString() : null; } catch { }
+            try { var d = JsonDocument.Parse(lastCheck.Value).RootElement; lastCheckedAt = d.TryGetProperty("checked_at", out var ca) ? ca.GetString() : null; } catch { Log.Error("[UpdateController] CurrentVersion failed"); }
         }
         return Ok(new
         {
@@ -198,7 +207,7 @@ public class UpdateController : ControllerBase
                     notes = d.TryGetProperty("notes", out var n) ? n.GetString() : null,
                 };
             }
-            catch { return null; }
+            catch { Log.Error("[UpdateController] operation failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(new { history, total = history.Count });
     }
@@ -262,13 +271,7 @@ public class UpdateController : ControllerBase
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
-    private async Task<string> GetCurrentTier()
-    {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
-        if (setting?.Value == null) return "standard";
-        try { var doc = JsonDocument.Parse(setting.Value).RootElement; return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard"; }
-        catch { return "standard"; }
-    }
+    private async Task<string> GetCurrentTier() => await _tierResolver.GetCurrentTier();
 
     private static int CompareVersions(string a, string b)
     {

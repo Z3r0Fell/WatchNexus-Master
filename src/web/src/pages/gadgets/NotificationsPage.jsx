@@ -36,6 +36,7 @@ export const NotificationsPage = () => {
       setHistory(historyRes.data);
     } catch (e) {
       console.error('Notifications fetch error:', e);
+        toast.error('Notifications fetch error:');
     } finally {
       setLoading(false);
     }

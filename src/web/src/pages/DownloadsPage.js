@@ -132,6 +132,7 @@ export const DownloadsPage = () => {
       setEngineTorrents(torrentsRes.data || []);
     } catch (error) {
       console.error('Engine fetch failed:', error);
+        toast.error('Engine fetch failed:');
       setEngineStatus({ success: false });
     }
   }, []);
@@ -148,6 +149,7 @@ export const DownloadsPage = () => {
       }
     } catch (error) {
       console.error('qBittorrent fetch failed:', error);
+        toast.error('qBittorrent fetch failed:');
       setQbitStatus({ success: false });
     }
   }, []);

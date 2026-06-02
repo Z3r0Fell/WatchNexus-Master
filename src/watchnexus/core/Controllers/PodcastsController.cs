@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Brioche (Podcasts) ──────────────────────────────────────
@@ -90,16 +92,13 @@ public class PodcastsController : ControllerBase
             sub.LastChecked = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
-        catch (Exception ex)
-        {
-            return Ok(new
+        catch (Exception ex) { Log.Error(ex, "[PodcastsController] operation failed"); return Ok(new
             {
                 sub.Id, sub.Title, sub.Author, feed_url = sub.FeedUrl,
                 artwork_url = sub.ArtworkUrl, sub.Description,
                 episodes = Array.Empty<object>(),
                 error = $"Failed to parse feed: {ex.Message}"
-            });
-        }
+            }); }
         return Ok(new
         {
             sub.Id, sub.Title, sub.Author, feed_url = sub.FeedUrl,

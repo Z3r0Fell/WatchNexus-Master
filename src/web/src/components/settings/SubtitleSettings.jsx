@@ -52,7 +52,7 @@ export const SubtitleSettings = () => {
         setSettings(res.data);
         setProviderOrder(res.data.providers || []);
       }
-    } catch (err) { console.error('Failed to fetch subtitle settings:', err); }
+    } catch (err) { console.error('Failed to fetch subtitle settings:', err); toast.error('Failed to fetch subtitle settings:');; }
   }, []);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);

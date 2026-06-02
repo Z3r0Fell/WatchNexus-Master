@@ -18,7 +18,7 @@ export const IndexerSettings = () => {
   });
 
   const fetchIndexers = useCallback(async () => {
-    try { const res = await compoteApi.getIndexers(); setIndexers(res.data || []); } catch {}
+    try { const res = await compoteApi.getIndexers(); setIndexers(res.data || []); } catch { console.error('[IndexerSettings] Failed to fetch indexers'); toast.error('[IndexerSettings] Failed to fetch indexers');; }
   }, []);
 
   useEffect(() => { fetchIndexers(); }, [fetchIndexers]);
@@ -47,6 +47,7 @@ export const IndexerSettings = () => {
       toast.success(`${indexer.name} ${indexer.enabled ? 'disabled' : 'enabled'}`);
     } catch (error) {
       console.error('Failed to toggle indexer:', error);
+        toast.error('Failed to toggle indexer:');
       toast.error('Failed to update indexer. Try removing and re-adding it.');
     }
   };

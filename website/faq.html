@@ -3,102 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FAQ - WatchNexus</title>
+  <title>FAQ — WatchNexus</title>
   <link rel="icon" type="image/png" href="assets/images/favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
+<body class="page">
 
-<nav class="nav">
-  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
-  <ul class="nav-links"><li><a href="features.html">Features</a></li><li><a href="download.html">Download</a></li><li><a href="faq.html" class="active">FAQ</a></li><li><a href="support.html">Support</a></li></ul>
-  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
-  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
-</nav>
-
-<section class="hero" style="padding-bottom:3rem;">
-  <h1 class="animate-in">Frequently Asked<br><span class="gradient-text">Questions</span></h1>
+<section class="page-hero">
+  <div class="section-eyebrow animate-in"><i class="fa-solid fa-circle-question"></i> Help</div>
+  <h1 class="animate-in delay-1">Frequently Asked<br><span class="gradient-text">Questions</span></h1>
 </section>
 
-<section class="section" style="max-width:48rem;margin:0 auto;padding:2rem;">
+<section class="section" style="padding-top:1rem;max-width:760px">
   <div class="faq-list animate-in">
 
     <details class="faq-item" open>
       <summary>What is WatchNexus?</summary>
-      <p>WatchNexus is a self-hosted, all-in-one media pipeline. It replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyfin, and more with a single application containing 73 purpose-built modules.</p>
+      <p>WatchNexus is a self-hosted, all-in-one media pipeline. It replaces Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyfin, and more with a single application containing 73 purpose-built modules, each with a culinary codename.</p>
     </details>
 
     <details class="faq-item">
       <summary>Is there a free version?</summary>
-      <p>Yes! WatchNexus Standard is completely free and includes 31 modules covering media library management, streaming, downloads, playlists, gadgets, themes, and more. No credit card, no trial period, no limits.</p>
+      <p>Yes. WatchNexus Standard is completely free and includes 31 modules — media library management, streaming, downloads, playlists, gadgets, themes, and more. No credit card, no trial period, no expiry.</p>
     </details>
 
     <details class="faq-item">
       <summary>What's the difference between Standard, Pro, and Ultra?</summary>
-      <p><strong>Standard (Free)</strong> &mdash; Core media server with 31 modules: library, streaming, downloads, playlists, gadgets, themes.<br><br><strong>Pro ($35 CAD)</strong> &mdash; Adds 18 modules for automation, analytics, scheduled tasks, indexer search, movie automation, Live TV/IPTV, AI recommendations, ebooks, music, RSS, backup, and 2FA.<br><br><strong>Ultra ($60 CAD)</strong> &mdash; Adds 24 more modules for the full suite: security center, hardware GPU transcoding, disc ripping, gaming console, media sync from Jellyfin/Emby, Jellyseerr integration, cloud backup, offline sync, Matrix chat, Usenet, subtitles, and more.</p>
+      <p><strong style="color:var(--text-1)">Standard (Free)</strong> — 31 modules covering core media server functionality: library, streaming, downloads, playlists, and gadgets.<br><br>
+      <strong style="color:#60a5fa">Pro ($35 CAD)</strong> — Adds 18 modules: indexer search, movie automation, scheduled tasks, analytics, AI recommendations, Live TV/IPTV, DVR, ebooks, music, RSS, backup, and 2FA.<br><br>
+      <strong style="color:#a78bfa">Ultra ($60 CAD)</strong> — Adds 24 more modules: security center, GPU transcoding, disc ripping, gaming console, media sync from Jellyfin/Emby, Jellyseerr, cloud backup, offline sync, Matrix, Usenet, and more.</p>
     </details>
 
     <details class="faq-item">
-      <summary>Is this a subscription or one-time payment?</summary>
-      <p>One-time payment. Buy a Pro or Ultra license once and it's yours forever. Standard is free forever. All tiers include lifetime updates.</p>
+      <summary>Is this a subscription or a one-time payment?</summary>
+      <p>One-time payment. Buy a Pro or Ultra license once and it's yours forever. Standard is free forever. All tiers include all future updates.</p>
     </details>
 
     <details class="faq-item">
       <summary>How do I activate Pro or Ultra?</summary>
-      <p>1. Install WatchNexus Standard (free)<br>2. Purchase a Pro or Ultra serial number at <a href="https://licenses.watchnexus.ca" style="color:var(--accent-light)">licenses.watchnexus.ca</a><br>3. In the app, go to Settings &rarr; Activation and enter your serial number<br>4. Your modules unlock instantly</p>
+      <p>1. Install WatchNexus Standard (free) via Docker<br>
+      2. Purchase a Pro or Ultra serial number at <strong style="color:var(--text-1)">licenses.watchnexus.ca</strong><br>
+      3. In the app, go to <strong style="color:var(--text-1)">Settings → Activation</strong> and enter your serial<br>
+      4. Modules unlock immediately — no restart required</p>
     </details>
 
     <details class="faq-item">
       <summary>Can I upgrade from Pro to Ultra later?</summary>
-      <p>Yes! Upgrade paths are built in. You can go from Standard &rarr; Pro, Standard &rarr; Ultra, or Pro &rarr; Ultra at any time. Just enter your new serial number in Settings &rarr; Activation.</p>
+      <p>Yes. Upgrade at any time by purchasing an Ultra serial and entering it in Settings → Activation. The app handles tier transitions automatically.</p>
     </details>
 
     <details class="faq-item">
       <summary>What are the system requirements?</summary>
-      <p>Docker 20.10+ on Linux, macOS, or Windows (WSL2). Minimum 2 CPU cores and 2 GB RAM. For hardware transcoding in Ultra, an NVIDIA GPU with NVENC support is recommended. Intel Quick Sync and AMD AMF are also supported.</p>
+      <p>Docker 20.10+ on Linux, macOS, or Windows (WSL2). Minimum 2 CPU cores and 2 GB RAM. For hardware transcoding (Ultra), an NVIDIA GPU with NVENC, Intel Quick Sync, or AMD AMF is supported.</p>
     </details>
 
     <details class="faq-item">
       <summary>How do updates work?</summary>
-      <p>WatchNexus has a built-in update system. It checks the license server for new builds and can also receive silent hotfix patches from a private repository. You can configure auto-check intervals and update channels (Stable, Beta, Nightly) in Settings &rarr; Updates.</p>
+      <p>WatchNexus has a built-in update system. It checks the license server for new builds and can silently apply hotfix patches. You can configure auto-check intervals and update channels (Stable, Beta, Nightly) in Settings → Updates.</p>
     </details>
 
     <details class="faq-item">
       <summary>What is the Gaming Console (Pretzel)?</summary>
-      <p>Pretzel is a browser-based retro game emulator built into WatchNexus Ultra. It supports 15 systems including NES, SNES, N64, Genesis, Game Boy, GBA, PlayStation, Atari, MAME, and more. Load ROM files from your server and play directly in your browser.</p>
+      <p>Pretzel is a browser-based retro game emulator built into WatchNexus Ultra. It supports 15 systems including NES, SNES, N64, Genesis, Game Boy, GBA, PlayStation, Atari, and MAME. Load ROMs from your server and play directly in the browser.</p>
     </details>
 
     <details class="faq-item">
       <summary>What is Chowder (Media Sync)?</summary>
-      <p>Chowder is a JellyLooter Pro-powered media sync engine. Connect to remote Jellyfin or Emby servers, browse their libraries, and download content with scheduling, bandwidth control, and automatic library import. Ultra tier only.</p>
-    </details>
-
-    <details class="faq-item">
-      <summary>Can I run WatchNexus without Docker?</summary>
-      <p>Docker is the recommended deployment method. WatchNexus is built with .NET 10 and React, so it can theoretically run standalone, but Docker ensures all dependencies are included and makes updates seamless.</p>
+      <p>Chowder is a JellyLooter Pro-powered engine that connects to remote Jellyfin or Emby servers, browses their libraries, and downloads content with scheduling, bandwidth throttling, and automatic library import. Ultra only.</p>
     </details>
 
     <details class="faq-item">
       <summary>Is my data stored locally?</summary>
-      <p>Yes, 100%. WatchNexus is self-hosted. Your media files, database, settings, and watch history all stay on your server. The only external connections are to TMDB (for metadata), your configured download clients, and the license server (for activation and updates).</p>
+      <p>Yes — 100% self-hosted. Your media, database, settings, and watch history stay on your server. The only external connections are TMDB (for metadata), your configured download clients, and the license server (for activation and updates only).</p>
     </details>
 
     <details class="faq-item">
-      <summary>What currency are the prices in?</summary>
-      <p>All prices are in Canadian Dollars (CAD). Pro is $35 CAD (~$26 USD) and Ultra is $60 CAD (~$44 USD). One-time payment, no recurring fees.</p>
+      <summary>What currency are prices listed in?</summary>
+      <p>Canadian Dollars (CAD). Pro is $35 CAD (~$26 USD) and Ultra is $60 CAD (~$44 USD). One-time, no recurring fees, no hidden charges.</p>
     </details>
 
   </div>
 </section>
 
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand"><div class="nav-logo" style="margin-bottom:0.5rem;"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;"> WatchNexus</div><p>Your complete, self-hosted media pipeline.</p></div>
-    <div class="footer-links"><div><h4>Product</h4><a href="features.html">Features</a><a href="download.html">Download</a><a href="faq.html">FAQ</a></div><div><h4>Resources</h4><a href="support.html">Support</a><a href="press.html">Press Kit</a></div><div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div></div>
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-body">
+    <div>
+      <a class="footer-brand-logo" onclick="window.parent.loadPage('home')">
+        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus">
+        WatchNexus
+      </a>
+      <p class="footer-brand-tagline">Your complete, self-hosted media pipeline. One app, 73 modules, zero subscriptions.</p>
+      <span class="footer-version"><i class="fa-solid fa-code-branch"></i> v2.9.0</span>
+    </div>
+    <div>
+      <p class="footer-col-title">Product</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('features')"><i class="fa-solid fa-layer-group"></i>Features &amp; Comparison</a>
+        <a onclick="window.parent.loadPage('download')"><i class="fa-solid fa-download"></i>Download</a>
+        <a onclick="window.parent.loadPage('faq')"><i class="fa-solid fa-circle-question"></i>FAQ</a>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Resources</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-headset"></i>Support</a>
+        <a onclick="window.parent.loadPage('press')"><i class="fa-solid fa-newspaper"></i>Press Kit</a>
+        <a href="https://licenses.watchnexus.ca" target="_blank"><i class="fa-solid fa-key"></i>License Portal</a>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Community</p>
+      <div class="footer-col-links">
+        <a class="muted"><i class="fa-brands fa-discord"></i>Discord <small>(soon)</small></a>
+        <a class="muted"><i class="fa-brands fa-github"></i>GitHub <small>(soon)</small></a>
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-bug"></i>Report a Bug</a>
+      </div>
+    </div>
   </div>
-  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved. v1.0.0</div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+  </div>
 </footer>
-<script>const obs=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.animate-in').forEach(el=>obs.observe(el));</script>
+
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.style.animationPlayState = 'running'; });
+}, { threshold: 0.08 });
+document.querySelectorAll('.animate-in').forEach(el => {
+  el.style.animationPlayState = 'paused';
+  io.observe(el);
+});
+</script>
 </body>
 </html>

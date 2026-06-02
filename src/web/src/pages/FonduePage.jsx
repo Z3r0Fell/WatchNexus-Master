@@ -56,6 +56,7 @@ export const FonduePage = () => {
       setConfig(configRes.data);
     } catch (e) {
       console.error('Fondue fetch error:', e);
+        toast.error('Fondue fetch error:');
     } finally {
       setLoading(false);
     }

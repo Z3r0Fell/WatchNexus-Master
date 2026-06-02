@@ -66,6 +66,7 @@ export const MoviesPage = () => {
       setRecentMovies(recentFiltered.slice(0, 8));
     } catch (error) {
       console.error('Failed to fetch library data:', error);
+        toast.error('Failed to fetch library data:');
     } finally {
       setLibraryLoading(false);
     }
@@ -113,6 +114,7 @@ export const MoviesPage = () => {
       setGenres(response.data.genres || []);
     } catch (error) {
       console.error('Failed to fetch genres:', error);
+        toast.error('Failed to fetch genres:');
     }
   };
 
@@ -122,6 +124,7 @@ export const MoviesPage = () => {
       setWatchlist(response.data || []);
     } catch (error) {
       console.error('Failed to fetch watchlist:', error);
+        toast.error('Failed to fetch watchlist:');
     }
   };
 

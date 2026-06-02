@@ -7,6 +7,8 @@ using WatchNexus.Core;
 using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Core.Controllers;
+using WatchNexus.Core.Services;
+using Microsoft.Extensions.Caching.Memory;
 
 // ══════════════════════════════════════════════════════════════════════
 //  Crash-safe boot logger
@@ -40,13 +42,13 @@ void Log(string msg)
 {
     var line = $"[{DateTime.UtcNow:HH:mm:ss.fff}] {msg}";
     Console.WriteLine(line);
-    try { bootLog.WriteLine(line); } catch { /* never fail because of logging */ }
+    try { bootLog.WriteLine(line); } catch { WatchNexus.Core.Log.Error("[Program] write to boot log failed"); /* never fail because of logging */ }
 }
 
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 {
     Log($"[FATAL] Unhandled exception: {e.ExceptionObject}");
-    try { bootLog.Flush(); } catch { }
+    try { bootLog.Flush(); } catch { WatchNexus.Core.Log.Error("[Program] boot log flush failed"); }
 };
 
 try
@@ -68,7 +70,7 @@ if (args.Contains("--tray") || args.Contains("--tray-only"))
     Log("[WatchNexus] --tray mode: starting user-session controller (no web host).");
     var trayPort = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var tp) ? tp : 8001;
     var exitCode = WatchNexus.Core.Services.TrayController.Run(trayPort, Log);
-    try { bootLog.Flush(); bootLog.Dispose(); } catch { }
+    try { bootLog.Flush(); bootLog.Dispose(); } catch { WatchNexus.Core.Log.Error("[Program] boot log flush/dispose in tray mode failed"); }
     Environment.Exit(exitCode);
 }
 
@@ -147,6 +149,8 @@ try
 }
 catch (Exception probeEx)
 {
+    WatchNexus.Core.Log.Error(probeEx, "[Program] data dir not writable");
+
     Log($"[WatchNexus] [FATAL] Data dir is not writable: {dataDir}");
     Log($"[WatchNexus]   {probeEx.GetType().Name}: {probeEx.Message}");
     Log($"[WatchNexus]   On Windows, the WatchNexusCore service runs as LocalSystem and should");
@@ -188,10 +192,16 @@ builder.Services.AddScoped<AuthService>();
 
 // ── Services ──────────────────────────────────────────────────
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ITierResolver, TierResolver>();
 builder.Services.AddControllers(options =>
 {
     // ── FORTRESS PROTOCOL: API-level tier enforcement ──
     options.Filters.Add<FortressFilter>();
+})
+.AddJsonOptions(opt =>
+{
+    opt.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -199,6 +209,8 @@ builder.Services.AddSwaggerGen();
 // ── Background Services ──
 builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>();
 builder.Services.AddHostedService<WatchNexus.Core.Services.TrayIconService>();
+builder.Services.AddHostedService<WatchNexus.Core.Services.SpotdlBackgroundService>();
+builder.Services.AddSingleton<WatchNexus.Core.Services.SpotdlKeyManager>();
 
 // CORS
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
@@ -267,6 +279,12 @@ static void SeedAccounts(AppDbContext db)
 // ── Middleware ─────────────────────────────────────────────────
 app.UseCors();
 
+// Rate limiting (auth endpoints)
+app.UseMiddleware<WatchNexus.Core.Middleware.RateLimiterMiddleware>();
+
+// CSRF protection (state-changing API requests)
+app.UseMiddleware<WatchNexus.Core.Middleware.CsrfMiddleware>();
+
 // Security headers (OWASP)
 app.Use(async (ctx, next) =>
 {
@@ -274,6 +292,7 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
     ctx.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    ctx.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.radio-browser.info https://api.open-meteo.com https://geocoding-api.open-meteo.com; font-src 'self' data:;";
     await next();
 });
 
@@ -379,12 +398,12 @@ catch (Exception ex)
     {
         Console.WriteLine();
         Console.WriteLine("Press any key to close...");
-        try { Console.ReadKey(intercept: true); } catch { /* no console attached */ }
+        try { Console.ReadKey(intercept: true); } catch { WatchNexus.Core.Log.Error("[Program] console read key failed"); }
     }
 
     Environment.ExitCode = 1;
 }
 finally
 {
-    try { bootLog?.Flush(); bootLog?.Dispose(); } catch { }
+    try { bootLog?.Flush(); bootLog?.Dispose(); } catch { WatchNexus.Core.Log.Error("[Program] boot log flush/dispose failed"); }
 }

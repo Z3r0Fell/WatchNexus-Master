@@ -47,6 +47,7 @@ export const MusicPage = () => {
       setRecentTracks(recentMusic.slice(0, 8));
     } catch (error) {
       console.error('Failed to fetch music data:', error);
+        toast.error('Failed to fetch music data:');
     } finally {
       setLoading(false);
     }

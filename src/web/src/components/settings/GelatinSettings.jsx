@@ -22,11 +22,11 @@ export const GelatinSettings = () => {
   const [accessToken, setAccessToken] = useState(null);
 
   const fetchGelatinStatus = useCallback(async () => {
-    try { const res = await axios.get(`${BACKEND_URL}/api/gelatin/status`); setGelatinStatus(res.data); } catch {}
+    try { const res = await axios.get(`${BACKEND_URL}/api/gelatin/status`); setGelatinStatus(res.data); } catch { console.error('[GelatinSettings] Failed to fetch status'); toast.error('[GelatinSettings] Failed to fetch status');; }
   }, []);
 
   const fetchActiveTunnels = useCallback(async () => {
-    try { const res = await axios.get(`${BACKEND_URL}/api/gelatin/tunnels`); setActiveTunnels(res.data || []); } catch {}
+    try { const res = await axios.get(`${BACKEND_URL}/api/gelatin/tunnels`); setActiveTunnels(res.data || []); } catch { console.error('[GelatinSettings] Failed to fetch tunnels'); toast.error('[GelatinSettings] Failed to fetch tunnels');; }
   }, []);
 
   useEffect(() => { fetchGelatinStatus(); fetchActiveTunnels(); }, [fetchGelatinStatus, fetchActiveTunnels]);

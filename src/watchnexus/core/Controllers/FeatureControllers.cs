@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Ripen (Gadget runtime) ──────────────────────────────────
@@ -59,7 +61,7 @@ public class RipenController : ControllerBase
         if (disabledSetting?.Value != null)
         {
             try { disabled = JsonSerializer.Deserialize<HashSet<string>>(disabledSetting.Value) ?? disabled; }
-            catch { }
+            catch { Log.Error("[RipenController] Installed failed"); }
         }
 
         var gadgets = AllGadgets.Select(g => new
@@ -111,7 +113,7 @@ public class RipenController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "ripen_disabled_gadgets");
         var disabled = new HashSet<string>();
         if (setting?.Value != null)
-            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(setting.Value) ?? disabled; } catch { }
+            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(setting.Value) ?? disabled; } catch { Log.Error("[RipenController] Activate failed"); }
         disabled.Remove(gadgetId);
         var json = JsonSerializer.Serialize(disabled);
         if (setting != null) setting.Value = json;
@@ -127,7 +129,7 @@ public class RipenController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "ripen_disabled_gadgets");
         var disabled = new HashSet<string>();
         if (setting?.Value != null)
-            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(setting.Value) ?? disabled; } catch { }
+            try { disabled = JsonSerializer.Deserialize<HashSet<string>>(setting.Value) ?? disabled; } catch { Log.Error("[RipenController] Deactivate failed"); }
         disabled.Add(gadgetId);
         var json = JsonSerializer.Serialize(disabled);
         if (setting != null) setting.Value = json;
@@ -166,7 +168,7 @@ public class MilkController : ControllerBase
 
         object? currentThemeColors = null;
         if (custom?.Value != null) {
-            try { currentThemeColors = JsonSerializer.Deserialize<object>(custom.Value); } catch { }
+            try { currentThemeColors = JsonSerializer.Deserialize<object>(custom.Value); } catch { Log.Error("[RipenController] operation failed"); }
         }
 
         return Ok(new

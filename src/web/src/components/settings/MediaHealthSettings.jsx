@@ -23,11 +23,11 @@ export const MediaHealthSettings = () => {
   });
 
   const fetchScheduledScans = useCallback(async () => {
-    try { const res = await mediaHealthApi.getScheduledScans(); setScheduledScans(res.data || []); } catch {}
+    try { const res = await mediaHealthApi.getScheduledScans(); setScheduledScans(res.data || []); } catch { console.error('[MediaHealthSettings] Failed to fetch scheduled scans'); toast.error('[MediaHealthSettings] Failed to fetch scheduled scans');; }
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    try { const res = await mediaHealthApi.getNotifications(true); setNotifications(res.data || []); } catch {}
+    try { const res = await mediaHealthApi.getNotifications(true); setNotifications(res.data || []); } catch { console.error('[MediaHealthSettings] Failed to fetch notifications'); toast.error('[MediaHealthSettings] Failed to fetch notifications');; }
   }, []);
 
   useEffect(() => { fetchScheduledScans(); fetchNotifications(); }, [fetchScheduledScans, fetchNotifications]);

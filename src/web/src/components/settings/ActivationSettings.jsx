@@ -71,7 +71,7 @@ export const ActivationSettings = () => {
     try {
       const res = await axios.get(`${API}/api/cellar/tiers`);
       setTiers(res.data?.tiers);
-    } catch {}
+    } catch { console.error('[ActivationSettings] Failed to fetch tiers'); toast.error('[ActivationSettings] Failed to fetch tiers');; }
   };
 
   const handleActivate = async () => {

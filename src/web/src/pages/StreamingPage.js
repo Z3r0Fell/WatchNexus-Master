@@ -37,6 +37,7 @@ export const StreamingPage = () => {
       setServices(response.data || []);
     } catch (error) {
       console.error('Failed to fetch streaming services:', error);
+        toast.error('Failed to fetch streaming services:');
     }
   };
 

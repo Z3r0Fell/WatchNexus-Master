@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── User Preferences ──────────────────────────────────
@@ -23,7 +25,7 @@ public class UserPreferencesController : ControllerBase
         if (prefs?.Value != null)
         {
             try { return Content(prefs.Value, "application/json"); }
-            catch { }
+            catch { Log.Error("[UserPreferencesController] GetPreferences failed"); }
         }
         return Ok(new { visible_tabs = Array.Empty<string>() });
     }

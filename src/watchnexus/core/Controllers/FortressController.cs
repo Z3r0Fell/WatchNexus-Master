@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Services;
 using WatchNexus.Shared;
+
+using static WatchNexus.Core.Log;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -21,7 +24,7 @@ namespace WatchNexus.Core.Controllers;
 /// </summary>
 public class FortressFilter : IAsyncActionFilter
 {
-    private readonly AppDbContext _db;
+    private readonly ITierResolver _tierResolver;
 
     // Module codename → required tier
     private static readonly Dictionary<string, string> ProtectedRoutes = new()
@@ -43,7 +46,7 @@ public class FortressFilter : IAsyncActionFilter
 
     private static readonly Dictionary<string, int> TierRank = new() { ["standard"] = 0, ["pro"] = 1, ["ultra"] = 2 };
 
-    public FortressFilter(AppDbContext db) => _db = db;
+    public FortressFilter(ITierResolver tierResolver) => _tierResolver = tierResolver;
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -56,7 +59,7 @@ public class FortressFilter : IAsyncActionFilter
             var moduleName = segments[1];
             if (ProtectedRoutes.TryGetValue(moduleName, out var requiredTier))
             {
-                var currentTier = await GetCurrentTier();
+                var currentTier = await _tierResolver.GetCurrentTier();
                 var currentRank = TierRank.GetValueOrDefault(currentTier, 0);
                 var requiredRank = TierRank.GetValueOrDefault(requiredTier, 0);
 
@@ -77,18 +80,6 @@ public class FortressFilter : IAsyncActionFilter
         }
 
         await next();
-    }
-
-    private async Task<string> GetCurrentTier()
-    {
-        try
-        {
-            var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
-            if (setting?.Value == null) return "standard";
-            var doc = JsonDocument.Parse(setting.Value).RootElement;
-            return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
-        }
-        catch { return "standard"; }
     }
 }
 
@@ -171,10 +162,7 @@ public static class FortressIntegrity
                     violations.Add($"TAMPERED: {prop.Name} (expected {expectedHash?[..12]}..., got {currentHash[..12]}...)");
             }
         }
-        catch (Exception ex)
-        {
-            violations.Add($"VERIFY_ERROR: {ex.Message}");
-        }
+        catch (Exception ex) { Log.Error(ex, "[FortressFilter] operation failed"); violations.Add($"VERIFY_ERROR: {ex.Message}"); }
 
         return (violations.Count == 0, violations);
     }
@@ -204,7 +192,7 @@ public class FortressController : ControllerBase
                 var doc = JsonDocument.Parse(manifest.Value).RootElement;
                 sealedAt = doc.TryGetProperty("sealed_at", out var sa) ? sa.GetString() : null;
             }
-            catch { }
+            catch { Log.Error("[FortressFilter] operation failed"); }
         }
 
         return Ok(new

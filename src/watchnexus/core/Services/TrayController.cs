@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Services;
 
 /// <summary>
@@ -35,6 +37,8 @@ public static class TrayController
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "[TrayController] Run failed");
+
             log($"[Tray] [FATAL] {ex.GetType().Name}: {ex.Message}");
             log(ex.StackTrace ?? "");
             return 1;
@@ -73,7 +77,7 @@ public static class TrayController
             using var resp = await _http.GetAsync($"http://localhost:{port}/api/health");
             return resp.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch { Log.Error("[TrayController] PingAsync failed"); return false; }
     }
 
     public static void OpenUrl(string url)
@@ -87,7 +91,7 @@ public static class TrayController
             else if (OperatingSystem.IsMacOS())
                 Process.Start("open", url);
         }
-        catch { /* best-effort */ }
+        catch { Log.Error("[TrayController] OpenUrl failed"); }
     }
 
     public static void OpenPath(string path)
@@ -102,7 +106,7 @@ public static class TrayController
             else if (OperatingSystem.IsMacOS())
                 Process.Start("open", path);
         }
-        catch { /* best-effort */ }
+        catch { Log.Error("[TrayController] OpenPath failed"); }
     }
 
     // ── WINDOWS ───────────────────────────────────────────────────
@@ -124,10 +128,7 @@ public static class TrayController
                 ? new System.Drawing.Icon(iconPath)
                 : System.Drawing.SystemIcons.Application;
         }
-        catch
-        {
-            icon = System.Drawing.SystemIcons.Application;
-        }
+        catch { Log.Error("[TrayController] operation failed"); icon = System.Drawing.SystemIcons.Application; }
 
         var tray = new System.Windows.Forms.NotifyIcon
         {
@@ -140,7 +141,7 @@ public static class TrayController
 
         System.Windows.Forms.Application.ApplicationExit += (_, _) =>
         {
-            try { tray.Visible = false; tray.Dispose(); } catch { }
+            try { tray.Visible = false; tray.Dispose(); } catch { Log.Error("[TrayController] operation failed"); }
         };
 
         log("[Tray] System tray icon active. Right-click for menu.");
@@ -256,7 +257,7 @@ public static class TrayController
             };
             Process.Start(psi);
         }
-        catch { /* user dismissed UAC etc. */ }
+        catch { Log.Error("[TrayController] The NSIS installer creates a service called 'WatchNexusCore'"); }
     }
 #endif
 
@@ -298,6 +299,8 @@ public static class TrayController
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "[TrayController] operation failed");
+
             log($"[Tray] Could not launch Python helper: {ex.Message}");
             log("[Tray] Install:  sudo apt install gir1.2-ayatanaappindicator3-0.1 python3-gi");
             return 1;

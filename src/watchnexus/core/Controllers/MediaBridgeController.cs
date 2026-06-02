@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -61,7 +63,7 @@ public class MediaBridgeController : ControllerBase
                 id = doc.RootElement.TryGetProperty("Id", out var id) ? id.GetString() : null,
             });
         }
-        catch (Exception ex) { return Ok(new { success = false, error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MediaBridgeController] operation failed"); return Ok(new { success = false, error = ex.Message }); }
     }
 
     // ── Server Info ──────────────────────────────────
@@ -138,7 +140,7 @@ public class MediaBridgeController : ControllerBase
             var data = await resp.Content.ReadAsByteArrayAsync();
             return File(data, contentType);
         }
-        catch { return NotFound(); }
+        catch { Log.Error("[MediaBridgeController] operation failed"); return NotFound(); }
     }
 
     // ── Playback / Sessions ──────────────────────────────────
@@ -196,7 +198,7 @@ public class MediaBridgeController : ControllerBase
             var resp = await http.GetStringAsync(url);
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MediaBridgeController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("omdb/search")]
@@ -214,7 +216,7 @@ public class MediaBridgeController : ControllerBase
                 $"https://www.omdbapi.com/?apikey={apiKey}&s={Uri.EscapeDataString(q)}&page={page}");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MediaBridgeController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Helpers ──────────────────────────────────
@@ -248,6 +250,6 @@ public class MediaBridgeController : ControllerBase
             var resp = await http.GetStringAsync($"{cfg.url}{path}");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[MediaBridgeController] ProxyGet failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 }

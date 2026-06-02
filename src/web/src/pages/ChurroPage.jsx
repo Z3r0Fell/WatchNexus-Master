@@ -41,6 +41,7 @@ export const ChurroPage = () => {
       setCategories(Array.isArray(catsRes.data) ? catsRes.data : []);
     } catch (e) {
       console.error('Churro fetch error:', e);
+        toast.error('Churro fetch error:');
     } finally {
       setLoading(false);
     }

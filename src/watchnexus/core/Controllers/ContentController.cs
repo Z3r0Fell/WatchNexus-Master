@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>TMDB proxy — forwards calls to themoviedb.org API using configured key</summary>
@@ -31,7 +33,7 @@ public class TmdbProxyController : ControllerBase
                 if (doc.RootElement.TryGetProperty("api_key", out var ak))
                     return ak.GetString();
             }
-            catch { }
+            catch { Log.Error("[TmdbProxyController] Check DB first (user-configured key)"); }
             return setting.Value;
         }
         // Check legacy crumbs_tmdb key
@@ -44,7 +46,7 @@ public class TmdbProxyController : ControllerBase
                 if (doc.RootElement.TryGetProperty("api_key", out var ak))
                     return ak.GetString();
             }
-            catch { }
+            catch { Log.Error("[TmdbProxyController] Check legacy crumbs_tmdb key"); }
         }
         // Fall back to environment/config
         return _config["TMDB_API_KEY"];
@@ -68,10 +70,7 @@ public class TmdbProxyController : ControllerBase
             var json = await resp.Content.ReadAsStringAsync();
             return Content(json, "application/json");
         }
-        catch
-        {
-            return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0, total_results = 0 });
-        }
+        catch { Log.Error("[TmdbProxyController] operation failed"); return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0, total_results = 0 }); }
     }
 
     [HttpGet("search")]
@@ -144,7 +143,7 @@ public class WatchlistController : ControllerBase
         var list = items.Select(s =>
         {
             try { return JsonSerializer.Deserialize<object>(s.Value); }
-            catch { return null; }
+            catch { Log.Error("[TmdbProxyController] Get failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(list);
     }
@@ -194,7 +193,7 @@ public class WatchProgressController : ControllerBase
         var list = items.Select(s =>
         {
             try { return JsonSerializer.Deserialize<object>(s.Value); }
-            catch { return null; }
+            catch { Log.Error("[TmdbProxyController] Get failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(list);
     }
@@ -208,7 +207,7 @@ public class WatchProgressController : ControllerBase
         var list = items.Select(s =>
         {
             try { return JsonSerializer.Deserialize<object>(s.Value); }
-            catch { return null; }
+            catch { Log.Error("[TmdbProxyController] GetAll failed"); return null; }
         }).Where(x => x != null).ToList();
         return Ok(list);
     }
@@ -290,7 +289,7 @@ public class NextUpController : ControllerBase
                     });
                 }
             }
-            catch { }
+            catch { Log.Error("[TmdbProxyController] operation failed"); }
         }
         return Ok(nextUp);
     }

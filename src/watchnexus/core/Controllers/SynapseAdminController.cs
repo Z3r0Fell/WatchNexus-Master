@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -93,7 +95,7 @@ public class SynapseAdminController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("users/{userId}/deactivate")]
@@ -110,7 +112,7 @@ public class SynapseAdminController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("users/{userId}/reset-password")]
@@ -126,7 +128,7 @@ public class SynapseAdminController : ControllerBase
                 $"{cfg.url}/_synapse/admin/v1/reset_password/{Uri.EscapeDataString(userId)}", content);
             return Ok(new { status = resp.IsSuccessStatusCode ? "reset" : "failed" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Media Management ──────────────────────────────────
@@ -151,7 +153,7 @@ public class SynapseAdminController : ControllerBase
                 $"{cfg.url}/_synapse/admin/v1/media/{Uri.EscapeDataString(serverName)}/{mediaId}");
             return Ok(new { status = resp.IsSuccessStatusCode ? "deleted" : "failed" });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Room Admin ──────────────────────────────────
@@ -170,7 +172,7 @@ public class SynapseAdminController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("rooms/{roomId}/purge")]
@@ -187,7 +189,7 @@ public class SynapseAdminController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Registration Tokens ──────────────────────────────────
@@ -212,7 +214,7 @@ public class SynapseAdminController : ControllerBase
             var result = await resp.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Config Storage ──────────────────────────────────
@@ -265,6 +267,6 @@ public class SynapseAdminController : ControllerBase
             var resp = await http.GetStringAsync($"{cfg.url}{path}");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[SynapseAdminController] ProxyGet failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 }

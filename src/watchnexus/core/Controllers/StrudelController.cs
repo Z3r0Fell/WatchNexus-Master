@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -79,10 +81,7 @@ public class StrudelController : ControllerBase
                 var result = await RunMakeMkvScan(makemkvPath, driveIndex, jobId);
                 await SaveScanResult(jobId, result);
             }
-            catch (Exception ex)
-            {
-                await SaveScanResult(jobId, new ScanResult { JobId = jobId, Status = "failed", Error = ex.Message });
-            }
+            catch (Exception ex) { Log.Error(ex, "[StrudelController] Run scan asynchronously"); await SaveScanResult(jobId, new ScanResult { JobId = jobId, Status = "failed", Error = ex.Message }); }
         });
 
         return Ok(new { job_id = jobId, status = "scanning", drive_index = driveIndex });
@@ -151,7 +150,7 @@ public class StrudelController : ControllerBase
         var jobs = settings.Select(s =>
         {
             try { return JsonSerializer.Deserialize<object>(s.Value ?? "{}"); }
-            catch { return null; }
+            catch { Log.Error("[StrudelController] GetJobs failed"); return null; }
         }).Where(j => j != null).ToList();
 
         // Merge with active in-memory jobs for real-time progress
@@ -243,7 +242,7 @@ public class StrudelController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "strudel_profiles" && s.UserId == "");
         if (setting?.Value != null)
         {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[StrudelController] GetProfiles failed"); }
         }
 
         // Return default profiles
@@ -295,7 +294,7 @@ public class StrudelController : ControllerBase
         var profiles = new List<JsonElement>();
         if (setting?.Value != null)
         {
-            try { profiles = JsonSerializer.Deserialize<List<JsonElement>>(setting.Value) ?? new(); } catch { }
+            try { profiles = JsonSerializer.Deserialize<List<JsonElement>>(setting.Value) ?? new(); } catch { Log.Error("[StrudelController] CreateProfile failed"); }
         }
 
         profiles.Add(profile);
@@ -321,7 +320,7 @@ public class StrudelController : ControllerBase
         var history = settings.Select(s =>
         {
             try { return JsonSerializer.Deserialize<object>(s.Value ?? "{}"); }
-            catch { return null; }
+            catch { Log.Error("[StrudelController] GetHistory failed"); return null; }
         }).Where(h => h != null).ToList();
 
         return Ok(new { history, count = history.Count });
@@ -334,7 +333,7 @@ public class StrudelController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "strudel_config" && s.UserId == "");
         if (setting?.Value != null)
         {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
+            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { Log.Error("[StrudelController] GetConfig failed"); }
         }
 
         return Ok(new
@@ -378,10 +377,7 @@ public class StrudelController : ControllerBase
             proc?.WaitForExit(5000);
             return Ok(new { message = $"Eject command sent to {device}", drive_index = driveIndex });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = $"Failed to eject: {ex.Message}" });
-        }
+        catch (Exception ex) { Log.Error(ex, "[StrudelController] EjectDrive failed"); return StatusCode(500, new { error = $"Failed to eject: {ex.Message}" }); }
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -402,7 +398,7 @@ public class StrudelController : ControllerBase
             proc?.WaitForExit(3000);
             return string.IsNullOrEmpty(output) ? null : output;
         }
-        catch { return null; }
+        catch { Log.Error("[StrudelController] FindBinary failed"); return null; }
     }
 
     private static List<DriveInfo_> DetectOpticalDrives()
@@ -442,6 +438,8 @@ public class StrudelController : ControllerBase
         }
         catch
         {
+            Log.Error("[StrudelController] operation failed");
+
             // Fallback: check /dev/sr* directly
             for (int i = 0; i < 4; i++)
             {
@@ -701,6 +699,8 @@ public class StrudelController : ControllerBase
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "[StrudelController] Remove from active jobs");
+
             job.Status = "failed";
             job.Error = ex.Message;
             await SaveJobState(job);

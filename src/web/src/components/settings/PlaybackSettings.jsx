@@ -474,6 +474,7 @@ const HistoryTab = () => {
       setWatchHistory(res.data || []);
     } catch (err) {
       console.error('Failed to fetch watch history:', err);
+        toast.error('Failed to fetch watch history:');
     } finally {
       setLoading(false);
     }

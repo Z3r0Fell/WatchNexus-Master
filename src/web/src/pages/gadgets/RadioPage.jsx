@@ -43,6 +43,7 @@ export const RadioPage = () => {
       setFavorites(resp.data.favorites || []);
     } catch (err) {
       console.error('Failed to load favorites');
+        toast.error('Failed to load favorites');
     }
   }, []);
 
@@ -56,6 +57,7 @@ export const RadioPage = () => {
       setTags(tagsResp.data.tags || []);
     } catch (err) {
       console.error('Failed to load filters');
+        toast.error('Failed to load filters');
     }
   }, []);
 

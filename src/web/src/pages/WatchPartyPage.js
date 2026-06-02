@@ -90,6 +90,7 @@ export const WatchPartyPage = () => {
         handleMessage(data);
       } catch (e) {
         console.error('Failed to parse message:', e);
+          toast.error('Failed to parse message:');
       }
     };
     

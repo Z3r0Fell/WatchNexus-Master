@@ -49,6 +49,7 @@ export const AuthCallback = () => {
         
       } catch (error) {
         console.error('OAuth callback error:', error);
+          toast.error('OAuth callback error:');
         toast.error('Authentication failed. Please try again.');
         navigate('/login');
       }

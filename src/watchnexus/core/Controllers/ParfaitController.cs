@@ -5,6 +5,8 @@ using System.Text.Json;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
@@ -39,7 +41,7 @@ public class ParfaitController : ControllerBase
             var key = doc.TryGetProperty("api_key", out var k) ? k.GetString() : null;
             return (url, key);
         }
-        catch { return (null, null); }
+        catch { Log.Error("[ParfaitController] operation failed"); return (null, null); }
     }
 
     private HttpClient BuildClient(string apiKey)
@@ -78,10 +80,7 @@ public class ParfaitController : ControllerBase
                 requests_count = data.TryGetProperty("restartRequired", out _) ? 0 : 0,
             });
         }
-        catch (Exception ex)
-        {
-            return Ok(new { connected = false, configured = true, message = $"Connection error: {ex.Message}" });
-        }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] operation failed"); return Ok(new { connected = false, configured = true, message = $"Connection error: {ex.Message}" }); }
     }
 
     // ── Configure Jellyseerr ────────────────────────────────────────
@@ -113,10 +112,7 @@ public class ParfaitController : ControllerBase
             if (!resp.IsSuccessStatusCode)
                 return BadRequest(new { success = false, message = $"Cannot connect to Jellyseerr at {url} (HTTP {(int)resp.StatusCode})" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { success = false, message = $"Connection failed: {ex.Message}" });
-        }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] Test the connection first"); return BadRequest(new { success = false, message = $"Connection failed: {ex.Message}" }); }
 
         var configData = JsonSerializer.Serialize(new { url, api_key = apiKey });
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == CFG_KEY && s.UserId == "");
@@ -146,7 +142,7 @@ public class ParfaitController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     [HttpPost("requests")]
@@ -164,7 +160,7 @@ public class ParfaitController : ControllerBase
             var resBody = await resp.Content.ReadAsStringAsync();
             return Content(resBody, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     [HttpPost("requests/{id}/approve")]
@@ -247,7 +243,7 @@ public class ParfaitController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch { return Ok(new { total = 0, pending = 0, approved = 0, declined = 0, available = 0 }); }
+        catch { Log.Error("[ParfaitController] operation failed"); return Ok(new { total = 0, pending = 0, approved = 0, declined = 0, available = 0 }); }
     }
 
     // ── Proxy Helpers ───────────────────────────────────────────────
@@ -263,7 +259,7 @@ public class ParfaitController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     private async Task<IActionResult> ProxyPost(string path)
@@ -278,7 +274,7 @@ public class ParfaitController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 
     private async Task<IActionResult> ProxyDelete(string path)
@@ -293,6 +289,6 @@ public class ParfaitController : ControllerBase
             var body = await resp.Content.ReadAsStringAsync();
             return Content(body, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[ParfaitController] operation failed"); return StatusCode(500, new { error = ex.Message }); }
     }
 }

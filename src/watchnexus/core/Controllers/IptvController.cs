@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 // ── Taffy (IPTV) ────────────────────────────────────────────
@@ -46,10 +48,7 @@ public class IptvController : ControllerBase
             source.LastRefreshed = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
-        catch (Exception ex)
-        {
-            return Ok(new { source.Id, source.Name, status = "added", parse_error = ex.Message, channel_count = 0 });
-        }
+        catch (Exception ex) { Log.Error(ex, "[IptvController] operation failed"); return Ok(new { source.Id, source.Name, status = "added", parse_error = ex.Message, channel_count = 0 }); }
         return Ok(new { source.Id, source.Name, status = "added", channel_count = source.ChannelCount });
     }
 
@@ -82,7 +81,7 @@ public class IptvController : ControllerBase
             source.LastRefreshed = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[IptvController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
         return Ok(new { status = "refreshed", channel_count = source.ChannelCount });
     }
 

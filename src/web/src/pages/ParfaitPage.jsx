@@ -58,21 +58,21 @@ const ParfaitPage = () => {
       const filterParam = filter !== 'all' ? `&filter=${filter}` : '';
       const res = await axios.get(`${API}/api/parfait/requests?take=30${filterParam}`);
       setRequests(res.data.results || []);
-    } catch {}
+    } catch { console.error('[ParfaitPage] Failed to fetch requests'); toast.error('[ParfaitPage] Failed to fetch requests');; }
   }, [filter]);
 
   const fetchStats = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/api/parfait/stats`);
       setStats(res.data);
-    } catch {}
+    } catch { console.error('[ParfaitPage] Failed to fetch stats'); toast.error('[ParfaitPage] Failed to fetch stats');; }
   }, []);
 
   const fetchDiscover = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/api/parfait/discover/trending`);
       setDiscover(res.data.results || []);
-    } catch {}
+    } catch { console.error('[ParfaitPage] Failed to fetch discover'); toast.error('[ParfaitPage] Failed to fetch discover');; }
   }, []);
 
   useEffect(() => {

@@ -32,6 +32,7 @@ export const ProcessingPage = () => {
       setJobs(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       console.error('Failed to fetch jobs:', e);
+        toast.error('Failed to fetch jobs:');
     } finally {
       setLoading(false);
     }

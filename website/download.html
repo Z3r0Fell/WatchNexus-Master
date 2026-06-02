@@ -3,145 +3,244 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Download - WatchNexus</title>
+  <title>Download — WatchNexus</title>
   <link rel="icon" type="image/png" href="assets/images/favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
+<body class="page">
 
-<nav class="nav">
-  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
-  <ul class="nav-links"><li><a href="features.html">Features</a></li><li><a href="download.html" class="active">Download</a></li><li><a href="faq.html">FAQ</a></li><li><a href="support.html">Support</a></li></ul>
-  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
-  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
-</nav>
-
-<section class="hero" style="padding-bottom:3rem;">
-  <h1 class="animate-in">Get <span class="gradient-text">WatchNexus</span></h1>
-  <p class="hero-sub animate-in delay-1">Start free with Standard. Upgrade to Pro or Ultra with a one-time purchase.</p>
+<!-- PAGE HERO -->
+<section class="page-hero">
+  <div class="section-eyebrow animate-in"><i class="fa-solid fa-download"></i> Get WatchNexus</div>
+  <h1 class="animate-in delay-1">Download &amp; <span class="gradient-text">Activate</span></h1>
+  <p class="animate-in delay-2">Start free with Standard. Unlock Pro or Ultra instantly with a serial number.</p>
 </section>
 
-<!-- PRICING CARDS -->
-<section class="section">
+<!-- TIER CARDS -->
+<section class="section" style="padding-top:1rem">
   <div class="tier-grid animate-in">
+
     <!-- Standard -->
-    <div class="tier-card">
-      <div class="tier-header" style="background: linear-gradient(135deg, #374151, #4b5563);">
-        <i class="fa-solid fa-shield-halved" style="font-size:2rem;"></i>
+    <div class="tier-card tier-standard">
+      <div class="tier-header" style="background:linear-gradient(160deg,#1f2937,#374151)">
+        <i class="fa-solid fa-shield-halved" style="font-size:2rem"></i>
         <h3>Standard</h3>
-        <div class="tier-price" style="font-size:2.5rem;">Free</div>
-        <p style="font-size:0.85rem;opacity:0.8;">Forever. No credit card needed.</p>
+        <div class="tier-price" style="font-size:2.4rem">Free</div>
+        <p class="tier-tagline">Forever. No credit card needed.</p>
       </div>
       <div class="tier-body">
         <ul class="tier-features">
-          <li><i class="fa-solid fa-check"></i> 31 core modules</li>
-          <li><i class="fa-solid fa-check"></i> Media library with TMDB</li>
-          <li><i class="fa-solid fa-check"></i> Video streaming</li>
-          <li><i class="fa-solid fa-check"></i> Downloads, playlists, watchlist</li>
-          <li><i class="fa-solid fa-check"></i> 5 built-in gadgets</li>
-          <li><i class="fa-solid fa-check"></i> Theme engine</li>
-          <li><i class="fa-solid fa-check"></i> Automatic updates</li>
+          <li><i class="fa-solid fa-check"></i>31 core modules</li>
+          <li><i class="fa-solid fa-check"></i>Media library with TMDB</li>
+          <li><i class="fa-solid fa-check"></i>Video streaming</li>
+          <li><i class="fa-solid fa-check"></i>Downloads, playlists, watchlist</li>
+          <li><i class="fa-solid fa-check"></i>5 built-in gadgets</li>
+          <li><i class="fa-solid fa-check"></i>Theme engine &amp; auto-updates</li>
         </ul>
-        <div class="download-section">
-          <h4>Docker</h4>
-          <code class="code-block">docker pull watchnexus/watchnexus:1.0.0-standard</code>
-          <h4 style="margin-top:1rem;">Docker Compose</h4>
+
+        <!-- Docker pull ONLY for Standard (free tier) -->
+        <div class="code-section">
+          <p class="code-label">Docker Pull</p>
+          <code class="code-block">docker pull watchnexus/watchnexus:2.9.0-standard</code>
+          <p class="code-label" style="margin-top:.75rem">Docker Compose</p>
           <code class="code-block">docker compose --profile standard up -d</code>
         </div>
-        <a href="#" class="btn btn-outline btn-block" style="margin-top:1rem;">Download Standard</a>
+
+        <a class="btn btn-outline btn-block" href="#" style="margin-top:1.1rem;color:var(--text-1)">
+          <i class="fa-solid fa-download"></i> Download Standard
+        </a>
       </div>
     </div>
 
     <!-- Pro -->
-    <div class="tier-card tier-featured">
+    <div class="tier-card tier-pro">
       <div class="tier-badge">Best Value</div>
-      <div class="tier-header" style="background: linear-gradient(135deg, #2563eb, #0891b2);">
-        <i class="fa-solid fa-bolt" style="font-size:2rem;"></i>
+      <div class="tier-header" style="background:linear-gradient(160deg,#1e3a8a,#0e7490)">
+        <i class="fa-solid fa-bolt" style="font-size:2rem"></i>
         <h3>Pro</h3>
-        <div class="tier-price" style="font-size:2.5rem;">$35 <span style="font-size:1rem;">CAD</span></div>
-        <p style="font-size:0.85rem;opacity:0.8;">One-time payment. Lifetime access.</p>
+        <div class="tier-price" style="font-size:2.4rem">$35 <span>CAD</span></div>
+        <p class="tier-tagline">One-time payment. Lifetime access.</p>
       </div>
       <div class="tier-body">
         <ul class="tier-features">
-          <li><i class="fa-solid fa-check"></i> Everything in Standard</li>
-          <li><i class="fa-solid fa-check"></i> +18 Pro modules (49 total)</li>
-          <li><i class="fa-solid fa-check"></i> Indexer search, movie automation</li>
-          <li><i class="fa-solid fa-check"></i> Watch analytics & AI recommendations</li>
-          <li><i class="fa-solid fa-check"></i> Live TV / IPTV with DVR</li>
-          <li><i class="fa-solid fa-check"></i> Ebooks, music, RSS, backup</li>
-          <li><i class="fa-solid fa-check"></i> Scheduled tasks & 2FA</li>
+          <li><i class="fa-solid fa-check"></i>Everything in Standard</li>
+          <li><i class="fa-solid fa-check"></i>+18 Pro modules (49 total)</li>
+          <li><i class="fa-solid fa-check"></i>Indexer search &amp; movie automation</li>
+          <li><i class="fa-solid fa-check"></i>Watch analytics &amp; AI recommendations</li>
+          <li><i class="fa-solid fa-check"></i>Live TV / IPTV with DVR</li>
+          <li><i class="fa-solid fa-check"></i>Ebooks, music, RSS, 2FA, backup</li>
         </ul>
-        <div class="download-section">
-          <h4>Docker</h4>
-          <code class="code-block">docker pull watchnexus/watchnexus:1.0.0-pro</code>
+
+        <div class="activate-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Install Standard (free), then enter your Pro serial number in
+          <strong>Settings &rarr; Activation</strong> to unlock instantly.
         </div>
-        <a href="https://licenses.watchnexus.ca" class="btn btn-primary btn-block" style="margin-top:1rem;">Buy Pro &mdash; $35 CAD</a>
-        <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Serial number delivered instantly after purchase</p>
+
+        <a class="btn btn-primary btn-block" href="https://licenses.watchnexus.ca" target="_blank"
+           style="margin-top:1.1rem;background:linear-gradient(135deg,#2563eb,#0891b2)">
+          <i class="fa-solid fa-cart-shopping"></i> Buy Pro &mdash; $35 CAD
+        </a>
+        <p style="text-align:center;font-size:.73rem;color:var(--text-3);margin-top:.5rem">
+          Serial number delivered instantly after purchase
+        </p>
       </div>
     </div>
 
     <!-- Ultra -->
-    <div class="tier-card">
-      <div class="tier-header" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-        <i class="fa-solid fa-crown" style="font-size:2rem;"></i>
+    <div class="tier-card tier-ultra">
+      <div class="tier-header" style="background:linear-gradient(160deg,#4c1d95,#7c3aed)">
+        <i class="fa-solid fa-crown" style="font-size:2rem"></i>
         <h3>Ultra</h3>
-        <div class="tier-price" style="font-size:2.5rem;">$60 <span style="font-size:1rem;">CAD</span></div>
-        <p style="font-size:0.85rem;opacity:0.8;">One-time payment. Everything unlocked.</p>
+        <div class="tier-price" style="font-size:2.4rem">$60 <span>CAD</span></div>
+        <p class="tier-tagline">One-time payment. Everything unlocked.</p>
       </div>
       <div class="tier-body">
         <ul class="tier-features">
-          <li><i class="fa-solid fa-check"></i> Everything in Pro</li>
-          <li><i class="fa-solid fa-check"></i> +24 Ultra modules (73 total)</li>
-          <li><i class="fa-solid fa-check"></i> GPU hardware transcoding</li>
-          <li><i class="fa-solid fa-check"></i> Disc ripping, gaming console</li>
-          <li><i class="fa-solid fa-check"></i> Media sync (Chowder/JellyLooter)</li>
-          <li><i class="fa-solid fa-check"></i> Cloud backup, offline sync</li>
-          <li><i class="fa-solid fa-check"></i> Security suite, notifications, Matrix</li>
+          <li><i class="fa-solid fa-check"></i>Everything in Pro</li>
+          <li><i class="fa-solid fa-check"></i>+24 Ultra modules (73 total)</li>
+          <li><i class="fa-solid fa-check"></i>GPU hardware transcoding</li>
+          <li><i class="fa-solid fa-check"></i>Disc ripping &amp; gaming console</li>
+          <li><i class="fa-solid fa-check"></i>Media sync, cloud backup, offline sync</li>
+          <li><i class="fa-solid fa-check"></i>Security suite, notifications, Matrix</li>
         </ul>
-        <div class="download-section">
-          <h4>Docker (NVIDIA GPU)</h4>
-          <code class="code-block">docker pull watchnexus/watchnexus:1.0.0-ultra</code>
+
+        <div class="activate-hint activate-hint-ultra">
+          <i class="fa-solid fa-circle-info"></i>
+          Install Standard (free), then enter your Ultra serial number in
+          <strong>Settings &rarr; Activation</strong> to unlock all 73 modules.
         </div>
-        <a href="https://licenses.watchnexus.ca" class="btn btn-primary btn-block" style="margin-top:1rem;background:linear-gradient(135deg,#7c3aed,#a855f7);">Buy Ultra &mdash; $60 CAD</a>
-        <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Serial number delivered instantly after purchase</p>
+
+        <a class="btn btn-primary btn-block" href="https://licenses.watchnexus.ca" target="_blank"
+           style="margin-top:1.1rem;background:linear-gradient(135deg,#7c3aed,#a855f7)">
+          <i class="fa-solid fa-cart-shopping"></i> Buy Ultra &mdash; $60 CAD
+        </a>
+        <p style="text-align:center;font-size:.73rem;color:var(--text-3);margin-top:.5rem">
+          Serial number delivered instantly after purchase
+        </p>
       </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW TO ACTIVATE -->
+<div class="band">
+  <section class="section section-center">
+    <div class="section-eyebrow animate-in"><i class="fa-solid fa-key"></i> Activation</div>
+    <h2 class="section-heading animate-in delay-1">How to Activate</h2>
+    <p class="section-sub animate-in delay-2">Three steps to unlock your tier.</p>
+
+    <div class="feature-grid animate-in delay-3" style="margin-top:2.5rem;max-width:860px;margin-left:auto;margin-right:auto;text-align:left">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(139,92,246,.12)">
+          <span class="step-num" style="color:#a78bfa">1</span>
+        </div>
+        <h4>Download &amp; Install Standard</h4>
+        <p>Pull the Standard Docker image and run it on your server. Standard is completely free with no limits or expiry.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(59,130,246,.12)">
+          <span class="step-num" style="color:#60a5fa">2</span>
+        </div>
+        <h4>Purchase a License</h4>
+        <p>Buy a Pro or Ultra serial number from our license portal at <strong style="color:var(--text-1)">licenses.watchnexus.ca</strong>. Delivered instantly by email.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(16,185,129,.12)">
+          <span class="step-num" style="color:#34d399">3</span>
+        </div>
+        <h4>Enter Your Serial</h4>
+        <p>In WatchNexus, go to <strong style="color:var(--text-1)">Settings &rarr; Activation</strong>, paste your serial number, and your modules unlock immediately.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- SYSTEM REQUIREMENTS -->
+<section class="section section-center">
+  <div class="section-eyebrow animate-in"><i class="fa-solid fa-server"></i> Requirements</div>
+  <h2 class="section-heading animate-in delay-1">System Requirements</h2>
+
+  <div class="feature-grid animate-in delay-2" style="margin-top:2.5rem;max-width:860px;margin-left:auto;margin-right:auto;text-align:left">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(59,130,246,.12)">
+        <i class="fa-brands fa-docker" style="color:#60a5fa;font-size:1.1rem"></i>
+      </div>
+      <h4>Docker</h4>
+      <p>Docker 20.10+ or Docker Compose v2. Runs on Linux, macOS, and Windows with WSL2.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(16,185,129,.12)">
+        <i class="fa-solid fa-microchip" style="color:#34d399;font-size:1.1rem"></i>
+      </div>
+      <h4>Hardware</h4>
+      <p>2+ CPU cores, 2 GB RAM minimum. 4 GB+ recommended for transcoding. NVIDIA GPU optional for Ultra.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(245,158,11,.12)">
+        <i class="fa-solid fa-hard-drive" style="color:#fbbf24;font-size:1.1rem"></i>
+      </div>
+      <h4>Storage</h4>
+      <p>~500 MB for the application container. Additional storage for your media library on the host.</p>
     </div>
   </div>
 </section>
 
-<!-- ACTIVATION INSTRUCTIONS -->
-<section class="section section-alt">
-  <div class="section-header animate-in">
-    <h2>How to Activate</h2>
-    <p>Three simple steps to unlock your tier.</p>
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-body">
+    <div>
+      <a class="footer-brand-logo" onclick="window.parent.loadPage('home')">
+        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus">
+        WatchNexus
+      </a>
+      <p class="footer-brand-tagline">Your complete, self-hosted media pipeline. One app, 73 modules, zero subscriptions.</p>
+      <span class="footer-version"><i class="fa-solid fa-code-branch"></i> v2.9.0</span>
+    </div>
+    <div>
+      <p class="footer-col-title">Product</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('features')"><i class="fa-solid fa-layer-group"></i>Features &amp; Comparison</a>
+        <a onclick="window.parent.loadPage('download')"><i class="fa-solid fa-download"></i>Download</a>
+        <a onclick="window.parent.loadPage('faq')"><i class="fa-solid fa-circle-question"></i>FAQ</a>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Resources</p>
+      <div class="footer-col-links">
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-headset"></i>Support</a>
+        <a onclick="window.parent.loadPage('press')"><i class="fa-solid fa-newspaper"></i>Press Kit</a>
+        <a href="https://licenses.watchnexus.ca" target="_blank"><i class="fa-solid fa-key"></i>License Portal</a>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Community</p>
+      <div class="footer-col-links">
+        <a class="muted"><i class="fa-brands fa-discord"></i>Discord <small>(soon)</small></a>
+        <a class="muted"><i class="fa-brands fa-github"></i>GitHub <small>(soon)</small></a>
+        <a onclick="window.parent.loadPage('support')"><i class="fa-solid fa-bug"></i>Report a Bug</a>
+      </div>
+    </div>
   </div>
-  <div class="feature-grid animate-in" style="max-width:56rem;margin:0 auto;">
-    <div class="feature-card"><div class="feature-icon" style="background:#8b5cf620"><span style="color:#a78bfa;font-size:1.3rem;font-weight:800;">1</span></div><h4>Download & Install</h4><p>Download WatchNexus Standard (free) and run it on your server via Docker.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#3b82f620"><span style="color:#60a5fa;font-size:1.3rem;font-weight:800;">2</span></div><h4>Purchase a License</h4><p>Buy a Pro or Ultra serial number from our license portal. Delivered instantly.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#10b98120"><span style="color:#34d399;font-size:1.3rem;font-weight:800;">3</span></div><h4>Enter Serial Number</h4><p>Go to Settings &rarr; Activation in the app. Enter your serial to unlock your tier.</p></div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2024&ndash;2026 WatchNexus. All rights reserved.</span>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
   </div>
-</section>
-
-<!-- SYSTEM REQUIREMENTS -->
-<section class="section">
-  <div class="section-header animate-in">
-    <h2>System Requirements</h2>
-  </div>
-  <div class="feature-grid animate-in" style="max-width:56rem;margin:0 auto;">
-    <div class="feature-card"><div class="feature-icon" style="background:#3b82f620"><i class="fa-brands fa-docker" style="color:#60a5fa;font-size:1.2rem;"></i></div><h4>Docker</h4><p>Docker 20.10+ or Docker Compose v2. Runs on Linux, macOS, and Windows with WSL2.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#10b98120"><i class="fa-solid fa-microchip" style="color:#34d399;font-size:1.2rem;"></i></div><h4>Hardware</h4><p>2+ CPU cores, 2 GB RAM minimum. 4 GB+ recommended for transcoding. NVIDIA GPU optional for Ultra.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#f59e0b20"><i class="fa-solid fa-hard-drive" style="color:#fbbf24;font-size:1.2rem;"></i></div><h4>Storage</h4><p>500 MB for the application. Additional storage for your media library.</p></div>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand"><div class="nav-logo" style="margin-bottom:0.5rem;"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;"> WatchNexus</div><p>Your complete, self-hosted media pipeline.</p></div>
-    <div class="footer-links"><div><h4>Product</h4><a href="features.html">Features</a><a href="download.html">Download</a><a href="faq.html">FAQ</a></div><div><h4>Resources</h4><a href="support.html">Support</a><a href="press.html">Press Kit</a></div><div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div></div>
-  </div>
-  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved. v1.0.0</div>
 </footer>
-<script>const obs=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.animate-in').forEach(el=>obs.observe(el));</script>
+
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.style.animationPlayState = 'running'; });
+}, { threshold: 0.08 });
+document.querySelectorAll('.animate-in').forEach(el => {
+  el.style.animationPlayState = 'paused';
+  io.observe(el);
+});
+</script>
 </body>
 </html>

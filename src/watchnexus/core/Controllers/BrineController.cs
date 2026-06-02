@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -63,7 +65,7 @@ public class BrineController : ControllerBase
                 return Ok(new { success = true, type = "newznab", message = "Newznab indexer connected" });
             }
         }
-        catch (Exception ex) { return Ok(new { success = false, error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[BrineController] operation failed"); return Ok(new { success = false, error = ex.Message }); }
     }
 
     // ── Prowlarr: Indexers ──────────────────────────────────
@@ -112,7 +114,7 @@ public class BrineController : ControllerBase
             }
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[BrineController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("search/movie")]
@@ -142,7 +144,7 @@ public class BrineController : ControllerBase
                 return Content(resp, "application/json");
             }
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[BrineController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("search/tv")]
@@ -178,7 +180,7 @@ public class BrineController : ControllerBase
                 return Content(resp, "application/json");
             }
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[BrineController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Grab/Download NZB ──────────────────────────────────
@@ -206,7 +208,7 @@ public class BrineController : ControllerBase
                 return Ok(new { status = "nzb_url_provided", url = nzbUrl });
             }
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[BrineController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     // ── Categories Reference ──────────────────────────────────
@@ -249,6 +251,6 @@ public class BrineController : ControllerBase
             var resp = await http.GetStringAsync($"{cfg.url}{path}");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[BrineController] ProxyGet failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 }

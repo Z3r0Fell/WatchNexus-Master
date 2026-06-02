@@ -114,6 +114,7 @@ export const PluginsSettings = () => {
       setCatalogueItems(res.data.items || []);
     } catch (err) {
       console.error('Failed to fetch catalogue:', err);
+        toast.error('Failed to fetch catalogue:');
     } finally {
       setLoadingCatalogue(false);
     }
@@ -125,6 +126,7 @@ export const PluginsSettings = () => {
       setCatalogueCategories(res.data || {});
     } catch (err) {
       console.error('Failed to fetch catalogue categories:', err);
+        toast.error('Failed to fetch catalogue categories:');
     }
   }, []);
 

@@ -198,6 +198,7 @@ export const Dashboard = () => {
       setRecentlyAdded(recentRes.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
+        toast.error('Failed to fetch data:');
       toast.error('Failed to load content');
     } finally {
       setLoading(false);
@@ -236,6 +237,7 @@ export const Dashboard = () => {
       toast.success(`Removed "${item.title}" from Continue Watching`);
     } catch (error) {
       console.error('Failed to remove from continue watching:', error);
+        toast.error('Failed to remove from continue watching:');
       toast.error('Failed to remove from Continue Watching');
     }
   };

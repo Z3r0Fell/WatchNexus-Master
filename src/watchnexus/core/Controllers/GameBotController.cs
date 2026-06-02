@@ -8,6 +8,8 @@ using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -54,7 +56,7 @@ public class GameBotController : ControllerBase
 
             return PhysicalFile(outputPath, "image/jpeg");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[GameBotController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("progressive-reveal")]
@@ -99,7 +101,7 @@ public class GameBotController : ControllerBase
 
             return Ok(new { steps = urls, total = urls.Count });
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[GameBotController] Final unblurred"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpGet("cache/{filename}")]
@@ -172,7 +174,7 @@ public class GameBotController : ControllerBase
                     }
                 }
             }
-            catch { }
+            catch { Log.Error("[GameBotController] operation failed"); }
         }
 
         if (questions.Count == 0)
@@ -210,7 +212,7 @@ public class GameBotController : ControllerBase
             await image.SaveAsJpegAsync(ms);
             return File(ms.ToArray(), "image/jpeg");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[GameBotController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("grayscale")]
@@ -231,7 +233,7 @@ public class GameBotController : ControllerBase
             await image.SaveAsJpegAsync(ms);
             return File(ms.ToArray(), "image/jpeg");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[GameBotController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("pixelate")]
@@ -253,6 +255,6 @@ public class GameBotController : ControllerBase
             await image.SaveAsJpegAsync(ms);
             return File(ms.ToArray(), "image/jpeg");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[GameBotController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 }

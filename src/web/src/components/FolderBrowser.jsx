@@ -14,6 +14,7 @@ import { ScrollArea } from './ui/scroll-area';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { toast } from 'sonner';
 
 // OS-specific icons and colors
 const OS_CONFIG = {
@@ -66,12 +67,6 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
   const fetchingRef = useRef(false);
   const lastFetchedPath = useRef('');
 
-  // Get auth token
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
   // Fetch directory contents
   const fetchDirectory = useCallback(async (path = '') => {
     // Prevent duplicate fetches
@@ -86,8 +81,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
 
     try {
       const response = await axios.get(`${API_URL}/api/filesystem/browse`, {
-        params: { path },
-        headers: getAuthHeaders()
+        params: { path }
       });
 
       const data = response.data;
@@ -111,6 +105,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
       
     } catch (err) {
       console.error('FolderBrowser fetch error:', err);
+        toast.error('FolderBrowser fetch error:');
       const errorMsg = err.response?.data?.detail || 'Failed to browse filesystem';
       setError(errorMsg);
       setItems([]);
@@ -118,7 +113,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [getAuthHeaders, onSelect]);
+  }, [onSelect]);
 
   // Initial load
   useEffect(() => {

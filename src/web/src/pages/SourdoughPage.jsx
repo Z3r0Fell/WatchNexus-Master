@@ -50,6 +50,7 @@ export const SourdoughPage = () => {
       setSchedule(scheduleRes.data);
     } catch (e) {
       console.error('Sourdough fetch error:', e);
+        toast.error('Sourdough fetch error:');
     } finally {
       setLoading(false);
     }

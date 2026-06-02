@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 /// <summary>
@@ -55,7 +57,7 @@ public class LadleController : ControllerBase
             var version = doc.RootElement.TryGetProperty("version", out var v) ? v.GetString() : "unknown";
             return Ok(new { success = true, version, message = $"SABnzbd v{version} connected" });
         }
-        catch (Exception ex) { return Ok(new { success = false, error = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[LadleController] operation failed"); return Ok(new { success = false, error = ex.Message }); }
     }
 
     // ── Status / Speed ──────────────────────────────────
@@ -106,7 +108,7 @@ public class LadleController : ControllerBase
             var resp = await http.GetStringAsync(url);
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[LadleController] operation failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 
     [HttpPost("pause")]
@@ -240,6 +242,6 @@ public class LadleController : ControllerBase
             var resp = await http.GetStringAsync($"{cfg.url}/api?mode={mode}&apikey={cfg.apiKey}&output=json{extra}");
             return Content(resp, "application/json");
         }
-        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+        catch (Exception ex) { Log.Error(ex, "[LadleController] SabApi failed"); return StatusCode(500, new { detail = ex.Message }); }
     }
 }

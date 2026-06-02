@@ -49,6 +49,7 @@ export const AddToPlaylistButton = ({
       setPlaylists(data.playlists || []);
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
+        toast.error('Failed to fetch playlists:');
       toast.error('Failed to load playlists');
     } finally {
       setLoading(false);
@@ -97,6 +98,7 @@ export const AddToPlaylistButton = ({
       onSuccess?.();
     } catch (err) {
       console.error('Failed to add to playlist:', err);
+        toast.error('Failed to add to playlist:');
       toast.error(err.message || 'Failed to add to playlist');
     } finally {
       setAdding(null);

@@ -3,20 +3,17 @@ import axios from 'axios';
 // Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
-// Get auth token from localStorage
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 // Create axios instance for Marmalade
 const marmaladeClient = axios.create({
   baseURL: `${API}/api/marmalade`,
 });
 
-// Add auth header to all requests
+// Pick up auth header from axios defaults (set by AuthContext at module level)
 marmaladeClient.interceptors.request.use((config) => {
-  config.headers = { ...config.headers, ...getAuthHeader() };
+  const authHeader = axios.defaults.headers.common['Authorization'];
+  if (authHeader) {
+    config.headers.Authorization = authHeader;
+  }
   return config;
 });
 

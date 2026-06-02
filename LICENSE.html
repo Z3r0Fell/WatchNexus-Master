@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WatchNexus EULA — v1.0.0 (RTP)</title>
+<title>WatchNexus — License Notice</title>
 <style>
   :root {
     --bg: #0b1220;
@@ -22,9 +22,6 @@
   .meta strong { color: var(--accent); font-weight: 600; }
   h2 { font-size: 16px; margin: 32px 0 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
   p, li { font-size: 15px; color: var(--ink); }
-  ol.terms { padding-left: 22px; }
-  ol.terms > li { margin-bottom: 18px; }
-  ol.terms ol { padding-left: 22px; margin-top: 8px; }
   code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--accent); font-size: 13px; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -42,57 +39,74 @@
 <div class="wrap">
 
 <header>
-  <span class="badge">RELEASE TO PUBLIC — v1.0.0</span>
-  <h1>WatchNexus End User License Agreement</h1>
-  <p class="meta">Effective <strong>February 2026</strong> &middot; Copyright &copy; 2026 WatchNexus Media Systems. All rights reserved.</p>
+  <span class="badge">v1.0.0</span>
+  <h1>WatchNexus License Notice</h1>
+  <p class="meta">Copyright &copy; 2026 WatchNexus Media Systems</p>
 </header>
 
-<p>This End User License Agreement (the &ldquo;Agreement&rdquo;) is a legal contract between you and WatchNexus Media Systems (&ldquo;Licensor&rdquo;) governing your use of the WatchNexus software, including its Standard, Pro, and Ultra tiers, and any updates or supplements thereto (collectively, the &ldquo;Software&rdquo;).</p>
+<h2>Source Code License</h2>
+<p>
+  The WatchNexus source code is released under the
+  <strong>MIT License</strong>. You are free to read, fork, modify, and
+  compile the source. See <a href="LICENSE"><code>LICENSE</code></a>
+  for the full text.
+</p>
 
-<ol class="terms">
+<p>
+  Every component of WatchNexus is derived from open-source materials
+  and built entirely on free and open-source software.
+</p>
 
-  <li><h2>Grant of License</h2>
-      WatchNexus is licensed, not sold. Subject to your acceptance of and compliance with this Agreement, Licensor grants you a non-exclusive, non-transferable, revocable license to install and use the Software on one or more devices that you own or control, solely in the tier (Standard, Pro, or Ultra) that is unlocked by the license key issued to you.</li>
+<p>
+  Source code: <a href="https://github.com/Z3r0Fell/WatchNexus-Master">
+  github.com/Z3r0Fell/WatchNexus-Master</a>
+</p>
 
-  <li><h2>Tier Enforcement</h2>
-      The Software contacts <code>https://licenses.watchnexus.ca</code> during activation and at runtime to verify the tier associated with your license key. Modules and features outside of your activated tier remain locked and may not be enabled by any means.</li>
+<h2>Binary Installer License</h2>
+<p>
+  Pre-built binary installers, official Docker images, and packaged
+  releases are <strong>tier-licensed</strong>. Use of the Standard, Pro,
+  or Ultra tiers requires a valid license key obtained from
+  <a href="https://watchnexus.ca">watchnexus.ca</a>.
+</p>
 
-  <li><h2>Restrictions</h2>
-      You may not, and may not permit any third party to:
-      <ol>
-        <li>reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Software, except to the extent expressly permitted by applicable law;</li>
-        <li>modify, adapt, translate, or create derivative works of the Software;</li>
-        <li>circumvent, disable, or interfere with the licensing, activation, integrity (Fortress Protocol), or copy-protection features of the Software;</li>
-        <li>rent, lease, sell, sublicense, distribute, transfer, or assign the Software, license keys, or activation tokens;</li>
-        <li>remove or alter any proprietary notices, branding, or labels on or in the Software.</li>
-      </ol>
-  </li>
+<p>
+  Tier enforcement is performed at compile time (Docker multi-stage
+  build selects which controllers are included) and at runtime (Fortress
+  integrity verification + license server validation). Circumventing
+  tier enforcement is prohibited.
+</p>
 
-  <li><h2>Integrity Verification</h2>
-      The Software performs cryptographic integrity verification of its own binaries on startup (&ldquo;Fortress Protocol&rdquo;). If the verification fails, the Software will refuse to start. This is a security feature; do not defeat it.</li>
+<h2>Third-Party Open Source Components</h2>
+<p>
+  This software incorporates open-source components under their
+  respective licenses. Notices are available at
+  <a href="https://watchnexus.ca/legal/notices">watchnexus.ca/legal/notices</a>.
+</p>
 
-  <li><h2>Third-Party Components</h2>
-      The Software incorporates open-source components under their respective licenses. A consolidated NOTICES file is available at <a href="https://watchnexus.ca/legal/notices">watchnexus.ca/legal/notices</a>.</li>
+<p>Notable dependencies include (but are not limited to):</p>
+<ul>
+  <li>.NET Runtime — MIT License</li>
+  <li>ASP.NET Core — MIT License</li>
+  <li>Entity Framework Core — MIT License</li>
+  <li>React — MIT License</li>
+  <li>yt-dlp — Unlicense / Public Domain</li>
+  <li>spotDL — MIT License</li>
+  <li>FFmpeg — LGPL / GPL</li>
+</ul>
 
-  <li><h2>Warranty Disclaimer</h2>
-      THE SOFTWARE IS PROVIDED &ldquo;AS IS&rdquo;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</li>
-
-  <li><h2>Limitation of Liability</h2>
-      To the maximum extent permitted by applicable law, Licensor&rsquo;s aggregate liability under or in connection with this Agreement will not exceed the amount you paid for the license to the Software in the twelve (12) months preceding the event giving rise to liability.</li>
-
-  <li><h2>Termination</h2>
-      This Agreement terminates automatically if you breach any of its terms. Upon termination, you must cease all use of the Software and destroy all copies in your possession or control.</li>
-
-  <li><h2>Governing Law</h2>
-      This Agreement is governed by the laws of the province of Ontario, Canada, without regard to conflict-of-laws principles.</li>
-
-  <li><h2>Contact</h2>
-      <a href="mailto:legal@watchnexus.ca">legal@watchnexus.ca</a> &middot; <a href="https://watchnexus.ca/legal/eula">watchnexus.ca/legal/eula</a></li>
-
-</ol>
+<h2>Disclaimer</h2>
+<p>
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
+  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+  OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE
+  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
 
 <footer>
-  By installing or using the Software, you acknowledge that you have read, understood, and agree to be bound by this Agreement.
+  WatchNexus &middot; v1.0.0 &middot; Built with open-source components.
 </footer>
 
 </div>

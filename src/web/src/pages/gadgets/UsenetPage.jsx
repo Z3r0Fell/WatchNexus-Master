@@ -40,6 +40,7 @@ export const UsenetPage = () => {
       if (ladleRes.data.api_key) setLadleApiKey(ladleRes.data.api_key);
     } catch (e) {
       console.error('Usenet config fetch error:', e);
+        toast.error('Usenet config fetch error:');
     } finally {
       setLoading(false);
     }

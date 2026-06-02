@@ -120,6 +120,7 @@ const AnimePage = () => {
       setAnimeSeries(Object.values(seriesMap));
     } catch (error) {
       console.error('Failed to fetch anime library data:', error);
+        toast.error('Failed to fetch anime library data:');
     } finally {
       setLibraryLoading(false);
     }
@@ -173,6 +174,7 @@ const AnimePage = () => {
       setAnime(res.data.results || []);
     } catch (error) {
       console.error('Failed to fetch anime:', error);
+        toast.error('Failed to fetch anime:');
     } finally {
       setLoading(false);
     }
@@ -189,6 +191,7 @@ const AnimePage = () => {
       setAnime(filtered);
     } catch (error) {
       console.error('Failed to search anime:', error);
+        toast.error('Failed to search anime:');
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
 
+using static WatchNexus.Core.Log;
+
 namespace WatchNexus.Core.Controllers;
 
 [ApiController]
@@ -230,7 +232,7 @@ public class LibrariesController : ControllerBase
                         else
                             tmdbKey = tmdbSetting.Value ?? "";
                     }
-                    catch { tmdbKey = tmdbSetting.Value ?? ""; }
+                    catch { Log.Error("[LibrariesController] operation failed"); tmdbKey = tmdbSetting.Value ?? ""; }
                 }
             }
             if (string.IsNullOrEmpty(tmdbKey))
@@ -245,7 +247,7 @@ public class LibrariesController : ControllerBase
                         if (doc.RootElement.TryGetProperty("api_key", out var ak))
                             tmdbKey = ak.GetString() ?? "";
                     }
-                    catch { }
+                    catch { Log.Error("[LibrariesController] operation failed"); }
                 }
             }
 
@@ -290,7 +292,7 @@ public class LibrariesController : ControllerBase
                     db.MediaItems.Add(item);
                     newCount++;
                 }
-                catch (Exception ex) { errors.Add($"{file}: {ex.Message}"); }
+                catch (Exception ex) { Log.Error(ex, "[LibrariesController] operation failed"); errors.Add($"{file}: {ex.Message}"); }
             }
 
             await db.SaveChangesAsync();
@@ -310,6 +312,8 @@ public class LibrariesController : ControllerBase
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "[LibrariesController] operation failed");
+
             errors.Add(ex.Message);
             UpdateJob(libraryId, "failed", errors: errors.ToArray());
         }
@@ -389,7 +393,7 @@ public class LibrariesController : ControllerBase
                 Runtime = runtime,
             };
         }
-        catch { return null; }
+        catch { Log.Error("[LibrariesController] operation failed"); return null; }
     }
 
     private class TmdbResult
