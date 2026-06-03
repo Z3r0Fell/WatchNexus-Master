@@ -13,6 +13,7 @@ import {
 import { UpdateSettings } from '../components/settings/UpdateSettings';
 import { ZestSettings } from '../components/settings/ZestSettings';
 import { CrumbsSettings } from '../components/settings/CrumbsSettings';
+import { FFmpegSettings } from '../components/settings/FFmpegSettings';
 import { Layout } from '../components/layout/Layout';
 import FolderBrowser from '../components/FolderBrowser';
 import axios from 'axios';
@@ -255,6 +256,7 @@ export const SettingsPage = () => {
       case 'media-health': return <MediaHealthSettings />;
       case 'integrations': return <CrumbsSettings />;
       case 'playback': return <PlaybackSettings />;
+      case 'ffmpeg': return <FFmpegSettings />;
       case 'quality-profiles': return <QualityProfilesSettings />;
       case 'indexers': return <IndexerSettings />;
       case 'download': return <DownloadSettings />;
@@ -341,6 +343,7 @@ export const SettingsPage = () => {
               <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Playback & Streaming</h3>
               <div className="space-y-0.5">
                 <NavButton id="playback" label="Playback" />
+                <NavButton id="ffmpeg" label="FFmpeg" />
                 <NavButton id="quality-profiles" label="Quality Profiles" />
                 <NavButton id="iptv" label="IPTV" />
                 <NavButton id="streaming" label="Streaming Services" />

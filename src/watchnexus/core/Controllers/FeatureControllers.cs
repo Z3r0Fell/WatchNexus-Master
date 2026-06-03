@@ -216,30 +216,58 @@ public class MilkController : ControllerBase
     };
 }
 
-// ── Gelatin (External Access) ──────────────────────────────────
+// ── Gelatin (External Access / Tunneling) ──────────────────────────────
+// External-access tunneling (Cloudflare, ngrok, Tailscale Funnel, etc.) is
+// NOT implemented in v1.0.0. The endpoints below honestly report that
+// rather than handing out fake tunnel IDs the user can't connect to.
+// Operators should expose the server via their own reverse proxy / port
+// forwarding for now. Roadmap: real provider integration (P2).
 [Route("api/gelatin")]
 [ApiController]
 [Authorize]
 public class GelatinController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { status = "inactive", tunnels = 0 });
+    public IActionResult Status() => Ok(new
+    {
+        status = "not_configured",
+        message = "External-access tunneling not implemented in v1.0.0. Use a reverse proxy or port forwarding.",
+        tunnels = 0
+    });
+
     [HttpGet("lan-url")]
     public IActionResult LanUrl() => Ok(new { url = $"http://{Environment.MachineName}:8001" });
+
     [HttpPost("tunnel/create")]
     public IActionResult CreateTunnel([FromQuery] string? provider = "built_in") =>
-        Ok(new { tunnel_id = Guid.NewGuid().ToString(), status = "created", provider });
+        StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            detail = "Tunneling providers (Cloudflare, ngrok, Tailscale) are roadmap items. "
+                   + "For now, expose port 8001 via your router or a reverse proxy."
+        });
+
     [HttpGet("tunnels")]
     public IActionResult Tunnels() => Ok(Array.Empty<object>());
+
     [HttpDelete("tunnel/{id}")]
-    public IActionResult CloseTunnel(string id) => Ok(new { status = "closed" });
+    public IActionResult CloseTunnel(string id) =>
+        StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            detail = "No tunnel to close — tunneling is not implemented in v1.0.0."
+        });
+
     [HttpPost("access-token")]
     public IActionResult AccessToken(
         [FromQuery] string? permissions = "view,watch_party",
         [FromQuery] int expires_hours = 24) =>
-        Ok(new { token = Guid.NewGuid().ToString("N"), permissions, expires_hours });
+        StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            detail = "Shareable guest-access tokens are a roadmap item. Use authenticated user accounts for now."
+        });
+
     [HttpGet("share-link")]
     public IActionResult ShareLink([FromQuery] string party_code = "") => Ok(new { link = $"/party/{party_code}" });
+
     [HttpGet("discover")]
     public IActionResult Discover() => Ok(Array.Empty<object>());
 }

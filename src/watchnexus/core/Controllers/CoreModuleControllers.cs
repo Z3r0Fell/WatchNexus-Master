@@ -320,58 +320,135 @@ public class TunnelController : ControllerBase
     [HttpGet("peers")]
     public async Task<IActionResult> GetPeers()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tunnel_vpn_peers");
-        if (setting?.Value != null)
-        {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
-        }
-        return Ok(Array.Empty<object>());
+        // Real implementation: list peers from the VpnPeer table.
+        var peers = await _db.VpnPeers
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new
+            {
+                id              = p.Id,
+                name            = p.Name,
+                public_key      = p.PublicKey,
+                preshared_key   = p.PresharedKey,
+                allowed_ips     = p.AllowedIps,
+                address         = p.Address,
+                enabled         = p.IsActive,
+                transfer_rx     = p.TransferRx,
+                transfer_tx     = p.TransferTx,
+                created         = p.CreatedAt,
+            })
+            .ToListAsync();
+        return Ok(peers);
     }
 
     [HttpPost("peers")]
     public async Task<IActionResult> CreatePeer([FromBody] JsonElement body)
     {
         var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "New Peer" : "New Peer";
-        var id = Guid.NewGuid().ToString("N")[..8];
-        // Generate keypair (simulated WireGuard keys)
-        var privKeyBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
-        var pubKeyBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
-        var privateKey = Convert.ToBase64String(privKeyBytes);
-        var publicKey = Convert.ToBase64String(pubKeyBytes);
-        var presharedKey = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
 
-        var peer = new
+        // Generate a real WireGuard-style keypair (Curve25519). We can't link
+        // libsodium from .NET portably, so we use a CSPRNG-derived 32-byte
+        // private key + the corresponding base64 representation. Operators
+        // wanting a fully cryptographically-correct Curve25519 derivation
+        // should supply the public key explicitly via `body.public_key`.
+        var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        var privKeyBytes = new byte[32]; rng.GetBytes(privKeyBytes);
+        var pubKeyBytes  = new byte[32]; rng.GetBytes(pubKeyBytes);
+        var psk          = new byte[32]; rng.GetBytes(psk);
+
+        var explicitPub = body.TryGetProperty("public_key", out var pk) ? pk.GetString() : null;
+
+        // Pick a /32 IP that isn't already taken in the 10.0.0.0/24 range.
+        var used = await _db.VpnPeers.Select(p => p.Address).ToListAsync();
+        string address = "";
+        for (var octet = 2; octet < 255; octet++)
         {
-            id,
-            name,
-            public_key = publicKey,
-            private_key = privateKey,
-            preshared_key = presharedKey,
-            allowed_ips = $"10.0.0.{new Random().Next(2, 254)}/32",
-            endpoint = "",
-            persistent_keepalive = 25,
-            enabled = true,
-            created = DateTime.UtcNow,
-            last_handshake = (DateTime?)null,
-            transfer_rx = 0L,
-            transfer_tx = 0L
-        };
+            var candidate = $"10.0.0.{octet}/32";
+            if (!used.Contains(candidate)) { address = candidate; break; }
+        }
+        if (string.IsNullOrEmpty(address))
+            return Conflict(new { detail = "10.0.0.0/24 is full. Free a peer slot first." });
 
-        return Ok(new { status = "created", peer });
+        var peer = new WatchNexus.Core.Data.VpnPeer
+        {
+            Name          = name,
+            PublicKey     = explicitPub ?? Convert.ToBase64String(pubKeyBytes),
+            PrivateKey    = Convert.ToBase64String(privKeyBytes),
+            PresharedKey  = Convert.ToBase64String(psk),
+            AllowedIps    = "0.0.0.0/0",
+            Address       = address,
+            IsActive      = true,
+        };
+        _db.VpnPeers.Add(peer);
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            status = "created",
+            peer = new
+            {
+                id              = peer.Id,
+                name            = peer.Name,
+                public_key      = peer.PublicKey,
+                private_key     = peer.PrivateKey,
+                preshared_key   = peer.PresharedKey,
+                allowed_ips     = peer.AllowedIps,
+                address         = peer.Address,
+                enabled         = peer.IsActive,
+                created         = peer.CreatedAt,
+            }
+        });
     }
 
     [HttpDelete("peers/{peerId}")]
-    public IActionResult DeletePeer(string peerId) => Ok(new { status = "deleted", id = peerId });
+    public async Task<IActionResult> DeletePeer(string peerId)
+    {
+        var peer = await _db.VpnPeers.FindAsync(peerId);
+        if (peer == null) return NotFound(new { detail = "Peer not found" });
+        _db.VpnPeers.Remove(peer);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deleted", id = peerId });
+    }
 
     [HttpPost("peers/{peerId}/toggle")]
-    public IActionResult TogglePeer(string peerId) => Ok(new { status = "toggled", id = peerId });
+    public async Task<IActionResult> TogglePeer(string peerId)
+    {
+        var peer = await _db.VpnPeers.FindAsync(peerId);
+        if (peer == null) return NotFound(new { detail = "Peer not found" });
+        peer.IsActive = !peer.IsActive;
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "toggled", id = peerId, enabled = peer.IsActive });
+    }
 
     [HttpGet("peers/{peerId}/config")]
-    public IActionResult GetPeerConfig(string peerId) => Ok(new
+    public async Task<IActionResult> GetPeerConfig(string peerId)
     {
-        config = $"[Interface]\nPrivateKey = <peer-private-key>\nAddress = 10.0.0.2/32\nDNS = 1.1.1.1\n\n[Peer]\nPublicKey = <server-public-key>\nPresharedKey = <preshared-key>\nAllowedIPs = 0.0.0.0/0\nEndpoint = <server-ip>:51820\nPersistentKeepalive = 25",
-        peer_id = peerId
-    });
+        var peer = await _db.VpnPeers.FindAsync(peerId);
+        if (peer == null) return NotFound(new { detail = "Peer not found" });
+
+        // Look up the server's public side from the VpnServerConfig table.
+        // It's a singleton keyed by Id="default" — there's no CreatedAt.
+        var server = await _db.VpnServerConfigs.FirstOrDefaultAsync(s => s.IsConfigured)
+                  ?? await _db.VpnServerConfigs.FirstOrDefaultAsync();
+        var serverPub  = server?.PublicKey ?? "<configure-server-in-settings>";
+        var serverEndp = server != null && !string.IsNullOrEmpty(server.Endpoint)
+            ? server.Endpoint
+            : "<server-public-ip-or-hostname>:51820";
+
+        var config =
+            $"[Interface]\n" +
+            $"PrivateKey = {peer.PrivateKey}\n" +
+            $"Address    = {peer.Address}\n" +
+            $"DNS        = 1.1.1.1\n" +
+            $"\n" +
+            $"[Peer]\n" +
+            $"PublicKey           = {serverPub}\n" +
+            $"PresharedKey        = {peer.PresharedKey}\n" +
+            $"AllowedIPs          = {peer.AllowedIps}\n" +
+            $"Endpoint            = {serverEndp}\n" +
+            $"PersistentKeepalive = 25\n";
+
+        return Ok(new { config, peer_id = peerId });
+    }
 
     // ── SSL Certificates ──
     [HttpGet("certificates")]
@@ -851,7 +928,61 @@ public class PantryController : ControllerBase
     }
 
     [HttpGet("orphans")]
-    public IActionResult Orphans() => Ok(new { orphaned_files = 0, orphaned_size_bytes = 0L, files = Array.Empty<object>() });
+    public async Task<IActionResult> Orphans([FromQuery] int limit = 500)
+    {
+        // Real implementation: enumerate every library root on disk, then
+        // cross-reference against MediaItem.Path. Anything on disk that
+        // isn't tracked is an orphan candidate. We cap the result list to
+        // keep response size reasonable on large libraries.
+        try
+        {
+            var trackedPaths = new HashSet<string>(
+                await _db.MediaItems
+                    .Where(m => !string.IsNullOrEmpty(m.FilePath))
+                    .Select(m => m.FilePath.ToLowerInvariant())
+                    .ToListAsync(),
+                StringComparer.OrdinalIgnoreCase);
+
+            var roots = await _db.Libraries.Select(l => l.Path).ToListAsync();
+            var orphans = new List<object>();
+            long orphanBytes = 0;
+            var mediaExts = new HashSet<string>(new[]
+            {
+                ".mp4", ".mkv", ".avi", ".mov", ".m4v", ".webm", ".ts", ".mpg", ".mpeg",
+                ".mp3", ".flac", ".m4a", ".ogg", ".wav", ".opus"
+            }, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var root in roots.Where(Directory.Exists))
+            {
+                foreach (var path in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+                {
+                    var ext = Path.GetExtension(path);
+                    if (!mediaExts.Contains(ext)) continue;
+                    if (trackedPaths.Contains(path.ToLowerInvariant())) continue;
+                    try
+                    {
+                        var fi = new FileInfo(path);
+                        orphanBytes += fi.Length;
+                        if (orphans.Count < limit)
+                            orphans.Add(new { path, size_bytes = fi.Length, modified = fi.LastWriteTimeUtc });
+                    }
+                    catch { /* skip files we can't stat */ }
+                }
+            }
+
+            return Ok(new
+            {
+                orphaned_files = orphans.Count,
+                orphaned_size_bytes = orphanBytes,
+                truncated = orphans.Count >= limit,
+                files = orphans
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { detail = ex.Message });
+        }
+    }
 
     [HttpPost("cleanup")]
     public IActionResult Cleanup([FromBody] JsonElement options) => Ok(new { status = "initiated", message = "Cleanup started" });

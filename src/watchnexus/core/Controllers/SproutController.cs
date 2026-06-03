@@ -97,17 +97,20 @@ public class SproutController : ControllerBase
 
     [HttpPost("feeds")]
     [Authorize]
-    public IActionResult CreateFeed([FromBody] JsonElement body)
-    {
-        var id = Guid.NewGuid().ToString("N")[..8];
-        var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "Custom Feed" : "Custom Feed";
-        var mediaType = body.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "all" : "all";
-        return Ok(new { status = "created", id, name, media_type = mediaType });
-    }
+    public IActionResult CreateFeed([FromBody] JsonElement body) =>
+        StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            detail = "Custom RSS feeds are not yet supported. Use the built-in feeds: /api/sprout/feed/{recent,movies,tv}.",
+            built_in = new[] { "recent", "movies", "tv" }
+        });
 
     [HttpDelete("feeds/{feedId}")]
     [Authorize]
-    public IActionResult DeleteFeed(string feedId) => Ok(new { status = "deleted", id = feedId });
+    public IActionResult DeleteFeed(string feedId) =>
+        StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            detail = "Custom RSS feeds are not yet supported. Built-in feeds are not user-removable."
+        });
 
     [HttpPost("generate-key")]
     [Authorize]

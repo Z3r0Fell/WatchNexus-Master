@@ -177,11 +177,20 @@ public class QualityProfilesController : ControllerBase
         new { id = "uhd", name = "4K UHD", min_quality = 1080, max_quality = 2160, preferred = "2160p" },
     });
     [HttpPost]
-    public IActionResult Create() => Ok(new { id = Guid.NewGuid().ToString(), status = "created" });
+    public IActionResult Create() => StatusCode(StatusCodes.Status501NotImplemented, new
+    {
+        detail = "Custom quality profiles are not supported in v1.0.0. Choose from the built-in list (any, sd, hd, fhd, uhd)."
+    });
     [HttpPut("{id}")]
-    public IActionResult Update(string id) => Ok(new { status = "updated" });
+    public IActionResult Update(string id) => StatusCode(StatusCodes.Status501NotImplemented, new
+    {
+        detail = "Built-in quality profiles are read-only. Custom profiles are not supported in v1.0.0."
+    });
     [HttpDelete("{id}")]
-    public IActionResult Delete(string id) => Ok(new { status = "deleted" });
+    public IActionResult Delete(string id) => StatusCode(StatusCodes.Status501NotImplemented, new
+    {
+        detail = "Built-in quality profiles are read-only."
+    });
 }
 
 // ── Compote (Indexer Manager) ──────────────────────────────────

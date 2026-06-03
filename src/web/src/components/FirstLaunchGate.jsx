@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key, Shield, Zap, Crown, ArrowRight, Loader2, ChevronRight,
-  User, Lock, Mail, Eye, EyeOff, CheckCircle2
+  User, Lock, Mail, Eye, EyeOff, CheckCircle2,
+  Film, AlertTriangle, Copy, RefreshCw
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -34,7 +35,8 @@ export const FirstLaunchGate = ({ children }) => {
   const [checking, setChecking] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [needsLicense, setNeedsLicense] = useState(false);
-  const [step, setStep] = useState('admin'); // 'admin' | 'license' | 'done'
+  const [step, setStep] = useState('admin'); // 'admin' | 'ffmpeg' | 'license' | 'done'
+  const [ffmpegStatus, setFfmpegStatus] = useState(null);
 
   const { setUser, setIsAuthenticated } = useAuth();
 
@@ -54,7 +56,6 @@ export const FirstLaunchGate = ({ children }) => {
       setNeedsLicense(needsLic);
       setStep(needsAdmin ? 'admin' : (needsLic ? 'license' : 'done'));
     } catch {
-      // If backend isn't up, don't block the app — the AuthPage will surface the error.
       setNeedsSetup(false);
       setNeedsLicense(false);
       setStep('done');
@@ -68,6 +69,13 @@ export const FirstLaunchGate = ({ children }) => {
     if (setUser) setUser(user);
     if (setIsAuthenticated) setIsAuthenticated(true);
     setNeedsSetup(false);
+    // Always show FFmpeg step after admin creation so the user knows up front
+    // whether transcoding/repair/disc-ripping will work on this machine.
+    setStep('ffmpeg');
+  };
+
+  const onFfmpegDone = (status) => {
+    setFfmpegStatus(status);
     setStep(needsLicense ? 'license' : 'done');
   };
 
@@ -92,6 +100,9 @@ export const FirstLaunchGate = ({ children }) => {
       <AnimatePresence mode="wait">
         {step === 'admin' && (
           <AdminStep key="admin" onCreated={onAdminCreated} />
+        )}
+        {step === 'ffmpeg' && (
+          <FfmpegStep key="ffmpeg" onDone={onFfmpegDone} />
         )}
         {step === 'license' && (
           <LicenseStep key="license" onFinished={onLicenseFinished} />
@@ -145,7 +156,7 @@ const AdminStep = ({ onCreated }) => {
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">Welcome to WatchNexus</h1>
         <p className="text-gray-400">Create your administrator account to get started.</p>
-        <p className="text-xs text-gray-600 mt-2">Step 1 of 2 — Admin account</p>
+        <p className="text-xs text-gray-600 mt-2">Step 1 of 3 — Admin account</p>
       </div>
 
       <form onSubmit={submit} className="space-y-4">
@@ -195,7 +206,133 @@ const Field = ({ icon: Icon, type, value, onChange, placeholder, testid, right }
   </div>
 );
 
-// ── Step 2: pick license tier ────────────────────────────────────────
+// ── Step 2: FFmpeg detection ─────────────────────────────────────────
+const FfmpegStep = ({ onDone }) => {
+  const [status, setStatus] = useState(null);
+  const [checking, setChecking] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const probe = async () => {
+    setChecking(true);
+    try {
+      const token = (() => { try { return localStorage.getItem('token'); } catch { return null; } })();
+      const res = await axios.get(`${API}/api/crucible/ffmpeg-status`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setStatus(res.data);
+    } catch (err) {
+      setStatus({ ffmpeg_installed: false, error: err.message });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => { probe(); }, []);
+
+  const installed = !!status?.ffmpeg_installed;
+  const probeInstalled = !!status?.ffprobe_installed;
+  const hint = status?.install_hint;
+
+  const copy = () => {
+    if (!hint) return;
+    try { navigator.clipboard.writeText(hint); setCopied(true); setTimeout(() => setCopied(false), 1500); }
+    catch { /* clipboard unavailable */ }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
+      className="max-w-xl w-full space-y-7"
+    >
+      <div className="text-center">
+        <div className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center shadow-2xl ${
+          installed
+            ? 'bg-gradient-to-br from-emerald-600 to-green-700 shadow-emerald-500/30'
+            : 'bg-gradient-to-br from-amber-600 to-orange-700 shadow-amber-500/30'
+        }`}>
+          {installed ? <Film className="w-9 h-9 text-white" /> : <AlertTriangle className="w-9 h-9 text-white" />}
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-2">FFmpeg detection</h1>
+        <p className="text-gray-400">
+          {installed
+            ? 'FFmpeg is installed. Transcoding, playback, repair and disc-ripping are all available.'
+            : "FFmpeg isn't installed on this machine. WatchNexus runs without it, but transcoding, repair and disc-ripping will be disabled until you install it."}
+        </p>
+        <p className="text-xs text-gray-600 mt-2">Step 2 of 3 — FFmpeg</p>
+      </div>
+
+      {checking && (
+        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 flex items-center justify-center gap-3 text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" /> Probing system for ffmpeg / ffprobe...
+        </div>
+      )}
+
+      {!checking && status && (
+        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 space-y-3">
+          <DetectionRow label="ffmpeg"  installed={installed}        path={status.ffmpeg_path}  />
+          <DetectionRow label="ffprobe" installed={probeInstalled}   path={status.ffprobe_path} />
+          {status.ffmpeg_version && (
+            <p className="text-xs text-gray-500 mt-2 pt-3 border-t border-white/5 font-mono break-all">
+              {status.ffmpeg_version}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!checking && !installed && hint && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
+          <p className="text-amber-200 text-sm font-medium mb-3">Install command for this system:</p>
+          <div className="flex items-center gap-2 bg-black/40 border border-amber-500/20 rounded-lg p-3">
+            <code className="flex-1 text-amber-100 text-sm font-mono break-all">{hint}</code>
+            <button onClick={copy} className="shrink-0 p-2 hover:bg-amber-500/10 rounded-md transition-colors"
+              data-testid="ffmpeg-copy-hint">
+              {copied
+                ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                : <Copy className="w-4 h-4 text-amber-300" />}
+            </button>
+          </div>
+          <p className="text-xs text-amber-300/70 mt-3">
+            Run the command above in a terminal, then click <strong>Re-check</strong> below.
+          </p>
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={probe} disabled={checking}
+          className="flex-1 h-12 bg-white/5 border-white/10 text-white hover:bg-white/10"
+          data-testid="ffmpeg-recheck-btn">
+          {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 mr-2" /> Re-check</>}
+        </Button>
+        <Button onClick={() => onDone(status)}
+          className="flex-1 h-12 bg-violet-600 hover:bg-violet-700"
+          data-testid="ffmpeg-continue-btn">
+          {installed ? 'Continue' : 'Continue without FFmpeg'} <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </motion.div>
+  );
+};
+
+const DetectionRow = ({ label, installed, path }) => (
+  <div className="flex items-center gap-3">
+    {installed
+      ? <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+      : <div className="w-5 h-5 rounded-full border-2 border-amber-500/50 shrink-0" />}
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2">
+        <span className="text-white font-medium">{label}</span>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${
+          installed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+        }`}>
+          {installed ? 'detected' : 'not found'}
+        </span>
+      </div>
+      {path && <p className="text-xs text-gray-500 font-mono truncate" title={path}>{path}</p>}
+    </div>
+  </div>
+);
+
+// ── Step 3: pick license tier ────────────────────────────────────────
 const LicenseStep = ({ onFinished }) => {
   const [serial, setSerial] = useState('');
   const [busy, setBusy] = useState(false);
@@ -235,7 +372,7 @@ const LicenseStep = ({ onFinished }) => {
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">Choose your edition</h1>
         <p className="text-gray-400">Enter your serial number to unlock Pro or Ultra, or continue with Standard.</p>
-        <p className="text-xs text-gray-600 mt-2">Step 2 of 2 — License</p>
+        <p className="text-xs text-gray-600 mt-2">Step 3 of 3 — License</p>
       </div>
 
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
