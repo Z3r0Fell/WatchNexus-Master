@@ -43,11 +43,29 @@ public class FortressFilter : IAsyncActionFilter
 
     private static readonly Dictionary<string, int> TierRank = new() { ["standard"] = 0, ["pro"] = 1, ["ultra"] = 2 };
 
+    // Endpoints that must stay reachable on EVERY tier (including a fresh Standard
+    // install) because they are system diagnostics / onboarding probes rather than
+    // licensed features. FFmpeg detection is surfaced in the first-launch wizard and
+    // the Settings panel before any license is ever entered — gating it behind the
+    // crucible (Ultra) tier made it always report "not found". See bug: customer
+    // reported ffmpeg installed but OOBE said it wasn't.
+    private static readonly HashSet<string> ExemptPaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/api/crucible/ffmpeg-status",
+    };
+
     public FortressFilter(AppDbContext db) => _db = db;
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var path = context.HttpContext.Request.Path.Value?.ToLower() ?? "";
+
+        // System diagnostics / onboarding probes bypass tier enforcement entirely.
+        if (ExemptPaths.Contains(path.TrimEnd('/')))
+        {
+            await next();
+            return;
+        }
 
         // Extract module codename from path: /api/{codename}/...
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);

@@ -26,3 +26,18 @@ Both must be set, and the seed only runs when the Users table is empty.
 If a previous session created an account via the wizard, the credentials it used
 should be recorded here by the agent that ran the test. If this file is empty
 when you see it, the DB is fresh and the wizard needs to be exercised first.
+
+## Current dev account (created June 2026 while fixing the FFmpeg tier-lock bug)
+- Email:    owner@watchnexus.local
+- Username: owner
+- Password: password123
+- Tier:     Standard (no license entered)
+This account exists in the dev SQLite DB at
+`/app/src/watchnexus/core/bin/Release/net10.0/data/watchnexus.db`.
+
+## Environment note (forked container)
+The .NET backend (`watchnexus-server` in supervisor) launches via
+`/opt/dotnet/dotnet`, but in this forked pod the SDK lives at `/root/.dotnet`.
+If the backend is FATAL with "can't find command '/opt/dotnet/dotnet'", run:
+`ln -sfn /root/.dotnet /opt/dotnet && sudo supervisorctl restart watchnexus-server`
+(`/opt` is outside `/app` so the platform may wipe this symlink between syncs.)
