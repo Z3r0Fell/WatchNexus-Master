@@ -16,8 +16,12 @@
 #  Prerequisites (one-time, on this Arch laptop):
 #      sudo pacman -S --needed ruby dotnet-sdk nodejs npm yarn jq \
 #                              osslsigncode rpm-tools nsis fakeroot
-#      gem install --user-install fpm
+#      # Ruby 3.4 split several stdlibs out of core; fpm needs them as gems:
+#      gem install --user-install fpm erb mutex_m getoptlong base64 fiddle
 #      set -Ux PATH (ruby -e 'puts Gem.user_dir')/bin \$PATH
+#
+#  If fpm dies with `cannot load such file -- erb (LoadError)` on Arch,
+#  this script will auto-install the missing stdlib gem as a user gem.
 # ══════════════════════════════════════════════════════════════════════
 
 set -g SCRIPT_DIR (dirname (status -f))
@@ -83,6 +87,52 @@ require rpmbuild       "sudo pacman -S rpm-tools"
 # Note: fpm's pacman target uses bsdtar + zstd internally; no need for
 # makepkg. fakeroot is only needed if you're cross-building debs as a
 # non-root user; modern fpm handles dpkg-deb directly.
+
+# ── fpm health-check (Ruby 3.4+ vs fpm 1.17 bundled-gem fallout) ────
+# Ruby 3.4 moved several modules out of the default stdlib into
+# bundled/default gems. fpm 1.17 still `require`s them eagerly. The
+# trick is that *system* `ruby -r erb -e 0` may succeed (Arch's ruby
+# package still finds erb), while `fpm` running through the user-gem
+# wrapper does NOT — because the gem stub's $LOAD_PATH excludes the
+# system bundled gems. So we can't probe with bare ruby. Instead we
+# probe by invoking fpm itself and parsing its LoadError for the
+# missing module name; we then `gem install --user-install` it and
+# loop until fpm prints its version banner cleanly.
+function preflight_fpm
+    set -l max_attempts 8
+    set -l attempt 0
+    while test $attempt -lt $max_attempts
+        set -l out (fpm --version 2>&1)
+        if test $status -eq 0
+            return 0
+        end
+        # Parse: "cannot load such file -- erb (LoadError)"
+        set -l missing (string match -r 'cannot load such file -- (\w+)' -- $out | tail -n 1)
+        if test -z "$missing"
+            echo "[!] fpm preflight failed and no LoadError pattern matched. Raw output:"
+            for line in $out
+                echo "    $line"
+            end
+            return 1
+        end
+        set attempt (math $attempt + 1)
+        echo "  [fpm] missing gem '$missing' (attempt $attempt) — installing as user gem..."
+        gem install --user-install --no-document "$missing" > /dev/null 2>&1
+        or begin
+            echo "[!] gem install --user-install $missing failed."
+            echo "    Try: sudo pacman -S ruby-$missing"
+            echo "    Or:  gem install --user-install $missing"
+            return 1
+        end
+    end
+    echo "[!] fpm still failing after $max_attempts auto-installs. Bailing."
+    return 1
+end
+
+echo "[ruby] checking fpm health..."
+preflight_fpm
+or exit 1
+echo "[ruby] fpm "(fpm --version 2>/dev/null)" — OK"
 
 if test "$DO_SIGN" = "1"
     require osslsigncode "sudo pacman -S osslsigncode"
@@ -199,7 +249,11 @@ function build_linux_packages -a tier
     rm -rf "$root"
     mkdir -p "$root/opt/watchnexus/bin" \
              "$root/opt/watchnexus/web" \
-             "$root/usr/lib/systemd/system"
+             "$root/usr/lib/systemd/system" \
+             "$root/usr/bin" \
+             "$root/etc/xdg/autostart" \
+             "$root/usr/share/icons/hicolor/256x256/apps" \
+             "$root/usr/share/applications"
 
     cp -a "$payload/." "$root/opt/watchnexus/bin/"
     cp -a "$web_payload/." "$root/opt/watchnexus/web/"
@@ -212,6 +266,25 @@ function build_linux_packages -a tier
     # systemd unit (same for all tiers)
     cp "$FPM_HOOKS_DIR/service/watchnexus.service" \
        "$root/usr/lib/systemd/system/watchnexus.service"
+
+    # ── User-session tray controller (new in v1.0.0) ─────────────
+    # /usr/bin/watchnexus-tray launches the Core binary in --tray mode
+    # for each interactive user. /etc/xdg/autostart/* auto-starts it on
+    # GUI login. The hicolor icon supports the AppIndicator's "icon=watchnexus".
+    cp "$FPM_HOOKS_DIR/bin/watchnexus-tray" "$root/usr/bin/watchnexus-tray"
+    chmod +x "$root/usr/bin/watchnexus-tray"
+    cp "$FPM_HOOKS_DIR/xdg-autostart/watchnexus-tray.desktop" \
+       "$root/etc/xdg/autostart/watchnexus-tray.desktop"
+    # App launcher entry (Activities / app drawer)
+    cp "$FPM_HOOKS_DIR/xdg-autostart/watchnexus-tray.desktop" \
+       "$root/usr/share/applications/watchnexus.desktop"
+    # System icon (so `Icon=watchnexus` in the .desktop resolves)
+    cp "$SCRIPT_DIR/packaging/resources/watchnexus-logo.png" \
+       "$root/usr/share/icons/hicolor/256x256/apps/watchnexus.png" 2>/dev/null
+    # Drop the .ico into /opt so the TrayController can find a square icon
+    # via its candidate path resolver.
+    cp "$SCRIPT_DIR/packaging/resources/watchnexus.ico" \
+       "$root/opt/watchnexus/watchnexus.ico" 2>/dev/null
 
     set -l common_args \
         --name "$pkg_name" \
@@ -239,7 +312,7 @@ function build_linux_packages -a tier
         --category "video" \
         --package "$out/deb/" \
         -C "$root" \
-        opt usr 2>&1
+        opt usr etc 2>&1
     set -l deb_status $status
     if test $deb_status -ne 0
         echo "  [!] fpm deb exited $deb_status for $tier"
@@ -258,7 +331,7 @@ function build_linux_packages -a tier
         --rpm-compression xz \
         --package "$out/rpm/" \
         -C "$root" \
-        opt usr 2>&1
+        opt usr etc 2>&1
     set -l rpm_status $status
     if test $rpm_status -ne 0
         echo "  [!] fpm rpm exited $rpm_status for $tier"
@@ -275,7 +348,7 @@ function build_linux_packages -a tier
         --pacman-compression zstd \
         --package "$out/arch/" \
         -C "$root" \
-        opt usr 2>&1
+        opt usr etc 2>&1
     set -l pac_status $status
     if test $pac_status -ne 0
         echo "  [!] fpm pacman exited $pac_status for $tier"

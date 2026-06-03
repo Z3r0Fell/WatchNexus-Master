@@ -19,6 +19,10 @@ SetCompressor /SOLID lzma
 !define MUI_ABORTWARNING
 !define MUI_ICON          "@STAGE_ROOT@/../../build/packaging/resources/watchnexus.ico"
 !define MUI_UNICON        "@STAGE_ROOT@/../../build/packaging/resources/watchnexus.ico"
+; Explicit Icon directive (belt + suspenders alongside MUI_ICON — some NSIS
+; builds don't honor MUI_ICON without this and ship the default installer icon).
+Icon         "@STAGE_ROOT@/../../build/packaging/resources/watchnexus.ico"
+UninstallIcon "@STAGE_ROOT@/../../build/packaging/resources/watchnexus.ico"
 
 ; ── Modern UI 2 ────────────────────────────────────────────────────
 !include "MUI2.nsh"
@@ -68,6 +72,12 @@ Section "Core (required)" SecCore
     File "@STAGE_ROOT@\LICENSE.txt"
     File "@STAGE_ROOT@\LICENSE.html"
     File "@STAGE_ROOT@\README.md"
+    ; Ship the application icon next to the binaries so every Start-menu
+    ; and Desktop shortcut can reference a real .ico file (the .NET-published
+    ; WatchNexus.Core.exe also has it embedded via <ApplicationIcon>, but
+    ; pointing shortcuts at a dedicated .ico is more reliable across shell
+    ; cache invalidations).
+    File "/oname=watchnexus.ico" "@STAGE_ROOT@\..\..\build\packaging\resources\watchnexus.ico"
 
     ; Helper script that opens the logs folder (used by Start-menu shortcut)
     FileOpen $0 "$INSTDIR\OpenLogs.cmd" w
@@ -102,11 +112,20 @@ Section "Core (required)" SecCore
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\WatchNexus" \
         "URLInfoAbout"    "${PRODUCT_WEB_SITE}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\WatchNexus" \
-        "DisplayIcon"     "$INSTDIR\bin\WatchNexus.Core.exe"
+        "DisplayIcon"     "$INSTDIR\watchnexus.ico"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\WatchNexus" \
         "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\WatchNexus" \
         "NoRepair" 1
+
+    ; Pre-create the runtime data dir and grant SYSTEM + Administrators full
+    ; control. Without this, an upgrade over an older install can inherit
+    ; restrictive ACLs and SQLite throws "attempt to write a readonly database"
+    ; on first boot. We use CMD's nested env-var expansion so PROGRAMDATA
+    ; is resolved at install time, not at NSIS compile time.
+    nsExec::ExecToLog 'cmd.exe /c if not exist "%PROGRAMDATA%\WatchNexus" mkdir "%PROGRAMDATA%\WatchNexus"'
+    nsExec::ExecToLog 'cmd.exe /c if not exist "%PROGRAMDATA%\WatchNexus\logs" mkdir "%PROGRAMDATA%\WatchNexus\logs"'
+    nsExec::ExecToLog 'cmd.exe /c icacls "%PROGRAMDATA%\WatchNexus" /grant "*S-1-5-18:(OI)(CI)F" /grant "*S-1-5-32-544:(OI)(CI)F" /T /C /Q'
 
     ; Register the Windows service
     nsExec::ExecToLog 'sc.exe create ${SERVICE_NAME} \
@@ -122,31 +141,64 @@ Section "Core (required)" SecCore
     ; Start the service
     nsExec::ExecToLog 'sc.exe start ${SERVICE_NAME}'
 
+    ; ── User-session tray controller ────────────────────────────────
+    ; The Core service runs in Session 0 (no desktop), so we ALSO need a
+    ; small user-session process that hosts the systray icon. We achieve
+    ; that by registering an HKLM\...\Run autostart entry pointing at
+    ; `WatchNexus.Core.exe --tray`. The same exe in --tray mode skips
+    ; Kestrel/EF Core entirely and only shows the NotifyIcon.
+    ;
+    ; HKLM (not HKCU) is intentional — the installer runs elevated, so
+    ; HKCU would write the admin's hive, not the user's. HKLM\...\Run
+    ; runs for *every* user that signs into this machine.
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" \
+        "WatchNexusTray" '"$INSTDIR\bin\WatchNexus.Core.exe" --tray'
+
+    ; Ship a tiny .cmd wrapper next to the icon so the user has a clearly
+    ; named "controller" launcher visible in Program Files\WatchNexus\.
+    ; (The user asked for "a controller process in program files".)
+    FileOpen $0 "$INSTDIR\WatchNexus-Tray.cmd" w
+    FileWrite $0 "@echo off$\r$\n"
+    FileWrite $0 "rem WatchNexus user-session tray controller launcher.$\r$\n"
+    FileWrite $0 "start $\"$\" $\"%~dp0bin\WatchNexus.Core.exe$\" --tray$\r$\n"
+    FileClose $0
+
+    ; Launch the tray RIGHT NOW so the user gets the icon without having
+    ; to log out/in. The installer runs as admin in Session 0+UAC; we use
+    ; explorer.exe to drop privileges back to the interactive user so the
+    ; NotifyIcon lands in their session, not in elevated-admin context.
+    nsExec::Exec 'cmd.exe /c start "" explorer.exe "$INSTDIR\WatchNexus-Tray.cmd"'
+
     ; Generate uninstaller
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-    ; Start-menu shortcuts
+    ; Start-menu shortcuts (all reference $INSTDIR\watchnexus.ico for the icon
+    ; — that file is shipped above and is guaranteed to render at every size).
     CreateDirectory "$SMPROGRAMS\WatchNexus"
     CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus Web UI.lnk" \
         "http://localhost:${DEFAULT_PORT}" \
-        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        "" "$INSTDIR\watchnexus.ico" 0 \
         SW_SHOWNORMAL "" "Open WatchNexus in your browser"
+    CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus Tray Controller.lnk" \
+        "$INSTDIR\bin\WatchNexus.Core.exe" \
+        "--tray" "$INSTDIR\watchnexus.ico" 0 \
+        SW_SHOWMINNOACTIVE "" "Show the WatchNexus system tray icon"
     CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus (Console mode).lnk" \
         "$INSTDIR\bin\WatchNexus.Core.exe" \
-        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        "" "$INSTDIR\watchnexus.ico" 0 \
         SW_SHOWNORMAL "" "Run WatchNexus in a console window (for troubleshooting)"
     CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus Logs Folder.lnk" \
         "$INSTDIR\OpenLogs.cmd" \
-        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        "" "$INSTDIR\watchnexus.ico" 0 \
         SW_SHOWMINIMIZED "" "Open the WatchNexus log folder"
     CreateShortcut "$SMPROGRAMS\WatchNexus\Uninstall WatchNexus.lnk" \
         "$INSTDIR\Uninstall.exe" \
-        "" "$INSTDIR\Uninstall.exe" 0
+        "" "$INSTDIR\watchnexus.ico" 0
 
     ; Desktop shortcut (single shortcut to the web UI)
     CreateShortcut "$DESKTOP\WatchNexus.lnk" \
         "http://localhost:${DEFAULT_PORT}" \
-        "" "$INSTDIR\bin\WatchNexus.Core.exe" 0 \
+        "" "$INSTDIR\watchnexus.ico" 0 \
         SW_SHOWNORMAL "" "Open WatchNexus in your browser"
 SectionEnd
 
@@ -155,6 +207,10 @@ SectionEnd
 ; ══════════════════════════════════════════════════════════════════════
 
 Section "Uninstall"
+    ; Kill any running user-session tray controller so its file lock
+    ; releases before we try to delete the binary.
+    nsExec::ExecToLog 'cmd.exe /c taskkill /F /IM WatchNexus.Core.exe /T'
+
     ; Stop + delete the service
     nsExec::ExecToLog 'sc.exe stop ${SERVICE_NAME}'
     nsExec::ExecToLog 'sc.exe delete ${SERVICE_NAME}'
@@ -173,12 +229,15 @@ Section "Uninstall"
     Delete   "$INSTDIR\README.md"
     Delete   "$INSTDIR\license.key"
     Delete   "$INSTDIR\OpenLogs.cmd"
+    Delete   "$INSTDIR\WatchNexus-Tray.cmd"
+    Delete   "$INSTDIR\watchnexus.ico"
     RMDir /r "$INSTDIR\bin"
     RMDir /r "$INSTDIR\web"
     RMDir    "$INSTDIR"
 
     ; Remove shortcuts
     Delete   "$SMPROGRAMS\WatchNexus\WatchNexus Web UI.lnk"
+    Delete   "$SMPROGRAMS\WatchNexus\WatchNexus Tray Controller.lnk"
     Delete   "$SMPROGRAMS\WatchNexus\WatchNexus (Console mode).lnk"
     Delete   "$SMPROGRAMS\WatchNexus\WatchNexus Logs Folder.lnk"
     Delete   "$SMPROGRAMS\WatchNexus\Uninstall WatchNexus.lnk"
@@ -186,6 +245,7 @@ Section "Uninstall"
     Delete   "$DESKTOP\WatchNexus.lnk"
 
     ; Remove registry keys
+    DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "WatchNexusTray"
     DeleteRegKey HKLM "Software\WatchNexus"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\WatchNexus"
 SectionEnd

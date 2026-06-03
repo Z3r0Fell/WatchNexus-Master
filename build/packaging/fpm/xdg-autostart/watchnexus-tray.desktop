@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=WatchNexus Tray Controller
+GenericName=Media Server Tray Icon
+Comment=Show the WatchNexus system tray icon and connect to the local service
+Exec=/usr/bin/watchnexus-tray
+Icon=watchnexus
+Terminal=false
+Categories=AudioVideo;Network;Utility;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+Hidden=false
+NoDisplay=false

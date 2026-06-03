@@ -36,6 +36,15 @@ if command -v systemctl >/dev/null 2>&1; then
     systemctl restart watchnexus.service || true
 fi
 
+# 5. Ensure xdg autostart wrapper is executable so it can spawn at user login.
+#    The .desktop file (shipped at /etc/xdg/autostart/watchnexus-tray.desktop)
+#    invokes /usr/bin/watchnexus-tray, which re-execs the Core binary with
+#    `--tray`. systemd runs as the `watchnexus` user (no GUI), so the tray
+#    has to live in each interactive user's session.
+chmod +x /usr/bin/watchnexus-tray 2>/dev/null || true
+
 echo "WatchNexus ${TIER^} v${VERSION} installed at ${INSTALLDIR} (port ${PORT})."
 echo "Open http://localhost:${PORT} in your browser to activate your license."
+echo "The system tray controller will appear automatically next time you log into a GUI session,"
+echo "  or run 'watchnexus-tray &' to start it right now."
 exit 0
