@@ -120,6 +120,64 @@ public class AuthController : ControllerBase
 
     public record RegisterRequest(string Email, string Username, string Password);
     public record LoginRequest(string Email, string Password);
+    public record SetupRequest(string Email, string Username, string Password);
+
+    // ══════════════════════════════════════════════════════════════
+    //  OOBE — First-launch admin creation
+    //  ----------------------------------------------------------------
+    //  Jellyfin-style: a fresh install has zero users; the frontend
+    //  wizard polls /setup-status, sees `needs_setup: true`, and posts
+    //  to /setup to create the first admin. After that the endpoint
+    //  becomes a no-op (returns 409) so it can't be used to silently
+    //  inject admins on a running server.
+    // ══════════════════════════════════════════════════════════════
+    [HttpGet("setup-status")]
+    [AllowAnonymous]
+    public IActionResult SetupStatus()
+    {
+        var hasUsers = _db.Users.Any();
+        return Ok(new
+        {
+            needs_setup = !hasUsers,
+            user_count = _db.Users.Count(),
+            version = "1.0.0"
+        });
+    }
+
+    [HttpPost("setup")]
+    [AllowAnonymous]
+    public IActionResult Setup([FromBody] SetupRequest req)
+    {
+        // Hard guard: only the *first* user can be created through this
+        // endpoint. Anyone calling it after setup is bounced.
+        if (_db.Users.Any())
+            return Conflict(new { detail = "Setup already completed. Use POST /api/auth/login." });
+
+        if (string.IsNullOrWhiteSpace(req.Email) ||
+            string.IsNullOrWhiteSpace(req.Username) ||
+            string.IsNullOrWhiteSpace(req.Password))
+            return BadRequest(new { detail = "Email, username and password are required." });
+
+        if (req.Password.Length < 8)
+            return BadRequest(new { detail = "Password must be at least 8 characters." });
+
+        var admin = new WatchNexus.Shared.AppUser
+        {
+            Email = req.Email.Trim(),
+            Username = req.Username.Trim(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
+            Role = "admin"
+        };
+        _db.Users.Add(admin);
+        _db.SaveChanges();
+
+        var token = _auth.GenerateToken(admin);
+        return Ok(new
+        {
+            access_token = token,
+            user = new { admin.Id, admin.Email, admin.Username, admin.Avatar, admin.Role, admin.CreatedAt }
+        });
+    }
 
     [HttpPost("register")]
     public IActionResult Register([FromBody] RegisterRequest req)
@@ -160,8 +218,15 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public IActionResult Logout() => Ok(new { status = "logged_out" });
 
+    // Google OAuth was removed in v1.0.0 RTP — WatchNexus is a self-hosted
+    // media server with local-account auth only. The endpoint is kept as
+    // a hard 410 Gone so any stale clients fail fast with a clear message
+    // instead of silently retrying.
     [HttpPost("google/session")]
-    public IActionResult GoogleSession() => BadRequest(new { detail = "Google auth not configured in standalone mode" });
+    public IActionResult GoogleSession() => StatusCode(410, new
+    {
+        detail = "Google OAuth was removed in WatchNexus v1.0.0. Use local username/password login."
+    });
 
 }
 

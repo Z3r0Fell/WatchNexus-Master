@@ -105,11 +105,15 @@ public class AdapterController : ControllerBase
         if (!System.IO.File.Exists(sourcePath))
             return NotFound(new { status = "error", message = $"File not found: {sourcePath}" });
 
-        // Check if FFmpeg is installed
-        var ffmpeg = new[] { "/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg" }
-            .FirstOrDefault(System.IO.File.Exists);
+        // Check if FFmpeg is installed (cross-platform — Windows/Linux/macOS)
+        var ffmpeg = Services.FfmpegLocator.Ffmpeg;
         if (ffmpeg == null)
-            return Ok(new { status = "error", message = "FFmpeg is not installed. Install FFmpeg to use media conversion.", install_hint = "sudo apt install ffmpeg" });
+            return Ok(new
+            {
+                status = "error",
+                message = "FFmpeg is not installed. Install FFmpeg to use media conversion.",
+                install_hint = Services.FfmpegLocator.InstallHint()
+            });
 
         // Create a transcode job via Crucible's data model
         var job = new TranscodeJob

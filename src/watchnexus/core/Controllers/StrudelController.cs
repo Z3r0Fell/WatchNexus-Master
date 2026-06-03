@@ -390,19 +390,10 @@ public class StrudelController : ControllerBase
 
     private static string? FindBinary(string name)
     {
-        try
-        {
-            var psi = new ProcessStartInfo("which", name)
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            };
-            var proc = Process.Start(psi);
-            var output = proc?.StandardOutput.ReadToEnd().Trim();
-            proc?.WaitForExit(3000);
-            return string.IsNullOrEmpty(output) ? null : output;
-        }
-        catch { return null; }
+        // Cross-platform binary lookup (where on Windows, which on Linux/macOS),
+        // delegated to the shared FfmpegLocator implementation which also
+        // searches common install dirs and the WATCHNEXUS_*_PATH env overrides.
+        return Services.FfmpegLocator.Find(name);
     }
 
     private static List<DriveInfo_> DetectOpticalDrives()

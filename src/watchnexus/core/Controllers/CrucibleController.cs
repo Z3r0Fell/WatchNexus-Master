@@ -170,67 +170,35 @@ public class CrucibleController : ControllerBase
 
     // ── FFmpeg Status ──────────────────────────────────
     [HttpGet("ffmpeg-status")]
-    public async Task<IActionResult> FfmpegStatus()
+    public IActionResult FfmpegStatus()
     {
-        var ffmpegPath = FindExecutable("ffmpeg");
-        var ffprobePath = FindExecutable("ffprobe");
-        string? ffmpegVersion = null;
-
-        if (ffmpegPath != null)
-        {
-            try
-            {
-                var psi = new System.Diagnostics.ProcessStartInfo(ffmpegPath, "-version")
-                { RedirectStandardOutput = true, UseShellExecute = false };
-                var proc = System.Diagnostics.Process.Start(psi);
-                if (proc != null)
-                {
-                    var output = await proc.StandardOutput.ReadLineAsync();
-                    await proc.WaitForExitAsync();
-                    ffmpegVersion = output;
-                }
-            }
-            catch { }
-        }
+        Services.FfmpegLocator.ResetCache(); // always re-probe — user may have just installed it
+        var ffmpegPath  = Services.FfmpegLocator.Ffmpeg;
+        var ffprobePath = Services.FfmpegLocator.Ffprobe;
+        var version     = Services.FfmpegLocator.Version();
 
         return Ok(new
         {
-            ffmpeg_installed = ffmpegPath != null,
-            ffmpeg_path = ffmpegPath,
+            ffmpeg_installed  = ffmpegPath != null,
+            ffmpeg_path       = ffmpegPath,
             ffprobe_installed = ffprobePath != null,
-            ffprobe_path = ffprobePath,
-            ffmpeg_version = ffmpegVersion,
-            hw_accel = new[] { "vaapi", "qsv", "nvenc", "videotoolbox" },
+            ffprobe_path      = ffprobePath,
+            ffmpeg_version    = version,
+            install_hint      = ffmpegPath == null ? Services.FfmpegLocator.InstallHint() : null,
+            hw_accel          = new[] { "vaapi", "qsv", "nvenc", "videotoolbox" },
         });
-    }
-
-    // ── Helpers ──────────────────────────────────
-    private static string? FindExecutable(string name)
-    {
-        var paths = new[] { $"/usr/bin/{name}", $"/usr/local/bin/{name}", $"/opt/ffmpeg/bin/{name}" };
-        foreach (var p in paths) if (System.IO.File.Exists(p)) return p;
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo("which", name)
-            { RedirectStandardOutput = true, UseShellExecute = false };
-            var proc = System.Diagnostics.Process.Start(psi);
-            var output = proc?.StandardOutput.ReadToEnd().Trim();
-            proc?.WaitForExit();
-            if (!string.IsNullOrEmpty(output) && System.IO.File.Exists(output)) return output;
-        }
-        catch { }
-        return null;
     }
 
     private static async Task<object?> RunFfprobe(string path)
     {
-        var ffprobe = FindExecutable("ffprobe");
-        if (ffprobe == null) return new { error = "ffprobe not installed" };
+        var ffprobe = Services.FfmpegLocator.Ffprobe;
+        if (ffprobe == null)
+            return new { error = "ffprobe not installed", install_hint = Services.FfmpegLocator.InstallHint() };
         try
         {
             var psi = new System.Diagnostics.ProcessStartInfo(ffprobe,
                 $"-v quiet -print_format json -show_format -show_streams \"{path}\"")
-            { RedirectStandardOutput = true, UseShellExecute = false };
+            { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
             var proc = System.Diagnostics.Process.Start(psi);
             if (proc == null) return null;
             var output = await proc.StandardOutput.ReadToEndAsync();

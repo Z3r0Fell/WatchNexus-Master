@@ -406,8 +406,8 @@ public class StrudelPipelineController : ControllerBase
 
     private static string? FindBinary(string name)
     {
-        var paths = new[] { $"/usr/bin/{name}", $"/usr/local/bin/{name}", $"/snap/bin/{name}", $"/opt/{name}/{name}" };
-        return paths.FirstOrDefault(System.IO.File.Exists);
+        // Cross-platform binary lookup — delegates to shared FfmpegLocator.
+        return Services.FfmpegLocator.Find(name);
     }
 }
 
@@ -616,7 +616,7 @@ public class CrucibleHardwareController : ControllerBase
 
     private static string? FindBinary(string name)
     {
-        var paths = new[] { $"/usr/bin/{name}", $"/usr/local/bin/{name}", $"/snap/bin/{name}" };
-        return paths.FirstOrDefault(System.IO.File.Exists);
+        // Cross-platform binary lookup — delegates to shared FfmpegLocator.
+        return Services.FfmpegLocator.Find(name);
     }
 }

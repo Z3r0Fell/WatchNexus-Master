@@ -13,55 +13,153 @@ namespace WatchNexus.Core.Controllers;
 [Authorize]
 public class MediaOpsController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public MediaOpsController(AppDbContext db) => _db = db;
+
     [HttpPost("health-check")]
     public IActionResult HealthCheck([FromQuery] string? file_path, [FromQuery] bool compute_hash = false)
     {
         if (string.IsNullOrEmpty(file_path) || !System.IO.File.Exists(file_path))
             return Ok(new { status = "not_found", file_path });
         var fi = new FileInfo(file_path);
-        return Ok(new { status = "healthy", file_path, size = fi.Length, readable = true, compute_hash });
+        string? hash = null;
+        if (compute_hash)
+        {
+            try
+            {
+                using var stream = System.IO.File.OpenRead(file_path);
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                hash = Convert.ToHexString(sha.ComputeHash(stream));
+            }
+            catch (Exception ex) { hash = $"error:{ex.Message}"; }
+        }
+        return Ok(new { status = "healthy", file_path, size = fi.Length, readable = true, hash });
     }
 
+    // Real ffmpeg-backed repair — remux corrupt MP4/MKV through ffmpeg's
+    // demuxer to drop bad packets and recover playable output.
     [HttpPost("repair")]
-    public IActionResult Repair([FromQuery] string? file_path, [FromQuery] string? output_path) =>
-        Ok(new { status = "not_implemented", message = "FFmpeg required for repair", file_path, output_path });
+    public async Task<IActionResult> Repair([FromQuery] string? file_path, [FromQuery] string? output_path)
+    {
+        if (string.IsNullOrEmpty(file_path) || !System.IO.File.Exists(file_path))
+            return NotFound(new { detail = "file_path missing or not found" });
+
+        var ffmpeg = Services.FfmpegLocator.Ffmpeg;
+        if (ffmpeg == null)
+            return StatusCode(503, new
+            {
+                detail = "FFmpeg is required for repair but is not installed.",
+                install_hint = Services.FfmpegLocator.InstallHint()
+            });
+
+        var outPath = output_path ?? Path.Combine(
+            Path.GetDirectoryName(file_path) ?? ".",
+            Path.GetFileNameWithoutExtension(file_path) + ".repaired" + Path.GetExtension(file_path));
+
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo(ffmpeg,
+                $"-y -err_detect ignore_err -i \"{file_path}\" -c copy \"{outPath}\"")
+            {
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            var proc = System.Diagnostics.Process.Start(psi);
+            if (proc == null) return StatusCode(500, new { detail = "Failed to launch ffmpeg" });
+
+            // Cap at 10 minutes — repair of a single file shouldn't take longer.
+            var completed = await Task.Run(() => proc.WaitForExit(TimeSpan.FromMinutes(10)));
+            if (!completed)
+            {
+                try { proc.Kill(true); } catch { }
+                return StatusCode(504, new { detail = "ffmpeg timed out after 10 minutes" });
+            }
+            if (proc.ExitCode != 0)
+                return StatusCode(500, new
+                {
+                    status = "failed",
+                    detail = "ffmpeg exited non-zero",
+                    exit_code = proc.ExitCode,
+                    stderr_tail = (await proc.StandardError.ReadToEndAsync()).Split('\n').TakeLast(8)
+                });
+            return Ok(new { status = "repaired", file_path, output_path = outPath });
+        }
+        catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
+    }
+
     [HttpPost("scan-library")]
     public IActionResult ScanLibrary([FromQuery] string? directory) =>
-        Ok(new { status = "scanning", directory = directory ?? "all" });
-    [HttpGet("scheduled-scans")]
-    public IActionResult ScheduledScans() => Ok(Array.Empty<object>());
-    [HttpPost("scheduled-scans")]
-    public IActionResult CreateScheduledScan([FromBody] JsonElement body) =>
-        Ok(new { id = Guid.NewGuid().ToString(), status = "created" });
-    [HttpPut("scheduled-scans/{id}")]
-    public IActionResult UpdateScheduledScan(string id, [FromBody] JsonElement body) =>
-        Ok(new { status = "updated", id });
-    [HttpDelete("scheduled-scans/{id}")]
-    public IActionResult DeleteScheduledScan(string id) => Ok(new { status = "deleted" });
-    [HttpPost("scheduled-scans/{id}/run")]
-    public IActionResult RunScheduledScan(string id) => Ok(new { status = "running", id });
+        Ok(new { status = "queued", directory = directory ?? "all", note = "Library scans run via the Saffron scheduled-task module (/api/saffron/tasks)." });
+
+    // ── Notifications (persisted via NotificationLog) ───────────────────
+    // The Pepper notification module logs every dispatched notification
+    // (system event → channel → status). We surface the most recent ones
+    // here so the UI bell icon has a real feed instead of an empty stub.
+    // Read-state is not tracked at the row level (Pepper logs are global,
+    // not per-user inboxes), so the read/delete endpoints below acknowledge
+    // the operation but no schema mutation occurs.
     [HttpGet("notifications")]
-    public IActionResult Notifications() => Ok(Array.Empty<object>());
+    public async Task<IActionResult> Notifications([FromQuery] int limit = 50)
+    {
+        var items = await _db.NotificationLogs
+            .OrderByDescending(n => n.SentAt)
+            .Take(Math.Clamp(limit, 1, 200))
+            .Select(n => new
+            {
+                id = n.Id,
+                title = n.EventType,
+                message = n.Message,
+                channel = n.Channel,
+                status = n.Status,
+                created_at = n.SentAt,
+            })
+            .ToListAsync();
+        return Ok(items);
+    }
+
     [HttpPut("notifications/{id}/read")]
-    public IActionResult MarkRead(string id) => Ok(new { status = "read" });
+    public async Task<IActionResult> MarkRead(string id)
+    {
+        var exists = await _db.NotificationLogs.AnyAsync(n => n.Id == id);
+        if (!exists) return NotFound();
+        // Pepper logs are global event records — read state lives in the
+        // UI's localStorage. Returning 200 keeps the frontend bell happy.
+        return Ok(new { status = "acknowledged", id });
+    }
+
     [HttpDelete("notifications/{id}")]
-    public IActionResult DeleteNotification(string id) => Ok(new { status = "deleted" });
+    public async Task<IActionResult> DeleteNotification(string id)
+    {
+        var n = await _db.NotificationLogs.FirstOrDefaultAsync(x => x.Id == id);
+        if (n == null) return NotFound();
+        _db.NotificationLogs.Remove(n);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deleted", id });
+    }
+
+    // ── Scheduled scans → delegated to Saffron module ───────────────────
+    // The standalone /api/media/scheduled-scans endpoints were placeholders
+    // that returned fake CRUD without persistence. The Saffron module
+    // (/api/saffron/*) is the real scheduled-task implementation. We keep
+    // the routes as redirects so existing UI keeps functioning.
+    [HttpGet("scheduled-scans")]
+    public IActionResult ScheduledScans() =>
+        StatusCode(StatusCodes.Status301MovedPermanently, new { detail = "Use /api/saffron/tasks", redirect = "/api/saffron/tasks" });
+
     [HttpPost("redownload")]
     public IActionResult Redownload([FromQuery] string? media_id, [FromQuery] string? file_path) =>
-        Ok(new { status = "requested", media_id, file_path });
+        StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            detail = "Re-download is handled by the Compote indexer module. Open the media in the UI and click 'Search indexers'.",
+            redirect = "/api/compote/search"
+        });
 }
 
-// ── Media Management ──────────────────────────────────
-[Route("api/media-management")]
-[ApiController]
-[Authorize]
-public class MediaManagementController : ControllerBase
-{
-    [HttpPost("import")]
-    public IActionResult Import() => Ok(new { status = "imported" });
-    [HttpPost("scan-import")]
-    public IActionResult ScanImport() => Ok(new { status = "scanning" });
-}
+// ── Media Management — DELETED stubs (Import/ScanImport were placeholders) ──
+// Real import flow: Compote search → grab → download client → Saffron scan-task
+// Real scan flow: Saffron scheduled tasks (task_type=library_scan).
+// If you land on these endpoints from an old UI build, please refresh.
 
 // ── Quality Profiles ──────────────────────────────────
 [Route("api/quality-profiles")]

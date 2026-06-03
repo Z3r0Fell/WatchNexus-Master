@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -10,7 +10,6 @@ import { lazy, Suspense } from "react";
 // Pages
 import { Dashboard } from "./pages/Dashboard";
 import { AuthPage } from "./pages/AuthPage";
-import { AuthCallback } from "./pages/AuthCallback";
 import { MoviesPage } from "./pages/MoviesPage";
 import { TVShowsPage } from "./pages/TVShowsPage";
 import { MediaDetails } from "./pages/MediaDetails";
@@ -148,16 +147,10 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// Router wrapper to detect OAuth callback synchronously
+// Router wrapper.
+// (Google OAuth callback handling was removed in v1.0.0 RTP — no
+// third-party identity providers in a self-hosted media server.)
 function AppRouter() {
-  const location = useLocation();
-  
-  // CRITICAL: Check URL fragment for session_id synchronously during render
-  // This prevents race conditions by processing OAuth callback BEFORE checking existing auth
-  if (location.hash?.includes('session_id=')) {
-    return <AuthCallback />;
-  }
-
   return (
     <Routes>
       {/* Public Routes */}

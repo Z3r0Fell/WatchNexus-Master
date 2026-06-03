@@ -369,7 +369,7 @@ const RELEASES = [
     highlights: ['Core media browsing', 'TMDB integration', 'Multi-user support'],
     changes: [
       { type: 'feature', text: 'Media discovery with TMDB integration' },
-      { type: 'feature', text: 'User authentication (local + Google OAuth)' },
+      { type: 'feature', text: 'User authentication (local accounts)' },
       { type: 'feature', text: 'Watchlist and watch progress tracking' },
       { type: 'feature', text: 'Library management with media scanning' },
       { type: 'feature', text: 'Media server API compatibility layer' },

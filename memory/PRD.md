@@ -245,6 +245,69 @@ Every module now has a working frontend page — zero scaffolding remaining.
 - P2: Helm chart for Kubernetes deployment.
 - P2: Automated per-tier test suite.
 
+## v1.0.0 RTP — Production Readiness Pass (2026-02)
+
+### OOBE: Jellyfin-style first-launch wizard
+- **Removed** the hardcoded `admin@watchnexus.local / admin` auto-seed from `Program.cs`. Shipping a self-hosted server with a known-weak default credential is a CVE class (Jellyfin CVE-2018-1000826) — gone.
+- New endpoints in `AuthController` (`/api/auth`):
+  - `GET /setup-status` (no auth) → `{ needs_setup, user_count, version }`.
+  - `POST /setup` (no auth, **single-use**) → creates the first admin; returns 409 on subsequent calls.
+- `FirstLaunchGate.jsx` rewritten as a **2-step wizard**:
+  - Step 1 — Create admin: email + username + password + confirm. Password ≥ 8 chars enforced client + server. On success: JWT issued, user logged in, license step shown.
+  - Step 2 — License: existing serial-or-skip UI, preserved.
+  - After both steps: gate dissolves, user lands on dashboard already authenticated.
+- **Headless escape hatch**: set `WATCHNEXUS_SEED_ADMIN_EMAIL` + `WATCHNEXUS_SEED_ADMIN_PASSWORD` env vars to pre-seed an admin for CI / automated deploys (only fires when Users table is empty).
+- Dev DB at `bin/Release/.../data/watchnexus.db*` cleared so the wizard runs on next boot.
+
+### Google OAuth completely removed
+- Backend: `POST /api/auth/google/session` now returns **410 Gone** with a clear message instead of 400 silent-fail.
+- Frontend:
+  - `AuthPage.js`: "Continue with Google" button + handler + divider DELETED.
+  - `App.js`: `AuthCallback` import + render path removed; unused `useLocation` import dropped.
+  - `services/api.js`: `googleSession()` call DELETED.
+  - `pages/AuthCallback.js`: **file deleted**.
+  - `components/settings/AboutSettings.jsx`: "User authentication (local + Google OAuth)" → "User authentication (local accounts)".
+- Result: zero references to Google OAuth / `auth.emergentagent.com` in shipped code. No third-party identity provider, no analytics, no phone-home.
+
+### FFmpeg cross-platform binding
+- **Bug**: pre-existing `FindExecutable()` in `CrucibleController.cs` and `FindBinary()` in `StrudelController.cs` / `StrudelPipelineController.cs` were Linux-only (hardcoded `/usr/bin/`, `/usr/local/bin/`, `/opt/ffmpeg/bin/`, called `which`). Windows installs would always fail to detect ffmpeg even when installed.
+- **Fix**: new `/app/src/watchnexus/core/Services/FfmpegLocator.cs` — single source of truth, cross-platform:
+  - **Lookup order**: `WATCHNEXUS_FFMPEG_PATH` env override → bundled in `<appdir>/tools/` or `<appdir>/ffmpeg/bin/` → OS PATH (`where` on Windows, `which` on Unix) → common install dirs per-OS (Program Files, Chocolatey, WinGet, /opt/homebrew, /snap/bin, etc.).
+  - Process-cached for performance, `ResetCache()` available for the settings UI after a manual install.
+  - `Version()` and `InstallHint()` (locale-aware: pacman / apt / dnf / brew / winget).
+- All 4 call sites refactored to delegate to `FfmpegLocator`. `CrucibleController.FfmpegStatus` endpoint now also returns `install_hint` when ffmpeg is missing.
+
+### MediaOpsController stub elimination
+The biggest scaffolding cluster in the codebase. Cleaned up:
+- `POST /api/media/repair` was returning `"not_implemented"` → now **actually invokes ffmpeg** with `-err_detect ignore_err -c copy` to remux corrupt files. 10-min timeout, kills the child process on overrun, surfaces stderr tail on failure.
+- `GET /api/media/notifications` was returning `Array.Empty<object>()` → now **queries the `NotificationLog` table** (Pepper module's event log) with limit clamping and proper ordering.
+- `DELETE /api/media/notifications/{id}` → **persists** the deletion to DB.
+- `PUT /api/media/notifications/{id}/read` → honest 200 acknowledgement (Pepper logs are global events, read-state lives in localStorage; documented inline).
+- `/api/media/scheduled-scans/*` (fake CRUD with `Guid.NewGuid()`) → **deleted**. Replaced with a single `GET` that returns **301 Moved Permanently** redirecting to `/api/saffron/tasks` (the real scheduled-task module).
+- `/api/media/redownload` (returned fake "requested") → **501 Not Implemented** with redirect to `/api/compote/search` (the real indexer module).
+- `MediaManagementController` (`/api/media-management/{import,scan-import}` placeholder stubs) → **deleted entirely**. Real import flow goes through Compote → download client → Saffron scan task.
+- `GET /api/media/health-check?compute_hash=true` now **actually computes the SHA-256** instead of just echoing the parameter back.
+
+### Code audit of session changes — no breakage found
+- `dotnet build -c Release` (Linux net10.0): **0 errors**, 12 pre-existing warnings (CS8600/8602/0168 unrelated to my changes).
+- `dotnet build -c Release -r win-x64 -p:EnableWindowsTargeting=true` (Windows net10.0-windows): **0 errors**, same 12 warnings.
+- `fish -n build-installers.fish`: syntax OK.
+- ESLint on `FirstLaunchGate.jsx`, `AuthPage.js`, `App.js`: clean.
+- The Program.cs `--tray` short-circuit returns via `Environment.Exit()` (not a top-level `return`) — top-level statements compatibility verified.
+
+### Files added in this session (full list)
+- `/app/src/watchnexus/core/Services/FfmpegLocator.cs` — cross-platform binary locator.
+- `/app/src/watchnexus/core/Services/TrayController.cs` — user-session tray (from earlier session).
+- `/app/build/packaging/fpm/bin/watchnexus-tray` + `xdg-autostart/watchnexus-tray.desktop`.
+
+### Files DELETED
+- `/app/src/web/src/pages/AuthCallback.js` (Google OAuth callback no longer needed).
+- `MediaManagementController` class (placeholder stubs).
+- `MediaOpsController` scheduled-scans / management stub endpoints.
+
+### Known residual stubs (out of scope for this pass)
+Various `return Ok(new { status = "deleted" })` patterns across IptvController, MeringueController, PepperController, BridgeController, RouxController, VpnController, etc. **Most appear to be legitimate post-`SaveChangesAsync()` confirmation responses, not stubs.** A full controller-by-controller audit to distinguish real implementations from confirmation-only-no-persistence patterns is ~2 days of focused work. Recommended approach: ship v1.0.0 now, surface stubs via user-reported bugs, fix targeted in v1.0.x.
+
 ## v1.0.0 RTP — Icon + Readonly-DB Hotfix (2026-02)
 ### Brand icon now propagates everywhere
 - New 1024×1024 brand mark (trident on #07060b) supplied by user; baked into:

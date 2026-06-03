@@ -137,17 +137,11 @@ export const mediaHealthApi = {
     }),
 };
 
-// Google OAuth API calls
+// Auth API calls — local account auth only (Google OAuth removed in v1.0.0 RTP).
 export const authApi = {
-  googleSession: (sessionId) =>
-    axios.post(`${API}/auth/google/session`, null, { 
-      params: { session_id: sessionId },
-      withCredentials: true 
-    }),
-  
   logout: () =>
     axios.post(`${API}/auth/logout`, null, { withCredentials: true }),
-  
+
   getMe: () =>
     axios.get(`${API}/auth/me`, { withCredentials: true }),
 };

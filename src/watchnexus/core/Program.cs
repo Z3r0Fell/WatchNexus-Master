@@ -245,19 +245,40 @@ using (var scope = app.Services.CreateScope())
 
 static void SeedAccounts(AppDbContext db)
 {
-    // Create default admin if no users exist
-    if (!db.Users.Any())
+    // ── OOBE (Out-Of-Box Experience) ──
+    // We deliberately do NOT seed a default admin/admin account in v1.0.0
+    // RTP. A self-hosted media server that ships with a known-weak admin
+    // credential is a security footgun (Jellyfin had this CVE in 2018, Plex
+    // doesn't ship one at all, Emby got rid of theirs years ago).
+    //
+    // Instead the frontend shows a first-launch wizard (`FirstLaunchGate`)
+    // when `GET /api/auth/setup-status` reports `needs_setup: true` (i.e.
+    // zero users in the DB). The wizard calls `POST /api/auth/setup` to
+    // create the first admin, then continues into the license-tier step.
+    //
+    // If you need an admin seeded for headless / scripted deploys
+    // (e.g. CI), set `WATCHNEXUS_SEED_ADMIN_EMAIL` and
+    // `WATCHNEXUS_SEED_ADMIN_PASSWORD` env vars on first boot.
+    if (db.Users.Any()) return;
+
+    var seedEmail = Environment.GetEnvironmentVariable("WATCHNEXUS_SEED_ADMIN_EMAIL");
+    var seedPass  = Environment.GetEnvironmentVariable("WATCHNEXUS_SEED_ADMIN_PASSWORD");
+    if (!string.IsNullOrWhiteSpace(seedEmail) && !string.IsNullOrWhiteSpace(seedPass))
     {
         var admin = new WatchNexus.Shared.AppUser
         {
-            Email = "admin@watchnexus.local",
-            Username = "admin",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+            Email = seedEmail.Trim(),
+            Username = seedEmail.Split('@')[0],
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(seedPass),
             Role = "admin"
         };
         db.Users.Add(admin);
         db.SaveChanges();
-        Console.WriteLine($"[WatchNexus] Seeded default admin account: admin@watchnexus.local");
+        Console.WriteLine($"[WatchNexus] Seeded admin from env: {admin.Email}");
+    }
+    else
+    {
+        Console.WriteLine("[WatchNexus] No users present — first-launch wizard will create the admin account.");
     }
 }
 
