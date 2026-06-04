@@ -1,0 +1,52 @@
+{
+  "summary": "Backend-only sweep of WatchNexus v1.0.0 RTP (50 controllers). Verified the FFmpeg tier-lock fix end-to-end, auth flow, full tier-gating semantics (Standard 403 -> Ultra 200 -> Deactivate 403), invalid-license rejection, honest-501 stubs, and primary GET endpoints across every listed controller. 73 of 74 pytest tests passed. Only 1 hard failure: GET /api/fortress/status crashes with AmbiguousMatchException -> HTTP 500 due to duplicate route registration (controller + Minimal API).",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/fortress/status",
+        "issue": "HTTP 500 — AmbiguousMatchException. The same path is mapped twice: (1) FortressController.Status() at src/watchnexus/core/Controllers/FortressController.cs:212 (`[Route(\"api/fortress\")] [HttpGet(\"status\")]`) AND (2) Minimal API in src/watchnexus/core/Fortress.cs:70 (`app.MapGet(\"/api/fortress/status\", ...)`). ASP.NET cannot select between the two and returns 500 on every call. Reproduces 100% on both Standard and Ultra tiers. Fix: delete one of the two registrations (recommend keeping the controller, removing the Minimal API duplicate). Likely also affects /api/fortress/verify (controller `[HttpPost(\"verify\")]` at line 254 vs `app.MapPost(\"/api/fortress/verify\", ...)` at Fortress.cs:89) and /api/fortress/audit if a controller version exists.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "GET /api/crucible/ffmpeg-status",
+        "issue": "Bug fix only verified after manually installing ffmpeg in the test container (`apt install -y ffmpeg`). The original problem statement claimed ffmpeg was pre-installed at /bin/ffmpeg; it was NOT. Before install: endpoint correctly returned 200 with ffmpeg_installed=false + install_hint='sudo apt install ffmpeg'. After install: 200 with ffmpeg_installed=true, ffprobe_installed=true, path=/bin/ffmpeg, version='ffmpeg 5.1.9-0+deb12u1'. The tier-lock fix itself is confirmed (no 403)."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_watchnexus_v100_controller_sweep.py",
+    "/app/test_reports/pytest/iteration_20.xml"
+  ],
+  "action_items": [
+    "FIX HIGH: Remove duplicate /api/fortress/status mapping. Delete either the Minimal API block (Fortress.cs lines 70-138) OR the controller method (FortressController.cs lines 212-245). Same likely needed for /api/fortress/verify and /api/fortress/audit*.",
+    "Note for prod: bundle or document ffmpeg as a hard prerequisite. The install-hint UX is correct, but the OOBE wizard should NOT proceed past 'ffmpeg detected' if absent (currently it returns 200 even with ffmpeg_installed=false — the frontend gate should block).",
+    "Main agent reminder: restore LICENSE_SERVER_URL in /app/src/watchnexus/core/appsettings.json before shipping (offline-only validation was a test scaffold)."
+  ],
+  "critical_code_review_comments": [
+    "DUPLICATE ROUTE REGISTRATION: Fortress.cs uses Minimal API style (app.MapGet/MapPost) for endpoints that ALSO exist as MVC controller actions. ASP.NET registers both -> 500. Pick one style per resource and standardize.",
+    "FortressFilter exempt list (FortressController.cs:52) is a hardcoded single-entry HashSet. As more system-diagnostic endpoints get added (license probes, health checks, update probes) they will repeat the OOBE bug. Suggest a marker attribute like [FortressExempt] on actions instead of a path list.",
+    "ProtectedRoutes dict (FortressController.cs:27-42) hardcodes 30+ module codenames inline. Drift risk: new controllers added without tier-map entry will silently be free. Recommend deriving from a single SSOT (e.g. ModuleCatalogue.cs)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_watchnexus_v100_controller_sweep.py (new — 74 tests, controller sweep)"
+  ],
+  "success_rate": {"backend": "98.6% (73/74)", "frontend": "N/A (skipped per request)"},
+  "test_credentials": "owner@watchnexus.local / password123 (Standard); Ultra serial WNX-ULT-AAAA-BBBB-CCCC (offline mode)",
+  "seed_data_creation": "Installed ffmpeg/ffprobe (apt) on the test container so the ffmpeg detection endpoint could be validated in the positive case. No DB changes.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Test file /app/backend/tests/test_watchnexus_v100_controller_sweep.py is idempotent: it leaves the system on Standard tier (TestZCleanup::test_deactivate_final). Activation logic now checks current tier first so re-runs don't 400. The ONLY failing test is fortress-status — once the duplicate route is removed the whole suite should be 74/74. Per-controller sweep covers 53 endpoints across 50+ controllers; if new controllers are added, append to CONTROLLER_GETS list.",
+  "rca of the issue": {
+    "ffmpeg_fix_verified": "PASS. The tier-lock fix (FortressFilter.ExemptPaths containing '/api/crucible/ffmpeg-status') works exactly as designed: the endpoint returns 200 on Standard tier instead of 403 FORTRESS_TIER_LOCKED. After installing ffmpeg in the env, payload correctly shows ffmpeg_installed=true, ffprobe_installed=true, ffmpeg_version, and ffmpeg_path. Cross-platform FfmpegLocator finds the binary via PATH (/bin/ffmpeg).",
+    "fortress_status_500": {
+      "reproduction": "GET https://ffmpeg-wizard-2.preview.emergentagent.com/api/fortress/status with a valid Bearer token returns HTTP 500. Tier irrelevant (fails on Standard and Ultra).",
+      "log_evidence": "Microsoft.AspNetCore.Routing.Matching.AmbiguousMatchException: The request matched multiple endpoints.",
+      "root_cause": "Two route registrations resolve to the same HTTP method + path: (a) [Route(\"api/fortress\")] [HttpGet(\"status\")] in FortressController.cs and (b) app.MapGet(\"/api/fortress/status\", ...) in Fortress.cs (called from Program.cs.MapControllers neighborhood).",
+      "fix": "Delete the Minimal API duplicates in Fortress.cs (lines 70-138) OR delete the controller actions. Controller version is richer (queries Settings table for sealed_at) — recommend keeping controller and dropping the Minimal API block."
+    },
+    "tier_gating_per_controller_table": "All controllers exercised on Ultra returned non-500 except fortress-status (above). Pro-locked endpoints correctly returned 403 FORTRESS_TIER_LOCKED on Standard, then 200/empty after WNX-ULT-AAAA-BBBB-CCCC activation, then 403 again after /api/cellar/deactivate. Honest-501 confirmed for POST /api/sprout/feeds, POST /api/gelatin/tunnel/create, POST /api/quality-profiles."
+  }
+}
