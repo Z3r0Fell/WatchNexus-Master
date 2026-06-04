@@ -432,3 +432,26 @@ User reported the systray icon and "controller process" never launched despite `
 - **Added**: `/app/src/watchnexus/core/Services/TrayController.cs`, `/app/build/packaging/fpm/bin/watchnexus-tray`, `/app/build/packaging/fpm/xdg-autostart/watchnexus-tray.desktop`.
 - **Modified**: `Program.cs` (early `--tray` dispatch), `TrayIconService.cs` (UserInteractive guard), `watchnexus.nsi.in` (Run key, .cmd, post-install launch, shortcut, uninstall cleanup), `build-installers.fish` (staging dirs, fpm source list), `fpm/after-install.sh`.
 
+## v1.0.0 RTP — FFmpeg Tier-Lock Bug + Fortress Route Conflict (June 2026)
+
+### P0 BUG FIXED: FFmpeg detection always reported "not found" (customer-reported)
+- **Symptom**: On a fresh install the OOBE "FFmpeg detection" step (and the Settings → FFmpeg panel) showed `ffmpeg`/`ffprobe` as "not found" even when both were installed.
+- **Root cause**: `FortressFilter` (global action filter in `Controllers/FortressController.cs`) tier-locks every `/api/{codename}/...` route by module codename. `crucible` → `ultra`. The FFmpeg diagnostic lives at `/api/crucible/ffmpeg-status`, so a fresh Standard-tier user (no license yet — and during OOBE no license is even possible) got **403 FORTRESS_TIER_LOCKED**. The frontend caught the error and fell back to "not found". Detection never ran. FFmpeg was installed all along.
+- **Fix**: Added an `ExemptPaths` set to `FortressFilter` so system-diagnostic/onboarding probes bypass tier enforcement. `/api/crucible/ffmpeg-status` is exempt. Verified: returns 200 + `ffmpeg_installed:true` on Standard tier; OOBE wizard shows green "detected" (verified in live UI).
+
+### P1 BUG FIXED: GET /api/fortress/status returned HTTP 500
+- **Root cause**: The path was registered twice — once as a Minimal API endpoint in `Fortress.cs` (`app.MapGet("/api/fortress/status")` + `MapPost("/api/fortress/verify")`) and once as the richer DB-backed `FortressController` actions → `AmbiguousMatchException`.
+- **Fix**: Removed the duplicate Minimal-API `status`/`verify` mappings from `Fortress.cs` (kept the controller versions and the audit endpoints which have no controller equivalent). Verified 200.
+
+### Comprehensive controller verification (testing agent, iteration_20)
+- Backend sweep of all 50 controllers / primary endpoints: **74/74 pytest tests pass**.
+- Verified: tier-gating toggles correctly (Standard 403 → Ultra 200 → deactivate 403), license validation is REAL (hits `licenses.watchnexus.ca`, rejects invalid keys with 400), honest-501 stubs confirmed (`POST /api/sprout/feeds`, `/api/gelatin/tunnel/create`, `/api/quality-profiles`).
+- Test file: `/app/backend/tests/test_watchnexus_v100_controller_sweep.py` (idempotent; leaves system on Standard). NOTE: requires offline license mode (`LICENSE_SERVER_URL=""`) to exercise Ultra-gated endpoints with the test key `WNX-ULT-AAAA-BBBB-CCCC`.
+
+### Forked-environment fix (container only — does NOT affect shipped product)
+- `/etc/supervisor/conf.d/watchnexus.conf` now launches the .NET backend via the persistent `/root/.dotnet/dotnet` (was `/opt/dotnet/dotnet`, which is wiped on every pod restart because `/opt` is outside `/app`).
+
+### Tech-debt noted by testing agent (not yet actioned — P2)
+- `FortressFilter.ExemptPaths` is a hardcoded HashSet; a `[FortressExempt]` marker attribute would be cleaner and prevent the OOBE-style bug recurring as new diagnostic endpoints are added.
+- `FortressFilter.ProtectedRoutes` (30+ codenames inline) should derive from a single source of truth (e.g. `ModuleCatalogue.cs`) so new controllers can't silently ship un-gated.
+

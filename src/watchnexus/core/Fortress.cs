@@ -66,39 +66,13 @@ public static class Fortress
             await next();
         });
 
-        // 4. Map Fortress status endpoint
-        app.MapGet("/api/fortress/status", () =>
-        {
-            return Results.Ok(new
-            {
-                status = Status,
-                intact = IsIntact,
-                initialized = _initialized,
-                assembliesTracked = _assemblyHashes.Count,
-                activation = new
-                {
-                    licensed = _config.IsActivated,
-                    instanceId = _config.InstanceId,
-                    activatedAt = _config.ActivatedAt
-                },
-                lastCheck = _lastCheckTime?.ToString("o")
-            });
-        });
+        // NOTE: /api/fortress/status and /api/fortress/verify are served by the
+        // richer DB-backed FortressController (Controllers/FortressController.cs).
+        // They were previously ALSO mapped here as Minimal API endpoints, which
+        // caused an AmbiguousMatchException (HTTP 500) on every call. Removed.
+        // The runtime anti-tamper middleware registered above still runs.
 
-        // 5. Map Fortress verify endpoint (manual integrity re-check)
-        app.MapPost("/api/fortress/verify", () =>
-        {
-            var results = VerifyAllAssemblies();
-            RecordAudit("manual_verify", IsIntact ? "pass" : "fail", $"Checked {results.Count} assemblies");
-            return Results.Ok(new
-            {
-                intact = IsIntact,
-                checked_at = DateTime.UtcNow.ToString("o"),
-                assemblies = results
-            });
-        });
-
-        // 6. Map Fortress audit log endpoint
+        // Map Fortress audit log endpoint (no controller equivalent)
         app.MapGet("/api/fortress/audit", (int? limit, int? offset) =>
         {
             var take = Math.Clamp(limit ?? 50, 1, 500);
