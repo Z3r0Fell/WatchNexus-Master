@@ -91,9 +91,13 @@ export const marmaladeStream = {
   getStreamInfo: (mediaId, quality = 'original') =>
     marmaladeClient.get(`/stream/${mediaId}`, { params: { quality } }),
   
-  // Get the actual stream URL (for the video player)
-  getStreamUrl: (mediaId) =>
-    `${API}/api/marmalade/stream/${mediaId}/file`,
+  // Get an authorised, signed stream URL for the video player. The HTML5
+  // <video> element can't send our bearer token, so we mint a short-lived
+  // signed stream token via an authenticated request first.
+  getStreamUrl: async (mediaId) => {
+    const res = await marmaladeClient.get(`/stream/${mediaId}/authorize`);
+    return `${API}${res.data.stream_url}`;
+  },
 };
 
 // Helper functions

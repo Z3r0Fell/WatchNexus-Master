@@ -34,6 +34,7 @@ const VideoPlayer = () => {
   const skipButtonTimeout = useRef(null);
   
   const [media, setMedia] = useState(null);
+  const [streamUrl, setStreamUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [playing, setPlaying] = useState(false);
@@ -75,6 +76,15 @@ const VideoPlayer = () => {
         const res = await marmaladeMedia.getMediaItem(mediaId);
         setMedia(res.data);
         setCurrentTime(res.data.watch_progress || 0);
+
+        // Authorise playback — mints a short-lived signed stream URL the
+        // <video> element can use directly.
+        try {
+          const url = await marmaladeStream.getStreamUrl(mediaId);
+          setStreamUrl(url);
+        } catch {
+          setError('Failed to authorize playback');
+        }
         
         // Fetch skip segments if available
         fetchSkipSegments(mediaId);
@@ -516,8 +526,6 @@ const VideoPlayer = () => {
       </div>
     );
   }
-
-  const streamUrl = marmaladeStream.getStreamUrl(mediaId);
 
   return (
     <div

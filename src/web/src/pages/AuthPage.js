@@ -481,20 +481,7 @@ export const AuthPage = () => {
                   </Button>
                 </form>
 
-                {/* Toggle - only for remote/manual */}
-                {(!isLocal || selectedUser?.manual || localUsers.length === 0) && (
-                  <p className="text-center mt-6 text-gray-400">
-                    {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                    <button
-                      type="button"
-                      onClick={() => setIsLogin(!isLogin)}
-                      data-testid="toggle-auth-mode"
-                      className="text-violet-400 hover:text-violet-300 font-medium transition-colors"
-                    >
-                      {isLogin ? 'Sign Up' : 'Sign In'}
-                    </button>
-                  </p>
-                )}
+                {/* Public sign-up is disabled — a server administrator creates accounts. */}
 
                 {/* Back to profile selection for local */}
                 {isLocal && localUsers.length > 0 && selectedUser && (

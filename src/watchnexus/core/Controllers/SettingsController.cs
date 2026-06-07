@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -25,6 +26,18 @@ public class SettingsController : ControllerBase
     public record QbitUpdate(string Host = "localhost", int Port = 8080, string Username = "admin", string Password = "", bool Enabled = false);
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+    // Settings the user must never be able to overwrite via the generic settings
+    // API — security/licensing/infrastructure state the server manages itself.
+    private static readonly string[] ReservedPrefixes =
+        { "sec_", "fortress", "cellar_license", "jwt", "license_server", "patch_repo", "setup_completed" };
+
+    private static bool IsReservedKey(string key)
+    {
+        var k = (key ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(k)) return true;
+        return ReservedPrefixes.Any(prefix => k.StartsWith(prefix)) || k.Contains("secret");
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -56,6 +69,7 @@ public class SettingsController : ControllerBase
         foreach (var prop in body.EnumerateObject())
         {
             var key = prop.Name;
+            if (IsReservedKey(key)) continue; // never let internal/security keys be written
             var value = prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString()! : prop.Value.GetRawText();
             var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
             if (existing != null) existing.Value = value;
@@ -68,6 +82,9 @@ public class SettingsController : ControllerBase
     [HttpPut("{key}")]
     public async Task<IActionResult> Set(string key, [FromBody] JsonElement body)
     {
+        if (IsReservedKey(key))
+            return BadRequest(new { detail = $"'{key}' is a reserved internal setting and cannot be modified through this API." });
+
         // Accept both {"value": "..."} and arbitrary JSON objects
         string value;
         if (body.TryGetProperty("value", out var v) || body.TryGetProperty("Value", out v))
@@ -134,9 +151,12 @@ public class SettingsController : ControllerBase
     [HttpPost("integrations/qbittorrent/test")]
     public async Task<IActionResult> TestQbit([FromBody] QbitUpdate req)
     {
+        if (SsrfGuard.IsBlocked(req.Host))
+            return BadRequest(new { success = false, detail = "That host is not allowed." });
         try
         {
             var client = _httpFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
             var resp = await client.GetAsync($"http://{req.Host}:{req.Port}/api/v2/auth/login");
             return Ok(new { success = resp.IsSuccessStatusCode });
         }

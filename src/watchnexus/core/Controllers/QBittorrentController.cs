@@ -102,7 +102,6 @@ public class QBittorrentController : ControllerBase
     }
 
     [HttpPost("test")]
-    [AllowAnonymous]
     public async Task<IActionResult> Test(
         [FromQuery] string? host,
         [FromQuery] int? port,
@@ -111,6 +110,8 @@ public class QBittorrentController : ControllerBase
     {
         var h = host ?? "localhost";
         var p = port ?? 8080;
+        if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(h))
+            return BadRequest(new { success = false, detail = "That host is not allowed." });
         try
         {
             var http = this.Http();

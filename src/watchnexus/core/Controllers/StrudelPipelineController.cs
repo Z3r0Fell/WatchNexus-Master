@@ -313,9 +313,14 @@ public class StrudelPipelineController : ControllerBase
     }
 
     [HttpPost("auto-rip")]
-    [AllowAnonymous] // Called by udev handler
+    [AllowAnonymous] // Invoked by the local udev disc handler over loopback only
     public async Task<IActionResult> AutoRip([FromBody] JsonElement body)
     {
+        // Hard requirement: this webhook may only be triggered by the on-box udev
+        // handler (which POSTs to http://localhost). Reject anything that isn't a
+        // loopback connection so it can't be fired remotely to spin up rips.
+        if (!WatchNexus.Core.Auth.LocalRequest.IsLoopback(HttpContext))
+            return StatusCode(403, new { detail = "auto-rip can only be triggered locally on the server." });
         var drivePath = body.TryGetProperty("drive_path", out var dp) ? dp.GetString() : "/dev/sr0";
         // Auto-submit a rip job for the detected disc
         var id = Guid.NewGuid().ToString("N")[..12];

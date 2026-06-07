@@ -27,13 +27,15 @@ If a previous session created an account via the wizard, the credentials it used
 should be recorded here by the agent that ran the test. If this file is empty
 when you see it, the DB is fresh and the wizard needs to be exercised first.
 
-## Current dev account (created June 2026 while fixing the FFmpeg tier-lock bug)
-- Email:    owner@watchnexus.local
-- Username: owner
-- Password: password123
-- Tier:     Standard (no license entered)
-This account exists in the dev SQLite DB at
+## Current dev accounts (June 2026 — security hardening pass)
+- ADMIN:  owner@watchnexus.local / password123  (role: admin)
+- MEMBER: member@home.local      / hometime1    (role: user)
+Both exist in the dev SQLite DB at
 `/app/src/watchnexus/core/bin/Release/net10.0/data/watchnexus.db`.
+
+NOTE: Public registration is DISABLED (POST /api/auth/register → 403). New
+accounts are created by an admin via Settings → Users (POST /api/users, admin
+only). Login is rate-limited to 10 requests/minute/IP (429 after that is expected).
 
 ## Environment note (forked container)
 The .NET backend (`watchnexus-server` in supervisor) launches via

@@ -1,5 +1,9 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
@@ -92,9 +96,6 @@ var repoRoot = FindRepoRoot();
 Log($"[WatchNexus] Repo root: {repoRoot}");
 
 // ── Configuration ─────────────────────────────────────────────
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? Environment.GetEnvironmentVariable("JWT_SECRET")
-    ?? "WatchNexus_DefaultSecret_ChangeInProduction_32chars!";
 var port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8001;
 
 // ── Database ──────────────────────────────────────────────────
@@ -168,6 +169,14 @@ Log($"[WatchNexus] DB conn : {connString}");
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlite(connString));
 
+// ── JWT signing secret ────────────────────────────────────────
+// A self-hosted server must NEVER ship a shared/hardcoded signing key (anyone
+// could forge admin tokens). Resolve from config/env; if it's missing — or set
+// to the legacy weak default — generate a strong 96-char secret and persist it
+// to the data dir so it stays stable across restarts and unique per install.
+var jwtSecret = ResolveJwtSecret(builder.Configuration, dataDir, Log);
+builder.Configuration["Jwt:Secret"] = jwtSecret;
+
 // ── Auth ──────────────────────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -181,10 +190,44 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = "WatchNexus",
             ValidAudience = "WatchNexus",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+        // Per-request token-version check enables real logout / password-change
+        // invalidation: if the token's "tv" claim no longer matches the stored
+        // version for that user, the token is rejected even before expiry.
+        opt.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var uid = ctx.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(uid)) { ctx.Fail("missing subject"); return; }
+                var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var current = await TokenVersionStore.GetAsync(db, uid);
+                var tvClaim = ctx.Principal?.FindFirst("tv")?.Value;
+                if (!int.TryParse(tvClaim, out var tv) || tv != current)
+                    ctx.Fail("token has been revoked");
+            }
         };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<AuthService>();
+
+// ── Rate limiting ─────────────────────────────────────────────
+// Per-IP fixed window on the authentication endpoints to blunt credential
+// brute-forcing. Other endpoints are unaffected.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 10,
+                QueueLimit = 0,
+            }));
+});
 
 // ── Services ──────────────────────────────────────────────────
 builder.Services.AddHttpClient();
@@ -194,15 +237,29 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<FortressFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Swagger is a dev-time convenience only — never expose the API schema on a
+// public production server.
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddSwaggerGen();
 
 // ── Background Services ──
 builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>();
 builder.Services.AddHostedService<WatchNexus.Core.Services.TrayIconService>();
 
-// CORS
-builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
-    p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+// CORS — restrict to configured origins when ALLOWED_ORIGINS is set
+// (comma-separated). When unset we reflect the request origin but DO NOT allow
+// credentials; the API is bearer-token based (no cookies), so this is safe and
+// keeps LAN access frictionless. Set ALLOWED_ORIGINS to lock it down further.
+var allowedOrigins = (builder.Configuration["ALLOWED_ORIGINS"]
+        ?? Environment.GetEnvironmentVariable("ALLOWED_ORIGINS"))
+    ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
+{
+    if (allowedOrigins is { Length: > 0 })
+        pol.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+    else
+        pol.SetIsOriginAllowed(_ => true).AllowAnyMethod().AllowAnyHeader();
+}));
 
 // ── Load external modules ─────────────────────────────────────
 // Production installs (Program Files / /opt/watchnexus) ship pre-built
@@ -243,8 +300,39 @@ using (var scope = app.Services.CreateScope())
     SeedAccounts(db);
 }
 
-static void SeedAccounts(AppDbContext db)
+static string ResolveJwtSecret(IConfiguration config, string dataDir, Action<string> log)
 {
+    const string legacyWeak = "WatchNexus_DefaultSecret_ChangeInProduction_32chars!";
+    var provided = config["Jwt:Secret"] ?? Environment.GetEnvironmentVariable("JWT_SECRET");
+    if (!string.IsNullOrWhiteSpace(provided) && provided != legacyWeak && provided.Length >= 32)
+        return provided;
+
+    var keyFile = Path.Combine(dataDir, "jwt.key");
+    try
+    {
+        if (File.Exists(keyFile))
+        {
+            var existing = File.ReadAllText(keyFile).Trim();
+            if (existing.Length >= 32) return existing;
+        }
+        var generated = Convert.ToHexString(RandomNumberGenerator.GetBytes(48)); // 96 hex chars
+        File.WriteAllText(keyFile, generated);
+        try { if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(keyFile, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+        catch { /* best effort on permissions */ }
+        log($"[WatchNexus] Generated a new per-install JWT secret at {keyFile}");
+        return generated;
+    }
+    catch (Exception ex)
+    {
+        // If we genuinely cannot persist a secret, fail fast rather than silently
+        // falling back to a known/shared key.
+        throw new InvalidOperationException(
+            $"Unable to resolve or generate a JWT signing secret (data dir: {dataDir}). " +
+            $"Set the JWT_SECRET environment variable to a strong random value. Inner: {ex.Message}", ex);
+    }
+}
+
+static void SeedAccounts(AppDbContext db){
     // ── OOBE (Out-Of-Box Experience) ──
     // We deliberately do NOT seed a default admin/admin account in v1.0.0
     // RTP. A self-hosted media server that ships with a known-weak admin
@@ -336,6 +424,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
 // ── Map external module routes ────────────────────────────────

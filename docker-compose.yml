@@ -25,7 +25,10 @@ services:
       - media-library:/data/media
     environment:
       - WATCHNEXUS_TIER=standard
-      - JWT_SECRET=${JWT_SECRET:-WatchNexus_DefaultSecret_ChangeInProduction_32chars!}
+      # Leave JWT_SECRET unset — the server auto-generates a strong per-install
+      # secret on first boot and persists it to the data volume. Never ship a
+      # shared/hardcoded signing key.
+      - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
     restart: unless-stopped
 
@@ -47,7 +50,10 @@ services:
       - rips:/data/rips
     environment:
       - WATCHNEXUS_TIER=pro
-      - JWT_SECRET=${JWT_SECRET:-WatchNexus_DefaultSecret_ChangeInProduction_32chars!}
+      # Leave JWT_SECRET unset — the server auto-generates a strong per-install
+      # secret on first boot and persists it to the data volume. Never ship a
+      # shared/hardcoded signing key.
+      - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
     restart: unless-stopped
 
@@ -71,7 +77,10 @@ services:
       - offline:/data/offline
     environment:
       - WATCHNEXUS_TIER=ultra
-      - JWT_SECRET=${JWT_SECRET:-WatchNexus_DefaultSecret_ChangeInProduction_32chars!}
+      # Leave JWT_SECRET unset — the server auto-generates a strong per-install
+      # secret on first boot and persists it to the data volume. Never ship a
+      # shared/hardcoded signing key.
+      - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
     # GPU passthrough for hardware transcoding (NVIDIA)
     deploy:

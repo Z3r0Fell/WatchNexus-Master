@@ -190,11 +190,15 @@ public class CellarController : ControllerBase
         }
         else
         {
-            // ── Offline/local validation (format-based fallback) ──
-            var upper = serial.ToUpperInvariant();
-            tier = ValidateSerialFormat(upper);
-            if (tier == null)
-                return BadRequest(new { success = false, message = "Invalid serial number. Connect to license server or use format WNX-PRO-XXXX-XXXX-XXXX / WNX-ULT-XXXX-XXXX-XXXX" });
+            // No offline/format-based unlock. A paid tier can only be granted by
+            // the WatchNexus license server — otherwise any pattern-matching string
+            // would unlock Ultra and bypass payment entirely. If the server isn't
+            // configured, activation is unavailable (the free Standard tier still works).
+            return StatusCode(503, new
+            {
+                success = false,
+                message = "License activation is unavailable: this server isn't configured to reach the WatchNexus license server. You can keep using the free Standard tier."
+            });
         }
 
         // Check upgrade path validity
@@ -290,9 +294,12 @@ public class CellarController : ControllerBase
         }
         else
         {
-            var upper = serial.ToUpperInvariant();
-            tier = ValidateSerialFormat(upper) ?? "standard";
-            if (tier == "standard") return BadRequest(new { success = false, message = "Invalid serial number format" });
+            // See Activate(): no offline format-based unlock for paid tiers.
+            return StatusCode(503, new
+            {
+                success = false,
+                message = "License activation requires the WatchNexus license server. Continue on the free Standard tier and upgrade later from Settings."
+            });
         }
 
         // Store license and mark setup done

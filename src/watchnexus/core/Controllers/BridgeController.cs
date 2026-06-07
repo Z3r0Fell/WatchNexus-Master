@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -506,19 +507,38 @@ public class MarmaladeBridgeController : ControllerBase
         if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
             return Ok(new { error = "File not found on disk", file_path = media.FilePath });
         var fi = new FileInfo(media.FilePath);
+        var streamToken = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
         return Ok(new
         {
             media.Id, media.Title, file_path = media.FilePath,
             file_size = fi.Length, media_type = media.MediaType,
-            stream_url = $"/api/marmalade/stream/{id}/file",
+            stream_url = $"/api/marmalade/stream/{id}/file?token={streamToken}",
             quality, format = System.IO.Path.GetExtension(media.FilePath).TrimStart('.')
         });
     }
 
+    // Mints a short-lived signed URL the HTML5 player can use directly. The
+    // browser's <video> element can't attach our bearer token, so playback is
+    // authorised here (requires a valid session) and the resulting token is
+    // validated by StreamFile below.
+    [HttpGet("stream/{id}/authorize")]
+    public async Task<IActionResult> AuthorizeStream(string id)
+    {
+        var media = await _db.MediaItems.FindAsync(id);
+        if (media == null) return NotFound(new { detail = "Media not found" });
+        var token = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
+        return Ok(new { stream_url = $"/api/marmalade/stream/{id}/file?token={token}" });
+    }
+
+    // AllowAnonymous because a <video src> request can't carry a bearer token —
+    // access is instead gated by a short-lived HMAC stream token issued by
+    // AuthorizeStream / GetStreamInfo.
     [HttpGet("stream/{id}/file")]
     [AllowAnonymous]
-    public async Task<IActionResult> StreamFile(string id)
+    public async Task<IActionResult> StreamFile(string id, [FromQuery] string? token)
     {
+        if (!StreamToken.Validate(id, token, _config["Jwt:Secret"] ?? ""))
+            return Unauthorized(new { detail = "Invalid or expired stream token." });
         var media = await _db.MediaItems.FindAsync(id);
         if (media == null) return NotFound();
         if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))

@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
@@ -12,15 +14,16 @@ namespace WatchNexus.Core.Controllers;
 [Route("api")]
 public class CoreController : ControllerBase
 {
+    // Public, unauthenticated liveness probe — intentionally minimal so it does
+    // not leak host/OS/runtime details to anonymous callers. Detailed diagnostics
+    // live behind the authenticated /api/info endpoint.
     [HttpGet("health")]
+    [AllowAnonymous]
     public IActionResult Health() => Ok(new
     {
         status = "healthy",
         timestamp = DateTime.UtcNow,
         version = "1.0.0",
-        runtime = $".NET {Environment.Version}",
-        os = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
-        architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),
     });
 
     [Authorize]
@@ -146,6 +149,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("setup")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public IActionResult Setup([FromBody] SetupRequest req)
     {
         // Hard guard: only the *first* user can be created through this
@@ -158,8 +162,11 @@ public class AuthController : ControllerBase
             string.IsNullOrWhiteSpace(req.Password))
             return BadRequest(new { detail = "Email, username and password are required." });
 
-        if (req.Password.Length < 8)
-            return BadRequest(new { detail = "Password must be at least 8 characters." });
+        if (!EmailValidator.IsValid(req.Email))
+            return BadRequest(new { detail = "Please enter a valid email address." });
+
+        var (pwOk, pwErr) = PasswordPolicy.Validate(req.Password);
+        if (!pwOk) return BadRequest(new { detail = pwErr });
 
         var admin = new WatchNexus.Shared.AppUser
         {
@@ -179,20 +186,19 @@ public class AuthController : ControllerBase
         });
     }
 
+    // Public self-registration is DISABLED in v1.0.0. A self-hosted media server
+    // is single-tenant: the owner creates accounts for household members from
+    // Settings → Users (admin only). Kept as an explicit 403 so stale clients get
+    // a clear message instead of a confusing 404.
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterRequest req)
+    [AllowAnonymous]
+    public IActionResult Register() => StatusCode(403, new
     {
-        var user = _auth.Register(req.Email, req.Username, req.Password);
-        if (user == null) return Conflict(new { detail = "Email already registered" });
-        var token = _auth.GenerateToken(user);
-        return Ok(new
-        {
-            access_token = token,
-            user = new { user.Id, user.Email, user.Username, user.Avatar, user.Role, user.CreatedAt }
-        });
-    }
+        detail = "Public registration is disabled. Ask your server administrator to create an account for you."
+    });
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public IActionResult Login([FromBody] LoginRequest req)
     {
         var (user, token) = _auth.Login(req.Email, req.Password);
@@ -216,7 +222,15 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpPost("logout")]
-    public IActionResult Logout() => Ok(new { status = "logged_out" });
+    public async Task<IActionResult> Logout()
+    {
+        // Server-side invalidation: bump the user's token version so every JWT
+        // previously issued to them (including this one) stops validating.
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrEmpty(userId))
+            await TokenVersionStore.IncrementAsync(_db, userId);
+        return Ok(new { status = "logged_out" });
+    }
 
     // Google OAuth was removed in v1.0.0 RTP — WatchNexus is a self-hosted
     // media server with local-account auth only. The endpoint is kept as
@@ -235,8 +249,9 @@ public class AuthController : ControllerBase
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly AuthService _auth;
 
-    public UsersController(AppDbContext db) { _db = db; }
+    public UsersController(AppDbContext db, AuthService auth) { _db = db; _auth = auth; }
 
     [Authorize]
     [HttpGet("me")]
@@ -248,11 +263,119 @@ public class UsersController : ControllerBase
         return Ok(new { user.Id, user.Email, user.Username, user.Avatar, user.Role, user.CreatedAt });
     }
 
-    [Authorize]
+    // Public, minimal profile list for the "Who's watching?" login picker
+    // (Jellyfin/Plex-style). Returns ONLY display fields — never email or role —
+    // so an unauthenticated caller can render avatars without leaking account data.
+    [AllowAnonymous]
     [HttpGet("profiles")]
     public IActionResult GetProfiles()
     {
-        var users = _db.Users.Select(u => new { u.Id, u.Email, u.Username, u.Avatar, u.Role }).ToList();
+        var users = _db.Users
+            .OrderBy(u => u.Username)
+            .Select(u => new { u.Id, u.Username, u.Avatar })
+            .ToList();
         return Ok(users);
+    }
+
+    // ── Admin user management (Settings → Users) ──────────────────
+    public record CreateUserRequest(string Email, string Username, string Password, string? Role);
+    public record PasswordRequest(string Password);
+    public record ChangePasswordRequest(string Current_password, string New_password);
+
+    private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    [Authorize(Roles = "admin")]
+    [HttpGet]
+    public IActionResult ListUsers()
+    {
+        var users = _db.Users
+            .OrderBy(u => u.CreatedAt)
+            .Select(u => new { u.Id, u.Email, u.Username, u.Avatar, u.Role, u.CreatedAt })
+            .ToList();
+        return Ok(users);
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPost]
+    public IActionResult CreateUser([FromBody] CreateUserRequest req)
+    {
+        if (!EmailValidator.IsValid(req.Email))
+            return BadRequest(new { detail = "Please enter a valid email address." });
+        if (string.IsNullOrWhiteSpace(req.Username))
+            return BadRequest(new { detail = "Username is required." });
+        var (ok, err) = PasswordPolicy.Validate(req.Password);
+        if (!ok) return BadRequest(new { detail = err });
+
+        var user = _auth.CreateUser(req.Email, req.Username, req.Password, req.Role ?? "user");
+        if (user == null) return Conflict(new { detail = "A user with that email already exists." });
+        return Ok(new { user.Id, user.Email, user.Username, user.Avatar, user.Role, user.CreatedAt });
+    }
+
+    // General update used by the Settings → Users panel. Only `role` is a
+    // server-enforced field; any other properties (e.g. UI permission flags) are
+    // accepted but not persisted — permissions enforcement is not yet implemented,
+    // so we don't pretend to store it.
+    [Authorize(Roles = "admin")]
+    [HttpPut("{id}")]
+    public IActionResult UpdateUser(string id, [FromBody] JsonElement body)
+    {
+        var user = _db.Users.Find(id);
+        if (user == null) return NotFound(new { detail = "User not found." });
+        if (body.TryGetProperty("role", out var r) && r.ValueKind == JsonValueKind.String)
+        {
+            var role = r.GetString();
+            if (role != "admin" && role != "user")
+                return BadRequest(new { detail = "Role must be 'admin' or 'user'." });
+            if (user.Role == "admin" && role == "user" && _db.Users.Count(u => u.Role == "admin") <= 1)
+                return BadRequest(new { detail = "Cannot demote the last administrator." });
+            user.Role = role!;
+            _db.SaveChanges();
+        }
+        return Ok(new { user.Id, user.Email, user.Username, user.Avatar, user.Role, user.CreatedAt });
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPost("{id}/reset-password")]
+    public async Task<IActionResult> ResetPassword(string id, [FromBody] PasswordRequest req)
+    {
+        var (ok, err) = PasswordPolicy.Validate(req.Password);
+        if (!ok) return BadRequest(new { detail = err });
+        var user = _db.Users.Find(id);
+        if (user == null) return NotFound(new { detail = "User not found." });
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password);
+        _db.SaveChanges();
+        await TokenVersionStore.IncrementAsync(_db, id); // sign the user out everywhere
+        return Ok(new { status = "password_reset" });
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpDelete("{id}")]
+    public IActionResult DeleteUser(string id)
+    {
+        var user = _db.Users.Find(id);
+        if (user == null) return NotFound(new { detail = "User not found." });
+        if (user.Id == CurrentUserId)
+            return BadRequest(new { detail = "You cannot delete your own account." });
+        if (user.Role == "admin" && _db.Users.Count(u => u.Role == "admin") <= 1)
+            return BadRequest(new { detail = "Cannot delete the last administrator." });
+        _db.Users.Remove(user);
+        _db.SaveChanges();
+        return Ok(new { status = "deleted" });
+    }
+
+    [Authorize]
+    [HttpPost("me/password")]
+    public async Task<IActionResult> ChangeOwnPassword([FromBody] ChangePasswordRequest req)
+    {
+        var (ok, err) = PasswordPolicy.Validate(req.New_password);
+        if (!ok) return BadRequest(new { detail = err });
+        var user = _db.Users.Find(CurrentUserId);
+        if (user == null) return NotFound();
+        if (!BCrypt.Net.BCrypt.Verify(req.Current_password, user.PasswordHash))
+            return BadRequest(new { detail = "Your current password is incorrect." });
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.New_password);
+        _db.SaveChanges();
+        await TokenVersionStore.IncrementAsync(_db, user.Id);
+        return Ok(new { status = "password_changed" });
     }
 }
