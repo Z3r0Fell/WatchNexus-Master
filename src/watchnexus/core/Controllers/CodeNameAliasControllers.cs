@@ -332,6 +332,9 @@ public class SetupWizardController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> CompleteStep(int stepNumber, [FromBody] JsonElement data)
     {
+        if (await _db.Settings.AnyAsync(s => s.Key == "setup_completed" && s.Value == "true"))
+            return StatusCode(403, new { detail = "Setup is already complete." });
+
         // Save step data
         var key = $"setup_step_{stepNumber}_data";
         var raw = data.GetRawText();
@@ -351,6 +354,9 @@ public class SetupWizardController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Complete()
     {
+        if (await _db.Settings.AnyAsync(s => s.Key == "setup_completed" && s.Value == "true"))
+            return StatusCode(403, new { detail = "Setup is already complete." });
+
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_completed");
         if (existing != null) existing.Value = "true"; else _db.Settings.Add(new AppSetting { UserId = "", Key = "setup_completed", Value = "true" });
         await _db.SaveChangesAsync();

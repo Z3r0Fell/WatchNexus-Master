@@ -203,7 +203,7 @@ public static class FortressIntegrity
 /// </summary>
 [Route("api/fortress")]
 [ApiController]
-[Microsoft.AspNetCore.Authorization.Authorize]
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "admin")]
 public class FortressController : ControllerBase
 {
     private readonly AppDbContext _db;

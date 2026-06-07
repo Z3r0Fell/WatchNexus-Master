@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WatchNexus.Core;
 
@@ -102,16 +103,16 @@ public static class Fortress
                     instanceId = e.InstanceId
                 })
             });
-        });
+        }).RequireAuthorization(policy => policy.RequireRole("admin"));
 
-        // 7. Map Fortress audit export (full log as JSON download)
+        // 7. Map Fortress audit export (full log as JSON download) — admin only
         app.MapGet("/api/fortress/audit/export", () =>
         {
             List<AuditEntry> entries;
             lock (_auditLock) { entries = _auditLog.ToList(); }
             var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
             return Results.Text(json, "application/json");
-        });
+        }).RequireAuthorization(policy => policy.RequireRole("admin"));
 
         // Record startup in audit log
         RecordAudit("startup", "pass", $"Fortress initialized — tracking {_assemblyHashes.Count} assemblies, instance {_config.InstanceId}");

@@ -455,3 +455,37 @@ User reported the systray icon and "controller process" never launched despite `
 - `FortressFilter.ExemptPaths` is a hardcoded HashSet; a `[FortressExempt]` marker attribute would be cleaner and prevent the OOBE-style bug recurring as new diagnostic endpoints are added.
 - `FortressFilter.ProtectedRoutes` (30+ codenames inline) should derive from a single source of truth (e.g. `ModuleCatalogue.cs`) so new controllers can't silently ship un-gated.
 
+## v1.0.0 RTP — Public-Readiness Security Epic (June 2026)
+
+Actioned the full 20-item `WatchNexus_PublicReadiness_Analysis.md` audit. User decisions:
+admin-creates-users (no public signup), license-server required (no offline unlock),
+7-day tokens with server-side invalidation, signed stream tokens.
+
+### 🔴 Critical (all fixed + verified)
+1. **Open registration** → `POST /api/auth/register` now 403; admin-only user CRUD at `/api/users` (Settings → Users). Public signup removed from `AuthPage.js`.
+2. **Offline license bypass** → removed format-based unlock in `CellarController`; paid tiers require `licenses.watchnexus.ca`.
+3. **Unauthenticated media streaming** → `StreamFile` now requires a short-lived HMAC stream token (`StreamToken`), minted by authenticated `/api/marmalade/stream/{id}/authorize`. Player updated.
+4. **Unauthenticated auto-rip** → `StrudelPipeline.AutoRip` now loopback-only (`LocalRequest.IsLoopback`).
+5. **Weak JWT secret fallback** → removed; `Program.cs ResolveJwtSecret` fails-fast / auto-generates+persists a per-install secret. `docker-compose.yml` no longer ships the literal.
+
+### 🟠 High (fixed)
+6. Password policy (`PasswordPolicy`, 8+ chars, letter+digit) on setup + user creation.
+7. CORS configurable via `ALLOWED_ORIGINS` (no credentialed wildcard).
+8. JWT 30d→7d + token-version invalidation on logout/password-change (`TokenVersionStore`, validated in `OnTokenValidated`).
+9. `/api/users/profiles` now returns only id/username/avatar (no email/role); full list is admin-only.
+10. Rate limiting implemented (`AddRateLimiter` "auth" policy, 10/min/IP) on login/setup.
+
+### 🟡 Medium / 🔵 Polish (fixed)
+11. Swagger registered only in Development. 12. Settings reserved-key guard (`IsReservedKey`). 13. qBittorrent `/test` now requires auth + SSRF guard (`SsrfGuard`). 14. `FORCE_HTTPS`/reverse-proxy documented. 15. License-server key blocked from settings writes. 16. Email validation (`EmailValidator`). 17. `/api/health` trimmed (no OS/runtime). 18. Admin-only guards on all user management. 19/20. `crowdfunding/`, `release_builds/`, `test_reports/`, `jwt.key` added to `.gitignore`/`.dockerignore`.
+
+### Phase 2 — Controller self-audit (all 50 controllers)
+- Reviewed every `[AllowAnonymous]` / class auth. Fixed: `FortressController` + `/api/fortress/audit(/export)` now **admin-only** (was any-user / anonymous); anonymous OOBE writes (`activate-first-launch`, `setup/complete`, `setup/step`) now reject once setup is complete; `GameBot ServeCache` path-traversal guard. Confirmed Sprout RSS feeds are correctly API-key-gated.
+- Also fixed pre-existing `App.js` crash: `useLocation` was used but not imported (surfaced once a user existed).
+
+### Verification
+- `iteration_21.json`: 25/25 backend security tests + 100% frontend (admin+member login, Settings→Users, no crash, no signup). Suite: `tests/test_watchnexus_v100_security.py`.
+- Controller-audit fixes manually verified (admin 200 / member 403 / anon 401; post-setup 403; traversal 400). Security suite re-run green after edits.
+
+### Phase 3 (PENDING — needs scoping with user)
+Full line-by-line code review of the codebase. Too large for one pass; should be scoped by area (e.g. per module group). Known tech-debt to fold in: the permissions UI in `UsersSettings.jsx` is not enforced server-side (cosmetic — flag for honest removal or real implementation); pre-existing strict eslint debt in `AuthPage.js`/`VideoPlayer.jsx` (nested components, react-hooks rules); cosmetic controlled-input React warning on login.
+

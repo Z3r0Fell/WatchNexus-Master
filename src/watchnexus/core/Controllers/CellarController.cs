@@ -246,6 +246,12 @@ public class CellarController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ActivateFirstLaunch([FromBody] JsonElement body)
     {
+        // First-launch only: once setup is complete this anonymous endpoint is
+        // closed. Post-setup license changes must go through the authenticated
+        // /api/cellar/activate endpoint.
+        if (await _db.Settings.AnyAsync(s2 => s2.Key == "setup_completed" && s2.Value == "true" && s2.UserId == ""))
+            return StatusCode(403, new { success = false, message = "Setup is already complete. Manage your license in Settings." });
+
         var serial = body.TryGetProperty("serial", out var s) ? s.GetString()?.Trim() : null;
         // Allow "skip" to start with Standard
         var skip = body.TryGetProperty("skip", out var sk) && sk.GetBoolean();

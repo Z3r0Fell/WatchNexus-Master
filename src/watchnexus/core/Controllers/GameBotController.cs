@@ -106,6 +106,9 @@ public class GameBotController : ControllerBase
     [AllowAnonymous]
     public IActionResult ServeCache(string filename)
     {
+        // Prevent path traversal — filename is a plain id, never a path component.
+        if (string.IsNullOrEmpty(filename) || filename.IndexOfAny(new[] { '/', '\\', '.' }) >= 0)
+            return BadRequest(new { detail = "Invalid filename." });
         var path = Path.Combine(CacheDir, $"reveal_{filename}.jpg");
         if (!System.IO.File.Exists(path))
         {
