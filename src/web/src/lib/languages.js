@@ -1,0 +1,95 @@
+export const LANGUAGES = [
+  { code: 'en', name: 'English', native: 'English', region: 'root' },
+  // Western Europe
+  { code: 'de', name: 'German', native: 'Deutsch', region: 'western_europe' },
+  { code: 'fr', name: 'French', native: 'Français', region: 'western_europe' },
+  { code: 'it', name: 'Italian', native: 'Italiano', region: 'western_europe' },
+  { code: 'nl', name: 'Dutch', native: 'Nederlands', region: 'western_europe' },
+  { code: 'pt_BR', name: 'Portuguese (Brazil)', native: 'Português (Brasil)', region: 'western_europe' },
+  { code: 'es', name: 'Spanish', native: 'Español', region: 'western_europe' },
+  // Northern Europe
+  { code: 'da', name: 'Danish', native: 'Dansk', region: 'northern_europe' },
+  { code: 'nb', name: 'Norwegian', native: 'Norsk', region: 'northern_europe' },
+  { code: 'sv', name: 'Swedish', native: 'Svenska', region: 'northern_europe' },
+  { code: 'fi', name: 'Finnish', native: 'Suomi', region: 'northern_europe' },
+  // Eastern Europe / Balkans
+  { code: 'bg', name: 'Bulgarian', native: 'Български', region: 'eastern_europe' },
+  { code: 'cs', name: 'Czech', native: 'Čeština', region: 'eastern_europe' },
+  { code: 'el', name: 'Greek', native: 'Ελληνικά', region: 'eastern_europe' },
+  { code: 'hr', name: 'Croatian', native: 'Hrvatski', region: 'eastern_europe' },
+  { code: 'hu', name: 'Hungarian', native: 'Magyar', region: 'eastern_europe' },
+  { code: 'pl', name: 'Polish', native: 'Polski', region: 'eastern_europe' },
+  { code: 'ro', name: 'Romanian', native: 'Română', region: 'eastern_europe' },
+  { code: 'ru', name: 'Russian', native: 'Русский', region: 'eastern_europe' },
+  { code: 'sk', name: 'Slovak', native: 'Slovenčina', region: 'eastern_europe' },
+  { code: 'sl', name: 'Slovenian', native: 'Slovenščina', region: 'eastern_europe' },
+  { code: 'sr', name: 'Serbian', native: 'Српски', region: 'eastern_europe' },
+  { code: 'uk', name: 'Ukrainian', native: 'Українська', region: 'eastern_europe' },
+  // Baltic
+  { code: 'et', name: 'Estonian', native: 'Eesti', region: 'baltic' },
+  { code: 'lv', name: 'Latvian', native: 'Latviešu', region: 'baltic' },
+  { code: 'lt', name: 'Lithuanian', native: 'Lietuvių', region: 'baltic' },
+  // Indian Subcontinent
+  { code: 'bn', name: 'Bengali', native: 'বাংলা', region: 'indian' },
+  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી', region: 'indian' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी', region: 'indian' },
+  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', region: 'indian' },
+  { code: 'ml', name: 'Malayalam', native: 'മലയാളം', region: 'indian' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी', region: 'indian' },
+  { code: 'ne', name: 'Nepali', native: 'नेपाली', region: 'indian' },
+  { code: 'si', name: 'Sinhala', native: 'සිංහල', region: 'indian' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்', region: 'indian' },
+  { code: 'te', name: 'Telugu', native: 'తెలుగు', region: 'indian' },
+  { code: 'ur', name: 'Urdu', native: 'اردو', region: 'indian' },
+  // Southeast Asia
+  { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia', region: 'southeast_asia' },
+  { code: 'ms', name: 'Malay', native: 'Bahasa Melayu', region: 'southeast_asia' },
+  { code: 'th', name: 'Thai', native: 'ไทย', region: 'southeast_asia' },
+  { code: 'vi', name: 'Vietnamese', native: 'Tiếng Việt', region: 'southeast_asia' },
+  { code: 'fil', name: 'Filipino', native: 'Filipino', region: 'southeast_asia' },
+  // East Asia
+  { code: 'ja', name: 'Japanese', native: '日本語', region: 'east_asia' },
+  { code: 'ko', name: 'Korean', native: '한국어', region: 'east_asia' },
+  { code: 'zh_CN', name: 'Chinese (Simplified)', native: '简体中文', region: 'east_asia' },
+  // Middle East / Central Asia
+  { code: 'ar', name: 'Arabic', native: 'العربية', region: 'middle_east' },
+  { code: 'az', name: 'Azerbaijani', native: 'Azərbaycan dili', region: 'middle_east' },
+  { code: 'fa', name: 'Persian', native: 'فارسی', region: 'middle_east' },
+  { code: 'he', name: 'Hebrew', native: 'עברית', region: 'middle_east' },
+  { code: 'ka', name: 'Georgian', native: 'ქართული', region: 'middle_east' },
+  { code: 'kk', name: 'Kazakh', native: 'Қазақ тілі', region: 'middle_east' },
+  { code: 'ku', name: 'Kurdish', native: 'Kurdî', region: 'middle_east' },
+  { code: 'ps', name: 'Pashto', native: 'پښتو', region: 'middle_east' },
+  { code: 'tr', name: 'Turkish', native: 'Türkçe', region: 'middle_east' },
+  { code: 'uz', name: 'Uzbek', native: 'O‘zbek', region: 'middle_east' },
+  // Africa
+  { code: 'af', name: 'Afrikaans', native: 'Afrikaans', region: 'africa' },
+  { code: 'am', name: 'Amharic', native: 'አማርኛ', region: 'africa' },
+  { code: 'ha', name: 'Hausa', native: 'Hausa', region: 'africa' },
+  { code: 'ig', name: 'Igbo', native: 'Igbo', region: 'africa' },
+  { code: 'om', name: 'Oromo', native: 'Afaan Oromoo', region: 'africa' },
+  { code: 'sw', name: 'Swahili', native: 'Kiswahili', region: 'africa' },
+  { code: 'yo', name: 'Yoruba', native: 'Yorùbá', region: 'africa' },
+  { code: 'zu', name: 'Zulu', native: 'isiZulu', region: 'africa' },
+  // Caucasus
+  { code: 'hy', name: 'Armenian', native: 'Հայերեն', region: 'caucasus' },
+];
+
+export const LANGUAGE_REGIONS = [
+  { id: 'root', label: 'English' },
+  { id: 'western_europe', label: 'Western Europe' },
+  { id: 'northern_europe', label: 'Northern Europe' },
+  { id: 'eastern_europe', label: 'Eastern Europe & Balkans' },
+  { id: 'baltic', label: 'Baltic' },
+  { id: 'indian', label: 'Indian Subcontinent' },
+  { id: 'southeast_asia', label: 'Southeast Asia' },
+  { id: 'east_asia', label: 'East Asia' },
+  { id: 'middle_east', label: 'Middle East & Central Asia' },
+  { id: 'africa', label: 'Africa' },
+  { id: 'caucasus', label: 'Caucasus' },
+];
+
+export const LANGUAGES_BY_REGION = LANGUAGE_REGIONS.map(region => ({
+  ...region,
+  languages: LANGUAGES.filter(l => l.region === region.id),
+})).filter(r => r.languages.length > 0);

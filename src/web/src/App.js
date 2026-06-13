@@ -5,7 +5,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { GadgetProvider, useGadgets } from "./context/GadgetContext";
 import { LicenseProvider } from "./context/LicenseContext";
 import { FirstLaunchGate } from "./components/FirstLaunchGate";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 // Lazy-loaded Pages (React.lazy + Suspense for code splitting)
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -439,6 +440,12 @@ function AppRouter() {
 }
 
 function App() {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
   return (
     <div className="App">
       <BrowserRouter>

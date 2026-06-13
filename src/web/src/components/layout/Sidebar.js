@@ -51,10 +51,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
-import { useLicense, ROUTE_MODULE_MAP } from '../../context/LicenseContext';
+import { useLicense } from '../../context/LicenseContext';
 import { cn } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 
-// Icon mapping for dynamic gadget sidebar entries
 const ICON_MAP = {
   Image, Gamepad2, Radio, Podcast, MonitorPlay, Cloud, Video,
   Home, Film, Tv, Music, BookOpen, Download, Settings,
@@ -65,25 +66,24 @@ const ICON_MAP = {
 };
 import { toast } from 'sonner';
 
-// Media navigation items
 const mediaNavItems = [
-  { icon: Home, label: 'Home', path: '/', alwaysVisible: true },
-  { icon: FolderOpen, label: 'Library', path: '/library', hideable: true },
-  { icon: Film, label: 'Movies', path: '/movies', hideable: true },
-  { icon: Tv, label: 'TV Shows', path: '/tv', hideable: true },
-  { icon: Sparkles, label: 'Anime', path: '/anime', hideable: true },
-  { icon: ListVideo, label: 'Playlists', path: '/playlists', hideable: true },
-  { icon: Layers, label: 'Collections', path: '/collections', hideable: true },
-  { icon: Music, label: 'Music', path: '/music', hideable: true },
-  { icon: BookOpen, label: 'Audiobooks', path: '/audiobooks', hideable: true },
-  { icon: Radio, label: 'Live TV', path: '/live', hideable: true },
-  { icon: Layers, label: 'Streaming', path: '/streaming', hideable: true },
-  { icon: Compass, label: 'Indexers', path: '/indexers', hideable: true },
-  { icon: Film, label: 'Automation', path: '/automation', hideable: true },
+  { icon: Home, labelKey: 'nav.home', path: '/', alwaysVisible: true },
+  { icon: FolderOpen, labelKey: 'nav.library', path: '/library', hideable: true },
+  { icon: Film, labelKey: 'media.movies', path: '/movies', hideable: true },
+  { icon: Tv, labelKey: 'media.tv_shows', path: '/tv', hideable: true },
+  { icon: Sparkles, labelKey: 'nav.anime', path: '/anime', hideable: true },
+  { icon: ListVideo, labelKey: 'media.playlists', path: '/playlists', hideable: true },
+  { icon: Layers, labelKey: 'nav.collections', path: '/collections', hideable: true },
+  { icon: Music, labelKey: 'media.music', path: '/music', hideable: true },
+  { icon: BookOpen, labelKey: 'nav.audiobooks', path: '/audiobooks', hideable: true },
+  { icon: Radio, labelKey: 'nav.live_tv', path: '/live', hideable: true },
+  { icon: Layers, labelKey: 'nav.streaming', path: '/streaming', hideable: true },
+  { icon: Compass, labelKey: 'nav.indexers', path: '/indexers', hideable: true },
+  { icon: Film, labelKey: 'nav.automation', path: '/automation', hideable: true },
 ];
 
-// Gadget page items
 const gadgetNavItems = [
+<<<<<<< HEAD
   { icon: Cloud, label: 'Weather', path: '/weather', hideable: true, isGadget: true },
   { icon: Podcast, label: 'Podcasts', path: '/podcasts', hideable: true, isGadget: true },
   { icon: Radio, label: 'Radio', path: '/radio', hideable: true, isGadget: true },
@@ -96,59 +96,94 @@ const gadgetNavItems = [
   { icon: Lock, label: 'Parental', path: '/parental-controls', hideable: true, isGadget: true },
   { icon: Cog, label: 'Processing', path: '/processing', hideable: true, isGadget: true },
   { icon: HardDrive, label: 'Usenet', path: '/usenet', hideable: true, isGadget: true },
+=======
+  { icon: Cloud, labelKey: 'gadgets.weather', path: '/weather', hideable: true, isGadget: true },
+  { icon: Podcast, labelKey: 'gadgets.podcasts', path: '/podcasts', hideable: true, isGadget: true },
+  { icon: Radio, labelKey: 'gadgets.radio', path: '/radio', hideable: true, isGadget: true },
+  { icon: Image, labelKey: 'gadgets.photos', path: '/photos', hideable: true, isGadget: true },
+  { icon: Video, labelKey: 'gadgets.webvideo', path: '/webvideo', hideable: true, isGadget: true },
+  { icon: BarChart3, labelKey: 'gadgets.analytics', path: '/analytics', hideable: true, isGadget: true },
+  { icon: Bell, labelKey: 'gadgets.notifications', path: '/notifications', hideable: true, isGadget: true },
+  { icon: MessageSquare, labelKey: 'nav.requests', path: '/requests', hideable: true, isGadget: true },
+  { icon: Lock, labelKey: 'nav.parental', path: '/parental-controls', hideable: true, isGadget: true },
+  { icon: Cog, labelKey: 'nav.processing', path: '/processing', hideable: true, isGadget: true },
+  { icon: HardDrive, labelKey: 'nav.usenet', path: '/usenet', hideable: true, isGadget: true },
+>>>>>>> 721ee8c8 (i18n: 64-language support with sidebar integration)
 ];
 
-// Admin/Tools items (shown under Settings sub-menu)
 const settingsSubItems = [
-  { icon: Shield, label: 'Security', path: '/security', hideable: true },
-  { icon: Wifi, label: 'VPN Portal', path: '/vpn', hideable: true },
-  { icon: Library, label: 'Lib Manager', path: '/library-manager', hideable: true },
-  { icon: Film, label: 'Browse Media', path: '/browse', hideable: true },
-  { icon: FileText, label: 'Log Viewer', path: '/log-viewer', hideable: true },
-  { icon: Server, label: 'System', path: '/system', hideable: true },
-  { icon: Store, label: 'Marketplace', path: '/plugins', hideable: true },
-  { icon: Timer, label: 'Tasks', path: '/tasks', hideable: true },
-  { icon: Download, label: 'DL Clients', path: '/download-clients', hideable: true },
-  { icon: Archive, label: 'Backups', path: '/backups', hideable: true },
-  { icon: Activity, label: 'Scrobbling', path: '/scrobbling', hideable: true },
-  { icon: Rss, label: 'RSS Feeds', path: '/rss', hideable: true },
-  { icon: Disc, label: 'Disc Ripping', path: '/disc-ripping', hideable: true },
-  { icon: MonitorPlay, label: 'Jellyseerr', path: '/jellyseerr', hideable: true },
-  { icon: Clapperboard, label: 'Requests', path: '/requests-manager', hideable: true },
-  { icon: Gamepad2, label: 'Gaming', path: '/gaming', hideable: true },
-  { icon: BookOpen, label: 'Ebooks', path: '/ebooks', hideable: true },
-  { icon: Music, label: 'Music Lib', path: '/music-library', hideable: true },
-  { icon: Sparkles, label: 'For You', path: '/for-you', hideable: true },
-  { icon: Tv, label: 'DVR', path: '/dvr', hideable: true },
-  { icon: Download, label: 'Offline', path: '/offline', hideable: true },
-  { icon: Cloud, label: 'Backup', path: '/cloud-backup', hideable: true },
-  { icon: Cloud, label: 'Sync', path: '/cloud-sync', hideable: true },
-  { icon: ArrowDownToLine, label: 'Media Sync', path: '/media-sync', hideable: true },
+  { icon: Shield, labelKey: 'nav.security', path: '/security', hideable: true },
+  { icon: Wifi, labelKey: 'nav.vpn', path: '/vpn', hideable: true },
+  { icon: Library, labelKey: 'nav.lib_manager', path: '/library-manager', hideable: true },
+  { icon: Film, labelKey: 'nav.browse_media', path: '/browse', hideable: true },
+  { icon: FileText, labelKey: 'nav.log_viewer', path: '/log-viewer', hideable: true },
+  { icon: Server, labelKey: 'nav.system', path: '/system', hideable: true },
+  { icon: Store, labelKey: 'nav.marketplace', path: '/plugins', hideable: true },
+  { icon: Timer, labelKey: 'nav.tasks', path: '/tasks', hideable: true },
+  { icon: Download, labelKey: 'nav.dl_clients', path: '/download-clients', hideable: true },
+  { icon: Archive, labelKey: 'nav.backups', path: '/backups', hideable: true },
+  { icon: Activity, labelKey: 'nav.scrobbling', path: '/scrobbling', hideable: true },
+  { icon: Rss, labelKey: 'nav.rss', path: '/rss', hideable: true },
+  { icon: Disc, labelKey: 'nav.disc_ripping', path: '/disc-ripping', hideable: true },
+  { icon: MonitorPlay, labelKey: 'nav.jellyseerr', path: '/jellyseerr', hideable: true },
+  { icon: Clapperboard, labelKey: 'nav.requests_mgr', path: '/requests-manager', hideable: true },
+  { icon: Gamepad2, labelKey: 'nav.gaming', path: '/gaming', hideable: true },
+  { icon: BookOpen, labelKey: 'nav.ebooks', path: '/ebooks', hideable: true },
+  { icon: Music, labelKey: 'nav.music_lib', path: '/music-library', hideable: true },
+  { icon: Sparkles, labelKey: 'nav.for_you', path: '/for-you', hideable: true },
+  { icon: Tv, labelKey: 'nav.dvr', path: '/dvr', hideable: true },
+  { icon: Download, labelKey: 'nav.offline', path: '/offline', hideable: true },
+  { icon: Cloud, labelKey: 'nav.cloud_backup', path: '/cloud-backup', hideable: true },
+  { icon: Cloud, labelKey: 'nav.cloud_sync', path: '/cloud-sync', hideable: true },
+  { icon: ArrowDownToLine, labelKey: 'nav.media_sync', path: '/media-sync', hideable: true },
 ];
 
-// Default visible tabs
-const defaultVisibleTabs = [
-  'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Collections', 'Music', 'Audiobooks',
-  'Streaming', 'Indexers', 'Automation', 'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
-  'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
-  'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
-  'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr', 'Requests', 'Gaming',
-  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync', 'Media Sync',
-];
+const DEFAULT_VISIBLE_KEYS = mediaNavItems.filter(i => i.hideable).map(i => i.labelKey)
+  .concat(gadgetNavItems.filter(i => i.hideable).map(i => i.labelKey))
+  .concat(settingsSubItems.filter(i => i.hideable).map(i => i.labelKey));
 
-// Get visible tabs from localStorage
+const LEGACY_LABEL_TO_KEY = {};
+mediaNavItems.forEach(i => {
+  const fallback = i.labelKey.split('.').pop().replace(/_/g, ' ');
+  LEGACY_LABEL_TO_KEY[fallback] = i.labelKey;
+});
+gadgetNavItems.forEach(i => {
+  const fallback = i.labelKey.split('.').pop().replace(/_/g, ' ');
+  LEGACY_LABEL_TO_KEY[fallback] = i.labelKey;
+});
+settingsSubItems.forEach(i => {
+  const fallback = i.labelKey.split('.').pop().replace(/_/g, ' ');
+  LEGACY_LABEL_TO_KEY[fallback] = i.labelKey;
+});
+LEGACY_LABEL_TO_KEY['Live TV'] = 'nav.live_tv';
+LEGACY_LABEL_TO_KEY['Web Video'] = 'gadgets.webvideo';
+LEGACY_LABEL_TO_KEY['Lib Manager'] = 'nav.lib_manager';
+LEGACY_LABEL_TO_KEY['Browse Media'] = 'nav.browse_media';
+LEGACY_LABEL_TO_KEY['Log Viewer'] = 'nav.log_viewer';
+LEGACY_LABEL_TO_KEY['DL Clients'] = 'nav.dl_clients';
+LEGACY_LABEL_TO_KEY['Music Lib'] = 'nav.music_lib';
+LEGACY_LABEL_TO_KEY['For You'] = 'nav.for_you';
+LEGACY_LABEL_TO_KEY['VPN Portal'] = 'nav.vpn';
+LEGACY_LABEL_TO_KEY['Requests'] = 'nav.requests_mgr';
+LEGACY_LABEL_TO_KEY['Parental'] = 'nav.parental';
+
 const getVisibleTabs = () => {
   try {
     const saved = localStorage.getItem('watchnexus_visible_tabs');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const migrated = parsed.map(key => LEGACY_LABEL_TO_KEY[key] || key);
+      return migrated;
+    }
   } catch (e) {
     console.error('Error loading visible tabs:', e);
       toast.error('Error loading visible tabs:');
   }
-  return defaultVisibleTabs;
+  return DEFAULT_VISIBLE_KEYS;
 };
 
 export const Sidebar = () => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const [visibleTabs, setVisibleTabs] = useState(getVisibleTabs);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -156,17 +191,14 @@ export const Sidebar = () => {
   const { logout, user } = useAuth();
   const { hooks } = useGadgets();
   const { isRouteUnlocked, getRouteRequiredTier } = useLicense();
+  const navRef = useRef(null);
+  const SCROLL_KEY = 'watchnexus_sidebar_scroll';
 
-  // Listen for changes from settings page
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'watchnexus_visible_tabs') {
-        setVisibleTabs(getVisibleTabs());
-      }
+      if (e.key === 'watchnexus_visible_tabs') setVisibleTabs(getVisibleTabs());
     };
-    const handleTabsUpdate = () => {
-      setVisibleTabs(getVisibleTabs());
-    };
+    const handleTabsUpdate = () => setVisibleTabs(getVisibleTabs());
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('watchnexus_tabs_updated', handleTabsUpdate);
     return () => {
@@ -175,25 +207,20 @@ export const Sidebar = () => {
     };
   }, []);
 
-  // Auto-expand settings section if current path is a sub-item
   useEffect(() => {
     const isSettingsSubPath = settingsSubItems.some(item => location.pathname === item.path) || location.pathname === '/settings';
-    if (isSettingsSubPath) {
-      setSettingsOpen(true);
-    }
+    if (isSettingsSubPath) setSettingsOpen(true);
   }, [location.pathname]);
 
-  // Build dynamic gadget sidebar items from active hooks
   const dynamicGadgets = (hooks?.sidebar_entries || []).map(entry => ({
     icon: ICON_MAP[entry.icon] || Sparkles,
-    label: entry.label,
+    labelKey: entry.labelKey || entry.label,
     path: entry.path,
     hideable: true,
     isGadget: true,
   }));
 
-  // Filter items based on visibility
-  const isVisible = (item) => item.alwaysVisible || visibleTabs.includes(item.label);
+  const isVisible = (item) => item.alwaysVisible || visibleTabs.includes(item.labelKey);
 
   const visibleMedia = mediaNavItems.filter(isVisible);
   const visibleGadgets = [...gadgetNavItems, ...dynamicGadgets].filter(isVisible);
@@ -203,12 +230,11 @@ export const Sidebar = () => {
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
     const locked = !isRouteUnlocked(item.path);
-    const requiredTier = locked ? getRouteRequiredTier(item.path) : null;
     return (
       <li key={item.path}>
         <Link
           to={item.path}
-          data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+          data-testid={`nav-${item.labelKey.replace(/\./g, '-')}`}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
             locked ? "text-gray-600 hover:text-gray-500 hover:bg-white/[0.02]" :
@@ -228,7 +254,7 @@ export const Sidebar = () => {
                 exit={{ opacity: 0, x: -10 }}
                 className="text-sm font-medium flex-1"
               >
-                {item.label}
+                {t(item.labelKey)}
               </motion.span>
             )}
           </AnimatePresence>
@@ -250,28 +276,19 @@ export const Sidebar = () => {
   const isSettingsActive = location.pathname === '/settings';
   const isAnySubActive = settingsSubItems.some(item => location.pathname === item.path);
 
-  // Sidebar scroll persistence using sessionStorage
-  const navRef = useRef(null);
-  const SCROLL_KEY = 'watchnexus_sidebar_scroll';
-
   const handleNavScroll = () => {
     if (navRef.current) {
-      // Save to sessionStorage on every scroll
       sessionStorage.setItem(SCROLL_KEY, navRef.current.scrollTop.toString());
     }
   };
 
-  // Restore scroll position after component mounts and on route change
   useEffect(() => {
     const savedScroll = sessionStorage.getItem(SCROLL_KEY);
     if (navRef.current && savedScroll) {
       const scrollValue = parseInt(savedScroll, 10);
       if (scrollValue > 0) {
-        // Use setTimeout to ensure DOM is fully rendered
         setTimeout(() => {
-          if (navRef.current) {
-            navRef.current.scrollTop = scrollValue;
-          }
+          if (navRef.current) navRef.current.scrollTop = scrollValue;
         }, 50);
       }
     }
@@ -285,7 +302,6 @@ export const Sidebar = () => {
       transition={{ duration: 0.2, ease: 'easeInOut' }}
       className="sidebar fixed left-0 top-0 h-screen z-50 flex flex-col"
     >
-      {/* Logo */}
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <Link to="/" className="flex items-center gap-3">
           <img src="/watchnexus-logo.png" alt="WatchNexus" className="w-10 h-10 rounded-xl" />
@@ -303,7 +319,7 @@ export const Sidebar = () => {
                   backgroundClip: 'text',
                 }}
               >
-                WatchNexus
+                {t('app.name')}
               </motion.span>
             )}
           </AnimatePresence>
@@ -317,7 +333,6 @@ export const Sidebar = () => {
         </button>
       </div>
 
-      {/* Search */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -332,35 +347,25 @@ export const Sidebar = () => {
               className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
             >
               <Search className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-400">Search...</span>
+              <span className="text-sm text-gray-400">{t('media.search_placeholder')}</span>
             </Link>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Navigation */}
       <nav
         ref={navRef}
         className="flex-1 py-4 overflow-y-auto hide-scrollbar"
         onScroll={handleNavScroll}
       >
         <ul className="space-y-1 px-3">
-          {/* Media Items */}
           {visibleMedia.map(renderNavItem)}
-
-          {/* Gadget Items */}
           {visibleGadgets.length > 0 && visibleGadgets.map(renderNavItem)}
+          {renderNavItem({ icon: Download, labelKey: 'gadgets.downloads', path: '/downloads', alwaysVisible: true })}
+          {renderNavItem({ icon: HelpCircle, labelKey: 'nav.help', path: '/help', alwaysVisible: true })}
 
-          {/* Downloads - always visible */}
-          {renderNavItem({ icon: Download, label: 'Downloads', path: '/downloads', alwaysVisible: true })}
-
-          {/* Help - always visible */}
-          {renderNavItem({ icon: HelpCircle, label: 'Help', path: '/help', alwaysVisible: true })}
-
-          {/* Settings Section with collapsible sub-items */}
           <li>
             <div className="flex flex-col">
-              {/* Settings main button */}
               <div className="flex items-center">
                 <Link
                   to="/settings"
@@ -383,7 +388,7 @@ export const Sidebar = () => {
                         exit={{ opacity: 0, x: -10 }}
                         className="text-sm font-medium"
                       >
-                        Settings
+                        {t('nav.settings')}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -399,7 +404,6 @@ export const Sidebar = () => {
                 )}
               </div>
 
-              {/* Settings sub-items */}
               <AnimatePresence>
                 {expanded && settingsOpen && visibleSettingsSubs.length > 0 && (
                   <motion.ul
@@ -417,7 +421,7 @@ export const Sidebar = () => {
                         <li key={item.path}>
                           <Link
                             to={item.path}
-                            data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                            data-testid={`nav-${item.labelKey.replace(/\./g, '-')}`}
                             className={cn(
                               "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-200 text-sm",
                               locked ? "text-gray-600 hover:text-gray-500" :
@@ -425,7 +429,7 @@ export const Sidebar = () => {
                             )}
                           >
                             <Icon className="w-4 h-4" style={(!locked && isActive) ? { color: 'var(--primary, #8B5CF6)' } : locked ? { opacity: 0.35 } : {}} />
-                            <span className="font-medium flex-1">{item.label}</span>
+                            <span className="font-medium flex-1">{t(item.labelKey)}</span>
                             {locked && <Lock className="w-3 h-3 text-gray-600" />}
                           </Link>
                         </li>
@@ -439,8 +443,8 @@ export const Sidebar = () => {
         </ul>
       </nav>
 
-      {/* User section */}
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4 border-t border-white/5 space-y-2">
+        {expanded ? <LanguageSwitcher /> : <div className="flex justify-center"><LanguageSwitcher compact /></div>}
         <div className={cn("flex items-center", expanded ? "gap-3" : "justify-center")}>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0">
             <span className="text-sm font-bold text-white">

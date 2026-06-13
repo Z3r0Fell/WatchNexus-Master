@@ -1,0 +1,38 @@
+# .aiderignore
+# Exclude giant dependency trees
+node_modules/
+vendor/
+.venv/
+env/
+packages/
+
+# Exclude build targets and binaries
+dist/
+build/
+out/
+target/
+*.bin
+*.exe
+*.dll
+
+# Exclude media and static assets
+public/assets/
+src/assets/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+*.pdf
+
+# Exclude logs, locks, and system caches
+*.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+composer.lock
+.git/
+.cache/
+.idea/
+.vscode/

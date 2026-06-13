@@ -1,0 +1,11 @@
+# .aider.conf.yml
+model: ollama/qwen2.5-coder:14b
+edit-format: whole
+auto-commits: true
+attribute-author: true
+chat-language: en
+# Explicitly force the local agent into strict full-production generation
+message: |
+  You are an elite software architect. Do not summarize code.
+  Do not write stubs, placeholding comments, or abbreviated blocks.
+  Rewrite every targeted method, file, and module in its entirety with robust logic, full data typing, and complete error safety traps.
