@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=WatchNexus
-Comment=Open WatchNexus in your browser
-Exec=xdg-open http://localhost:8001
-Icon=watchnexus
-Terminal=false
-Categories=Network;AudioVideo;

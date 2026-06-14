@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=WatchNexus Tray
-Comment=WatchNexus system tray controller
-Exec=/usr/bin/watchnexus-tray
-Icon=watchnexus
-Terminal=false
-Categories=Network;AudioVideo;
-X-GNOME-Autostart-enabled=true
