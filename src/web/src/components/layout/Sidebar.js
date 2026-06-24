@@ -53,6 +53,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
 import { useLicense, ROUTE_MODULE_MAP } from '../../context/LicenseContext';
 import { cn } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 
 // Icon mapping for dynamic gadget sidebar entries
 const ICON_MAP = {
@@ -153,6 +155,10 @@ export const Sidebar = () => {
   const { logout, user } = useAuth();
   const { hooks } = useGadgets();
   const { isRouteUnlocked, getRouteRequiredTier } = useLicense();
+  const { t } = useTranslation();
+  // Translate a nav label by derived key (e.g. "Live TV" -> "nav.live_tv"),
+  // falling back to the original English label when no translation exists.
+  const tl = (label) => t(`nav.${label.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`, { defaultValue: label });
 
   // Listen for changes from settings page
   useEffect(() => {
@@ -225,7 +231,7 @@ export const Sidebar = () => {
                 exit={{ opacity: 0, x: -10 }}
                 className="text-sm font-medium flex-1"
               >
-                {item.label}
+                {tl(item.label)}
               </motion.span>
             )}
           </AnimatePresence>
@@ -422,7 +428,7 @@ export const Sidebar = () => {
                             )}
                           >
                             <Icon className="w-4 h-4" style={(!locked && isActive) ? { color: 'var(--primary, #8B5CF6)' } : locked ? { opacity: 0.35 } : {}} />
-                            <span className="font-medium flex-1">{item.label}</span>
+                            <span className="font-medium flex-1">{tl(item.label)}</span>
                             {locked && <Lock className="w-3 h-3 text-gray-600" />}
                           </Link>
                         </li>
@@ -457,6 +463,7 @@ export const Sidebar = () => {
               </motion.div>
             )}
           </AnimatePresence>
+          <LanguageSwitcher compact={!expanded} />
           <AnimatePresence>
             {expanded && (
               <motion.button

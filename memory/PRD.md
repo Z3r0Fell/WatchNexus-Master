@@ -486,6 +486,16 @@ admin-creates-users (no public signup), license-server required (no offline unlo
 - `iteration_21.json`: 25/25 backend security tests + 100% frontend (admin+member login, Settings→Users, no crash, no signup). Suite: `tests/test_watchnexus_v100_security.py`.
 - Controller-audit fixes manually verified (admin 200 / member 403 / anon 401; post-setup 403; traversal 400). Security suite re-run green after edits.
 
-### Phase 3 (PENDING — needs scoping with user)
-Full line-by-line code review of the codebase. Too large for one pass; should be scoped by area (e.g. per module group). Known tech-debt to fold in: the permissions UI in `UsersSettings.jsx` is not enforced server-side (cosmetic — flag for honest removal or real implementation); pre-existing strict eslint debt in `AuthPage.js`/`VideoPlayer.jsx` (nested components, react-hooks rules); cosmetic controlled-input React warning on login.
+### Locale / i18n system merged from GitHub `Dev` branch (June 24 2026)
+The user built a 64-language i18n system on the GitHub `Dev` branch (NOT in our session lineage). Rather than `git pull` (which would have reverted the entire security epic — the GitHub repo is OLDER, still has SeedAccounts/weak-JWT/no-FfmpegLocator), it was **merged into `/app`** preserving all security work:
+- Copied: `src/web/src/i18n.js`, `src/web/src/components/LanguageSwitcher.jsx`, `src/web/src/lib/languages.js`, `src/web/public/locales/*.json` (64 langs).
+- Added deps: `i18next@^26`, `react-i18next@^17`, `i18next-http-backend@^4` (via yarn).
+- Wired: `import "./i18n"` in `index.js`; `Sidebar.js` uses `useTranslation` + a `tl()` derived-key helper (`nav.<slug>` with English fallback) on both nav render sites, and renders `<LanguageSwitcher>` in the footer.
+- Fix: added `react: { useSuspense: false }` to `i18n.js` (no global `<Suspense>` boundary in `/app`'s App.js, unlike Dev's).
+- Verified live: switching to French renders Maison/Bibliothèque/Listes de lecture/etc.; missing keys fall back to English.
+- NOTE: Dev's `Sidebar.js` had a committed unresolved git conflict marker — did NOT copy it; ported the pattern into `/app`'s clean Sidebar instead.
+- Disk: `/app` volume was 100% full (broke git fetch); reclaimed ~500MB of build caches. The stale 908MB `/app/WatchNexus-Master` clone (GitHub mirror) remains — recommend deleting (user not yet confirmed).
+
+### Phase 3 — implement public-ready-audit-2026-06-24.md (IN PROGRESS — needs scoping)
+The 2026-06-24 audit (197 findings / 33 critical) was run against the OLDER GitHub code, so ~8 of its criticals are ALREADY fixed in `/app` (S-03 JWT fallback, S-05 docker-compose secret, S-08 SeedAccounts, S-09 CORS, S-18 qbit SSRF, S-25 password policy, etc.). Not-yet-fixed items confirmed present in `/app`: S-04 (Electron `Date.now()` JWT secret), S-06 (Docker runs as root), D-04 (Docker image version "2.9.0" vs 1.0.0), S-19 (ASPNETCORE_URLS http), S-02/S-13 (JWT in localStorage / API keys in URLs — large frontend refactors), S-11 (Python proxy auth), S-16 (rate limiting only on auth). Full line-by-line review still pending; scope by module group. Too large for one pass; should be scoped by area (e.g. per module group). Known tech-debt to fold in: the permissions UI in `UsersSettings.jsx` is not enforced server-side (cosmetic — flag for honest removal or real implementation); pre-existing strict eslint debt in `AuthPage.js`/`VideoPlayer.jsx` (nested components, react-hooks rules); cosmetic controlled-input React warning on login.
 

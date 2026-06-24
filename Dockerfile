@@ -77,7 +77,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Labels
 LABEL org.opencontainers.image.title="WatchNexus ${TIER}" \
       org.opencontainers.image.description="WatchNexus Media Server - ${TIER} Edition" \
-      org.opencontainers.image.version="2.9.0" \
+      org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.vendor="WatchNexus" \
       org.opencontainers.image.source="https://github.com/Z3r0Fell/watchnexus" \
       com.watchnexus.tier="${TIER}"
@@ -92,6 +92,12 @@ COPY --from=frontend-build /build/frontend/build ./web/build/
 
 # Create data directories
 RUN mkdir -p /app/data /app/logs /data/media /data/rips /data/transcoded /data/offline
+
+# Run as a non-root user (security hardening). Named volumes inherit this
+# ownership on first creation; bind mounts must be chown'd on the host.
+RUN groupadd -r watchnexus && useradd -r -g watchnexus -d /app watchnexus \
+    && chown -R watchnexus:watchnexus /app /data
+USER watchnexus
 
 # Environment
 ENV ASPNETCORE_URLS=http://0.0.0.0:8002 \

@@ -80,8 +80,11 @@ function startBackend() {
       // Server
       HOST: '127.0.0.1',
       PORT: '8001',
-      // Security
-      JWT_SECRET: 'watchnexus_desktop_' + Date.now(),
+      // Security — JWT_SECRET is intentionally NOT set here. The backend now
+      // generates and persists a strong, per-install secret to the data dir on
+      // first launch (see ResolveJwtSecret in Program.cs). The old
+      // 'watchnexus_desktop_' + Date.now() value was both predictable AND rotated
+      // on every launch, silently logging the user out each restart.
     },
     stdio: ['pipe', 'pipe', 'pipe']
   });
