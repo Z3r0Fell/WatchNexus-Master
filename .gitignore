@@ -545,3 +545,11 @@ src/web/node_modules/.cache/default-development/15.pack
 WatchNexus-Master/.git/objects/pack/pack-41544b5d01aa39967a5206d2d3298bbbbc8d19ac.pack
 src/web/node_modules/.cache/default-development/13.pack
 WatchNexus-Master/.git/objects/pack/tmp_pack_ilJfDN
+
+# Public-readiness: environment-specific secrets & key material (never commit)
+appsettings.Production.json
+appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Development.json
+dp-keys/
+**/dp-keys/

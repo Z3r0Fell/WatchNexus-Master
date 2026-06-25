@@ -545,3 +545,30 @@ own dedicated pass. Verified live + by testing_agent (iteration_22.json: **55/55
   URL query params. Large, regression-prone frontend+backend auth refactor.
 - Pre-existing minor (not regressions): bulk `PUT /api/settings` `{key,value}` envelope footgun (creates
   literal 'key'/'value' rows; no `DELETE /api/settings/{key}` route); line-by-line audit; AuthPage eslint debt.
+
+## v1.0.0 RTP — Public-Readiness Finalization (June 25 2026)
+
+### Login + OOBE language picker (i18n exposure)
+- Added a compact `LanguageSwitcher` (globe, top-right) to `pages/AuthPage.js` and the
+  `FirstLaunchGate` OOBE wizard — exposes the 64-language i18n system from first boot.
+- `LanguageSwitcher` gained an `align` prop ('left'|'right') so the dropdown right-aligns
+  in the top-right corner (Sidebar's collapsed compact usage unchanged). Verified live:
+  picker opens fully on-screen, region-grouped, switching to French works.
+
+### Secret-leak remediation (deployment_agent finding #3 — genuine blocker)
+- `src/watchnexus/core/appsettings.json` was git-tracked with LIVE secrets:
+  TMDB_API_KEY, LICENSE_SERVER_API_KEY, and the legacy weak Jwt:Secret. **Blanked all three**
+  in committed source (read via `_config[...]` which ASP.NET overrides from env +
+  appsettings.{Environment}.json).
+- Real values moved to **gitignored** `appsettings.Production.json` (this env runs as Production,
+  so it's auto-loaded). Official release pipeline injects via env / build secret.
+- `.gitignore` + `.dockerignore` now exclude `appsettings.Production.json`,
+  `appsettings.Development.json`, `dp-keys/`, `jwt.key`, `*.db`, `**/data/`.
+- `backend/server.py` (preview proxy) BACKEND_URL now env-driven (`os.getenv`).
+- Verified: login 200 (JWT auto-generated/persisted to jwt.key 0600), TMDB trending 200 with
+  live results (key resolves from Production override), dp-keys ring 0700. No live keys in tracked files.
+
+### deployment_agent note
+- The agent's other "blockers" (port 8002, SQLite-not-Mongo, .NET-not-Python, supervisor mismatch)
+  are EXPECTED — WatchNexus is a self-hosted .NET app shipping as installers + Docker, NOT an
+  Emergent-K8s/Mongo app. These are not applicable to the product's actual deployment model.

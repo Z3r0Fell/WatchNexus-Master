@@ -27,3 +27,14 @@ memory/
 LICENSE
 .env*
 yarn-error.log
+
+appsettings.Production.json
+appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Development.json
+dp-keys/
+**/dp-keys/
+jwt.key
+**/jwt.key
+*.db
+**/data/

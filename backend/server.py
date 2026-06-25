@@ -1,3 +1,5 @@
+import os
+
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BACKEND_URL = "http://127.0.0.1:8002"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8002")
 
 @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
 async def proxy(request: Request, path: str):
