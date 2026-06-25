@@ -15,23 +15,19 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  // S-02: the JWT lives in an httpOnly cookie the browser sends automatically.
+  // We never read/store it in JS. Auth state is derived from a /users/me probe.
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+    fetchUser();
+  }, []);
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${API}/users/me`);
+      const response = await axios.get(`${API}/users/me`, { withCredentials: true });
       const d = response.data;
       // Normalize PascalCase to lowercase for consistent access
       const normalized = {
@@ -45,78 +41,73 @@ export const AuthProvider = ({ children }) => {
       };
       setUser(normalized);
       setIsAuthenticated(true);
+      return normalized;
     } catch (error) {
-      console.error('Failed to fetch user:', error);
-      // Only logout on 401 Unauthorized, not on network errors
       if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-        setToken(null);
         setUser(null);
         setIsAuthenticated(false);
       }
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (email, password) => {
-    const response = await axios.post(`${API}/auth/login`, { email, password });
-    const { access_token, user: userData } = response.data;
-    localStorage.setItem('token', access_token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-    setToken(access_token);
-    setUser(userData);
-    setIsAuthenticated(true);
+    // Backend sets the httpOnly auth cookie on success; we just sync state.
+    const response = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
+    const { user: userData } = response.data;
+    if (userData) {
+      setUser(userData);
+      setIsAuthenticated(true);
+    } else {
+      await fetchUser();
+    }
     return userData;
   };
 
-  // Establish a session from an already-issued token (quick-login / PIN flows).
-  const loginWithToken = (newToken, userData) => {
-    localStorage.setItem('token', newToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-    setToken(newToken);
-    if (userData) setUser(userData);
-    setIsAuthenticated(true);
-    return userData;
+  // Establish a session after the backend has already issued the auth cookie
+  // (e.g. setup wizard / quick-login). No token handling in JS.
+  const loginWithToken = (_token, userData) => {
+    if (userData) {
+      setUser(userData);
+      setIsAuthenticated(true);
+      return userData;
+    }
+    return fetchUser();
   };
 
   const register = async (email, password, username) => {
-    const response = await axios.post(`${API}/auth/register`, { email, password, username });
-    const { access_token, user: userData } = response.data;
-    localStorage.setItem('token', access_token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-    setToken(access_token);
-    setUser(userData);
-    setIsAuthenticated(true);
+    const response = await axios.post(`${API}/auth/register`, { email, password, username }, { withCredentials: true });
+    const { user: userData } = response.data;
+    if (userData) {
+      setUser(userData);
+      setIsAuthenticated(true);
+    }
     return userData;
   };
 
   const logout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`);
+      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
     } catch (error) {
       // Ignore logout errors - we're clearing local state anyway
     }
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    setToken(null);
     setUser(null);
     setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
+    <AuthContext.Provider value={{
+      user,
       setUser,
-      token, 
-      loading, 
-      login, 
+      loading,
+      login,
       loginWithToken,
-      register, 
-      logout, 
+      register,
+      logout,
       isAuthenticated,
-      setIsAuthenticated 
+      setIsAuthenticated
     }}>
       {children}
     </AuthContext.Provider>

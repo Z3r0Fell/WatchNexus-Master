@@ -66,7 +66,8 @@ export const FirstLaunchGate = ({ children }) => {
   };
 
   const onAdminCreated = ({ access_token, user }) => {
-    try { localStorage.setItem('token', access_token); } catch { /* SSR/private mode */ }
+    // S-02: the backend already set the httpOnly auth cookie on /auth/setup.
+    // No token is stored in JS; subsequent OOBE calls authenticate via the cookie.
     if (setUser) setUser(user);
     if (setIsAuthenticated) setIsAuthenticated(true);
     setNeedsSetup(false);

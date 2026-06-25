@@ -121,6 +121,36 @@ public class AuthController : ControllerBase
         _db = db;
     }
 
+    // ── httpOnly cookie auth (S-02) ───────────────────────────────
+    // The JWT is delivered as an httpOnly, SameSite cookie so it is NOT
+    // reachable from JavaScript (XSS can't exfiltrate it). Secure is keyed off
+    // the request scheme (honours X-Forwarded-Proto behind a TLS proxy) so the
+    // cookie still works on a plain-http LAN install. The access_token is also
+    // returned in the body for non-browser / Electron clients (Bearer header path).
+    private const string AuthCookie = "wn_token";
+
+    private void SetAuthCookie(string token) =>
+        Response.Cookies.Append(AuthCookie, token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Path = "/",
+            MaxAge = TimeSpan.FromDays(7),
+            IsEssential = true,
+        });
+
+    private void ClearAuthCookie() =>
+        Response.Cookies.Append(AuthCookie, "", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Path = "/",
+            Expires = DateTimeOffset.UnixEpoch,
+            IsEssential = true,
+        });
+
     public record RegisterRequest(string Email, string Username, string Password);
     public record LoginRequest(string Email, string Password);
     public record SetupRequest(string Email, string Username, string Password);
@@ -179,6 +209,7 @@ public class AuthController : ControllerBase
         _db.SaveChanges();
 
         var token = _auth.GenerateToken(admin);
+        SetAuthCookie(token);
         return Ok(new
         {
             access_token = token,
@@ -203,6 +234,7 @@ public class AuthController : ControllerBase
     {
         var (user, token) = _auth.Login(req.Email, req.Password);
         if (user == null || token == null) return Unauthorized(new { detail = "Invalid credentials" });
+        SetAuthCookie(token);
         return Ok(new
         {
             access_token = token,
@@ -229,6 +261,7 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!string.IsNullOrEmpty(userId))
             await TokenVersionStore.IncrementAsync(_db, userId);
+        ClearAuthCookie();
         return Ok(new { status = "logged_out" });
     }
 

@@ -232,6 +232,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         // version for that user, the token is rejected even before expiry.
         opt.Events = new JwtBearerEvents
         {
+            // S-02: prefer the httpOnly cookie when present. This makes the cookie
+            // authoritative, so any stale "Authorization: Bearer null" header sent
+            // by legacy client code is ignored once the cookie is set.
+            OnMessageReceived = ctx =>
+            {
+                var cookie = ctx.Request.Cookies["wn_token"];
+                if (!string.IsNullOrEmpty(cookie)) ctx.Token = cookie;
+                return Task.CompletedTask;
+            },
             OnTokenValidated = async ctx =>
             {
                 var uid = ctx.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
