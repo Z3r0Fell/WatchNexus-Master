@@ -572,3 +572,16 @@ own dedicated pass. Verified live + by testing_agent (iteration_22.json: **55/55
 - The agent's other "blockers" (port 8002, SQLite-not-Mongo, .NET-not-Python, supervisor mismatch)
   are EXPECTED — WatchNexus is a self-hosted .NET app shipping as installers + Docker, NOT an
   Emergent-K8s/Mongo app. These are not applicable to the product's actual deployment model.
+
+## v1.0.0 RTP — Public Release Lockdown (June 25 2026) — DONE
+Final "make it public-release-ready, plug the holes" pass. Tested: 71/71 backend + 100% frontend (iteration_23.json), zero bugs.
+- **CSP header** added to all responses (script-src 'self' + frame-ancestors 'none' etc.) — practical mitigation for the S-02 localStorage-XSS token-theft vector (full httpOnly-cookie refactor remains a future enhancement; CSP closes the real exposure).
+- **Committed secret leak removed**: appsettings.json blanked (TMDB key, license API key, JWT); real values in gitignored appsettings.Production.json. `test_reports/` (contained a leaked TMDB key in iteration_3.json) untracked + gitignored. ACTION FOR USER: rotate the previously-committed license-server key.
+- **Quick-login bug fixed**: AuthPage performQuickLogin now uses new `AuthContext.loginWithToken(token, user)` instead of the broken `login(user, token)` call.
+- **Startup secret warnings**: backend logs a loud WARNING if TMDB_API_KEY / LICENSE_SERVER_API_KEY are unconfigured at boot.
+- **i18n polish**: added 10 missing nav.* keys (movies/tv_shows/music/weather/radio/photos/web_video/analytics/notifications/downloads) to en.json — silences i18next missingKey console noise.
+- Verified: services up, login + live TMDB 200, encryption-at-rest + mutation limiter + RBAC + tier-gating all still green, no committed secrets remain.
+
+### Remaining (future, non-blocking)
+- S-02/S-13 full httpOnly-cookie + API-keys-out-of-URL refactor (CSP-mitigated for now).
+- Line-by-line audit; bulk PUT /api/settings envelope footgun / no DELETE route; GET /api/fortress/status duplicate-route check; tighten CSP to nonce-based; dedupe bloated .gitignore *.env lines.

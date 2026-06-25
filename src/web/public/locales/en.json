@@ -63,7 +63,17 @@
     "offline": "Offline",
     "cloud_backup": "Cloud Backup",
     "cloud_sync": "Cloud Sync",
-    "media_sync": "Media Sync"
+    "media_sync": "Media Sync",
+    "movies": "Movies",
+    "tv_shows": "TV Shows",
+    "music": "Music",
+    "weather": "Weather",
+    "radio": "Radio",
+    "photos": "Photos",
+    "web_video": "Web Video",
+    "analytics": "Analytics",
+    "notifications": "Notifications",
+    "downloads": "Downloads"
   },
   "auth": {
     "login": "Log In",
