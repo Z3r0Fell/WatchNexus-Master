@@ -619,3 +619,16 @@ Restored to clean working state: admin owner@watchnexus.local / password123 + re
 - FirstLaunchGate.jsx is ~666 lines — extract step components into /components/oobe/ before adding more steps.
 - LibraryStep path could lose value on Back-from-Edition (same pattern as Identity nit); low impact.
 - Optional: extend pre-fill/lift-state pattern; tighten CSP to nonce-based; remove 5 stray console.logs.
+
+## v1.0.0 — App-wide Accent Theming + Real Logo (June 25 2026)
+
+### Accent carries into the whole dashboard (approved improvement) — DONE, tested iter27
+- Remapped the Tailwind `violet-*` / `purple-*` scales (the app's de-facto accent, 600+ usages) to CSS vars `--ac-100..900` (tailwind.config.js); default ramp (violet) defined in index.css :root.
+- ThemeContext: ACCENT_RAMP for 6 accents (violet/amber/crimson/emerald/sky/rose); applyAccentToDOM sets --ac-* + --primary/--accent/--ring/--wn-accent; applyAccentFromSettings reads per-user `ui_accent` (GET /api/settings, cookie auth); a useEffect re-applies it when isAuthenticated flips true (key fix — accent is per-user, fetched AFTER login). Exposed applyAccent(id) for a future Settings picker.
+- Verified (iter27): owner (ui_accent=crimson) → whole dashboard crimson (sidebar active, Play Now, carousel dot, --ac-600=#E11D48); member (no accent) → default violet; no rendering regressions across Home/Library/Movies.
+
+### Real brand logo wired in — DONE
+- User supplied the official WatchNexus logo (blue→purple stopwatch + play + nexus 'N' graph, "watchnexus / UNIFIED MEDIA SERVER SUITE").
+- Generated a clean TRANSPARENT mark-only crop (wordmark/tagline/cursor removed) → src/assets/watchnexus-logo.png (OOBE rail + welcome hero) and copied to public/watchnexus-logo.png (sidebar), public/favicon.png, public/logo192.png, public/logo512.png. Full lockup kept at src/assets/watchnexus-lockup.png for splash/marketing.
+- Verified via screenshot: new mark renders in the sidebar; default violet accent harmonizes with the blue/purple logo.
+- Note: favicon.png is the 1MB hi-res mark — optimize/resize later if desired.
