@@ -108,7 +108,14 @@ export const FirstLaunchGate = ({ children }) => {
     if (setUser) setUser(user);
     if (setIsAuthenticated) setIsAuthenticated(true);
     merge({ admin: user?.username });
-    next();
+    // Welcome + Admin are irreversible once the account exists (POST /setup then
+    // 409s). Drop them from the sequence so Back can never trap the user on a
+    // dead step; Identity becomes the new first (back-disabled) step.
+    setSteps((prev) => {
+      const i = prev.indexOf('identity');
+      return i >= 0 ? prev.slice(i) : prev;
+    });
+    setIdx(0);
   };
 
   const finishWizard = () => {
@@ -149,11 +156,11 @@ export const FirstLaunchGate = ({ children }) => {
 
         <AnimatePresence mode="wait">
           {current === 'welcome' && <WelcomeStep key="welcome" accent={accent} onNext={next} />}
-          {current === 'admin' && <AdminStep key="admin" accent={accent} onCreated={onAdminCreated} onBack={back} />}
-          {current === 'identity' && <IdentityStep key="identity" accent={accent} setAccent={setAccent} onNext={(p) => { merge(p); next(); }} onBack={back} />}
-          {current === 'ffmpeg' && <FfmpegStep key="ffmpeg" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={back} />}
-          {current === 'library' && <LibraryStep key="library" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={back} />}
-          {current === 'license' && <LicenseStep key="license" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={back} />}
+          {current === 'admin' && <AdminStep key="admin" accent={accent} onCreated={onAdminCreated} onBack={idx > 0 ? back : null} />}
+          {current === 'identity' && <IdentityStep key="identity" accent={accent} setAccent={setAccent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
+          {current === 'ffmpeg' && <FfmpegStep key="ffmpeg" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
+          {current === 'library' && <LibraryStep key="library" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
+          {current === 'license' && <LicenseStep key="license" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
           {current === 'finish' && <FinishStep key="finish" accent={accent} summary={summary} onLaunch={finishWizard} />}
         </AnimatePresence>
       </div>
@@ -242,10 +249,12 @@ const PrimaryBtn = ({ accent, children, ...props }) => (
 );
 
 const BackBtn = ({ onBack }) => (
-  <button onClick={onBack} data-testid="oobe-back-btn"
-    className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
-    <ArrowLeft className="w-4 h-4" /> Back
-  </button>
+  onBack ? (
+    <button onClick={onBack} data-testid="oobe-back-btn"
+      className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+      <ArrowLeft className="w-4 h-4" /> Back
+    </button>
+  ) : <span />
 );
 
 const Heading = ({ kicker, title, sub }) => (

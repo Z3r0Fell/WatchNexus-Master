@@ -557,3 +557,4 @@ dp-keys/
 # Test reports may contain sensitive values (keys logged during testing)
 test_reports/
 /app/test_reports/
+src/web/node_modules/.cache/default-development/8.pack
