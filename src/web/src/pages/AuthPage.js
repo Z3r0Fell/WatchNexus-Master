@@ -37,7 +37,7 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { login, loginWithToken, register } = useAuth();
   const navigate = useNavigate();
   
   // Local/Remote detection
@@ -125,8 +125,7 @@ export const AuthPage = () => {
       });
       
       // Store token and login - use 'token' key for consistency
-      localStorage.setItem('token', res.data.token);
-      login(res.data.user, res.data.token);
+      loginWithToken(res.data.token, res.data.user);
       toast.success(`Welcome back, ${res.data.user.username || 'User'}!`);
       navigate('/');
     } catch (error) {

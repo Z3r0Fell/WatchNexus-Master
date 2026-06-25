@@ -203,6 +203,15 @@ if (!builder.Environment.IsDevelopment())
 var jwtSecret = ResolveJwtSecret(builder.Configuration, dataDir, Log);
 builder.Configuration["Jwt:Secret"] = jwtSecret;
 
+// ── Config sanity warnings (public-readiness) ─────────────────
+// Committed appsettings.json ships with BLANK secrets. Real values come from
+// env vars or a gitignored appsettings.Production.json. Warn loudly if a
+// self-hoster booted without configuring them so features fail visibly, not silently.
+if (string.IsNullOrWhiteSpace(builder.Configuration["TMDB_API_KEY"]))
+    Log("[WatchNexus] WARNING: TMDB_API_KEY is not configured — content discovery/metadata will be unavailable until you add a key (Settings → Metadata, or the TMDB_API_KEY env var).");
+if (string.IsNullOrWhiteSpace(builder.Configuration["LICENSE_SERVER_API_KEY"]))
+    Log("[WatchNexus] WARNING: LICENSE_SERVER_API_KEY is not configured — paid-tier (Pro/Ultra) license activation will be unavailable. Standard tier works without it.");
+
 // ── Auth ──────────────────────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -453,6 +462,21 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
     ctx.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    // CSP — blocks injected/external scripts (the primary token-theft vector for
+    // an SPA that holds its JWT in localStorage). 'unsafe-inline' is required by
+    // the CRA build (no nonce); external script origins are still denied.
+    ctx.Response.Headers["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data: blob: https:; " +
+        "font-src 'self' data:; " +
+        "media-src 'self' blob: https:; " +
+        "connect-src 'self' https: wss:; " +
+        "frame-ancestors 'none'; " +
+        "object-src 'none'; " +
+        "base-uri 'self'; " +
+        "form-action 'self'";
     if (forceHttps)
         ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
     await next();

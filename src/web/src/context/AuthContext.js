@@ -71,6 +71,16 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
+  // Establish a session from an already-issued token (quick-login / PIN flows).
+  const loginWithToken = (newToken, userData) => {
+    localStorage.setItem('token', newToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    setToken(newToken);
+    if (userData) setUser(userData);
+    setIsAuthenticated(true);
+    return userData;
+  };
+
   const register = async (email, password, username) => {
     const response = await axios.post(`${API}/auth/register`, { email, password, username });
     const { access_token, user: userData } = response.data;
@@ -102,6 +112,7 @@ export const AuthProvider = ({ children }) => {
       token, 
       loading, 
       login, 
+      loginWithToken,
       register, 
       logout, 
       isAuthenticated,

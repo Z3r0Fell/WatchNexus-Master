@@ -553,3 +553,7 @@ appsettings.Development.json
 **/appsettings.Development.json
 dp-keys/
 **/dp-keys/
+
+# Test reports may contain sensitive values (keys logged during testing)
+test_reports/
+/app/test_reports/
