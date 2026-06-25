@@ -5,7 +5,7 @@ import { changeLanguage } from '../i18n';
 import { LANGUAGES_BY_REGION } from '../lib/languages';
 import { cn } from '../lib/utils';
 
-export const LanguageSwitcher = ({ compact = false }) => {
+export const LanguageSwitcher = ({ compact = false, align = 'left' }) => {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -41,7 +41,9 @@ export const LanguageSwitcher = ({ compact = false }) => {
       {open && (
         <div className={cn(
           "absolute z-50 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden",
-          compact ? "left-0 top-full mt-1" : "right-0 bottom-full mb-2"
+          compact
+            ? (align === 'right' ? "right-0 top-full mt-1" : "left-0 top-full mt-1")
+            : "right-0 bottom-full mb-2"
         )}>
           <div className="max-h-80 overflow-y-auto p-2 space-y-3 min-w-[220px]">
             {LANGUAGES_BY_REGION.map(region => (

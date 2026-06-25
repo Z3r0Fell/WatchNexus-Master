@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock, User, Home, Globe, Users, ChevronRight, Wifi } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import axios from 'axios';
 
 // Check if IP is local/private network
@@ -260,6 +261,11 @@ export const AuthPage = () => {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="absolute inset-0 brand-glow" />
       <div className="noise-overlay" />
+
+      {/* Language picker — top right */}
+      <div className="absolute top-4 right-4 z-20" data-testid="auth-language-picker">
+        <LanguageSwitcher compact align="right" />
+      </div>
 
       {/* Form Container */}
       <motion.div

@@ -6,6 +6,7 @@ import {
   Film, AlertTriangle, Copy, RefreshCw
 } from 'lucide-react';
 import { Button } from './ui/button';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
@@ -97,6 +98,10 @@ export const FirstLaunchGate = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6" data-testid="first-launch-gate">
+      {/* Language picker — top right */}
+      <div className="absolute top-4 right-4 z-20" data-testid="oobe-language-picker">
+        <LanguageSwitcher compact align="right" />
+      </div>
       <AnimatePresence mode="wait">
         {step === 'admin' && (
           <AdminStep key="admin" onCreated={onAdminCreated} />
