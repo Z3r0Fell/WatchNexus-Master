@@ -499,3 +499,49 @@ The user built a 64-language i18n system on the GitHub `Dev` branch (NOT in our 
 ### Phase 3 — implement public-ready-audit-2026-06-24.md (IN PROGRESS — needs scoping)
 The 2026-06-24 audit (197 findings / 33 critical) was run against the OLDER GitHub code, so ~8 of its criticals are ALREADY fixed in `/app` (S-03 JWT fallback, S-05 docker-compose secret, S-08 SeedAccounts, S-09 CORS, S-18 qbit SSRF, S-25 password policy, etc.). Not-yet-fixed items confirmed present in `/app`: S-04 (Electron `Date.now()` JWT secret), S-06 (Docker runs as root), D-04 (Docker image version "2.9.0" vs 1.0.0), S-19 (ASPNETCORE_URLS http), S-02/S-13 (JWT in localStorage / API keys in URLs — large frontend refactors), S-11 (Python proxy auth), S-16 (rate limiting only on auth). Full line-by-line review still pending; scope by module group. Too large for one pass; should be scoped by area (e.g. per module group). Known tech-debt to fold in: the permissions UI in `UsersSettings.jsx` is not enforced server-side (cosmetic — flag for honest removal or real implementation); pre-existing strict eslint debt in `AuthPage.js`/`VideoPlayer.jsx` (nested components, react-hooks rules); cosmetic controlled-input React warning on login.
 
+
+## v1.0.0 RTP — Audit Phase 3 Backend-Security Pass (June 25 2026)
+
+Actioned the remaining `public-ready-audit-2026-06-24.md` items in `/app`. User approved
+ALL backend items this pass; only the httpOnly-cookie refactor (S-02/S-13) is DEFERRED to its
+own dedicated pass. Verified live + by testing_agent (iteration_22.json: **55/55 PASS, zero regressions**).
+
+### Implemented & verified
+- **S-20 / S-21 — Encryption at rest**: new `Services/SecretProtector.cs` (ASP.NET DataProtection,
+  AES-256, keys persisted to `<dataDir>/dp-keys`). EF `ValueConverter` transparently encrypts
+  `AppSetting.Value`, `VpnPeer.PrivateKey/PresharedKey`, `VpnServerConfig.PrivateKey`. Ciphertext
+  carries an `enc:v1:` prefix; legacy plaintext rows decrypt to themselves (backward compatible).
+  Verified: API write → DB stores `enc:v1:CfDJ8…`; API read → original plaintext; `theme=dark` legacy row still reads.
+- **S-16 — Mutation rate limiting**: added a `GlobalLimiter` (120/min/IP) on all POST/PUT/DELETE/PATCH;
+  GET/HEAD/OPTIONS exempt (reads + streaming never throttle). The stricter `auth` policy (10/min) still
+  applies to login. Verified: 130 PUTs → 117×200 then 13×429; 50 GETs → 0×429.
+- **S-19 — TLS awareness**: `UseForwardedHeaders` (X-Forwarded-Proto/For, known-proxy list cleared for
+  arbitrary reverse proxies) + conditional HSTS header when `FORCE_HTTPS=1`. (No UseHttpsRedirection —
+  Kestrel is HTTP-only behind a TLS-terminating proxy; a redirect would loop.)
+- **S-10 — Structured logging**: production (`!Development`) now uses `AddJsonConsole` with scopes;
+  EF command logging filtered to Warning (was leaking SQL + params at Information).
+- **S-07 — CI security scanning**: new `.github/workflows/security-scan.yml` (CodeQL C#+JS, `dotnet list
+  package --vulnerable`, `yarn audit`, weekly cron).
+- **S-22 — Frontend deps**: `axios` already `^1.8.4` (patched). Added `resolutions` for `shell-quote
+  ^1.8.4` (the one Critical), `nth-check ^2.1.1`, `postcss ^8.4.49`. Remaining audit hits are
+  react-scripts build-toolchain transitives (eslint/babel/glob) that are NOT in the shipped static bundle.
+- **S-17 — Dynamic module compilation**: ALREADY mitigated in RTP (runtime `dotnet build` /
+  AssemblyLoadContext path removed; production ships pre-built module DLLs). No change needed.
+
+### Moot in /app (audit ran against OLDER GitHub code)
+- **S-01** leaked Google Translate key — not present in `/app` source.
+- **S-11** Python proxy blind relay — `/app/backend/server.py` is a preview-container artifact; the
+  shipped product serves the .NET backend directly (Dockerfile exposes 8002, no Python proxy).
+- **S-23** `net10.0` — .NET 10 is GA now, not preview.
+- Already fixed earlier: S-03/S-04/S-05/S-06/S-08/S-09/S-12/S-14/S-15/S-18, D-04.
+
+### Build/infra
+- `dotnet build -c Release`: 0 errors. Backend boots clean (JSON logs, DataProtection key ring created).
+- Freed critical disk: deleted the stale 909M `/app/WatchNexus-Master` GitHub mirror clone (disk 100%→89%).
+- NOTE: `SQLitePCLRaw.lib.e_sqlite3 2.1.11` flags NU1903 (high) — transitive via EF Core SQLite; bump when EF ships a patched pin.
+
+### Still DEFERRED (own pass)
+- **S-02 + S-13** — JWT localStorage → httpOnly Secure SameSite cookies + move 3rd-party API keys out of
+  URL query params. Large, regression-prone frontend+backend auth refactor.
+- Pre-existing minor (not regressions): bulk `PUT /api/settings` `{key,value}` envelope footgun (creates
+  literal 'key'/'value' rows; no `DELETE /api/settings/{key}` route); line-by-line audit; AuthPage eslint debt.
