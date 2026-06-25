@@ -594,3 +594,28 @@ The deferred "future item" — moved JWT auth off localStorage onto httpOnly coo
 - **Verified in browser**: after login localStorage has no token, `document.cookie` does NOT contain wn_token (httpOnly → XSS can't read it), reload persists the session via the cookie, logout returns to login. Same-origin (the .NET app serves SPA+API) so the cookie is sent automatically — no per-component changes needed.
 - **S-13**: confirmed MOOT in /app — no API keys appear in browser URLs (TMDB auth is server-side only).
 - Remaining cosmetic (non-blocking): pre-existing controlled-input React warning on login; expected bootstrap 401 (the unauth /users/me probe). Optional: tighten CSP to nonce-based.
+
+## v1.0.0 — Code Audit + Premium OOBE Redesign (June 25 2026)
+
+### Line-by-line code audit (controllers + components)
+Deep-read the security-critical controllers in full (CoreController/Auth/Users, BridgeController incl. streaming, GameBot, Cellar first-launch) and pattern-scanned all 50 controllers + 162 components.
+- Anonymous endpoints are all correctly gated: StreamFile by short-lived HMAC StreamToken; GameBot ServeCache rejects path-traversal chars; Cellar activate-first-launch closes after setup_completed; users/profiles redacts email/role.
+- RBAC + last-admin guards, password policy, token-version invalidation all solid. No dangerouslySetInnerHTML/XSS sinks. No real hardcoded backend URLs (localhost hits are placeholder/help text).
+- Verdict: clean, production-grade (consistent with prior 706-handler sweep). Only cosmetics (5 stray console.logs, a controlled-input warning on the login page). No functional defects → nothing to fix.
+
+### Premium cinematic OOBE redesign (FirstLaunchGate.jsx)
+Replaced the bland 3-step wizard with a premium 7-step first-run experience per design_guidelines.json (Obsidian/Amber cinematic palette, Outfit/Manrope/JetBrains Mono, generated WatchNexus logo at src/assets/watchnexus-logo.png).
+- Steps: Welcome (hero) → Administrator → Server Identity (name + live accent picker, 6 swatches, persists server_name + ui_accent via PUT /api/settings) → FFmpeg (terminal-style diagnostic) → First Library (4 type cards + path, POST /api/marmalade/libraries) → Edition (3 tier cards + serial) → Finish (summary + Launch).
+- Persistent left progress rail (glassmorphism, logo, per-step done/active states, accent-tinted), framer-motion transitions, top-right language picker, grain + radial-glow depth.
+- Live accent theming via --wn-accent CSS var (rail, buttons, cards, inputs all retint instantly).
+- Tested (testing_agent iter25→iter26): full 7-step flow verified end-to-end, lands on dashboard.
+- BUG FIXED (iter25 HIGH softlock): Back from Identity → Admin trapped the user (setup 409s post-creation). Fix: onAdminCreated prunes welcome+admin from steps[] and resets to Identity; onBack={idx>0?back:null} + BackBtn renders empty span on first step. Verified fixed in iter26 (100%).
+- LOW nit fixed: Identity name input now pre-fills from saved state on back-nav (initialName prop) so it can't be wiped to default.
+
+### DB state
+Restored to clean working state: admin owner@watchnexus.local / password123 + recreated member@home.local / hometime1 (user). OOBE won't re-trigger (setup_completed). To demo OOBE again: wipe Users + setup_completed settings and restart watchnexus-server.
+
+### Backlog (non-blocking)
+- FirstLaunchGate.jsx is ~666 lines — extract step components into /components/oobe/ before adding more steps.
+- LibraryStep path could lose value on Back-from-Edition (same pattern as Identity nit); low impact.
+- Optional: extend pre-fill/lift-state pattern; tighten CSP to nonce-based; remove 5 stray console.logs.

@@ -157,7 +157,7 @@ export const FirstLaunchGate = ({ children }) => {
         <AnimatePresence mode="wait">
           {current === 'welcome' && <WelcomeStep key="welcome" accent={accent} onNext={next} />}
           {current === 'admin' && <AdminStep key="admin" accent={accent} onCreated={onAdminCreated} onBack={idx > 0 ? back : null} />}
-          {current === 'identity' && <IdentityStep key="identity" accent={accent} setAccent={setAccent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
+          {current === 'identity' && <IdentityStep key="identity" accent={accent} setAccent={setAccent} initialName={summary.server || ''} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
           {current === 'ffmpeg' && <FfmpegStep key="ffmpeg" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
           {current === 'library' && <LibraryStep key="library" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
           {current === 'license' && <LicenseStep key="license" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
@@ -341,8 +341,8 @@ const AdminStep = ({ accent, onCreated, onBack }) => {
 };
 
 // ── Step: Server identity ─────────────────────────────────────────────
-const IdentityStep = ({ accent, setAccent, onNext, onBack }) => {
-  const [name, setName] = useState('');
+const IdentityStep = ({ accent, setAccent, onNext, onBack, initialName }) => {
+  const [name, setName] = useState(initialName || '');
   const [busy, setBusy] = useState(false);
   const chosen = ACCENTS.find((a) => a.hex === accent)?.id || 'amber';
 
