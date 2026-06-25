@@ -585,3 +585,12 @@ Final "make it public-release-ready, plug the holes" pass. Tested: 71/71 backend
 ### Remaining (future, non-blocking)
 - S-02/S-13 full httpOnly-cookie + API-keys-out-of-URL refactor (CSP-mitigated for now).
 - Line-by-line audit; bulk PUT /api/settings envelope footgun / no DELETE route; GET /api/fortress/status duplicate-route check; tighten CSP to nonce-based; dedupe bloated .gitignore *.env lines.
+
+## v1.0.0 RTP — S-02 httpOnly Cookie Auth Migration (June 25 2026) — DONE
+The deferred "future item" — moved JWT auth off localStorage onto httpOnly cookies. Verified: 41/41 backend + 100% frontend (iteration_24.json), zero defects.
+- **Backend (CoreController.cs)**: AuthController sets an httpOnly `wn_token` cookie on /auth/login + /auth/setup (HttpOnly, SameSite=Strict, Secure=Request.IsHttps, 7d), clears it on /auth/logout. access_token still returned in body for non-browser/Electron (Bearer header path retained).
+- **Backend (Program.cs)**: JwtBearer OnMessageReceived prefers the cookie over the Authorization header → makes the cookie authoritative, so the ~90 legacy components still sending `Authorization: Bearer ${localStorage token}` (now null) keep working via the cookie. Token-version invalidation preserved.
+- **Frontend**: index.js sets `axios.defaults.withCredentials=true` and purges legacy localStorage token. AuthContext rewritten — NO localStorage; derives auth from a /users/me cookie probe; login/logout sync state. FirstLaunchGate no longer writes the token.
+- **Verified in browser**: after login localStorage has no token, `document.cookie` does NOT contain wn_token (httpOnly → XSS can't read it), reload persists the session via the cookie, logout returns to login. Same-origin (the .NET app serves SPA+API) so the cookie is sent automatically — no per-component changes needed.
+- **S-13**: confirmed MOOT in /app — no API keys appear in browser URLs (TMDB auth is server-side only).
+- Remaining cosmetic (non-blocking): pre-existing controlled-input React warning on login; expected bootstrap 401 (the unauth /users/me probe). Optional: tighten CSP to nonce-based.
