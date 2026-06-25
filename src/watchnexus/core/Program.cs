@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -11,6 +13,7 @@ using WatchNexus.Core;
 using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Core.Controllers;
+using WatchNexus.Core.Services;
 
 // ══════════════════════════════════════════════════════════════════════
 //  Crash-safe boot logger
@@ -169,6 +172,29 @@ Log($"[WatchNexus] DB conn : {connString}");
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlite(connString));
 
+// ── Data Protection (encryption-at-rest key ring) ─────────────
+// Persists AES keys to the data dir so encrypted credential columns
+// (S-20/S-21) stay readable across restarts and are unique per install.
+var dpKeysDir = Path.Combine(dataDir, "dp-keys");
+Directory.CreateDirectory(dpKeysDir);
+try { if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(dpKeysDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+catch { /* best effort on permissions */ }
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir))
+    .SetApplicationName("WatchNexus");
+
+// ── Structured logging in production (S-10) ───────────────────
+// JSON console logs with levels/scopes for production sinks. Dev keeps the
+// human-readable default so the boot log stays easy to read.
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Logging.ClearProviders();
+    builder.Logging.AddJsonConsole(o => o.IncludeScopes = true);
+    // EF logs every SQL command (incl. parameters) at Information — too noisy
+    // and a minor info-leak in prod logs. Surface only warnings+.
+    builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+}
+
 // ── JWT signing secret ────────────────────────────────────────
 // A self-hosted server must NEVER ship a shared/hardcoded signing key (anyone
 // could forge admin tokens). Resolve from config/env; if it's missing — or set
@@ -227,6 +253,24 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 10,
                 QueueLimit = 0,
             }));
+
+    // ── S-16: blanket limiter on all state-changing requests ──
+    // GET/HEAD/OPTIONS are exempt (reads + media streaming must not throttle).
+    // Every POST/PUT/DELETE/PATCH is capped per-IP to blunt brute force / DoS
+    // against the 50+ mutation endpoints that previously had no protection.
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var method = httpContext.Request.Method;
+        if (HttpMethods.IsGet(method) || HttpMethods.IsHead(method) || HttpMethods.IsOptions(method))
+            return RateLimitPartition.GetNoLimiter("safe");
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter("mut:" + ip, _ => new FixedWindowRateLimiterOptions
+        {
+            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = 120,
+            QueueLimit = 0,
+        });
+    });
 });
 
 // ── Services ──────────────────────────────────────────────────
@@ -278,6 +322,13 @@ else
 
 // ── Build app ─────────────────────────────────────────────────
 var app = builder.Build();
+
+// ── Wire encryption-at-rest protector (S-20/S-21) ─────────────
+// Must happen before any DbContext query materializes so the EF value
+// converters can encrypt/decrypt credential columns.
+SecretProtector.Initialize(
+    app.Services.GetRequiredService<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>()
+       .CreateProtector("WatchNexus.Secrets.v1"));
 
 // ── Init Database (EF Core Migrations) ────────────────────────
 using (var scope = app.Services.CreateScope())
@@ -374,6 +425,25 @@ static void SeedAccounts(AppDbContext db){
 // logDir + bootLog already set up at top of Program.cs
 
 // ── Middleware ─────────────────────────────────────────────────
+// ── Reverse-proxy / TLS awareness (S-19) ──────────────────────
+// Production is fronted by a TLS-terminating reverse proxy (Caddy/nginx/
+// Traefik). Honour X-Forwarded-Proto/For so the app knows the original
+// scheme + client IP. Proxies aren't on a known subnet in self-hosted
+// setups, so we accept forwarded headers from any hop.
+var fwd = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+fwd.KnownIPNetworks.Clear();
+fwd.KnownProxies.Clear();
+app.UseForwardedHeaders(fwd);
+
+// When FORCE_HTTPS is set, advertise HSTS so browsers pin TLS. We do NOT
+// add UseHttpsRedirection — Kestrel listens HTTP only and the proxy does
+// TLS, so a redirect here would loop. HSTS upgrades future requests.
+var forceHttps = (Environment.GetEnvironmentVariable("FORCE_HTTPS") ?? "")
+    .Trim().ToLowerInvariant() is "1" or "true" or "yes";
+
 app.UseCors();
 
 // Security headers (OWASP)
@@ -383,6 +453,8 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
     ctx.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    if (forceHttps)
+        ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
     await next();
 });
 

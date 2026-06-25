@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using WatchNexus.Core.Services;
 using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Data;
@@ -35,12 +37,21 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        // ── Encryption at rest for credential-bearing columns (S-20 / S-21) ──
+        var secret = new ValueConverter<string, string>(
+            v => SecretProtector.ProtectValue(v),
+            v => SecretProtector.UnprotectValue(v));
+
         b.Entity<AppUser>(e =>
         {
             e.HasKey(u => u.Id);
             e.HasIndex(u => u.Email).IsUnique();
         });
-        b.Entity<AppSetting>().HasKey(s => new { s.Key, s.UserId });
+        b.Entity<AppSetting>(e =>
+        {
+            e.HasKey(s => new { s.Key, s.UserId });
+            e.Property(s => s.Value).HasConversion(secret);
+        });
         b.Entity<Library>().HasKey(l => l.Id);
         b.Entity<MediaItem>(e =>
         {
@@ -50,8 +61,17 @@ public class AppDbContext : DbContext
         b.Entity<AuditLog>().HasKey(a => a.Id);
         b.Entity<IpRule>().HasKey(r => r.Id);
         b.Entity<ApiKeyEntity>().HasKey(k => k.Id);
-        b.Entity<VpnPeer>().HasKey(p => p.Id);
-        b.Entity<VpnServerConfig>().HasKey(c => c.Id);
+        b.Entity<VpnPeer>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.PrivateKey).HasConversion(secret);
+            e.Property(p => p.PresharedKey).HasConversion(secret);
+        });
+        b.Entity<VpnServerConfig>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.Property(c => c.PrivateKey).HasConversion(secret);
+        });
         b.Entity<DownloadItem>().HasKey(d => d.Id);
         b.Entity<IptvSource>().HasKey(s => s.Id);
         b.Entity<IptvChannel>(e => { e.HasKey(c => c.Id); e.HasIndex(c => c.SourceId); });
