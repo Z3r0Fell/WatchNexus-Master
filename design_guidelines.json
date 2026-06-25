@@ -1,0 +1,123 @@
+{
+  "project_name": "WatchNexus OOBE",
+  "theme": "Dark",
+  "archetype": "5 (Luxury / Cinematic)",
+  "vibe": "Premium, distinctive, bold, cinematic, dark mode. No AI-slop violet/purple gradients.",
+  "branding": {
+    "logo_text": "WatchNexus",
+    "colors": {
+      "background": "#050505",
+      "surface": "#0A0A0A",
+      "surface_glass": "rgba(15, 15, 15, 0.6)",
+      "border": "rgba(255, 255, 255, 0.08)",
+      "primary_accent": "#F59E0B",
+      "primary_accent_hover": "#D97706",
+      "secondary_accent": "#E11D48",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#A1A1AA",
+      "success": "#10B981",
+      "error": "#EF4444"
+    }
+  },
+  "typography": {
+    "heading_font": "Outfit, sans-serif",
+    "body_font": "Manrope, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "scales": {
+      "h1": "text-4xl sm:text-5xl font-semibold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-medium tracking-tight",
+      "h3": "text-xl font-medium",
+      "body": "text-base leading-relaxed text-zinc-300",
+      "label": "text-xs font-bold uppercase tracking-[0.2em] text-zinc-500"
+    }
+  },
+  "layout": {
+    "global_structure": "Flex row on desktop (lg:flex-row), flex col on mobile. Sidebar: w-full lg:w-72 or 80. Content pane: flex-1.",
+    "sidebar_progress_rail": "Persistent left side. Glassmorphism background. Vertical step list using Lucide icons (Circle, CheckCircle). Active step text-white, inactive text-zinc-500.",
+    "content_pane": "Centered content. max-w-3xl w-full mx-auto p-6 sm:p-12.",
+    "language_picker": "Absolute top-right position on the content pane (z-50)."
+  },
+  "motion_specs": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 20 },
+      "animate": { "opacity": 1, "y": 0 },
+      "exit": { "opacity": 0, "y": -20 },
+      "transition": { "duration": 0.4, "ease": [0.22, 1, 0.36, 1] }
+    }
+  },
+  "wizard_steps": [
+    {
+      "step": 1,
+      "id": "welcome",
+      "title": "Welcome",
+      "design_instructions": "Hero layout. Full cover background image with heavy linear gradient overlay (to black). Large WatchNexus logo/mark. Huge H1 'Your Media, Mastered.' Primary CTA to begin."
+    },
+    {
+      "step": 2,
+      "id": "admin",
+      "title": "Administrator",
+      "design_instructions": "Centered clean form. Inputs for Email, Username, Password, Confirm Password. Use eye icon (Lucide Eye/EyeOff) to toggle password visibility. Single-column."
+    },
+    {
+      "step": 3,
+      "id": "server-identity",
+      "title": "Server Identity",
+      "design_instructions": "Input for 'Server Name'. Below it, a grid of 5-6 color swatches (buttons) to select a theme. Active theme should instantly update the primary accent color of the OOBE UI."
+    },
+    {
+      "step": 4,
+      "id": "ffmpeg-diagnostic",
+      "title": "FFmpeg Diagnostic",
+      "design_instructions": "Retro-Futuristic 'Terminal' card. Dark bg-zinc-950, mono font. Show Detected (green) or Not Found (red). Include a code block with the install command (e.g., apt install ffmpeg) and a copy button. 'Re-check' button at bottom."
+    },
+    {
+      "step": 5,
+      "id": "media-library",
+      "title": "First Library",
+      "design_instructions": "Path input field (e.g., /media/movies). Below, 4 large Bento-style selectable cards for type (Movies, TV, Music, Anime) using icons. Skip button below primary action."
+    },
+    {
+      "step": 6,
+      "id": "license",
+      "title": "License Edition",
+      "design_instructions": "3 tier cards in a grid. Free (subtle), Pro (glassy), Ultra (Tracing beam or glowing amber border). Serial key input below the cards."
+    },
+    {
+      "step": 7,
+      "id": "finish",
+      "title": "You're all set",
+      "design_instructions": "Celebratory summary. List of configured items with checkmarks. 'Launch WatchNexus' big CTA. Confetti/Pulse animation."
+    }
+  ],
+  "components_styling": {
+    "buttons": {
+      "primary": "bg-amber-500 text-black font-semibold hover:bg-amber-400 rounded-md px-6 py-3 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.3)]",
+      "secondary": "bg-white/5 border border-white/10 text-white hover:bg-white/10 rounded-md px-6 py-3 transition-colors backdrop-blur-md"
+    },
+    "inputs": "bg-black/50 border border-white/10 rounded-md focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-white px-4 py-3 placeholder:text-zinc-600 transition-all",
+    "cards": "backdrop-blur-xl bg-white/[0.02] border border-white/10 rounded-xl p-6 hover:bg-white/[0.04] transition-colors"
+  },
+  "image_urls": [
+    {
+      "category": "welcome_bg",
+      "description": "Cinematic home theater background for the welcome step",
+      "url": "https://images.unsplash.com/photo-1561722798-9a732d141027?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwzfHxob21lJTIwdGhlYXRlciUyMGNpbmVtYXRpY3xlbnwwfHx8fDE3ODIzODc3NjF8MA&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "finish_bg",
+      "description": "Cozy cinematic vibe for the final step",
+      "url": "https://images.pexels.com/photos/19374140/pexels-photo-19374140.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "You are building a React 18 JS application, NOT TypeScript. Do not use .tsx extensions.",
+    "Eradicate any existing purple/violet AI-slop gradients. Implement the strict Obsidian/Amber premium cinematic palette defined here.",
+    "Use framer-motion's <AnimatePresence> and <motion.div> to wrap the wizard steps for smooth sliding/fading transitions.",
+    "Create a persistent left sidebar containing the progress rail. On mobile, this should collapse to a top horizontal bar.",
+    "Integrate the existing language picker component into the top-right corner of the layout (absolute or fixed positioning).",
+    "All interactive elements (buttons, inputs, selectable cards) MUST have a 'data-testid' attribute for robust testing (e.g., data-testid='admin-email-input').",
+    "Use standard Tailwind classes. For glassmorphism, combine 'backdrop-blur-xl', 'bg-white/5', and 'border border-white/10'.",
+    "Ensure the wizard blocks access to the main app until completed.",
+    "Install any missing dependencies like lucide-react or framer-motion if they are not already in package.json."
+  ]
+}
