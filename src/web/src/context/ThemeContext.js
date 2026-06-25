@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
 
@@ -43,6 +44,37 @@ const DEFAULT_LIGHT_THEME = {
   error: '#DC2626',
   info: '#2563EB',
   accent: '#DB2777',
+};
+
+// OOBE accent choices → full Tailwind-compatible color ramps. The id a user
+// picks in the first-run wizard (persisted as `ui_accent`) drives the --ac-*
+// variables, which the remapped violet-*/purple-* Tailwind classes consume —
+// so the chosen accent carries across the entire dashboard.
+const ACCENT_RAMP = {
+  violet:  { 100: '#EDE9FE', 300: '#C4B5FD', 400: '#A78BFA', 500: '#8B5CF6', 600: '#7C3AED', 700: '#6D28D9', 900: '#4C1D95' },
+  amber:   { 100: '#FEF3C7', 300: '#FCD34D', 400: '#FBBF24', 500: '#F59E0B', 600: '#D97706', 700: '#B45309', 900: '#78350F' },
+  crimson: { 100: '#FFE4E6', 300: '#FDA4AF', 400: '#FB7185', 500: '#F43F5E', 600: '#E11D48', 700: '#BE123C', 900: '#881337' },
+  emerald: { 100: '#D1FAE5', 300: '#6EE7B7', 400: '#34D399', 500: '#10B981', 600: '#059669', 700: '#047857', 900: '#064E3B' },
+  sky:     { 100: '#E0F2FE', 300: '#7DD3FC', 400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7', 700: '#0369A1', 900: '#0C4A6E' },
+  rose:    { 100: '#FCE7F3', 300: '#F9A8D4', 400: '#F472B6', 500: '#EC4899', 600: '#DB2777', 700: '#BE185D', 900: '#831843' },
+};
+
+// Apply ONLY the accent variables on top of the active theme.
+const applyAccentToDOM = (accentId) => {
+  const r = ACCENT_RAMP[accentId];
+  if (!r) return false;
+  const root = document.documentElement;
+  Object.entries(r).forEach(([shade, hex]) => root.style.setProperty(`--ac-${shade}`, hex));
+  root.style.setProperty('--primary', r[500]);
+  root.style.setProperty('--primary-hover', r[600]);
+  root.style.setProperty('--secondary', r[600]);
+  root.style.setProperty('--accent', r[500]);
+  root.style.setProperty('--color-primary', r[500]);
+  root.style.setProperty('--color-secondary', r[600]);
+  root.style.setProperty('--ring', r[500]);
+  root.style.setProperty('--toggle-bg-checked', r[500]);
+  root.style.setProperty('--wn-accent', r[500]);
+  return true;
 };
 
 // Apply theme to CSS variables - now synced with index.css variable names
@@ -103,6 +135,26 @@ export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState('dark'); // Default, will be updated from backend
   const [loading, setLoading] = useState(true);
   const [modeLoaded, setModeLoaded] = useState(false);
+  const [accentId, setAccentId] = useState(null);
+  const { isAuthenticated } = useAuth();
+
+  // Read the user's OOBE accent choice (ui_accent setting) and apply it.
+  // Only used as the default accent when no full custom theme is active.
+  const applyAccentFromSettings = useCallback(async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/settings`);
+      const id = res.data?.ui_accent;
+      if (id && applyAccentToDOM(id)) setAccentId(id);
+    } catch { /* not logged in / no setting — keep theme defaults */ }
+  }, []);
+
+  // Set a new accent live and persist it to the backend.
+  const applyAccent = useCallback(async (id) => {
+    if (!applyAccentToDOM(id)) return false;
+    setAccentId(id);
+    try { await axios.put(`${BACKEND_URL}/api/settings`, { ui_accent: id }); } catch { /* */ }
+    return true;
+  }, []);
 
   // Load theme mode from backend on mount
   useEffect(() => {
@@ -141,21 +193,20 @@ export const ThemeProvider = ({ children }) => {
       if (data.current_theme) {
         setTheme(data.current_theme);
         setThemeType(data.current_theme.type || 'custom');
-        
         if (data.current_theme.colors) {
           applyThemeToDOM(data.current_theme.colors, mode);
         }
       } else {
-        // Apply default theme
         applyThemeToDOM(mode === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME, mode);
       }
     } catch (err) {
       console.log('Using default theme');
       applyThemeToDOM(mode === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME, mode);
-    } finally {
-      setLoading(false);
     }
-  }, [mode]);
+    // Always layer the user's chosen OOBE accent on top of whatever theme loaded.
+    await applyAccentFromSettings();
+    setLoading(false);
+  }, [mode, applyAccentFromSettings]);
 
   // Toggle between light and dark mode
   const toggleMode = useCallback(async () => {
@@ -254,6 +305,11 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [fetchTheme, modeLoaded]);
 
+  // ui_accent is a per-user setting — (re)apply it once the user is authenticated.
+  useEffect(() => {
+    if (isAuthenticated) applyAccentFromSettings();
+  }, [isAuthenticated, applyAccentFromSettings]);
+
   return (
     <ThemeContext.Provider value={{
       theme,
@@ -266,6 +322,8 @@ export const ThemeProvider = ({ children }) => {
       previewColors,
       resetToSaved,
       refreshTheme: fetchTheme,
+      accentId,
+      applyAccent,
       DEFAULT_DARK_THEME,
       DEFAULT_LIGHT_THEME
     }}>

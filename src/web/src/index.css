@@ -12,6 +12,14 @@
     --primary-foreground: #FFFFFF;
     --secondary: #EC4899;
     --accent: #EC4899;
+    /* Accent scale (default = violet). Driven by the user's OOBE accent choice. */
+    --ac-100: #EDE9FE;
+    --ac-300: #C4B5FD;
+    --ac-400: #A78BFA;
+    --ac-500: #8B5CF6;
+    --ac-600: #7C3AED;
+    --ac-700: #6D28D9;
+    --ac-900: #4C1D95;
     --text-primary: #F3F4F6;
     --text-secondary: #9CA3AF;
     --border-color: #27272A;
