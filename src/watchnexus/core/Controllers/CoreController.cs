@@ -129,7 +129,8 @@ public class AuthController : ControllerBase
     // returned in the body for non-browser / Electron clients (Bearer header path).
     private const string AuthCookie = "wn_token";
 
-    private void SetAuthCookie(string token) =>
+    private void SetAuthCookie(string token)
+    {
         Response.Cookies.Append(AuthCookie, token, new CookieOptions
         {
             HttpOnly = true,
@@ -139,8 +140,21 @@ public class AuthController : ControllerBase
             MaxAge = TimeSpan.FromDays(7),
             IsEssential = true,
         });
+        // CSRF double-submit token: readable by JS so the SPA can mirror it into
+        // the X-XSRF-TOKEN header. Rotated on every login/setup.
+        Response.Cookies.Append(CsrfTokens.CookieName, CsrfTokens.Generate(), new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Path = "/",
+            MaxAge = TimeSpan.FromDays(7),
+            IsEssential = true,
+        });
+    }
 
-    private void ClearAuthCookie() =>
+    private void ClearAuthCookie()
+    {
         Response.Cookies.Append(AuthCookie, "", new CookieOptions
         {
             HttpOnly = true,
@@ -150,6 +164,16 @@ public class AuthController : ControllerBase
             Expires = DateTimeOffset.UnixEpoch,
             IsEssential = true,
         });
+        Response.Cookies.Append(CsrfTokens.CookieName, "", new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Path = "/",
+            Expires = DateTimeOffset.UnixEpoch,
+            IsEssential = true,
+        });
+    }
 
     public record RegisterRequest(string Email, string Username, string Password);
     public record LoginRequest(string Email, string Password);

@@ -530,6 +530,7 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseCsrfProtection();
 app.MapControllers();
 
 // ── Map external module routes ────────────────────────────────

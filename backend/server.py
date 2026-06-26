@@ -6,9 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Same-origin reverse proxy. Restrict CORS to explicit origins (never wildcard
+# with credentials, which the Fetch spec forbids). CORS_ORIGINS is a
+# comma-separated allowlist; defaults to none (same-origin needs no CORS).
+_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
