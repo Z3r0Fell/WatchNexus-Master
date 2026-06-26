@@ -38,8 +38,14 @@ async def proxy(request: Request, path: str):
             content=body,
         )
 
-    return Response(
-        content=resp.content,
-        status_code=resp.status_code,
-        headers=dict(resp.headers),
-    )
+    # Preserve headers individually so MULTIPLE Set-Cookie headers (auth +
+    # CSRF cookies) survive. dict(resp.headers) would fold duplicates into one
+    # comma-joined value, which browsers parse as a single malformed cookie.
+    response = Response(content=resp.content, status_code=resp.status_code)
+    response.raw_headers.clear()
+    skip = {"content-length", "content-encoding", "transfer-encoding", "connection"}
+    for key, value in resp.headers.multi_items():
+        if key.lower() in skip:
+            continue
+        response.raw_headers.append((key.encode("latin-1"), value.encode("latin-1")))
+    return response
