@@ -57,3 +57,8 @@ Thumbs.db
 *.log
 src/web/node_modules/.cache/default-development/5.pack
 src/web/node_modules/electron/dist/electron
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
