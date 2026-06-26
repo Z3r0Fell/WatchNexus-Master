@@ -632,3 +632,26 @@ Restored to clean working state: admin owner@watchnexus.local / password123 + re
 - Generated a clean TRANSPARENT mark-only crop (wordmark/tagline/cursor removed) → src/assets/watchnexus-logo.png (OOBE rail + welcome hero) and copied to public/watchnexus-logo.png (sidebar), public/favicon.png, public/logo192.png, public/logo512.png. Full lockup kept at src/assets/watchnexus-lockup.png for splash/marketing.
 - Verified via screenshot: new mark renders in the sidebar; default violet accent harmonizes with the blue/purple logo.
 - Note: favicon.png is the 1MB hi-res mark — optimize/resize later if desired.
+
+## v1.0.0 — Handoff 2026-06-26 Review + CSRF Hardening (June 26 2026)
+
+### Cross-check verdict
+The agent-handoff-2026-06-26.md was generated against the stale GitHub `main` branch, NOT the running /app. Re-confirmed most "blockers" are already fixed/moot in /app: localStorage JWT → httpOnly cookie (S-02 done), CSP added, mutation rate-limiting added, React production build SUCCEEDS in /app (BUILD_EXIT=0, jsconfig paths present), Google Translate key NOT in our source. Those are GitHub-only.
+
+### Done this pass (tested)
+- **CSRF double-submit protection** (user approved). New /app/src/watchnexus/core/Auth/CsrfProtection.cs middleware: guards mutating /api requests, exempts GET/HEAD/OPTIONS + /api/auth/login + /api/auth/setup + pure-Bearer clients, constant-time compares X-XSRF-TOKEN header vs XSRF-TOKEN cookie. CoreController.SetAuthCookie now also issues a readable XSRF-TOKEN cookie (rotated per login/setup); ClearAuthCookie clears both. Program.cs: app.UseCsrfProtection(). Frontend index.js: axios xsrfCookieName/xsrfHeaderName + a global fetch() wrapper that mirrors the token onto mutating fetch calls.
+  - BUG FOUND+FIXED (iter28 CRITICAL): the FastAPI preview proxy (backend/server.py) folded the two Set-Cookie headers into one comma-joined header via dict(resp.headers) → browser dropped XSRF-TOKEN → all UI mutations 403. Fixed by copying headers via resp.headers.multi_items() into response.raw_headers (preserves multiple Set-Cookie). NOTE: .NET backend was always correct (production serves cookies directly); bug was proxy-only.
+  - Verified: iter29 retest 100%, 0 open issues — browser receives XSRF-TOKEN, UI mutations 200, logout clears both cookies, backend suite test_csrf_protection.py 10/10.
+- **Clean .gitignore** rewrite (was 560 lines of filter-repo garbage) — preserves all secret/key/data ignores.
+- **Community files**: SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SUPPORT.md.
+- **Preview proxy CORS** tightened: allowlist via CORS_ORIGINS env (no wildcard+credentials).
+- **App version** unified to 1.0.0 (src/web/package.json; .csproj defaults to 1.0.0; API reports 1.0.0).
+- New test file: /app/backend/tests/test_csrf_protection.py (10/10).
+
+### Deferred (user picked "everything" — these are the remaining larger/riskier items for a dedicated pass)
+- Frontend perf: React.lazy() code-splitting for 60+ eager page imports; useMemo/useCallback in the 4 context providers.
+- Test suites: C# xUnit project + React Testing Library suite + wire `dotnet test`/`yarn test` into CI (.github/workflows). (CSRF pytest + security-scan.yml already exist as a start.)
+- 22 C# CS8602 nullable warnings cleanup.
+- 39 dead `localStorage.getItem('token')` reads (now harmless no-ops post-S-02 since the cookie is authoritative) — cleanup for honesty.
+- Module.json versions are 2.7.3 (per-module schema versions, left independent of app v1.0.0).
+- God-controller split + service layer — user said "not at this time".
