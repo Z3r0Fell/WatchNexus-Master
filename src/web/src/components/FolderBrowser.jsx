@@ -68,8 +68,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
 
   // Get auth token
   const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
   }, []);
 
   // Fetch directory contents

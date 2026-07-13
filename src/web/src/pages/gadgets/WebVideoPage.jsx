@@ -20,7 +20,7 @@ export const WebVideoPage = () => {
   const [activeTab, setActiveTab] = useState('search');
   const videoRef = useRef(null);
 
-  const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+  const getAuth = () => ({}); // Cookie auth: wn_token sent automatically
 
   const searchVideo = async () => {
     if (!url.trim()) return toast.error('Enter a video URL');

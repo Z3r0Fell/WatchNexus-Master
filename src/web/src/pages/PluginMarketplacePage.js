@@ -120,8 +120,8 @@ export const PluginMarketplacePage = () => {
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
 
-  const getToken = () => localStorage.getItem('token');
-  const getAuthHeader = () => ({ Authorization: `Bearer ${getToken()}` });
+  // Cookie auth: the httpOnly wn_token is sent automatically.
+  const getAuthHeader = () => ({});
 
   // Fetch Gadgets Catalogue
   const fetchCatalogue = useCallback(async (category = null, query = '') => {

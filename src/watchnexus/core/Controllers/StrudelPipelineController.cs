@@ -52,7 +52,7 @@ public class StrudelPipelineController : ControllerBase
             catch { return null; }
         }).Where(x => x != null).ToList();
 
-        return Ok(new { jobs = result, total = result.Count, active = result.Count(j => ((dynamic)j).phase == "ripping" || ((dynamic)j).phase == "transcoding") });
+        return Ok(new { jobs = result, total = result.Count, active = result.Count(j => ((dynamic)j!).phase == "ripping" || ((dynamic)j!).phase == "transcoding") });
     }
 
     // ── Submit Async Rip Job ────────────────────────────────────────

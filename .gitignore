@@ -63,3 +63,4 @@ credentials.json
 *.key
 .credentials
 src/web/node_modules/.cache/default-development/0.pack
+src/web/node_modules/.cache/default-development/6.pack

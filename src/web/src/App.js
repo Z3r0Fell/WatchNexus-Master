@@ -2,91 +2,85 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { GadgetProvider, useGadgets } from "./context/GadgetContext";
+import { GadgetProvider } from "./context/GadgetContext";
 import { LicenseProvider } from "./context/LicenseContext";
 import { FirstLaunchGate } from "./components/FirstLaunchGate";
-import { lazy, Suspense } from "react";
-
-// Pages
-import { Dashboard } from "./pages/Dashboard";
-import { AuthPage } from "./pages/AuthPage";
-import { MoviesPage } from "./pages/MoviesPage";
-import { TVShowsPage } from "./pages/TVShowsPage";
-import { MediaDetails } from "./pages/MediaDetails";
-import { SearchPage } from "./pages/SearchPage";
-import { IndexerSearchPage } from "./pages/IndexerSearchPage";
-import { DownloadsPage } from "./pages/DownloadsPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { StreamingPage } from "./pages/StreamingPage";
-import { MusicPage } from "./pages/MusicPage";
-import { AudiobooksPage } from "./pages/AudiobooksPage";
-import { LiveTVPage } from "./pages/LiveTVPage";
-import { LibraryPage } from "./pages/LibraryPage";
-import { WatchPartyPage } from "./pages/WatchPartyPage";
-import { PluginMarketplacePage } from "./pages/PluginMarketplacePage";
-import { ThemeCommunityPage } from "./pages/ThemeCommunityPage";
-import { DVRPage } from "./pages/DVRPage";
-import PlaylistsPage from "./pages/PlaylistsPage";
-import AnimePage from "./pages/AnimePage";
-import VideoPlayer from "./components/VideoPlayer";
-import { WatchHistoryPage } from "./pages/WatchHistoryPage";
-import { WatchlistPage } from "./pages/WatchlistPage";
-import { DiscoverPage } from "./pages/DiscoverPage";
-
-// Admin / Security / VPN / System
-import SecurityPage from "./pages/SecurityPage";
-import VpnPage from "./pages/VpnPage";
-import SystemPage from "./pages/SystemPage";
-import LibraryManagerPage from "./pages/LibraryManagerPage";
-import LogViewerPage from "./pages/LogViewerPage";
-import MediaBrowserPage from "./pages/MediaBrowserPage";
-
-// Gadget Pages
-import WeatherPage from "./pages/gadgets/WeatherPage";
-import PodcastsPage from "./pages/gadgets/PodcastsPage";
-import RadioPage from "./pages/gadgets/RadioPage";
-import PhotosPage from "./pages/gadgets/PhotosPage";
-import WebVideoPage from "./pages/gadgets/WebVideoPage";
-import AnalyticsPage from "./pages/gadgets/AnalyticsPage";
-import NotificationsPage from "./pages/gadgets/NotificationsPage";
-import RequestsPage from "./pages/gadgets/RequestsPage";
-import ParentalControlsPage from "./pages/gadgets/ParentalControlsPage";
-import ProcessingPage from "./pages/gadgets/ProcessingPage";
-import UsenetPage from "./pages/gadgets/UsenetPage";
-import HelpPage from "./pages/HelpPage";
 import { TierGate } from "./components/TierGate";
-
-// Module Pages
-import GlazePage from "./pages/GlazePage";
-import SaffronPage from "./pages/SaffronPage";
-import FonduePage from "./pages/FonduePage";
-import SourdoughPage from "./pages/SourdoughPage";
-import ChurroPage from "./pages/ChurroPage";
-import RouxPage from "./pages/RouxPage";
-import SproutPage from "./pages/SproutPage";
-import StrudelPage from "./pages/StrudelPage";
-import ParfaitPage from "./pages/ParfaitPage";
-import MenuPage from "./pages/MenuPage";
-import PretzelPage from "./pages/PretzelPage";
-import BiscottiPage from "./pages/BiscottiPage";
-import TreaclePage from "./pages/TreaclePage";
-import SagePage from "./pages/SagePage";
-import TerrinePage from "./pages/TerrinePage";
-import PopsiclePage from "./pages/PopsiclePage";
-import PreservesPage from "./pages/PreservesPage";
-import MarshmallowPage from "./pages/MarshmallowPage";
-import ChowderPage from "./pages/ChowderPage";
-
+import { lazy, Suspense } from "react";
 import "./App.css";
 
-// Gadget Pages - Currently none are functional
-// When gadgets are properly implemented, they will be registered here dynamically
+// Eager: first-paint critical pages only.
+import { Dashboard } from "./pages/Dashboard";
+import { AuthPage } from "./pages/AuthPage";
 
-const GADGET_PAGE_MAP = {
-  // Gadget pages will be added here when they become functional
-};
+// Lazy: everything else is code-split into its own chunk.
+const MoviesPage = lazy(() => import("./pages/MoviesPage").then(m => ({ default: m.MoviesPage })));
+const TVShowsPage = lazy(() => import("./pages/TVShowsPage").then(m => ({ default: m.TVShowsPage })));
+const MediaDetails = lazy(() => import("./pages/MediaDetails").then(m => ({ default: m.MediaDetails })));
+const SearchPage = lazy(() => import("./pages/SearchPage").then(m => ({ default: m.SearchPage })));
+const IndexerSearchPage = lazy(() => import("./pages/IndexerSearchPage").then(m => ({ default: m.IndexerSearchPage })));
+const DownloadsPage = lazy(() => import("./pages/DownloadsPage").then(m => ({ default: m.DownloadsPage })));
+const SettingsPage = lazy(() => import("./pages/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const StreamingPage = lazy(() => import("./pages/StreamingPage").then(m => ({ default: m.StreamingPage })));
+const MusicPage = lazy(() => import("./pages/MusicPage").then(m => ({ default: m.MusicPage })));
+const AudiobooksPage = lazy(() => import("./pages/AudiobooksPage").then(m => ({ default: m.AudiobooksPage })));
+const LiveTVPage = lazy(() => import("./pages/LiveTVPage").then(m => ({ default: m.LiveTVPage })));
+const LibraryPage = lazy(() => import("./pages/LibraryPage").then(m => ({ default: m.LibraryPage })));
+const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage").then(m => ({ default: m.WatchPartyPage })));
+const PluginMarketplacePage = lazy(() => import("./pages/PluginMarketplacePage").then(m => ({ default: m.PluginMarketplacePage })));
+const ThemeCommunityPage = lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage })));
+const DVRPage = lazy(() => import("./pages/DVRPage").then(m => ({ default: m.DVRPage })));
+const WatchHistoryPage = lazy(() => import("./pages/WatchHistoryPage").then(m => ({ default: m.WatchHistoryPage })));
+const WatchlistPage = lazy(() => import("./pages/WatchlistPage").then(m => ({ default: m.WatchlistPage })));
+const DiscoverPage = lazy(() => import("./pages/DiscoverPage").then(m => ({ default: m.DiscoverPage })));
+const PlaylistsPage = lazy(() => import("./pages/PlaylistsPage"));
+const AnimePage = lazy(() => import("./pages/AnimePage"));
+const VideoPlayer = lazy(() => import("./components/VideoPlayer"));
 
-const GadgetPageLoader = () => (
+// Admin / Security / VPN / System
+const SecurityPage = lazy(() => import("./pages/SecurityPage"));
+const VpnPage = lazy(() => import("./pages/VpnPage"));
+const SystemPage = lazy(() => import("./pages/SystemPage"));
+const LibraryManagerPage = lazy(() => import("./pages/LibraryManagerPage"));
+const LogViewerPage = lazy(() => import("./pages/LogViewerPage"));
+const MediaBrowserPage = lazy(() => import("./pages/MediaBrowserPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+
+// Gadget Pages
+const WeatherPage = lazy(() => import("./pages/gadgets/WeatherPage"));
+const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
+const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
+const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
+const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
+const AnalyticsPage = lazy(() => import("./pages/gadgets/AnalyticsPage"));
+const NotificationsPage = lazy(() => import("./pages/gadgets/NotificationsPage"));
+const RequestsPage = lazy(() => import("./pages/gadgets/RequestsPage"));
+const ParentalControlsPage = lazy(() => import("./pages/gadgets/ParentalControlsPage"));
+const ProcessingPage = lazy(() => import("./pages/gadgets/ProcessingPage"));
+const UsenetPage = lazy(() => import("./pages/gadgets/UsenetPage"));
+
+// Module Pages
+const GlazePage = lazy(() => import("./pages/GlazePage"));
+const SaffronPage = lazy(() => import("./pages/SaffronPage"));
+const FonduePage = lazy(() => import("./pages/FonduePage"));
+const SourdoughPage = lazy(() => import("./pages/SourdoughPage"));
+const ChurroPage = lazy(() => import("./pages/ChurroPage"));
+const RouxPage = lazy(() => import("./pages/RouxPage"));
+const SproutPage = lazy(() => import("./pages/SproutPage"));
+const StrudelPage = lazy(() => import("./pages/StrudelPage"));
+const ParfaitPage = lazy(() => import("./pages/ParfaitPage"));
+const MenuPage = lazy(() => import("./pages/MenuPage"));
+const PretzelPage = lazy(() => import("./pages/PretzelPage"));
+const BiscottiPage = lazy(() => import("./pages/BiscottiPage"));
+const TreaclePage = lazy(() => import("./pages/TreaclePage"));
+const SagePage = lazy(() => import("./pages/SagePage"));
+const TerrinePage = lazy(() => import("./pages/TerrinePage"));
+const PopsiclePage = lazy(() => import("./pages/PopsiclePage"));
+const PreservesPage = lazy(() => import("./pages/PreservesPage"));
+const MarshmallowPage = lazy(() => import("./pages/MarshmallowPage"));
+const ChowderPage = lazy(() => import("./pages/ChowderPage"));
+
+const PageLoader = () => (
   <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
     <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
   </div>
@@ -103,11 +97,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!isAuthenticated) {
@@ -133,11 +123,7 @@ const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (isAuthenticated) {
@@ -152,296 +138,81 @@ const PublicRoute = ({ children }) => {
 // third-party identity providers in a self-hosted media server.)
 function AppRouter() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <AuthPage />
-          </PublicRoute>
-        }
-      />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
 
-      {/* Protected Routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/movies"
-        element={
-          <ProtectedRoute>
-            <MoviesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tv"
-        element={
-          <ProtectedRoute>
-            <TVShowsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/:type/:id"
-        element={
-          <ProtectedRoute>
-            <MediaDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/search"
-        element={
-          <ProtectedRoute>
-            <SearchPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/indexers" element={<TierRoute path="/indexers"><IndexerSearchPage /></TierRoute>} />
-      <Route
-        path="/downloads"
-        element={
-          <ProtectedRoute>
-            <DownloadsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/library"
-        element={
-          <ProtectedRoute>
-            <LibraryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/watch/:mediaId"
-        element={
-          <ProtectedRoute>
-            <VideoPlayer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/anime"
-        element={
-          <ProtectedRoute>
-            <AnimePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/streaming" element={<TierRoute path="/streaming"><StreamingPage /></TierRoute>} />
-      <Route
-        path="/music"
-        element={
-          <ProtectedRoute>
-            <MusicPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/audiobooks"
-        element={
-          <ProtectedRoute>
-            <AudiobooksPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/live" element={<TierRoute path="/live"><LiveTVPage /></TierRoute>} />
-      <Route
-        path="/party/:partyCode"
-        element={
-          <ProtectedRoute>
-            <WatchPartyPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/plugins"
-        element={
-          <ProtectedRoute>
-            <PluginMarketplacePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/themes"
-        element={
-          <ProtectedRoute>
-            <ThemeCommunityPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dvr"
-        element={
-          <ProtectedRoute>
-            <DVRPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/playlists"
-        element={
-          <ProtectedRoute>
-            <PlaylistsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <ProtectedRoute>
-            <WatchHistoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/watchlist"
-        element={
-          <ProtectedRoute>
-            <WatchlistPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/discover"
-        element={
-          <ProtectedRoute>
-            <DiscoverPage />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected Routes */}
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/movies" element={<ProtectedRoute><MoviesPage /></ProtectedRoute>} />
+        <Route path="/tv" element={<ProtectedRoute><TVShowsPage /></ProtectedRoute>} />
+        <Route path="/:type/:id" element={<ProtectedRoute><MediaDetails /></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+        <Route path="/indexers" element={<TierRoute path="/indexers"><IndexerSearchPage /></TierRoute>} />
+        <Route path="/downloads" element={<ProtectedRoute><DownloadsPage /></ProtectedRoute>} />
+        <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
+        <Route path="/watch/:mediaId" element={<ProtectedRoute><VideoPlayer /></ProtectedRoute>} />
+        <Route path="/anime" element={<ProtectedRoute><AnimePage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/streaming" element={<TierRoute path="/streaming"><StreamingPage /></TierRoute>} />
+        <Route path="/music" element={<ProtectedRoute><MusicPage /></ProtectedRoute>} />
+        <Route path="/audiobooks" element={<ProtectedRoute><AudiobooksPage /></ProtectedRoute>} />
+        <Route path="/live" element={<TierRoute path="/live"><LiveTVPage /></TierRoute>} />
+        <Route path="/party/:partyCode" element={<ProtectedRoute><WatchPartyPage /></ProtectedRoute>} />
+        <Route path="/plugins" element={<ProtectedRoute><PluginMarketplacePage /></ProtectedRoute>} />
+        <Route path="/themes" element={<ProtectedRoute><ThemeCommunityPage /></ProtectedRoute>} />
+        <Route path="/dvr" element={<ProtectedRoute><DVRPage /></ProtectedRoute>} />
+        <Route path="/playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><WatchHistoryPage /></ProtectedRoute>} />
+        <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
+        <Route path="/discover" element={<ProtectedRoute><DiscoverPage /></ProtectedRoute>} />
 
-      {/* Gadget Pages */}
-      <Route
-        path="/weather"
-        element={
-          <ProtectedRoute>
-            <WeatherPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/podcasts"
-        element={
-          <ProtectedRoute>
-            <PodcastsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/radio"
-        element={
-          <ProtectedRoute>
-            <RadioPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/photos"
-        element={
-          <ProtectedRoute>
-            <PhotosPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/webvideo"
-        element={
-          <ProtectedRoute>
-            <WebVideoPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/security" element={<TierRoute path="/security"><SecurityPage /></TierRoute>} />
-      <Route path="/vpn" element={<TierRoute path="/vpn"><VpnPage /></TierRoute>} />
-      <Route
-        path="/system"
-        element={
-          <ProtectedRoute>
-            <SystemPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/library-manager"
-        element={
-          <ProtectedRoute>
-            <LibraryManagerPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/log-viewer"
-        element={
-          <ProtectedRoute>
-            <LogViewerPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/browse"
-        element={
-          <ProtectedRoute>
-            <MediaBrowserPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/analytics" element={<TierRoute path="/analytics"><AnalyticsPage /></TierRoute>} />
-      <Route path="/notifications" element={<TierRoute path="/notifications"><NotificationsPage /></TierRoute>} />
-      <Route path="/requests" element={<TierRoute path="/requests"><RequestsPage /></TierRoute>} />
-      <Route path="/parental-controls" element={<TierRoute path="/parental-controls"><ParentalControlsPage /></TierRoute>} />
-      <Route path="/processing" element={<TierRoute path="/processing"><ProcessingPage /></TierRoute>} />
-      <Route path="/usenet" element={<TierRoute path="/usenet"><UsenetPage /></TierRoute>} />
-      <Route
-        path="/help"
-        element={
-          <ProtectedRoute>
-            <HelpPage />
-          </ProtectedRoute>
-        }
-      />
+        {/* Gadget Pages */}
+        <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
+        <Route path="/podcasts" element={<ProtectedRoute><PodcastsPage /></ProtectedRoute>} />
+        <Route path="/radio" element={<ProtectedRoute><RadioPage /></ProtectedRoute>} />
+        <Route path="/photos" element={<ProtectedRoute><PhotosPage /></ProtectedRoute>} />
+        <Route path="/webvideo" element={<ProtectedRoute><WebVideoPage /></ProtectedRoute>} />
+        <Route path="/security" element={<TierRoute path="/security"><SecurityPage /></TierRoute>} />
+        <Route path="/vpn" element={<TierRoute path="/vpn"><VpnPage /></TierRoute>} />
+        <Route path="/system" element={<ProtectedRoute><SystemPage /></ProtectedRoute>} />
+        <Route path="/library-manager" element={<ProtectedRoute><LibraryManagerPage /></ProtectedRoute>} />
+        <Route path="/log-viewer" element={<ProtectedRoute><LogViewerPage /></ProtectedRoute>} />
+        <Route path="/browse" element={<ProtectedRoute><MediaBrowserPage /></ProtectedRoute>} />
+        <Route path="/analytics" element={<TierRoute path="/analytics"><AnalyticsPage /></TierRoute>} />
+        <Route path="/notifications" element={<TierRoute path="/notifications"><NotificationsPage /></TierRoute>} />
+        <Route path="/requests" element={<TierRoute path="/requests"><RequestsPage /></TierRoute>} />
+        <Route path="/parental-controls" element={<TierRoute path="/parental-controls"><ParentalControlsPage /></TierRoute>} />
+        <Route path="/processing" element={<TierRoute path="/processing"><ProcessingPage /></TierRoute>} />
+        <Route path="/usenet" element={<TierRoute path="/usenet"><UsenetPage /></TierRoute>} />
+        <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
 
-      {/* Module Pages */}
-      <Route path="/scrobbling" element={<ProtectedRoute><GlazePage /></ProtectedRoute>} />
-      <Route path="/tasks" element={<TierRoute path="/tasks"><SaffronPage /></TierRoute>} />
-      <Route path="/automation" element={<TierRoute path="/automation"><FonduePage /></TierRoute>} />
-      <Route path="/backups" element={<TierRoute path="/backups"><SourdoughPage /></TierRoute>} />
-      <Route path="/download-clients" element={<ProtectedRoute><ChurroPage /></ProtectedRoute>} />
-      <Route path="/collections" element={<ProtectedRoute><RouxPage /></ProtectedRoute>} />
-      <Route path="/rss" element={<TierRoute path="/rss"><SproutPage /></TierRoute>} />
-      <Route path="/disc-ripping" element={<TierRoute path="/disc-ripping"><StrudelPage /></TierRoute>} />
-      <Route path="/jellyseerr" element={<TierRoute path="/jellyseerr"><ParfaitPage /></TierRoute>} />
-      <Route path="/requests-manager" element={<TierRoute path="/requests-manager"><MenuPage /></TierRoute>} />
-      <Route path="/gaming" element={<TierRoute path="/gaming"><PretzelPage /></TierRoute>} />
-      <Route path="/ebooks" element={<TierRoute path="/ebooks"><BiscottiPage /></TierRoute>} />
-      <Route path="/music-library" element={<TierRoute path="/music-library"><TreaclePage /></TierRoute>} />
-      <Route path="/for-you" element={<TierRoute path="/for-you"><SagePage /></TierRoute>} />
-      <Route path="/dvr" element={<TierRoute path="/dvr"><TerrinePage /></TierRoute>} />
-      <Route path="/offline" element={<TierRoute path="/offline"><PopsiclePage /></TierRoute>} />
-      <Route path="/cloud-backup" element={<TierRoute path="/cloud-backup"><PreservesPage /></TierRoute>} />
-      <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
-      <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
+        {/* Module Pages */}
+        <Route path="/scrobbling" element={<ProtectedRoute><GlazePage /></ProtectedRoute>} />
+        <Route path="/tasks" element={<TierRoute path="/tasks"><SaffronPage /></TierRoute>} />
+        <Route path="/automation" element={<TierRoute path="/automation"><FonduePage /></TierRoute>} />
+        <Route path="/backups" element={<TierRoute path="/backups"><SourdoughPage /></TierRoute>} />
+        <Route path="/download-clients" element={<ProtectedRoute><ChurroPage /></ProtectedRoute>} />
+        <Route path="/collections" element={<ProtectedRoute><RouxPage /></ProtectedRoute>} />
+        <Route path="/rss" element={<TierRoute path="/rss"><SproutPage /></TierRoute>} />
+        <Route path="/disc-ripping" element={<TierRoute path="/disc-ripping"><StrudelPage /></TierRoute>} />
+        <Route path="/jellyseerr" element={<TierRoute path="/jellyseerr"><ParfaitPage /></TierRoute>} />
+        <Route path="/requests-manager" element={<TierRoute path="/requests-manager"><MenuPage /></TierRoute>} />
+        <Route path="/gaming" element={<TierRoute path="/gaming"><PretzelPage /></TierRoute>} />
+        <Route path="/ebooks" element={<TierRoute path="/ebooks"><BiscottiPage /></TierRoute>} />
+        <Route path="/music-library" element={<TierRoute path="/music-library"><TreaclePage /></TierRoute>} />
+        <Route path="/for-you" element={<TierRoute path="/for-you"><SagePage /></TierRoute>} />
+        <Route path="/dvr" element={<TierRoute path="/dvr"><TerrinePage /></TierRoute>} />
+        <Route path="/offline" element={<TierRoute path="/offline"><PopsiclePage /></TierRoute>} />
+        <Route path="/cloud-backup" element={<TierRoute path="/cloud-backup"><PreservesPage /></TierRoute>} />
+        <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
+        <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
 
-      {/* Catch all - redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
@@ -456,8 +227,8 @@ function App() {
                 <FirstLaunchGate>
                   <AppRouter />
                 </FirstLaunchGate>
-                <Toaster 
-                  position="bottom-right" 
+                <Toaster
+                  position="bottom-right"
                   toastOptions={{
                     style: {
                       background: '#1E1E1E',

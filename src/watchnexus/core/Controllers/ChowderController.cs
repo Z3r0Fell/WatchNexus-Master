@@ -283,10 +283,10 @@ public class ChowderController : ControllerBase
         {
             items,
             total = items.Count,
-            downloading = items.Count(i => ((dynamic)i).status == "downloading"),
-            queued = items.Count(i => ((dynamic)i).status == "queued"),
-            completed = items.Count(i => ((dynamic)i).status == "completed"),
-            failed = items.Count(i => ((dynamic)i).status == "failed"),
+            downloading = items.Count(i => ((dynamic)i!).status == "downloading"),
+            queued = items.Count(i => ((dynamic)i!).status == "queued"),
+            completed = items.Count(i => ((dynamic)i!).status == "completed"),
+            failed = items.Count(i => ((dynamic)i!).status == "failed"),
         });
     }
 

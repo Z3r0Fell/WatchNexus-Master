@@ -7,10 +7,8 @@ import axios from 'axios';
 
 const API_URL = BACKEND_URL;
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+// Cookie auth: the httpOnly wn_token is sent automatically.
+const getAuthHeader = () => ({});
 
 function EcosystemButton({ id, label, icon: Icon, selected, onSelect }) {
   return (

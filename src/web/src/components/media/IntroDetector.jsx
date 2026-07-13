@@ -22,13 +22,12 @@ export const IntroDetector = ({ seriesName, onDetectionComplete }) => {
     setStatus(null);
 
     try {
-      const token = localStorage.getItem('token');
       const encodedName = encodeURIComponent(seriesName);
       
       const res = await axios.post(
         `${API_URL}/api/marmalade/series/${encodedName}/analyze-intros`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {  }
       );
 
       if (res.data.success) {
@@ -40,7 +39,7 @@ export const IntroDetector = ({ seriesName, onDetectionComplete }) => {
           try {
             const statusRes = await axios.get(
               `${API_URL}/api/marmalade/series/${encodedName}/intro-status`,
-              { headers: { Authorization: `Bearer ${token}` } }
+              {  }
             );
             
             if (statusRes.data.with_segments > 0) {

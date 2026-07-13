@@ -70,8 +70,13 @@ public class SettingsController : ControllerBase
         {
             var key = prop.Name;
             if (IsReservedKey(key)) continue; // never let internal/security keys be written
-            var value = prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString()! : prop.Value.GetRawText();
             var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
+            if (prop.Value.ValueKind == JsonValueKind.Null)
+            {
+                if (existing != null) _db.Settings.Remove(existing); // null = delete key
+                continue;
+            }
+            var value = prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString()! : prop.Value.GetRawText();
             if (existing != null) existing.Value = value;
             else _db.Settings.Add(new AppSetting { Key = key, Value = value, UserId = UserId });
         }
@@ -85,18 +90,31 @@ public class SettingsController : ControllerBase
         if (IsReservedKey(key))
             return BadRequest(new { detail = $"'{key}' is a reserved internal setting and cannot be modified through this API." });
 
-        // Accept both {"value": "..."} and arbitrary JSON objects
-        string value;
-        if (body.TryGetProperty("value", out var v) || body.TryGetProperty("Value", out v))
-            value = v.ValueKind == JsonValueKind.String ? v.GetString()! : v.GetRawText();
-        else
-            value = body.GetRawText();
+        // Accept both {"value": "..."} and arbitrary JSON objects; null deletes the key
+        var target = (body.TryGetProperty("value", out var v) || body.TryGetProperty("Value", out v)) ? v : body;
+        if (target.ValueKind == JsonValueKind.Null)
+        {
+            var toDelete = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
+            if (toDelete != null) { _db.Settings.Remove(toDelete); await _db.SaveChangesAsync(); }
+            return Ok(new { key, deleted = true });
+        }
+        var value = target.ValueKind == JsonValueKind.String ? target.GetString()! : target.GetRawText();
 
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
         if (existing != null) existing.Value = value;
         else _db.Settings.Add(new AppSetting { Key = key, Value = value, UserId = UserId });
         await _db.SaveChangesAsync();
         return Ok(new { key, value });
+    }
+
+    [HttpDelete("{key}")]
+    public async Task<IActionResult> Delete(string key)
+    {
+        if (IsReservedKey(key))
+            return BadRequest(new { detail = $"'{key}' is a reserved internal setting and cannot be modified through this API." });
+        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
+        if (existing != null) { _db.Settings.Remove(existing); await _db.SaveChangesAsync(); }
+        return Ok(new { key, deleted = existing != null });
     }
 
     [HttpGet("integrations")]

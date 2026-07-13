@@ -38,8 +38,6 @@ export const GlazePage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [configRes, historyRes] = await Promise.all([
         axios.get(`${API}/api/glaze/config`, { headers }),
         axios.get(`${API}/api/glaze/trakt/history?limit=20`, { headers }),
@@ -57,9 +55,8 @@ export const GlazePage = () => {
 
   const saveConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
       await axios.put(`${API}/api/glaze/config`, config, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' }
       });
       toast.success('Scrobbling settings saved');
     } catch (e) {
@@ -69,9 +66,8 @@ export const GlazePage = () => {
 
   const syncTrakt = async () => {
     try {
-      const token = localStorage.getItem('token');
       await axios.post(`${API}/api/glaze/trakt/sync`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success('Trakt sync initiated');
     } catch (e) {
@@ -81,9 +77,8 @@ export const GlazePage = () => {
 
   const authorizeTrakt = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post(`${API}/api/glaze/trakt/authorize`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       if (res.data?.authorization_url) {
         window.open(res.data.authorization_url, '_blank');

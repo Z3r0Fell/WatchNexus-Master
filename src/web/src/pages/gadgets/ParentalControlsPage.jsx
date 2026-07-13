@@ -17,9 +17,7 @@ export const ParentalControlsPage = () => {
   const [pin, setPin] = useState('');
   const [maxRating, setMaxRating] = useState('PG-13');
   const [blockedGenres, setBlockedGenres] = useState('');
-
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   const fetchProfile = async () => {
     try {

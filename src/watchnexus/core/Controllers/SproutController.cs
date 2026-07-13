@@ -147,7 +147,7 @@ public class SproutController : ControllerBase
                 setting.Value = System.Text.Encoding.UTF8.GetString(stream.ToArray());
                 await _db.SaveChangesAsync();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 setting.Value = JsonSerializer.Serialize(new { enabled = true, api_key = key, items_per_feed = 50 });
                 await _db.SaveChangesAsync();

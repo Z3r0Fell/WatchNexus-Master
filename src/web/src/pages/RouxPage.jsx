@@ -34,8 +34,6 @@ export const RouxPage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [colRes, presetRes] = await Promise.all([
         axios.get(`${API}/api/roux/collections`, { headers }),
         axios.get(`${API}/api/roux/presets`, { headers }),
@@ -53,9 +51,8 @@ export const RouxPage = () => {
 
   const viewCollection = async (collectionId) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.get(`${API}/api/roux/collections/${collectionId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       setSelectedCollection(collectionId);
       setCollectionItems(res.data?.items || []);
@@ -67,9 +64,8 @@ export const RouxPage = () => {
   const createCollection = async () => {
     if (!newName.trim()) return;
     try {
-      const token = localStorage.getItem('token');
       await axios.post(`${API}/api/roux/collections`, { name: newName, type: 'manual' }, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' }
       });
       toast.success(`Collection "${newName}" created`);
       setNewName('');
@@ -82,9 +78,8 @@ export const RouxPage = () => {
 
   const refreshCollection = async (collectionId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.post(`${API}/api/roux/collections/${collectionId}/refresh`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success('Collection refreshing');
     } catch (e) {
@@ -94,9 +89,8 @@ export const RouxPage = () => {
 
   const deleteCollection = async (collectionId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.delete(`${API}/api/roux/collections/${collectionId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       setCollections(prev => prev.filter(c => c.id !== collectionId));
       if (selectedCollection === collectionId) {

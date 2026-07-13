@@ -44,8 +44,7 @@ export const WeatherPage = () => {
   const [showSearch, setShowSearch] = useState(false);
 
   const getAuth = () => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
   };
 
   const fetchWeather = useCallback(async (lat, lon) => {

@@ -28,9 +28,7 @@ export const RequestsPage = () => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newReq, setNewReq] = useState({ title: '', media_type: 'movie', description: '' });
-
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   const fetchRequests = async () => {
     try {

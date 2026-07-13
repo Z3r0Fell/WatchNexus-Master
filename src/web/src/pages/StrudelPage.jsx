@@ -54,10 +54,8 @@ export const StrudelPage = () => {
   const [outputFormat, setOutputFormat] = useState('mkv');
   const [loading, setLoading] = useState(true);
 
-  const headers = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return { Authorization: `Bearer ${token}` };
-  }, []);
+  // Cookie auth: the httpOnly wn_token is sent automatically.
+  const headers = useCallback(() => ({}), []);
 
   const fetchAll = useCallback(async () => {
     try {

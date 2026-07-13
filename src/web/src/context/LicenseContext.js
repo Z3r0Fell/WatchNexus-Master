@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 
@@ -103,11 +103,8 @@ export const LicenseProvider = ({ children }) => {
 
   const fetchLicense = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) { setLoading(false); return; }
-      const res = await axios.get(`${BACKEND_URL}/api/cellar/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Cookie auth: the httpOnly wn_token is sent automatically.
+      const res = await axios.get(`${BACKEND_URL}/api/cellar/status`);
       setTier(res.data.tier || 'standard');
       setUnlockedModules(res.data.modules_unlocked || []);
     } catch {
@@ -148,13 +145,15 @@ export const LicenseProvider = ({ children }) => {
     return mod ? (MODULE_TIER[mod] || 'standard') : 'standard';
   }, []);
 
+  const value = useMemo(() => ({
+    tier, unlockedModules, loading,
+    isModuleUnlocked, isRouteUnlocked,
+    getRequiredTier, getRouteRequiredTier,
+    refreshLicense: fetchLicense,
+  }), [tier, unlockedModules, loading, isModuleUnlocked, isRouteUnlocked, getRequiredTier, getRouteRequiredTier, fetchLicense]);
+
   return (
-    <LicenseContext.Provider value={{
-      tier, unlockedModules, loading,
-      isModuleUnlocked, isRouteUnlocked,
-      getRequiredTier, getRouteRequiredTier,
-      refreshLicense: fetchLicense,
-    }}>
+    <LicenseContext.Provider value={value}>
       {children}
     </LicenseContext.Provider>
   );

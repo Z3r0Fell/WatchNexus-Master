@@ -22,9 +22,7 @@ export const NotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newChannel, setNewChannel] = useState({ name: '', type: 'webhook', config: '{}' });
-
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   const fetchData = async () => {
     try {

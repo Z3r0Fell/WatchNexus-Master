@@ -3,11 +3,8 @@ import axios from 'axios';
 // Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
-// Get auth token from localStorage
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+// Cookie auth: the httpOnly wn_token is sent automatically.
+const getAuthHeader = () => ({});
 
 // Create axios instance for Marmalade
 const marmaladeClient = axios.create({

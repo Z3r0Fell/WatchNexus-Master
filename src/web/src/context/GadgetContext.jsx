@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const GadgetContext = createContext(null);
@@ -11,6 +12,7 @@ export const useGadgets = () => {
 };
 
 export const GadgetProvider = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [installed, setInstalled] = useState([]);
   const [hooks, setHooks] = useState({
     sidebar_entries: [], routes: [], settings_panels: [],
@@ -20,89 +22,65 @@ export const GadgetProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  const getAuth = () => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
+  // Cookie auth: the httpOnly wn_token is sent automatically by axios.
   const refresh = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     try {
-      const headers = { Authorization: `Bearer ${token}` };
       const [instRes, hooksRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/api/ripen/installed`, { headers }),
-        axios.get(`${BACKEND_URL}/api/ripen/hooks`, { headers }),
+        axios.get(`${BACKEND_URL}/api/ripen/installed`),
+        axios.get(`${BACKEND_URL}/api/ripen/hooks`),
       ]);
       setInstalled(instRes.data.gadgets || []);
       setHooks(prev => hooksRes.data || prev);
     } catch (err) {
-      console.error('Ripen: Failed to load gadgets:', err);
+      if (err.response?.status !== 401) console.error('Ripen: Failed to load gadgets:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Initial fetch + listen for storage changes (login/logout)
+  // Fetch on login; clear on logout.
   useEffect(() => {
-    refresh();
+    if (isAuthenticated) {
+      refresh();
+    } else {
+      setInstalled([]);
+      setLoading(false);
+    }
+  }, [isAuthenticated, refresh]);
 
-    // Re-fetch when token changes (login/logout events)
-    const handleStorage = (e) => {
-      if (e.key === 'token') refresh();
-    };
-    window.addEventListener('storage', handleStorage);
-
-    // Also poll for token changes (same-tab login won't fire storage event)
-    let lastToken = localStorage.getItem('token');
-    const interval = setInterval(() => {
-      const currentToken = localStorage.getItem('token');
-      if (currentToken !== lastToken) {
-        lastToken = currentToken;
-        refresh();
-      }
-    }, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      clearInterval(interval);
-    };
-  }, [refresh]);
-
-  const install = async (gadgetId) => {
-    const res = await axios.post(`${BACKEND_URL}/api/ripen/install/${gadgetId}`, {}, { headers: getAuth() });
+  const install = useCallback(async (gadgetId) => {
+    const res = await axios.post(`${BACKEND_URL}/api/ripen/install/${gadgetId}`, {});
     await refresh();
     return res.data;
-  };
+  }, [refresh]);
 
-  const uninstall = async (gadgetId) => {
-    await axios.delete(`${BACKEND_URL}/api/ripen/uninstall/${gadgetId}`, { headers: getAuth() });
+  const uninstall = useCallback(async (gadgetId) => {
+    await axios.delete(`${BACKEND_URL}/api/ripen/uninstall/${gadgetId}`);
     await refresh();
-  };
+  }, [refresh]);
 
-  const activate = async (gadgetId) => {
-    await axios.post(`${BACKEND_URL}/api/ripen/activate/${gadgetId}`, {}, { headers: getAuth() });
+  const activate = useCallback(async (gadgetId) => {
+    await axios.post(`${BACKEND_URL}/api/ripen/activate/${gadgetId}`, {});
     await refresh();
-  };
+  }, [refresh]);
 
-  const deactivate = async (gadgetId) => {
-    await axios.post(`${BACKEND_URL}/api/ripen/deactivate/${gadgetId}`, {}, { headers: getAuth() });
+  const deactivate = useCallback(async (gadgetId) => {
+    await axios.post(`${BACKEND_URL}/api/ripen/deactivate/${gadgetId}`, {});
     await refresh();
-  };
+  }, [refresh]);
 
-  const isInstalled = (gadgetId) => installed.some(g => g.gadget_id === gadgetId);
-  const isActive = (gadgetId) => installed.some(g => g.gadget_id === gadgetId && g.status === 'active');
-  const getGadget = (gadgetId) => installed.find(g => g.gadget_id === gadgetId);
+  const isInstalled = useCallback((gadgetId) => installed.some(g => g.gadget_id === gadgetId), [installed]);
+  const isActive = useCallback((gadgetId) => installed.some(g => g.gadget_id === gadgetId && g.status === 'active'), [installed]);
+  const getGadget = useCallback((gadgetId) => installed.find(g => g.gadget_id === gadgetId), [installed]);
+
+  const value = useMemo(() => ({
+    installed, hooks, loading, refresh,
+    install, uninstall, activate, deactivate,
+    isInstalled, isActive, getGadget,
+  }), [installed, hooks, loading, refresh, install, uninstall, activate, deactivate, isInstalled, isActive, getGadget]);
 
   return (
-    <GadgetContext.Provider value={{
-      installed, hooks, loading, refresh,
-      install, uninstall, activate, deactivate,
-      isInstalled, isActive, getGadget,
-    }}>
+    <GadgetContext.Provider value={value}>
       {children}
     </GadgetContext.Provider>
   );

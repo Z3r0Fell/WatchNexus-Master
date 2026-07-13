@@ -40,8 +40,6 @@ export const SourdoughPage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [backupsRes, scheduleRes] = await Promise.all([
         axios.get(`${API}/api/sourdough/backups`, { headers }),
         axios.get(`${API}/api/sourdough/schedule`, { headers }),
@@ -60,9 +58,8 @@ export const SourdoughPage = () => {
   const createBackup = async () => {
     setCreating(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post(`${API}/api/sourdough/backup`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success(`Backup initiated: ${res.data?.backup_name || 'creating...'}`);
       setTimeout(fetchData, 2000);
@@ -75,9 +72,8 @@ export const SourdoughPage = () => {
 
   const exportConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.get(`${API}/api/sourdough/config/export`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -94,9 +90,8 @@ export const SourdoughPage = () => {
 
   const saveSchedule = async () => {
     try {
-      const token = localStorage.getItem('token');
       await axios.put(`${API}/api/sourdough/schedule`, schedule, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' }
       });
       toast.success('Schedule saved');
     } catch (e) {

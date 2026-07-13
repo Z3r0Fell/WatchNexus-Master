@@ -30,9 +30,8 @@ export const IPTVSettings = () => {
   const fetchIptvSources = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       const response = await axios.get(`${BACKEND_URL}/api/iptv/sources`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       setIptvSources(response.data.sources || []);
     } catch (error) {
@@ -51,7 +50,6 @@ export const IPTVSettings = () => {
     
     try {
       setSaving(true);
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         name: newIptvSource.name,
         url: newIptvSource.url,
@@ -62,7 +60,7 @@ export const IPTVSettings = () => {
       }
       
       const response = await axios.post(`${BACKEND_URL}/api/iptv/sources?${params.toString()}`, null, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       
       setIptvSources([...iptvSources, response.data]);
@@ -78,9 +76,8 @@ export const IPTVSettings = () => {
 
   const handleDeleteIptvSource = async (id) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.delete(`${BACKEND_URL}/api/iptv/sources/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       setIptvSources(iptvSources.filter(s => s.id !== id));
       toast.success('IPTV source removed');

@@ -290,9 +290,8 @@ export const QualityProfilesSubTab = () => {
 
   const fetchProfiles = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/quality-profiles`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       const data = await res.json();
       setProfiles(data.profiles || []);
@@ -320,14 +319,12 @@ export const QualityProfilesSubTab = () => {
   };
 
   const handleSave = async (data) => {
-    const token = localStorage.getItem('token');
     try {
       if (editingProfile) {
         // Update existing
         await fetch(`${API_URL}/api/quality-profiles/${editingProfile.id}`, {
           method: 'PUT',
           headers: { 
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(data)
@@ -343,7 +340,7 @@ export const QualityProfilesSubTab = () => {
         });
         await fetch(`${API_URL}/api/quality-profiles?${params}`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
+          
         });
         toast.success('Profile created');
       }
@@ -359,10 +356,9 @@ export const QualityProfilesSubTab = () => {
     if (!window.confirm('Are you sure you want to delete this profile?')) return;
     
     try {
-      const token = localStorage.getItem('token');
       await fetch(`${API_URL}/api/quality-profiles/${profileId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       toast.success('Profile deleted');
       fetchProfiles();
@@ -374,11 +370,9 @@ export const QualityProfilesSubTab = () => {
 
   const handleSetDefault = async (profileId) => {
     try {
-      const token = localStorage.getItem('token');
       await fetch(`${API_URL}/api/quality-profiles/${profileId}`, {
         method: 'PUT',
         headers: { 
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ is_default: true })

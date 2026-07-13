@@ -27,8 +27,7 @@ const PLAYBACK_TABS = [
 ];
 
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 };
 
 export const PlaybackSettings = () => {

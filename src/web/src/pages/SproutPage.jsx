@@ -38,8 +38,6 @@ export const SproutPage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [feedsRes, configRes] = await Promise.all([
         axios.get(`${API}/api/sprout/feeds`, { headers }),
         axios.get(`${API}/api/sprout/config`, { headers }),
@@ -62,9 +60,8 @@ export const SproutPage = () => {
 
   const generateApiKey = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post(`${API}/api/sprout/generate-key`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       if (res.data?.api_key) {
         setConfig(prev => ({ ...prev, api_key: res.data.api_key }));
@@ -77,9 +74,8 @@ export const SproutPage = () => {
 
   const saveConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
       await axios.put(`${API}/api/sprout/config`, config, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' }
       });
       toast.success('RSS settings saved');
     } catch (e) {

@@ -22,9 +22,7 @@ export const UsenetPage = () => {
   const [brineApiKey, setBrineApiKey] = useState('');
   const [ladleUrl, setLadleUrl] = useState('');
   const [ladleApiKey, setLadleApiKey] = useState('');
-
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   const fetchConfigs = async () => {
     try {

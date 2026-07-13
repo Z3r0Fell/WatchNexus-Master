@@ -70,9 +70,8 @@ export const GeneralSettings = ({
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const token = localStorage.getItem('token');
         const response = await axios.get(`${BACKEND_URL}/api/user/preferences`, {
-          headers: { Authorization: `Bearer ${token}` }
+          
         });
         if (response.data.visible_tabs && response.data.visible_tabs.length > 0) {
           setVisibleTabs(response.data.visible_tabs);
@@ -103,10 +102,9 @@ export const GeneralSettings = ({
   const saveTabVisibility = async () => {
     try {
       setSavingTabs(true);
-      const token = localStorage.getItem('token');
       await axios.put(`${BACKEND_URL}/api/user/preferences`, 
         { visible_tabs: visibleTabs },
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        { headers: { 'Content-Type': 'application/json' } }
       );
       // Also update localStorage for backwards compatibility and immediate sidebar update
       localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));

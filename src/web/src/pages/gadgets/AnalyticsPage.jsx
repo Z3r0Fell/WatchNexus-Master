@@ -34,8 +34,6 @@ export const AnalyticsPage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [statsRes, recentRes] = await Promise.all([
         axios.get(`${API}/api/truffle/stats?days=${period}`, { headers }),
         axios.get(`${API}/api/truffle/recent?limit=20`, { headers }),

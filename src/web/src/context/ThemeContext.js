@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from './AuthContext';
@@ -50,7 +50,7 @@ const DEFAULT_LIGHT_THEME = {
 // picks in the first-run wizard (persisted as `ui_accent`) drives the --ac-*
 // variables, which the remapped violet-*/purple-* Tailwind classes consume —
 // so the chosen accent carries across the entire dashboard.
-const ACCENT_RAMP = {
+export const ACCENT_RAMP = {
   violet:  { 100: '#EDE9FE', 300: '#C4B5FD', 400: '#A78BFA', 500: '#8B5CF6', 600: '#7C3AED', 700: '#6D28D9', 900: '#4C1D95' },
   amber:   { 100: '#FEF3C7', 300: '#FCD34D', 400: '#FBBF24', 500: '#F59E0B', 600: '#D97706', 700: '#B45309', 900: '#78350F' },
   crimson: { 100: '#FFE4E6', 300: '#FDA4AF', 400: '#FB7185', 500: '#F43F5E', 600: '#E11D48', 700: '#BE123C', 900: '#881337' },
@@ -160,16 +160,11 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const loadThemeMode = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await axios.get(`${BACKEND_URL}/api/user/preferences`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (response.data.theme_mode) {
-            setMode(response.data.theme_mode);
-          }
+        // Cookie auth: the httpOnly wn_token is sent automatically.
+        const response = await axios.get(`${BACKEND_URL}/api/user/preferences`);
+        if (response.data.theme_mode) {
+          setMode(response.data.theme_mode);
         } else {
-          // Fall back to localStorage if not logged in
           const saved = localStorage.getItem('watchnexus_theme_mode');
           if (saved) setMode(saved);
         }
@@ -213,15 +208,11 @@ export const ThemeProvider = ({ children }) => {
     const newMode = mode === 'dark' ? 'light' : 'dark';
     setMode(newMode);
     
-    // Save to backend
+    // Save to backend (cookie auth)
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { theme_mode: newMode }
-        });
-      }
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
+        params: { theme_mode: newMode }
+      });
     } catch (error) {
       console.error('Failed to save theme mode:', error);
     }
@@ -310,23 +301,25 @@ export const ThemeProvider = ({ children }) => {
     if (isAuthenticated) applyAccentFromSettings();
   }, [isAuthenticated, applyAccentFromSettings]);
 
+  const value = useMemo(() => ({
+    theme,
+    themeType,
+    mode,
+    loading,
+    toggleMode,
+    applyBuiltInTheme,
+    applyCustomColors,
+    previewColors,
+    resetToSaved,
+    refreshTheme: fetchTheme,
+    accentId,
+    applyAccent,
+    DEFAULT_DARK_THEME,
+    DEFAULT_LIGHT_THEME
+  }), [theme, themeType, mode, loading, toggleMode, applyBuiltInTheme, applyCustomColors, previewColors, resetToSaved, fetchTheme, accentId, applyAccent]);
+
   return (
-    <ThemeContext.Provider value={{
-      theme,
-      themeType,
-      mode,
-      loading,
-      toggleMode,
-      applyBuiltInTheme,
-      applyCustomColors,
-      previewColors,
-      resetToSaved,
-      refreshTheme: fetchTheme,
-      accentId,
-      applyAccent,
-      DEFAULT_DARK_THEME,
-      DEFAULT_LIGHT_THEME
-    }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

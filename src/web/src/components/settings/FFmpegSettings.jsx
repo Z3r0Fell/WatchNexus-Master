@@ -29,10 +29,7 @@ export const FFmpegSettings = () => {
   const probe = useCallback(async () => {
     setChecking(true);
     try {
-      const token = (() => { try { return localStorage.getItem('token'); } catch { return null; } })();
-      const res = await axios.get(`${API}/api/crucible/ffmpeg-status`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await axios.get(`${API}/api/crucible/ffmpeg-status`);
       setStatus(res.data);
     } catch (err) {
       setStatus({ ffmpeg_installed: false, error: err.message });

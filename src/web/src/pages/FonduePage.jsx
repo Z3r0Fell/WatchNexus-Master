@@ -43,8 +43,6 @@ export const FonduePage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [moviesRes, queueRes, configRes] = await Promise.all([
         axios.get(`${API}/api/fondue/movies?pageSize=100`, { headers }),
         axios.get(`${API}/api/fondue/queue`, { headers }),
@@ -65,9 +63,8 @@ export const FonduePage = () => {
 
   const searchMovie = async (movieId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.post(`${API}/api/fondue/movies/${movieId}/search`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success('Search initiated for movie');
     } catch (e) {
@@ -77,9 +74,8 @@ export const FonduePage = () => {
 
   const removeMovie = async (movieId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.delete(`${API}/api/fondue/movies/${movieId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       setMovies(prev => prev.filter(m => m.id !== movieId));
       toast.success('Movie removed');

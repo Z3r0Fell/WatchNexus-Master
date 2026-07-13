@@ -9,19 +9,20 @@ import { Button } from '../ui/button';
 import { JuiceColorPicker } from '../juice/JuiceColorPicker';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme, ACCENT_RAMP } from '../../context/ThemeContext';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
 
 // Tabs for Theme Settings
 const THEME_TABS = [
   { id: 'mode', label: 'Light/Dark Mode', icon: Contrast },
+  { id: 'accent', label: 'Accent Color', icon: Layers },
   { id: 'presets', label: 'Theme Presets', icon: Sparkles },
   { id: 'custom', label: 'Custom Theme', icon: Paintbrush },
 ];
 
 export const ThemeForgeSettings = () => {
   const [activeTab, setActiveTab] = useState('mode');
-  const { themeType, mode, toggleMode, applyBuiltInTheme, applyCustomColors, previewColors, resetToSaved } = useTheme();
+  const { themeType, mode, toggleMode, applyBuiltInTheme, applyCustomColors, previewColors, resetToSaved, accentId, applyAccent } = useTheme();
   const [themeForgeConfig, setThemeForgeConfig] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState(themeType);
   const [customColors, setCustomColors] = useState({
@@ -88,6 +89,8 @@ export const ThemeForgeSettings = () => {
     switch (activeTab) {
       case 'mode':
         return <ModeTab mode={mode} toggleMode={toggleMode} />;
+      case 'accent':
+        return <AccentTab accentId={accentId} applyAccent={applyAccent} />;
       case 'presets':
         return <PresetsTab themeForgeConfig={themeForgeConfig} selectedTheme={selectedTheme} handleSetTheme={handleSetTheme} />;
       case 'custom':
@@ -185,6 +188,63 @@ const ModeTab = ({ mode, toggleMode }) => (
     </div>
   </div>
 );
+
+// Accent Tab — same palette the OOBE wizard offers, changeable anytime.
+const ACCENT_LABELS = {
+  violet: 'Violet', amber: 'Amber', crimson: 'Crimson',
+  emerald: 'Emerald', sky: 'Sky', rose: 'Rose',
+};
+
+const AccentTab = ({ accentId, applyAccent }) => {
+  const current = accentId || 'violet';
+  const handlePick = async (id) => {
+    const ok = await applyAccent(id);
+    if (ok) toast.success(`Accent set to ${ACCENT_LABELS[id]}`);
+    else toast.error('Failed to apply accent');
+  };
+  return (
+    <div className="space-y-6">
+      <div className="bg-surface border border-white/10 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+          <Layers className="w-5 h-5" style={{ color: ACCENT_RAMP[current]?.[400] }} />
+          Accent Color
+        </h3>
+        <p className="text-sm text-gray-400 mb-6">
+          The accent you picked during setup carries across the whole app — buttons, highlights, and navigation. Change it anytime.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {Object.keys(ACCENT_RAMP).map((id) => {
+            const ramp = ACCENT_RAMP[id];
+            const active = current === id;
+            return (
+              <button
+                key={id}
+                onClick={() => handlePick(id)}
+                data-testid={`accent-swatch-${id}`}
+                className={`p-4 rounded-xl border transition-all text-left ${
+                  active ? 'bg-white/5' : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+                style={active ? { borderColor: ramp[500] } : undefined}
+              >
+                <div className="flex items-center gap-1.5 mb-3">
+                  {[300, 400, 500, 600, 700].map((shade) => (
+                    <div key={shade} className="w-5 h-5 rounded-full" style={{ backgroundColor: ramp[shade] }} />
+                  ))}
+                </div>
+                <p className="font-semibold">{ACCENT_LABELS[id]}</p>
+                {active && (
+                  <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: ramp[400] }}>
+                    <Check className="w-3 h-3" /> Active
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Presets Tab
 const PresetsTab = ({ themeForgeConfig, selectedTheme, handleSetTheme }) => (

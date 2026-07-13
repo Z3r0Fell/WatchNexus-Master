@@ -35,7 +35,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.4" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.16.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.5" />
@@ -46,7 +48,7 @@
   </ItemGroup>
 
   <!-- Auto-build frontend on dotnet build/run (dev — uses whatever .env has) -->
-  <Target Name="BuildFrontend" BeforeTargets="Build" Condition="!Exists('$(MSBuildProjectDirectory)\..\..\web\build\index.html')">
+  <Target Name="BuildFrontend" BeforeTargets="Build" Condition="!Exists('$(MSBuildProjectDirectory)\..\..\web\build\index.html') AND '$(SkipFrontendBuild)' != 'true'">
     <Message Importance="high" Text="[WatchNexus] Building frontend (src/web)..." />
     <Exec Command="yarn install --frozen-lockfile || yarn install" WorkingDirectory="$(MSBuildProjectDirectory)/../../web" />
     <Exec Command="yarn build" WorkingDirectory="$(MSBuildProjectDirectory)/../../web" />

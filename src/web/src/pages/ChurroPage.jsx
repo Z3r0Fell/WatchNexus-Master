@@ -31,8 +31,6 @@ export const ChurroPage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [clientsRes, catsRes] = await Promise.all([
         axios.get(`${API}/api/churro/clients`, { headers }),
         axios.get(`${API}/api/churro/categories`, { headers }),
@@ -51,9 +49,8 @@ export const ChurroPage = () => {
   const testClient = async (clientId) => {
     setTestingClient(clientId);
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post(`${API}/api/churro/clients/${clientId}/test`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success(`Connection successful (${res.data?.response_time_ms || 0}ms)`);
     } catch (e) {
@@ -65,9 +62,8 @@ export const ChurroPage = () => {
 
   const removeClient = async (clientId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.delete(`${API}/api/churro/clients/${clientId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       setClients(prev => prev.filter(c => c.id !== clientId));
       toast.success('Client removed');

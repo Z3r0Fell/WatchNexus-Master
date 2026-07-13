@@ -23,7 +23,7 @@ export const RadioPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
 
-  const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+  const getAuth = () => ({}); // Cookie auth: wn_token sent automatically
 
   const fetchStations = useCallback(async (params = {}) => {
     try {

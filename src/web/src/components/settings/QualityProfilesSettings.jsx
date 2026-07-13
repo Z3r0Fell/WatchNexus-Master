@@ -101,9 +101,8 @@ export const QualityProfilesSettings = () => {
 
   const fetchProfiles = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.get(`${BACKEND_URL}/api/quality-profiles`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       // Handle both array and object responses
       let data = res.data;
@@ -148,9 +147,8 @@ export const QualityProfilesSettings = () => {
     
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
       await axios.post(`${BACKEND_URL}/api/quality-profiles`, newProfile, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success('Profile created');
       fetchProfiles();
@@ -172,9 +170,8 @@ export const QualityProfilesSettings = () => {
   const handleUpdateProfile = async (profile) => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
       await axios.put(`${BACKEND_URL}/api/quality-profiles/${profile.id}`, profile, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success('Profile updated');
       fetchProfiles();
@@ -190,9 +187,8 @@ export const QualityProfilesSettings = () => {
     if (!confirm('Delete this quality profile?')) return;
     
     try {
-      const token = localStorage.getItem('token');
       await axios.delete(`${BACKEND_URL}/api/quality-profiles/${profileId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success('Profile deleted');
       fetchProfiles();
@@ -203,11 +199,10 @@ export const QualityProfilesSettings = () => {
 
   const handleSetDefault = async (profileId) => {
     try {
-      const token = localStorage.getItem('token');
       const profile = profiles.find(p => p.id === profileId);
       await axios.put(`${BACKEND_URL}/api/quality-profiles/${profileId}`, 
         { ...profile, is_default: true },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {  }
       );
       toast.success('Default profile set');
       fetchProfiles();
@@ -227,10 +222,9 @@ export const QualityProfilesSettings = () => {
   const importDefaultProfiles = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
       for (const profile of DEFAULT_PROFILES) {
         await axios.post(`${BACKEND_URL}/api/quality-profiles`, profile, {
-          headers: { Authorization: `Bearer ${token}` }
+          
         });
       }
       toast.success('Default profiles imported');

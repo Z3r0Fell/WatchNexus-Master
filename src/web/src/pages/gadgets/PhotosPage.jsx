@@ -18,7 +18,7 @@ export const PhotosPage = () => {
   const [newLib, setNewLib] = useState({ name: '', path: '' });
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
-  const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+  const getAuth = () => ({}); // Cookie auth: wn_token sent automatically
 
   const fetchLibraries = useCallback(async () => {
     try {

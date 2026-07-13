@@ -79,7 +79,6 @@ export const WatchPartyPage = () => {
         user_id: user.id,
         username: user.username,
         action: action,
-        token: localStorage.getItem('token'),
         ...location.state, // media info if creating
       }));
     };

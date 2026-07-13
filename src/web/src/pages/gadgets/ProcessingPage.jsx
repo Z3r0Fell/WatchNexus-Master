@@ -22,9 +22,7 @@ export const ProcessingPage = () => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newJob, setNewJob] = useState({ input_path: '', output_format: 'mp4', preset: 'medium' });
-
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   const fetchJobs = async () => {
     try {

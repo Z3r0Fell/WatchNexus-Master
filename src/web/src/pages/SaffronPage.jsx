@@ -51,8 +51,6 @@ export const SaffronPage = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [tasksRes, historyRes] = await Promise.all([
         axios.get(`${API}/api/saffron/tasks`, { headers }),
         axios.get(`${API}/api/saffron/history?limit=20`, { headers }),
@@ -70,10 +68,9 @@ export const SaffronPage = () => {
 
   const runTask = async (taskId) => {
     try {
-      const token = localStorage.getItem('token');
       setRunningTasks(prev => new Set([...prev, taskId]));
       await axios.post(`${API}/api/saffron/tasks/${taskId}/run`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        
       });
       toast.success(`Task "${taskId}" started`);
       setTimeout(() => {

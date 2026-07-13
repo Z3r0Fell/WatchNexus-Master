@@ -41,9 +41,8 @@ export const AddToPlaylistButton = ({
   const fetchPlaylists = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/drizzle/playlists`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       const data = await res.json();
       setPlaylists(data.playlists || []);
@@ -63,7 +62,6 @@ export const AddToPlaylistButton = ({
 
     setAdding(playlistId);
     try {
-      const token = localStorage.getItem('token');
       const itemData = {
         media_type: mediaItem.media_type || 'movie',
         tmdb_id: mediaItem.tmdb_id || mediaItem.id,
@@ -81,7 +79,6 @@ export const AddToPlaylistButton = ({
       const res = await fetch(`${API_URL}/api/drizzle/playlists/${playlistId}/items`, {
         method: 'POST',
         headers: { 
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(itemData)
@@ -108,11 +105,10 @@ export const AddToPlaylistButton = ({
     if (!name) return;
 
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({ name });
       const res = await fetch(`${API_URL}/api/drizzle/playlists?${params}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       
       if (!res.ok) throw new Error('Failed to create playlist');

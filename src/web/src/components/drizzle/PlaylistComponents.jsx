@@ -160,9 +160,8 @@ export const ActiveQueuePanel = ({ onClose }) => {
   
   const fetchQueueState = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/drizzle/queue`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       const data = await res.json();
       setQueueState(data);
@@ -175,10 +174,9 @@ export const ActiveQueuePanel = ({ onClose }) => {
   
   const handleClearQueue = async () => {
     try {
-      const token = localStorage.getItem('token');
       await fetch(`${API_URL}/api/drizzle/queue`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       setQueueState({ active: false, queue: null });
       toast.success('Queue cleared');
@@ -266,7 +264,6 @@ export const PlaySeasonButton = ({ showTmdbId, showTitle, seasonNumber, onSucces
   const handlePlaySeason = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         show_tmdb_id: showTmdbId,
         show_title: showTitle,
@@ -275,7 +272,7 @@ export const PlaySeasonButton = ({ showTmdbId, showTitle, seasonNumber, onSucces
       
       const res = await fetch(`${API_URL}/api/drizzle/play-season?${params}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       
       if (!res.ok) throw new Error('Failed to create playlist');
@@ -311,7 +308,6 @@ export const PlayCollectionButton = ({ collectionId, collectionName, onSuccess }
   const handlePlayCollection = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         collection_id: collectionId,
         collection_name: collectionName
@@ -319,7 +315,7 @@ export const PlayCollectionButton = ({ collectionId, collectionName, onSuccess }
       
       const res = await fetch(`${API_URL}/api/drizzle/play-collection?${params}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       
       if (!res.ok) throw new Error('Failed to create playlist');
@@ -360,9 +356,8 @@ export const PlaylistsManager = () => {
   
   const fetchPlaylists = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/drizzle/playlists`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       const data = await res.json();
       setPlaylists(data.playlists || []);
@@ -378,11 +373,10 @@ export const PlaylistsManager = () => {
     if (!name) return;
     
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({ name });
       const res = await fetch(`${API_URL}/api/drizzle/playlists?${params}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       const newPlaylist = await res.json();
       setPlaylists([newPlaylist, ...playlists]);
@@ -396,10 +390,9 @@ export const PlaylistsManager = () => {
     if (!window.confirm('Delete this playlist?')) return;
     
     try {
-      const token = localStorage.getItem('token');
       await fetch(`${API_URL}/api/drizzle/playlists/${playlistId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       setPlaylists(playlists.filter(p => p.id !== playlistId));
       if (selectedPlaylist?.id === playlistId) {
@@ -413,10 +406,9 @@ export const PlaylistsManager = () => {
   
   const handleSetActiveQueue = async (playlistId) => {
     try {
-      const token = localStorage.getItem('token');
       await fetch(`${API_URL}/api/drizzle/queue/set/${playlistId}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        
       });
       toast.success('Playlist set as active queue!');
     } catch (err) {

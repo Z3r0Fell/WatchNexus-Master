@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { API_URL } from '../lib/config';
 
@@ -21,11 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/users/me`, { withCredentials: true });
       const d = response.data;
@@ -51,9 +47,13 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const login = async (email, password) => {
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const login = useCallback(async (email, password) => {
     // Backend sets the httpOnly auth cookie on success; we just sync state.
     const response = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
     const { user: userData } = response.data;
@@ -64,20 +64,20 @@ export const AuthProvider = ({ children }) => {
       await fetchUser();
     }
     return userData;
-  };
+  }, [fetchUser]);
 
   // Establish a session after the backend has already issued the auth cookie
   // (e.g. setup wizard / quick-login). No token handling in JS.
-  const loginWithToken = (_token, userData) => {
+  const loginWithToken = useCallback((_token, userData) => {
     if (userData) {
       setUser(userData);
       setIsAuthenticated(true);
       return userData;
     }
     return fetchUser();
-  };
+  }, [fetchUser]);
 
-  const register = async (email, password, username) => {
+  const register = useCallback(async (email, password, username) => {
     const response = await axios.post(`${API}/auth/register`, { email, password, username }, { withCredentials: true });
     const { user: userData } = response.data;
     if (userData) {
@@ -85,9 +85,9 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     }
     return userData;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
     } catch (error) {
@@ -95,20 +95,22 @@ export const AuthProvider = ({ children }) => {
     }
     setUser(null);
     setIsAuthenticated(false);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    user,
+    setUser,
+    loading,
+    login,
+    loginWithToken,
+    register,
+    logout,
+    isAuthenticated,
+    setIsAuthenticated,
+  }), [user, loading, login, loginWithToken, register, logout, isAuthenticated]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      setUser,
-      loading,
-      login,
-      loginWithToken,
-      register,
-      logout,
-      isAuthenticated,
-      setIsAuthenticated
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -22,7 +22,7 @@ export const PodcastsPage = () => {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);
 
-  const getAuth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+  const getAuth = () => ({}); // Cookie auth: wn_token sent automatically
 
   const fetchSubscriptions = useCallback(async () => {
     try {
