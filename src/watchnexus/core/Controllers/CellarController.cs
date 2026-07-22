@@ -103,7 +103,7 @@ public class CellarController : ControllerBase
         try
         {
             var license = JsonDocument.Parse(setting.Value).RootElement;
-            var tier = license.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
+            var tier = ResolveTier(setting.Value);
             var serial = license.TryGetProperty("serial", out var s) ? s.GetString() : null;
             var activatedAt = license.TryGetProperty("activated_at", out var a) ? a.GetString() : null;
             var activationId = license.TryGetProperty("activation_id", out var ai) ? ai.GetString() : null;
@@ -393,11 +393,24 @@ public class CellarController : ControllerBase
     private async Task<string> GetCurrentTier()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
-        if (setting?.Value == null) return "standard";
+        return ResolveTier(setting?.Value);
+    }
+
+    // Tamper-evident tier read: a paid tier is only honored when the stored
+    // hash matches the stored serial. Mismatch/missing → fall back to standard.
+    internal static string ResolveTier(string? licenseJson)
+    {
+        if (string.IsNullOrEmpty(licenseJson)) return "standard";
         try
         {
-            var doc = JsonDocument.Parse(setting.Value).RootElement;
-            return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
+            var doc = JsonDocument.Parse(licenseJson).RootElement;
+            var tier = doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
+            if (tier != "pro" && tier != "ultra") return "standard";
+            var serial = doc.TryGetProperty("serial", out var s) ? s.GetString() : null;
+            var hash = doc.TryGetProperty("hash", out var h) ? h.GetString() : null;
+            if (string.IsNullOrEmpty(serial) || string.IsNullOrEmpty(hash) || ComputeHash(serial) != hash)
+                return "standard";
+            return tier;
         }
         catch { return "standard"; }
     }
@@ -406,17 +419,6 @@ public class CellarController : ControllerBase
     {
         var rank = new Dictionary<string, int> { ["standard"] = 0, ["pro"] = 1, ["ultra"] = 2 };
         return rank.GetValueOrDefault(target, 0) > rank.GetValueOrDefault(current, 0);
-    }
-
-    private static string? ValidateSerialFormat(string serial)
-    {
-        if (serial.Length < 19) return null;
-        var parts = serial.Split('-');
-        if (parts.Length != 5 || parts[0] != "WNX") return null;
-        if (parts[1] != "PRO" && parts[1] != "ULT") return null;
-        for (int i = 2; i < 5; i++)
-            if (parts[i].Length != 4 || !parts[i].All(c => char.IsLetterOrDigit(c))) return null;
-        return parts[1] == "PRO" ? "pro" : "ultra";
     }
 
     public static string[] GetUnlockedModules(string tier)
@@ -433,7 +435,7 @@ public class CellarController : ControllerBase
         return serial[..8] + "-****-****-" + serial[^4..];
     }
 
-    private static string ComputeHash(string serial)
+    internal static string ComputeHash(string serial)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(serial + "WatchNexus-Cellar-Salt-2026");
         return Convert.ToHexString(SHA256.HashData(bytes))[..16].ToLower();

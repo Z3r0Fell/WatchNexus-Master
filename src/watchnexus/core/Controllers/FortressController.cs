@@ -24,14 +24,14 @@ public class FortressFilter : IAsyncActionFilter
     private readonly AppDbContext _db;
 
     // Module codename → required tier
-    private static readonly Dictionary<string, string> ProtectedRoutes = new()
+    internal static readonly Dictionary<string, string> ProtectedRoutes = new()
     {
         // Pro
         ["compote"] = "pro", ["fondue"] = "pro", ["saffron"] = "pro", ["sourdough"] = "pro",
         ["bastion"] = "pro", ["truffle"] = "pro", ["tunnel"] = "pro", ["sprout"] = "pro",
         ["drizzle"] = "pro", ["meringue"] = "pro", ["nutmeg"] = "pro",
         ["biscotti"] = "pro", ["treacle"] = "pro", ["sage"] = "pro", ["terrine"] = "pro",
-        ["iptv"] = "pro",
+        ["iptv"] = "pro", ["streaming-logins"] = "pro", ["streaming-services"] = "pro",
         // Ultra
         ["security"] = "ultra", ["rind"] = "ultra", ["pepper"] = "ultra", ["crucible"] = "ultra",
         ["strudel"] = "ultra", ["crumbs"] = "ultra", ["taffy"] = "ultra",
@@ -39,6 +39,7 @@ public class FortressFilter : IAsyncActionFilter
         ["brine"] = "ultra", ["ladle"] = "ultra", ["vpn"] = "ultra", ["qbittorrent"] = "ultra",
         ["subtitles"] = "ultra", ["pretzel"] = "ultra", ["parfait"] = "ultra", ["menu"] = "ultra",
         ["popsicle"] = "ultra", ["preserves"] = "ultra", ["marshmallow"] = "ultra", ["chowder"] = "ultra",
+        ["watch-party"] = "ultra",
     };
 
     private static readonly Dictionary<string, int> TierRank = new() { ["standard"] = 0, ["pro"] = 1, ["ultra"] = 2 };
@@ -102,9 +103,8 @@ public class FortressFilter : IAsyncActionFilter
         try
         {
             var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
-            if (setting?.Value == null) return "standard";
-            var doc = JsonDocument.Parse(setting.Value).RootElement;
-            return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard";
+            // Tamper-evident read: hash must match the stored serial (CellarController.ResolveTier).
+            return CellarController.ResolveTier(setting?.Value);
         }
         catch { return "standard"; }
     }

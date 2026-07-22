@@ -361,9 +361,7 @@ export const streamingLoginsApi = {
   getLogins: () => axios.get(`${API}/streaming-logins`),
   
   addLogin: (serviceId, email, password) =>
-    axios.post(`${API}/streaming-logins`, null, { 
-      params: { service_id: serviceId, email, password } 
-    }),
+    axios.post(`${API}/streaming-logins`, { service_id: serviceId, email, password }),
   
   deleteLogin: (serviceId) => axios.delete(`${API}/streaming-logins/${serviceId}`),
   

@@ -313,16 +313,19 @@ public class StreamingLoginsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(
-        [FromQuery] string? service_id,
-        [FromQuery] string? email,
-        [FromQuery] string? password)
+    public async Task<IActionResult> Add([FromBody] JsonElement body)
     {
-        var svcId = service_id ?? "";
+        // Credentials arrive in the JSON body — never in the query string
+        // (query params leak into access/proxy logs and browser history).
+        var svcId = body.TryGetProperty("service_id", out var s) ? s.GetString() ?? "" : "";
+        var email = body.TryGetProperty("email", out var e) ? e.GetString() ?? "" : "";
+        var password = body.TryGetProperty("password", out var p) ? p.GetString() ?? "" : "";
+        if (string.IsNullOrEmpty(svcId))
+            return BadRequest(new { detail = "service_id required" });
         var key = $"streaming_login:{svcId}";
         var userId = this.UserId();
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
-        var value = JsonSerializer.Serialize(new { email = email ?? "", password = password ?? "" });
+        var existing = await _db.Settings.FirstOrDefaultAsync(x => x.UserId == userId && x.Key == key);
+        var value = JsonSerializer.Serialize(new { email, password });
         if (existing != null) existing.Value = value;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, Value = value, UserId = userId });
         await _db.SaveChangesAsync();

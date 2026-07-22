@@ -60,10 +60,10 @@ export const StreamingSettings = () => {
       toast.error('Please select a service and enter credentials'); return;
     }
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/streaming-logins`, null, {
-        params: { service_id: selectedService, email: serviceCredentials.email, password: serviceCredentials.password }
+      await axios.post(`${BACKEND_URL}/api/streaming-logins`, {
+        service_id: selectedService, email: serviceCredentials.email, password: serviceCredentials.password
       });
-      toast.success(`${res.data.login.service_name} added successfully`);
+      toast.success('Streaming service added successfully');
       setSelectedService(''); setServiceCredentials({ email: '', password: '' });
       fetchStreamingLogins();
     } catch (error) { toast.error(error.response?.data?.detail || 'Failed to add service'); }
