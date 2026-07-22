@@ -81,6 +81,16 @@ if (args.Contains("--tray") || args.Contains("--tray-only"))
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Apply any staged binary updates BEFORE the host loads assemblies ──
+// (hot patches to web/config files apply live and never reach this path;
+//  only binary fixes are staged and swapped in here, at boot.)
+try
+{
+    var stagedApplied = WatchNexus.Core.Services.PatchService.ApplyPendingUpdates(Log);
+    if (stagedApplied > 0) Log($"[Updater] {stagedApplied} staged binary update(s) applied at boot.");
+}
+catch (Exception ex) { Log($"[Updater] Pending-update apply failed: {ex.Message}"); }
+
 // ── Resolve project root (works from bin/Debug, published, or installed) ──
 static string FindRepoRoot()
 {
@@ -307,6 +317,8 @@ if (builder.Environment.IsDevelopment())
 // ── Background Services ──
 builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>();
 builder.Services.AddHostedService<WatchNexus.Core.Services.TrayIconService>();
+builder.Services.AddScoped<WatchNexus.Core.Services.PatchService>();
+builder.Services.AddHostedService<WatchNexus.Core.Services.UpdateBackgroundService>();
 
 // CORS — restrict to configured origins when ALLOWED_ORIGINS is set
 // (comma-separated). When unset we reflect the request origin but DO NOT allow
@@ -498,6 +510,7 @@ var frontendSearchPaths = new[]
     Path.Combine(AppContext.BaseDirectory, "..", "web"),   // alt production layout
     Path.Combine(AppContext.BaseDirectory, "wwwroot"),
     Path.Combine(repoRoot, "src", "web", "build"),         // dev tree
+    Path.Combine(repoRoot, "..", "web", "build"),          // dev tree (repoRoot = src/watchnexus)
     Path.Combine(repoRoot, "web", "build"),
 };
 var webRoot = frontendSearchPaths.FirstOrDefault(p => Directory.Exists(p));
@@ -514,6 +527,7 @@ if (webRoot != null)
         RequestPath = ""
     });
     Console.WriteLine($"[WatchNexus] Serving frontend from {fullPath}");
+    WatchNexus.Core.Services.PatchService.WebRoot = fullPath;
 }
 else
 {

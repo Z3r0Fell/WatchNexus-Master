@@ -20,6 +20,8 @@ export const UpdateSettings = () => {
   const [updateResult, setUpdateResult] = useState(null);
   const [updateSettings, setUpdateSettings] = useState(null);
   const [updateHistory, setUpdateHistory] = useState([]);
+  const [restartPending, setRestartPending] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -37,9 +39,13 @@ export const UpdateSettings = () => {
     try { const res = await axios.get(`${API}/api/system/updates/history`); setUpdateHistory(res.data.history || []); } catch {}
   }, []);
 
+  const fetchRestartPending = useCallback(async () => {
+    try { const res = await axios.get(`${API}/api/system/updates/restart-pending`); setRestartPending(!!res.data.restart_pending); } catch {}
+  }, []);
+
   useEffect(() => {
-    Promise.all([fetchCurrent(), fetchSettings(), fetchHistory()]).finally(() => setLoading(false));
-  }, [fetchCurrent, fetchSettings, fetchHistory]);
+    Promise.all([fetchCurrent(), fetchSettings(), fetchHistory(), fetchRestartPending()]).finally(() => setLoading(false));
+  }, [fetchCurrent, fetchSettings, fetchHistory, fetchRestartPending]);
 
   const handleCheckUpdates = async () => {
     setChecking(true);
@@ -64,12 +70,33 @@ export const UpdateSettings = () => {
 
   const handleApplyPatch = async (patch) => {
     try {
-      const res = await axios.post(`${API}/api/system/updates/apply-patch`, { patch_id: patch.patch_id, description: patch.description });
+      const res = await axios.post(`${API}/api/system/updates/apply-patch`, { patch_id: patch.patch_id });
       if (res.data.success) {
-        toast.success(res.data.message);
+        toast.success(res.data.message, { duration: 8000 });
+        if (res.data.restart_required) setRestartPending(true);
         fetchHistory();
+        setUpdateResult(null);
       }
-    } catch { toast.error('Failed to apply patch'); }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to apply patch');
+    }
+  };
+
+  const handleRestart = async () => {
+    setRestarting(true);
+    try {
+      const res = await axios.post(`${API}/api/system/updates/restart`, {});
+      toast.info(res.data.message || 'Restarting...', { duration: 10000 });
+      // Poll until the server is back, then reload.
+      setTimeout(() => {
+        const poll = setInterval(async () => {
+          try { await axios.get(`${API}/api/system/updates/current`); clearInterval(poll); window.location.reload(); } catch {}
+        }, 3000);
+      }, 4000);
+    } catch (err) {
+      setRestarting(false);
+      toast.error(err.response?.data?.message || 'Restart failed');
+    }
   };
 
   const handleDismiss = async (version) => {
@@ -135,6 +162,30 @@ export const UpdateSettings = () => {
           </div>
         </div>
       </div>
+
+      {/* Restart Pending Banner (staged binary patch) */}
+      <AnimatePresence>
+        {restartPending && (
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5"
+            data-testid="restart-pending-banner"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Binary update staged — restart to finish</h4>
+                  <p className="text-xs text-gray-400">Live-file fixes are already active. The staged binary swap happens at boot and takes a few seconds.</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={handleRestart} disabled={restarting}
+                className="bg-amber-600 hover:bg-amber-700" data-testid="restart-now-btn">
+                {restarting ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Restarting...</> : 'Restart Now'}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Update Available Banner */}
       <AnimatePresence>

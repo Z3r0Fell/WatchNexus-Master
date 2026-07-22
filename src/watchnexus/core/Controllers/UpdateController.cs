@@ -213,6 +213,7 @@ public class UpdateController : ControllerBase
     }
 
     [HttpPost("settings")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> SaveSettings([FromBody] JsonElement body)
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "update_settings" && s.UserId == "");
@@ -223,29 +224,68 @@ public class UpdateController : ControllerBase
     }
 
     // ── Apply Hotfix Patch (from GitHub) ────────────────────────────
+    // Server re-fetches the trusted manifest from the patch repo and
+    // verifies every file's sha256 — the client only names the patch.
+    // Web/config files apply LIVE (no restart); binaries are staged and
+    // restart_required=true is returned.
     [HttpPost("apply-patch")]
-    public async Task<IActionResult> ApplyPatch([FromBody] JsonElement body)
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> ApplyPatch([FromBody] JsonElement body, [FromServices] Services.PatchService patchService)
     {
         var patchId = body.TryGetProperty("patch_id", out var pid) ? pid.GetString() : null;
         if (string.IsNullOrEmpty(patchId))
             return BadRequest(new { success = false, message = "patch_id required" });
+        if (!patchService.IsConfigured)
+            return StatusCode(503, new { success = false, message = "Patch repo not configured (PATCH_REPO_URL)" });
 
-        // Log the patch application
-        var id = Guid.NewGuid().ToString("N")[..12];
-        var data = JsonSerializer.Serialize(new
+        var manifest = await patchService.FetchManifestAsync(CURRENT_VERSION);
+        if (manifest == null)
+            return NotFound(new { success = false, message = $"No patch manifest found for v{CURRENT_VERSION}" });
+        if (!string.Equals(manifest.PatchId, patchId, StringComparison.Ordinal))
+            return BadRequest(new { success = false, message = $"Patch '{patchId}' does not match the published manifest ('{manifest.PatchId}')" });
+
+        var result = await patchService.ApplyAsync(manifest);
+        await Services.UpdateBackgroundService.RecordAsync(_db, manifest, result, applier: "manual");
+
+        if (!result.Success)
+            return StatusCode(500, new { success = false, message = $"Patch failed: {result.Error}" });
+
+        return Ok(new
         {
-            patch_id = patchId,
-            from_version = CURRENT_VERSION,
-            to_version = CURRENT_VERSION,
-            type = "hotfix",
-            applied_at = DateTime.UtcNow.ToString("o"),
-            status = "applied",
-            notes = body.TryGetProperty("description", out var desc) ? desc.GetString() : "Silent hotfix patch",
+            success = true,
+            message = result.RestartRequired
+                ? $"Patch {patchId} applied — {result.AppliedLive.Count} file(s) live, {result.StagedForRestart.Count} binary file(s) staged. Restart to finish."
+                : $"Patch {patchId} applied live — no restart needed.",
+            applied_live = result.AppliedLive,
+            staged_for_restart = result.StagedForRestart,
+            restart_required = result.RestartRequired,
         });
-        _db.Settings.Add(new AppSetting { Key = $"update_applied:{id}", UserId = "", Value = data });
-        await _db.SaveChangesAsync();
+    }
 
-        return Ok(new { success = true, message = $"Patch {patchId} applied", restart_required = false });
+    // ── Restart status + graceful restart (binary patches only) ─────
+    [HttpGet("restart-pending")]
+    public async Task<IActionResult> RestartPending()
+    {
+        var pending = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "update_restart_pending" && s.UserId == "");
+        var stagedDir = Path.Combine(AppContext.BaseDirectory, Services.PatchService.PendingDirName);
+        var hasStaged = Directory.Exists(stagedDir) && Directory.EnumerateFiles(stagedDir, "*", SearchOption.AllDirectories).Any();
+        if (!hasStaged) return Ok(new { restart_pending = false });
+        object? info = null;
+        if (pending?.Value != null) { try { info = JsonSerializer.Deserialize<object>(pending.Value); } catch { } }
+        return Ok(new { restart_pending = true, patch = info });
+    }
+
+    [HttpPost("restart")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> Restart([FromServices] IHostApplicationLifetime lifetime)
+    {
+        var pending = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "update_restart_pending" && s.UserId == "");
+        if (pending != null) { _db.Settings.Remove(pending); await _db.SaveChangesAsync(); }
+        // Graceful stop after the response flushes; the service manager
+        // (systemd Restart=always / Windows service recovery / supervisor)
+        // brings the process back up, applying staged binaries at boot.
+        _ = Task.Run(async () => { await Task.Delay(1500); lifetime.StopApplication(); });
+        return Ok(new { success = true, message = "Restarting — staged updates will be applied at boot. Back in a few seconds." });
     }
 
     // ── Dismiss Update Notification ─────────────────────────────────
