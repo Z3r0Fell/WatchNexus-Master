@@ -1,4 +1,3 @@
-import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -15,9 +14,7 @@ import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 
-const API = BACKEND_URL;
 
 // Page transition animations
 const pageVariants = {
@@ -71,7 +68,7 @@ export const DownloadsPage = () => {
   const [qbitTorrents, setQbitTorrents] = useState([]);
   const [qbitStatus, setQbitStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [downloadMode, setDownloadMode] = useState('builtin');
+  const [downloadMode, setDownloadMode] = useState('qbittorrent');
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [torrentFiles, setTorrentFiles] = useState([]);
   
@@ -104,16 +101,15 @@ export const DownloadsPage = () => {
 
     setAddingMagnet(true);
     try {
-      const response = await axios.post(`${API}/api/downloads/add-magnet`, null, {
-        params: { magnet: magnetLink, sequential: true }
-      });
-      
-      if (response.data.success) {
-        toast.success(`Added: ${response.data.name}`);
-        setMagnetLink('');
-        setShowMagnetInput(false);
-        fetchEngineData();
+      if (downloadMode !== 'qbittorrent') {
+        toast.error('The built-in engine ships in a future release — switch to qBittorrent mode to add downloads.');
+        return;
       }
+      await qbittorrentApi.addTorrent(null, magnetLink);
+      toast.success('Magnet sent to qBittorrent');
+      setMagnetLink('');
+      setShowMagnetInput(false);
+      fetchQbitData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to add magnet');
     } finally {
@@ -154,7 +150,7 @@ export const DownloadsPage = () => {
 
   useEffect(() => {
     // Load saved download mode
-    const savedMode = localStorage.getItem('watchnexus_download_mode') || 'builtin';
+    const savedMode = localStorage.getItem('watchnexus_download_mode') || 'qbittorrent';
     setDownloadMode(savedMode);
 
     const fetchAll = async () => {
@@ -401,7 +397,7 @@ export const DownloadsPage = () => {
                   }`}
                 >
                   <Zap className="w-4 h-4" />
-                  Built-in
+                  Built-in (soon)
                 </button>
                 <button
                   onClick={() => { setDownloadMode('qbittorrent'); localStorage.setItem('watchnexus_download_mode', 'qbittorrent'); }}
@@ -437,9 +433,9 @@ export const DownloadsPage = () => {
                 )}
               </div>
 
-              {downloadMode === 'builtin' && engineStatus?.transfer && (
-                <span className="text-xs text-gray-500">
-                  DHT: {engineStatus.transfer.dht_nodes} nodes
+              {downloadMode === 'builtin' && (
+                <span data-testid="builtin-engine-notice" className="text-xs text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1">
+                  The built-in engine ships in a future release — use qBittorrent for downloads today
                 </span>
               )}
             </div>

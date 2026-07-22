@@ -283,63 +283,63 @@ public class DownloadsController : ControllerBase
     }
 
     // ── Built-in Download Engine ────────────────────────
+    // v1.0.0 ships WITHOUT a built-in torrent engine. These endpoints are
+    // honest about that: reads return empty/unavailable, mutations 501.
+    // Real downloads go through the qBittorrent integration (/api/qbittorrent).
+    private const string EngineUnavailable =
+        "The built-in torrent engine is not included in v1.0.0. Connect qBittorrent under Settings → Integrations to manage downloads.";
+
+    private ObjectResult EngineNotImplemented() =>
+        StatusCode(StatusCodes.Status501NotImplemented, new { detail = EngineUnavailable });
+
     [HttpGet("engine/status")]
-    public IActionResult EngineStatus() => Ok(new { engine = "built-in", status = "idle", active_downloads = 0 });
+    public IActionResult EngineStatus() => Ok(new
+    {
+        engine = "built-in",
+        status = "unavailable",
+        success = false,
+        available = false,
+        active_downloads = 0,
+        detail = EngineUnavailable,
+    });
 
     [HttpGet("engine/torrents")]
     public IActionResult EngineTorrents() => Ok(Array.Empty<object>());
 
     [HttpGet("engine/{torrentId}")]
-    public IActionResult EngineTorrent(string torrentId) => Ok(new { id = torrentId, status = "unknown" });
+    public IActionResult EngineTorrent(string torrentId) =>
+        NotFound(new { detail = "Torrent not found — the built-in engine is not available in this release." });
 
     [HttpPost("engine/add")]
-    public IActionResult EngineAdd(
-        [FromQuery] string? magnet,
-        [FromQuery] string? save_path,
-        [FromQuery] bool sequential = false,
-        [FromQuery] string? category = "watchnexus")
-    {
-        if (string.IsNullOrEmpty(magnet)) return BadRequest(new { detail = "magnet link required" });
-        return Ok(new { status = "added", magnet = magnet[..Math.Min(50, magnet.Length)] + "...", category });
-    }
+    public IActionResult EngineAdd() => EngineNotImplemented();
 
     [HttpGet("engine/{torrentId}/files")]
     public IActionResult EngineFiles(string torrentId) => Ok(Array.Empty<object>());
 
     [HttpPost("engine/{torrentId}/pause")]
-    public IActionResult EnginePause(string torrentId) => Ok(new { status = "paused", id = torrentId });
+    public IActionResult EnginePause(string torrentId) => EngineNotImplemented();
 
     [HttpPost("engine/{torrentId}/resume")]
-    public IActionResult EngineResume(string torrentId) => Ok(new { status = "resumed", id = torrentId });
+    public IActionResult EngineResume(string torrentId) => EngineNotImplemented();
 
     [HttpDelete("engine/{torrentId}")]
-    public IActionResult EngineRemove(string torrentId, [FromQuery] bool delete_files = false) =>
-        Ok(new { status = "removed", id = torrentId, files_deleted = delete_files });
+    public IActionResult EngineRemove(string torrentId) => EngineNotImplemented();
 
     [HttpPost("engine/{torrentId}/sequential")]
-    public IActionResult EngineSequential(string torrentId, [FromQuery] bool enabled = true) =>
-        Ok(new { status = "updated", id = torrentId, sequential = enabled });
+    public IActionResult EngineSequential(string torrentId) => EngineNotImplemented();
 
     [HttpGet("engine/settings")]
-    public IActionResult EngineSettings() => Ok(new
-    {
-        download_path = Path.Combine(AppContext.BaseDirectory, "downloads"),
-        max_concurrent = 3,
-        sequential_download = false,
-        auto_start = true,
-        seed_ratio_limit = 1.0,
-    });
+    public IActionResult EngineSettings() => EngineNotImplemented();
 
     [HttpPut("engine/settings")]
-    public IActionResult EngineUpdateSettings([FromBody] JsonElement body) => Ok(new { status = "updated" });
+    public IActionResult EngineUpdateSettings() => EngineNotImplemented();
 
     [HttpPost("engine/pause-all")]
-    public IActionResult EnginePauseAll() => Ok(new { status = "all_paused" });
+    public IActionResult EnginePauseAll() => EngineNotImplemented();
 
     [HttpPost("engine/resume-all")]
-    public IActionResult EngineResumeAll() => Ok(new { status = "all_resumed" });
+    public IActionResult EngineResumeAll() => EngineNotImplemented();
 
     [HttpPost("engine/remove-completed")]
-    public IActionResult EngineRemoveCompleted([FromQuery] bool delete_files = false) =>
-        Ok(new { status = "completed_removed", files_deleted = delete_files });
+    public IActionResult EngineRemoveCompleted() => EngineNotImplemented();
 }

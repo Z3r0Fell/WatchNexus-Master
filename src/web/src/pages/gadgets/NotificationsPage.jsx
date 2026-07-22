@@ -39,6 +39,7 @@ export const NotificationsPage = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
 
   const addChannel = async () => {

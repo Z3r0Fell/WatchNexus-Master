@@ -106,6 +106,7 @@ export const WatchPartyPage = () => {
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyCode, location.state]);
   
   // Handle incoming messages

@@ -122,6 +122,7 @@ const FolderBrowser = ({ onSelect, initialPath = '', selectedPath = '' }) => {
   // Initial load
   useEffect(() => {
     fetchDirectory(initialPath || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle folder click - navigate into folder

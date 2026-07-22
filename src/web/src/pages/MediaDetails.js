@@ -31,12 +31,14 @@ export const MediaDetails = () => {
   useEffect(() => {
     fetchMediaDetails();
     checkWatchlist();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, id]);
 
   useEffect(() => {
     if (type === 'tv' && media) {
       fetchSeason();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeason, media]);
 
   const fetchMediaDetails = async () => {

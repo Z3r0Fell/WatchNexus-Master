@@ -64,3 +64,8 @@ credentials.json
 .credentials
 src/web/node_modules/.cache/default-development/0.pack
 src/web/node_modules/.cache/default-development/6.pack
+
+# Internal agent/dev notes — keep credentials and memory files out of the public repo
+/memory/
+/auth_testing.md
+src/web/node_modules/.cache/default-development/4.pack

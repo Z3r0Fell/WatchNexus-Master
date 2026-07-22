@@ -1,6 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════
-# WatchNexus — PR Validation
-# Runs on pull requests to verify the build compiles for all tiers.
+# WatchNexus — Multi-tier Build Validation
+# Verifies the Standard/Pro/Ultra Docker images compile. Runs on PRs,
+# on pushes to main (direct-to-main workflow), and on demand.
 # ══════════════════════════════════════════════════════════════════════
 
 name: PR Build Check
@@ -8,6 +9,9 @@ name: PR Build Check
 on:
   pull_request:
     branches: [main, develop]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-check:

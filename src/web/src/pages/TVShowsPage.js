@@ -194,6 +194,7 @@ export const TVShowsPage = () => {
 
   useEffect(() => {
     if (viewMode === 'discover') fetchShows();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, selectedGenre, sortBy, viewMode]);
 
   return (

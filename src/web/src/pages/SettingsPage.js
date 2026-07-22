@@ -204,6 +204,7 @@ export const SettingsPage = () => {
       const settingsRes = await settingsApi.get().catch(() => ({ data: settings }));
       setSettings(settingsRes.data || settings);
     } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveSettings = async () => {

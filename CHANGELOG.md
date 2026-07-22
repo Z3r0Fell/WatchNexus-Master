@@ -6,7 +6,7 @@
 
 ### Headline
 - **First Release To Public (RTP) of WatchNexus.** Standard, Pro, and Ultra tiers are now generally available.
-- All scaffolding/placeholders removed across backend and frontend (no stubs remain).
+- Scaffolding/placeholder purge across backend and frontend — 697 of 706 route handlers are real implementations or honest catalogues/501s (see `docs/CONTROLLER-AUDIT.md`). The 5 remaining known stubs (Kodi addons, built-in torrent engine, subtitle-ext toggle, FFmpeg adapter endpoint, next-up) return honest empty/`not_implemented` responses rather than fake data.
 - License key activation against `https://licenses.watchnexus.ca` is the single source of tier truth.
 - Fortress Protocol integrity verification active on startup for every tier.
 

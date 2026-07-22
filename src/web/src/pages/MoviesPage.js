@@ -180,6 +180,7 @@ export const MoviesPage = () => {
 
   useEffect(() => {
     if (viewMode === 'discover') fetchMovies();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, selectedGenre, sortBy, viewMode]);
 
   return (

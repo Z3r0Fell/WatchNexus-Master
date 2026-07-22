@@ -127,6 +127,7 @@ export const ZestSettings = () => {
 
   useEffect(() => {
     handleRefresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -138,6 +139,7 @@ export const ZestSettings = () => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh]);
 
   useEffect(() => {

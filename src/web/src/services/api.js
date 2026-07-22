@@ -232,7 +232,8 @@ export const qbittorrentApi = {
     }),
 };
 
-// Built-in Torrent Engine API calls (no external apps required!)
+// Built-in Torrent Engine API (not available in v1.0.0 — endpoints return 501;
+// use qbittorrentApi for real downloads)
 export const torrentEngineApi = {
   // Status
   getStatus: () =>

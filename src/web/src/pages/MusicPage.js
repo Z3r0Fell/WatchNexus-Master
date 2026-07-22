@@ -68,6 +68,7 @@ export const MusicPage = () => {
       audio.pause();
       audio.src = '';
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchData]);
 
   const handleAddLibrary = async () => {

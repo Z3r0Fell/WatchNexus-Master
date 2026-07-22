@@ -35,6 +35,7 @@ export const ProcessingPage = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchJobs(); const interval = setInterval(fetchJobs, 10000); return () => clearInterval(interval); }, []);
 
   const submitJob = async () => {

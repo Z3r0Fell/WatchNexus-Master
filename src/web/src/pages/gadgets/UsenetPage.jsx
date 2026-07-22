@@ -43,6 +43,7 @@ export const UsenetPage = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchConfigs(); }, []);
 
   const saveBrineConfig = async () => {

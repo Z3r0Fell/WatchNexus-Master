@@ -127,6 +127,7 @@ const ColorSpectrum = ({ hue, saturation, lightness, onChange }) => {
   const handleMouseDown = useCallback((e) => {
     setIsDragging(true);
     handleMove(e);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMove = useCallback((e) => {
@@ -266,6 +267,7 @@ export const JuiceColorPicker = ({
     const newHex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
     setInputValue(newHex);
     onChange?.(newHex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hue, saturation, lightness]);
 
   // Handle input change

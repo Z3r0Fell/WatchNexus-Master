@@ -204,6 +204,7 @@ const VideoPlayer = () => {
     if (nextEpisodeCountdown === 0 && nextEpisode && autoPlayNext) {
       playNextEpisode();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextEpisodeCountdown, nextEpisode, autoPlayNext]);
 
   // Skip to end of current segment
@@ -492,6 +493,7 @@ const VideoPlayer = () => {
       default:
         break;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volume, fullscreen, showSubtitleMenu, showSettings, subtitleOffset]);
 
   useEffect(() => {

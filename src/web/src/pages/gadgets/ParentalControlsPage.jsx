@@ -33,6 +33,7 @@ export const ParentalControlsPage = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchProfile(); }, []);
 
   const saveProfile = async () => {

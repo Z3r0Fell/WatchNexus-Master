@@ -61,6 +61,23 @@ jobs:
       - name: Install
         working-directory: src/web
         run: yarn install --frozen-lockfile
-      - name: Audit (high+)
+      - name: Audit production dependencies (fails on critical)
         working-directory: src/web
-        run: yarn audit --level high --groups dependencies || true
+        run: |
+          set +e
+          yarn audit --groups dependencies --json > audit.json 2>/dev/null
+          CRIT=$(grep -c '"severity":"critical"' audit.json)
+          HIGH=$(grep -c '"severity":"high"' audit.json)
+          echo "Production deps — critical: $CRIT, high: $HIGH"
+          {
+            echo "### Frontend dependency audit (production dependencies)"
+            echo "- Critical: $CRIT"
+            echo "- High: $HIGH"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CRIT" -gt 0 ]; then
+            echo "::error::$CRIT critical vulnerabilities found in production dependencies"
+            exit 1
+          fi
+      - name: Advisory audit incl. devDependencies (informational only)
+        working-directory: src/web
+        run: yarn audit --level high || true
