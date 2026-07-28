@@ -9,9 +9,12 @@ namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
 // UPDATE SYSTEM — Version Check, Changelog, Silent Patching
-// Checks against:
-//   1. License server (https://licenses.watchnexus.ca) for tier builds
-//   2. Private GitHub repo for silent hotfix patches
+// Checks the WN-Admin/WatchNexus GitHub repo:
+//   • Updates/latest.json  → full version updates (primary channel)
+//   • Patches/{version}.json → silent hotfix patches for the running version
+//   • Releases/            → downloadable installers/builds
+// The license server (licenses.watchnexus.ca) remains the fallback for
+// tier-specific builds when the GitHub Updates channel has no entry.
 // ══════════════════════════════════════════════════════════════════════
 [Route("api/system/updates")]
 [ApiController]
@@ -29,6 +32,27 @@ public class UpdateController : ControllerBase
     }
 
     private const string CURRENT_VERSION = "1.0.0";
+    private const string RELEASES_PAGE = "https://github.com/WN-Admin/WatchNexus/tree/main/Releases";
+
+    // Fetch + base64-decode a JSON file from the GitHub repo via the contents API.
+    private async Task<JsonElement?> FetchRepoJson(string repoPath)
+    {
+        var repoUrl = (_config["PATCH_REPO_URL"] ?? "").TrimEnd('/');
+        if (string.IsNullOrEmpty(repoUrl)) return null;
+        using var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(10);
+        http.DefaultRequestHeaders.Add("User-Agent", $"WatchNexus/{CURRENT_VERSION}");
+        var token = _config["PATCH_REPO_TOKEN"] ?? "";
+        if (!string.IsNullOrEmpty(token))
+            http.DefaultRequestHeaders.Add("Authorization", $"token {token}");
+        var resp = await http.GetAsync($"{repoUrl}/contents/{repoPath}");
+        if (!resp.IsSuccessStatusCode) return null;
+        var ghFile = JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
+        if (!ghFile.TryGetProperty("content", out var content)) return null;
+        var decoded = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(content.GetString()?.Replace("\n", "") ?? ""));
+        return JsonDocument.Parse(decoded).RootElement;
+    }
 
     // ── Check for Updates ───────────────────────────────────────────
     [HttpGet("check")]
@@ -37,85 +61,105 @@ public class UpdateController : ControllerBase
         var tier = await GetCurrentTier();
         var licenseServerUrl = _config["LICENSE_SERVER_URL"] ?? "https://licenses.watchnexus.ca";
         var githubPatchUrl = _config["PATCH_REPO_URL"] ?? "";
-        var githubPatchToken = _config["PATCH_REPO_TOKEN"] ?? "";
 
         // Result containers
         object? mainUpdate = null;
         object? hotfixPatch = null;
         var errors = new List<string>();
 
-        // ── 1. Check license server for tier builds ─────────────
+        // ── 1. Main version updates — GitHub Updates/ channel first ──
         try
         {
-            using var http = _httpFactory.CreateClient();
-            http.Timeout = TimeSpan.FromSeconds(10);
-            http.DefaultRequestHeaders.Add("User-Agent", $"WatchNexus/{CURRENT_VERSION}");
-            var resp = await http.GetAsync($"{licenseServerUrl.TrimEnd('/')}/api/updates/manifest?tier={tier}&current={CURRENT_VERSION}");
-            if (resp.IsSuccessStatusCode)
+            var latest = await FetchRepoJson("Updates/latest.json");
+            if (latest is JsonElement u)
             {
-                var body = await resp.Content.ReadAsStringAsync();
-                var manifest = JsonDocument.Parse(body).RootElement;
-                var latestVersion = manifest.TryGetProperty("latest_version", out var lv) ? lv.GetString() : CURRENT_VERSION;
+                var latestVersion = u.TryGetProperty("latest_version", out var lv) ? lv.GetString() : CURRENT_VERSION;
                 var hasUpdate = CompareVersions(latestVersion ?? CURRENT_VERSION, CURRENT_VERSION) > 0;
-
                 mainUpdate = new
                 {
                     available = hasUpdate,
+                    source = "github",
                     current_version = CURRENT_VERSION,
                     latest_version = latestVersion,
                     tier,
-                    download_url = manifest.TryGetProperty("download_url", out var du) ? du.GetString() : null,
-                    release_notes = manifest.TryGetProperty("release_notes", out var rn) ? rn.GetString() : null,
-                    changelog = manifest.TryGetProperty("changelog", out var cl) ? cl.GetString() : null,
-                    release_date = manifest.TryGetProperty("release_date", out var rd) ? rd.GetString() : null,
-                    size_mb = manifest.TryGetProperty("size_mb", out var sm) ? sm.GetDouble() : 0,
-                    mandatory = manifest.TryGetProperty("mandatory", out var mn) && mn.GetBoolean(),
-                    min_version = manifest.TryGetProperty("min_version", out var mv) ? mv.GetString() : null,
+                    download_url = u.TryGetProperty("download_url", out var du) ? du.GetString() : RELEASES_PAGE,
+                    releases_page = RELEASES_PAGE,
+                    release_notes = u.TryGetProperty("release_notes", out var rn) ? rn.GetString() : null,
+                    changelog = u.TryGetProperty("changelog", out var cl) ? cl.GetString() : null,
+                    release_date = u.TryGetProperty("release_date", out var rd) ? rd.GetString() : null,
+                    size_mb = u.TryGetProperty("size_mb", out var sm) && sm.TryGetDouble(out var smv) ? smv : 0,
+                    mandatory = u.TryGetProperty("mandatory", out var mn) && mn.GetBoolean(),
+                    min_version = u.TryGetProperty("min_version", out var mv) ? mv.GetString() : null,
                 };
-            }
-            else
-            {
-                mainUpdate = new { available = false, current_version = CURRENT_VERSION, latest_version = CURRENT_VERSION, tier, error = $"License server returned {(int)resp.StatusCode}" };
             }
         }
         catch (Exception ex)
         {
-            mainUpdate = new { available = false, current_version = CURRENT_VERSION, latest_version = CURRENT_VERSION, tier, error = $"Cannot reach license server: {ex.Message}" };
-            errors.Add($"License server: {ex.Message}");
+            errors.Add($"GitHub Updates channel: {ex.Message}");
         }
 
-        // ── 2. Check GitHub for silent hotfix patches ───────────
-        if (!string.IsNullOrEmpty(githubPatchUrl))
+        // ── 1b. Fallback: license server for tier-specific builds ──
+        if (mainUpdate == null)
         {
             try
             {
                 using var http = _httpFactory.CreateClient();
                 http.Timeout = TimeSpan.FromSeconds(10);
                 http.DefaultRequestHeaders.Add("User-Agent", $"WatchNexus/{CURRENT_VERSION}");
-                if (!string.IsNullOrEmpty(githubPatchToken))
-                    http.DefaultRequestHeaders.Add("Authorization", $"token {githubPatchToken}");
-
-                var resp = await http.GetAsync($"{githubPatchUrl.TrimEnd('/')}/contents/patches/{CURRENT_VERSION}.json");
+                var resp = await http.GetAsync($"{licenseServerUrl.TrimEnd('/')}/api/updates/manifest?tier={tier}&current={CURRENT_VERSION}");
                 if (resp.IsSuccessStatusCode)
                 {
                     var body = await resp.Content.ReadAsStringAsync();
-                    var ghFile = JsonDocument.Parse(body).RootElement;
-                    // GitHub returns base64-encoded content
-                    if (ghFile.TryGetProperty("content", out var content))
+                    var manifest = JsonDocument.Parse(body).RootElement;
+                    var latestVersion = manifest.TryGetProperty("latest_version", out var lv) ? lv.GetString() : CURRENT_VERSION;
+                    var hasUpdate = CompareVersions(latestVersion ?? CURRENT_VERSION, CURRENT_VERSION) > 0;
+
+                    mainUpdate = new
                     {
-                        var decoded = System.Text.Encoding.UTF8.GetString(
-                            Convert.FromBase64String(content.GetString()?.Replace("\n", "") ?? ""));
-                        var patchData = JsonDocument.Parse(decoded).RootElement;
-                        hotfixPatch = new
-                        {
-                            available = true,
-                            patch_id = patchData.TryGetProperty("patch_id", out var pid) ? pid.GetString() : null,
-                            description = patchData.TryGetProperty("description", out var desc) ? desc.GetString() : null,
-                            severity = patchData.TryGetProperty("severity", out var sev) ? sev.GetString() : "low",
-                            silent = patchData.TryGetProperty("silent", out var sil) && sil.GetBoolean(),
-                            files = patchData.TryGetProperty("files", out var files) ? files.GetArrayLength() : 0,
-                        };
-                    }
+                        available = hasUpdate,
+                        source = "license-server",
+                        current_version = CURRENT_VERSION,
+                        latest_version = latestVersion,
+                        tier,
+                        download_url = manifest.TryGetProperty("download_url", out var du) ? du.GetString() : null,
+                        releases_page = RELEASES_PAGE,
+                        release_notes = manifest.TryGetProperty("release_notes", out var rn) ? rn.GetString() : null,
+                        changelog = manifest.TryGetProperty("changelog", out var cl) ? cl.GetString() : null,
+                        release_date = manifest.TryGetProperty("release_date", out var rd) ? rd.GetString() : null,
+                        size_mb = manifest.TryGetProperty("size_mb", out var sm) ? sm.GetDouble() : 0,
+                        mandatory = manifest.TryGetProperty("mandatory", out var mn) && mn.GetBoolean(),
+                        min_version = manifest.TryGetProperty("min_version", out var mv) ? mv.GetString() : null,
+                    };
+                }
+                else
+                {
+                    mainUpdate = new { available = false, current_version = CURRENT_VERSION, latest_version = CURRENT_VERSION, tier, error = $"License server returned {(int)resp.StatusCode}" };
+                }
+            }
+            catch (Exception ex)
+            {
+                mainUpdate = new { available = false, current_version = CURRENT_VERSION, latest_version = CURRENT_VERSION, tier, error = $"Cannot reach license server: {ex.Message}" };
+                errors.Add($"License server: {ex.Message}");
+            }
+        }
+
+        // ── 2. Check GitHub Patches/ for silent hotfix patches ──────
+        if (!string.IsNullOrEmpty(githubPatchUrl))
+        {
+            try
+            {
+                var patchData0 = await FetchRepoJson($"Patches/{CURRENT_VERSION}.json");
+                if (patchData0 is JsonElement patchData)
+                {
+                    hotfixPatch = new
+                    {
+                        available = true,
+                        patch_id = patchData.TryGetProperty("patch_id", out var pid) ? pid.GetString() : null,
+                        description = patchData.TryGetProperty("description", out var desc) ? desc.GetString() : null,
+                        severity = patchData.TryGetProperty("severity", out var sev) ? sev.GetString() : "low",
+                        silent = patchData.TryGetProperty("silent", out var sil) && sil.GetBoolean(),
+                        files = patchData.TryGetProperty("files", out var files) ? files.GetArrayLength() : 0,
+                    };
                 }
                 else
                 {
@@ -146,10 +190,52 @@ public class UpdateController : ControllerBase
             tier,
             main_update = mainUpdate,
             hotfix_patch = hotfixPatch,
+            releases_page = RELEASES_PAGE,
             checked_at = DateTime.UtcNow.ToString("o"),
             auto_check_enabled = true,
             errors = errors.Count > 0 ? errors : null,
         });
+    }
+
+    // ── List downloadable builds from the GitHub Releases/ folder ────
+    [HttpGet("releases")]
+    public async Task<IActionResult> ListReleases()
+    {
+        var repoUrl = (_config["PATCH_REPO_URL"] ?? "").TrimEnd('/');
+        if (string.IsNullOrEmpty(repoUrl))
+            return Ok(new { releases = Array.Empty<object>(), releases_page = RELEASES_PAGE, message = "Update repo not configured" });
+        try
+        {
+            using var http = _httpFactory.CreateClient();
+            http.Timeout = TimeSpan.FromSeconds(10);
+            http.DefaultRequestHeaders.Add("User-Agent", $"WatchNexus/{CURRENT_VERSION}");
+            var token = _config["PATCH_REPO_TOKEN"] ?? "";
+            if (!string.IsNullOrEmpty(token))
+                http.DefaultRequestHeaders.Add("Authorization", $"token {token}");
+            var resp = await http.GetAsync($"{repoUrl}/contents/Releases");
+            if (!resp.IsSuccessStatusCode)
+                return Ok(new { releases = Array.Empty<object>(), releases_page = RELEASES_PAGE, message = $"Releases folder returned {(int)resp.StatusCode}" });
+            var items = JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
+            var releases = new List<object>();
+            foreach (var item in items.EnumerateArray())
+            {
+                var name = item.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                if (name.Equals("readme.md", StringComparison.OrdinalIgnoreCase)) continue;
+                releases.Add(new
+                {
+                    name,
+                    type = item.TryGetProperty("type", out var t) ? t.GetString() : "file",
+                    size = item.TryGetProperty("size", out var sz) ? sz.GetInt64() : 0,
+                    download_url = item.TryGetProperty("download_url", out var du) ? du.GetString() : null,
+                    html_url = item.TryGetProperty("html_url", out var hu) ? hu.GetString() : null,
+                });
+            }
+            return Ok(new { releases, releases_page = RELEASES_PAGE, total = releases.Count });
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { releases = Array.Empty<object>(), releases_page = RELEASES_PAGE, error = ex.Message });
+        }
     }
 
     // ── Get Current Version Info ────────────────────────────────────

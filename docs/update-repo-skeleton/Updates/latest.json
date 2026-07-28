@@ -1,0 +1,10 @@
+{
+  "latest_version": "1.0.0",
+  "release_date": "2026-07-22",
+  "release_notes": "Initial public release.",
+  "changelog": "https://github.com/WN-Admin/WatchNexus/blob/main/Updates/CHANGELOG.md",
+  "download_url": "https://github.com/WN-Admin/WatchNexus/tree/main/Releases",
+  "size_mb": 0,
+  "mandatory": false,
+  "min_version": "1.0.0"
+}

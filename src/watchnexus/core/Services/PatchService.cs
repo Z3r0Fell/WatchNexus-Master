@@ -65,7 +65,7 @@ public class PatchService
     {
         if (!IsConfigured) return null;
         using var http = CreateClient();
-        var resp = await http.GetAsync($"{RepoUrl}/contents/patches/{version}.json");
+        var resp = await http.GetAsync($"{RepoUrl}/contents/Patches/{version}.json");
         if (!resp.IsSuccessStatusCode) return null;
         var ghFile = JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
         if (!ghFile.TryGetProperty("content", out var content)) return null;
@@ -191,8 +191,8 @@ public class PatchService
             if (!string.IsNullOrEmpty(f.Url))
                 return await http.GetByteArrayAsync(f.Url);
 
-            // Default layout: patches/files/<patch_id>/<path> via GitHub contents API
-            var resp = await http.GetAsync($"{RepoUrl}/contents/patches/files/{patchId}/{f.Path}");
+            // Default layout: Patches/files/<patch_id>/<path> via GitHub contents API
+            var resp = await http.GetAsync($"{RepoUrl}/contents/Patches/files/{patchId}/{f.Path}");
             if (!resp.IsSuccessStatusCode) return null;
             var ghFile = JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
             if (!ghFile.TryGetProperty("content", out var content)) return null;

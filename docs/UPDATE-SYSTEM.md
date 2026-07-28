@@ -18,23 +18,51 @@ Set in `appsettings.Production.json` (or environment):
 
 ```json
 {
-  "PATCH_REPO_URL": "https://api.github.com/repos/<owner>/<private-patch-repo>",
+  "PATCH_REPO_URL": "https://api.github.com/repos/WN-Admin/WatchNexus",
   "PATCH_REPO_TOKEN": "github_pat_..."
 }
 ```
 
 ## Patch repo layout
 
+The update repo is `WN-Admin/WatchNexus` (github.com/WN-Admin/WatchNexus)
+with three channels:
+
 ```
-patches/
+Patches/                            ← hot-fixes for the RUNNING version
 ├── 1.0.0.json                      ← manifest for servers running v1.0.0
 └── files/
     └── 2026-07-22-hotfix-01/       ← one folder per patch_id
         ├── static/js/fix.js        ← file paths mirror their install path
         └── WatchNexus.Core.dll
+Updates/                            ← full version-update announcements
+└── latest.json                     ← latest_version + notes + download_url
+Releases/                           ← downloadable installers/builds
+└── WatchNexus-1.0.1-win-x64.exe    ← linked from Updates/latest.json
 ```
 
-## Manifest schema — `patches/<version>.json`
+### `Updates/latest.json` schema
+
+```json
+{
+  "latest_version": "1.0.1",
+  "release_date": "2026-08-01",
+  "release_notes": "Fixes X, adds Y",
+  "changelog": "https://github.com/WN-Admin/WatchNexus/blob/main/Updates/CHANGELOG-1.0.1.md",
+  "download_url": "https://github.com/WN-Admin/WatchNexus/tree/main/Releases",
+  "size_mb": 85,
+  "mandatory": false,
+  "min_version": "1.0.0"
+}
+```
+
+The server compares `latest_version` to its own version; only a strictly
+newer version shows the "Update Available" banner. If `Updates/latest.json`
+does not exist, the check falls back to the license server manifest.
+`GET /api/system/updates/releases` lists the `Releases/` folder contents
+with direct download links.
+
+## Patch manifest schema — `Patches/<version>.json`
 
 ```json
 {
@@ -60,7 +88,7 @@ patches/
 
 - `target`: `web` (SPA root, live), `data` (app dir, live), `app` (app dir, staged for restart)
 - `url` optional — when omitted the file is fetched from
-  `patches/files/<patch_id>/<path>` in the patch repo (GitHub contents API,
+  `Patches/files/<patch_id>/<path>` in the update repo (GitHub contents API,
   works for files up to ~1 MB; use `url` / release assets for bigger files)
 - `sha256` is **mandatory** per file. Generate with `sha256sum <file>`.
 - `silent: true` + the server's "Auto-Install Silent Patches" setting =
