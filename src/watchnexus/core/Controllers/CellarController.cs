@@ -432,6 +432,10 @@ public class CellarController : ControllerBase
     private static string? MaskSerial(string? serial)
     {
         if (string.IsNullOrEmpty(serial) || serial.Length < 12) return serial;
+        // Short format: WNX-<TIER>-XXXX-XXXX-XXXX — keep prefix + first data group.
+        var parts = serial.Split('-');
+        if (parts.Length == 5 && parts[0] == "WNX")
+            return $"{parts[0]}-{parts[1]}-{parts[2]}-****-****";
         return serial[..8] + "-****-****-" + serial[^4..];
     }
 
