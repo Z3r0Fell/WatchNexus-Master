@@ -14,7 +14,7 @@ COPY watchnexus/ ./
 RUN dotnet publish core/WatchNexus.Core.csproj -c Release -o /app/publish
 
 # Frontend build
-FROM node:20-slim AS frontend
+FROM node:22-slim AS frontend
 WORKDIR /web
 COPY src/web/package.json src/web/yarn.lock ./
 RUN yarn install --frozen-lockfile

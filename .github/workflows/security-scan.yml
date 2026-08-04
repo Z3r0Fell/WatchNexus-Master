@@ -26,6 +26,17 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           language: ${{ matrix.language }}
+      - name: Setup Node.js
+        if: matrix.language == 'javascript-typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+          cache-dependency-path: src/web/yarn.lock
+      - name: Install frontend dependencies
+        if: matrix.language == 'javascript-typescript'
+        working-directory: src/web
+        run: yarn install --frozen-lockfile
       - name: Setup .NET
         if: matrix.language == 'csharp'
         uses: actions/setup-dotnet@v4
@@ -57,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Install
         working-directory: src/web
         run: yarn install --frozen-lockfile

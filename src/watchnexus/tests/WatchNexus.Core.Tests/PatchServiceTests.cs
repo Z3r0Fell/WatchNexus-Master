@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Microsoft.Extensions.Configuration;
 using WatchNexus.Core.Services;
 
 namespace WatchNexus.Core.Tests;
@@ -104,6 +105,173 @@ public class PatchApplyPendingTests
         var result = await svc.ApplyAsync(manifest);
         Assert.False(result.Success);
         Assert.Contains("sha256", result.Error);
+    }
+
+    private class DummyHttpFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new();
+    }
+}
+
+public class ManifestSignerTests
+{
+    [Fact]
+    public void GenerateKeyPair_produces_valid_keys()
+    {
+        var (pub, priv) = ManifestSigner.GenerateKeyPair();
+        Assert.False(string.IsNullOrEmpty(pub));
+        Assert.False(string.IsNullOrEmpty(priv));
+        // BouncyCastle Ed25519: public key 32 bytes (44 base64), private key seed 32 bytes (44 base64)
+        Assert.Equal(44, pub.Length);
+        Assert.Equal(44, priv.Length);
+    }
+
+    [Fact]
+    public void Sign_and_verify_round_trip()
+    {
+        var (pub, priv) = ManifestSigner.GenerateKeyPair();
+        var manifest = """{"patch_id":"test-01","description":"test","severity":"low","silent":true,"files":[]}""";
+
+        var signature = ManifestSigner.Sign(manifest, priv);
+        Assert.False(string.IsNullOrEmpty(signature));
+
+        Assert.True(ManifestSigner.Verify(manifest, signature, pub));
+    }
+
+    [Fact]
+    public void Verify_rejects_tampered_manifest()
+    {
+        var (pub, priv) = ManifestSigner.GenerateKeyPair();
+        var manifest = """{"patch_id":"test-01","description":"original","severity":"low","silent":true,"files":[]}""";
+
+        var signature = ManifestSigner.Sign(manifest, priv);
+
+        var tampered = manifest.Replace("original", "MALICIOUS");
+        Assert.False(ManifestSigner.Verify(tampered, signature, pub));
+    }
+
+    [Fact]
+    public void Verify_rejects_wrong_public_key()
+    {
+        var (_, priv) = ManifestSigner.GenerateKeyPair();
+        var (wrongPub, _) = ManifestSigner.GenerateKeyPair();
+        var manifest = """{"patch_id":"test-01","description":"test","severity":"low","silent":true,"files":[]}""";
+
+        var signature = ManifestSigner.Sign(manifest, priv);
+        Assert.False(ManifestSigner.Verify(manifest, signature, wrongPub));
+    }
+
+    [Fact]
+    public void Verify_rejects_empty_signature()
+    {
+        var (pub, _) = ManifestSigner.GenerateKeyPair();
+        var manifest = """{"patch_id":"test-01"}""";
+        Assert.False(ManifestSigner.Verify(manifest, "", pub));
+        Assert.False(ManifestSigner.Verify(manifest, "invalid-base64!!!", pub));
+    }
+
+    [Fact]
+    public void StripSignature_removes_signature_field()
+    {
+        var json = """{"patch_id":"test-01","signature":"abc123","description":"test"}""";
+        var stripped = ManifestSigner.StripSignature(json);
+        Assert.DoesNotContain("signature", stripped);
+        Assert.Contains("patch_id", stripped);
+        Assert.Contains("description", stripped);
+    }
+
+    [Fact]
+    public void StripSignature_handles_no_signature_field()
+    {
+        var json = """{"patch_id":"test-01","description":"test"}""";
+        var stripped = ManifestSigner.StripSignature(json);
+        // Re-serializes with sorted keys, no whitespace
+        Assert.Equal("""{"description":"test","patch_id":"test-01"}""", stripped);
+    }
+
+    [Fact]
+    public void Canonicalize_sorts_keys_deterministically()
+    {
+        var json1 = """{"z":1,"a":2,"m":3}""";
+        var json2 = """{"a":2,"m":3,"z":1}""";
+
+        var c1 = ManifestSigner.Canonicalize(json1);
+        var c2 = ManifestSigner.Canonicalize(json2);
+        Assert.Equal(c1, c2);
+        Assert.Equal("""{"a":2,"m":3,"z":1}""", c1);
+    }
+
+    [Fact]
+    public void Canonicalize_handles_nested_objects_and_arrays()
+    {
+        var json = """{"files":[{"path":"b.js","sha256":"xxx"},{"path":"a.js","sha256":"yyy"}],"patch_id":"test"}""";
+        var canonical = ManifestSigner.Canonicalize(json);
+        // Top-level keys sorted
+        Assert.StartsWith("""{"files":""", canonical);
+        Assert.Contains("""{"path":"a.js","sha256":"yyy"}""", canonical);
+        // No whitespace
+        Assert.DoesNotContain(": ", canonical);
+    }
+
+    [Fact]
+    public void PatchService_VerifyManifestSignature_rejects_unsigned_when_configured()
+    {
+        var (pub, _) = ManifestSigner.GenerateKeyPair();
+        var config = BuildConfig(new Dictionary<string, string?> { { "PATCH_SIGNING_PUBLIC_KEY", pub } });
+        var svc = new PatchService(new DummyHttpFactory(), config);
+
+        var manifest = """{"patch_id":"test-01","description":"test","severity":"low","silent":true,"files":[]}""";
+        var (valid, error) = svc.VerifyManifestSignature(manifest);
+        Assert.False(valid);
+        Assert.Contains("no signature", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void PatchService_VerifyManifestSignature_passes_valid_signature()
+    {
+        var (pub, priv) = ManifestSigner.GenerateKeyPair();
+        var config = BuildConfig(new Dictionary<string, string?> { { "PATCH_SIGNING_PUBLIC_KEY", pub } });
+        var svc = new PatchService(new DummyHttpFactory(), config);
+
+        var manifest = """{"patch_id":"test-01","description":"test","severity":"low","silent":true,"files":[]}""";
+        var signature = ManifestSigner.Sign(manifest, priv);
+        var signed = System.Text.Json.JsonSerializer.Serialize(
+            new SortedDictionary<string, object?>
+            {
+                ["patch_id"] = "test-01",
+                ["description"] = "test",
+                ["severity"] = "low",
+                ["silent"] = true,
+                ["files"] = Array.Empty<object>(),
+                ["signature"] = signature
+            });
+
+        var (valid, error) = svc.VerifyManifestSignature(signed);
+        Assert.True(valid);
+        Assert.Null(error);
+    }
+
+    [Fact]
+    public void PatchService_VerifyManifestSignature_skips_when_not_configured()
+    {
+        var config = new ConfigurationBuilder().Build();
+        var svc = new PatchService(new DummyHttpFactory(), config);
+
+        var manifest = """{"patch_id":"test-01"}""";
+        var (valid, error) = svc.VerifyManifestSignature(manifest);
+        Assert.Null(valid); // null = not configured
+        Assert.NotNull(error); // informational message about skipping
+    }
+
+    private static IConfiguration BuildConfig(Dictionary<string, string?> overrides)
+    {
+        var tmpFile = Path.Combine(Path.GetTempPath(), $"wn-test-{Guid.NewGuid():N}.json");
+        File.WriteAllText(tmpFile, System.Text.Json.JsonSerializer.Serialize(overrides));
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddJsonFile(tmpFile, optional: false, reloadOnChange: false)
+            .Build();
+        try { File.Delete(tmpFile); } catch { }
+        return config;
     }
 
     private class DummyHttpFactory : IHttpClientFactory

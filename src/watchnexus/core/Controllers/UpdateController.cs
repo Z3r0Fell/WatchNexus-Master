@@ -151,6 +151,17 @@ public class UpdateController : ControllerBase
                 var patchData0 = await FetchRepoJson($"Patches/{CURRENT_VERSION}.json");
                 if (patchData0 is JsonElement patchData)
                 {
+                    // Check Ed25519 signature if signing is configured
+                    bool? sigValid = null;
+                    string? sigError = null;
+                    var patchService = new Services.PatchService(_httpFactory, _config);
+                    if (patchService.IsSigningConfigured)
+                    {
+                        var (valid, error) = patchService.VerifyManifestSignature(patchData.GetRawText());
+                        sigValid = valid;
+                        sigError = error;
+                    }
+
                     hotfixPatch = new
                     {
                         available = true,
@@ -159,6 +170,8 @@ public class UpdateController : ControllerBase
                         severity = patchData.TryGetProperty("severity", out var sev) ? sev.GetString() : "low",
                         silent = patchData.TryGetProperty("silent", out var sil) && sil.GetBoolean(),
                         files = patchData.TryGetProperty("files", out var files) ? files.GetArrayLength() : 0,
+                        signature_valid = sigValid,
+                        signature_error = sigError,
                     };
                 }
                 else
@@ -330,7 +343,21 @@ public class UpdateController : ControllerBase
         if (!string.Equals(manifest.PatchId, patchId, StringComparison.Ordinal))
             return BadRequest(new { success = false, message = $"Patch '{patchId}' does not match the published manifest ('{manifest.PatchId}')" });
 
-        var result = await patchService.ApplyAsync(manifest);
+        // Verify Ed25519 signature if signing is configured.
+        bool? signatureValid = null;
+        if (patchService.IsSigningConfigured)
+        {
+            var rawJson = await patchService.FetchManifestRawAsync(CURRENT_VERSION);
+            if (rawJson != null)
+            {
+                var (valid, error) = patchService.VerifyManifestSignature(rawJson);
+                signatureValid = valid;
+                if (valid == false)
+                    return BadRequest(new { success = false, message = $"Patch signature invalid: {error}" });
+            }
+        }
+
+        var result = await patchService.ApplyAsync(manifest, signatureValid);
         await Services.UpdateBackgroundService.RecordAsync(_db, manifest, result, applier: "manual");
 
         if (!result.Success)
@@ -345,6 +372,7 @@ public class UpdateController : ControllerBase
             applied_live = result.AppliedLive,
             staged_for_restart = result.StagedForRestart,
             restart_required = result.RestartRequired,
+            signature_valid = result.SignatureValid,
         });
     }
 

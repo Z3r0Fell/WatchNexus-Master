@@ -26,7 +26,7 @@ public record PatchManifest(
 
 public record PatchApplyResult(
     bool Success, string PatchId, List<string> AppliedLive, List<string> StagedForRestart,
-    bool RestartRequired, string? Error);
+    bool RestartRequired, string? Error, bool? SignatureValid = null);
 
 public class PatchService
 {
@@ -47,8 +47,10 @@ public class PatchService
 
     private string RepoUrl => (_config["PATCH_REPO_URL"] ?? "").TrimEnd('/');
     private string RepoToken => _config["PATCH_REPO_TOKEN"] ?? "";
+    private string? SigningPublicKey => _config["PATCH_SIGNING_PUBLIC_KEY"]?.Trim();
 
     public bool IsConfigured => !string.IsNullOrEmpty(RepoUrl);
+    public bool IsSigningConfigured => !string.IsNullOrEmpty(SigningPublicKey);
 
     private HttpClient CreateClient()
     {
@@ -72,6 +74,45 @@ public class PatchService
         var decoded = System.Text.Encoding.UTF8.GetString(
             Convert.FromBase64String(content.GetString()?.Replace("\n", "") ?? ""));
         return ParseManifest(decoded);
+    }
+
+    /// <summary>
+    /// Fetch raw manifest JSON (including signature field if present).
+    /// </summary>
+    public async Task<string?> FetchManifestRawAsync(string version)
+    {
+        if (!IsConfigured) return null;
+        using var http = CreateClient();
+        var resp = await http.GetAsync($"{RepoUrl}/contents/patches/{version}.json");
+        if (!resp.IsSuccessStatusCode) return null;
+        var ghFile = JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
+        if (!ghFile.TryGetProperty("content", out var content)) return null;
+        return System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(content.GetString()?.Replace("\n", "") ?? ""));
+    }
+
+    /// <summary>
+    /// Verify the Ed25519 signature on a manifest JSON string.
+    /// Returns (isValid, errorReason).
+    /// If signing is not configured, returns (null, null) — caller decides policy.
+    /// </summary>
+    public (bool? valid, string? error) VerifyManifestSignature(string manifestJson)
+    {
+        if (!IsSigningConfigured)
+            return (null, "Signing key not configured — skipping verification");
+
+        using var doc = JsonDocument.Parse(manifestJson);
+        if (!doc.RootElement.TryGetProperty("signature", out var sigProp))
+            return (false, "Manifest has no signature field — unsigned manifests rejected");
+
+        var signature = sigProp.GetString();
+        if (string.IsNullOrWhiteSpace(signature))
+            return (false, "Signature field is empty");
+
+        if (!ManifestSigner.Verify(manifestJson, signature, SigningPublicKey!))
+            return (false, "Ed25519 signature verification failed — manifest may be tampered");
+
+        return (true, null);
     }
 
     public static PatchManifest? ParseManifest(string json)
@@ -102,7 +143,7 @@ public class PatchService
     }
 
     // ── Apply ────────────────────────────────────────────────────────
-    public async Task<PatchApplyResult> ApplyAsync(PatchManifest manifest)
+    public async Task<PatchApplyResult> ApplyAsync(PatchManifest manifest, bool? signatureValid = null)
     {
         var appliedLive = new List<string>();
         var staged = new List<string>();
@@ -164,10 +205,10 @@ public class PatchService
             }
         }
 
-        return new PatchApplyResult(true, manifest.PatchId, appliedLive, staged, staged.Count > 0, null);
+        return new PatchApplyResult(true, manifest.PatchId, appliedLive, staged, staged.Count > 0, null, signatureValid);
 
         PatchApplyResult Fail(string msg) =>
-            new(false, manifest.PatchId, appliedLive, staged, false, msg);
+            new(false, manifest.PatchId, appliedLive, staged, false, msg, signatureValid);
     }
 
     private (string? root, bool isBinary) ResolveTargetRoot(PatchFileEntry f)

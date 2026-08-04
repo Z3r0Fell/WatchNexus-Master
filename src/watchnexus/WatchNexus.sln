@@ -11,6 +11,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WatchNexus.Core.Tests", "tests\WatchNexus.Core.Tests\WatchNexus.Core.Tests.csproj", "{FB1627C6-574A-49E4-8601-67F225A579A4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sign-manifest", "sign-manifest", "{3D940D38-27A7-5426-FBD6-9034E24608C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignManifest", "tools\sign-manifest\SignManifest.csproj", "{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "core", "core", "{FBF56CC3-7AE6-AD2D-3F14-7F97FD322CD6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,11 +65,25 @@ Global
 		{FB1627C6-574A-49E4-8601-67F225A579A4}.Release|x64.Build.0 = Release|Any CPU
 		{FB1627C6-574A-49E4-8601-67F225A579A4}.Release|x86.ActiveCfg = Release|Any CPU
 		{FB1627C6-574A-49E4-8601-67F225A579A4}.Release|x86.Build.0 = Release|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Debug|x64.Build.0 = Debug|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Debug|x86.Build.0 = Debug|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Release|x64.ActiveCfg = Release|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Release|x64.Build.0 = Release|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Release|x86.ActiveCfg = Release|Any CPU
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{FB1627C6-574A-49E4-8601-67F225A579A4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{3D940D38-27A7-5426-FBD6-9034E24608C2} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{0871DFA1-EECB-4EF4-BE0B-9A87DE1F67F0} = {3D940D38-27A7-5426-FBD6-9034E24608C2}
 	EndGlobalSection
 EndGlobal

@@ -67,8 +67,25 @@ public class UpdateBackgroundService : BackgroundService
             return intervalHours;
         }
 
+        // Verify Ed25519 manifest signature if signing is configured.
+        bool? signatureValid = null;
+        if (patchService.IsSigningConfigured)
+        {
+            var rawJson = await patchService.FetchManifestRawAsync(CurrentVersion);
+            if (rawJson != null)
+            {
+                var (valid, error) = patchService.VerifyManifestSignature(rawJson);
+                signatureValid = valid;
+                if (valid == false)
+                {
+                    _logger.LogWarning("[Updater] Patch {PatchId} REJECTED: {Error}", manifest.PatchId, error);
+                    return intervalHours;
+                }
+            }
+        }
+
         _logger.LogInformation("[Updater] Auto-applying silent patch {PatchId}...", manifest.PatchId);
-        var result = await patchService.ApplyAsync(manifest);
+        var result = await patchService.ApplyAsync(manifest, signatureValid);
         await RecordAsync(db, manifest, result, applier: "auto");
 
         if (result.Success)

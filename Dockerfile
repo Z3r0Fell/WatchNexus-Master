@@ -4,7 +4,7 @@
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Frontend Build ──────────────────────────────────────────
-FROM node:20-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /build/frontend
 
 COPY frontend/package.json frontend/yarn.lock ./
