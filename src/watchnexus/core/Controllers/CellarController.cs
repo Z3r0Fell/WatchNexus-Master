@@ -49,7 +49,7 @@ public class CellarController : ControllerBase
         ["ultra"] = new[]
         {
             "security", "rind", "pepper", "crucible", "strudel", "crumbs", "taffy",
-            "cinnamon", "waffle", "custard", "yeast", "brine", "ladle",
+            "cinnamon", "waffle", "custard", "yeast", "brine", "ladle", "marzipan",
             "watch-party", "vpn", "qbittorrent", "subtitles", "pretzel", "parfait", "menu",
             "popsicle", "preserves", "marshmallow", "chowder"
         }

@@ -36,6 +36,10 @@ dp-keys/
 **/dp-keys/
 jwt.key
 **/jwt.key
+private.key
+**/private.key
+public.key
+**/public.key
 *.db
 **/data/
 

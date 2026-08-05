@@ -127,14 +127,10 @@ export const DVRPage = () => {
     series_recording: false,
   });
 
-  const getToken = () => localStorage.getItem('watchnexus_token');
-
   // Fetch IPTV channels for recording selection
   const fetchChannels = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/iptv/channels`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
+      const res = await axios.get(`${API_URL}/api/iptv/channels`);
       setChannels(res.data || []);
     } catch (err) {
       console.error('Failed to fetch channels:', err);

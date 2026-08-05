@@ -504,16 +504,21 @@ app.Use(async (ctx, next) =>
 });
 
 // ── Serve Frontend (SPA) — MUST be before auth so static files load without tokens
+// The first candidate whose directory actually CONTAINS index.html wins. This
+// makes both layouts work: {base}/web/build (Docker) and {base}/web (native
+// install), instead of naively picking {base}/web because the folder exists
+// even when the build lives one level deeper.
 var frontendSearchPaths = new[]
 {
-    Path.Combine(AppContext.BaseDirectory, "web"),         // production install layout
-    Path.Combine(AppContext.BaseDirectory, "..", "web"),   // alt production layout
+    Path.Combine(AppContext.BaseDirectory, "web", "build"),   // Docker layout
+    Path.Combine(AppContext.BaseDirectory, "web"),            // production install layout
+    Path.Combine(AppContext.BaseDirectory, "..", "web"),      // alt production layout
     Path.Combine(AppContext.BaseDirectory, "wwwroot"),
-    Path.Combine(repoRoot, "src", "web", "build"),         // dev tree
-    Path.Combine(repoRoot, "..", "web", "build"),          // dev tree (repoRoot = src/watchnexus)
+    Path.Combine(repoRoot, "src", "web", "build"),            // dev tree
+    Path.Combine(repoRoot, "..", "web", "build"),             // dev tree (repoRoot = src/watchnexus)
     Path.Combine(repoRoot, "web", "build"),
 };
-var webRoot = frontendSearchPaths.FirstOrDefault(p => Directory.Exists(p));
+var webRoot = frontendSearchPaths.FirstOrDefault(p => Directory.Exists(p) && File.Exists(Path.Combine(p, "index.html")));
 if (webRoot != null)
 {
     var fullPath = Path.GetFullPath(webRoot);

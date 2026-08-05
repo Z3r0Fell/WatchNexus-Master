@@ -15,6 +15,7 @@ export const ParentalControlsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pin, setPin] = useState('');
+  const [pinEnabled, setPinEnabled] = useState(false);
   const [maxRating, setMaxRating] = useState('PG-13');
   const [blockedGenres, setBlockedGenres] = useState('');
   const headers = { 'Content-Type': 'application/json' };
@@ -24,7 +25,7 @@ export const ParentalControlsPage = () => {
       const res = await axios.get(`${API}/api/rind/profile`, { headers });
       setProfile(res.data);
       if (res.data.max_rating) setMaxRating(res.data.max_rating);
-      if (res.data.pin) setPin(res.data.pin);
+      if (res.data.pin_enabled !== undefined) setPinEnabled(res.data.pin_enabled);
       if (res.data.blocked_genres) setBlockedGenres(Array.isArray(res.data.blocked_genres) ? res.data.blocked_genres.join(', ') : res.data.blocked_genres);
     } catch (e) {
       console.error('Failed to fetch parental profile:', e);
@@ -77,7 +78,9 @@ export const ParentalControlsPage = () => {
                   className="max-w-xs"
                   data-testid="parental-pin-input"
                 />
-                <p className="text-gray-500 text-xs mt-1">Required to access restricted content</p>
+                <p className="text-gray-500 text-xs mt-1">Required to access restricted content
+                  {pinEnabled ? ' — a PIN is currently set. Leave blank to keep it.' : ''}
+                </p>
               </div>
 
               <div>

@@ -135,4 +135,47 @@ public static class SsrfGuard
         if (h == "[fd00:ec2::254]" || h == "fd00:ec2::254") return true; // AWS IMDS IPv6
         return false;
     }
+
+    /// <summary>
+    /// Allow-list for fully-fledged server-side fetches (IPTV playlists/EPG).
+    /// Unlike <see cref="IsBlocked"/> this is used on untrusted URL inputs, so it
+    /// denies non-http(s) schemes, loopback/unspecified, link-local and multicast
+    /// addresses, and unresolvable hosts. RFC1918/CGNAT private LAN ranges stay
+    /// allowed so home-network IPTV/indexer sources keep working.
+    /// </summary>
+    public static bool IsAllowedUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri)) return false;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) return false;
+
+        var host = uri.Host;
+        if (IPAddress.TryParse(host, out var ip))
+            return IsRoutable(ip);
+
+        try
+        {
+            var addresses = Dns.GetHostAddresses(host);
+            return addresses.Length > 0 && addresses.All(IsRoutable);
+        }
+        catch { return false; }
+    }
+
+    private static bool IsRoutable(IPAddress ip)
+    {
+        if (IPAddress.IsLoopback(ip)) return false;
+        if (ip.Equals(IPAddress.Any) || ip.Equals(IPAddress.IPv6Any)) return false;
+        if (ip.IsIPv6LinkLocal) return false;
+        if (ip.IsIPv6SiteLocal) return false;
+        if (ip.IsIPv6Multicast) return false;
+        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            var b = ip.GetAddressBytes();
+            // Link-local 169.254.0.0/16 (incl. cloud metadata services) + multicast 224.0.0.0/4.
+            if (b[0] == 169 && b[1] == 254) return false;
+            if (b[0] >= 224) return false;
+            // RFC1918 (10/8, 172.16/12, 192.168/16) and CGNAT (100.64/10) are allowed.
+        }
+        return true;
+    }
 }

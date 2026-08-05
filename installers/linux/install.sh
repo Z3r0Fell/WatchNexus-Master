@@ -61,11 +61,11 @@ fi
 # Build
 echo "[1/4] Building WatchNexus..."
 mkdir -p "$INSTALL_DIR"/{bin,modules,data,logs} "$BIN_DIR" "$DESKTOP_DIR"
-cd "$SCRIPT_DIR/watchnexus"
+cd "$SCRIPT_DIR/src/watchnexus"
 dotnet publish core/WatchNexus.Core.csproj -c Release -o "$INSTALL_DIR/bin" --self-contained false
 
 echo "[2/4] Installing modules..."
-cp -r "$SCRIPT_DIR/watchnexus/modules/"* "$INSTALL_DIR/modules/" 2>/dev/null || true
+cp -r "$SCRIPT_DIR/src/watchnexus/modules/"* "$INSTALL_DIR/modules/" 2>/dev/null || true
 
 # Create launcher
 echo "[3/4] Creating launcher..."

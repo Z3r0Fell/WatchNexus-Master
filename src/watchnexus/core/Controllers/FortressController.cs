@@ -39,7 +39,22 @@ public class FortressFilter : IAsyncActionFilter
         ["brine"] = "ultra", ["ladle"] = "ultra", ["vpn"] = "ultra", ["qbittorrent"] = "ultra",
         ["subtitles"] = "ultra", ["pretzel"] = "ultra", ["parfait"] = "ultra", ["menu"] = "ultra",
         ["popsicle"] = "ultra", ["preserves"] = "ultra", ["marshmallow"] = "ultra", ["chowder"] = "ultra",
-        ["watch-party"] = "ultra",
+        ["watch-party"] = "ultra", ["marzipan"] = "ultra",
+    };
+
+    // Gadget-route aliases: /api/gadgets/{name}/... → module codename.
+    // FortressFilter enforces the codename's tier on these prefixes too, so a
+    // paid module can never be reached by routing under /api/gadgets/*, which
+    // previously bypassed the segments[1] check entirely.
+    internal static readonly Dictionary<string, string> GadgetRoutes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["synapse-admin"] = "cinnamon",
+        ["gamebot"] = "waffle",
+        ["media-bridge"] = "custard",
+        ["bot"] = "yeast",
+        ["matrix"] = "marzipan",
+        ["brine"] = "brine",
+        ["ladle"] = "ladle",
     };
 
     private static readonly Dictionary<string, int> TierRank = new() { ["standard"] = 0, ["pro"] = 1, ["ultra"] = 2 };
@@ -68,12 +83,23 @@ public class FortressFilter : IAsyncActionFilter
             return;
         }
 
-        // Extract module codename from path: /api/{codename}/...
+        // Extract module codename from path: /api/{codename}/... or the
+        // gadget alias form /api/gadgets/{name}/...
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (segments.Length >= 2 && segments[0] == "api")
         {
-            var moduleName = segments[1];
-            if (ProtectedRoutes.TryGetValue(moduleName, out var requiredTier))
+            string? moduleName = null;
+            if (segments[1] == "gadgets")
+            {
+                if (segments.Length >= 3 && GadgetRoutes.TryGetValue(segments[2], out var codename))
+                    moduleName = codename;
+            }
+            else
+            {
+                moduleName = segments[1];
+            }
+
+            if (moduleName != null && ProtectedRoutes.TryGetValue(moduleName, out var requiredTier))
             {
                 var currentTier = await GetCurrentTier();
                 var currentRank = TierRank.GetValueOrDefault(currentTier, 0);

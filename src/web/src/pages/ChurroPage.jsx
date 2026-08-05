@@ -12,6 +12,7 @@ import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
+const headers = { 'Content-Type': 'application/json' };
 
 const clientTypeIcons = {
   torrent: Download,

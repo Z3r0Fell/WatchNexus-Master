@@ -32,7 +32,7 @@ if not exist "%INSTALL_DIR%\data" mkdir "%INSTALL_DIR%\data"
 if not exist "%INSTALL_DIR%\logs" mkdir "%INSTALL_DIR%\logs"
 if not exist "%INSTALL_DIR%\modules" mkdir "%INSTALL_DIR%\modules"
 
-cd /d "%SCRIPT_DIR%\watchnexus"
+cd /d "%SCRIPT_DIR%\src\watchnexus"
 dotnet publish core\WatchNexus.Core.csproj -c Release -o "%INSTALL_DIR%\bin" --self-contained false
 
 echo [2/4] Installing modules...

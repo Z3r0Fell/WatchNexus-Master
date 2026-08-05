@@ -11,6 +11,7 @@ import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
+const headers = { 'Content-Type': 'application/json' };
 
 const stateColors = {
   idle: 'text-gray-400',

@@ -348,13 +348,17 @@ public class UpdateController : ControllerBase
         if (patchService.IsSigningConfigured)
         {
             var rawJson = await patchService.FetchManifestRawAsync(CURRENT_VERSION);
-            if (rawJson != null)
+            if (rawJson == null)
             {
-                var (valid, error) = patchService.VerifyManifestSignature(rawJson);
-                signatureValid = valid;
-                if (valid == false)
-                    return BadRequest(new { success = false, message = $"Patch signature invalid: {error}" });
+                // Fail closed: signing is configured but the exact raw manifest
+                // (the bytes the signature covers) can't be fetched. Applying
+                // without verification would defeat the purpose of signing.
+                return StatusCode(500, new { success = false, message = "Patch refused: signing is configured but the raw manifest could not be fetched for signature verification" });
             }
+            var (valid, error) = patchService.VerifyManifestSignature(rawJson);
+            signatureValid = valid;
+            if (valid == false)
+                return BadRequest(new { success = false, message = $"Patch signature invalid: {error}" });
         }
 
         var result = await patchService.ApplyAsync(manifest, signatureValid);
@@ -419,9 +423,9 @@ public class UpdateController : ControllerBase
     private async Task<string> GetCurrentTier()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
-        if (setting?.Value == null) return "standard";
-        try { var doc = JsonDocument.Parse(setting.Value).RootElement; return doc.TryGetProperty("tier", out var t) ? t.GetString() ?? "standard" : "standard"; }
-        catch { return "standard"; }
+        // Tamper-evident read: a paid tier is only honored when the stored hash
+        // matches the stored serial (same policy as CellarController.ResolveTier).
+        return CellarController.ResolveTier(setting?.Value);
     }
 
     private static int CompareVersions(string a, string b)

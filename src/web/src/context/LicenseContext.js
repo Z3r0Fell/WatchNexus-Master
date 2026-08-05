@@ -64,7 +64,6 @@ export const ROUTE_MODULE_MAP = {
   '/cloud-sync': 'marshmallow',
   '/media-sync': 'chowder',
   '/themes': 'milk',
-  '/dvr': 'iptv',
 };
 
 // Module → required tier

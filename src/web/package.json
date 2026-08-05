@@ -69,12 +69,13 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
+    "backend:publish": "dotnet publish ../watchnexus/core/WatchNexus.Core.csproj -c Release -o ../watchnexus/core/bin/Release/net10.0/publish --self-contained false",
     "electron:dev": "NODE_ENV=development electron .",
-    "electron:build": "yarn build && electron-builder",
-    "electron:build:mac": "yarn build && electron-builder --mac",
-    "electron:build:win": "yarn build && electron-builder --win",
-    "electron:build:linux": "yarn build && electron-builder --linux",
-    "electron:build:all": "yarn build && electron-builder -mwl"
+    "electron:build": "yarn build && yarn backend:publish && electron-builder",
+    "electron:build:mac": "yarn build && yarn backend:publish && electron-builder --mac",
+    "electron:build:win": "yarn build && yarn backend:publish && electron-builder --win",
+    "electron:build:linux": "yarn build && yarn backend:publish && electron-builder --linux",
+    "electron:build:all": "yarn build && yarn backend:publish && electron-builder -mwl"
   },
   "browserslist": {
     "production": [

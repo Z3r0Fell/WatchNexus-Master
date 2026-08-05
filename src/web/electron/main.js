@@ -13,21 +13,16 @@ function getBackendPath() {
     return null; // Use external backend in dev mode
   }
   
-  const platform = process.platform;
   const basePath = app.isPackaged 
     ? path.join(process.resourcesPath, 'backend')
-    : path.join(__dirname, '..', '..', 'backend', 'dist');
+    : path.join(__dirname, '..', '..', 'watchnexus', 'core', 'bin', 'Release', 'net10.0', 'publish');
   
-  switch (platform) {
-    case 'win32':
-      return path.join(basePath, 'watchnexus-server.exe');
-    case 'darwin':
-    case 'linux':
-      return path.join(basePath, 'watchnexus-server');
-    default:
-      console.error('Unsupported platform:', platform);
-      return null;
-  }
+  // The backend publishes as a framework-dependent assembly run via `dotnet`.
+  return {
+    exe: 'dotnet',
+    args: [path.join(basePath, 'WatchNexus.Core.dll')],
+    dir: basePath,
+  };
 }
 
 // Get user data directory for storing data
@@ -56,35 +51,31 @@ function startBackend() {
     return;
   }
   
-  if (!fs.existsSync(backendPath)) {
-    console.error('Backend executable not found:', backendPath);
+  const dataPath = getUserDataPath();
+
+  console.log('Starting backend from:', backendPath.dir);
+  console.log('Data path:', dataPath);
+
+  const dll = path.join(backendPath.dir, 'WatchNexus.Core.dll');
+  if (!fs.existsSync(dll)) {
+    console.error('Backend assembly not found:', dll);
     dialog.showErrorBox('Error', 'Backend server not found. Please reinstall WatchNexus.');
     app.quit();
     return;
   }
-  
-  const dataPath = getUserDataPath();
-  const downloadPath = getDownloadsPath();
-  
-  console.log('Starting backend from:', backendPath);
-  console.log('Data path:', dataPath);
-  console.log('Download path:', downloadPath);
-  
-  backendProcess = spawn(backendPath, [], {
-    cwd: path.dirname(backendPath),
+
+  backendProcess = spawn(backendPath.exe, [dll], {
+    cwd: backendPath.dir,
     env: {
       ...process.env,
-      // Database - use SQLite/TinyDB for portability
-      DATA_PATH: dataPath,
-      DOWNLOAD_PATH: downloadPath,
-      // Server
-      HOST: '127.0.0.1',
-      PORT: '8001',
-      // Security — JWT_SECRET is intentionally NOT set here. The backend now
+      // Data dir: the backend reads WATCHNEXUS_DATA_DIR (NOT DATA_PATH) and
+      // persists the SQLite DB + generated JWT secret there.
+      WATCHNEXUS_DATA_DIR: dataPath,
+      // Server: the backend reads WATCHNEXUS_PORT (NOT PORT).
+      WATCHNEXUS_PORT: '8001',
+      // Security — JWT_SECRET is intentionally NOT set here. The backend
       // generates and persists a strong, per-install secret to the data dir on
-      // first launch (see ResolveJwtSecret in Program.cs). The old
-      // 'watchnexus_desktop_' + Date.now() value was both predictable AND rotated
-      // on every launch, silently logging the user out each restart.
+      // first launch (see ResolveJwtSecret in Program.cs).
     },
     stdio: ['pipe', 'pipe', 'pipe']
   });

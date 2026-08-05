@@ -16,6 +16,8 @@ axios.defaults.xsrfHeaderName = "X-XSRF-TOKEN";
 try {
   localStorage.removeItem("token");
   localStorage.removeItem("access_token");
+  localStorage.removeItem("watchnexus_token");
+  localStorage.removeItem("watchnexus_user");
 } catch { /* private mode */ }
 
 // Mirror the CSRF token onto mutating fetch() calls too (axios does this

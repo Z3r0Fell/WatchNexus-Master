@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -33,6 +34,8 @@ public class IptvController : ControllerBase
         [FromQuery] string? url,
         [FromQuery] string? epg_url)
     {
+        if (!SsrfGuard.IsAllowedUrl(url))
+            return BadRequest(new { detail = "Source URL is not allowed (only public http/https URLs)" });
         var source = new IptvSource { Name = name ?? "", Url = url ?? "", EpgUrl = epg_url };
         _db.IptvSources.Add(source);
         await _db.SaveChangesAsync();
@@ -59,7 +62,13 @@ public class IptvController : ControllerBase
         var source = await _db.IptvSources.FindAsync(id);
         if (source == null) return NotFound();
         if (body.TryGetProperty("name", out var n)) source.Name = n.GetString() ?? source.Name;
-        if (body.TryGetProperty("url", out var u)) source.Url = u.GetString() ?? source.Url;
+        if (body.TryGetProperty("url", out var u))
+        {
+            var newUrl = u.GetString();
+            if (!SsrfGuard.IsAllowedUrl(newUrl))
+                return BadRequest(new { detail = "Source URL is not allowed (only public http/https URLs)" });
+            source.Url = newUrl;
+        }
         if (body.TryGetProperty("epg_url", out var e)) source.EpgUrl = e.GetString();
         await _db.SaveChangesAsync();
         return Ok(new { status = "updated" });
@@ -70,6 +79,8 @@ public class IptvController : ControllerBase
     {
         var source = await _db.IptvSources.FindAsync(id);
         if (source == null) return NotFound();
+        if (!SsrfGuard.IsAllowedUrl(source.Url))
+            return BadRequest(new { detail = "Source URL is not allowed (only public http/https URLs)" });
         var oldChannels = await _db.IptvChannels.Where(c => c.SourceId == id).ToListAsync();
         _db.IptvChannels.RemoveRange(oldChannels);
         try

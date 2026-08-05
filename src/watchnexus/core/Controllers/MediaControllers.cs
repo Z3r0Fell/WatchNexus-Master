@@ -19,7 +19,11 @@ public class MediaOpsController : ControllerBase
     [HttpPost("health-check")]
     public IActionResult HealthCheck([FromQuery] string? file_path, [FromQuery] bool compute_hash = false)
     {
-        if (string.IsNullOrEmpty(file_path) || !System.IO.File.Exists(file_path))
+        if (string.IsNullOrEmpty(file_path))
+            return Ok(new { status = "not_found", file_path });
+        if (!IsAllowedMediaPath(file_path))
+            return StatusCode(403, new { status = "forbidden", detail = "file_path must be inside a configured media root (MEDIA_ROOT / MEDIA_ROOTS, or the standard /data/media, /data/rips, /data/transcoded, /data/offline directories)" });
+        if (!System.IO.File.Exists(file_path))
             return Ok(new { status = "not_found", file_path });
         var fi = new FileInfo(file_path);
         string? hash = null;
@@ -43,6 +47,8 @@ public class MediaOpsController : ControllerBase
     {
         if (string.IsNullOrEmpty(file_path) || !System.IO.File.Exists(file_path))
             return NotFound(new { detail = "file_path missing or not found" });
+        if (!IsAllowedMediaPath(file_path))
+            return StatusCode(403, new { detail = "file_path must be inside a configured media root" });
 
         var ffmpeg = Services.FfmpegLocator.Ffmpeg;
         if (ffmpeg == null)
@@ -55,6 +61,13 @@ public class MediaOpsController : ControllerBase
         var outPath = output_path ?? Path.Combine(
             Path.GetDirectoryName(file_path) ?? ".",
             Path.GetFileNameWithoutExtension(file_path) + ".repaired" + Path.GetExtension(file_path));
+
+        if (!IsAllowedMediaPath(outPath))
+            return StatusCode(403, new { detail = "output_path must be inside a configured media root" });
+        var inDir = Path.GetFullPath(Path.GetDirectoryName(file_path) ?? ".").TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var outDir = Path.GetFullPath(Path.GetDirectoryName(outPath) ?? ".").TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (!string.Equals(inDir, outDir, StringComparison.OrdinalIgnoreCase))
+            return StatusCode(403, new { detail = "output_path must be in the same directory as file_path" });
 
         try
         {
@@ -154,6 +167,51 @@ public class MediaOpsController : ControllerBase
             detail = "Re-download is handled by the Compote indexer module. Open the media in the UI and click 'Search indexers'.",
             redirect = "/api/compote/search"
         });
+
+    // ── Media-root allowlist ─────────────────────────────────────────
+    // Confines the file-oracle / ffmpeg-overwrite endpoints to the server's
+    // media directories so an authenticated user can't probe or overwrite
+    // arbitrary system files. Roots come from MEDIA_ROOT / MEDIA_ROOTS env,
+    // otherwise the standard Docker data dirs + the app data dir.
+    private static string[]? _cachedRoots;
+    private static readonly object _rootsLock = new();
+
+    private static string[] ResolveAllowedMediaRoots()
+    {
+        var env = Environment.GetEnvironmentVariable("MEDIA_ROOTS")
+                  ?? Environment.GetEnvironmentVariable("MEDIA_ROOT");
+        if (!string.IsNullOrWhiteSpace(env))
+            return env.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (_cachedRoots != null) return _cachedRoots;
+        lock (_rootsLock)
+        {
+            if (_cachedRoots == null)
+            {
+                var dataDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR")
+                              ?? Path.Combine(AppContext.BaseDirectory, "data");
+                _cachedRoots = new[]
+                {
+                    "/data/media", "/data/rips", "/data/transcoded", "/data/offline",
+                    dataDir,
+                };
+            }
+            return _cachedRoots;
+        }
+    }
+
+    private static bool IsAllowedMediaPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false;
+        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        foreach (var root in ResolveAllowedMediaRoots())
+        {
+            var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (full.Equals(rootFull, StringComparison.OrdinalIgnoreCase) ||
+                full.StartsWith(rootFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
 }
 
 // ── Media Management — DELETED stubs (Import/ScanImport were placeholders) ──

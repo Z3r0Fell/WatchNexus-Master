@@ -33,23 +33,44 @@ public class RindController : ControllerBase
     public async Task<IActionResult> GetProfile()
     {
         var uid = this.UserId();
+        var pinSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == PinKey);
+        var pinEnabled = pinSetting != null;
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ProfileKey);
         if (setting == null)
             return Ok(new
             {
                 configured = false,
                 max_rating = "NR",
-                pin_enabled = false,
+                pin_enabled = pinEnabled,
                 restricted_genres = Array.Empty<string>(),
                 allowed_libraries = Array.Empty<string>(),
                 hide_unrated = false,
             });
         try
         {
-            var doc = JsonDocument.Parse(setting.Value);
-            return Ok(doc.RootElement);
+            // Never expose a PIN (legacy rows may still contain a plaintext
+            // "pin" field saved before the strip-in-SaveProfile fix). Drop it.
+            var doc = JsonDocument.Parse(setting.Value).RootElement;
+            var profile = new Dictionary<string, object?>
+            {
+                ["configured"] = true,
+                ["pin_enabled"] = pinEnabled,
+            };
+            foreach (var prop in doc.EnumerateObject())
+            {
+                if (string.Equals(prop.Name, "pin", StringComparison.OrdinalIgnoreCase)) continue;
+                profile[prop.Name] = prop.Value.ValueKind switch
+                {
+                    JsonValueKind.String => prop.Value.GetString(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    JsonValueKind.Number => prop.Value.TryGetInt64(out var l) ? (object)l : prop.Value.GetDouble(),
+                    _ => prop.Value.GetRawText(),
+                };
+            }
+            return Ok(profile);
         }
-        catch { return Ok(new { configured = false }); }
+        catch { return Ok(new { configured = false, pin_enabled = pinEnabled }); }
     }
 
     // ── Save Profile ──────────────────────────────────
@@ -58,9 +79,35 @@ public class RindController : ControllerBase
     {
         var uid = this.UserId();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ProfileKey);
-        var value = body.GetRawText();
+
+        // Strip any "pin" from the stored profile — the PIN lives only in the
+        // BCrypt-hashed /pin/set row, never in the profile JSON.
+        string? pinToHash = null;
+        var clean = new Dictionary<string, JsonElement>();
+        foreach (var prop in body.EnumerateObject())
+        {
+            if (string.Equals(prop.Name, "pin", StringComparison.OrdinalIgnoreCase))
+            {
+                pinToHash = prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString() : null;
+                continue;
+            }
+            clean[prop.Name] = prop.Value.Clone();
+        }
+        var value = JsonSerializer.Serialize(clean);
         if (existing != null) existing.Value = value;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = ProfileKey, Value = value, UserId = uid });
+
+        // Hash the PIN through the dedicated path (BCrypt), never plaintext.
+        if (!string.IsNullOrEmpty(pinToHash))
+        {
+            if (pinToHash.Length < 4)
+                return BadRequest(new { detail = "PIN must be at least 4 characters" });
+            var hashed = BCrypt.Net.BCrypt.HashPassword(pinToHash);
+            var pinSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == PinKey);
+            if (pinSetting != null) pinSetting.Value = hashed;
+            else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = PinKey, Value = hashed, UserId = uid });
+        }
+
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -159,8 +206,15 @@ public class RindController : ControllerBase
         {
             try
             {
-                var doc = JsonDocument.Parse(p.Value);
-                return new { user_id = p.UserId, profile = (object)doc.RootElement.ToString() };
+                var doc = JsonDocument.Parse(p.Value).RootElement;
+                // Strip any legacy plaintext "pin" before it leaves the server.
+                var clean = new Dictionary<string, JsonElement>();
+                foreach (var prop in doc.EnumerateObject())
+                {
+                    if (string.Equals(prop.Name, "pin", StringComparison.OrdinalIgnoreCase)) continue;
+                    clean[prop.Name] = prop.Value.Clone();
+                }
+                return new { user_id = p.UserId, profile = JsonSerializer.Serialize(clean) };
             }
             catch { return null; }
         }).Where(x => x != null).ToList();
@@ -171,7 +225,15 @@ public class RindController : ControllerBase
     public async Task<IActionResult> AdminSetProfile(string userId, [FromBody] JsonElement body)
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == ProfileKey);
-        var value = body.GetRawText();
+        // Strip any PIN from the stored profile (admin-typed PINs must go
+        // through the BCrypt path, not the profile JSON).
+        var clean = new Dictionary<string, JsonElement>();
+        foreach (var prop in body.EnumerateObject())
+        {
+            if (string.Equals(prop.Name, "pin", StringComparison.OrdinalIgnoreCase)) continue;
+            clean[prop.Name] = prop.Value.Clone();
+        }
+        var value = JsonSerializer.Serialize(clean);
         if (existing != null) existing.Value = value;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = ProfileKey, Value = value, UserId = userId });
         await _db.SaveChangesAsync();

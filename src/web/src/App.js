@@ -29,7 +29,6 @@ const LibraryPage = lazy(() => import("./pages/LibraryPage").then(m => ({ defaul
 const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage").then(m => ({ default: m.WatchPartyPage })));
 const PluginMarketplacePage = lazy(() => import("./pages/PluginMarketplacePage").then(m => ({ default: m.PluginMarketplacePage })));
 const ThemeCommunityPage = lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage })));
-const DVRPage = lazy(() => import("./pages/DVRPage").then(m => ({ default: m.DVRPage })));
 const WatchHistoryPage = lazy(() => import("./pages/WatchHistoryPage").then(m => ({ default: m.WatchHistoryPage })));
 const WatchlistPage = lazy(() => import("./pages/WatchlistPage").then(m => ({ default: m.WatchlistPage })));
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage").then(m => ({ default: m.DiscoverPage })));
@@ -162,7 +161,6 @@ function AppRouter() {
         <Route path="/party/:partyCode" element={<ProtectedRoute><WatchPartyPage /></ProtectedRoute>} />
         <Route path="/plugins" element={<ProtectedRoute><PluginMarketplacePage /></ProtectedRoute>} />
         <Route path="/themes" element={<ProtectedRoute><ThemeCommunityPage /></ProtectedRoute>} />
-        <Route path="/dvr" element={<ProtectedRoute><DVRPage /></ProtectedRoute>} />
         <Route path="/playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><WatchHistoryPage /></ProtectedRoute>} />
         <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />

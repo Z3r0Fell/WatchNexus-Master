@@ -13,7 +13,7 @@ files:
   - package.json
 
 extraResources:
-  - from: ../server/dist/
+  - from: ../watchnexus/core/bin/Release/net10.0/publish/
     to: backend
     filter:
       - "**/*"

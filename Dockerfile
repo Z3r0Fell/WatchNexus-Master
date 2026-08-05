@@ -32,7 +32,6 @@ COPY src/watchnexus/shared/ src/watchnexus/shared/
 COPY src/watchnexus/core/Program.cs src/watchnexus/core/
 COPY src/watchnexus/core/appsettings.json src/watchnexus/core/
 COPY src/watchnexus/core/Data/ src/watchnexus/core/Data/
-COPY src/watchnexus/core/Models/ src/watchnexus/core/Models/
 COPY src/watchnexus/core/Auth/ src/watchnexus/core/Auth/
 COPY src/watchnexus/core/WatchNexus.Core.csproj src/watchnexus/core/
 

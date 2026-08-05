@@ -24,13 +24,19 @@
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
         <title>WatchNexus</title>
-        <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
         <!--
-        These two scripts have been added for the Visual Edits, please do not edit or remove them
+        Visual-edit helper scripts (Emergent/Tailwind) are dev tooling and are
+        only loaded when the app is embedded in an editing iframe — never in the
+        top-level app, where third-party JS would run alongside auth cookies.
         -->
         <script>
             // Only load visual edit scripts when inside an iframe
             if (window.self !== window.top) {
+                // Load visual edit monitor script
+                var emergentScript = document.createElement('script');
+                emergentScript.src = 'https://assets.emergent.sh/scripts/emergent-main.js';
+                document.head.appendChild(emergentScript);
+
                 // Load debug monitor script
                 var debugMonitorScript = document.createElement('script');
                 debugMonitorScript.src = 'https://assets.emergent.sh/scripts/debug-monitor.js';

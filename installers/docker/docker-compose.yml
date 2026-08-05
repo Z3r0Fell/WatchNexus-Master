@@ -3,21 +3,19 @@ services:
     build: .
     container_name: watchnexus
     ports:
-      - "8001:8001"
+      - "8002:8002"
     volumes:
-      - watchnexus-data:/opt/watchnexus/backend/data
-      - watchnexus-logs:/opt/watchnexus/backend/logs
-      - /path/to/your/media:/media:ro    # Mount your media libraries here
+      - watchnexus-data:/app/data
+      - /path/to/your/media:/data/media:ro    # Mount your media libraries here
     environment:
-      - WATCHNEXUS_PORT=8001
+      - WATCHNEXUS_PORT=8002
       - TMDB_API_KEY=               # Optional: Your TMDB API key
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
 
 volumes:
   watchnexus-data:
-  watchnexus-logs:

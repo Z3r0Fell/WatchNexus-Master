@@ -41,6 +41,37 @@ public class FortressTierCoverageTests
         Assert.True(FortressFilter.ProtectedRoutes.TryGetValue(module, out var required));
         Assert.Equal(tier, required);
     }
+
+    // Regression guard for the /api/gadgets/* bypass class: every gadget
+    // route prefix that serves a PAID module must map to a codename that is
+    // itself in ProtectedRoutes — otherwise FortressFilter's segments[1]
+    // check never fires for /api/gadgets/{name}/...
+    [Fact]
+    public void Every_gadget_route_that_serves_a_paid_module_is_gated()
+    {
+        var missing = FortressFilter.GadgetRoutes
+            .Where(kv => !FortressFilter.ProtectedRoutes.ContainsKey(kv.Value))
+            .Select(kv => $"api/gadgets/{kv.Key} -> '{kv.Value}'")
+            .ToList();
+        Assert.True(missing.Count == 0,
+            $"Gadget routes without a server-side tier gate (open tier bypass!): {string.Join(", ", missing)}");
+    }
+
+    // Every paid tier module must be reachable only through a route prefix the
+    // filter actually checks: either its codename directly or a mapped gadget
+    // route. This catches a module being dropped from one map but still served.
+    [Theory]
+    [InlineData("pro")]
+    [InlineData("ultra")]
+    public void Every_paid_module_has_an_enforced_route(string tier)
+    {
+        var unenforced = CellarController.TierModules[tier]
+            .Where(m => !FortressFilter.ProtectedRoutes.ContainsKey(m)
+                        && !FortressFilter.GadgetRoutes.Values.Contains(m))
+            .ToList();
+        Assert.True(unenforced.Count == 0,
+            $"Paid '{tier}' modules with no enforced route prefix (open tier bypass!): {string.Join(", ", unenforced)}");
+    }
 }
 
 // Tamper-evidence: a paid tier stored in cellar_license is only honored when

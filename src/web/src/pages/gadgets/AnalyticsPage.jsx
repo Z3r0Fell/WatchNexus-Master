@@ -7,6 +7,7 @@ import { BarChart3, Clock, Film, Tv, TrendingUp, Calendar, PlayCircle, Activity 
 import { Button } from '../../components/ui/button';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
+const headers = { 'Content-Type': 'application/json' };
 
 const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
   <motion.div

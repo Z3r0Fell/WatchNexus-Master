@@ -83,7 +83,9 @@ public class PatchService
     {
         if (!IsConfigured) return null;
         using var http = CreateClient();
-        var resp = await http.GetAsync($"{RepoUrl}/contents/patches/{version}.json");
+        // Case-sensitive on GitHub: the repo layout is "Patches/". Fetching
+        // "patches/" (lowercase) 404s and would silently skip signature checks.
+        var resp = await http.GetAsync($"{RepoUrl}/contents/Patches/{version}.json");
         if (!resp.IsSuccessStatusCode) return null;
         var ghFile = JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
         if (!ghFile.TryGetProperty("content", out var content)) return null;

@@ -23,7 +23,6 @@ const EPGGuideView = ({ channels }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedProgram, setSelectedProgram] = useState(null);
   const timelineRef = useRef(null);
-  const getToken = () => localStorage.getItem('watchnexus_token');
 
   // Generate time slots for 24 hours
   const timeSlots = Array.from({ length: 48 }, (_, i) => {
@@ -43,8 +42,7 @@ const EPGGuideView = ({ channels }) => {
       for (const channel of channels.slice(0, 20)) { // Limit to first 20 channels
         try {
           const res = await axios.get(`${API_URL}/api/iptv/epg/${channel.id}`, {
-            headers: { Authorization: `Bearer ${getToken()}` }
-          });
+              });
           data[channel.id] = res.data || [];
         } catch (err) {
           data[channel.id] = [];
@@ -372,12 +370,9 @@ export const LiveTVPage = () => {
   const [newSource, setNewSource] = useState({ name: '', url: '', epg_url: '' });
   const [addingSource, setAddingSource] = useState(false);
 
-  const getToken = () => localStorage.getItem('watchnexus_token');
-
   const fetchStats = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/iptv/stats`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       setStats(res.data);
     } catch (err) {
@@ -388,7 +383,6 @@ export const LiveTVPage = () => {
   const fetchSources = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/iptv/sources`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       setSources(res.data || []);
     } catch (err) {
@@ -405,7 +399,6 @@ export const LiveTVPage = () => {
       
       const res = await axios.get(`${API_URL}/api/iptv/channels`, {
         params,
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       setChannels(res.data || []);
     } catch (err) {
@@ -416,7 +409,6 @@ export const LiveTVPage = () => {
   const fetchGroups = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/iptv/groups`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       setGroups(res.data || []);
     } catch (err) {
@@ -449,7 +441,6 @@ export const LiveTVPage = () => {
     try {
       await axios.post(`${API_URL}/api/iptv/sources`, null, {
         params: { name: newSource.name, url: newSource.url, epg_url: newSource.epg_url },
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       toast.success('Source added successfully');
       setShowAddSource(false);
@@ -466,7 +457,6 @@ export const LiveTVPage = () => {
     setRefreshingSource(sourceId);
     try {
       await axios.post(`${API_URL}/api/iptv/sources/${sourceId}/refresh`, null, {
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       toast.success('Source refreshed');
       fetchAll();
@@ -482,7 +472,6 @@ export const LiveTVPage = () => {
     
     try {
       await axios.delete(`${API_URL}/api/iptv/sources/${sourceId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       toast.success('Source deleted');
       fetchAll();
@@ -494,7 +483,6 @@ export const LiveTVPage = () => {
   const handleToggleFavorite = async (channelId) => {
     try {
       await axios.post(`${API_URL}/api/iptv/channels/${channelId}/favorite`, null, {
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       fetchChannels();
     } catch (err) {
@@ -506,7 +494,6 @@ export const LiveTVPage = () => {
     try {
       const res = await axios.get(`${API_URL}/api/iptv/export`, {
         params: { favorites_only: favoritesOnly },
-        headers: { Authorization: `Bearer ${getToken()}` }
       });
       
       const blob = new Blob([res.data.content], { type: 'application/x-mpegurl' });

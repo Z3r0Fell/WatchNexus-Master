@@ -72,15 +72,20 @@ public class UpdateBackgroundService : BackgroundService
         if (patchService.IsSigningConfigured)
         {
             var rawJson = await patchService.FetchManifestRawAsync(CurrentVersion);
-            if (rawJson != null)
+            if (rawJson == null)
             {
-                var (valid, error) = patchService.VerifyManifestSignature(rawJson);
-                signatureValid = valid;
-                if (valid == false)
-                {
-                    _logger.LogWarning("[Updater] Patch {PatchId} REJECTED: {Error}", manifest.PatchId, error);
-                    return intervalHours;
-                }
+                // Fail closed: signing is configured but we can't fetch the
+                // exact raw manifest to verify — refuse to auto-apply rather
+                // than install an unverified patch.
+                _logger.LogWarning("[Updater] Patch {PatchId} NOT applied: signing is configured but the raw manifest could not be fetched for signature verification", manifest.PatchId);
+                return intervalHours;
+            }
+            var (valid, error) = patchService.VerifyManifestSignature(rawJson);
+            signatureValid = valid;
+            if (valid == false)
+            {
+                _logger.LogWarning("[Updater] Patch {PatchId} REJECTED: {Error}", manifest.PatchId, error);
+                return intervalHours;
             }
         }
 

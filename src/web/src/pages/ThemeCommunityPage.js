@@ -152,13 +152,11 @@ export const ThemeCommunityPage = () => {
   const [installedThemes, setInstalledThemes] = useState([]);
   const [installing, setInstalling] = useState(null);
 
-  const getToken = () => localStorage.getItem('watchnexus_token');
-
   // Fetch installed themes from Milk API
   const fetchInstalledThemes = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/milk/themes`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+
       });
       const customThemes = Object.keys(res.data?.custom_themes || {});
       setInstalledThemes(customThemes);
@@ -197,7 +195,7 @@ export const ThemeCommunityPage = () => {
         name: theme.name,
         colors: theme.colors,
       }, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+
       });
       
       toast.success(`${theme.name} installed!`);
@@ -217,7 +215,7 @@ export const ThemeCommunityPage = () => {
           name: theme.name,
           colors: theme.colors,
         }, {
-          headers: { Authorization: `Bearer ${getToken()}` }
+  
         });
       }
       
@@ -225,7 +223,7 @@ export const ThemeCommunityPage = () => {
       await axios.post(`${API_URL}/api/milk/set-theme`, {
         theme_name: theme.name,
       }, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+
       });
       
       toast.success(`Applied ${theme.name}!`);

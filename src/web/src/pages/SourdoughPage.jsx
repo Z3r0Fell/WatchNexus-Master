@@ -14,6 +14,7 @@ import { cn } from '../lib/utils';
 import { formatFileSize } from '../lib/utils';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
+const headers = { 'Content-Type': 'application/json' };
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
   <button
