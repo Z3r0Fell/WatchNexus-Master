@@ -182,7 +182,7 @@ Section "Core (required)" SecCore
     CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus Tray Controller.lnk" \
         "$INSTDIR\bin\WatchNexus.Core.exe" \
         "--tray" "$INSTDIR\watchnexus.ico" 0 \
-        SW_SHOWMINNOACTIVE "" "Show the WatchNexus system tray icon"
+        SW_SHOWMINIMIZED "" "Show the WatchNexus system tray icon"
     CreateShortcut "$SMPROGRAMS\WatchNexus\WatchNexus (Console mode).lnk" \
         "$INSTDIR\bin\WatchNexus.Core.exe" \
         "" "$INSTDIR\watchnexus.ico" 0 \
