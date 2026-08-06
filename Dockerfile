@@ -28,33 +28,19 @@ RUN dotnet restore src/watchnexus/core/WatchNexus.Core.csproj
 # Copy shared code
 COPY src/watchnexus/shared/ src/watchnexus/shared/
 
-# Copy core code (everything except controllers — we'll selectively copy those)
-COPY src/watchnexus/core/Program.cs src/watchnexus/core/
-COPY src/watchnexus/core/appsettings.json src/watchnexus/core/
-COPY src/watchnexus/core/Data/ src/watchnexus/core/Data/
-COPY src/watchnexus/core/Auth/ src/watchnexus/core/Auth/
-COPY src/watchnexus/core/WatchNexus.Core.csproj src/watchnexus/core/
+# Copy core code (whole tree — .dockerignore excludes bin/obj/data)
+# Selective per-dir COPYs kept breaking the build (Services/ and
+# Properties/ were omitted); a full-tree copy is simpler and always correct.
+COPY src/watchnexus/core/ src/watchnexus/core/
 
-# ── Tier-Based Controller Selection ─────────────────────────────────
-# Standard controllers (always included)
-COPY src/watchnexus/core/Controllers/CoreController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/ContentController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/BridgeController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/SettingsController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/FilesystemController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/LibrariesController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/SystemController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/WeatherController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/PodcastsController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/RadioController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/PhotosController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/WebVideoController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/CellarController.cs src/watchnexus/core/Controllers/
-COPY src/watchnexus/core/Controllers/Helpers.cs src/watchnexus/core/Controllers/
-
-# Use a script to conditionally copy Pro/Ultra controllers
-COPY build/copy-tier-controllers.sh /tmp/
-RUN chmod +x /tmp/copy-tier-controllers.sh && /tmp/copy-tier-controllers.sh ${TIER}
+# ── Controllers ──────────────────────────────────────────────────────
+# All controllers are compiled into every tier image. Tier enforcement is
+# runtime-only: FortressController gates module codenames against the
+# license tier, exactly like the native (non-Docker) release. Compile-time
+# tier exclusion was removed because it (a) duplicated types via the
+# Controllers_all staging dir, and (b) stripped FortressController +
+# UpdateController + GadgetsCatalogueController + ChowderController, which
+# are in no tier list and are required by every tier.
 
 # Publish
 ENV SkipFrontendBuild=true
