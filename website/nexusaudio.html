@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusAudio - Download, Tag &amp; Share Music</title>
+  <meta name="description" content="NexusAudio is a free, all-in-one music toolkit for Windows, Linux, and macOS: download Spotify tracks and playlists, edit tags with a spreadsheet editor and MusicBrainz lookup, and grab rare files from the Soulseek P2P network.">
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
+  <ul class="nav-links">
+    <li><a href="features.html">Features</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li class="nav-dropdown">
+      <a href="#" class="nav-dropdown-toggle" onclick="toggleDropdown(event)">Products <i class="fa-solid fa-chevron-down chevron"></i></a>
+      <ul class="nav-dropdown-menu">
+        <li><a href="features.html"><i class="fa-solid fa-film"></i> WatchNexus<span class="dd-tag">Paid</span></a></li>
+        <li><a href="nexussms.html"><i class="fa-solid fa-mobile-screen"></i> NexusSMS<span class="dd-tag">$4.99</span></a></li>
+        <li><a href="nexusaudio.html"><i class="fa-solid fa-music"></i> NexusAudio<span class="dd-tag free">Free</span></a></li>
+      </ul>
+    </li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
+</nav>
+
+<section class="product-hero">
+  <img src="assets/images/nexusaudio.png" alt="NexusAudio icon" class="product-logo round">
+  <span class="hero-badge animate-in">
+    <i class="fa-solid fa-headphones"></i> Windows &middot; Linux &middot; macOS &middot; Free
+  </span>
+  <h1 class="animate-in delay-1">Download, Tag &amp;<br><span class="gradient-text">Share Music</span></h1>
+  <p class="hero-sub animate-in delay-2">
+    NexusAudio is an all-in-one music toolkit. Pull any Spotify track, album, or playlist from YouTube, clean up your library with a spreadsheet-style tag editor, and grab rare tracks straight from the Soulseek P2P network &mdash; all in one app.
+  </p>
+  <div class="product-price animate-in delay-2"><i class="fa-solid fa-circle-check"></i> Free &amp; open source</div>
+  <div class="hero-cta animate-in delay-3">
+    <button type="button" class="btn btn-primary btn-lg" data-tooltip="Coming soon"><i class="fa-solid fa-download"></i> Download for Free</button>
+    <a href="#features" class="btn btn-outline btn-lg"><i class="fa-solid fa-layer-group"></i> Explore Features</a>
+  </div>
+</section>
+
+<!-- FEATURES OVERVIEW -->
+<section class="section" id="features">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-cubes"></i> Highlights</span>
+    <h2 class="section-title">Three tools, one app</h2>
+    <p class="section-desc">A downloader, a tag editor, and a P2P file finder &mdash; no external programs required. Everything runs in a single application.</p>
+  </div>
+  <div class="feature-grid animate-in">
+    <div class="feature-card"><div class="feature-icon" style="background:#8b5cf620"><i class="fa-solid fa-download" style="color:#a78bfa"></i></div><h4>Spotify Downloader</h4><p>Paste any Spotify track, album, or playlist URL and NexusAudio grabs the audio via YouTube. Works without an API key &mdash; a web-scrape fallback is built in.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#3b82f620"><i class="fa-solid fa-table-cells" style="color:#60a5fa"></i></div><h4>Tag Editor</h4><p>A spreadsheet-style editor for MP3, FLAC, M4A, and OGG with bulk rename, find &amp; replace, extended tags, and per-file cover art preview.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#10b98120"><i class="fa-solid fa-globe" style="color:#34d399"></i></div><h4>MusicBrainz Lookup</h4><p>Search releases by artist or album, auto-match track titles and numbers to your files, and download &amp; embed cover art in all four formats.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#f59e0b20"><i class="fa-solid fa-file-lines" style="color:#fbbf24"></i></div><h4>Auto Lyrics</h4><p>Fetch and embed lyrics from lyrics.ovh with a Genius fallback &mdash; saved straight into the ID3, Vorbis, or MP4 tags.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#ef444420"><i class="fa-solid fa-network-wired" style="color:#f87171"></i></div><h4>Soulseek P2P</h4><p>Full SLSK wire protocol: connect to the Soulseek network, search peers, and download files directly &mdash; with reconnection and queue handling.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#ec489920"><i class="fa-solid fa-palette" style="color:#f472b6"></i></div><h4>15 Themes</h4><p>From Nexus Dark to Dracula, Nord, Catppuccin, and Tokyo Night. Switch your look instantly from the settings tab.</p></div>
+  </div>
+</section>
+
+<!-- DOWNLOADER -->
+<section class="section section-alt">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-download"></i> Downloader</span>
+    <h2 class="section-title">From Spotify to your library</h2>
+    <p class="section-desc">Your format, your quality, your folder &mdash; queued, tagged, and lyrics-embedded.</p>
+  </div>
+  <div class="check-grid animate-in">
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Track, album, or playlist</strong> &mdash; paste a Spotify URL and get the full track list.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>No API key required</strong> &mdash; the built-in web scraper works out of the box. Optional Spotify API keys speed up large playlists.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Formats &amp; quality</strong> &mdash; MP3 (64&ndash;320 kbps), FLAC, M4A, or OGG.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Age-restricted content</strong> &mdash; pass browser cookies (Firefox, Chrome, Edge, Brave, Safari) to handle restricted videos.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Download queue</strong> &mdash; batch-download whole albums with progress bars and one-click cancel.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Auto-tagging</strong> &mdash; title, artist, and album are embedded as ID3 / Vorbis / MP4 tags on every download.</span></div>
+  </div>
+</section>
+
+<!-- TAG EDITOR -->
+<section class="section">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-table-cells"></i> Tag Editor</span>
+    <h2 class="section-title">Clean up your whole library</h2>
+    <p class="section-desc">Batch edits that would take hours in other tools &mdash; done in minutes.</p>
+  </div>
+  <div class="check-grid animate-in">
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Spreadsheet editing</strong> &mdash; edit title, artist, album, genre, year, and track number across all files at once.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Bulk rename</strong> &mdash; rename every file to &ldquo;Artist &ndash; Title&rdquo; with a single click.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Find &amp; replace</strong> &mdash; search and replace tag text across files, with regex and case toggles.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Extended tags</strong> &mdash; composer, album artist, disc number, BPM, ISRC, publisher, grouping, performer, lyricist, and more.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>MusicBrainz</strong> &mdash; search releases, auto-match track numbers, and write correct titles &amp; years.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Cover art</strong> &mdash; download front cover art and embed it into MP3, FLAC, M4A, or OGG files.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Lyrics fetch</strong> &mdash; pull and embed lyrics for every file, straight from the toolbar.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>All four formats</strong> &mdash; MP3 (ID3v2), FLAC (Vorbis Comments), M4A (MP4 tags), and OGG.</span></div>
+  </div>
+</section>
+
+<!-- P2P -->
+<section class="section section-alt">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-network-wired"></i> Soulseek P2P</span>
+    <h2 class="section-title">The network for rare tracks</h2>
+    <p class="section-desc">Soulseek is where niche and hard-to-find music lives. NexusAudio speaks the protocol natively.</p>
+  </div>
+  <div class="check-grid animate-in">
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Native SLSK protocol</strong> &mdash; direct TCP implementation, no third-party client required.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Search the network</strong> &mdash; find files by name with user, size, bitrate, and length results.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Direct downloads</strong> &mdash; double-click a result to download it from the peer, with transfer progress.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Reliable connections</strong> &mdash; auto-reconnect with exponential backoff and TCP keepalive.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Peer server</strong> &mdash; listen for incoming search results and transfer requests.</span></div>
+  </div>
+</section>
+
+<!-- SPECS -->
+<section class="section">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-microchip"></i> Tech Specs</span>
+    <h2 class="section-title">Under the hood</h2>
+  </div>
+  <div class="comparison-table-wrap animate-in" style="max-width:56rem;">
+    <table class="comparison-table">
+      <tbody>
+        <tr><td>Platforms</td><td>Windows &middot; Linux &middot; macOS &middot; Docker</td></tr>
+        <tr><td>UI</td><td>PyQt6 desktop application</td></tr>
+        <tr><td>Language</td><td>Python 3.10+</td></tr>
+        <tr><td>Formats</td><td>MP3 (64&ndash;320 kbps) &middot; FLAC &middot; M4A &middot; OGG</td></tr>
+        <tr><td>Downloading</td><td>yt-dlp (YouTube audio) &middot; spotipy or built-in web scraper</td></tr>
+        <tr><td>Metadata</td><td>MusicBrainz &middot; Cover Art Archive &middot; lyrics.ovh &middot; Genius</td></tr>
+        <tr><td>P2P</td><td>Soulseek SLSK wire protocol over TCP</td></tr>
+        <tr><td>Dependencies</td><td>FFmpeg required for audio conversion</td></tr>
+        <tr><td>Pricing</td><td>Free</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section section-center" style="padding: 6rem 2rem;">
+  <h2 class="animate-in" style="font-size:2.5rem;font-weight:800;">Your music, your way.</h2>
+  <p class="animate-in delay-1" style="color:var(--text-secondary);margin:1rem auto;max-width:32rem;">NexusAudio is free for Windows, Linux, and macOS. Downloads are on the way &mdash; check back soon.</p>
+  <div class="hero-cta animate-in delay-2">
+    <button type="button" class="btn btn-primary btn-lg" data-tooltip="Coming soon"><i class="fa-solid fa-download"></i> Download for Free</button>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo" style="margin-bottom:0.5rem;">
+        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;">
+        WatchNexus
+      </div>
+      <p>Media pipelines, encrypted messaging, and music tools from Nexus Media.</p>
+    </div>
+    <div class="footer-links">
+      <div><h4>Products</h4><a href="features.html">WatchNexus</a><a href="nexussms.html">NexusSMS</a><a href="nexusaudio.html">NexusAudio</a></div>
+      <div><h4>Resources</h4><a href="faq.html">FAQ</a><a href="support.html">Support</a><a href="press.html">Press Kit</a></div>
+      <div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved.</div>
+</footer>
+
+<script>
+function toggleDropdown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.closest('.nav-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.nav-dropdown')) {
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+  }
+});
+const obs = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
+document.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

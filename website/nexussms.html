@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusSMS - Encrypted Messaging for Android</title>
+  <meta name="description" content="NexusSMS is a feature-rich Android SMS/MMS app with end-to-end encryption, a unified inbox across Matrix, Telegram, Discord and more, on-device spam protection, and powerful automation. Coming soon to Google Play.">
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
+  <ul class="nav-links">
+    <li><a href="features.html">Features</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li class="nav-dropdown">
+      <a href="#" class="nav-dropdown-toggle" onclick="toggleDropdown(event)">Products <i class="fa-solid fa-chevron-down chevron"></i></a>
+      <ul class="nav-dropdown-menu">
+        <li><a href="features.html"><i class="fa-solid fa-film"></i> WatchNexus<span class="dd-tag">Paid</span></a></li>
+        <li><a href="nexussms.html"><i class="fa-solid fa-mobile-screen"></i> NexusSMS<span class="dd-tag">$4.99</span></a></li>
+        <li><a href="nexusaudio.html"><i class="fa-solid fa-music"></i> NexusAudio<span class="dd-tag free">Free</span></a></li>
+      </ul>
+    </li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
+</nav>
+
+<section class="product-hero">
+  <img src="assets/images/nexussms-icon.png" alt="NexusSMS icon" class="product-logo">
+  <span class="hero-badge animate-in">
+    <i class="fa-brands fa-android"></i> Android &middot; Coming to Google Play &middot; $4.99 USD
+  </span>
+  <h1 class="animate-in delay-1">Messaging,<br><span class="gradient-text">Unified &amp; Secure</span></h1>
+  <p class="hero-sub animate-in delay-2">
+    NexusSMS is a feature-rich Android SMS/MMS app that fuses your text messages with Matrix, Telegram, Discord, Messenger, and more &mdash; wrapped in end-to-end encryption, on-device spam protection, and a deniable vault.
+  </p>
+  <div class="product-price paid animate-in delay-2"><i class="fa-solid fa-tag"></i> $4.99 USD &middot; One-time purchase on Google Play</div>
+  <div class="hero-cta animate-in delay-3">
+    <button type="button" class="btn btn-primary btn-lg" data-tooltip="Coming soon to Google Play"><i class="fa-brands fa-google-play"></i> Get on Google Play</button>
+    <a href="#features" class="btn btn-outline btn-lg"><i class="fa-solid fa-layer-group"></i> Explore Features</a>
+  </div>
+</section>
+
+<!-- FEATURES OVERVIEW -->
+<section class="section" id="features">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-cubes"></i> Highlights</span>
+    <h2 class="section-title">Built for privacy. Built for power.</h2>
+    <p class="section-desc">NexusSMS combines the messaging features you expect with security and automation you won't find in a stock messaging app.</p>
+  </div>
+  <div class="feature-grid animate-in">
+    <div class="feature-card"><div class="feature-icon" style="background:#8b5cf620"><i class="fa-solid fa-lock" style="color:#a78bfa"></i></div><h4>End-to-End Encryption</h4><p>AES-256-GCM message encryption with Signal-style X3DH + Double Ratchet, verifiable 30-digit safety numbers, and QR-based key verification.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#3b82f620"><i class="fa-solid fa-diagram-project" style="color:#60a5fa"></i></div><h4>Unified Inbox</h4><p>Connect Matrix, Telegram, Discord, Facebook Messenger, Signal, and Slack. Every platform shows as a filterable tab &mdash; reply to all of them from one app.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#ef444420"><i class="fa-solid fa-shield-halved" style="color:#f87171"></i></div><h4>Spam &amp; Scam Protection</h4><p>On-device detection across 10 scam categories &mdash; OTP phishing, bank impersonation, delivery scams, and more &mdash; with configurable auto-blocking.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#10b98120"><i class="fa-solid fa-robot" style="color:#34d399"></i></div><h4>Automation Rules</h4><p>A Tasker-lite rules engine with 15 action types: auto-copy OTPs, auto-reply, auto-archive, forward to email, mute, block, and webhooks.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#f59e0b20"><i class="fa-solid fa-cloud-arrow-up" style="color:#fbbf24"></i></div><h4>Encrypted Backups</h4><p>Back up to Google Drive or your own WebDAV/Nextcloud server with PBKDF2 passphrase encryption. Scheduled, one-tap restore.</p></div>
+    <div class="feature-card"><div class="feature-icon" style="background:#ec489920"><i class="fa-solid fa-ghost" style="color:#f472b6"></i></div><h4>Deniable Vault</h4><p>A second, hidden encrypted space with a decoy vault. Hide conversations from the main list and unlock them with your own PIN.</p></div>
+  </div>
+</section>
+
+<!-- MESSAGING CHECKLIST -->
+<section class="section section-alt">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-comment-dots"></i> Messaging</span>
+    <h2 class="section-title">Everyday messaging, done right</h2>
+    <p class="section-desc">From scheduled texts to smart replies, the basics are anything but basic.</p>
+  </div>
+  <div class="check-grid animate-in">
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>SMS / MMS + RCS</strong> &mdash; text, photos, video, and rich messaging with automatic SMS fallback.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Scheduled messages</strong> &mdash; send once or repeat daily, weekly, or monthly at any time.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Shortcodes</strong> &mdash; type <strong>!brb</strong> and it expands to &ldquo;Be right back&rdquo;. Unlimited custom triggers.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Signatures &amp; templates</strong> &mdash; attach a signature per conversation and pick from a template library.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Smart reply</strong> &mdash; context-aware suggestion chips for fast replies.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>GIFs, stickers &amp; emoji</strong> &mdash; GIF picker, six sticker categories, and a searchable emoji library.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Reactions</strong> &mdash; long-press any message to react with an emoji.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Full-text search</strong> &mdash; search across every conversation and message, instantly.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Dual SIM support</strong> &mdash; choose which SIM card each message goes out on.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Archive, pin, mute &amp; block</strong> &mdash; full conversation management, including per-contact notifications.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Group messaging</strong> &mdash; MMS group chats and bulk SMS modes with send-delay protection.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Message actions</strong> &mdash; copy, forward, lock/unlock, multi-select, and message detail view.</span></div>
+  </div>
+</section>
+
+<!-- SECURITY CHECKLIST -->
+<section class="section">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-user-shield"></i> Security &amp; Privacy</span>
+    <h2 class="section-title">Your conversations stay yours</h2>
+    <p class="section-desc">Encryption, a vault, and app-level protection keep prying eyes out &mdash; including the screen ones.</p>
+  </div>
+  <div class="check-grid animate-in">
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>App lock</strong> &mdash; PIN, pattern, or password with biometric fallback and configurable auto-lock timeout.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>E2E encrypted chats</strong> &mdash; per-contact AES-256-GCM with X3DH key agreement and Double Ratchet.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Safety numbers</strong> &mdash; verify contacts with a 30-digit fingerprint or in-person QR scan. Get warned if a key changes.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Deniable vault</strong> &mdash; a hidden encrypted space with a decoy PIN that shows an empty shell.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Screenshot blocking</strong> &mdash; optional FLAG_SECURE to keep conversations out of screenshots.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Content privacy</strong> &mdash; hide message previews from the recents app switcher.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Secure storage</strong> &mdash; keys in EncryptedSharedPreferences backed by the Android Keystore. No plaintext secrets.</span></div>
+    <div class="check-item"><i class="fa-solid fa-check"></i><span><strong>Blocklist &amp; spam report</strong> &mdash; block known senders and report spam straight from a message.</span></div>
+  </div>
+</section>
+
+<!-- SPECS -->
+<section class="section section-alt">
+  <div class="section-header animate-in">
+    <span class="section-label"><i class="fa-solid fa-microchip"></i> Tech Specs</span>
+    <h2 class="section-title">Under the hood</h2>
+  </div>
+  <div class="comparison-table-wrap animate-in" style="max-width:56rem;">
+    <table class="comparison-table">
+      <tbody>
+        <tr><td>Platform</td><td>Android 7.0+ (API 24+)</td></tr>
+        <tr><td>UI</td><td>Jetpack Compose &middot; Material Design 3</td></tr>
+        <tr><td>Architecture</td><td>MVVM &middot; Repository pattern</td></tr>
+        <tr><td>Tech stack</td><td>Kotlin &middot; Room &middot; Hilt &middot; Coroutines &middot; WorkManager &middot; Retrofit/OkHttp</td></tr>
+        <tr><td>Messaging</td><td>SMS / MMS / RCS</td></tr>
+        <tr><td>Encryption</td><td>AES-256-GCM &middot; X3DH + Double Ratchet &middot; Android Keystore</td></tr>
+        <tr><td>Integrations</td><td>Matrix &middot; Telegram &middot; Discord &middot; Facebook Messenger &middot; Signal &middot; Slack</td></tr>
+        <tr><td>Backups</td><td>Google Drive &middot; WebDAV / Nextcloud &middot; JSON / CSV export</td></tr>
+        <tr><td>Version</td><td>1.0.3 (Code 103)</td></tr>
+        <tr><td>Developer</td><td>Nexus Media &middot; Canada</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section section-center" style="padding: 6rem 2rem;">
+  <h2 class="animate-in" style="font-size:2.5rem;font-weight:800;">Say it your way.</h2>
+  <p class="animate-in delay-1" style="color:var(--text-secondary);margin:1rem auto;max-width:32rem;">NexusSMS is finishing final testing and will be available on the Google Play Store for a one-time $4.99 USD.</p>
+  <div class="hero-cta animate-in delay-2">
+    <button type="button" class="btn btn-primary btn-lg" data-tooltip="Coming soon to Google Play"><i class="fa-brands fa-google-play"></i> Get on Google Play</button>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo" style="margin-bottom:0.5rem;">
+        <img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;">
+        WatchNexus
+      </div>
+      <p>Media pipelines, encrypted messaging, and music tools from Nexus Media.</p>
+    </div>
+    <div class="footer-links">
+      <div><h4>Products</h4><a href="features.html">WatchNexus</a><a href="nexussms.html">NexusSMS</a><a href="nexusaudio.html">NexusAudio</a></div>
+      <div><h4>Resources</h4><a href="faq.html">FAQ</a><a href="support.html">Support</a><a href="press.html">Press Kit</a></div>
+      <div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved.</div>
+</footer>
+
+<script>
+function toggleDropdown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.closest('.nav-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.nav-dropdown')) {
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+  }
+});
+const obs = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
+document.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

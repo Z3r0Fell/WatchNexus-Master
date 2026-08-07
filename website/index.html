@@ -20,6 +20,14 @@
   <ul class="nav-links">
     <li><a href="features.html">Features</a></li>
     <li><a href="download.html">Download</a></li>
+    <li class="nav-dropdown">
+      <a href="#" class="nav-dropdown-toggle" onclick="toggleDropdown(event)">Products <i class="fa-solid fa-chevron-down chevron"></i></a>
+      <ul class="nav-dropdown-menu">
+        <li><a href="features.html"><i class="fa-solid fa-film"></i> WatchNexus<span class="dd-tag">Paid</span></a></li>
+        <li><a href="nexussms.html"><i class="fa-solid fa-mobile-screen"></i> NexusSMS<span class="dd-tag">$4.99</span></a></li>
+        <li><a href="nexusaudio.html"><i class="fa-solid fa-music"></i> NexusAudio<span class="dd-tag free">Free</span></a></li>
+      </ul>
+    </li>
     <li><a href="faq.html">FAQ</a></li>
     <li><a href="support.html">Support</a></li>
   </ul>
@@ -195,7 +203,7 @@
       <p>Your complete, self-hosted media pipeline.</p>
     </div>
     <div class="footer-links">
-      <div><h4>Product</h4><a href="features.html">Features</a><a href="download.html">Download</a><a href="faq.html">FAQ</a></div>
+      <div><h4>Products</h4><a href="features.html">WatchNexus</a><a href="nexussms.html">NexusSMS</a><a href="nexusaudio.html">NexusAudio</a></div>
       <div><h4>Resources</h4><a href="support.html">Support</a><a href="press.html">Press Kit</a></div>
       <div><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
     </div>
@@ -204,6 +212,16 @@
 </footer>
 
 <script>
+function toggleDropdown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.closest('.nav-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.nav-dropdown')) {
+    document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+  }
+});
 function switchScreenshot(btn, name) {
   document.querySelectorAll('.screenshot-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
