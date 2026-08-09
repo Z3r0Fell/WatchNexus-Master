@@ -31,7 +31,7 @@ public class UpdateController : ControllerBase
         _config = config;
     }
 
-    private const string CURRENT_VERSION = "1.0.0";
+    private const string CURRENT_VERSION = "1.0.1";
     private const string RELEASES_PAGE = "https://github.com/WN-Admin/WatchNexus/tree/main/Releases";
 
     // Fetch + base64-decode a JSON file from the GitHub repo via the contents API.

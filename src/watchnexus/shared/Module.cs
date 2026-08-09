@@ -14,7 +14,7 @@ public class ModuleManifest
     public string DisplayName { get; set; } = "";
 
     [JsonPropertyName("version")]
-    public string Version { get; set; } = "1.0.0";
+    public string Version { get; set; } = "1.0.1";
 
     [JsonPropertyName("description")]
     public string Description { get; set; } = "";

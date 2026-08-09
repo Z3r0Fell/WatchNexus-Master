@@ -19,7 +19,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # ── Subcommand: sign — walks installer release dir, emits SHA256SUMS.txt ──
 if [ "${1:-}" = "sign" ]; then
   RELEASE_DIR="${2:-$ROOT/release}"
-  VERSION="1.0.0"
+  VERSION="1.0.1"
   LICENSE_API="${WN_LICENSE_API:-https://licenses.watchnexus.ca}"
   UPLOAD="${WN_UPLOAD_HASHES:-0}"
 
@@ -73,7 +73,7 @@ fi
 
 # ── Default: per-tier sealed build ─────────────────────────────────────
 TIER="${1:-ultra}"
-VERSION="1.0.0"
+VERSION="1.0.1"
 OUT="$ROOT/release/${TIER}"
 
 echo "══════════════════════════════════════════════════"
