@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
+using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -99,6 +100,43 @@ public class QBittorrentController : ControllerBase
             return Content(resp, "application/json");
         }
         catch { return Ok(Array.Empty<object>()); }
+    }
+
+    [HttpGet("config")]
+    public async Task<IActionResult> GetConfig()
+    {
+        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == this.UserId());
+        if (cfg?.Value == null) return Ok(new { host = "localhost", port = 8080, username = "", password = "", configured = false });
+        try
+        {
+            var doc = JsonDocument.Parse(cfg.Value).RootElement;
+            return Ok(new
+            {
+                host = doc.TryGetProperty("host", out var h) ? h.GetString() : "localhost",
+                port = doc.TryGetProperty("port", out var p) ? p.GetInt32() : 8080,
+                username = doc.TryGetProperty("username", out var u) ? u.GetString() : "",
+                password = doc.TryGetProperty("password", out var pw) ? pw.GetString() : "",
+                configured = true
+            });
+        }
+        catch { return Ok(new { host = "localhost", port = 8080, username = "", password = "", configured = false }); }
+    }
+
+    [HttpPut("config")]
+    public async Task<IActionResult> SaveConfig([FromQuery] string? host, [FromQuery] int? port, [FromQuery] string? username, [FromQuery] string? password)
+    {
+        var h = string.IsNullOrWhiteSpace(host) ? "localhost" : host!.Trim();
+        var p = port ?? 8080;
+        if (p < 1 || p > 65535) return BadRequest(new { detail = "Port must be between 1 and 65535." });
+        if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(h))
+            return BadRequest(new { detail = "That host is not allowed." });
+
+        var value = JsonSerializer.Serialize(new { host = h, port = p, username = username ?? "", password = password ?? "" });
+        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == this.UserId());
+        if (cfg != null) { cfg.Value = value; }
+        else { _db.Settings.Add(new AppSetting { Key = "qbit_config", UserId = this.UserId(), Value = value }); }
+        await _db.SaveChangesAsync();
+        return Ok(new { saved = true, host = h, port = p });
     }
 
     [HttpPost("test")]

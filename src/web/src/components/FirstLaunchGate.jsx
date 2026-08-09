@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from '../context/AuthContext';
+import MediaFolderDropdown from './MediaFolderDropdown';
 import logo from '../assets/watchnexus-logo.png';
 
 const API = BACKEND_URL;
@@ -299,12 +300,13 @@ const AdminStep = ({ accent, onCreated, onBack }) => {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const canSubmit = email.trim() && username.trim() && password.length >= 8 && password === confirm && !busy;
+  const meetsPolicy = password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password);
+  const canSubmit = email.trim() && username.trim() && meetsPolicy && password === confirm && !busy;
 
   const submit = async (e) => {
     e?.preventDefault();
     if (!canSubmit) {
-      if (password.length < 8) toast.error('Password must be at least 8 characters');
+      if (!meetsPolicy) toast.error('Password must be at least 8 characters with a letter and a number');
       else if (password !== confirm) toast.error('Passwords do not match');
       return;
     }
@@ -328,6 +330,7 @@ const AdminStep = ({ accent, onCreated, onBack }) => {
         <Field icon={Lock} type={show ? 'text' : 'password'} value={password} onChange={setPassword}
           placeholder="Password (min 8 chars)" testid="setup-password" accent={accent}
           right={<button type="button" onClick={() => setShow(!show)} className="text-zinc-500 hover:text-zinc-300">{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>} />
+        <StrengthMeter password={password} accent={accent} />
         <Field icon={Lock} type={show ? 'text' : 'password'} value={confirm} onChange={setConfirm} placeholder="Confirm password" testid="setup-confirm" accent={accent} />
         <div className="flex items-center justify-between pt-3">
           <BackBtn onBack={onBack} />
@@ -337,6 +340,46 @@ const AdminStep = ({ accent, onCreated, onBack }) => {
         </div>
       </form>
     </motion.div>
+  );
+};
+
+// Password strength scoring — matches the backend policy (min 8 chars,
+// at least one letter + one digit) plus length/entropy heuristics.
+const scorePassword = (pw) => {
+  if (!pw) return { score: 0, label: '', color: '' };
+  let score = 0;
+  if (pw.length >= 8) score += 1;
+  if (pw.length >= 12) score += 1;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 1;
+  if (/\d/.test(pw)) score += 1;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+  // Backend rejects passwords missing a letter or a digit regardless of length.
+  const meetsPolicy = pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+  if (!meetsPolicy) {
+    return { score: Math.min(score, 2), label: 'Too weak', color: '#EF4444' };
+  }
+  if (score <= 2) return { score: 2, label: 'Weak', color: '#EF4444' };
+  if (score === 3) return { score: 3, label: 'Fair', color: '#F59E0B' };
+  if (score === 4) return { score: 4, label: 'Good', color: '#10B981' };
+  return { score: 5, label: 'Strong', color: '#34d399' };
+};
+
+const StrengthMeter = ({ password, accent }) => {
+  const { score, label, color } = scorePassword(password);
+  return (
+    <div className="space-y-1.5" data-testid="password-strength">
+      <div className="flex gap-1.5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-1.5 flex-1 rounded-full transition-colors"
+            style={{ background: i <= score ? color : 'rgba(255,255,255,0.08)' }} />
+        ))}
+      </div>
+      {password && (
+        <p className="text-[11px] flex items-center gap-1.5" style={{ color }}>
+          {label} · min 8 chars, a letter and a number
+        </p>
+      )}
+    </div>
   );
 };
 
@@ -531,6 +574,8 @@ const LibraryStep = ({ accent, onNext, onBack }) => {
 
       <Field icon={FolderOpen} type="text" value={path} onChange={setPath}
         placeholder="/media/movies" testid="library-path" accent={accent} onEnter={create} />
+
+      <MediaFolderDropdown value={path} onChange={setPath} />
 
       <div className="flex items-center justify-between pt-1">
         <BackBtn onBack={onBack} />

@@ -30,6 +30,7 @@ services:
       # shared/hardcoded signing key.
       - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY:-wnk_uMomYP4bsYacTprGTTA_KuIHkm8rbQfmGO6uWnO1rQE}
     restart: unless-stopped
 
   # ── Pro Edition ──────────────────────────────────────────────────
@@ -55,6 +56,7 @@ services:
       # shared/hardcoded signing key.
       - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY:-wnk_uMomYP4bsYacTprGTTA_KuIHkm8rbQfmGO6uWnO1rQE}
     restart: unless-stopped
 
   # ── Ultra Edition ────────────────────────────────────────────────
@@ -82,6 +84,7 @@ services:
       # shared/hardcoded signing key.
       - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY:-wnk_uMomYP4bsYacTprGTTA_KuIHkm8rbQfmGO6uWnO1rQE}
     # GPU passthrough for hardware transcoding (NVIDIA)
     deploy:
       resources:

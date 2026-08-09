@@ -230,6 +230,15 @@ export const qbittorrentApi = {
     axios.post(`${API}/qbittorrent/test`, null, { 
       params: { host, port, username, password } 
     }),
+
+  // Config (load + save) — lets users change the default 8080 port
+  getConfig: () =>
+    axios.get(`${API}/qbittorrent/config`),
+
+  saveConfig: (host, port, username, password) =>
+    axios.put(`${API}/qbittorrent/config`, null, {
+      params: { host, port, username, password }
+    }),
 };
 
 // Built-in Torrent Engine API (not available in v1.0.0 — endpoints return 501;

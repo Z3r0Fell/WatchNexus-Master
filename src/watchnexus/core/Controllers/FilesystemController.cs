@@ -164,6 +164,38 @@ public class FilesystemController : ControllerBase
             {
                 if (Directory.Exists(p)) drives.Add(new { name = n, path = p });
             }
+            // Docker container: media folders are typically bind-mounted here.
+            // Surfaces them as a top-level "Container Media" drive so users can
+            // pick the correct in-container path instead of a host path that
+            // doesn't exist inside the container.
+            var mediaRoots = new List<string>();
+            var envRoots = Environment.GetEnvironmentVariable("MEDIA_ROOT")
+                           ?? Environment.GetEnvironmentVariable("MEDIA_ROOTS");
+            if (!string.IsNullOrWhiteSpace(envRoots))
+            {
+                foreach (var r in envRoots.Split(','))
+                {
+                    var t = r.Trim();
+                    if (!string.IsNullOrEmpty(t)) mediaRoots.Add(t);
+                }
+            }
+            else
+            {
+                // Default compose mounts: /data/media (+ optional extras).
+                mediaRoots.Add("/data/media");
+                mediaRoots.Add("/data/rips");
+                mediaRoots.Add("/data/transcoded");
+                mediaRoots.Add("/data/offline");
+            }
+            var mediaDriveAdded = false;
+            foreach (var root in mediaRoots)
+            {
+                if (Directory.Exists(root))
+                {
+                    drives.Add(new { name = mediaDriveAdded ? System.IO.Path.GetFileName(root.TrimEnd('/')) : "Container Media", path = root });
+                    mediaDriveAdded = true;
+                }
+            }
         }
         else if (osType == "darwin")
         {

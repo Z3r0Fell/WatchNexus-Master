@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Download, Zap, Package, CheckCircle, AlertTriangle, RefreshCw, Check,
-  DownloadCloud, Clock, Trash2, Globe, Wifi, WifiOff, Settings
+  DownloadCloud, Clock, Trash2, Globe, Wifi, WifiOff, Settings, Save
 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -31,6 +31,7 @@ export const DownloadSettings = () => {
   const [qbitConfig, setQbitConfig] = useState({ host: 'localhost', port: '8080', username: 'admin', password: '' });
   const [qbitStatus, setQbitStatus] = useState(null);
   const [testingQbit, setTestingQbit] = useState(false);
+  const [savingQbit, setSavingQbit] = useState(false);
 
   const fetchEngineStatus = useCallback(async () => {
     try { const res = await torrentEngineApi.getStatus(); setEngineStatus(res.data); } catch { setEngineStatus({ success: false, error: 'Engine not available' }); }
@@ -91,6 +92,35 @@ export const DownloadSettings = () => {
     } catch { toast.error('Failed to connect to qBittorrent'); setQbitStatus({ success: false, error: 'Connection failed' }); }
     finally { setTestingQbit(false); }
   };
+
+  const handleSaveQbit = async () => {
+    setSavingQbit(true);
+    try {
+      await qbittorrentApi.saveConfig(qbitConfig.host, parseInt(qbitConfig.port), qbitConfig.username, qbitConfig.password);
+      toast.success('qBittorrent settings saved');
+      handleTestQbit();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save qBittorrent settings');
+    } finally { setSavingQbit(false); }
+  };
+
+  const handleLoadQbit = useCallback(async () => {
+    try {
+      const res = await qbittorrentApi.getConfig();
+      if (res.data?.configured) {
+        setQbitConfig(prev => ({
+          host: res.data.host || prev.host,
+          port: res.data.port ? String(res.data.port) : prev.port,
+          username: res.data.username ?? prev.username,
+          password: res.data.password ?? prev.password,
+        }));
+      }
+    } catch { /* non-fatal */ }
+  }, []);
+
+  useEffect(() => {
+    handleLoadQbit();
+  }, [handleLoadQbit]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" data-testid="download-settings">
@@ -320,9 +350,14 @@ export const DownloadSettings = () => {
               </div>
             ))}
           </div>
-          <Button onClick={handleTestQbit} disabled={testingQbit} className="bg-violet-600 hover:bg-violet-700">
-            {testingQbit ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Wifi className="w-4 h-4 mr-2" />} Test Connection
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={handleTestQbit} disabled={testingQbit} className="bg-violet-600 hover:bg-violet-700">
+              {testingQbit ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Wifi className="w-4 h-4 mr-2" />} Test Connection
+            </Button>
+            <Button onClick={handleSaveQbit} disabled={savingQbit} className="bg-emerald-600 hover:bg-emerald-700">
+              {savingQbit ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save Settings
+            </Button>
+          </div>
           <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
             <h4 className="font-medium text-blue-400 mb-2">Setup Instructions</h4>
             <ol className="text-sm text-blue-300 space-y-1 list-decimal list-inside">

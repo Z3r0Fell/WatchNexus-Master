@@ -72,6 +72,13 @@ Log($"[WatchNexus] Boot log: {bootLogPath}");
 // ══════════════════════════════════════════════════════════════════════
 if (args.Contains("--tray") || args.Contains("--tray-only"))
 {
+    // The tray controller is a console-subsystem exe (same binary as the
+    // web host / service). Hide the console window so users don't see a
+    // stray terminal pop up at login — closing that window would also kill
+    // the tray process.
+    if (OperatingSystem.IsWindows())
+        WindowsConsole.Hide();
+
     Log("[WatchNexus] --tray mode: starting user-session controller (no web host).");
     var trayPort = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var tp) ? tp : 8001;
     var exitCode = WatchNexus.Core.Services.TrayController.Run(trayPort, Log);
@@ -622,4 +629,28 @@ catch (Exception ex)
 finally
 {
     try { bootLog?.Flush(); bootLog?.Dispose(); } catch { }
+}
+
+// Windows console-window helper. `WatchNexus.Core.exe` is a console-subsystem
+// binary (it also hosts the web server + Windows service), so when launched in
+// `--tray` mode from the logon Run key it would otherwise flash a terminal
+// window on the desktop. We hide it before the tray message pump starts.
+internal static class WindowsConsole
+{
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern IntPtr GetConsoleWindow();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    public static void Hide()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        try
+        {
+            var hwnd = GetConsoleWindow();
+            if (hwnd != IntPtr.Zero) ShowWindow(hwnd, 0 /* SW_HIDE */);
+        }
+        catch { /* best-effort — a visible console is cosmetic, not fatal */ }
+    }
 }

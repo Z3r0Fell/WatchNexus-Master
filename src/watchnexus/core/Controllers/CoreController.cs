@@ -230,7 +230,21 @@ public class AuthController : ControllerBase
             Role = "admin"
         };
         _db.Users.Add(admin);
-        _db.SaveChanges();
+        try
+        {
+            _db.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            // Surface the real failure (e.g. SQLite cannot open/write the DB
+            // under the current service account) instead of a bare 500 that
+            // the frontend renders as the generic "Failed to create admin".
+            var detail = ex.Message;
+            if (ex.InnerException != null && !string.IsNullOrWhiteSpace(ex.InnerException.Message))
+                detail = $"{ex.Message} — {ex.InnerException.Message}";
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { detail = $"Could not save admin account: {detail}" });
+        }
 
         var token = _auth.GenerateToken(admin);
         SetAuthCookie(token);

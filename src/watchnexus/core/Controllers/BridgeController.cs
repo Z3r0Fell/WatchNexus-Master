@@ -42,6 +42,14 @@ public class MarmaladeBridgeController : ControllerBase
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(path))
             return BadRequest(new { detail = "Name and path are required" });
 
+        var trimmedPath = path.Trim();
+        if (!Directory.Exists(trimmedPath))
+            return BadRequest(new
+            {
+                detail = $"Path not found on this server: {trimmedPath}. If you're running WatchNexus in Docker, use the in-container path (e.g. /data/media/Movies) or pick a folder below — the container can't see host paths.",
+                path = trimmedPath
+            });
+
         var typeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Movie"] = "movies", ["Movies"] = "movies", ["movies"] = "movies",
@@ -52,7 +60,7 @@ public class MarmaladeBridgeController : ControllerBase
         var lib = new Library
         {
             Name = name,
-            Path = path,
+            Path = trimmedPath,
             MediaType = typeMap.GetValueOrDefault(media_type, media_type.ToLower()),
         };
         _db.Libraries.Add(lib);

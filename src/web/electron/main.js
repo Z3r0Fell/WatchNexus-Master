@@ -66,6 +66,7 @@ function startBackend() {
 
   backendProcess = spawn(backendPath.exe, [dll], {
     cwd: backendPath.dir,
+    windowsHide: true,
     env: {
       ...process.env,
       // Data dir: the backend reads WATCHNEXUS_DATA_DIR (NOT DATA_PATH) and

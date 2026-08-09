@@ -89,6 +89,17 @@ public class LibrariesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] LibraryRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.Path))
+            return BadRequest(new { detail = "Name and path are required" });
+
+        var trimmedPath = req.Path.Trim();
+        if (!Directory.Exists(trimmedPath))
+            return BadRequest(new
+            {
+                detail = $"Path not found on this server: {trimmedPath}. If you're running WatchNexus in Docker, use the in-container path (e.g. /data/media/Movies) or pick a folder below — the container can't see host paths.",
+                path = trimmedPath
+            });
+
         var typeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Movie"] = "movies", ["Movies"] = "movies", ["movies"] = "movies",
@@ -98,7 +109,7 @@ public class LibrariesController : ControllerBase
         var lib = new Library
         {
             Name = req.Name,
-            Path = req.Path,
+            Path = trimmedPath,
             MediaType = typeMap.GetValueOrDefault(req.MediaType, req.MediaType.ToLower()),
         };
         _db.Libraries.Add(lib);

@@ -14,6 +14,7 @@ import { Button } from '../components/ui/button';
 import { formatFileSize } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import FolderBrowser from '../components/FolderBrowser';
+import MediaFolderDropdown from '../components/MediaFolderDropdown';
 
 const MEDIA_TYPE_ICONS = {
   movie: Film,
@@ -119,7 +120,9 @@ export const LibraryPage = () => {
         }
       }
     } catch (error) {
-      toast.error('Failed to add library');
+      const detail = error?.response?.data?.detail;
+      if (detail) toast.error(detail);
+      else toast.error('Failed to add library');
     }
   };
 
@@ -293,6 +296,10 @@ export const LibraryPage = () => {
                       className="bg-white/5 border-white/10"
                     />
                   </div>
+                  <MediaFolderDropdown
+                    value={newLibrary.path}
+                    onChange={(path) => setNewLibrary(prev => ({ ...prev, path }))}
+                  />
                 </div>
                 <div>
                   <label className="text-sm text-gray-400 mb-2 flex items-center gap-2">
