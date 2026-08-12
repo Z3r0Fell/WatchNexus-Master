@@ -17,6 +17,8 @@ public class IptvController : ControllerBase
     private readonly AppDbContext _db;
     public IptvController(AppDbContext db) => _db = db;
 
+    private const string IptvFavKey = "iptv_favorite:";
+
     [HttpGet("sources")]
     public async Task<IActionResult> Sources()
     {
@@ -110,18 +112,48 @@ public class IptvController : ControllerBase
 
     [HttpGet("channels")]
     public async Task<IActionResult> Channels([FromQuery] string? source_id, [FromQuery] string? group,
-        [FromQuery] string? search, [FromQuery] int limit = 200, [FromQuery] int offset = 0)
+        [FromQuery] string? search, [FromQuery] bool favorites_only = false,
+        [FromQuery] int limit = 200, [FromQuery] int offset = 0)
     {
+        var uid = this.UserId();
         var query = _db.IptvChannels.AsQueryable();
         if (!string.IsNullOrEmpty(source_id)) query = query.Where(c => c.SourceId == source_id);
         if (!string.IsNullOrEmpty(group)) query = query.Where(c => c.GroupTitle == group);
         if (!string.IsNullOrEmpty(search)) query = query.Where(c => c.Name.Contains(search));
+
+        var favIds = (await _db.Settings
+                .Where(s => s.UserId == uid && s.Key.StartsWith(IptvFavKey))
+                .Select(s => s.Key).ToListAsync())
+            .Select(k => k[IptvFavKey.Length..]).ToList();
+        if (favorites_only) query = query.Where(c => favIds.Contains(c.Id));
+        var favSet = favIds.ToHashSet();
+
         var channels = await query.OrderBy(c => c.SortOrder).Skip(offset).Take(limit).ToListAsync();
         return Ok(channels.Select(c => new
         {
             c.Id, c.SourceId, c.Name, group_title = c.GroupTitle,
-            stream_url = c.StreamUrl, logo_url = c.LogoUrl, tvg_id = c.TvgId, tvg_name = c.TvgName
+            stream_url = c.StreamUrl, logo_url = c.LogoUrl, tvg_id = c.TvgId, tvg_name = c.TvgName,
+            is_favorite = favSet.Contains(c.Id)
         }));
+    }
+
+    [HttpPost("channels/{id}/favorite")]
+    public async Task<IActionResult> ToggleFavorite(string id)
+    {
+        var uid = this.UserId();
+        var ch = await _db.IptvChannels.FindAsync(id);
+        if (ch == null) return NotFound();
+        var key = IptvFavKey + id;
+        var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == key);
+        if (row == null)
+        {
+            _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, UserId = uid, Value = "1" });
+            await _db.SaveChangesAsync();
+            return Ok(new { is_favorite = true, id });
+        }
+        _db.Settings.Remove(row);
+        await _db.SaveChangesAsync();
+        return Ok(new { is_favorite = false, id });
     }
 
     [HttpGet("channels/{id}")]
@@ -150,19 +182,34 @@ public class IptvController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()
     {
+        var uid = this.UserId();
+        var totalChannels = await _db.IptvChannels.CountAsync();
+        var totalGroups = await _db.IptvChannels.Where(c => c.GroupTitle != null).Select(c => c.GroupTitle).Distinct().CountAsync();
         return Ok(new
         {
             sources = await _db.IptvSources.CountAsync(),
-            channels = await _db.IptvChannels.CountAsync(),
-            groups = await _db.IptvChannels.Where(c => c.GroupTitle != null).Select(c => c.GroupTitle).Distinct().CountAsync()
+            channels = totalChannels,
+            groups = totalGroups,
+            total_channels = totalChannels,
+            total_groups = totalGroups,
+            favorites_count = await _db.Settings.CountAsync(s => s.UserId == uid && s.Key.StartsWith(IptvFavKey))
         });
     }
 
     [HttpGet("export")]
-    public async Task<IActionResult> Export([FromQuery] string? source_id)
+    public async Task<IActionResult> Export([FromQuery] string? source_id, [FromQuery] bool favorites_only = false)
     {
         var query = _db.IptvChannels.AsQueryable();
         if (!string.IsNullOrEmpty(source_id)) query = query.Where(c => c.SourceId == source_id);
+        if (favorites_only)
+        {
+            var uid = this.UserId();
+            var favIds = (await _db.Settings
+                    .Where(s => s.UserId == uid && s.Key.StartsWith(IptvFavKey))
+                    .Select(s => s.Key).ToListAsync())
+                .Select(k => k[IptvFavKey.Length..]).ToList();
+            query = query.Where(c => favIds.Contains(c.Id));
+        }
         var channels = await query.OrderBy(c => c.SortOrder).ToListAsync();
         var sb = new StringBuilder("#EXTM3U\n");
         foreach (var ch in channels)
@@ -175,7 +222,7 @@ public class IptvController : ControllerBase
             sb.AppendLine($",{ch.Name}");
             sb.AppendLine(ch.StreamUrl);
         }
-        return Content(sb.ToString(), "audio/x-mpegurl");
+        return Ok(new { content = sb.ToString(), filename = "watchnexus.m3u" });
     }
 
     private static List<IptvChannel> ParseM3U(string content, string sourceId)

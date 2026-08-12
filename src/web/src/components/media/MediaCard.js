@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../../lib/config';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -37,7 +38,7 @@ export const MediaCard = ({ item, onAddToWatchlist, isInWatchlist = false, index
         {/* Poster Image */}
         {posterUrl ? (
           <img
-            src={posterUrl.startsWith('http') ? posterUrl : `https://image.tmdb.org/t/p/w342${posterUrl}`}
+            src={posterUrl.startsWith('http') ? posterUrl : tmdbImageUrl(posterUrl, 'w342')}
             alt={title}
             className={cn(
               "w-full h-full object-cover transition-all duration-500",

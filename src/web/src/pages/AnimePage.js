@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -26,7 +27,7 @@ const ANIME_GENRES = [
 
 const AnimeCard = ({ anime }) => {
   const imageUrl = anime.poster_path 
-    ? `https://image.tmdb.org/t/p/w342${anime.poster_path}`
+    ? tmdbImageUrl(anime.poster_path, 'w342')
     : '/placeholder-poster.png';
     
   return (

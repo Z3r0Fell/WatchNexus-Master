@@ -98,10 +98,6 @@ export const PluginsSettings = () => {
     }
   };
 
-  const getAuthHeader = () => {
-    return {};
-  };
-
   // ==================== CATALOGUE ====================
   const fetchCatalogue = useCallback(async (category = null, query = '') => {
     setLoadingCatalogue(true);
@@ -109,7 +105,7 @@ export const PluginsSettings = () => {
       let url = `${BACKEND_URL}/api/gadgets/catalogue/search?`;
       if (query) url += `q=${encodeURIComponent(query)}&`;
       if (category) url += `category=${category}&`;
-      const res = await axios.get(url, { headers: getAuthHeader() });
+      const res = await axios.get(url);
       setCatalogueItems(res.data.items || []);
     } catch (err) {
       console.error('Failed to fetch catalogue:', err);
@@ -120,7 +116,7 @@ export const PluginsSettings = () => {
 
   const fetchCatalogueCategories = useCallback(async () => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/gadgets/catalogue/categories`, { headers: getAuthHeader() });
+      const res = await axios.get(`${BACKEND_URL}/api/gadgets/catalogue/categories`);
       setCatalogueCategories(res.data || {});
     } catch (err) {
       console.error('Failed to fetch catalogue categories:', err);
@@ -131,7 +127,7 @@ export const PluginsSettings = () => {
   const fetchPlugins = useCallback(async () => {
     setLoadingPlugins(true);
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/gadgets/plugins`, { headers: getAuthHeader() });
+      const res = await axios.get(`${BACKEND_URL}/api/gadgets/plugins`);
       setPlugins(res.data || []);
     } catch {} finally {
       setLoadingPlugins(false);
@@ -148,7 +144,7 @@ export const PluginsSettings = () => {
     setTogglingPlugin(pluginId);
     try {
       const action = currentStatus === 'active' ? 'disable' : 'enable';
-      await axios.post(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`, {}, { headers: getAuthHeader() });
+      await axios.post(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`, {});
       toast.success(`Gadget ${action === 'enable' ? 'enabled' : 'disabled'}!`);
       fetchPlugins();
     } catch {
@@ -161,7 +157,7 @@ export const PluginsSettings = () => {
   const handleDiscoverPlugins = async () => {
     setLoadingPlugins(true);
     try {
-      await axios.post(`${BACKEND_URL}/api/gadgets/discover`, {}, { headers: getAuthHeader() });
+      await axios.post(`${BACKEND_URL}/api/gadgets/discover`, {});
       toast.success('Gadget discovery complete!');
       fetchPlugins();
     } catch {
@@ -180,7 +176,7 @@ export const PluginsSettings = () => {
       const formData = new FormData();
       formData.append('file', file);
       const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-file`, formData, {
-        headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success(`Gadget "${res.data.name}" imported!`);
       fetchPlugins();
@@ -198,7 +194,7 @@ export const PluginsSettings = () => {
     setImporting(true);
     try {
       const res = await axios.post(`${BACKEND_URL}/api/gadgets/import-url`, null, {
-        params: { url: importUrl }, headers: getAuthHeader()
+        params: { url: importUrl }
       });
       toast.success(`Gadget "${res.data.name}" imported!`);
       fetchPlugins();
@@ -215,7 +211,7 @@ export const PluginsSettings = () => {
     if (!window.confirm(`Uninstall "${pluginName}"? This will delete all gadget files.`)) return;
     setUninstallingPlugin(pluginId);
     try {
-      await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`, { headers: getAuthHeader() });
+      await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`);
       toast.success(`"${pluginName}" uninstalled`);
       fetchPlugins();
     } catch (error) {

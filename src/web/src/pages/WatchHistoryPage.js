@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -101,7 +102,7 @@ export const WatchHistoryPage = () => {
                     <div className="w-16 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
                       {item.poster_path ? (
                         <img 
-                          src={`https://image.tmdb.org/t/p/w154${item.poster_path}`} 
+                          src={tmdbImageUrl(item.poster_path, 'w154')} 
                           alt={item.title} 
                           className="w-full h-full object-cover"
                         />

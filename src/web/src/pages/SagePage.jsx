@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
-import { BACKEND_URL } from '../lib/config';
+import { BACKEND_URL , tmdbImageUrl} from '../lib/config';
 
 const API = BACKEND_URL;
 
@@ -43,7 +43,7 @@ const SagePage = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {recs.map(item => {
-              const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w300${item.poster_path}` : null;
+              const posterUrl = item.poster_path ? tmdbImageUrl(item.poster_path, 'w300') : null;
               return (
                 <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="group relative rounded-xl overflow-hidden bg-white/[0.03] border border-white/5 hover:border-amber-500/40 transition-all">
                   {posterUrl ? <img src={posterUrl} alt={item.title} className="w-full aspect-[2/3] object-cover" loading="lazy" /> : <div className="w-full aspect-[2/3] bg-white/5 flex items-center justify-center"><Film className="w-8 h-8 text-gray-700" /></div>}

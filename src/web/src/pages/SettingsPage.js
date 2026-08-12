@@ -216,15 +216,6 @@ export const SettingsPage = () => {
 
   useEffect(() => { fetchData(); fetchLibraries(); fetchUsers(); }, [fetchData, fetchLibraries, fetchUsers]);
 
-  // Toggle section expand/collapse
-  const toggleGroup = (groupId) => {
-    setExpandedGroups(prev => 
-      prev.includes(groupId) 
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    );
-  };
-
   // Render the content for the active section
   const renderContent = () => {
     switch (activeSection) {

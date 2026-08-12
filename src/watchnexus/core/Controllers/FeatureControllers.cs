@@ -236,7 +236,16 @@ public class GelatinController : ControllerBase
     });
 
     [HttpGet("lan-url")]
-    public IActionResult LanUrl() => Ok(new { url = $"http://{Environment.MachineName}:8001" });
+    public IActionResult LanUrl()
+    {
+        // Only meaningful for clients on the same LAN — never disclose the
+        // machine's hostname to remote clients.
+        var remote = HttpContext.Connection.RemoteIpAddress;
+        if (remote == null) return Ok(new { url = (string?)null });
+        if (!WatchNexus.Core.Auth.LocalRequest.IsLoopback(HttpContext) && !WatchNexus.Core.Auth.SsrfGuard.IsPrivateAddress(remote))
+            return Ok(new { url = (string?)null });
+        return Ok(new { url = $"http://{Environment.MachineName}:8001" });
+    }
 
     [HttpPost("tunnel/create")]
     public IActionResult CreateTunnel([FromQuery] string? provider = "built_in") =>

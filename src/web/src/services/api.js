@@ -162,18 +162,16 @@ export const compoteApi = {
     axios.get(`${API}/compote/default-indexers`),
   
   addIndexer: (name, type, url, apiKey = '', enabled = true, priority = 50, options = {}) =>
-    axios.post(`${API}/compote/indexers`, null, { 
-      params: { 
-        name, 
-        indexer_type: type, 
-        url, 
-        api_key: apiKey, 
-        enabled, 
-        priority,
-        cloudflare_protected: options.cloudflare_protected || false,
-        search_path: options.search_path || '',
-        cookie: options.cookie || '',
-      } 
+    axios.post(`${API}/compote/indexers`, {
+      name,
+      indexer_type: type,
+      url,
+      api_key: apiKey,
+      enabled,
+      priority,
+      cloudflare_protected: options.cloudflare_protected || false,
+      search_path: options.search_path || '',
+      cookie: options.cookie || '',
     }),
   
   updateIndexer: (indexerId, updates) =>
@@ -227,18 +225,14 @@ export const qbittorrentApi = {
   
   // Test connection
   testConnection: (host, port, username, password) =>
-    axios.post(`${API}/qbittorrent/test`, null, { 
-      params: { host, port, username, password } 
-    }),
+    axios.post(`${API}/qbittorrent/test`, { host, port, username, password }),
 
   // Config (load + save) — lets users change the default 8080 port
   getConfig: () =>
     axios.get(`${API}/qbittorrent/config`),
 
   saveConfig: (host, port, username, password) =>
-    axios.put(`${API}/qbittorrent/config`, null, {
-      params: { host, port, username, password }
-    }),
+    axios.put(`${API}/qbittorrent/config`, { host, port, username, password }),
 };
 
 // Built-in Torrent Engine API (not available in v1.0.0 — endpoints return 501;

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { API_URL } from '../../lib/config';
 import {
   Home,
   Film,
@@ -152,7 +154,7 @@ export const Sidebar = () => {
   const [visibleTabs, setVisibleTabs] = useState(getVisibleTabs);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, isAuthenticated } = useAuth();
   const { hooks } = useGadgets();
   const { isRouteUnlocked, getRouteRequiredTier } = useLicense();
   const { t } = useTranslation();
@@ -177,6 +179,22 @@ export const Sidebar = () => {
       window.removeEventListener('watchnexus_tabs_updated', handleTabsUpdate);
     };
   }, []);
+
+  // Sync visible tabs from the account-level preferences (source of truth),
+  // falling back to localStorage for backward compatibility.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axios.get(`${API_URL}/user/preferences`);
+        if (!cancelled && res.data?.visible_tabs) {
+          setVisibleTabs(res.data.visible_tabs);
+        }
+      } catch { /* not signed in — keep localStorage fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
 
   // Auto-expand settings section if current path is a sub-item
   useEffect(() => {

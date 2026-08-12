@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -48,8 +49,10 @@ public class MenuController : ControllerBase
         try
         {
             var doc = JsonDocument.Parse(setting.Value).RootElement;
+            var url = doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
+            if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
             return (
-                doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null,
+                url,
                 doc.TryGetProperty("api_key", out var k) ? k.GetString() : null
             );
         }
@@ -208,18 +211,21 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("requests/{id}/approve")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ApproveRequest(string id)
     {
         return await UpdateRequestStatus(id, "approved");
     }
 
     [HttpPost("requests/{id}/decline")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeclineRequest(string id)
     {
         return await UpdateRequestStatus(id, "declined");
     }
 
     [HttpDelete("requests/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeleteRequest(string id)
     {
         var key = $"menu_request:{id}";
@@ -263,6 +269,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("sonarr/config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> SaveSonarrConfig([FromBody] JsonElement body)
     {
         return await SaveServiceConfig(SONARR_KEY, body, "/api/v3/system/status");
@@ -281,6 +288,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("sonarr/add")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> SonarrAdd([FromBody] JsonElement body)
     {
         var (url, apiKey) = await GetServiceConfig(SONARR_KEY);
@@ -314,6 +322,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("radarr/config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> SaveRadarrConfig([FromBody] JsonElement body)
     {
         return await SaveServiceConfig(RADARR_KEY, body, "/api/v3/system/status");
@@ -332,6 +341,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("radarr/add")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> RadarrAdd([FromBody] JsonElement body)
     {
         var (url, apiKey) = await GetServiceConfig(RADARR_KEY);
@@ -358,6 +368,7 @@ public class MenuController : ControllerBase
     // ═══════════════════════════════════════════════════════════════
 
     [HttpPost("requests/{id}/fulfill")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> FulfillRequest(string id)
     {
         var key = $"menu_request:{id}";

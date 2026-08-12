@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -36,6 +37,7 @@ public class ParfaitController : ControllerBase
         {
             var doc = JsonDocument.Parse(setting.Value).RootElement;
             var url = doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
+            if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
             var key = doc.TryGetProperty("api_key", out var k) ? k.GetString() : null;
             return (url, key);
         }
@@ -98,6 +100,7 @@ public class ParfaitController : ControllerBase
     }
 
     [HttpPost("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> SaveSettings([FromBody] JsonElement body)
     {
         var url = body.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
@@ -168,18 +171,21 @@ public class ParfaitController : ControllerBase
     }
 
     [HttpPost("requests/{id}/approve")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ApproveRequest(int id)
     {
         return await ProxyPost($"/api/v1/request/{id}/approve");
     }
 
     [HttpPost("requests/{id}/decline")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeclineRequest(int id)
     {
         return await ProxyPost($"/api/v1/request/{id}/decline");
     }
 
     [HttpDelete("requests/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeleteRequest(int id)
     {
         return await ProxyDelete($"/api/v1/request/{id}");

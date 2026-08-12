@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -215,7 +216,7 @@ export const SearchPage = () => {
                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 bg-surface">
                       {item.profile_path ? (
                         <img
-                          src={`https://image.tmdb.org/t/p/w185${item.profile_path}`}
+                          src={tmdbImageUrl(item.profile_path, 'w185')}
                           alt={item.name}
                           className="w-full h-full object-cover"
                         />

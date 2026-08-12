@@ -70,6 +70,7 @@ public class StrudelController : ControllerBase
 
         var jobId = Guid.NewGuid().ToString("N")[..12];
         var driveIndex = request.DriveIndex;
+        var ownerId = this.UserId();
 
         // Run scan asynchronously
         _ = Task.Run(async () =>
@@ -77,11 +78,12 @@ public class StrudelController : ControllerBase
             try
             {
                 var result = await RunMakeMkvScan(makemkvPath, driveIndex, jobId);
+                result.OwnerUserId = ownerId;
                 await SaveScanResult(jobId, result);
             }
             catch (Exception ex)
             {
-                await SaveScanResult(jobId, new ScanResult { JobId = jobId, Status = "failed", Error = ex.Message });
+                await SaveScanResult(jobId, new ScanResult { JobId = jobId, Status = "failed", Error = ex.Message, OwnerUserId = ownerId });
             }
         });
 
@@ -95,7 +97,10 @@ public class StrudelController : ControllerBase
         if (setting?.Value == null)
             return NotFound(new { error = "Scan not found", job_id = jobId });
 
-        var result = JsonSerializer.Deserialize<object>(setting.Value);
+        var result = JsonSerializer.Deserialize<ScanResult>(setting.Value);
+        if (result == null || !CanAccessJob(result.OwnerUserId))
+            return NotFound(new { error = "Scan not found", job_id = jobId });
+
         return Ok(result);
     }
 
@@ -111,6 +116,7 @@ public class StrudelController : ControllerBase
         var job = new RipJob
         {
             Id = jobId,
+            OwnerUserId = this.UserId(),
             Status = "pending",
             DriveIndex = request.DriveIndex,
             DiscLabel = request.DiscLabel ?? "Unknown",
@@ -144,15 +150,24 @@ public class StrudelController : ControllerBase
     [HttpGet("jobs")]
     public async Task<IActionResult> GetJobs()
     {
+        var uid = this.UserId();
+        var isAdmin = User.IsInRole("admin");
         var settings = await _db.Settings
             .Where(s => s.Key.StartsWith("strudel_job_") && s.UserId == "")
             .ToListAsync();
 
-        var jobs = settings.Select(s =>
+        var jobs = new List<object?>();
+        foreach (var s in settings)
         {
-            try { return JsonSerializer.Deserialize<object>(s.Value ?? "{}"); }
-            catch { return null; }
-        }).Where(j => j != null).ToList();
+            try
+            {
+                var job = JsonSerializer.Deserialize<RipJob>(s.Value ?? "{}");
+                if (job == null) continue;
+                if (!isAdmin && job.OwnerUserId != "" && job.OwnerUserId != uid) continue;
+                jobs.Add(JsonSerializer.SerializeToElement(JobToObject(job)));
+            }
+            catch { }
+        }
 
         // Merge with active in-memory jobs for real-time progress
         lock (_jobLock)
@@ -176,19 +191,41 @@ public class StrudelController : ControllerBase
         lock (_jobLock)
         {
             var active = _activeJobs.FirstOrDefault(j => j.Id == jobId);
-            if (active != null) return Ok(JobToObject(active));
+            if (active != null)
+                return CanAccessJob(active.OwnerUserId) ? Ok(JobToObject(active)) : NotFound(new { error = "Job not found" });
         }
 
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_job_{jobId}" && s.UserId == "");
         if (setting?.Value == null)
             return NotFound(new { error = "Job not found" });
 
-        return Ok(JsonSerializer.Deserialize<object>(setting.Value));
+        var job = JsonSerializer.Deserialize<RipJob>(setting.Value);
+        if (job == null || !CanAccessJob(job.OwnerUserId))
+            return NotFound(new { error = "Job not found" });
+
+        return Ok(JobToObject(job));
     }
 
     [HttpDelete("jobs/{jobId}")]
     public async Task<IActionResult> CancelJob(string jobId)
     {
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_job_{jobId}" && s.UserId == "");
+        if (setting?.Value != null)
+        {
+            var job = JsonSerializer.Deserialize<RipJob>(setting.Value);
+            if (job != null && !CanAccessJob(job.OwnerUserId))
+                return NotFound(new { error = "Job not found" });
+        }
+        else
+        {
+            lock (_jobLock)
+            {
+                var active = _activeJobs.FirstOrDefault(j => j.Id == jobId);
+                if (active == null) return NotFound(new { error = "Job not found" });
+                if (!CanAccessJob(active.OwnerUserId)) return NotFound(new { error = "Job not found" });
+            }
+        }
+
         lock (_jobLock)
         {
             var active = _activeJobs.FirstOrDefault(j => j.Id == jobId);
@@ -199,7 +236,6 @@ public class StrudelController : ControllerBase
             }
         }
 
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_job_{jobId}" && s.UserId == "");
         if (setting != null)
         {
             _db.Settings.Remove(setting);
@@ -216,9 +252,8 @@ public class StrudelController : ControllerBase
         if (setting?.Value == null)
             return NotFound(new { error = "Job not found" });
 
-        // Reset job status
         var job = JsonSerializer.Deserialize<RipJob>(setting.Value);
-        if (job == null) return BadRequest(new { error = "Invalid job data" });
+        if (job == null || !CanAccessJob(job.OwnerUserId)) return BadRequest(new { error = "Invalid job data" });
 
         job.Status = "pending";
         job.RipProgress = 0;
@@ -713,6 +748,9 @@ public class StrudelController : ControllerBase
         };
     }
 
+    private bool CanAccessJob(string owner) =>
+        User.IsInRole("admin") || (owner != "" && owner == this.UserId());
+
     private async Task SaveJobState(RipJob job)
     {
         var json = JsonSerializer.Serialize(JobToObject(job));
@@ -723,8 +761,7 @@ public class StrudelController : ControllerBase
     }
 
     private async Task SaveScanResult(string jobId, ScanResult result)
-    {
-        var json = JsonSerializer.Serialize(result);
+    {        var json = JsonSerializer.Serialize(result);
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_scan_{jobId}" && s.UserId == "");
         if (setting != null) setting.Value = json;
         else _db.Settings.Add(new AppSetting { Key = $"strudel_scan_{jobId}", UserId = "", Value = json });
@@ -741,6 +778,7 @@ public class StrudelController : ControllerBase
     private static object JobToObject(RipJob job) => new
     {
         id = job.Id,
+        owner_user_id = job.OwnerUserId,
         status = job.Status,
         disc_label = job.DiscLabel,
         drive_index = job.DriveIndex,
@@ -777,6 +815,8 @@ public class StrudelController : ControllerBase
     public class ScanResult
     {
         public string JobId { get; set; } = "";
+        [System.Text.Json.Serialization.JsonPropertyName("owner_user_id")]
+        public string OwnerUserId { get; set; } = "";
         public string Status { get; set; } = "";
         public int DriveIndex { get; set; }
         public string DiscLabel { get; set; } = "";
@@ -818,6 +858,8 @@ public class StrudelController : ControllerBase
     public class RipJob
     {
         public string Id { get; set; } = "";
+        [System.Text.Json.Serialization.JsonPropertyName("owner_user_id")]
+        public string OwnerUserId { get; set; } = "";
         public string Status { get; set; } = "pending";
         public int DriveIndex { get; set; }
         public string DiscLabel { get; set; } = "";

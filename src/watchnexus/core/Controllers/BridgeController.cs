@@ -43,6 +43,14 @@ public class MarmaladeBridgeController : ControllerBase
             return BadRequest(new { detail = "Name and path are required" });
 
         var trimmedPath = path.Trim();
+        // Library roots must live under a configured media root so scanned items
+        // can actually be streamed. Prevents registration of arbitrary folders.
+        if (!MediaPaths.IsAllowedPath(trimmedPath))
+            return BadRequest(new
+            {
+                detail = $"Path is outside the configured media roots. Add the parent directory to MEDIA_ROOT / MEDIA_ROOTS, or place media under /data/media (in Docker).",
+                path = trimmedPath
+            });
         if (!Directory.Exists(trimmedPath))
             return BadRequest(new
             {
@@ -198,7 +206,7 @@ public class MarmaladeBridgeController : ControllerBase
         var items = await q.OrderBy(m => m.Title).Skip(offset).Take(limit).ToListAsync();
         return Ok(items.Select(m => new
         {
-            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
             media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime
@@ -262,7 +270,7 @@ public class MarmaladeBridgeController : ControllerBase
         if (m == null) return NotFound(new { detail = "Media item not found" });
         return Ok(new
         {
-            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
             media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime, library_id = m.LibraryId,
@@ -279,7 +287,7 @@ public class MarmaladeBridgeController : ControllerBase
         var items = await q.OrderBy(m => m.Title).Take(limit).ToListAsync();
         return Ok(items.Select(m => new
         {
-            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
             media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime
@@ -365,7 +373,7 @@ public class MarmaladeBridgeController : ControllerBase
                         episode_number = e.episode > 0 ? e.episode : (int?)null,
                         size = e.item.FileSize,
                         watched = false,
-                        file_path = e.item.FilePath,
+                        file_path = (string?)null,
                     }).ToList()
                 }).ToList();
 
@@ -513,7 +521,7 @@ public class MarmaladeBridgeController : ControllerBase
         var media = await _db.MediaItems.FindAsync(id);
         if (media == null) return NotFound(new { detail = "Media not found" });
         if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
-            return Ok(new { error = "File not found on disk", file_path = media.FilePath });
+            return Ok(new { error = "File not found on disk", file_path = (string?)null });
         var fi = new FileInfo(media.FilePath);
         var streamToken = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
         return Ok(new
@@ -549,7 +557,9 @@ public class MarmaladeBridgeController : ControllerBase
             return Unauthorized(new { detail = "Invalid or expired stream token." });
         var media = await _db.MediaItems.FindAsync(id);
         if (media == null) return NotFound();
-        if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
+        // Defense in depth: never stream a path outside the media roots, even for
+        // rows added before path validation existed.
+        if (string.IsNullOrEmpty(media.FilePath) || !MediaPaths.IsAllowedPath(media.FilePath) || !System.IO.File.Exists(media.FilePath))
             return NotFound(new { detail = "File not found" });
         var ext = System.IO.Path.GetExtension(media.FilePath).ToLower();
         var mime = ext switch
@@ -587,7 +597,7 @@ public class LibraryAliasController : ControllerBase
         var items = await q.OrderBy(m => m.Title).ToListAsync();
         return Ok(items.Select(m => new
         {
-            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
             media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime
@@ -608,6 +618,10 @@ public class LibraryAliasController : ControllerBase
             TmdbId = item.TryGetProperty("tmdb_id", out var tid) && tid.ValueKind == System.Text.Json.JsonValueKind.Number ? tid.GetInt32() : null,
             Year = item.TryGetProperty("year", out var y) && y.ValueKind == System.Text.Json.JsonValueKind.Number ? y.GetInt32() : null,
         };
+        // Only paths under the configured media roots may be added — prevents
+        // arbitrary server files from becoming streamable via /api/marmalade/stream.
+        if (string.IsNullOrEmpty(mediaItem.FilePath) || !MediaPaths.IsAllowedPath(mediaItem.FilePath))
+            return BadRequest(new { detail = "file_path must be inside a configured media root (MEDIA_ROOT / MEDIA_ROOTS, or the standard /data/media, /data/rips, /data/transcoded, /data/offline directories)" });
         _db.MediaItems.Add(mediaItem);
         await _db.SaveChangesAsync();
         return Ok(new

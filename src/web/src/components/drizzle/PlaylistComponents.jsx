@@ -5,6 +5,7 @@
  * Like a continuous drizzle of content - never stops flowing.
  */
 
+import { tmdbImageUrl } from '../../lib/config';
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipForward, SkipBack, List, Plus, Trash2, GripVertical, Shuffle, Repeat, Clock, Film, Tv } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -50,7 +51,7 @@ export const PlaylistItem = ({ item, index, isPlaying, onPlay, onRemove, draggab
       <div className="relative w-16 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
         {item.poster_path ? (
           <img 
-            src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
+            src={tmdbImageUrl(item.poster_path, 'w92')}
             alt={item.title}
             className="w-full h-full object-cover"
           />
@@ -161,7 +162,7 @@ export const ActiveQueuePanel = ({ onClose }) => {
   const fetchQueueState = async () => {
     try {
       const res = await fetch(`${API_URL}/api/drizzle/queue`, {
-        
+        credentials: 'include',
       });
       const data = await res.json();
       setQueueState(data);
@@ -176,7 +177,7 @@ export const ActiveQueuePanel = ({ onClose }) => {
     try {
       await fetch(`${API_URL}/api/drizzle/queue`, {
         method: 'DELETE',
-        
+        credentials: 'include',
       });
       setQueueState({ active: false, queue: null });
       toast.success('Queue cleared');
@@ -228,7 +229,7 @@ export const ActiveQueuePanel = ({ onClose }) => {
               <div className="w-12 h-8 rounded bg-muted overflow-hidden">
                 {queue.current_item.poster_path && (
                   <img 
-                    src={`https://image.tmdb.org/t/p/w92${queue.current_item.poster_path}`}
+                    src={tmdbImageUrl(queue.current_item.poster_path, 'w92')}
                     alt=""
                     className="w-full h-full object-cover"
                   />
@@ -272,7 +273,7 @@ export const PlaySeasonButton = ({ showTmdbId, showTitle, seasonNumber, onSucces
       
       const res = await fetch(`${API_URL}/api/drizzle/play-season?${params}`, {
         method: 'POST',
-        
+        credentials: 'include',
       });
       
       if (!res.ok) throw new Error('Failed to create playlist');
@@ -315,7 +316,7 @@ export const PlayCollectionButton = ({ collectionId, collectionName, onSuccess }
       
       const res = await fetch(`${API_URL}/api/drizzle/play-collection?${params}`, {
         method: 'POST',
-        
+        credentials: 'include',
       });
       
       if (!res.ok) throw new Error('Failed to create playlist');
@@ -357,7 +358,7 @@ export const PlaylistsManager = () => {
   const fetchPlaylists = async () => {
     try {
       const res = await fetch(`${API_URL}/api/drizzle/playlists`, {
-        
+        credentials: 'include',
       });
       const data = await res.json();
       setPlaylists(data.playlists || []);
@@ -376,7 +377,7 @@ export const PlaylistsManager = () => {
       const params = new URLSearchParams({ name });
       const res = await fetch(`${API_URL}/api/drizzle/playlists?${params}`, {
         method: 'POST',
-        
+        credentials: 'include',
       });
       const newPlaylist = await res.json();
       setPlaylists([newPlaylist, ...playlists]);
@@ -392,7 +393,7 @@ export const PlaylistsManager = () => {
     try {
       await fetch(`${API_URL}/api/drizzle/playlists/${playlistId}`, {
         method: 'DELETE',
-        
+        credentials: 'include',
       });
       setPlaylists(playlists.filter(p => p.id !== playlistId));
       if (selectedPlaylist?.id === playlistId) {
@@ -408,7 +409,7 @@ export const PlaylistsManager = () => {
     try {
       await fetch(`${API_URL}/api/drizzle/queue/set/${playlistId}`, {
         method: 'POST',
-        
+        credentials: 'include',
       });
       toast.success('Playlist set as active queue!');
     } catch (err) {

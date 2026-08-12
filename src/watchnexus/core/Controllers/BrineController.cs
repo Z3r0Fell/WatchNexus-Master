@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -225,8 +226,10 @@ public class BrineController : ControllerBase
         var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ConfigKey);
         if (cfg?.Value == null) return (null, null, "prowlarr");
         var doc = JsonDocument.Parse(cfg.Value).RootElement;
+        var url = doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
+        if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
         return (
-            doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null,
+            url,
             doc.TryGetProperty("api_key", out var ak) ? ak.GetString() : null,
             doc.TryGetProperty("type", out var t) ? t.GetString() ?? "prowlarr" : "prowlarr"
         );

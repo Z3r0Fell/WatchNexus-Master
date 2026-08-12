@@ -4,17 +4,10 @@ import axios from 'axios';
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
 // Cookie auth: the httpOnly wn_token is sent automatically.
-const getAuthHeader = () => ({});
-
 // Create axios instance for Marmalade
 const marmaladeClient = axios.create({
   baseURL: `${API}/api/marmalade`,
-});
-
-// Add auth header to all requests
-marmaladeClient.interceptors.request.use((config) => {
-  config.headers = { ...config.headers, ...getAuthHeader() };
-  return config;
+  withCredentials: true,
 });
 
 // Marmalade Server Status

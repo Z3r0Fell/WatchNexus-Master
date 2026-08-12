@@ -6,6 +6,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -34,6 +35,7 @@ public class GameBotController : ControllerBase
         var sigma = body.TryGetProperty("blur_sigma", out var bs) ? bs.GetSingle() : 25f;
 
         if (string.IsNullOrEmpty(imageUrl)) return BadRequest(new { detail = "image_url required" });
+        if (!SsrfGuard.IsAllowedUrl(imageUrl)) return BadRequest(new { detail = "image_url must be a reachable http(s) URL" });
 
         Directory.CreateDirectory(CacheDir);
         var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
@@ -64,6 +66,7 @@ public class GameBotController : ControllerBase
         var steps = body.TryGetProperty("steps", out var st) ? st.GetInt32() : 5;
 
         if (string.IsNullOrEmpty(imageUrl)) return BadRequest(new { detail = "image_url required" });
+        if (!SsrfGuard.IsAllowedUrl(imageUrl)) return BadRequest(new { detail = "image_url must be a reachable http(s) URL" });
 
         Directory.CreateDirectory(CacheDir);
         var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
@@ -199,6 +202,7 @@ public class GameBotController : ControllerBase
         var height = body.TryGetProperty("height", out var h) ? h.GetInt32() : 0;
 
         if (string.IsNullOrEmpty(imageUrl)) return BadRequest(new { detail = "image_url required" });
+        if (!SsrfGuard.IsAllowedUrl(imageUrl)) return BadRequest(new { detail = "image_url must be a reachable http(s) URL" });
 
         try
         {
@@ -221,6 +225,7 @@ public class GameBotController : ControllerBase
     {
         var imageUrl = body.TryGetProperty("image_url", out var iu) ? iu.GetString() : null;
         if (string.IsNullOrEmpty(imageUrl)) return BadRequest(new { detail = "image_url required" });
+        if (!SsrfGuard.IsAllowedUrl(imageUrl)) return BadRequest(new { detail = "image_url must be a reachable http(s) URL" });
 
         try
         {
@@ -243,6 +248,7 @@ public class GameBotController : ControllerBase
         var imageUrl = body.TryGetProperty("image_url", out var iu) ? iu.GetString() : null;
         var size = body.TryGetProperty("pixel_size", out var ps) ? ps.GetInt32() : 10;
         if (string.IsNullOrEmpty(imageUrl)) return BadRequest(new { detail = "image_url required" });
+        if (!SsrfGuard.IsAllowedUrl(imageUrl)) return BadRequest(new { detail = "image_url must be a reachable http(s) URL" });
 
         try
         {

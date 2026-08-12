@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -62,7 +63,7 @@ public class LibrariesController : ControllerBase
             seen.Add(key);
             result.Add(new
             {
-                m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+                m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
                 media_type = (m.MediaType == "episode") ? "tv" : m.MediaType,
                 tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
                 m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
@@ -93,6 +94,14 @@ public class LibrariesController : ControllerBase
             return BadRequest(new { detail = "Name and path are required" });
 
         var trimmedPath = req.Path.Trim();
+        // Library roots must live under a configured media root so scanned items
+        // can actually be streamed. Prevents registration of arbitrary folders.
+        if (!MediaPaths.IsAllowedPath(trimmedPath))
+            return BadRequest(new
+            {
+                detail = $"Path is outside the configured media roots. Add the parent directory to MEDIA_ROOT / MEDIA_ROOTS, or place media under /data/media (in Docker).",
+                path = trimmedPath
+            });
         if (!Directory.Exists(trimmedPath))
             return BadRequest(new
             {
@@ -194,7 +203,7 @@ public class LibrariesController : ControllerBase
             .ToListAsync();
         return Ok(items.Select(m => new
         {
-            m.Id, m.Title, m.Overview, m.FilePath, file_size = m.FileSize,
+            m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
             media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime

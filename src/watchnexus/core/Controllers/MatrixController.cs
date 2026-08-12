@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -283,8 +284,10 @@ public class MatrixController : ControllerBase
         var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == "matrix_config");
         if (cfg?.Value == null) return (null, null, null);
         var doc = JsonDocument.Parse(cfg.Value).RootElement;
+        var homeserver = doc.TryGetProperty("homeserver", out var hs) ? hs.GetString() : null;
+        if (homeserver != null && SsrfGuard.IsBlockedUrl(homeserver)) homeserver = null;
         return (
-            doc.TryGetProperty("homeserver", out var hs) ? hs.GetString() : null,
+            homeserver,
             doc.TryGetProperty("access_token", out var at) ? at.GetString() : null,
             doc.TryGetProperty("user_id", out var ui) ? ui.GetString() : null
         );

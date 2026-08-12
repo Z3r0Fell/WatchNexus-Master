@@ -3,6 +3,7 @@ using System.Xml.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -92,18 +93,70 @@ public class MediaOpsController : ControllerBase
                 return StatusCode(500, new
                 {
                     status = "failed",
+                    success = false,
+                    message = "ffmpeg exited non-zero",
                     detail = "ffmpeg exited non-zero",
                     exit_code = proc.ExitCode,
                     stderr_tail = (await proc.StandardError.ReadToEndAsync()).Split('\n').TakeLast(8)
                 });
-            return Ok(new { status = "repaired", file_path, output_path = outPath });
+            return Ok(new { status = "repaired", success = true, message = "File repaired", file_path, output_path = outPath });
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
 
+    // Real directory health scan — enumerates files (bounded depth/count)
+    // inside the media-root allowlist and classifies each as healthy /
+    // repairable / warning / error so the UI list works as designed.
+    private sealed record HealthResult(string file_path, string status, bool repairable, long size, string? error);
+
+    private static readonly HashSet<string> _videoExts = new(StringComparer.OrdinalIgnoreCase)
+        { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts", ".mpg", ".mpeg", ".m2ts" };
+
+    private static List<HealthResult> RunHealthScan(string directory, int maxFiles)
+    {
+        var results = new List<HealthResult>();
+        var stack = new Stack<string>();
+        stack.Push(directory);
+        while (stack.Count > 0 && results.Count < maxFiles)
+        {
+            var dir = stack.Pop();
+            try
+            {
+                foreach (var sub in Directory.GetDirectories(dir))
+                    if (stack.Count < 512) stack.Push(sub);
+                foreach (var f in Directory.GetFiles(dir))
+                {
+                    if (results.Count >= maxFiles) break;
+                    try
+                    {
+                        var fi = new FileInfo(f);
+                        var repairable = _videoExts.Contains(fi.Extension) && fi.Length == 0;
+                        var status = fi.Length == 0 ? (repairable ? "repairable" : "warning") : "healthy";
+                        results.Add(new HealthResult(f, status, repairable, fi.Length, fi.Length == 0 ? "File is empty" : null));
+                    }
+                    catch (Exception ex)
+                    {
+                        results.Add(new HealthResult(f, "error", false, 0, ex.Message));
+                    }
+                }
+            }
+            catch { }
+        }
+        return results;
+    }
+
     [HttpPost("scan-library")]
-    public IActionResult ScanLibrary([FromQuery] string? directory) =>
-        Ok(new { status = "queued", directory = directory ?? "all", note = "Library scans run via the Saffron scheduled-task module (/api/saffron/tasks)." });
+    public IActionResult ScanLibrary([FromQuery] string? directory, [FromQuery] int max_files = 2000)
+    {
+        if (string.IsNullOrEmpty(directory))
+            return BadRequest(new { detail = "directory is required" });
+        if (!IsAllowedMediaPath(directory))
+            return StatusCode(403, new { detail = "directory must be inside a configured media root" });
+        if (!System.IO.Directory.Exists(directory))
+            return NotFound(new { detail = "directory not found" });
+        var results = RunHealthScan(directory, Math.Clamp(max_files, 1, 10000));
+        return Ok(results);
+    }
 
     // ── Notifications (persisted via NotificationLog) ───────────────────
     // The Pepper notification module logs every dispatched notification
@@ -151,14 +204,125 @@ public class MediaOpsController : ControllerBase
         return Ok(new { status = "deleted", id });
     }
 
-    // ── Scheduled scans → delegated to Saffron module ───────────────────
-    // The standalone /api/media/scheduled-scans endpoints were placeholders
-    // that returned fake CRUD without persistence. The Saffron module
-    // (/api/saffron/*) is the real scheduled-task implementation. We keep
-    // the routes as redirects so existing UI keeps functioning.
+    // ── Scheduled scans (persisted) ─────────────────────────
+    // Stored as JSON rows keyed media_scan_schedule:{id}. "Run now" performs
+    // a synchronous health scan of the configured directory.
+    private const string ScanScheduleKey = "media_scan_schedule:";
+
     [HttpGet("scheduled-scans")]
-    public IActionResult ScheduledScans() =>
-        StatusCode(StatusCodes.Status301MovedPermanently, new { detail = "Use /api/saffron/tasks", redirect = "/api/saffron/tasks" });
+    public async Task<IActionResult> ScheduledScans()
+    {
+        var uid = this.UserId();
+        var rows = await _db.Settings
+            .Where(s => s.UserId == uid && s.Key.StartsWith(ScanScheduleKey))
+            .OrderBy(s => s.Key).ToListAsync();
+        var list = rows.Select(s =>
+        {
+            try
+            {
+                var doc = JsonDocument.Parse(s.Value ?? "{}").RootElement;
+                return new
+                {
+                    id = s.Key[ScanScheduleKey.Length..],
+                    directory = doc.TryGetProperty("directory", out var d) ? d.GetString() : "",
+                    schedule_type = doc.TryGetProperty("schedule_type", out var t) ? t.GetString() : "daily",
+                    schedule_time = doc.TryGetProperty("schedule_time", out var tm) ? tm.GetString() : "03:00",
+                    notify_on_issues = doc.TryGetProperty("notify_on_issues", out var n) && n.GetBoolean(),
+                    auto_repair = doc.TryGetProperty("auto_repair", out var ar) && ar.GetBoolean(),
+                };
+            }
+            catch { return null; }
+        }).Where(x => x != null).ToList();
+        return Ok(list);
+    }
+
+    [HttpPost("scheduled-scans")]
+    public async Task<IActionResult> CreateScheduledScan([FromBody] JsonElement body)
+    {
+        var directory = body.TryGetProperty("directory", out var d) ? d.GetString() : "";
+        if (string.IsNullOrEmpty(directory))
+            return BadRequest(new { detail = "directory is required" });
+        if (!IsAllowedMediaPath(directory))
+            return StatusCode(403, new { detail = "directory must be inside a configured media root" });
+        var id = Guid.NewGuid().ToString("N")[..8];
+        var value = JsonSerializer.Serialize(new
+        {
+            directory,
+            schedule_type = body.TryGetProperty("schedule_type", out var t) ? t.GetString() ?? "daily" : "daily",
+            schedule_time = body.TryGetProperty("schedule_time", out var tm) ? tm.GetString() ?? "03:00" : "03:00",
+            notify_on_issues = body.TryGetProperty("notify_on_issues", out var n) && n.GetBoolean(),
+            auto_repair = body.TryGetProperty("auto_repair", out var ar) && ar.GetBoolean(),
+            created_at = DateTime.UtcNow.ToString("o"),
+        });
+        _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = ScanScheduleKey + id, UserId = this.UserId(), Value = value });
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, id });
+    }
+
+    [HttpPut("scheduled-scans/{id}")]
+    public async Task<IActionResult> UpdateScheduledScan(string id, [FromBody] JsonElement body)
+    {
+        var row = await FindScanSchedule(id);
+        if (row == null) return NotFound();
+        var directory = "";
+        try
+        {
+            var doc = JsonDocument.Parse(row.Value ?? "{}").RootElement;
+            directory = doc.TryGetProperty("directory", out var d) ? d.GetString() ?? "" : "";
+        }
+        catch { }
+        if (body.TryGetProperty("directory", out var db) && !string.IsNullOrEmpty(db.GetString()))
+            directory = db.GetString()!;
+        if (string.IsNullOrEmpty(directory))
+            return BadRequest(new { detail = "directory is required" });
+        if (!IsAllowedMediaPath(directory))
+            return StatusCode(403, new { detail = "directory must be inside a configured media root" });
+        row.Value = JsonSerializer.Serialize(new
+        {
+            directory,
+            schedule_type = body.TryGetProperty("schedule_type", out var t) ? t.GetString() ?? "daily" : "daily",
+            schedule_time = body.TryGetProperty("schedule_time", out var tm) ? tm.GetString() ?? "03:00" : "03:00",
+            notify_on_issues = body.TryGetProperty("notify_on_issues", out var n) && n.GetBoolean(),
+            auto_repair = body.TryGetProperty("auto_repair", out var ar) && ar.GetBoolean(),
+            updated_at = DateTime.UtcNow.ToString("o"),
+        });
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, id });
+    }
+
+    [HttpDelete("scheduled-scans/{id}")]
+    public async Task<IActionResult> DeleteScheduledScan(string id)
+    {
+        var row = await FindScanSchedule(id);
+        if (row == null) return NotFound();
+        _db.Settings.Remove(row);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deleted", id });
+    }
+
+    [HttpPost("scheduled-scans/{id}/run")]
+    public async Task<IActionResult> RunScheduledScan(string id)
+    {
+        var row = await FindScanSchedule(id);
+        if (row == null) return NotFound();
+        var directory = "";
+        try
+        {
+            var doc = JsonDocument.Parse(row.Value ?? "{}").RootElement;
+            directory = doc.TryGetProperty("directory", out var d) ? d.GetString() ?? "" : "";
+        }
+        catch { }
+        if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))
+            return NotFound(new { detail = "Configured directory not found" });
+        var res = RunHealthScan(directory, maxFiles: 2000);
+        return Ok(new { total_files = res.Count, issues = res.Count(r => r.status != "healthy"), scan_id = id });
+    }
+
+    private Task<WatchNexus.Shared.AppSetting?> FindScanSchedule(string id)
+    {
+        var uid = this.UserId();
+        return _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ScanScheduleKey + id);
+    }
 
     [HttpPost("redownload")]
     public IActionResult Redownload([FromQuery] string? media_id, [FromQuery] string? file_path) =>
@@ -257,6 +421,16 @@ public class QualityProfilesController : ControllerBase
 [Authorize]
 public class CompoteController : ControllerBase
 {
+    public record AddIndexerRequest(
+        string Name,
+        string? Indexer_type,
+        string? Url,
+        string? Api_key,
+        bool Enabled = true,
+        int Priority = 50,
+        bool Cloudflare_protected = false,
+        string? Search_path = null,
+        string? Cookie = null);
     private readonly AppDbContext _db;
     public CompoteController(AppDbContext db) => _db = db;
 
@@ -313,30 +487,21 @@ public class CompoteController : ControllerBase
     }
 
     [HttpPost("indexers")]
-    public async Task<IActionResult> AddIndexer(
-        [FromQuery] string name,
-        [FromQuery] string? indexer_type,
-        [FromQuery] string? url,
-        [FromQuery] string? api_key,
-        [FromQuery] bool enabled = true,
-        [FromQuery] int priority = 50,
-        [FromQuery] bool cloudflare_protected = false,
-        [FromQuery] string? search_path = null,
-        [FromQuery] string? cookie = null)
+    public async Task<IActionResult> AddIndexer([FromBody] AddIndexerRequest req)
     {
         var id = Guid.NewGuid().ToString();
         var indexer = new
         {
             id,
-            name,
-            type = indexer_type ?? "torznab",
-            url = url ?? "",
-            api_key = api_key ?? "",
-            enabled,
-            priority,
-            cloudflare_protected,
-            search_path = search_path ?? "",
-            cookie = cookie ?? "",
+            name = req.Name,
+            type = req.Indexer_type ?? "torznab",
+            url = req.Url ?? "",
+            api_key = req.Api_key ?? "",
+            enabled = req.Enabled,
+            priority = req.Priority,
+            cloudflare_protected = req.Cloudflare_protected,
+            search_path = req.Search_path ?? "",
+            cookie = req.Cookie ?? "",
             added_at = DateTime.UtcNow.ToString("o"),
         };
         var json = JsonSerializer.Serialize(indexer);
@@ -381,6 +546,7 @@ public class CompoteController : ControllerBase
             var doc = JsonSerializer.Deserialize<JsonElement>(existing.Value ?? "{}");
             var url = doc.TryGetProperty("url", out var u) ? u.GetString() : null;
             if (string.IsNullOrEmpty(url)) return Ok(new { success = false, error = "No URL configured" });
+            if (SsrfGuard.IsBlockedUrl(url)) return Ok(new { success = false, error = "Indexer URL is not an allowed http(s) endpoint" });
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
@@ -432,6 +598,8 @@ public class CompoteController : ControllerBase
                 var iType = doc.TryGetProperty("type", out var t) ? t.GetString() ?? "torznab" : "torznab";
 
                 if (!enabled || string.IsNullOrEmpty(url)) continue;
+                // Never fetch an indexer URL that could target cloud metadata or link-local hosts.
+                if (SsrfGuard.IsBlockedUrl(url)) continue;
 
                 var urlLower = url.ToLower();
                 tasks.Add(Task.Run(async () =>
@@ -892,19 +1060,56 @@ public class GarnishController : ControllerBase
     private readonly AppDbContext _db;
     public GarnishController(AppDbContext db) => _db = db;
 
+    private const string SubtitleSettingsKey = "subtitle_settings";
+
     [HttpGet("settings")]
     public async Task<IActionResult> Settings()
     {
         var uid = this.UserId();
-        var providers = new[] { "opensubtitles", "addic7ed", "podnapisi", "yifysubtitles", "subscene" };
-        var configured = new List<object>();
-        foreach (var p in providers)
+        var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == SubtitleSettingsKey);
+        if (row?.Value != null)
         {
-            var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == $"subtitle_{p}");
-            var hasCfg = cfg?.Value != null;
-            configured.Add(new { id = p, name = p, enabled = hasCfg, configured = hasCfg });
+            try
+            {
+                var doc = JsonDocument.Parse(row.Value).RootElement;
+                var providers = doc.TryGetProperty("providers", out var p) && p.ValueKind == JsonValueKind.Array
+                    ? p.EnumerateArray().Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToArray()
+                    : Array.Empty<string>();
+                var languages = doc.TryGetProperty("subtitle_languages", out var l) && l.ValueKind == JsonValueKind.Array
+                    ? l.EnumerateArray().Select(x => x.GetString() ?? "en").Where(x => x.Length > 0).ToArray()
+                    : new[] { "en" };
+                return Ok(new
+                {
+                    auto_subtitles = doc.TryGetProperty("auto_subtitles", out var a) && a.GetBoolean(),
+                    subtitle_languages = languages,
+                    providers,
+                    provider_configs = doc.TryGetProperty("provider_configs", out var c)
+                        ? c.Clone() : JsonSerializer.SerializeToElement(new Dictionary<string, object>())
+                });
+            }
+            catch { }
         }
-        return Ok(new { enabled = configured.Any(c => ((dynamic)c).enabled), providers = configured });
+        return Ok(new
+        {
+            auto_subtitles = true,
+            subtitle_languages = new[] { "en" },
+            providers = new[] { "opensubtitles" },
+            provider_configs = new Dictionary<string, object>()
+        });
+    }
+
+    [HttpPost("settings")]
+    public async Task<IActionResult> SaveSettings([FromBody] JsonElement body)
+    {
+        var uid = this.UserId();
+        var value = body.GetRawText();
+        var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == SubtitleSettingsKey);
+        if (row == null)
+            _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = SubtitleSettingsKey, UserId = uid, Value = value });
+        else
+            row.Value = value;
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "saved" });
     }
 
     [HttpPost("test/{provider}")]

@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -100,7 +101,7 @@ export const WatchlistPage = () => {
                   >
                     {item.poster_path ? (
                       <img 
-                        src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} 
+                        src={tmdbImageUrl(item.poster_path, 'w342')} 
                         alt={item.title} 
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />

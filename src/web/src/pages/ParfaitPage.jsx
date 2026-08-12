@@ -9,7 +9,7 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
-import { BACKEND_URL } from '../lib/config';
+import { BACKEND_URL , tmdbImageUrl} from '../lib/config';
 
 const API = BACKEND_URL;
 
@@ -343,7 +343,7 @@ const ParfaitPage = () => {
                     const status = req.status === 1 ? 'pending' : req.status === 2 ? 'approved' : req.status === 3 ? 'declined' : 'available';
                     const sc = STATUS_COLORS[status] || STATUS_COLORS.pending;
                     const media = req.media || {};
-                    const posterPath = media.posterPath ? `https://image.tmdb.org/t/p/w92${media.posterPath}` : null;
+                    const posterPath = media.posterPath ? tmdbImageUrl(media.posterPath, 'w92') : null;
                     return (
                       <div key={req.id} className="bg-surface border border-white/10 rounded-xl p-4 flex items-center gap-4" data-testid={`request-${req.id}`}>
                         {posterPath ? (
@@ -399,7 +399,7 @@ const ParfaitPage = () => {
                   </div>
                 ) : (
                   discover.map((item) => {
-                    const posterUrl = item.posterPath ? `https://image.tmdb.org/t/p/w300${item.posterPath}` : null;
+                    const posterUrl = item.posterPath ? tmdbImageUrl(item.posterPath, 'w300') : null;
                     const mediaType = item.mediaType || (item.title ? 'movie' : 'tv');
                     return (
                       <div key={`${mediaType}-${item.id}`} className="group relative rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-violet-500/30 transition-all">
@@ -438,7 +438,7 @@ const ParfaitPage = () => {
                   </div>
                 ) : (
                   searchResults.map((item) => {
-                    const posterUrl = item.posterPath ? `https://image.tmdb.org/t/p/w300${item.posterPath}` : null;
+                    const posterUrl = item.posterPath ? tmdbImageUrl(item.posterPath, 'w300') : null;
                     const mediaType = item.mediaType || (item.title ? 'movie' : 'tv');
                     return (
                       <div key={`${mediaType}-${item.id}`} className="group relative rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-violet-500/30 transition-all">

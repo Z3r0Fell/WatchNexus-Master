@@ -120,8 +120,6 @@ export const PluginMarketplacePage = () => {
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
 
-  // Cookie auth: the httpOnly wn_token is sent automatically.
-  const getAuthHeader = () => ({});
 
   // Fetch Gadgets Catalogue
   const fetchCatalogue = useCallback(async (category = null, query = '') => {
@@ -130,7 +128,7 @@ export const PluginMarketplacePage = () => {
       let url = `${API_URL}/api/gadgets/catalogue/search?`;
       if (query) url += `q=${encodeURIComponent(query)}&`;
       if (category) url += `category=${category}&`;
-      const res = await axios.get(url, { headers: getAuthHeader() });
+      const res = await axios.get(url);
       setCatalogueItems(res.data.items || []);
     } catch (err) {
       console.error('Failed to fetch catalogue:', err);
@@ -141,7 +139,7 @@ export const PluginMarketplacePage = () => {
 
   const fetchCatalogueCategories = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/gadgets/catalogue/categories`, { headers: getAuthHeader() });
+      const res = await axios.get(`${API_URL}/api/gadgets/catalogue/categories`);
       setCatalogueCategories(res.data || {});
     } catch (err) {
       console.error('Failed to fetch catalogue categories:', err);
@@ -151,7 +149,7 @@ export const PluginMarketplacePage = () => {
   // Fetch Kodi categories
   const fetchKodiCategories = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/kodi/categories`, { headers: getAuthHeader() });
+      const res = await axios.get(`${API_URL}/api/kodi/categories`);
       setKodiCategories(res.data.categories || {});
     } catch (err) {
       console.error('Failed to fetch Kodi categories:', err);
@@ -162,7 +160,7 @@ export const PluginMarketplacePage = () => {
   const fetchPopularAddons = useCallback(async () => {
     setLoadingKodi(true);
     try {
-      const res = await axios.get(`${API_URL}/api/kodi/addons/popular?limit=12`, { headers: getAuthHeader() });
+      const res = await axios.get(`${API_URL}/api/kodi/addons/popular?limit=12`);
       setPopularAddons(res.data.addons || []);
     } catch (err) {
       console.error('Failed to fetch popular addons:', err);
@@ -179,7 +177,7 @@ export const PluginMarketplacePage = () => {
       if (query) url += `&query=${encodeURIComponent(query)}`;
       if (category) url += `&category=${category}`;
       
-      const res = await axios.get(url, { headers: getAuthHeader() });
+      const res = await axios.get(url);
       setKodiAddons(res.data.addons || []);
     } catch (err) {
       console.error('Failed to fetch Kodi addons:', err);
@@ -193,7 +191,7 @@ export const PluginMarketplacePage = () => {
   const fetchInstalledPlugins = useCallback(async () => {
     setLoadingPlugins(true);
     try {
-      const res = await axios.get(`${API_URL}/api/gadgets/plugins`, { headers: getAuthHeader() });
+      const res = await axios.get(`${API_URL}/api/gadgets/plugins`);
       setInstalledPlugins(res.data || []);
     } catch (err) {
       console.error('Failed to fetch installed plugins:', err);
@@ -206,7 +204,7 @@ export const PluginMarketplacePage = () => {
   const refreshKodiRepo = async () => {
     setLoadingKodi(true);
     try {
-      await axios.post(`${API_URL}/api/kodi/refresh`, {}, { headers: getAuthHeader() });
+      await axios.post(`${API_URL}/api/kodi/refresh`, {});
       toast.success('Kodi repository refreshed');
       await fetchKodiCategories();
       await fetchPopularAddons();
@@ -266,7 +264,7 @@ export const PluginMarketplacePage = () => {
       formData.append('file', file);
       
       const res = await axios.post(`${API_URL}/api/gadgets/import-file`, formData, {
-        headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       
       toast.success(`Plugin "${res.data.name}" imported successfully!`);
@@ -295,8 +293,7 @@ export const PluginMarketplacePage = () => {
     setImporting(true);
     try {
       const res = await axios.post(`${API_URL}/api/gadgets/import-url`, null, {
-        params: { url: importUrl },
-        headers: getAuthHeader()
+        params: { url: importUrl }
       });
       
       toast.success(`Plugin "${res.data.name}" imported successfully!`);
@@ -318,7 +315,7 @@ export const PluginMarketplacePage = () => {
         ? `/api/gadgets/plugins/${plugin.id}/disable`
         : `/api/gadgets/plugins/${plugin.id}/enable`;
       
-      await axios.post(`${API_URL}${endpoint}`, {}, { headers: getAuthHeader() });
+      await axios.post(`${API_URL}${endpoint}`, {});
       toast.success(`Plugin ${plugin.status === 'active' ? 'disabled' : 'enabled'}`);
       fetchInstalledPlugins();
     } catch (err) {

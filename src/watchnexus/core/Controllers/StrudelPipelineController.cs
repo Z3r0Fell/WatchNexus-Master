@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Diagnostics;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -68,6 +69,8 @@ public class StrudelPipelineController : ControllerBase
         var titleIndex = body.TryGetProperty("title_index", out var ti) ? ti.GetInt32() : -1; // -1 = all titles
 
         if (string.IsNullOrEmpty(title)) title = $"Rip-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
+        if (!MediaPaths.IsAllowedPath(outputDir))
+            return BadRequest(new { success = false, message = "output_dir must be inside an allowed media directory" });
 
         var id = Guid.NewGuid().ToString("N")[..12];
         var jobData = JsonSerializer.Serialize(new
@@ -105,27 +108,39 @@ public class StrudelPipelineController : ControllerBase
             if (job == null) return;
 
             var jobVal = job.Value;
-            var makemkvCmd = jobVal.TryGetProperty("makemkv_cmd", out var mc) ? mc.GetString() : null;
             var outputDir = jobVal.TryGetProperty("output_dir", out var od) ? od.GetString() ?? "/data/rips" : "/data/rips";
             var profile = jobVal.TryGetProperty("profile", out var p) ? p.GetString() ?? "direct" : "direct";
             var autoImport = jobVal.TryGetProperty("auto_import", out var ai) && ai.GetBoolean();
+            var driveIndex = jobVal.TryGetProperty("drive_index", out var di) ? di.GetInt32() : 0;
+            var titleIndex = jobVal.TryGetProperty("title_index", out var ti) ? ti.GetInt32() : -1;
+
+            // Never run rips outside the allowed media roots, and never trust any
+            // free-form command string that was persisted on the job.
+            if (!MediaPaths.IsAllowedPath(outputDir))
+                throw new InvalidOperationException("Output directory is outside the allowed media roots");
+
+            var jobDir = Path.Combine(outputDir, jobId);
 
             // Create output directory
-            Directory.CreateDirectory($"{outputDir}/{jobId}");
+            Directory.CreateDirectory(jobDir);
 
-            // Execute MakeMKV if installed
+            // Execute MakeMKV if installed. Arguments are built from typed fields
+            // (never from a stored string) so no extra flags can be injected.
             var makemkvPath = FindBinary("makemkvcon");
-            if (makemkvPath != null && !string.IsNullOrEmpty(makemkvCmd))
+            if (makemkvPath != null)
             {
                 var psi = new ProcessStartInfo
                 {
                     FileName = makemkvPath,
-                    Arguments = makemkvCmd.Replace("makemkvcon ", ""),
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 };
+                psi.ArgumentList.Add("mkv");
+                psi.ArgumentList.Add($"disc:{driveIndex}");
+                psi.ArgumentList.Add(titleIndex >= 0 ? titleIndex.ToString() : "all");
+                psi.ArgumentList.Add(jobDir);
 
                 using var process = Process.Start(psi);
                 if (process != null)
@@ -170,31 +185,32 @@ public class StrudelPipelineController : ControllerBase
                 var handbrakePath = FindBinary("HandBrakeCLI");
                 if (handbrakePath != null)
                 {
-                    var handbrakeCmd = jobVal.TryGetProperty("handbrake_cmd", out var hc) ? hc.GetString() : null;
-                    if (!string.IsNullOrEmpty(handbrakeCmd))
+                    var psi = new ProcessStartInfo
                     {
-                        var psi = new ProcessStartInfo
-                        {
-                            FileName = handbrakePath,
-                            Arguments = handbrakeCmd.Replace("HandBrakeCLI ", ""),
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
-                        };
+                        FileName = handbrakePath,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    };
+                    psi.ArgumentList.Add("-i");
+                    psi.ArgumentList.Add(jobDir);
+                    psi.ArgumentList.Add("-o");
+                    psi.ArgumentList.Add(Path.Combine(outputDir, jobId + "_transcoded"));
+                    psi.ArgumentList.Add("--preset");
+                    psi.ArgumentList.Add(profile);
 
-                        using var proc = Process.Start(psi);
-                        if (proc != null)
+                    using var proc = Process.Start(psi);
+                    if (proc != null)
+                    {
+                        var pctRegex = new System.Text.RegularExpressions.Regex(@"(\d+\.\d+) %");
+                        while (!proc.HasExited)
                         {
-                            var pctRegex = new System.Text.RegularExpressions.Regex(@"(\d+\.\d+) %");
-                            while (!proc.HasExited)
+                            var line = await proc.StandardError.ReadLineAsync();
+                            if (line != null)
                             {
-                                var line = await proc.StandardError.ReadLineAsync();
-                                if (line != null)
-                                {
-                                    var match = pctRegex.Match(line);
-                                    if (match.Success) await UpdateJobPhase(key, "transcoding", double.Parse(match.Groups[1].Value), null);
-                                }
+                                var match = pctRegex.Match(line);
+                                if (match.Success) await UpdateJobPhase(key, "transcoding", double.Parse(match.Groups[1].Value), null);
                             }
                         }
                     }
@@ -249,6 +265,8 @@ public class StrudelPipelineController : ControllerBase
         var job = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (job?.Value == null) return NotFound();
         var data = JsonSerializer.Deserialize<Dictionary<string, object>>(job.Value) ?? new();
+        var submittedBy = data.GetValueOrDefault("submitted_by")?.ToString() ?? "";
+        if (!CanAccessJob(submittedBy)) return NotFound();
         data["phase"] = "cancelled";
         data["completed_at"] = DateTime.UtcNow.ToString("o");
         job.Value = JsonSerializer.Serialize(data);
@@ -264,6 +282,8 @@ public class StrudelPipelineController : ControllerBase
         var job = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (job?.Value == null) return NotFound();
         var data = JsonSerializer.Deserialize<Dictionary<string, object>>(job.Value) ?? new();
+        var submittedBy = data.GetValueOrDefault("submitted_by")?.ToString() ?? "";
+        if (!CanAccessJob(submittedBy)) return NotFound();
         data["phase"] = "queued";
         data["progress"] = 0;
         data["error"] = null!;
@@ -365,6 +385,9 @@ public class StrudelPipelineController : ControllerBase
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
+    private bool CanAccessJob(string submittedBy) =>
+        User.IsInRole("admin") || (submittedBy != "" && submittedBy == this.UserId());
+
     private async Task<JsonElement?> GetJobData(string key)
     {
         var s = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
@@ -507,6 +530,10 @@ public class CrucibleHardwareController : ControllerBase
             return BadRequest(new { success = false, message = "source_path required" });
         if (!System.IO.File.Exists(sourcePath))
             return NotFound(new { success = false, message = $"File not found: {sourcePath}" });
+        if (!MediaPaths.IsAllowedPath(sourcePath))
+            return BadRequest(new { success = false, message = "source_path must be inside an allowed media directory" });
+        if (!MediaPaths.IsAllowedPath(outputDir))
+            return BadRequest(new { success = false, message = "output_dir must be inside an allowed media directory" });
 
         var ffmpegPath = FindBinary("ffmpeg");
         if (ffmpegPath == null)

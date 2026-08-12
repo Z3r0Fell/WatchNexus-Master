@@ -42,20 +42,31 @@ const LevelBadge = ({ level }) => {
   );
 };
 
-const SystemMetricCard = ({ icon: Icon, label, value, subValue, color = 'violet' }) => (
-  <div className="p-4 rounded-xl bg-white/5 border border-white/10" data-testid={`system-metric-${label.toLowerCase().replace(/\s+/g, '-')}`}>
-    <div className="flex items-center gap-3">
-      <div className={`p-2 rounded-lg bg-${color}-500/20`}>
-        <Icon className={`w-5 h-5 text-${color}-400`} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-lg font-semibold">{value}</p>
-        {subValue && <p className="text-xs text-gray-500">{subValue}</p>}
+const SystemMetricCard = ({ icon: Icon, label, value, subValue, color = 'violet' }) => {
+  const colorClasses = {
+    violet: 'bg-violet-500/20 text-violet-400',
+    blue: 'bg-blue-500/20 text-blue-400',
+    pink: 'bg-pink-500/20 text-pink-400',
+    green: 'bg-green-500/20 text-green-400',
+    yellow: 'bg-yellow-500/20 text-yellow-400',
+    red: 'bg-red-500/20 text-red-400',
+  };
+  const cls = colorClasses[color] || colorClasses.violet;
+  return (
+    <div className="p-4 rounded-xl bg-white/5 border border-white/10" data-testid={`system-metric-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${cls}`}>
+          <Icon className={`w-5 h-5 ${cls.split(' ')[1]}`} />
+        </div>
+        <div>
+          <p className="text-sm text-gray-400">{label}</p>
+          <p className="text-lg font-semibold">{value}</p>
+          {subValue && <p className="text-xs text-gray-500">{subValue}</p>}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const ZestSettings = () => {
   const [logs, setLogs] = useState([]);

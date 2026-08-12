@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Net.Http.Headers;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -523,8 +524,10 @@ public class ChowderController : ControllerBase
         var srv = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"chowder_srv:{serverId}");
         if (srv?.Value == null) return (null, null, null);
         var doc = JsonDocument.Parse(srv.Value).RootElement;
+        var url = doc.TryGetProperty("url", out var u) ? u.GetString() : null;
+        if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
         return (
-            doc.TryGetProperty("url", out var u) ? u.GetString() : null,
+            url,
             doc.TryGetProperty("api_key", out var k) ? k.GetString() : null,
             doc.TryGetProperty("type", out var t) ? t.GetString() : "jellyfin"
         );

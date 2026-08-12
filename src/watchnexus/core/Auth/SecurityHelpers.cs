@@ -161,6 +161,41 @@ public static class SsrfGuard
         catch { return false; }
     }
 
+    /// <summary>
+    /// Weak guard for LAN-bound integrations (Sonarr/Radarr/Ombi/Jellyfin/Sabnzbd/
+    /// indexers etc.) whose base URL legitimately points at localhost or RFC1918
+    /// hosts. Rejects non-http(s) schemes and cloud-metadata/link-local hosts only —
+    /// use <see cref="IsAllowedUrl"/> for surfaces with no reason to reach internal hosts.
+    /// </summary>
+    public static bool IsBlockedUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return true;
+        if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri)) return true;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) return true;
+        if (IsBlocked(uri.Host)) return true;
+        return IPAddress.TryParse(uri.Host, out var ip) && IsBlocked(ip.ToString());
+    }
+
+    /// <summary>
+    /// True for loopback and private/UTA (RFC1918, CGNAT, link-local, site-local)
+    /// addresses — i.e. clients that live on the same machine or LAN. Used to scope
+    /// hostname/LAN info disclosure to local clients.
+    /// </summary>
+    public static bool IsPrivateAddress(IPAddress ip)
+    {
+        if (ip == null) return false;
+        if (IPAddress.IsLoopback(ip)) return true;
+        if (ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal || ip.IsIPv6UniqueLocal) return true;
+        if (ip.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork) return false;
+        var b = ip.GetAddressBytes();
+        if (b[0] == 10) return true;
+        if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) return true;
+        if (b[0] == 192 && b[1] == 168) return true;
+        if (b[0] == 100 && (b[1] & 0xC0) == 0x40) return true; // CGNAT 100.64/10
+        if (b[0] == 169 && b[1] == 254) return true; // link-local
+        return false;
+    }
+
     private static bool IsRoutable(IPAddress ip)
     {
         if (IPAddress.IsLoopback(ip)) return false;
@@ -177,5 +212,74 @@ public static class SsrfGuard
             // RFC1918 (10/8, 172.16/12, 192.168/16) and CGNAT (100.64/10) are allowed.
         }
         return true;
+    }
+}
+
+/// <summary>
+/// Canonical media-path allow-list shared by controllers that turn a
+/// user-supplied path into a file read/write (photos, subtitles, library
+/// aliases). A path is only allowed when its real path (symlinks resolved)
+/// sits inside one of the configured media roots. This is the single source
+/// of truth so every file-serving surface enforces the same boundary.
+/// </summary>
+public static class MediaPaths
+{
+    private static string[]? _defaultRoots;
+
+    public static string[] ResolveAllowedRoots()
+    {
+        var env = Environment.GetEnvironmentVariable("MEDIA_ROOTS") ?? Environment.GetEnvironmentVariable("MEDIA_ROOT");
+        if (!string.IsNullOrWhiteSpace(env))
+            return env.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (_defaultRoots != null) return _defaultRoots;
+        var dataDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR") ?? Path.Combine(AppContext.BaseDirectory, "data");
+        _defaultRoots = new[] { "/data/media", "/data/rips", "/data/transcoded", "/data/offline", dataDir };
+        return _defaultRoots;
+    }
+
+    /// <summary>Canonical, symlink-resolved absolute path for the given path, or null.</summary>
+    public static string? ResolveRealPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        string full;
+        try { full = Path.GetFullPath(path); }
+        catch { return null; }
+        var root = Path.GetPathRoot(full) ?? "/";
+        var current = root;
+        var rest = full[root.Length..];
+        try
+        {
+            foreach (var seg in rest.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                current = Path.Combine(current, seg);
+                FileSystemInfo fsi = Directory.Exists(current) ? new DirectoryInfo(current) : new FileInfo(current);
+                var target = fsi.ResolveLinkTarget(returnFinalTarget: true);
+                if (target != null) current = target.FullName;
+            }
+        }
+        catch { return null; }
+        try { return Path.GetFullPath(current); }
+        catch { return null; }
+    }
+
+    public static bool IsPathInside(string root, string child)
+    {
+        var r = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var c = child.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return c.Equals(r, StringComparison.OrdinalIgnoreCase) ||
+               c.StartsWith(r + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsAllowedPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false;
+        var full = ResolveRealPath(path);
+        if (full == null) return false;
+        foreach (var root in ResolveAllowedRoots())
+        {
+            var rootFull = ResolveRealPath(root);
+            if (rootFull != null && IsPathInside(rootFull, full)) return true;
+        }
+        return false;
     }
 }

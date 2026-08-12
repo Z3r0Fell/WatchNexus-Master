@@ -291,7 +291,7 @@ export const QualityProfilesSubTab = () => {
   const fetchProfiles = async () => {
     try {
       const res = await fetch(`${API_URL}/api/quality-profiles`, {
-        
+        credentials: 'include',
       });
       const data = await res.json();
       setProfiles(data.profiles || []);
@@ -327,7 +327,8 @@ export const QualityProfilesSubTab = () => {
           headers: { 
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(data),
+          credentials: 'include',
         });
         toast.success('Profile updated');
       } else {
@@ -340,7 +341,7 @@ export const QualityProfilesSubTab = () => {
         });
         await fetch(`${API_URL}/api/quality-profiles?${params}`, {
           method: 'POST',
-          
+          credentials: 'include',
         });
         toast.success('Profile created');
       }
@@ -358,7 +359,7 @@ export const QualityProfilesSubTab = () => {
     try {
       await fetch(`${API_URL}/api/quality-profiles/${profileId}`, {
         method: 'DELETE',
-        
+        credentials: 'include',
       });
       toast.success('Profile deleted');
       fetchProfiles();
@@ -375,7 +376,8 @@ export const QualityProfilesSubTab = () => {
         headers: { 
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ is_default: true })
+        body: JSON.stringify({ is_default: true }),
+        credentials: 'include',
       });
       toast.success('Default profile updated');
       fetchProfiles();

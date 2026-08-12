@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../../lib/config';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,7 +24,7 @@ export const HeroBanner = ({ items = [], autoRotate = true }) => {
   const title = getTitle(currentItem);
   const year = getReleaseYear(currentItem);
   const mediaType = getMediaType(currentItem);
-  const backdropUrl = currentItem.backdrop_url || (currentItem.backdrop_path ? `https://image.tmdb.org/t/p/w1280${currentItem.backdrop_path}` : null);
+  const backdropUrl = currentItem.backdrop_url || (currentItem.backdrop_path ? tmdbImageUrl(currentItem.backdrop_path, 'w1280') : null);
 
   return (
     <div data-testid="hero-banner" className="relative h-[70vh] min-h-[500px] w-full overflow-hidden">

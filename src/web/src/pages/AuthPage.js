@@ -37,7 +37,7 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login, loginWithToken, register } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
   
   // Local/Remote detection
@@ -45,7 +45,6 @@ export const AuthPage = () => {
   const [authMode, setAuthMode] = useState('auto'); // 'auto', 'local', 'remote'
   const [localUsers, setLocalUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [showUserSelect, setShowUserSelect] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
@@ -96,132 +95,13 @@ export const AuthPage = () => {
   };
 
   const handleLocalUserLogin = async (user) => {
-    // Check if user has a PIN
-    try {
-      const pinCheck = await axios.get(`${BACKEND_URL}/api/users/${user.id}/has-pin`);
-      
-      if (pinCheck.data.has_pin) {
-        // User has PIN - show PIN entry
-        setSelectedUser({ ...user, requiresPin: true });
-        setShowUserSelect(false);
-      } else {
-        // No PIN - quick login directly
-        await performQuickLogin(user.id);
-      }
-    } catch (error) {
-      // If PIN check fails, fall back to password login
-      setSelectedUser(user);
-      setShowUserSelect(false);
-      setEmail(user.email);
-    }
-  };
-
-  const performQuickLogin = async (userId, pin = null) => {
-    setLoading(true);
-    try {
-      const res = await axios.post(`${BACKEND_URL}/api/users/quick-login`, {
-        user_id: userId,
-        pin: pin
-      });
-      
-      // Store token and login - use 'token' key for consistency
-      loginWithToken(res.data.token, res.data.user);
-      toast.success(`Welcome back, ${res.data.user.username || 'User'}!`);
-      navigate('/');
-    } catch (error) {
-      if (error.response?.status === 401) {
-        toast.error('Invalid PIN');
-      } else if (error.response?.status === 403) {
-        // Not on home network - fall back to password
-        toast.error('Quick login only available on home network');
-        setSelectedUser(prev => ({ ...prev, requiresPin: false }));
-      } else {
-        toast.error('Login failed. Please try with password.');
-        setSelectedUser(prev => ({ ...prev, requiresPin: false }));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePinSubmit = async (pin) => {
-    if (selectedUser?.id) {
-      await performQuickLogin(selectedUser.id, pin);
-    }
+    setSelectedUser({ ...user });
+    setEmail(user.email);
   };
 
   // Google OAuth removed in v1.0.0 RTP — WatchNexus is a self-hosted media
   // server with local-account auth only. No external dependencies, no third-
   // party identity providers, no analytics, no phone-home.
-
-  // PIN Entry Component
-  const PinEntry = ({ onSubmit, onCancel, username }) => {
-    const [pin, setPin] = useState(['', '', '', '']);
-    const inputRefs = [null, null, null, null];
-    
-    const handlePinChange = (index, value) => {
-      if (!/^\d*$/.test(value)) return; // Only digits
-      
-      const newPin = [...pin];
-      newPin[index] = value.slice(-1); // Only last character
-      setPin(newPin);
-      
-      // Auto-focus next input
-      if (value && index < 3) {
-        inputRefs[index + 1]?.focus();
-      }
-      
-      // Auto-submit when complete
-      if (index === 3 && value) {
-        const fullPin = newPin.join('');
-        if (fullPin.length === 4) {
-          onSubmit(fullPin);
-        }
-      }
-    };
-    
-    const handleKeyDown = (index, e) => {
-      if (e.key === 'Backspace' && !pin[index] && index > 0) {
-        inputRefs[index - 1]?.focus();
-      }
-    };
-    
-    return (
-      <div className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-500/30 flex items-center justify-center text-2xl">
-          {username?.charAt(0).toUpperCase() || '👤'}
-        </div>
-        <h2 className="text-xl font-bold mb-2">Enter PIN</h2>
-        <p className="text-gray-400 text-sm mb-6">Enter your 4-digit PIN to continue</p>
-        
-        <div className="flex justify-center gap-3 mb-6">
-          {pin.map((digit, index) => (
-            <input
-              key={index}
-              ref={el => inputRefs[index] = el}
-              type="password"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handlePinChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              className="w-12 h-14 text-center text-2xl font-bold rounded-xl bg-white/10 border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
-              autoFocus={index === 0}
-              data-testid={`pin-input-${index}`}
-            />
-          ))}
-        </div>
-        
-        <button
-          onClick={onCancel}
-          className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          data-testid="pin-cancel-btn"
-        >
-          Use password instead
-        </button>
-      </div>
-    );
-  };
 
   // User Profile Card Component
   const UserProfileCard = ({ user, onClick }) => (
@@ -254,7 +134,7 @@ export const AuthPage = () => {
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1762278804729-13d330fad71a?w=1920)',
+          backgroundImage: 'linear-gradient(160deg, rgba(15, 12, 41, 0.9) 0%, rgba(30, 27, 75, 0.75) 45%, rgba(59, 45, 92, 0.55) 100%)',
         }}
       />
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -277,7 +157,7 @@ export const AuthPage = () => {
           {/* Logo */}
           <div className="flex items-center justify-center gap-3 mb-6">
             <img 
-              src="https://customer-assets.emergentagent.com/job_viewhub-1008/artifacts/z5wboqjd_image.png" 
+              src={`${BACKEND_URL}/watchnexus-logo.png`}
               alt="WatchNexus" 
               className="h-12 w-auto"
             />
@@ -345,33 +225,8 @@ export const AuthPage = () => {
               </motion.div>
             )}
 
-            {/* PIN Entry Mode */}
-            {selectedUser?.requiresPin && (
-              <motion.div
-                key="pin-entry"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                data-testid="pin-entry-screen"
-              >
-                <PinEntry
-                  username={selectedUser.username}
-                  onSubmit={handlePinSubmit}
-                  onCancel={() => {
-                    setSelectedUser({ ...selectedUser, requiresPin: false });
-                    setEmail(selectedUser.email);
-                  }}
-                />
-                {loading && (
-                  <div className="text-center mt-4">
-                    <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
             {/* Password Entry for Selected User OR Standard Login */}
-            {((selectedUser && !selectedUser.requiresPin) || !isLocal || localUsers.length === 0) && !selectedUser?.requiresPin && (
+            {(selectedUser || !isLocal || localUsers.length === 0) && (
               <motion.div
                 key="login-form"
                 initial={{ opacity: 0, y: 10 }}
@@ -458,6 +313,8 @@ export const AuthPage = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

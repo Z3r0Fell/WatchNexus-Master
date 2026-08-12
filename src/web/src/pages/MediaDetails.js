@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -126,8 +127,8 @@ export const MediaDetails = () => {
 
   const title = getTitle(media);
   const year = media.release_date?.slice(0, 4) || media.first_air_date?.slice(0, 4);
-  const backdropUrl = media.backdrop_url || (media.backdrop_path ? `https://image.tmdb.org/t/p/w1280${media.backdrop_path}` : null);
-  const posterUrl = media.poster_url || (media.poster_path ? `https://image.tmdb.org/t/p/w500${media.poster_path}` : null);
+  const backdropUrl = media.backdrop_url || (media.backdrop_path ? tmdbImageUrl(media.backdrop_path, 'w1280') : null);
+  const posterUrl = media.poster_url || (media.poster_path ? tmdbImageUrl(media.poster_path, 'w500') : null);
   const cast = media.credits?.cast?.slice(0, 10) || [];
   const similar = media.similar?.results?.slice(0, 6) || media.recommendations?.results?.slice(0, 6) || [];
 
@@ -335,7 +336,7 @@ export const MediaDetails = () => {
                   <div className="w-48 aspect-video flex-shrink-0 relative">
                     {episode.still_url || episode.still_path ? (
                       <img
-                        src={episode.still_url || `https://image.tmdb.org/t/p/w300${episode.still_path}`}
+                        src={episode.still_url || tmdbImageUrl(episode.still_path, 'w300')}
                         alt={episode.name}
                         className="w-full h-full object-cover"
                       />
@@ -377,7 +378,7 @@ export const MediaDetails = () => {
                   <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-2 bg-surface">
                     {person.profile_path ? (
                       <img
-                        src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
+                        src={tmdbImageUrl(person.profile_path, 'w185')}
                         alt={person.name}
                         className="w-full h-full object-cover"
                       />
@@ -408,7 +409,7 @@ export const MediaDetails = () => {
                 >
                   {item.poster_path ? (
                     <img
-                      src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
+                      src={tmdbImageUrl(item.poster_path, 'w342')}
                       alt={getTitle(item)}
                       className="w-full h-full object-cover"
                     />

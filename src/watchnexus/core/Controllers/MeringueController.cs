@@ -73,6 +73,7 @@ public class MeringueController : ControllerBase
 
     // ── All Requests (admin view) ──────────────────────────────────
     [HttpGet("requests")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> AllRequests([FromQuery] string? status = null)
     {
         var query = _db.MediaRequests.AsQueryable();
@@ -84,8 +85,9 @@ public class MeringueController : ControllerBase
         return Ok(requests);
     }
 
-    // ── Approve/Reject ──────────────────────────────────
+    // ── Approve/Reject (admin only) ──────────────────────────────────
     [HttpPut("requests/{id}/approve")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Approve(string id, [FromBody] JsonElement? body = null)
     {
         var req = await _db.MediaRequests.FirstOrDefaultAsync(r => r.Id == id);
@@ -99,6 +101,7 @@ public class MeringueController : ControllerBase
     }
 
     [HttpPut("requests/{id}/reject")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Reject(string id, [FromBody] JsonElement? body = null)
     {
         var req = await _db.MediaRequests.FirstOrDefaultAsync(r => r.Id == id);
@@ -112,6 +115,7 @@ public class MeringueController : ControllerBase
     }
 
     [HttpPut("requests/{id}/fulfill")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Fulfill(string id)
     {
         var req = await _db.MediaRequests.FirstOrDefaultAsync(r => r.Id == id);

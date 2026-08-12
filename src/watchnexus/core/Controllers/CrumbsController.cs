@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -230,8 +231,8 @@ public class CrumbsController : ControllerBase
                     foreach (var prop in fieldsEl.EnumerateObject())
                     {
                         var val = prop.Value.GetString() ?? "";
-                        // Mask passwords/keys
-                        if (prop.Name.Contains("password") || prop.Name.Contains("key") || prop.Name.Contains("secret"))
+                        // Mask passwords/keys/tokens
+                        if (prop.Name.Contains("password") || prop.Name.Contains("key") || prop.Name.Contains("secret") || prop.Name.Contains("token"))
                             fields[prop.Name] = val.Length > 4 ? val[..4] + "****" : "****";
                         else
                             fields[prop.Name] = val;
@@ -471,6 +472,8 @@ public class CrumbsController : ControllerBase
         var host = fields.GetValueOrDefault("host", "localhost");
         var portStr = fields.GetValueOrDefault("port", "8080");
         if (!int.TryParse(portStr, out var port)) port = 8080;
+        if (SsrfGuard.IsBlockedUrl($"http://{host}:{port}"))
+            return (false, "Host is not an allowed http(s) endpoint", 0);
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(5);
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -527,6 +530,8 @@ public class CrumbsController : ControllerBase
 
     private async Task<(bool, string, int)> TestUrl(string url, string name)
     {
+        if (SsrfGuard.IsBlockedUrl(url))
+            return (false, "URL is not an allowed http(s) endpoint", 0);
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -544,6 +549,7 @@ public class CrumbsController : ControllerBase
         var homeserver = fields.GetValueOrDefault("homeserver", "")?.TrimEnd('/');
         var token = fields.GetValueOrDefault("access_token", "");
         if (string.IsNullOrEmpty(homeserver)) return (false, "Homeserver URL is required", 0);
+        if (SsrfGuard.IsBlockedUrl(homeserver)) return (false, "Homeserver URL is not allowed", 0);
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         if (!string.IsNullOrEmpty(token))
@@ -565,6 +571,7 @@ public class CrumbsController : ControllerBase
         var homeserver = fields.GetValueOrDefault("homeserver", "")?.TrimEnd('/');
         var token = fields.GetValueOrDefault("admin_token", "");
         if (string.IsNullOrEmpty(homeserver)) return (false, "Homeserver URL is required", 0);
+        if (SsrfGuard.IsBlockedUrl(homeserver)) return (false, "Homeserver URL is not allowed", 0);
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         if (!string.IsNullOrEmpty(token))
@@ -586,6 +593,7 @@ public class CrumbsController : ControllerBase
         var url = fields.GetValueOrDefault("url", "")?.TrimEnd('/');
         var apiKey = fields.GetValueOrDefault("api_key", "");
         if (string.IsNullOrEmpty(url)) return (false, "Server URL is required", 0);
+        if (SsrfGuard.IsBlockedUrl(url)) return (false, "Server URL is not allowed", 0);
         var http = _httpFactory.CreateClient();
         http.Timeout = TimeSpan.FromSeconds(10);
         if (!string.IsNullOrEmpty(apiKey)) http.DefaultRequestHeaders.Add("X-Emby-Token", apiKey);

@@ -131,7 +131,7 @@ public class CellarController : ControllerBase
 
     // ── Activate Serial Number (integrates with WN-License-Server) ──
     [HttpPost("activate")]
-    [Authorize]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Activate([FromBody] JsonElement body)
     {
         var serial = body.TryGetProperty("serial", out var s) ? s.GetString()?.Trim() : null;
@@ -323,7 +323,7 @@ public class CellarController : ControllerBase
 
     // ── Deactivate License ──────────────────────────────────────────
     [HttpPost("deactivate")]
-    [Authorize]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Deactivate()
     {
         // Try to deactivate on the license server too

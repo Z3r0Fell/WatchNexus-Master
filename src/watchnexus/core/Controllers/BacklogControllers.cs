@@ -417,8 +417,12 @@ public class PopsicleController : ControllerBase
     [HttpGet("downloads")]
     public async Task<IActionResult> GetOfflineDownloads()
     {
+        var uid = this.UserId();
+        var isAdmin = User.IsInRole("admin");
         var all = await _db.Settings.Where(s => s.Key.StartsWith("popsicle:")).ToListAsync();
-        var items = all.Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("popsicle:", ""), title = d.TryGetProperty("title", out var t) ? t.GetString() : "", media_type = d.TryGetProperty("media_type", out var mt) ? mt.GetString() : "", quality = d.TryGetProperty("quality", out var q) ? q.GetString() : "720p", status = d.TryGetProperty("status", out var st) ? st.GetString() : "pending", progress = d.TryGetProperty("progress", out var pr) ? pr.GetDouble() : 0, file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0, expires_at = d.TryGetProperty("expires_at", out var ea) ? ea.GetString() : null }; } catch { return null; } }).Where(x => x != null).ToList();
+        var items = all
+            .Where(s => isAdmin || s.UserId == uid)
+            .Select(s => { try { var d = JsonDocument.Parse(s.Value ?? "{}").RootElement; return new { id = s.Key.Replace("popsicle:", ""), title = d.TryGetProperty("title", out var t) ? t.GetString() : "", media_type = d.TryGetProperty("media_type", out var mt) ? mt.GetString() : "", quality = d.TryGetProperty("quality", out var q) ? q.GetString() : "720p", status = d.TryGetProperty("status", out var st) ? st.GetString() : "pending", progress = d.TryGetProperty("progress", out var pr) ? pr.GetDouble() : 0, file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0, expires_at = d.TryGetProperty("expires_at", out var ea) ? ea.GetString() : null }; } catch { return null; } }).Where(x => x != null).ToList();
         return Ok(new { downloads = items, total = items.Count });
     }
 
@@ -442,6 +446,7 @@ public class PopsicleController : ControllerBase
     {
         var item = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"popsicle:{id}");
         if (item == null) return NotFound();
+        if (item.UserId != this.UserId() && !User.IsInRole("admin")) return NotFound();
         _db.Settings.Remove(item); await _db.SaveChangesAsync();
         return Ok(new { success = true });
     }

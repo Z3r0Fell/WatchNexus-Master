@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -14,7 +15,7 @@ public class PhotosController : ControllerBase
 {
     private readonly AppDbContext _db;
     private static readonly HashSet<string> ImageExts = new(StringComparer.OrdinalIgnoreCase)
-        { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif", ".heic", ".heif", ".avif", ".svg" };
+        { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif", ".heic", ".heif", ".avif" };
 
     public PhotosController(AppDbContext db) => _db = db;
 
@@ -24,11 +25,11 @@ public class PhotosController : ControllerBase
         var libs = await _db.PhotoLibraries
             .Where(l => l.UserId == this.UserId())
             .OrderByDescending(l => l.CreatedAt).ToListAsync();
-        return Ok(libs.Select(l => new
+        return Ok(new { libraries = libs.Select(l => new
         {
             l.Id, l.Name, l.Path, photo_count = l.PhotoCount,
             last_scanned = l.LastScanned, created_at = l.CreatedAt
-        }));
+        }) });
     }
 
     [HttpPost("libraries")]
@@ -56,6 +57,7 @@ public class PhotosController : ControllerBase
     }
 
     [HttpGet("libraries/{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetLibrary(string id, [FromQuery] int limit = 100, [FromQuery] int offset = 0)
     {
         var lib = await _db.PhotoLibraries.FindAsync(id);
@@ -70,7 +72,7 @@ public class PhotosController : ControllerBase
             foreach (var f in files)
             {
                 var fi = new FileInfo(f);
-                photos.Add(new { path = f, name = fi.Name, size = fi.Length, modified = fi.LastWriteTimeUtc });
+                photos.Add(new { id = f, path = f, filename = fi.Name, name = fi.Name, size = fi.Length, modified = fi.LastWriteTimeUtc });
             }
         }
         catch (Exception ex)
@@ -98,18 +100,23 @@ public class PhotosController : ControllerBase
     }
 
     [HttpGet("file/{*filePath}")]
-    public IActionResult ServePhoto(string filePath)
+    public async Task<IActionResult> ServePhoto(string filePath)
     {
-        var fullPath = "/" + filePath;
-        if (!System.IO.File.Exists(fullPath)) return NotFound();
-        var ext = Path.GetExtension(fullPath).ToLower();
+        var full = MediaPaths.ResolveRealPath("/" + filePath);
+        if (full == null || !System.IO.File.Exists(full)) return NotFound();
+        // Ownership: only serve files living under one of the caller's own photo
+        // libraries — blocks cross-user and arbitrary server file reads.
+        var libs = await _db.PhotoLibraries.Where(l => l.UserId == this.UserId()).ToListAsync();
+        var allowed = libs.Any(l => MediaPaths.IsPathInside(MediaPaths.ResolveRealPath(l.Path) ?? "", full));
+        if (!allowed) return NotFound();
+        var ext = Path.GetExtension(full).ToLower();
         var mime = ext switch
         {
             ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png",
             ".gif" => "image/gif", ".webp" => "image/webp",
-            ".bmp" => "image/bmp", ".svg" => "image/svg+xml",
+            ".bmp" => "image/bmp",
             _ => "application/octet-stream"
         };
-        return PhysicalFile(fullPath, mime);
+        return PhysicalFile(full, mime);
     }
 }

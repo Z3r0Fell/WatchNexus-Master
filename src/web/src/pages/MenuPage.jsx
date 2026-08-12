@@ -9,7 +9,7 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
-import { BACKEND_URL } from '../lib/config';
+import { BACKEND_URL , tmdbImageUrl} from '../lib/config';
 
 const API = BACKEND_URL;
 
@@ -141,7 +141,7 @@ const MenuPage = () => {
   const MediaCard = ({ item }) => {
     const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
     const id = `${mediaType}_${item.id}`;
-    const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w300${item.poster_path}` : null;
+    const posterUrl = item.poster_path ? tmdbImageUrl(item.poster_path, 'w300') : null;
     const year = (item.release_date || item.first_air_date || '').slice(0, 4);
 
     return (
@@ -365,7 +365,7 @@ const MenuPage = () => {
               ) : (
                 requests.map((req) => {
                   const sc = STATUS_BADGE[req.status] || STATUS_BADGE.pending;
-                  const posterUrl = req.poster_path ? `https://image.tmdb.org/t/p/w92${req.poster_path}` : null;
+                  const posterUrl = req.poster_path ? tmdbImageUrl(req.poster_path, 'w92') : null;
                   return (
                     <motion.div key={req.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       className="bg-surface border border-white/10 rounded-xl p-4 flex items-center gap-4"

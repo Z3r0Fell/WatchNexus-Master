@@ -7,9 +7,6 @@ import axios from 'axios';
 
 const API_URL = BACKEND_URL;
 
-// Cookie auth: the httpOnly wn_token is sent automatically.
-const getAuthHeader = () => ({});
-
 function EcosystemButton({ id, label, icon: Icon, selected, onSelect }) {
   return (
     <button data-testid={`ecosystem-${id || 'auto'}`} onClick={() => onSelect(id)}
@@ -53,7 +50,7 @@ export const PluginConverter = () => {
       formData.append('file', convertFile);
       if (convertEcosystem) formData.append('ecosystem', convertEcosystem);
       const res = await axios.post(`${API_URL}/api/adapter/convert`, formData, {
-        headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       setConvertResult(res.data); toast.success(`Plugin converted from ${res.data.ecosystem}`);
     } catch (err) {

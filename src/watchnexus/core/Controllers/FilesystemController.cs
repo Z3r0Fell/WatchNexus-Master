@@ -17,6 +17,7 @@ public class FilesystemController : ControllerBase
     };
 
     [HttpGet("browse")]
+    [Authorize(Roles = "admin")]
     public IActionResult Browse([FromQuery] string path = "")
     {
         var osType = GetOsType();

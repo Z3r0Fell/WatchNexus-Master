@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -41,12 +42,17 @@ public class CrucibleController : ControllerBase
     {
         var sourcePath = body.TryGetProperty("source_path", out var sp) ? sp.GetString() ?? "" : "";
         if (string.IsNullOrEmpty(sourcePath)) return BadRequest(new { detail = "source_path is required" });
+        if (!MediaPaths.IsAllowedPath(sourcePath))
+            return BadRequest(new { detail = "source_path must be inside an allowed media directory" });
+        var requestedOutput = body.TryGetProperty("output_path", out var op) ? op.GetString() : null;
+        if (requestedOutput != null && !MediaPaths.IsAllowedPath(requestedOutput))
+            return BadRequest(new { detail = "output_path must be inside an allowed media directory" });
 
         var job = new TranscodeJob
         {
             UserId = this.UserId(),
             SourcePath = sourcePath,
-            OutputPath = body.TryGetProperty("output_path", out var op) ? op.GetString() : null,
+            OutputPath = requestedOutput,
             Profile = body.TryGetProperty("profile", out var pr) ? pr.GetString() ?? "h265-default" : "h265-default",
             SettingsJson = body.TryGetProperty("settings", out var s) ? s.GetRawText() : null,
         };
@@ -131,6 +137,8 @@ public class CrucibleController : ControllerBase
     {
         var path = body.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "";
         if (!System.IO.File.Exists(path)) return NotFound(new { detail = "File not found" });
+        if (!MediaPaths.IsAllowedPath(path))
+            return BadRequest(new { detail = "path must be inside an allowed media directory" });
 
         var fi = new System.IO.FileInfo(path);
         var result = new
@@ -196,9 +204,15 @@ public class CrucibleController : ControllerBase
             return new { error = "ffprobe not installed", install_hint = Services.FfmpegLocator.InstallHint() };
         try
         {
-            var psi = new System.Diagnostics.ProcessStartInfo(ffprobe,
-                $"-v quiet -print_format json -show_format -show_streams \"{path}\"")
+            var psi = new System.Diagnostics.ProcessStartInfo(ffprobe)
             { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
+            psi.ArgumentList.Add("-v");
+            psi.ArgumentList.Add("quiet");
+            psi.ArgumentList.Add("-print_format");
+            psi.ArgumentList.Add("json");
+            psi.ArgumentList.Add("-show_format");
+            psi.ArgumentList.Add("-show_streams");
+            psi.ArgumentList.Add(path);
             var proc = System.Diagnostics.Process.Start(psi);
             if (proc == null) return null;
             var output = await proc.StandardOutput.ReadToEndAsync();

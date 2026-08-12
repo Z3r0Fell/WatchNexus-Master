@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -129,14 +130,46 @@ public class SubtitlesController : ControllerBase
         [FromQuery] string? media_id,
         [FromQuery] string? media_path)
     {
+        // The web player posts these fields as a JSON body; tolerate that too.
+        if (string.IsNullOrEmpty(download_url))
+        {
+            try
+            {
+                using var reader = new StreamReader(Request.Body);
+                var body = JsonDocument.Parse(await reader.ReadToEndAsync()).RootElement;
+                if (body.TryGetProperty("download_url", out var du) && du.ValueKind == JsonValueKind.String) download_url = du.GetString();
+                if (body.TryGetProperty("media_id", out var mi) && mi.ValueKind == JsonValueKind.String) media_id = mi.GetString();
+                if (body.TryGetProperty("media_path", out var mp) && mp.ValueKind == JsonValueKind.String) media_path = mp.GetString();
+                if (body.TryGetProperty("source", out var src) && src.ValueKind == JsonValueKind.String) source = src.GetString();
+            }
+            catch { }
+        }
+
         if (string.IsNullOrEmpty(download_url)) return BadRequest(new { detail = "download_url required" });
+        // SSRF guard: subtitle downloads must target a routable public http(s) URL.
+        if (!SsrfGuard.IsAllowedUrl(download_url))
+            return BadRequest(new { detail = "download_url is not an allowed http(s) URL" });
+
+        // If the caller gave a media id but no path, resolve the path from the
+        // media library so the download can be written next to the media file.
+        if (string.IsNullOrEmpty(media_path) && !string.IsNullOrEmpty(media_id))
+        {
+            var media = await _db.MediaItems.FindAsync(media_id);
+            media_path = media?.FilePath;
+        }
+
         try
         {
             var http = this.Http();
             var data = await http.GetByteArrayAsync(download_url);
             if (!string.IsNullOrEmpty(media_path))
             {
+                // Write path must stay inside a configured media root.
+                if (!MediaPaths.IsAllowedPath(media_path))
+                    return BadRequest(new { detail = "media_path is outside the configured media directories" });
                 var srtPath = Path.ChangeExtension(media_path, ".srt");
+                if (!MediaPaths.IsAllowedPath(srtPath))
+                    return BadRequest(new { detail = "subtitle output path is outside the configured media directories" });
                 await System.IO.File.WriteAllBytesAsync(srtPath, data);
                 return Ok(new { status = "downloaded", path = srtPath, size = data.Length, source, media_id });
             }
@@ -148,8 +181,8 @@ public class SubtitlesController : ControllerBase
     [HttpGet("file/{*filePath}")]
     public IActionResult ServeSubtitle(string filePath)
     {
-        var full = "/" + filePath;
-        if (!System.IO.File.Exists(full)) return NotFound();
+        var full = MediaPaths.ResolveRealPath("/" + filePath);
+        if (full == null || !MediaPaths.IsAllowedPath(full) || !System.IO.File.Exists(full)) return NotFound();
         return PhysicalFile(full, "text/plain");
     }
 

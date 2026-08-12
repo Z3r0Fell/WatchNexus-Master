@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -160,7 +161,7 @@ export const StreamingPage = () => {
               {searchResults.map((item) => {
                 const title = getTitle(item);
                 const posterUrl = item.poster_path 
-                  ? `https://image.tmdb.org/t/p/w92${item.poster_path}`
+                  ? tmdbImageUrl(item.poster_path, 'w92')
                   : null;
 
                 return (

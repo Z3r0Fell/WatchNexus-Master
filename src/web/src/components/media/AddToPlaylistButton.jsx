@@ -42,7 +42,7 @@ export const AddToPlaylistButton = ({
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/drizzle/playlists`, {
-        
+        credentials: 'include',
       });
       const data = await res.json();
       setPlaylists(data.playlists || []);
@@ -81,7 +81,8 @@ export const AddToPlaylistButton = ({
         headers: { 
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(itemData)
+        body: JSON.stringify(itemData),
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -108,7 +109,7 @@ export const AddToPlaylistButton = ({
       const params = new URLSearchParams({ name });
       const res = await fetch(`${API_URL}/api/drizzle/playlists?${params}`, {
         method: 'POST',
-        
+        credentials: 'include',
       });
       
       if (!res.ok) throw new Error('Failed to create playlist');

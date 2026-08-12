@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -242,8 +243,10 @@ public class SynapseAdminController : ControllerBase
         var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == "synapse_admin_config");
         if (cfg?.Value == null) return (null, null);
         var doc = JsonDocument.Parse(cfg.Value).RootElement;
+        var url = doc.TryGetProperty("homeserver", out var hs) ? hs.GetString()?.TrimEnd('/') : null;
+        if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
         return (
-            doc.TryGetProperty("homeserver", out var hs) ? hs.GetString()?.TrimEnd('/') : null,
+            url,
             doc.TryGetProperty("admin_token", out var at) ? at.GetString() : null
         );
     }

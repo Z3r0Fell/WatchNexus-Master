@@ -122,16 +122,18 @@ public class QBittorrentController : ControllerBase
         catch { return Ok(new { host = "localhost", port = 8080, username = "", password = "", configured = false }); }
     }
 
+    public record QbitConfigRequest(string? Host, int? Port, string? Username, string? Password);
+
     [HttpPut("config")]
-    public async Task<IActionResult> SaveConfig([FromQuery] string? host, [FromQuery] int? port, [FromQuery] string? username, [FromQuery] string? password)
+    public async Task<IActionResult> SaveConfig([FromBody] QbitConfigRequest req)
     {
-        var h = string.IsNullOrWhiteSpace(host) ? "localhost" : host!.Trim();
-        var p = port ?? 8080;
+        var h = string.IsNullOrWhiteSpace(req.Host) ? "localhost" : req.Host!.Trim();
+        var p = req.Port ?? 8080;
         if (p < 1 || p > 65535) return BadRequest(new { detail = "Port must be between 1 and 65535." });
         if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(h))
             return BadRequest(new { detail = "That host is not allowed." });
 
-        var value = JsonSerializer.Serialize(new { host = h, port = p, username = username ?? "", password = password ?? "" });
+        var value = JsonSerializer.Serialize(new { host = h, port = p, username = req.Username ?? "", password = req.Password ?? "" });
         var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == this.UserId());
         if (cfg != null) { cfg.Value = value; }
         else { _db.Settings.Add(new AppSetting { Key = "qbit_config", UserId = this.UserId(), Value = value }); }
@@ -140,14 +142,10 @@ public class QBittorrentController : ControllerBase
     }
 
     [HttpPost("test")]
-    public async Task<IActionResult> Test(
-        [FromQuery] string? host,
-        [FromQuery] int? port,
-        [FromQuery] string? username,
-        [FromQuery] string? password)
+    public async Task<IActionResult> Test([FromBody] QbitConfigRequest req)
     {
-        var h = host ?? "localhost";
-        var p = port ?? 8080;
+        var h = req.Host ?? "localhost";
+        var p = req.Port ?? 8080;
         if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(h))
             return BadRequest(new { success = false, detail = "That host is not allowed." });
         try

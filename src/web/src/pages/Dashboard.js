@@ -1,3 +1,4 @@
+import { tmdbImageUrl } from '../lib/config';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -56,7 +57,7 @@ const ContinueWatchingCard = ({ item, index, onRemove }) => {
         <div className="aspect-video relative">
           {(item.backdrop_path || item.backdrop_url || item.poster_url) ? (
             <img
-              src={item.backdrop_url || item.poster_url || `https://image.tmdb.org/t/p/w500${item.backdrop_path}`}
+              src={item.backdrop_url || item.poster_url || tmdbImageUrl(item.backdrop_path, 'w500')}
               alt={item.title}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -128,7 +129,7 @@ const NextUpCard = ({ item, index }) => (
     >
       <div className="aspect-video relative">
         {item.backdrop_path ? (
-          <img src={`https://image.tmdb.org/t/p/w500${item.backdrop_path}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <img src={tmdbImageUrl(item.backdrop_path, 'w500')} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-pink-900/50 to-violet-900/50 flex items-center justify-center">
             <Tv className="w-12 h-12 text-gray-600" />
@@ -306,7 +307,7 @@ export const Dashboard = () => {
                 <motion.div key={item.id || `recent-${index}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.03 }}>
                   <Link to={`/${item.media_type || 'movie'}/${item.tmdb_id || item.id}`} data-testid={`recent-${item.id}`} className="aspect-[2/3] rounded-xl overflow-hidden media-card block relative group">
                     {(item.poster_url || item.poster_path) ? (
-                      <img src={item.poster_url || `https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <img src={item.poster_url || tmdbImageUrl(item.poster_path, 'w342')} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-green-900/50 to-violet-900/50 flex items-center justify-center">
                         <Film className="w-8 h-8 text-gray-500" />
@@ -351,7 +352,7 @@ export const Dashboard = () => {
                 <motion.div key={item.id || `watchlist-${item.tmdb_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.03 }}>
                   <Link to={`/${item.media_type}/${item.tmdb_id}`} data-testid={`watchlist-${item.tmdb_id}`} className="aspect-[2/3] rounded-xl overflow-hidden media-card block relative group">
                     {item.poster_path ? (
-                      <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <img src={tmdbImageUrl(item.poster_path, 'w342')} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-violet-900/50 to-pink-900/50 flex items-center justify-center">
                         <span className="text-3xl text-gray-500">{item.title?.charAt(0)}</span>

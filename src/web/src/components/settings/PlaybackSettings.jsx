@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BACKEND_URL } from '../../lib/config';
+import { BACKEND_URL , tmdbImageUrl} from '../../lib/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, FastForward, SkipForward, Clock, Zap, 
@@ -26,9 +26,6 @@ const PLAYBACK_TABS = [
   { id: 'history', label: 'Watch History', icon: History },
 ];
 
-const getAuthHeader = () => {
-  return {};
-};
 
 export const PlaybackSettings = () => {
   const [activeTab, setActiveTab] = useState('skip');
@@ -60,7 +57,7 @@ export const PlaybackSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/settings/playback`, { headers: getAuthHeader() });
+      const res = await axios.get(`${API_URL}/api/settings/playback`);
       if (res.data) setSettings(prev => ({ ...prev, ...res.data }));
     } catch (err) {
       console.log('Using default playback settings');
@@ -69,7 +66,7 @@ export const PlaybackSettings = () => {
 
   const checkChromaprint = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/system/chromaprint-status`, { headers: getAuthHeader() });
+      const res = await axios.get(`${API_URL}/api/system/chromaprint-status`);
       setChromaprintStatus(res.data.installed ? 'installed' : 'not_installed');
     } catch {
       setChromaprintStatus('unknown');
@@ -80,7 +77,7 @@ export const PlaybackSettings = () => {
     setSaving(true);
     try {
       await axios.put(`${API_URL}/api/settings/playback`, settings, {
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' }
       });
       toast.success('Playback settings saved');
     } catch (err) {
@@ -93,7 +90,7 @@ export const PlaybackSettings = () => {
   const handleAnalyzeAllSeries = async () => {
     setAnalyzing(true);
     try {
-      const res = await axios.post(`${API_URL}/api/marmalade/analyze-all-intros`, {}, { headers: getAuthHeader() });
+      const res = await axios.post(`${API_URL}/api/marmalade/analyze-all-intros`, {});
       toast.success(`Queued ${res.data.queued || 0} series for analysis`);
     } catch (err) {
       toast.error('Failed to start analysis');
@@ -614,7 +611,7 @@ const HistoryTab = () => {
                   <div className="w-16 h-10 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
                     {item.backdrop_path ? (
                       <img 
-                        src={`https://image.tmdb.org/t/p/w200${item.backdrop_path}`} 
+                        src={tmdbImageUrl(item.backdrop_path, 'w200')} 
                         alt={item.title}
                         className="w-full h-full object-cover"
                       />

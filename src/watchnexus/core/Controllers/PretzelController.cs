@@ -124,8 +124,9 @@ public class PretzelController : ControllerBase
         return Ok(new { success = true, id, message = $"'{title}' added to library" });
     }
 
-    // ── Delete Game ─────────────────────────────────────────────────
+    // ── Delete Game (admin) ─────────────────────────────────────────
     [HttpDelete("games/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeleteGame(string id)
     {
         var key = $"pretzel_game:{id}";
@@ -234,8 +235,9 @@ public class PretzelController : ControllerBase
         return Ok(new { total_games = games.Count, total_plays = totalPlays, systems = systemCounts, save_states = await _db.Settings.CountAsync(s => s.Key.StartsWith("pretzel_save:")) });
     }
 
-    // ── Scan Directory for ROMs ─────────────────────────────────────
+    // ── Scan Directory for ROMs (admin) ─────────────────────────────
     [HttpPost("scan")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ScanDirectory([FromBody] JsonElement body)
     {
         var path = body.TryGetProperty("path", out var p) ? p.GetString() : null;
@@ -273,8 +275,9 @@ public class PretzelController : ControllerBase
         return Ok(new { success = true, files = found, total = found.Count });
     }
 
-    // ── Bulk Add from Scan ──────────────────────────────────────────
+    // ── Bulk Add from Scan (admin) ──────────────────────────────────
     [HttpPost("scan/import")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ImportScanned([FromBody] JsonElement body)
     {
         if (!body.TryGetProperty("files", out var filesArr) || filesArr.ValueKind != JsonValueKind.Array)

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -140,8 +141,9 @@ public class PepperController : ControllerBase
         var title = body.TryGetProperty("title", out var ti) ? ti.GetString() ?? "" : "";
         var message = body.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
 
+        // Only ever blast the *current user's* channels — never another user's webhooks/tokens.
         var channels = await _db.Settings
-            .Where(s => s.Key.StartsWith("pepper_channel:"))
+            .Where(s => s.UserId == this.UserId() && s.Key.StartsWith("pepper_channel:"))
             .ToListAsync();
 
         int sent = 0, failed = 0;
@@ -173,8 +175,9 @@ public class PepperController : ControllerBase
         return Ok(new { sent, failed });
     }
 
-    // ── History ──────────────────────────────────
+    // ── History (admin) ──────────────────────────────────
     [HttpGet("history")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> History([FromQuery] int limit = 50)
     {
         var logs = await _db.NotificationLogs
@@ -190,6 +193,7 @@ public class PepperController : ControllerBase
     {
         var webhookUrl = cfg.TryGetProperty("webhook_url", out var wu) ? wu.GetString() : null;
         if (string.IsNullOrEmpty(webhookUrl)) return (false, "Discord webhook URL not configured");
+        if (!SsrfGuard.IsAllowedUrl(webhookUrl)) return (false, "Discord webhook URL is not an allowed http(s) URL");
         var http = _httpFactory.CreateClient();
         var payload = JsonSerializer.Serialize(new
         {
@@ -215,6 +219,7 @@ public class PepperController : ControllerBase
     {
         var webhookUrl = cfg.TryGetProperty("webhook_url", out var wu) ? wu.GetString() : null;
         if (string.IsNullOrEmpty(webhookUrl)) return (false, "Slack webhook URL not configured");
+        if (!SsrfGuard.IsAllowedUrl(webhookUrl)) return (false, "Slack webhook URL is not an allowed http(s) URL");
         var http = _httpFactory.CreateClient();
         var payload = JsonSerializer.Serialize(new
         {

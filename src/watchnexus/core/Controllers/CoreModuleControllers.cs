@@ -531,7 +531,7 @@ public class FondueController : ControllerBase
             .Where(m => m.MediaType == "movies")
             .OrderByDescending(m => m.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(m => new { m.Id, m.Title, m.Year, m.TmdbId, m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl, m.FilePath, file_size = m.FileSize, monitored = true })
+            .Select(m => new { m.Id, m.Title, m.Year, m.TmdbId, m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl, file_path = (string?)null, file_size = m.FileSize, monitored = true })
             .ToListAsync();
         return Ok(new { page, pageSize, total = await _db.MediaItems.CountAsync(m => m.MediaType == "movies"), movies });
     }
@@ -652,10 +652,12 @@ public class SourdoughController : ControllerBase
     public IActionResult Restore(string backupName) => Ok(new { status = "restore_initiated", backup = backupName, warning = "Server will restart after restore" });
 
     [HttpGet("config/export")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ExportConfig()
     {
         var settings = await _db.Settings.Select(s => new { s.Key, s.Value }).ToListAsync();
-        return Ok(new { exported = DateTime.UtcNow, settings_count = settings.Count, settings });
+        var redacted = settings.Select(s => new { s.Key, Value = LooksSecret(s.Key) ? MaskSecret(s.Value) : s.Value });
+        return Ok(new { exported = DateTime.UtcNow, settings_count = redacted.Count(), settings = redacted });
     }
 
     [HttpPost("config/import")]
@@ -677,6 +679,23 @@ public class SourdoughController : ControllerBase
         if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "sourdough_schedule", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
+    }
+
+    private static readonly HashSet<string> SecretKeyHints = new(StringComparer.OrdinalIgnoreCase)
+        { "license", "serial", "api_key", "apikey", "token", "password", "secret", "passphrase", "jwt", "webhook" };
+
+    private static bool LooksSecret(string key)
+    {
+        foreach (var hint in SecretKeyHints)
+            if (key.Contains(hint, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private static string MaskSecret(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Length <= 4) return "****";
+        return value[..2] + "****" + value[^2..];
     }
 }
 

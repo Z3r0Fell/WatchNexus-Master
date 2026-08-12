@@ -4,6 +4,7 @@ using System.Xml;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -55,6 +56,8 @@ public class PodcastsController : ControllerBase
                 body.TryGetProperty("artworkUrl600", out var art2) ? art2.GetString() : null,
             Description = body.TryGetProperty("description", out var d) ? d.GetString() : null,
         };
+        if (string.IsNullOrEmpty(sub.FeedUrl) || !SsrfGuard.IsAllowedUrl(sub.FeedUrl))
+            return BadRequest(new { detail = "feed_url must be a reachable http(s) URL" });
         _db.PodcastSubscriptions.Add(sub);
         await _db.SaveChangesAsync();
         return Ok(new { sub.Id, sub.Title, sub.FeedUrl, status = "subscribed" });
@@ -65,12 +68,16 @@ public class PodcastsController : ControllerBase
     {
         var sub = await _db.PodcastSubscriptions.FindAsync(id);
         if (sub == null) return NotFound();
+        if (sub.UserId != this.UserId()) return NotFound();
+        if (string.IsNullOrEmpty(sub.FeedUrl) || !SsrfGuard.IsAllowedUrl(sub.FeedUrl))
+            return Ok(new { sub.Id, sub.Title, feed_url = sub.FeedUrl, episodes = Array.Empty<object>(), error = "Feed URL is not an allowed http(s) URL" });
         var episodes = new List<object>();
         try
         {
             var http = this.Http();
             using var stream = await http.GetStreamAsync(sub.FeedUrl);
-            using var reader = XmlReader.Create(stream);
+            var xmlSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit };
+            using var reader = XmlReader.Create(stream, xmlSettings);
             var feed = SyndicationFeed.Load(reader);
             foreach (var item in feed.Items.Take(50))
             {

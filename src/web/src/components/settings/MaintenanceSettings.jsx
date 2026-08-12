@@ -134,11 +134,22 @@ export const MaintenanceSettings = () => {
 
 // System Tab
 const SystemTab = ({ systemStats, loading, fetchAllStats }) => {
-  const StatCard = ({ icon: Icon, title, value, subtitle, color = "violet", progress = null }) => (
+  const StatCard = ({ icon: Icon, title, value, subtitle, color = "violet", progress = null }) => {
+    const colorClasses = {
+      violet: 'bg-violet-500/20 text-violet-400',
+      blue: 'bg-blue-500/20 text-blue-400',
+      green: 'bg-green-500/20 text-green-400',
+      orange: 'bg-orange-500/20 text-orange-400',
+      purple: 'bg-purple-500/20 text-purple-400',
+      red: 'bg-red-500/20 text-red-400',
+      yellow: 'bg-yellow-500/20 text-yellow-400',
+    };
+    const cls = colorClasses[color] || colorClasses.violet;
+    return (
     <div className="bg-black/30 border border-white/10 rounded-xl p-4">
       <div className="flex items-start justify-between mb-2">
-        <div className={`w-10 h-10 rounded-lg bg-${color}-500/20 flex items-center justify-center`}>
-          <Icon className={`w-5 h-5 text-${color}-400`} />
+        <div className={`w-10 h-10 rounded-lg ${cls}`}>
+          <Icon className={`w-5 h-5 ${cls.split(' ')[1]}`} />
         </div>
         {progress !== null && (
           <span className={`text-sm font-medium ${progress > 80 ? 'text-red-400' : progress > 60 ? 'text-yellow-400' : 'text-green-400'}`}>
@@ -151,7 +162,8 @@ const SystemTab = ({ systemStats, loading, fetchAllStats }) => {
       {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
       {progress !== null && <Progress value={progress} className="mt-2 h-1.5" />}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
