@@ -3,12 +3,25 @@ import axios from 'axios';
 // Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
-// Cookie auth: the httpOnly wn_token is sent automatically.
 // Create axios instance for Marmalade
 const marmaladeClient = axios.create({
   baseURL: `${API}/api/marmalade`,
-  withCredentials: true,
+  timeout: 30000,
 });
+
+// Response interceptor for centralized error handling
+marmaladeClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject(new Error('Request timed out. Please try again.'));
+    }
+    if (!error.response) {
+      return Promise.reject(new Error('Network error. Please check your connection.'));
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Marmalade Server Status
 export const marmaladeStatus = {
@@ -22,7 +35,7 @@ export const marmaladeLibrary = {
   
   // Add a new library
   addLibrary: (name, path, mediaType = 'movies') =>
-    marmaladeClient.post('/libraries', null, { params: { name, path, media_type: mediaType } }),
+    marmaladeClient.post('/libraries', { name, path, media_type: mediaType }),
   
   // Remove a library
   removeLibrary: (libraryId) =>
@@ -53,7 +66,7 @@ export const marmaladeMedia = {
   
   // Search media
   search: (query, limit = 50) =>
-    marmaladeClient.get('/media/search', { params: { query, limit } }),
+    marmaladeClient.get('/media/search', { params: { query, limit: Math.min(limit, 200) } }),
   
   // Get continue watching list
   getContinueWatching: (limit = 10) =>
@@ -68,11 +81,11 @@ export const marmaladeMedia = {
 export const marmaladeProgress = {
   // Update watch progress
   updateProgress: (mediaId, progress) =>
-    marmaladeClient.post(`/media/${mediaId}/progress`, null, { params: { progress } }),
+    marmaladeClient.post(`/media/${mediaId}/progress`, { progress }),
   
   // Mark as watched/unwatched
   markWatched: (mediaId, watched = true) =>
-    marmaladeClient.post(`/media/${mediaId}/watched`, null, { params: { watched } }),
+    marmaladeClient.post(`/media/${mediaId}/watched`, { watched }),
 };
 
 // Streaming
@@ -86,7 +99,16 @@ export const marmaladeStream = {
   // signed stream token via an authenticated request first.
   getStreamUrl: async (mediaId) => {
     const res = await marmaladeClient.get(`/stream/${mediaId}/authorize`);
-    return `${API}${res.data.stream_url}`;
+    const streamUrl = res.data?.stream_url;
+    if (!streamUrl) {
+      throw new Error('No stream URL returned from server');
+    }
+    // If the server returns an absolute URL, use it directly.
+    // Otherwise, resolve it against the API base URL.
+    if (streamUrl.startsWith('http://') || streamUrl.startsWith('https://')) {
+      return streamUrl;
+    }
+    return `${API}${streamUrl}`;
   },
 };
 

@@ -6,7 +6,17 @@
 // Backend URL configuration
 // - In development: Uses REACT_APP_BACKEND_URL (e.g., preview URL)
 // - In production (standalone): Empty string for same-origin requests
-export const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+export const BACKEND_URL = (() => {
+  const raw = process.env.REACT_APP_BACKEND_URL || '';
+  if (!raw) return '';
+  // Strip trailing slashes and validate protocol
+  const trimmed = raw.replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(trimmed)) {
+    console.warn(`REACT_APP_BACKEND_URL must include protocol (http:// or https://): ${raw}`);
+    return '';
+  }
+  return trimmed;
+})();
 
 // API base URL (includes /api prefix)
 export const API_URL = `${BACKEND_URL}/api`;
@@ -27,14 +37,11 @@ export const getWebSocketUrl = (path) => {
 };
 
 // TMDB image base URL — single source of truth for poster/backdrop sizes.
-// Keeps the CDN host out of individual components and centralizes the
 // image width policy. Accepts a named size (small/medium/large) or an exact
 // TMDB width token (e.g. 'w154', 'w500') to preserve per-component intent.
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 const TMDB_IMAGE_WIDTHS = { small: 'w92', medium: 'w342', large: 'w1280' };
-
 export const tmdbImageUrl = (path, size = 'medium') => {
-  if (!path) return null;
   const width = TMDB_IMAGE_WIDTHS[size] || size || TMDB_IMAGE_WIDTHS.medium;
   return `${TMDB_IMAGE_BASE}/${width}${path}`;
 };

@@ -39,6 +39,26 @@ const kodiCategoryConfig = {
   other: { icon: Package, color: 'gray', label: 'Other', emoji: '📁' },
 };
 
+const colorClassMap = {
+  blue: { bg: 'bg-blue-500/30', text: 'text-blue-300', iconBg: 'bg-blue-500/20', iconText: 'text-blue-400' },
+  green: { bg: 'bg-green-500/30', text: 'text-green-300', iconBg: 'bg-green-500/20', iconText: 'text-green-400' },
+  pink: { bg: 'bg-pink-500/30', text: 'text-pink-300', iconBg: 'bg-pink-500/20', iconText: 'text-pink-400' },
+  purple: { bg: 'bg-purple-500/30', text: 'text-purple-300', iconBg: 'bg-purple-500/20', iconText: 'text-purple-400' },
+  orange: { bg: 'bg-orange-500/30', text: 'text-orange-300', iconBg: 'bg-orange-500/20', iconText: 'text-orange-400' },
+  yellow: { bg: 'bg-yellow-500/30', text: 'text-yellow-300', iconBg: 'bg-yellow-500/20', iconText: 'text-yellow-400' },
+  violet: { bg: 'bg-violet-500/30', text: 'text-violet-300', iconBg: 'bg-violet-500/20', iconText: 'text-violet-400' },
+  cyan: { bg: 'bg-cyan-500/30', text: 'text-cyan-300', iconBg: 'bg-cyan-500/20', iconText: 'text-cyan-400' },
+  rose: { bg: 'bg-rose-500/30', text: 'text-rose-300', iconBg: 'bg-rose-500/20', iconText: 'text-rose-400' },
+  teal: { bg: 'bg-teal-500/30', text: 'text-teal-300', iconBg: 'bg-teal-500/20', iconText: 'text-teal-400' },
+  indigo: { bg: 'bg-indigo-500/30', text: 'text-indigo-300', iconBg: 'bg-indigo-500/20', iconText: 'text-indigo-400' },
+  fuchsia: { bg: 'bg-fuchsia-500/30', text: 'text-fuchsia-300', iconBg: 'bg-fuchsia-500/20', iconText: 'text-fuchsia-400' },
+  slate: { bg: 'bg-slate-500/30', text: 'text-slate-300', iconBg: 'bg-slate-500/20', iconText: 'text-slate-400' },
+  amber: { bg: 'bg-amber-500/30', text: 'text-amber-300', iconBg: 'bg-amber-500/20', iconText: 'text-amber-400' },
+  sky: { bg: 'bg-sky-500/30', text: 'text-sky-300', iconBg: 'bg-sky-500/20', iconText: 'text-sky-400' },
+  red: { bg: 'bg-red-500/30', text: 'text-red-300', iconBg: 'bg-red-500/20', iconText: 'text-red-400' },
+  gray: { bg: 'bg-gray-500/30', text: 'text-gray-300', iconBg: 'bg-gray-500/20', iconText: 'text-gray-400' },
+};
+
 // WatchNexus plugin type config
 const pluginTypeConfig = {
   metadata_provider: { icon: Database, color: 'blue', label: 'Metadata' },
@@ -326,6 +346,7 @@ export const PluginMarketplacePage = () => {
   // Kodi Addon Card
   const KodiAddonCard = ({ addon }) => {
     const categoryConfig = kodiCategoryConfig[addon.category] || kodiCategoryConfig.other;
+    const colors = colorClassMap[categoryConfig.color] || colorClassMap.gray;
     
     return (
       <motion.div
@@ -349,7 +370,7 @@ export const PluginMarketplacePage = () => {
               {categoryConfig.emoji}
             </div>
           )}
-          <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium bg-${categoryConfig.color}-500/30 text-${categoryConfig.color}-300`}>
+          <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}>
             {categoryConfig.label}
           </div>
         </div>
@@ -373,6 +394,7 @@ export const PluginMarketplacePage = () => {
   const CategoryCard = ({ category, count }) => {
     const config = kodiCategoryConfig[category] || kodiCategoryConfig.other;
     const Icon = config.icon;
+    const colors = colorClassMap[config.color] || colorClassMap.gray;
     
     return (
       <motion.button
@@ -381,8 +403,8 @@ export const PluginMarketplacePage = () => {
         onClick={() => handleCategorySelect(category)}
         className="glass-card rounded-xl p-6 text-left hover:border-violet-500/30 transition-all group"
       >
-        <div className={`w-12 h-12 rounded-xl bg-${config.color}-500/20 flex items-center justify-center mb-4`}>
-          <Icon className={`w-6 h-6 text-${config.color}-400`} />
+        <div className={`w-12 h-12 rounded-xl ${colors.iconBg} flex items-center justify-center mb-4`}>
+          <Icon className={`w-6 h-6 ${colors.iconText}`} />
         </div>
         <h3 className="font-bold text-white group-hover:text-violet-400 transition-colors">
           {config.label}
@@ -399,14 +421,15 @@ export const PluginMarketplacePage = () => {
     const config = pluginTypeConfig[plugin.plugin_type] || pluginTypeConfig.metadata_provider;
     const Icon = config.icon;
     const isActive = plugin.status === 'active';
+    const colors = colorClassMap[config.color] || colorClassMap.gray;
     
     return (
       <div className="glass-card rounded-xl p-4 flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl bg-${config.color}-500/20 flex items-center justify-center flex-shrink-0`}>
+        <div className={`w-12 h-12 rounded-xl ${colors.iconBg} flex items-center justify-center flex-shrink-0`}>
           {plugin.icon ? (
             <span className="text-2xl">{plugin.icon}</span>
           ) : (
-            <Icon className={`w-6 h-6 text-${config.color}-400`} />
+            <Icon className={`w-6 h-6 ${colors.iconText}`} />
           )}
         </div>
         <div className="flex-1 min-w-0">
@@ -490,7 +513,7 @@ export const PluginMarketplacePage = () => {
                 <h2 className="text-2xl font-bold text-white">{addon.name}</h2>
                 <p className="text-gray-400">{addon.provider}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${categoryConfig.color}-500/20 text-${categoryConfig.color}-300`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${colors.bg} ${colors.text}`}>
                 {categoryConfig.label}
               </span>
             </div>

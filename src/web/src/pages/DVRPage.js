@@ -25,76 +25,14 @@ const RecordingStatus = {
   CANCELLED: 'cancelled',
 };
 
-// Sample recordings (in production, this would come from backend)
-const sampleRecordings = [
-  {
-    id: '1',
-    title: 'Evening News',
-    channel_name: 'CNN',
-    channel_id: 'cnn',
-    start_time: new Date(Date.now() + 3600000).toISOString(),
-    end_time: new Date(Date.now() + 7200000).toISOString(),
-    duration: 60,
-    status: RecordingStatus.SCHEDULED,
-    series_recording: false,
-    file_path: null,
-    file_size: null,
-  },
-  {
-    id: '2',
-    title: 'Monday Night Football',
-    channel_name: 'ESPN',
-    channel_id: 'espn',
-    start_time: new Date(Date.now() - 1800000).toISOString(),
-    end_time: new Date(Date.now() + 5400000).toISOString(),
-    duration: 180,
-    status: RecordingStatus.RECORDING,
-    series_recording: true,
-    file_path: null,
-    file_size: '2.3 GB',
-    progress: 45,
-  },
-  {
-    id: '3',
-    title: 'The Late Show',
-    channel_name: 'CBS',
-    channel_id: 'cbs',
-    start_time: new Date(Date.now() - 86400000).toISOString(),
-    end_time: new Date(Date.now() - 82800000).toISOString(),
-    duration: 60,
-    status: RecordingStatus.COMPLETED,
-    series_recording: true,
-    file_path: '/recordings/late_show_20250211.mp4',
-    file_size: '1.8 GB',
-  },
-  {
-    id: '4',
-    title: 'Nature Documentary',
-    channel_name: 'Discovery',
-    channel_id: 'discovery',
-    start_time: new Date(Date.now() - 172800000).toISOString(),
-    end_time: new Date(Date.now() - 165600000).toISOString(),
-    duration: 120,
-    status: RecordingStatus.COMPLETED,
-    series_recording: false,
-    file_path: '/recordings/nature_doc_20250209.mp4',
-    file_size: '3.2 GB',
-  },
-  {
-    id: '5',
-    title: 'Morning News',
-    channel_name: 'NBC',
-    channel_id: 'nbc',
-    start_time: new Date(Date.now() - 259200000).toISOString(),
-    end_time: new Date(Date.now() - 255600000).toISOString(),
-    duration: 60,
-    status: RecordingStatus.FAILED,
-    series_recording: false,
-    file_path: null,
-    file_size: null,
-    error: 'Stream unavailable',
-  },
-];
+// DVR Recording status
+const RecordingStatus = {
+  SCHEDULED: 'scheduled',
+  RECORDING: 'recording',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled',
+};
 
 // DVR Settings
 const defaultSettings = {
@@ -109,9 +47,9 @@ const defaultSettings = {
 };
 
 export const DVRPage = () => {
-  const [recordings, setRecordings] = useState(sampleRecordings);
+  const [recordings, setRecordings] = useState([]);
   const [channels, setChannels] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('upcoming');
   const [showNewRecording, setShowNewRecording] = useState(false);
   const [settings, setSettings] = useState(defaultSettings);
@@ -127,6 +65,17 @@ export const DVRPage = () => {
     series_recording: false,
   });
 
+  // Fetch recordings from backend
+  const fetchRecordings = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/dvr/recordings`);
+      setRecordings(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch recordings:', error);
+      setRecordings([]);
+    }
+  }, []);
+
   // Fetch IPTV channels for recording selection
   const fetchChannels = useCallback(async () => {
     try {
@@ -138,8 +87,13 @@ export const DVRPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchChannels();
-  }, [fetchChannels]);
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchRecordings(), fetchChannels()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchRecordings, fetchChannels]);
 
   // Filter recordings by status
   const upcomingRecordings = recordings.filter(r => r.status === RecordingStatus.SCHEDULED);

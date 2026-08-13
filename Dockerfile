@@ -100,4 +100,10 @@ EXPOSE 8002
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -sf http://localhost:8002/api/health || exit 1
 
+# Note: For production, consider:
+# - Pinning base images by digest (e.g., node:22-alpine@sha256:...)
+# - Enabling HTTPS with TLS certificates
+# - Adding security headers (HSTS, CSP, X-Frame-Options)
+# - Using a reverse proxy (nginx, traefik) for TLS termination
+
 ENTRYPOINT ["dotnet", "WatchNexus.Core.dll"]

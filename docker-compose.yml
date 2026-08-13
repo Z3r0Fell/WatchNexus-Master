@@ -28,9 +28,13 @@ services:
       # Leave JWT_SECRET unset — the server auto-generates a strong per-install
       # secret on first boot and persists it to the data volume. Never ship a
       # shared/hardcoded signing key.
-      - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
-      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY:-}
+      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
 
   # ── Pro Edition ──────────────────────────────────────────────────
@@ -54,9 +58,13 @@ services:
       # Leave JWT_SECRET unset — the server auto-generates a strong per-install
       # secret on first boot and persists it to the data volume. Never ship a
       # shared/hardcoded signing key.
-      - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
-      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY:-}
+      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
 
   # ── Ultra Edition ────────────────────────────────────────────────
@@ -82,9 +90,13 @@ services:
       # Leave JWT_SECRET unset — the server auto-generates a strong per-install
       # secret on first boot and persists it to the data volume. Never ship a
       # shared/hardcoded signing key.
-      - JWT_SECRET=${JWT_SECRET:-}
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
-      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY:-}
+      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     # GPU passthrough for hardware transcoding (NVIDIA)
     deploy:
       resources:

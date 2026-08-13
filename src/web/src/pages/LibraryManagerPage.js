@@ -12,6 +12,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
+import { useConfirm } from '../hooks/use-confirm';
 
 const MEDIA_TYPES = [
   { value: 'Movie', label: 'Movies', icon: Film, color: 'bg-blue-500/15 text-blue-400', accent: 'border-blue-500/30' },
@@ -131,6 +132,7 @@ const LibraryCard = ({ library, onScan, onDelete, scanning, scanResult }) => {
 };
 
 export default function LibraryManagerPage() {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [libraries, setLibraries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -178,7 +180,8 @@ export default function LibraryManagerPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this library and all its media entries?')) return;
+    const ok = await confirm({ title: 'Delete Library', description: 'Delete this library and all its media entries?', confirmText: 'Delete' });
+    if (!ok) return;
     try {
       await libraryApi.remove(id);
       toast.success('Library deleted');
@@ -295,6 +298,7 @@ export default function LibraryManagerPage() {
           </div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 }

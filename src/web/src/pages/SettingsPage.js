@@ -21,11 +21,13 @@ import { toast } from 'sonner';
 import { settingsApi } from '../services/api';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API_URL = BACKEND_URL;
 
 export const SettingsPage = () => {
   const { user: currentUser } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
   // Current active setting
   const [activeSection, setActiveSection] = useState('general');
   
@@ -107,7 +109,8 @@ export const SettingsPage = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    const ok = await confirm({ title: 'Delete User', description: 'Are you sure you want to delete this user?', confirmText: 'Delete' });
+    if (!ok) return;
     try { await axios.delete(`${API_URL}/api/users/${userId}`); setUsers(prev => prev.filter(u => u.id !== userId)); toast.success('User deleted'); }
     catch { toast.error('Failed to delete user'); }
   };
@@ -116,7 +119,8 @@ export const SettingsPage = () => {
   const fetchLibraries = useCallback(async () => {
     setLoadingLibraries(true);
     try { const res = await axios.get(`${API_URL}/api/marmalade/libraries`); setLibraries(res.data || []); }
-    catch {} finally { setLoadingLibraries(false); }
+    catch (error) { console.error('Failed to fetch libraries:', error); toast.error('Failed to load libraries'); }
+    finally { setLoadingLibraries(false); }
   }, []);
 
   const handleAddLibrary = async () => {
@@ -439,6 +443,7 @@ export const SettingsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      <ConfirmDialog />
     </Layout>
   );
 };

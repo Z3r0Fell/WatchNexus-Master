@@ -361,61 +361,117 @@ const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabV
 );
 
 // Preferences Tab
-const PreferencesTab = () => (
-  <div className="space-y-6">
-    <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-4">
-      <h3 className="text-lg font-semibold flex items-center gap-2">
-        <Sliders className="w-5 h-5 text-blue-400" />
-        Display Preferences
-        <HelpTooltip
-          title="Display Preferences"
-          description="Customize how media information is displayed throughout the application. These settings affect all pages and views."
-          examples={["Enable ratings to see TMDB scores on cards", "Compact mode reduces card sizes for more items per row", "24-hour time shows 14:30 instead of 2:30 PM"]}
-        />
-      </h3>
-      
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="p-4 rounded-lg bg-white/5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Show Ratings</p>
-              <p className="text-xs text-gray-500">Display TMDB/IMDB ratings on media cards</p>
+const PreferencesTab = ({ settings, setSettings, onSave }) => {
+  const [prefs, setPrefs] = useState({
+    show_ratings: true,
+    show_genres: true,
+    use_24h_time: false,
+    compact_mode: false,
+  });
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
+  const handleToggle = (key) => {
+    setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSavePrefs = async () => {
+    setSavingPrefs(true);
+    try {
+      await onSave({ ...settings, ...prefs });
+      toast.success('Preferences saved');
+    } catch {
+      toast.error('Failed to save preferences');
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Sliders className="w-5 h-5 text-blue-400" />
+          Display Preferences
+          <HelpTooltip
+            title="Display Preferences"
+            description="Customize how media information is displayed throughout the application. These settings affect all pages and views."
+            examples={["Enable ratings to see TMDB scores on cards", "Compact mode reduces card sizes for more items per row", "24-hour time shows 14:30 instead of 2:30 PM"]}
+          />
+        </h3>
+        
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="p-4 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Show Ratings</p>
+                <p className="text-xs text-gray-500">Display TMDB/IMDB ratings on media cards</p>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={prefs.show_ratings}
+                onChange={() => handleToggle('show_ratings')}
+                className="w-4 h-4 rounded bg-white/10" 
+              />
             </div>
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-white/10" />
+          </div>
+          
+          <div className="p-4 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Show Genres</p>
+                <p className="text-xs text-gray-500">Display genre tags on media items</p>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={prefs.show_genres}
+                onChange={() => handleToggle('show_genres')}
+                className="w-4 h-4 rounded bg-white/10" 
+              />
+            </div>
+          </div>
+          
+          <div className="p-4 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">24-hour Time</p>
+                <p className="text-xs text-gray-500">Use 24-hour time format</p>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={prefs.use_24h_time}
+                onChange={() => handleToggle('use_24h_time')}
+                className="w-4 h-4 rounded bg-white/10" 
+              />
+            </div>
+          </div>
+          
+          <div className="p-4 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Compact Mode</p>
+                <p className="text-xs text-gray-500">Use smaller cards and tighter spacing</p>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={prefs.compact_mode}
+                onChange={() => handleToggle('compact_mode')}
+                className="w-4 h-4 rounded bg-white/10" 
+              />
+            </div>
           </div>
         </div>
         
-        <div className="p-4 rounded-lg bg-white/5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Show Genres</p>
-              <p className="text-xs text-gray-500">Display genre tags on media items</p>
-            </div>
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-white/10" />
-          </div>
-        </div>
-        
-        <div className="p-4 rounded-lg bg-white/5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">24-hour Time</p>
-              <p className="text-xs text-gray-500">Use 24-hour time format</p>
-            </div>
-            <input type="checkbox" className="w-4 h-4 rounded bg-white/10" />
-          </div>
-        </div>
-        
-        <div className="p-4 rounded-lg bg-white/5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Compact Mode</p>
-              <p className="text-xs text-gray-500">Use smaller cards and tighter spacing</p>
-            </div>
-            <input type="checkbox" className="w-4 h-4 rounded bg-white/10" />
-          </div>
+        <div className="flex justify-end pt-2">
+          <Button 
+            onClick={handleSavePrefs}
+            disabled={savingPrefs}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {savingPrefs ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+            {savingPrefs ? 'Saving...' : 'Save Preferences'}
+          </Button>
         </div>
       </div>
-    </div>
 
     <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-4">
       <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -452,5 +508,6 @@ const PreferencesTab = () => (
     </div>
   </div>
 );
+};
 
 export default GeneralSettings;

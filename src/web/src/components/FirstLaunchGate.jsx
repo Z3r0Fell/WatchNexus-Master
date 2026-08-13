@@ -17,8 +17,8 @@ import logo from '../assets/watchnexus-logo.png';
 
 const API = BACKEND_URL;
 
-const WELCOME_BG = 'https://images.unsplash.com/photo-1561722798-9a732d141027?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwzfHxob21lJTIwdGhlYXRlciUyMGNpbmVtYXRpY3xlbnwwfHx8fDE3ODIzODc3NjF8MA&ixlib=rb-4.1.0&q=85';
-const FINISH_BG = 'https://images.pexels.com/photos/19374140/pexels-photo-19374140.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940';
+const WELCOME_BG = 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%)';
+const FINISH_BG = 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f3460 100%)';
 
 const ACCENTS = [
   { id: 'amber',   hex: '#F59E0B', name: 'Amber' },
@@ -93,7 +93,8 @@ export const FirstLaunchGate = ({ children }) => {
       }
       setSteps(seq);
       if (seq.length === 0) setDone(true);
-    } catch {
+    } catch (error) {
+      console.error('First launch bootstrap failed:', error);
       setDone(true);
     } finally {
       setChecking(false);
@@ -268,8 +269,7 @@ const Heading = ({ kicker, title, sub }) => (
 
 // ── Step: Welcome ─────────────────────────────────────────────────────
 const WelcomeStep = ({ accent, onNext }) => (
-  <motion.div {...fade} className="relative w-full max-w-3xl rounded-3xl overflow-hidden border border-white/10">
-    <img src={WELCOME_BG} alt="" className="absolute inset-0 w-full h-full object-cover" />
+  <motion.div {...fade} className="relative w-full max-w-3xl rounded-3xl overflow-hidden border border-white/10" style={{ background: WELCOME_BG }}>
     <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/85 to-black/40" />
     <div className="relative p-10 sm:p-14 min-h-[520px] flex flex-col justify-between">
       <img src={logo} alt="WatchNexus" className="w-16 h-16 object-contain drop-shadow-[0_0_24px_rgba(245,158,11,0.5)]" />
@@ -458,7 +458,7 @@ const FfmpegStep = ({ accent, onNext, onBack }) => {
 
   const copy = () => {
     if (!hint) return;
-    try { navigator.clipboard.writeText(hint); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* */ }
+    try { navigator.clipboard.writeText(hint); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (error) { console.warn('Failed to copy to clipboard:', error); }
   };
 
   return (
@@ -676,8 +676,7 @@ const FinishStep = ({ accent, summary, onLaunch }) => {
   ].filter(Boolean);
 
   return (
-    <motion.div {...fade} className="relative w-full max-w-2xl rounded-3xl overflow-hidden border border-white/10">
-      <img src={FINISH_BG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+    <motion.div {...fade} className="relative w-full max-w-2xl rounded-3xl overflow-hidden border border-white/10" style={{ background: FINISH_BG }}>
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/60" />
       <div className="relative p-10 sm:p-12">
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}

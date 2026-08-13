@@ -19,11 +19,17 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://ffmpeg-wizard-2.preview.emergentagent.com").rstrip("/")
-ADMIN_EMAIL = "owner@watchnexus.local"
-ADMIN_PASSWORD = "password123"
-MEMBER_EMAIL = "member@home.local"
-MEMBER_PASSWORD = "hometime1"
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
+
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "")
+MEMBER_EMAIL = os.environ.get("TEST_MEMBER_EMAIL", "")
+MEMBER_PASSWORD = os.environ.get("TEST_MEMBER_PASSWORD", "")
+
+if not all([ADMIN_EMAIL, ADMIN_PASSWORD, MEMBER_EMAIL, MEMBER_PASSWORD]):
+    pytest.skip("TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_MEMBER_EMAIL, and TEST_MEMBER_PASSWORD required", allow_module_level=True)
 
 
 # ---------- pacing helper to avoid 10/min auth rate limit ----------

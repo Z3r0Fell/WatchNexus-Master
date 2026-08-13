@@ -14,10 +14,14 @@ import requests
 import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
 
-# Test credentials
-TEST_EMAIL = "test@test.com"
-TEST_PASSWORD = "password"
+# Test credentials must be provided via environment variables
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD environment variables required", allow_module_level=True)
 
 
 @pytest.fixture(scope="module")

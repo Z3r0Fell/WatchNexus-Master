@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
         avatar: d.Avatar || d.avatar,
         role: d.Role || d.role,
         created_at: d.CreatedAt || d.created_at,
-        ...d,
       };
       setUser(normalized);
       setIsAuthenticated(true);
@@ -106,7 +105,6 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     isAuthenticated,
-    setIsAuthenticated,
   }), [user, loading, login, loginWithToken, register, logout, isAuthenticated]);
 
   return (

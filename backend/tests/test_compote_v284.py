@@ -8,6 +8,13 @@ import os
 import time
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
+
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD environment variables required", allow_module_level=True)
 
 class TestCompoteSearch:
     """Compote Search endpoint tests - Real indexer queries"""
@@ -16,8 +23,8 @@ class TestCompoteSearch:
     def setup(self):
         """Get auth token for all tests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         self.token = response.json().get("access_token")

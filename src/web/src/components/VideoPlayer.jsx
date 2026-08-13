@@ -69,6 +69,21 @@ const VideoPlayer = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState('subtitles');
 
+  // Refs to avoid stale closures in keyboard handler
+  const volumeRef = useRef(volume);
+  const fullscreenRef = useRef(fullscreen);
+  const showSubtitleMenuRef = useRef(showSubtitleMenu);
+  const showSettingsRef = useRef(showSettings);
+  const subtitleOffsetRef = useRef(subtitleOffset);
+  const subtitlesEnabledRef = useRef(subtitlesEnabled);
+
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
+  useEffect(() => { fullscreenRef.current = fullscreen; }, [fullscreen]);
+  useEffect(() => { showSubtitleMenuRef.current = showSubtitleMenu; }, [showSubtitleMenu]);
+  useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
+  useEffect(() => { subtitleOffsetRef.current = subtitleOffset; }, [subtitleOffset]);
+  useEffect(() => { subtitlesEnabledRef.current = subtitlesEnabled; }, [subtitlesEnabled]);
+
   // Fetch media info
   useEffect(() => {
     const fetchMedia = async () => {
@@ -378,7 +393,7 @@ const VideoPlayer = () => {
   };
 
   // Controls
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (videoRef.current) {
       if (playing) {
         videoRef.current.pause();
@@ -387,7 +402,7 @@ const VideoPlayer = () => {
       }
       setPlaying(!playing);
     }
-  };
+  }, [playing]);
 
   const handleSeek = (value) => {
     if (videoRef.current) {
@@ -396,23 +411,23 @@ const VideoPlayer = () => {
     }
   };
 
-  const handleVolumeChange = (value) => {
+  const handleVolumeChange = useCallback((value) => {
     if (videoRef.current) {
       const vol = value[0];
       videoRef.current.volume = vol;
       setVolume(vol);
       setMuted(vol === 0);
     }
-  };
+  }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.muted = !muted;
       setMuted(!muted);
     }
-  };
+  }, [muted]);
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen();
       setFullscreen(true);
@@ -420,19 +435,19 @@ const VideoPlayer = () => {
       document.exitFullscreen();
       setFullscreen(false);
     }
-  };
+  }, []);
 
-  const skip = (seconds) => {
+  const skip = useCallback((seconds) => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seconds));
     }
-  };
+  }, [duration]);
 
   // Subtitle offset adjustment with keyboard
-  const adjustSubtitleOffset = (delta) => {
+  const adjustSubtitleOffset = useCallback((delta) => {
     setSubtitleOffset(prev => prev + delta);
     toast.info(`Subtitle offset: ${subtitleOffset + delta}ms`);
-  };
+  }, [subtitleOffset]);
 
   const handleKeyDown = useCallback((e) => {
     switch (e.key) {
@@ -451,11 +466,11 @@ const VideoPlayer = () => {
         break;
       case 'ArrowUp':
         e.preventDefault();
-        handleVolumeChange([Math.min(1, volume + 0.1)]);
+        handleVolumeChange([Math.min(1, volumeRef.current + 0.1)]);
         break;
       case 'ArrowDown':
         e.preventDefault();
-        handleVolumeChange([Math.max(0, volume - 0.1)]);
+        handleVolumeChange([Math.max(0, volumeRef.current - 0.1)]);
         break;
       case 'f':
         e.preventDefault();
@@ -482,19 +497,18 @@ const VideoPlayer = () => {
         adjustSubtitleOffset(100);
         break;
       case 'Escape':
-        if (showSubtitleMenu) {
+        if (showSubtitleMenuRef.current) {
           setShowSubtitleMenu(false);
-        } else if (showSettings) {
+        } else if (showSettingsRef.current) {
           setShowSettings(false);
-        } else if (fullscreen) {
+        } else if (fullscreenRef.current) {
           document.exitFullscreen();
         }
         break;
       default:
         break;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [volume, fullscreen, showSubtitleMenu, showSettings, subtitleOffset]);
+  }, [togglePlay, skip, handleVolumeChange, toggleFullscreen, toggleMute, adjustSubtitleOffset]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);

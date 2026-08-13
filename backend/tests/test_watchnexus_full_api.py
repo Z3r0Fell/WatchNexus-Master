@@ -1,13 +1,21 @@
 """
 WatchNexus Full API Test Suite
 Tests all major features with REAL APIs - no stubs
-Backend: C#/.NET 10 running on port 8001
+Backend: C#/.NET 10 running on configured port
 """
 import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ffmpeg-wizard-2.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
+
+# Credentials must be provided via environment variables
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD environment variables required", allow_module_level=True)
 
 class TestAuth:
     """Authentication tests"""
@@ -15,14 +23,14 @@ class TestAuth:
     def test_login_success(self):
         """Test login with valid credentials"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
         assert "access_token" in data, "Missing access_token"
         assert "user" in data, "Missing user data"
-        assert data["user"]["email"] == "test@test.com"
+        assert data["user"]["email"] == TEST_EMAIL
         
     def test_login_invalid(self):
         """Test login with invalid credentials"""
@@ -36,8 +44,8 @@ class TestAuth:
 def auth_token():
     """Get authentication token for tests"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
-        "email": "test@test.com",
-        "password": "password"
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD
     })
     if response.status_code != 200:
         pytest.skip("Authentication failed")
@@ -357,7 +365,7 @@ class TestTMDB:
         assert response.status_code == 200
         data = response.json()
         assert data["tmdb"]["has_key"] is True
-        assert data["tmdb"]["api_key"].startswith("8c860bcb")
+        assert data["tmdb"]["api_key"] and len(data["tmdb"]["api_key"]) > 0
 
 
 class TestHealth:

@@ -28,7 +28,7 @@ export const DownloadSettings = () => {
   });
   const [savingEngineSettings, setSavingEngineSettings] = useState(false);
   const [testingEngine, setTestingEngine] = useState(false);
-  const [qbitConfig, setQbitConfig] = useState({ host: 'localhost', port: '8080', username: 'admin', password: '' });
+  const [qbitConfig, setQbitConfig] = useState({ host: '', port: '', username: '', password: '' });
   const [qbitStatus, setQbitStatus] = useState(null);
   const [testingQbit, setTestingQbit] = useState(false);
   const [savingQbit, setSavingQbit] = useState(false);

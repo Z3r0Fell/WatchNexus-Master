@@ -258,6 +258,7 @@ const ApiKeysPanel = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [newKey, setNewKey] = useState({ name: '' });
   const [revealedKey, setRevealedKey] = useState(null);
+  const [showKey, setShowKey] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -275,6 +276,7 @@ const ApiKeysPanel = () => {
     try {
       const res = await securityApi.createApiKey(newKey);
       setRevealedKey(res.data.key);
+      setShowKey(false);
       toast.success('API key created — copy it now!');
       setShowAdd(false);
       setNewKey({ name: '' });
@@ -295,6 +297,11 @@ const ApiKeysPanel = () => {
     toast.success('Copied to clipboard');
   };
 
+  const maskKey = (key) => {
+    if (!key || key.length <= 8) return key;
+    return `${key.slice(0, 4)}${'•'.repeat(Math.min(key.length - 8, 20))}${key.slice(-4)}`;
+  };
+
   return (
     <div data-testid="api-keys-panel">
       {revealedKey && (
@@ -302,12 +309,17 @@ const ApiKeysPanel = () => {
           className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
           <p className="text-sm text-amber-400 font-medium mb-2">New API Key Created — Save it now!</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-3 py-2 rounded-lg bg-black/30 text-xs font-mono text-amber-300 break-all">{revealedKey}</code>
+            <code className="flex-1 px-3 py-2 rounded-lg bg-black/30 text-xs font-mono text-amber-300 break-all">
+              {showKey ? revealedKey : maskKey(revealedKey)}
+            </code>
+            <Button size="sm" variant="ghost" onClick={() => setShowKey(!showKey)}>
+              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </Button>
             <Button size="sm" variant="ghost" onClick={() => copyToClipboard(revealedKey)}>
               <Copy className="w-4 h-4" />
             </Button>
           </div>
-          <Button size="sm" variant="ghost" className="mt-2 text-xs" onClick={() => setRevealedKey(null)}>Dismiss</Button>
+          <Button size="sm" variant="ghost" className="mt-2 text-xs" onClick={() => { setRevealedKey(null); setShowKey(false); }}>Dismiss</Button>
         </motion.div>
       )}
 
@@ -434,7 +446,9 @@ export default function SecurityPage() {
   const [activeTab, setActiveTab] = useState('audit');
 
   useEffect(() => {
-    securityApi.getStats().then(r => setStats(r.data)).catch(() => {});
+    securityApi.getStats().then(r => setStats(r.data)).catch((error) => {
+      console.warn('Failed to load security stats:', error);
+    });
   }, []);
 
   const tabs = [

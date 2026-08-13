@@ -106,7 +106,8 @@ export const LicenseProvider = ({ children }) => {
       const res = await axios.get(`${BACKEND_URL}/api/cellar/status`);
       setTier(res.data.tier || 'standard');
       setUnlockedModules(res.data.modules_unlocked || []);
-    } catch {
+    } catch (error) {
+      console.warn('Failed to fetch license, defaulting to standard:', error);
       setTier('standard');
     } finally {
       setLoading(false);
@@ -123,9 +124,9 @@ export const LicenseProvider = ({ children }) => {
   }, [fetchLicense]);
 
   const isModuleUnlocked = useCallback((moduleName) => {
-    if (!moduleName) return true;
+    if (!moduleName) return false;
     const required = MODULE_TIER[moduleName];
-    if (!required) return true; // Unknown module = allow
+    if (!required) return false;
     return TIER_RANK[tier] >= TIER_RANK[required];
   }, [tier]);
 

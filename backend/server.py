@@ -1,7 +1,7 @@
 import os
 
 import httpx
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -19,6 +19,36 @@ app.add_middleware(
 )
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8002")
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "proxy": True}
+
+@app.websocket("/ws/{path:path}")
+async def websocket_proxy(websocket: WebSocket, path: str):
+    await websocket.accept()
+    target_url = f"{BACKEND_URL}/ws/{path}"
+    if websocket.query_params:
+        target_url += f"?{websocket.query_params}"
+    
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        try:
+            async with client.stream("GET", target_url, headers=dict(websocket.headers)) as backend_ws:
+                while True:
+                    try:
+                        data = await websocket.receive_bytes()
+                        await backend_ws.send_bytes(data)
+                    except WebSocketDisconnect:
+                        break
+                    
+                    try:
+                        backend_data = await backend_ws.aread()
+                        if backend_data:
+                            await websocket.send_bytes(backend_data)
+                    except Exception:
+                        break
+        except Exception:
+            await websocket.close()
 
 @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
 async def proxy(request: Request, path: str):

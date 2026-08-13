@@ -73,7 +73,8 @@ function startBackend() {
       // persists the SQLite DB + generated JWT secret there.
       WATCHNEXUS_DATA_DIR: dataPath,
       // Server: the backend reads WATCHNEXUS_PORT (NOT PORT).
-      WATCHNEXUS_PORT: '8001',
+      // Use 8002 to match the Docker/proxy default.
+      WATCHNEXUS_PORT: '8002',
       // Security — JWT_SECRET is intentionally NOT set here. The backend
       // generates and persists a strong, per-install secret to the data dir on
       // first launch (see ResolveJwtSecret in Program.cs).

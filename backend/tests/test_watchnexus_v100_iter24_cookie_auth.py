@@ -18,10 +18,21 @@ import re
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://ffmpeg-wizard-2.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
+
 API = f"{BASE_URL}/api"
-ADMIN = ("owner@watchnexus.local", "password123")
-MEMBER = ("member@home.local", "hometime1")
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "")
+MEMBER_EMAIL = os.environ.get("TEST_MEMBER_EMAIL", "")
+MEMBER_PASSWORD = os.environ.get("TEST_MEMBER_PASSWORD", "")
+
+if not all([ADMIN_EMAIL, ADMIN_PASSWORD, MEMBER_EMAIL, MEMBER_PASSWORD]):
+    pytest.skip("TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_MEMBER_EMAIL, and TEST_MEMBER_PASSWORD required", allow_module_level=True)
+
+ADMIN = (ADMIN_EMAIL, ADMIN_PASSWORD)
+MEMBER = (MEMBER_EMAIL, MEMBER_PASSWORD)
 
 
 def _login(session: requests.Session, email: str, password: str) -> requests.Response:

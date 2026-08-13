@@ -37,6 +37,11 @@ const addToRemoveQueue = (toastId) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+const clearAllTimeouts = () => {
+  toastTimeouts.forEach((timeout) => clearTimeout(timeout))
+  toastTimeouts.clear()
+}
+
 export const reducer = (state, action) => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -55,8 +60,6 @@ export const reducer = (state, action) => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -90,7 +93,7 @@ export const reducer = (state, action) => {
   }
 }
 
-const listeners = []
+const listeners = new Set()
 
 let memoryState = { toasts: [] }
 
@@ -136,14 +139,13 @@ function useToast() {
   const [state, setState] = React.useState(memoryState)
 
   React.useEffect(() => {
-    listeners.push(setState)
+    const listener = (newState) => setState(newState)
+    listeners.add(listener)
     return () => {
-      const index = listeners.indexOf(setState)
-      if (index > -1) {
-        listeners.splice(index, 1)
-      }
+      listeners.delete(listener)
+      clearAllTimeouts()
     };
-  }, [state])
+  }, [])
 
   return {
     ...state,

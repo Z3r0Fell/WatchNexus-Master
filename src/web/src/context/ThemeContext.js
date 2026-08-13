@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from './AuthContext';
@@ -145,14 +145,16 @@ export const ThemeProvider = ({ children }) => {
       const res = await axios.get(`${BACKEND_URL}/api/settings`);
       const id = res.data?.ui_accent;
       if (id && applyAccentToDOM(id)) setAccentId(id);
-    } catch { /* not logged in / no setting — keep theme defaults */ }
+    } catch (error) {
+      console.warn('Failed to load accent from settings:', error);
+    }
   }, []);
 
   // Set a new accent live and persist it to the backend.
   const applyAccent = useCallback(async (id) => {
     if (!applyAccentToDOM(id)) return false;
     setAccentId(id);
-    try { await axios.put(`${BACKEND_URL}/api/settings`, { ui_accent: id }); } catch { /* */ }
+    try { await axios.put(`${BACKEND_URL}/api/settings`, { ui_accent: id }); } catch (error) { console.warn('Failed to save accent:', error); }
     return true;
   }, []);
 
@@ -289,12 +291,16 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme, mode]);
 
+  // Track latest mode in a ref to avoid redundant fetches
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+
   useEffect(() => {
     // Only fetch theme after mode is loaded from backend
     if (modeLoaded) {
       fetchTheme();
     }
-  }, [fetchTheme, modeLoaded]);
+  }, [modeLoaded, fetchTheme]);
 
   // ui_accent is a per-user setting — (re)apply it once the user is authenticated.
   useEffect(() => {
