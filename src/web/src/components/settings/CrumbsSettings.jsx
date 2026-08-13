@@ -10,10 +10,12 @@ import { toast } from 'sonner';
 import { HelpTooltip } from '../ui/HelpTooltip';
 import { BACKEND_URL } from '../../lib/config';
 import axios from 'axios';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const API = `${BACKEND_URL}/api/crumbs`;
 
 export const CrumbsSettings = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [services, setServices] = useState([]);
   const [configured, setConfigured] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +96,8 @@ export const CrumbsSettings = () => {
   };
 
   const handleDelete = async (serviceId) => {
-    if (!window.confirm('Remove this service configuration?')) return;
+    const ok = await confirm({ title: 'Remove Service', description: 'Remove this service configuration?', confirmText: 'Remove' });
+    if (!ok) return;
     try {
       await axios.delete(`${API}/${serviceId}`);
       toast.success('Configuration removed');

@@ -6,10 +6,12 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 
 const TreaclePage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [tracks, setTracks] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ const TreaclePage = () => {
     try { const res = await axios.post(`${API}/api/treacle/tracks`, newTrack); if (res.data.success) { toast.success('Track added'); fetchTracks(); fetchStats(); setShowAdd(false); setNewTrack({ title: '', artist: '', album: '', file_path: '' }); } } catch (err) { toast.error('Failed'); }
   };
 
-  const handleDelete = async (id) => { if (!window.confirm('Remove?')) return; try { await axios.delete(`${API}/api/treacle/tracks/${id}`); toast.success('Removed'); fetchTracks(); fetchStats(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/treacle/tracks/${id}`); toast.success('Removed'); fetchTracks(); fetchStats(); } catch {} };
 
   const handleScan = async () => {
     if (!scanPath) return;
@@ -80,6 +82,7 @@ const TreaclePage = () => {
           </div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

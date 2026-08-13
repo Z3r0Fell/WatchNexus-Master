@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
+import { useConfirm } from '../../hooks/use-confirm';
+import { usePrompt } from '../../hooks/use-prompt';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -347,6 +349,8 @@ export const PlayCollectionButton = ({ collectionId, collectionName, onSuccess }
 
 // Main Playlists Page Component
 export const PlaylistsManager = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
+  const { prompt: promptName, PromptDialog: PromptNameDialog } = usePrompt();
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -370,7 +374,7 @@ export const PlaylistsManager = () => {
   };
   
   const handleCreatePlaylist = async () => {
-    const name = prompt('Enter playlist name:');
+    const name = await promptName({ title: 'Create Playlist', description: 'Enter a name for your new playlist:', placeholder: 'My Playlist' });
     if (!name) return;
     
     try {
@@ -388,7 +392,8 @@ export const PlaylistsManager = () => {
   };
   
   const handleDeletePlaylist = async (playlistId) => {
-    if (!window.confirm('Delete this playlist?')) return;
+    const ok = await confirm({ title: 'Delete Playlist', description: 'Delete this playlist?', confirmText: 'Delete' });
+    if (!ok) return;
     
     try {
       await fetch(`${API_URL}/api/drizzle/playlists/${playlistId}`, {
@@ -478,6 +483,8 @@ export const PlaylistsManager = () => {
           <ActiveQueuePanel />
         </Card>
       </div>
+      <ConfirmDialog />
+      <PromptNameDialog />
     </div>
   );
 };

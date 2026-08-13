@@ -6,11 +6,13 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 const STATUS_BADGE = { in_progress: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'In Progress' }, completed: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Completed' }, failed: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Failed' } };
 
 const PreservesPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [config, setConfig] = useState(null);
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ const PreservesPage = () => {
 
   const handleSaveConfig = async () => { try { const res = await axios.post(`${API}/api/preserves/config`, cfgForm); if (res.data.success) { toast.success(res.data.message); fetch_(); setShowConfig(false); } } catch {} };
   const handleCreateBackup = async () => { try { const res = await axios.post(`${API}/api/preserves/backups`, { type: 'full' }); if (res.data.success) { toast.success(res.data.message); fetch_(); } } catch {} };
-  const handleDelete = async (id) => { if (!window.confirm('Delete backup?')) return; try { await axios.delete(`${API}/api/preserves/backups/${id}`); toast.success('Deleted'); fetch_(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Delete Backup', description: 'Delete backup?', confirmText: 'Delete' }); if (!ok) return; try { await axios.delete(`${API}/api/preserves/backups/${id}`); toast.success('Deleted'); fetch_(); } catch {} };
 
   return (
     <Layout>
@@ -59,6 +61,7 @@ const PreservesPage = () => {
           ); })}</div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

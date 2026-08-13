@@ -11,6 +11,7 @@ import { Progress } from '../ui/progress';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -23,6 +24,7 @@ const MAINTENANCE_TABS = [
 ];
 
 export const MaintenanceSettings = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [activeTab, setActiveTab] = useState('system');
   const [systemStats, setSystemStats] = useState(null);
   const [dbStats, setDbStats] = useState(null);
@@ -242,7 +244,7 @@ const DatabaseTab = ({ dbStats, backups, actionLoading, handleAction }) => {
         <div className="flex flex-wrap gap-3">
           <Button variant="outline" onClick={() => handleAction('vacuum', '/api/db/vacuum', 'Database optimized')} disabled={actionLoading.vacuum} className="border-white/20">{actionLoading.vacuum ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}Optimize</Button>
           <Button variant="outline" onClick={() => handleAction('backup', '/api/db/backup', 'Backup created')} disabled={actionLoading.backup} className="border-white/20">{actionLoading.backup ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}Backup</Button>
-          <Button variant="outline" onClick={() => { if (window.confirm('WARNING: This will delete ALL data. Are you sure?')) handleAction('reset', '/api/db/reset', 'Database reset'); }} disabled={actionLoading.reset} className="border-red-500/30 text-red-400">{actionLoading.reset ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}Reset</Button>
+          <Button variant="outline" onClick={async () => { const ok = await confirm({ title: 'Reset Database', description: 'WARNING: This will delete ALL data. Are you sure?', confirmText: 'Reset' }); if (ok) handleAction('reset', '/api/db/reset', 'Database reset'); }} disabled={actionLoading.reset} className="border-red-500/30 text-red-400">{actionLoading.reset ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}Reset</Button>
         </div>
 
         {backups.length > 0 && (

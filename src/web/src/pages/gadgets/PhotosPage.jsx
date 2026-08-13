@@ -6,10 +6,12 @@ import { Input } from '../../components/ui/input';
 import { Image, Plus, FolderOpen, RefreshCw, Trash2, Grid, X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 export const PhotosPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [libraries, setLibraries] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [selectedLib, setSelectedLib] = useState(null);
@@ -50,7 +52,8 @@ export const PhotosPage = () => {
   };
 
   const deleteLibrary = async (libId) => {
-    if (!window.confirm('Delete this library?')) return;
+    const ok = await confirm({ title: 'Delete Library', description: 'Delete this library?', confirmText: 'Delete' });
+    if (!ok) return;
     try {
       await axios.delete(`${BACKEND_URL}/api/gadgets/photos/libraries/${libId}`, { headers: getAuth() });
       toast.success('Library deleted');
@@ -243,6 +246,7 @@ export const PhotosPage = () => {
           )}
         </AnimatePresence>
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

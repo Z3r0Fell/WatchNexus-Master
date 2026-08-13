@@ -10,12 +10,14 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 
 const EMULATORJS_CDN = 'https://cdn.emulatorjs.org/stable/data';
 
 const PretzelPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [games, setGames] = useState([]);
   const [systems, setSystems] = useState([]);
   const [stats, setStats] = useState(null);
@@ -64,7 +66,8 @@ const PretzelPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Remove this game?')) return;
+    const ok = await confirm({ title: 'Remove Game', description: 'Remove this game?', confirmText: 'Remove' });
+    if (!ok) return;
     try { await axios.delete(`${API}/api/pretzel/games/${id}`); toast.success('Removed'); fetchGames(); fetchStats(); }
     catch { toast.error('Failed'); }
   };
@@ -146,7 +149,8 @@ const PretzelPage = () => {
             </div>
           </div>
         </div>
-      </Layout>
+      <ConfirmDialog />
+    </Layout>
     );
   }
 
@@ -338,6 +342,7 @@ const PretzelPage = () => {
           </div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

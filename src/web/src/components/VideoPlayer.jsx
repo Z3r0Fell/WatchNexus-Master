@@ -445,9 +445,12 @@ const VideoPlayer = () => {
 
   // Subtitle offset adjustment with keyboard
   const adjustSubtitleOffset = useCallback((delta) => {
-    setSubtitleOffset(prev => prev + delta);
-    toast.info(`Subtitle offset: ${subtitleOffset + delta}ms`);
-  }, [subtitleOffset]);
+    setSubtitleOffset(prev => {
+      const newOffset = prev + delta;
+      toast.info(`Subtitle offset: ${newOffset}ms`);
+      return newOffset;
+    });
+  }, []);
 
   const handleKeyDown = useCallback((e) => {
     switch (e.key) {

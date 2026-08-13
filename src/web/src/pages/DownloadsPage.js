@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { torrentEngineApi, qbittorrentApi } from '../services/api';
 import { toast } from 'sonner';
+import { useConfirm } from '../hooks/use-confirm';
 import { 
   Download, Pause, Play, Trash2, RefreshCw, 
   HardDrive, ArrowDown, ArrowUp, CheckCircle, AlertCircle, Clock,
@@ -63,6 +64,7 @@ const statusIcons = {
 };
 
 export const DownloadsPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [engineTorrents, setEngineTorrents] = useState([]);
   const [engineStatus, setEngineStatus] = useState(null);
   const [qbitTorrents, setQbitTorrents] = useState([]);
@@ -603,9 +605,10 @@ export const DownloadsPage = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (confirm('Remove this torrent?')) {
+                            const ok = await confirm({ title: 'Remove Torrent', description: 'Remove this torrent?', confirmText: 'Remove' });
+                            if (ok) {
                               isBuiltin ? handleEngineDelete(id, false) : handleQbitDelete(id, false);
                             }
                           }}
@@ -667,6 +670,7 @@ export const DownloadsPage = () => {
           )}
         </motion.div>
       </motion.div>
+    <ConfirmDialog />
     </Layout>
   );
 };

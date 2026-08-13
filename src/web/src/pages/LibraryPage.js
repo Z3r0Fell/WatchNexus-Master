@@ -13,6 +13,7 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { formatFileSize } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { useConfirm } from '../hooks/use-confirm';
 import FolderBrowser from '../components/FolderBrowser';
 import MediaFolderDropdown from '../components/MediaFolderDropdown';
 
@@ -33,6 +34,7 @@ const MEDIA_TYPE_COLORS = {
 };
 
 export const LibraryPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [serverStatus, setServerStatus] = useState(null);
   const [libraries, setLibraries] = useState([]);
   const [media, setMedia] = useState([]);
@@ -127,7 +129,8 @@ export const LibraryPage = () => {
   };
 
   const handleRemoveLibrary = async (libraryId, libraryName) => {
-    if (!confirm(`Remove library "${libraryName}"? This will remove all media entries.`)) return;
+    const ok = await confirm({ title: 'Remove Library', description: `Remove library "${libraryName}"? This will remove all media entries.`, confirmText: 'Remove' });
+    if (!ok) return;
     
     try {
       await marmaladeLibrary.removeLibrary(libraryId);
@@ -639,6 +642,7 @@ export const LibraryPage = () => {
           )}
         </motion.div>
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

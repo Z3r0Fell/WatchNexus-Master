@@ -3,6 +3,7 @@ import { FolderCog, Layers, Plus, Trash2, Check, CheckCircle, RefreshCw } from '
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -14,6 +15,7 @@ const Toggle = ({ checked, onChange }) => (
 );
 
 export const MediaManagementSubTab = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [renameEpisodes, setRenameEpisodes] = useState(true);
   const [useHardlinks, setUseHardlinks] = useState(true);
   const [importExtraFiles, setImportExtraFiles] = useState(true);
@@ -354,7 +356,8 @@ export const QualityProfilesSubTab = () => {
   };
 
   const handleDelete = async (profileId) => {
-    if (!window.confirm('Are you sure you want to delete this profile?')) return;
+    const ok = await confirm({ title: 'Delete Profile', description: 'Are you sure you want to delete this profile?', confirmText: 'Delete' });
+    if (!ok) return;
     
     try {
       await fetch(`${API_URL}/api/quality-profiles/${profileId}`, {

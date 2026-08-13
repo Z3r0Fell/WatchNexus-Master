@@ -6,11 +6,13 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 const STATUS_BADGE = { queued: { bg: 'bg-gray-500/15', text: 'text-gray-400', label: 'Queued' }, downloading: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'Downloading' }, completed: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Ready' }, expired: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Expired' } };
 
 const PopsiclePage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [downloads, setDownloads] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ const PopsiclePage = () => {
   const fetch_ = useCallback(async () => { try { const [d, s] = await Promise.all([axios.get(`${API}/api/popsicle/downloads`), axios.get(`${API}/api/popsicle/settings`)]); setDownloads(d.data.downloads || []); setSettings(s.data); } catch {} finally { setLoading(false); } }, []);
   useEffect(() => { fetch_(); }, [fetch_]);
 
-  const handleDelete = async (id) => { if (!window.confirm('Remove?')) return; try { await axios.delete(`${API}/api/popsicle/downloads/${id}`); toast.success('Removed'); fetch_(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/popsicle/downloads/${id}`); toast.success('Removed'); fetch_(); } catch {} };
 
   const handleSaveSettings = async () => { try { await axios.post(`${API}/api/popsicle/settings`, settings); toast.success('Settings saved'); setShowSettings(false); } catch {} };
 
@@ -55,6 +57,7 @@ const PopsiclePage = () => {
           ); })}</div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

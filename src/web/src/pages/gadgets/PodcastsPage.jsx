@@ -6,10 +6,12 @@ import { Input } from '../../components/ui/input';
 import { Podcast, Plus, Play, Pause, RefreshCw, Trash2, Clock, Rss, ListPlus, ChevronLeft, SkipBack, SkipForward } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 export const PodcastsPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [subscriptions, setSubscriptions] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [selectedPodcast, setSelectedPodcast] = useState(null);
@@ -54,7 +56,8 @@ export const PodcastsPage = () => {
   };
 
   const unsubscribe = async (subId) => {
-    if (!window.confirm('Unsubscribe from this podcast?')) return;
+    const ok = await confirm({ title: 'Unsubscribe', description: 'Unsubscribe from this podcast?', confirmText: 'Unsubscribe' });
+    if (!ok) return;
     try {
       await axios.delete(`${BACKEND_URL}/api/gadgets/podcasts/${subId}`, { headers: getAuth() });
       toast.success('Unsubscribed');
@@ -307,6 +310,7 @@ export const PodcastsPage = () => {
           )}
         </AnimatePresence>
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

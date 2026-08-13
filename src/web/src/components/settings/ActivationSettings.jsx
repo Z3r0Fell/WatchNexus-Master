@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { BACKEND_URL } from '../../lib/config';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const API = BACKEND_URL;
 
@@ -45,6 +46,7 @@ const TIER_CONFIG = {
 };
 
 export const ActivationSettings = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [status, setStatus] = useState(null);
   const [tiers, setTiers] = useState(null);
   const [serial, setSerial] = useState('');
@@ -95,7 +97,8 @@ export const ActivationSettings = () => {
   };
 
   const handleDeactivate = async () => {
-    if (!window.confirm('Are you sure? This will revert to Standard tier.')) return;
+    const ok = await confirm({ title: 'Deactivate License', description: 'Are you sure? This will revert to Standard tier.', confirmText: 'Deactivate' });
+    if (!ok) return;
     try {
       const res = await axios.post(`${API}/api/cellar/deactivate`);
       if (res.data.success) {

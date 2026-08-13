@@ -9,7 +9,8 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
-import { BACKEND_URL , tmdbImageUrl} from '../lib/config';
+import { BACKEND_URL, tmdbImageUrl } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 
@@ -21,6 +22,7 @@ const STATUS_BADGE = {
 };
 
 const MenuPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [tab, setTab] = useState('discover');
   const [subTab, setSubTab] = useState('trending');
   const [loading, setLoading] = useState(true);
@@ -123,7 +125,8 @@ const MenuPage = () => {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this request?')) return;
+    const ok = await confirm({ title: 'Delete Request', description: 'Delete this request?', confirmText: 'Delete' });
+    if (!ok) return;
     try { await axios.delete(`${API}/api/menu/requests/${id}`); toast.success('Deleted'); fetchRequests(); fetchStats(); }
     catch { toast.error('Failed'); }
   };
@@ -424,6 +427,7 @@ const MenuPage = () => {
           </>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

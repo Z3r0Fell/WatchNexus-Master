@@ -13,6 +13,7 @@ import { Input } from '../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API_URL = BACKEND_URL;
 
@@ -353,6 +354,7 @@ const EPGGuideView = ({ channels }) => {
 };
 
 export const LiveTVPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [sources, setSources] = useState([]);
@@ -468,7 +470,8 @@ export const LiveTVPage = () => {
   };
 
   const handleDeleteSource = async (sourceId) => {
-    if (!confirm('Delete this source?')) return;
+    const ok = await confirm({ title: 'Delete Source', description: 'Delete this source?', confirmText: 'Delete' });
+    if (!ok) return;
     
     try {
       await axios.delete(`${API_URL}/api/iptv/sources/${sourceId}`, {
@@ -957,6 +960,7 @@ export const LiveTVPage = () => {
           )}
         </AnimatePresence>
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

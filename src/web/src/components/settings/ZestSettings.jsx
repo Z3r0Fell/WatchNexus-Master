@@ -9,6 +9,7 @@ import {
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useConfirm } from '../../hooks/use-confirm';
 
 const LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
 
@@ -69,6 +70,7 @@ const SystemMetricCard = ({ icon: Icon, label, value, subValue, color = 'violet'
 };
 
 export const ZestSettings = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [logs, setLogs] = useState([]);
   const [logStats, setLogStats] = useState(null);
   const [systemHealth, setSystemHealth] = useState(null);
@@ -122,7 +124,8 @@ export const ZestSettings = () => {
   };
 
   const handleClearLogs = async () => {
-    if (!confirm('Clear log file? A backup will be created.')) return;
+    const ok = await confirm({ title: 'Clear Logs', description: 'Clear log file? A backup will be created.', confirmText: 'Clear' });
+    if (!ok) return;
     try {
       const res = await axios.post(`${BACKEND_URL}/api/zest/logs/clear`);
       toast.success(res.data.message || 'Logs cleared');
@@ -373,6 +376,7 @@ export const ZestSettings = () => {
           Logs are rotated automatically at 10MB with 7 backups kept.
         </p>
       </div>
+        <ConfirmDialog />
     </motion.div>
   );
 };

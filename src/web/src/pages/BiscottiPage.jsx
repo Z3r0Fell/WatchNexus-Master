@@ -6,12 +6,14 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 const TYPE_ICONS = { ebook: BookOpen, comic: Image, audiobook: Headphones };
 const TYPE_COLORS = { ebook: 'bg-blue-500/80', comic: 'bg-amber-500/80', audiobook: 'bg-violet-500/80' };
 
 const BiscottiPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [items, setItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,8 @@ const BiscottiPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Remove?')) return;
+    const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' });
+    if (!ok) return;
     try { await axios.delete(`${API}/api/biscotti/items/${id}`); toast.success('Removed'); fetchItems(); fetchStats(); } catch { toast.error('Failed'); }
   };
 
@@ -128,6 +131,7 @@ const BiscottiPage = () => {
           </div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

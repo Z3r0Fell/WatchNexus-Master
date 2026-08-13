@@ -6,11 +6,13 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 const STATUS_BADGE = { scheduled: { bg: 'bg-amber-500/15', text: 'text-amber-400', label: 'Scheduled' }, recording: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Recording' }, completed: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Completed' } };
 
 const TerrinePage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [recordings, setRecordings] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ const TerrinePage = () => {
     try { const res = await axios.post(`${API}/api/terrine/recordings`, newRec); if (res.data.success) { toast.success(res.data.message); fetch_(); setShowAdd(false); setNewRec({ title: '', channel: '', start_time: '', end_time: '' }); } } catch (err) { toast.error('Failed'); }
   };
 
-  const handleDelete = async (id) => { if (!window.confirm('Delete recording?')) return; try { await axios.delete(`${API}/api/terrine/recordings/${id}`); toast.success('Deleted'); fetch_(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Delete Recording', description: 'Delete recording?', confirmText: 'Delete' }); if (!ok) return; try { await axios.delete(`${API}/api/terrine/recordings/${id}`); toast.success('Deleted'); fetch_(); } catch {} };
 
   return (
     <Layout>
@@ -62,6 +64,7 @@ const TerrinePage = () => {
           ); })}</div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

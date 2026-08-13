@@ -15,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
+import { usePrompt } from '../../hooks/use-prompt';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -26,6 +29,7 @@ export const AddToPlaylistButton = ({
   showLabel = false,
   onSuccess,
 }) => {
+  const { prompt: promptName, PromptDialog: PromptNameDialog } = usePrompt();
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(null);
@@ -102,7 +106,7 @@ export const AddToPlaylistButton = ({
   };
 
   const handleCreatePlaylist = async () => {
-    const name = prompt('Enter playlist name:');
+    const name = await promptName({ title: 'Create Playlist', description: 'Enter a name for your new playlist:', placeholder: 'My Playlist' });
     if (!name) return;
 
     try {
@@ -128,6 +132,7 @@ export const AddToPlaylistButton = ({
   };
 
   return (
+    <>
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
@@ -183,6 +188,8 @@ export const AddToPlaylistButton = ({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <PromptNameDialog />
+    </>
   );
 };
 

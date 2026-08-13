@@ -9,7 +9,8 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
-import { BACKEND_URL , tmdbImageUrl} from '../lib/config';
+import { BACKEND_URL, tmdbImageUrl } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 
@@ -26,6 +27,7 @@ const MEDIA_STATUS = {
 };
 
 const ParfaitPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [connected, setConnected] = useState(false);
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -138,7 +140,8 @@ const ParfaitPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this request?')) return;
+    const ok = await confirm({ title: 'Delete Request', description: 'Delete this request?', confirmText: 'Delete' });
+    if (!ok) return;
     try {
       await axios.delete(`${API}/api/parfait/requests/${id}`);
       toast.success('Request deleted');
@@ -164,7 +167,8 @@ const ParfaitPage = () => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
         </div>
-      </Layout>
+      <ConfirmDialog />
+    </Layout>
     );
   }
 
@@ -483,6 +487,7 @@ const ParfaitPage = () => {
           </div>
         )}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

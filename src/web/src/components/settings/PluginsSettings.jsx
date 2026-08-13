@@ -13,6 +13,7 @@ import { Switch } from '../ui/switch';
 import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useConfirm } from '../../hooks/use-confirm';
 import { HelpTooltip } from '../ui/HelpTooltip';
 import { useGadgets } from '../../context/GadgetContext';
 
@@ -44,6 +45,7 @@ const categoryColors = {
 
 export const PluginsSettings = () => {
   const { installed, isInstalled, isActive, install, uninstall, activate, deactivate, refresh: refreshGadgets } = useGadgets();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [activeView, setActiveView] = useState('catalogue');
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
@@ -208,7 +210,8 @@ export const PluginsSettings = () => {
   };
 
   const handleUninstallPlugin = async (pluginId, pluginName) => {
-    if (!window.confirm(`Uninstall "${pluginName}"? This will delete all gadget files.`)) return;
+    const ok = await confirm({ title: 'Uninstall Plugin', description: `Uninstall "${pluginName}"? This will delete all gadget files.`, confirmText: 'Uninstall' });
+    if (!ok) return;
     setUninstallingPlugin(pluginId);
     try {
       await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`);

@@ -10,11 +10,13 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 const STATUS_BADGE = { queued: { bg: 'bg-gray-500/15', text: 'text-gray-400', label: 'Queued' }, downloading: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'Downloading' }, completed: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Done' }, failed: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Failed' }, paused: { bg: 'bg-amber-500/15', text: 'text-amber-400', label: 'Paused' } };
 
 const ChowderPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [tab, setTab] = useState('servers');
   const [servers, setServers] = useState([]);
   const [queue, setQueue] = useState({ items: [], total: 0 });
@@ -42,7 +44,7 @@ const ChowderPage = () => {
     catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
-  const handleDeleteServer = async (id) => { if (!window.confirm('Remove server?')) return; try { await axios.delete(`${API}/api/chowder/servers/${id}`); fetchServers(); fetchStats(); } catch {} };
+  const handleDeleteServer = async (id) => { const ok = await confirm({ title: 'Remove Server', description: 'Remove server?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/chowder/servers/${id}`); fetchServers(); fetchStats(); } catch {} };
 
   const handleBrowseServer = async (srv) => {
     setBrowsingServer(srv);
@@ -66,7 +68,8 @@ const ChowderPage = () => {
   const handlePauseAll = async () => { try { await axios.post(`${API}/api/chowder/queue/pause`); toast.success('Paused'); fetchQueue(); } catch {} };
   const handleResumeAll = async () => { try { await axios.post(`${API}/api/chowder/queue/resume`); toast.success('Resumed'); fetchQueue(); } catch {} };
 
-  if (loading) return <Layout><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-teal-400" /></div></Layout>;
+  if (loading) return <Layout><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-teal-400" /></div><ConfirmDialog />
+    </Layout>;
 
   return (
     <Layout>
@@ -170,6 +173,7 @@ const ChowderPage = () => {
           ))}
         </div>)}
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

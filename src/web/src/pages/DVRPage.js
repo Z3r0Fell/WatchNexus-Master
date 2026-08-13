@@ -2,6 +2,7 @@ import { BACKEND_URL } from '../lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
+import { useConfirm } from '../hooks/use-confirm';
 import { 
   Video, Calendar, Clock, Play, Pause, Square, Trash2, Plus,
   RefreshCw, AlertTriangle, Check, X, HardDrive, Settings,
@@ -25,15 +26,6 @@ const RecordingStatus = {
   CANCELLED: 'cancelled',
 };
 
-// DVR Recording status
-const RecordingStatus = {
-  SCHEDULED: 'scheduled',
-  RECORDING: 'recording',
-  COMPLETED: 'completed',
-  FAILED: 'failed',
-  CANCELLED: 'cancelled',
-};
-
 // DVR Settings
 const defaultSettings = {
   recording_path: '/media/recordings',
@@ -47,6 +39,7 @@ const defaultSettings = {
 };
 
 export const DVRPage = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [recordings, setRecordings] = useState([]);
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -137,10 +130,11 @@ export const DVRPage = () => {
   };
 
   // Handle cancel/delete recording
-  const handleCancelRecording = (recordingId) => {
+  const handleCancelRecording = async (recordingId) => {
     const recording = recordings.find(r => r.id === recordingId);
     if (recording.status === RecordingStatus.RECORDING) {
-      if (!confirm('Stop this recording in progress?')) return;
+      const ok = await confirm({ title: 'Stop Recording', description: 'Stop this recording in progress?', confirmText: 'Stop' });
+      if (!ok) return;
     }
     
     setRecordings(recordings.filter(r => r.id !== recordingId));
@@ -148,8 +142,9 @@ export const DVRPage = () => {
   };
 
   // Handle delete completed recording
-  const handleDeleteRecording = (recordingId) => {
-    if (!confirm('Delete this recording? The file will be removed.')) return;
+  const handleDeleteRecording = async (recordingId) => {
+    const ok = await confirm({ title: 'Delete Recording', description: 'Delete this recording? The file will be removed.', confirmText: 'Delete' });
+    if (!ok) return;
     setRecordings(recordings.filter(r => r.id !== recordingId));
     toast.success('Recording deleted');
   };
@@ -698,6 +693,7 @@ export const DVRPage = () => {
           )}
         </AnimatePresence>
       </div>
+    <ConfirmDialog />
     </Layout>
   );
 };

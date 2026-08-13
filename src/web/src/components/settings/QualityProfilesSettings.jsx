@@ -11,6 +11,7 @@ import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { HelpTooltip } from '../ui/HelpTooltip';
+import { useConfirm } from '../../hooks/use-confirm';
 
 // Quality definitions (like Sonarr/Radarr)
 const QUALITY_DEFINITIONS = [
@@ -84,6 +85,7 @@ const QualityBadge = ({ quality }) => {
 };
 
 export const QualityProfilesSettings = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -184,7 +186,8 @@ export const QualityProfilesSettings = () => {
   };
 
   const handleDeleteProfile = async (profileId) => {
-    if (!confirm('Delete this quality profile?')) return;
+    const ok = await confirm({ title: 'Delete Profile', description: 'Delete this quality profile?', confirmText: 'Delete' });
+    if (!ok) return;
     
     try {
       await axios.delete(`${BACKEND_URL}/api/quality-profiles/${profileId}`, {
