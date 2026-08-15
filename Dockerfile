@@ -1,13 +1,13 @@
 # ══════════════════════════════════════════════════════════════════════
 # WatchNexus — Multi-Tier Docker Build
 # Build args: TIER=standard|pro|ultra (default: standard)
-#            NODE_VERSION=22-alpine3.20
-#            DOTNET_SDK_VERSION=10.0.4-noble
-#            DOTNET_ASPNET_VERSION=10.0.4-noble
+#            NODE_VERSION=node:22-alpine
+#            DOTNET_SDK_VERSION=10.0
+#            DOTNET_ASPNET_VERSION=10.0-bookworm-slim
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Frontend Build ──────────────────────────────────────────
-ARG NODE_VERSION=22-alpine3.20
+ARG NODE_VERSION=node:22-alpine
 FROM ${NODE_VERSION} AS frontend-build
 WORKDIR /build/frontend
 
@@ -20,8 +20,7 @@ ENV REACT_APP_BACKEND_URL=""
 RUN yarn build
 
 # ── Stage 2: Backend Build ───────────────────────────────────────────
-ARG DOTNET_SDK_VERSION=10.0.4-noble
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION} AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 ARG TIER=standard
 WORKDIR /build
 
@@ -54,8 +53,7 @@ RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
     /p:SkipFrontendBuild=true
 
 # ── Stage 3: Runtime ─────────────────────────────────────────────────
-ARG DOTNET_ASPNET_VERSION=10.0.4-noble
-FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_ASPNET_VERSION} AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 ARG TIER=standard
 
 # Install runtime dependencies

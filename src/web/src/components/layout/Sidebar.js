@@ -50,6 +50,7 @@ import {
   Disc,
   Clapperboard,
   ArrowDownToLine,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGadgets } from '../../context/GadgetContext';
@@ -65,7 +66,7 @@ const ICON_MAP = {
   Search, Play, Layers, FolderOpen, Compass, ListVideo, Sparkles,
   Shield, Wifi, Server, FileText, Library, Store, Key,
   BarChart3, Bell, MessageSquare, Lock, Cog, HardDrive, HelpCircle,
-  Activity, Timer, Archive, Rss, Clapperboard,
+  Activity, Timer, Archive, Rss, Disc, Clapperboard, Users,
 };
 
 // Media navigation items
@@ -126,6 +127,8 @@ const settingsSubItems = [
   { icon: Cloud, label: 'Backup', path: '/cloud-backup', hideable: true },
   { icon: Cloud, label: 'Sync', path: '/cloud-sync', hideable: true },
   { icon: ArrowDownToLine, label: 'Media Sync', path: '/media-sync', hideable: true },
+  { icon: Users, label: 'Watch Party', path: '/watch-party', hideable: true },
+  { icon: HelpCircle, label: 'Roadmap', path: '/roadmap', hideable: true },
 ];
 
 // Default visible tabs
@@ -135,7 +138,7 @@ const defaultVisibleTabs = [
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
   'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr', 'Requests', 'Gaming',
-  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync', 'Media Sync',
+  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync', 'Media Sync', 'Watch Party', 'Roadmap',
 ];
 
 // Get visible tabs from localStorage

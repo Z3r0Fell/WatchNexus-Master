@@ -77,6 +77,8 @@ const PopsiclePage = lazy(() => import("./pages/PopsiclePage"));
 const PreservesPage = lazy(() => import("./pages/PreservesPage"));
 const MarshmallowPage = lazy(() => import("./pages/MarshmallowPage"));
 const ChowderPage = lazy(() => import("./pages/ChowderPage"));
+const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage"));
+const RoadmapPage = lazy(() => import("./pages/RoadmapPage"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
@@ -202,8 +204,10 @@ function AppRouter() {
         <Route path="/dvr" element={<TierRoute path="/dvr"><TerrinePage /></TierRoute>} />
         <Route path="/offline" element={<TierRoute path="/offline"><PopsiclePage /></TierRoute>} />
         <Route path="/cloud-backup" element={<TierRoute path="/cloud-backup"><PreservesPage /></TierRoute>} />
-        <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
-        <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
+         <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
+         <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
+         <Route path="/watch-party" element={<TierRoute path="/watch-party"><WatchPartyPage /></TierRoute>} />
+         <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
 
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -174,4 +174,19 @@ public class DbControllerReal : ControllerBase
         if (System.IO.File.Exists(dbPath)) System.IO.File.Copy(dbPath, backupPath);
         return Ok(new { status = "created", path = backupPath });
     }
+
+    [HttpGet("roadmap")]
+    public IActionResult Roadmap()
+    {
+        var items = new[]
+        {
+            new { endpoint = "GET /api/security/sessions", method = "GET", path = "/api/security/sessions", message = "Session management is not yet implemented.", tier = "pro" },
+            new { endpoint = "POST /api/security/sessions/{id}/revoke", method = "POST", path = "/api/security/sessions/{id}/revoke", message = "Session revocation is not yet implemented.", tier = "pro" },
+            new { endpoint = "POST /api/vpn/server/wg-up", method = "POST", path = "/api/vpn/server/wg-up", message = "WireGuard interface activation requires server-side wg-quick integration.", tier = "ultra" },
+            new { endpoint = "POST /api/vpn/server/wg-down", method = "POST", path = "/api/vpn/server/wg-down", message = "WireGuard interface deactivation requires server-side wg-quick integration.", tier = "ultra" },
+            new { endpoint = "GET /api/vpn/logs", method = "GET", path = "/api/vpn/logs", message = "VPN log streaming is not yet implemented.", tier = "ultra" },
+            new { endpoint = "POST /api/watch-party/{code}/chat", method = "POST", path = "/api/watch-party/{code}/chat", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages.", tier = "ultra" },
+        };
+        return Ok(new { version = "1.0.1", endpoints = items, total = items.Length });
+    }
 }

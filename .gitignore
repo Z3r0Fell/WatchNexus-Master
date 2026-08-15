@@ -77,3 +77,4 @@ src/web/node_modules/.cache/default-development/6.pack
 /auth_testing.md
 src/web/node_modules/.cache/default-development/4.pack
 src/web/node_modules/.cache/default-development/1.pack
+src/watchnexus/core/publish/
