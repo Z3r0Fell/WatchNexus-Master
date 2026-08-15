@@ -2,11 +2,15 @@
   "name": "Beacon",
   "codename": "beacon",
   "display_name": "System Tray Application",
-  "version": "2.7.3",
+  "version": "1.0.1",
   "description": "Desktop system tray controller for server management and quick access",
   "author": "WatchNexus",
-  "dependencies": ["core"],
+  "dependencies": [
+    "core"
+  ],
   "api_routes": [],
   "frontend_pages": [],
-  "type": "desktop"
+  "type": "desktop",
+  "tier": "standard",
+  "api_route_prefix": ""
 }

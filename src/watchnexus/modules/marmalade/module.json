@@ -2,10 +2,21 @@
   "name": "Marmalade",
   "codename": "marmalade",
   "display_name": "Library Manager",
-  "version": "2.7.3",
+  "version": "1.0.1",
   "description": "Media library scanning with TMDB metadata enrichment, file system traversal, and media organization",
   "author": "WatchNexus",
-  "dependencies": ["core"],
-  "api_routes": ["/api/libraries", "/api/libraries/{id}/scan", "/api/libraries/{id}/media"],
-  "frontend_pages": ["LibraryManagerPage", "MediaBrowserPage"]
+  "dependencies": [
+    "core"
+  ],
+  "api_routes": [
+    "/api/libraries",
+    "/api/libraries/{id}/scan",
+    "/api/libraries/{id}/media"
+  ],
+  "frontend_pages": [
+    "LibraryManagerPage",
+    "MediaBrowserPage"
+  ],
+  "tier": "standard",
+  "api_route_prefix": "libraries"
 }

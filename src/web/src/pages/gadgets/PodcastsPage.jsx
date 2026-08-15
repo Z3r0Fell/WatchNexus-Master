@@ -7,7 +7,7 @@ import { Podcast, Plus, Play, Pause, RefreshCw, Trash2, Clock, Rss, ListPlus, Ch
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useConfirm } from '../../hooks/use-confirm';
-import { BACKEND_URL } from '../../../lib/config';
+import { BACKEND_URL } from '../../lib/config';
 
 const API = BACKEND_URL;
 

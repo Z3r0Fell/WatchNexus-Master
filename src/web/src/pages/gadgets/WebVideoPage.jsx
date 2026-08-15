@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/input';
 import { Video, Play, Pause, Bookmark, Clock, User, Eye, Search, X, ExternalLink, BookmarkPlus, History } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { BACKEND_URL } from '../../../lib/config';
+import { BACKEND_URL } from '../../lib/config';
 
 const API = BACKEND_URL;
 

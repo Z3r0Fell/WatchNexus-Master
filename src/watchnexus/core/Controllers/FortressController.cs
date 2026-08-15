@@ -99,29 +99,50 @@ public class FortressFilter : IAsyncActionFilter
                 moduleName = segments[1];
             }
 
-            if (moduleName != null && ProtectedRoutes.TryGetValue(moduleName, out var requiredTier))
+            if (moduleName != null)
             {
-                var currentTier = await GetCurrentTier();
-                var currentRank = TierRank.GetValueOrDefault(currentTier, 0);
-                var requiredRank = TierRank.GetValueOrDefault(requiredTier, 0);
-
-                if (currentRank < requiredRank)
+                var requiredTier = GetRequiredTier(moduleName);
+                if (requiredTier != null)
                 {
-                    context.Result = new JsonResult(new
+                    var currentTier = await GetCurrentTier();
+                    var currentRank = TierRank.GetValueOrDefault(currentTier, 0);
+                    var requiredRank = TierRank.GetValueOrDefault(requiredTier, 0);
+
+                    if (currentRank < requiredRank)
                     {
-                        error = "FORTRESS_TIER_LOCKED",
-                        message = $"This feature requires a {requiredTier} license.",
-                        required_tier = requiredTier,
-                        current_tier = currentTier,
-                        upgrade_url = "/settings?section=activation",
-                    })
-                    { StatusCode = 403 };
-                    return;
+                        context.Result = new JsonResult(new
+                        {
+                            error = "FORTRESS_TIER_LOCKED",
+                            message = $"This feature requires a {requiredTier} license.",
+                            required_tier = requiredTier,
+                            current_tier = currentTier,
+                            upgrade_url = "/settings?section=activation",
+                        })
+                        { StatusCode = 403 };
+                        return;
+                    }
                 }
             }
         }
 
         await next();
+    }
+
+    private static string? GetRequiredTier(string moduleName)
+    {
+        // 1. Check dynamic module registry (populated from module.json manifests)
+        if (ModuleRegistry.TryGetByRoute(moduleName, out var codename) && ModuleRegistry.TryGetTier(codename!, out var registryTier))
+            return registryTier;
+
+        // 2. Check direct codename match in registry
+        if (ModuleRegistry.TryGetTier(moduleName, out var directTier))
+            return directTier;
+
+        // 3. Fall back to hardcoded map for backward compatibility
+        if (ProtectedRoutes.TryGetValue(moduleName, out var fallbackTier))
+            return fallbackTier;
+
+        return null;
     }
 
     private async Task<string> GetCurrentTier()

@@ -45,6 +45,7 @@ public static class ModuleLoader
                 if (manifest == null) continue;
 
                 _discoveredManifests.Add(manifest);
+                ModuleRegistry.Register(manifest);
 
                 // Try to load a pre-compiled module DLL
                 var dllPath = Path.Combine(dir, $"WatchNexus.Module.{manifest.Name}.dll");
@@ -60,15 +61,18 @@ public static class ModuleLoader
                     }
                 }
 
-                Log($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (registered)");
+                // No DLL — register as built-in (controller already mapped by MapControllers)
+                var builtIn = new BuiltInModule(manifest);
+                _loadedModules.Add(builtIn);
+                Log($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (built-in)");
             }
             catch (Exception ex)
             {
-                        Log($"[ModuleLoader] Error loading module from {dir}: {ex.Message}");
+                Log($"[ModuleLoader] Error loading module from {dir}: {ex.Message}");
             }
         }
 
-        Log($"[ModuleLoader] {_discoveredManifests.Count} modules discovered, {_loadedModules.Count} external DLLs loaded");
+        Log($"[ModuleLoader] {_discoveredManifests.Count} modules discovered, {_loadedModules.Count} loaded ({_loadedModules.Count(m => m is BuiltInModule)} built-in, {_loadedModules.Count(m => !(m is BuiltInModule))} external DLL)");
     }
 
     /// <summary>Scans the separated/ directory, compiles each module via dotnet build, and loads the resulting DLL</summary>

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Search, Database, Settings, Save, RefreshCw, Download, Globe, ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { BACKEND_URL } from '../../../lib/config';
+import { BACKEND_URL } from '../../lib/config';
 
 const API = BACKEND_URL;
 

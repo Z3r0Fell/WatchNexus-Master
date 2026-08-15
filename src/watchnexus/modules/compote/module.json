@@ -2,10 +2,19 @@
   "name": "Compote",
   "codename": "compote",
   "display_name": "Indexer Manager",
-  "version": "2.7.3",
+  "version": "1.0.1",
   "description": "Torrent indexer management and search aggregation",
   "author": "WatchNexus",
-  "dependencies": ["core"],
-  "api_routes": ["/api/compote/indexers", "/api/compote/search"],
-  "frontend_pages": ["IndexersPage"]
+  "dependencies": [
+    "core"
+  ],
+  "api_routes": [
+    "/api/media/indexers",
+    "/api/media/search"
+  ],
+  "frontend_pages": [
+    "IndexersPage"
+  ],
+  "tier": "pro",
+  "api_route_prefix": "media"
 }

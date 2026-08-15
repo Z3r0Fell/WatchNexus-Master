@@ -2,6 +2,9 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
@@ -37,7 +40,8 @@ public class VpnController : ControllerBase
     {
         var privateKey = new byte[32];
         RandomNumberGenerator.Fill(privateKey);
-        var publicKey = System.Security.Cryptography.Curve25519.PublicKeyFromSeed(privateKey);
+        var privParams = new X25519PrivateKeyParameters(privateKey, 0);
+        var publicKey = privParams.GeneratePublicKey().GetEncoded();
         return (Convert.ToBase64String(privateKey), Convert.ToBase64String(publicKey));
     }
 
@@ -143,10 +147,10 @@ public class VpnController : ControllerBase
     }
 
     [HttpPost("server/wg-up")]
-    public IActionResult WgUp() => Ok(new { status = "up", message = "WireGuard interface activated" });
+    public IActionResult WgUp() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "WireGuard interface activation requires server-side wg-quick integration." });
 
     [HttpPost("server/wg-down")]
-    public IActionResult WgDown() => Ok(new { status = "down", message = "WireGuard interface deactivated" });
+    public IActionResult WgDown() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "WireGuard interface deactivation requires server-side wg-quick integration." });
 
     [HttpGet("server/wg-status")]
     public async Task<IActionResult> WgStatus()
@@ -157,7 +161,7 @@ public class VpnController : ControllerBase
     }
 
     [HttpGet("logs")]
-    public IActionResult Logs() => Ok(new { logs = Array.Empty<object>(), total = 0, page = 1 });
+    public IActionResult Logs() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "VPN log streaming is not yet implemented." });
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()

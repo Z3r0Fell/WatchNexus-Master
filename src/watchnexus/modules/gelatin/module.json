@@ -2,10 +2,18 @@
   "name": "Gelatin",
   "codename": "gelatin",
   "display_name": "Transcoding Engine",
-  "version": "2.7.3",
+  "version": "1.0.1",
   "description": "FFmpeg-based media transcoding with quality profiles",
   "author": "WatchNexus",
-  "dependencies": ["core"],
-  "api_routes": ["/api/gelatin/jobs", "/api/gelatin/transcode", "/api/gelatin/profiles"],
-  "frontend_pages": []
+  "dependencies": [
+    "core"
+  ],
+  "api_routes": [
+    "/api/crucible/jobs",
+    "/api/crucible/transcode",
+    "/api/crucible/profiles"
+  ],
+  "frontend_pages": [],
+  "tier": "ultra",
+  "api_route_prefix": "crucible"
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Services;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -385,6 +386,8 @@ public class StreamingServicesController : ControllerBase
 [Authorize]
 public class WatchPartyController : ControllerBase
 {
+    private static readonly WatchPartyConnectionManager _connectionManager = new();
+
     [HttpGet("list")]
     public IActionResult List() => Ok(Array.Empty<object>());
     [HttpPost("create")]
@@ -404,4 +407,13 @@ public class WatchPartyController : ControllerBase
     }
     [HttpGet("{partyCode}")]
     public IActionResult Get(string partyCode) => Ok(new { party_code = partyCode, status = "waiting" });
+
+    [HttpGet("{partyCode}/ws")]
+    public async Task WebSocket(string partyCode)
+    {
+        await _connectionManager.HandleConnection(HttpContext, partyCode);
+    }
+
+    [HttpPost("{partyCode}/chat")]
+    public IActionResult SendChat(string partyCode, [FromBody] JsonElement body) => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages." });
 }

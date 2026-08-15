@@ -1,0 +1,19 @@
+{
+  "name": "Template",
+  "display_name": "Template Module",
+  "version": "1.0.0",
+  "description": "A starter module for WatchNexus. Replace this with your module description.",
+  "codename": "template",
+  "author": "Your Name",
+  "tier": "standard",
+  "dependencies": [],
+  "api_route_prefix": "template",
+  "api_routes": [
+    "/api/template/status",
+    "/api/template/hello"
+  ],
+  "frontend_pages": [
+    "TemplatePage"
+  ],
+  "type": "controller"
+}

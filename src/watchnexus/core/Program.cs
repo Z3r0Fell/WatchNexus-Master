@@ -425,7 +425,7 @@ static string ResolveJwtSecret(IConfiguration config, string dataDir, Action<str
     }
 }
 
-static void SeedAccounts(AppDbContext db){
+void SeedAccounts(AppDbContext db){
     // ── OOBE (Out-Of-Box Experience) ──
     // We deliberately do NOT seed a default admin/admin account in v1.0.0
     // RTP. A self-hosted media server that ships with a known-weak admin
@@ -562,10 +562,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseCsrfProtection();
+app.UseWebSockets();
 app.MapControllers();
 
 // ── Map external module routes ────────────────────────────────
 ModuleLoader.MapAllRoutes(app);
+
+// ── WatchParty WebSocket ──────────────────────────────────────
+app.MapGet("/api/watch-party/{partyCode}/ws", async (HttpContext context, string partyCode) =>
+{
+    var manager = context.RequestServices.GetRequiredService<WatchNexus.Core.Services.WatchPartyConnectionManager>();
+    await manager.HandleConnection(context, partyCode);
+}).RequireAuthorization();
 
 // ── SPA fallback — catch-all for client-side routes (NOT /api/*) ─
 if (webRoot != null)

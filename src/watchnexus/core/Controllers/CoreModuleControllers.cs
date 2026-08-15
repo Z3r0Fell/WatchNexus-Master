@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Security.Cryptography;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
 using WatchNexus.Core.Data;
 using WatchNexus.Shared;
 
@@ -434,7 +437,8 @@ public class TunnelController : ControllerBase
 
         var privateKeyBytes = new byte[32];
         RandomNumberGenerator.Fill(privateKeyBytes);
-        var publicKeyBytes = System.Security.Cryptography.Curve25519.PublicKeyFromSeed(privateKeyBytes);
+        var privParams = new X25519PrivateKeyParameters(privateKeyBytes, 0);
+        var publicKeyBytes = privParams.GeneratePublicKey().GetEncoded();
         var psk = new byte[32];
         RandomNumberGenerator.Fill(psk);
 

@@ -2,10 +2,19 @@
   "name": "Drizzle",
   "codename": "drizzle",
   "display_name": "Playlist Engine",
-  "version": "2.7.3",
+  "version": "1.0.1",
   "description": "Continuous playback, queue management, and playlist creation",
   "author": "WatchNexus",
-  "dependencies": ["core"],
-  "api_routes": ["/api/drizzle/playlists", "/api/drizzle/queue"],
-  "frontend_pages": ["PlaylistsPage"]
+  "dependencies": [
+    "core"
+  ],
+  "api_routes": [
+    "/api/drizzle/playlists",
+    "/api/drizzle/queue"
+  ],
+  "frontend_pages": [
+    "PlaylistsPage"
+  ],
+  "tier": "pro",
+  "api_route_prefix": "drizzle"
 }

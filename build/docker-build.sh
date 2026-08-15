@@ -9,6 +9,7 @@
 #   ./docker-build.sh --push          # Build all + push to registry
 #   ./docker-build.sh ultra --push    # Build ultra + push
 #   ./docker-build.sh --no-cache      # Build all with --no-cache
+#   ./docker-build.sh --multiarch     # Build multi-arch (linux/amd64,linux/arm64)
 #
 # Registry: Set DOCKER_REGISTRY env var (default: watchnexus)
 # ══════════════════════════════════════════════════════════════════════
@@ -18,6 +19,7 @@ REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
 VERSION="1.0.1"
 PUSH=false
 NO_CACHE=false
+MULTIARCH=false
 TIERS=("standard" "pro" "ultra")
 
 # Parse args
@@ -25,6 +27,7 @@ for arg in "$@"; do
   case $arg in
     --push) PUSH=true ;;
     --no-cache) NO_CACHE=true ;;
+    --multiarch) MULTIARCH=true ;;
     standard|pro|ultra) TIERS=("$arg") ;;
   esac
 done
@@ -57,11 +60,22 @@ for TIER in "${TIERS[@]}"; do
     .
   )
 
+  if [ "$MULTIARCH" = true ]; then
+    BUILD_CMD="docker buildx build --platform linux/amd64,linux/arm64"
+    if [ "$PUSH" = true ]; then
+      BUILD_CMD+=" --push"
+    else
+      BUILD_CMD+=" --load"
+    fi
+  else
+    BUILD_CMD="docker build"
+  fi
+
   if [ "$NO_CACHE" = true ]; then
     BUILD_ARGS+=(--no-cache)
   fi
 
-  docker build "${BUILD_ARGS[@]}"
+  $BUILD_CMD "${BUILD_ARGS[@]}"
 
   echo "  Built: ${IMAGE}"
   echo "  Size: $(docker image inspect ${IMAGE} --format='{{.Size}}' | numfmt --to=iec 2>/dev/null || echo 'unknown')"
