@@ -1,6 +1,8 @@
 # WatchNexus Distribution & Packaging Plan
 ## Codename: **Constellation**
 
+> **NOTE:** This document describes an early Python-based design. The current WatchNexus codebase is C#/.NET 10 with ASP.NET Core, EF Core, and React. Distribution is now handled via `build-tiers.sh`, Docker, and native installers. This file is kept for historical reference only.
+
 ### Overview
 
 This document outlines the build and distribution strategy for WatchNexus across all major platforms, architectures, and form factors.

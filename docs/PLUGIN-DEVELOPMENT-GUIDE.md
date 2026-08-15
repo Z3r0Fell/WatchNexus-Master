@@ -62,7 +62,7 @@ my-plugin/
 {
   "id": "com.example.my-plugin",
   "name": "My Plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A brief description of what this plugin does",
   "author": "Your Name",
   "plugin_type": "metadata_provider",
@@ -89,9 +89,9 @@ my-plugin/
     }
   },
   "permissions": ["network", "storage"],
-  "min_version": "1.0.0",
+  "min_version": "1.0.1",
   "homepage": "https://github.com/you/my-plugin",
-  "license": "MIT"
+  "license": "LicenseRef-OWN"
 }
 ```
 
@@ -575,7 +575,7 @@ else:
 {
   "id": "wn.adapted.kodi.plugin_video_example",
   "name": "Example Plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An example video plugin",
   "author": "Developer",
   "plugin_type": "stream_provider",
@@ -1244,7 +1244,7 @@ plugins/
           "min_watchnexus_version": "1.0.0"
         },
         {
-          "version": "1.0.0",
+          "version": "1.0.1",
           "released": "2024-01-01",
           "download_url": "packages/com.example.my-plugin/1.0.0.zip"
         }

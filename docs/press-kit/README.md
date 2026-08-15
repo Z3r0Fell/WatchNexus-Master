@@ -4,7 +4,7 @@
 
 **WatchNexus** is a self-hosted, unified media management pipeline that combines the best of media servers like Jellyfin with the automation power of the *arr ecosystem -- all in a single application. Built with C#/.NET 10 and React, it gives users complete control over their media libraries without relying on third-party cloud services.
 
-**Current Version:** 1.0.0  
+**Current Version:** 1.0.1  
 **Platform:** Self-hosted (Linux, Windows, macOS, Docker)  
 **License:** Proprietary  
 **Website:** [watchnexus.ca](http://watchnexus.ca)
@@ -140,7 +140,7 @@ Personalized home screen with hero banner, continue watching, and media recommen
 ### Library
 Manage multiple media libraries with automatic metadata fetching, poster art, and recently added content.
 
-![Library](images/library.png)
+![Library](images/library-manager.png)
 
 ### Indexer Search (Compote)
 Multi-indexer search engine with category filters, quality detection, and one-click grab.
@@ -165,12 +165,12 @@ WireGuard VPN management with peer configuration, bandwidth monitoring, and conn
 ### Settings
 Deep configuration for storage paths, playback, quality profiles, streaming services, indexers, and more.
 
-![Settings](images/settings.png)
+![Settings](images/system.png)
 
 ### Movies
 Browse and manage your movie collection with library organization and TMDB discovery.
 
-![Movies](images/movies.png)
+![Movies](images/library-manager.png)
 
 ---
 
@@ -207,7 +207,7 @@ Browse and manage your movie collection with library organization and TMDB disco
 
 ## Release History
 
-### v1.0.0 (Current - March 2026)
+### v1.0.1 (Current - March 2026)
 - Real TOTP 2FA implementation in Bastion module
 - Live indexer search engine replacing placeholder stubs
 - 7 new fully-implemented module pages
@@ -232,8 +232,8 @@ Browse and manage your movie collection with library organization and TMDB disco
 - **Bare Metal:** Direct installation on Linux or Windows with systemd/service integration
 - **Docker:** Official Docker Compose with multi-container setup
 - **Release Builds:** Self-contained archives (no runtime required)
-  - `WatchNexus-v1.0.0-linux-x64.tar.gz` (58 MB)
-  - `WatchNexus-v1.0.0-win-x64.zip` (72 MB)
+  - `WatchNexus-v1.0.1-linux-x64.tar.gz` (58 MB)
+  - `WatchNexus-v1.0.1-win-x64.zip` (72 MB)
 
 ---
 
@@ -242,7 +242,7 @@ Browse and manage your movie collection with library organization and TMDB disco
 For press inquiries, partnership opportunities, or technical questions:
 
 - **Project:** WatchNexus
-- **Version:** 1.0.0
+- **Version:** 1.0.1
 - **Build Date:** March 2026
 - **Architecture:** C#/.NET 10 + React 18
 

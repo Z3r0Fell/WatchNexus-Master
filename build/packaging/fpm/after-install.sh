@@ -25,9 +25,10 @@ if ! id -u "$SERVICE_USER" >/dev/null 2>&1; then
     fi
 fi
 
-# 2. Set perms
-chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALLDIR"
-chmod +x "$INSTALLDIR/bin/WatchNexus.Core" 2>/dev/null || true
+# 2. Set perms — binaries owned by root, data dir owned by service user
+chown root:root "$INSTALLDIR/bin/WatchNexus.Core" 2>/dev/null || true
+chmod 755 "$INSTALLDIR/bin/WatchNexus.Core" 2>/dev/null || true
+chmod -R go-w "$INSTALLDIR/bin" 2>/dev/null || true
 
 # 3. Data dir
 mkdir -p /var/lib/watchnexus

@@ -21,7 +21,7 @@ public class BrineController : ControllerBase
     public BrineController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "brine", version = "1.0.0", status = "active", description = "Usenet indexer: search NZBs via Newznab-compatible indexers" });
+    public IActionResult Status() => Ok(new { module = "brine", version = "1.0.1", status = "active", description = "Usenet indexer: search NZBs via Newznab-compatible indexers" });
 
     private const string ConfigKey = "brine_config";
 

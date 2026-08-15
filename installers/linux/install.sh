@@ -53,6 +53,11 @@ if [ ${#MISSING[@]} -gt 0 ]; then
     read -p "  Install .NET 10 SDK automatically? (y/n): " ANSWER
     if [[ "$ANSWER" == "y" || "$ANSWER" == "Y" ]]; then
         curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+        if [ ! -s /tmp/dotnet-install.sh ] || ! head -1 /tmp/dotnet-install.sh | grep -q "dotnet-install"; then
+            echo "  [ERROR] Downloaded script appears invalid. Aborting."
+            rm -f /tmp/dotnet-install.sh
+            exit 1
+        fi
         bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
         rm -f /tmp/dotnet-install.sh
         export PATH="$HOME/.dotnet:$PATH"

@@ -64,7 +64,7 @@ netsh advfirewall firewall add rule name="WatchNexus" dir=in action=allow protoc
 :: Auto-start via Scheduled Task
 echo [5/5] Registering auto-start...
 schtasks /delete /tn "WatchNexus" /f >nul 2>&1
-schtasks /create /tn "WatchNexus" /tr "wscript.exe \"%INSTALL_DIR%\WatchNexus-Service.vbs\"" /sc onstart /ru "%USERNAME%" /f >nul 2>&1
+schtasks /create /tn "WatchNexus" /tr "wscript.exe \"%INSTALL_DIR%\WatchNexus-Service.vbs\"" /sc onstart /ru "NT AUTHORITY\NetworkService" /f >nul 2>&1
 if errorlevel 1 (
     echo   [WARN] Could not create startup task. Add manually via Task Scheduler.
 ) else (

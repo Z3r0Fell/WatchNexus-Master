@@ -1,4 +1,4 @@
-# WatchNexus Update Repo (WN-Admin/WatchNexus)
+# WatchNexus Update Repo (Z3r0Fell/WatchNexus-Master)
 
 Three channels the app polls (see docs/UPDATE-SYSTEM.md in the main repo):
 
@@ -10,7 +10,7 @@ Three channels the app polls (see docs/UPDATE-SYSTEM.md in the main repo):
 
 ## Push a hot-patch (example)
 1. Put the fixed file(s) under `Patches/files/<patch_id>/<install-path>`
-2. Run `./make-patch.sh <patch_id> 1.0.0` to generate `Patches/1.0.0.json` with SHA-256s
+2. Run `./make-patch.sh <patch_id> 1.0.1` to generate `Patches/1.0.1.json` with SHA-256s
 3. Commit + push — servers pick it up on their next auto-check (or instantly via "Check for Updates")
 
 ## Announce a new version

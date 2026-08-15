@@ -93,11 +93,11 @@ Point WatchNexus at your NAS media shares for library scanning, and it handles e
 
 ```bash
 # Download
-wget https://github.com/watchnexus/releases/download/v1.0.0/WatchNexus-v1.0.0-linux-x64.tar.gz
+wget https://github.com/watchnexus/releases/download/v1.0.1/WatchNexus-v1.0.1-linux-x64.tar.gz
 
 # Extract and install
-tar xzf WatchNexus-v1.0.0-linux-x64.tar.gz
-cd WatchNexus-v1.0.0-linux-x64
+tar xzf WatchNexus-v1.0.1-linux-x64.tar.gz
+cd WatchNexus-v1.0.1-linux-x64
 sudo bash install.sh
 
 # Verify it's running
@@ -117,7 +117,7 @@ The install script:
 version: '3.8'
 services:
   watchnexus:
-    image: watchnexus/server:1.0.0
+    image: watchnexus/server:1.0.1
     ports:
       - "8001:8001"
     volumes:
@@ -169,7 +169,7 @@ Media files stay on your NAS with their own backup strategy. WatchNexus only sto
 **Where the traditional stack still wins:**
 - **Transcoding**: Jellyfin's hardware transcoding (QSV/NVENC/VA-API) is mature and well-tested. WatchNexus doesn't have this yet.
 - **Community plugins**: Jellyfin and Sonarr/Radarr have years of community plugins. WatchNexus's plugin ecosystem is nascent.
-- **Battle-tested**: Sonarr/Radarr have been in production for years. WatchNexus is at v1.0.0 -- newer and less battle-hardened.
+- **Battle-tested**: Sonarr/Radarr have been in production for years. WatchNexus is at v1.0.1 -- newer and less battle-hardened.
 
 For homelabbers who prioritize simplicity and resource efficiency over maximum transcoding capability, WatchNexus is worth evaluating. For those who need hardware transcoding today, run WatchNexus alongside Jellyfin -- they complement each other.
 

@@ -1,6 +1,8 @@
 # WatchNexus Code Protection Strategy
 ## Codename: **Fortress**
 
+> **NOTE:** This document describes an early Python-based design with Cython compilation. The current WatchNexus codebase is C#/.NET 10. Code protection is now handled via the FortressProtocol (SHA-256 manifest verification, runtime integrity checks, and license-server hash registry). This file is kept for historical reference only.
+
 ### Overview
 
 WatchNexus uses a dual-layer protection strategy combining **legal protection** (dual licensing) with **technical protection** (Cython compilation) to ensure the codebase remains protected while staying open source.

@@ -167,11 +167,11 @@ After a successful run you'll have:
 ```
 release/
 ├── standard/
-│   ├── deb/             watchnexus-standard_1.0.0_amd64.deb
-│   ├── rpm/             watchnexus-standard-1.0.0-1.x86_64.rpm
-│   ├── arch/            watchnexus-standard-1.0.0-1-x86_64.pkg.tar.zst
-│   ├── windows/         watchnexus-standard-1.0.0-windows-x64.exe
-│   ├── docker/          watchnexus-standard-1.0.0-docker.tar  (--docker)
+│   ├── deb/             watchnexus-standard_1.0.1_amd64.deb
+│   ├── rpm/             watchnexus-standard-1.0.1-1.x86_64.rpm
+│   ├── arch/            watchnexus-standard-1.0.1-1-x86_64.pkg.tar.zst
+│   ├── windows/         watchnexus-standard-1.0.1-windows-x64.exe
+│   ├── docker/          watchnexus-standard-1.0.1-docker.tar  (--docker)
 │   ├── community-hubs/  Submit-ready manifests for community stores:
 │   │   ├── docker-compose.yml          (generic reference compose file)
 │   │   ├── unraid-watchnexus-standard.xml  (Unraid CA template)
@@ -211,9 +211,9 @@ Disposable VM/container, one per platform:
 
 | Platform | Command |
 |---|---|
-| Fedora  | `sudo dnf install ./watchnexus-ultra-1.0.0-1.x86_64.rpm && systemctl status watchnexus` |
-| Debian  | `sudo apt install ./watchnexus-ultra_1.0.0_amd64.deb && systemctl status watchnexus` |
-| Arch    | `sudo pacman -U ./watchnexus-ultra-1.0.0-1-x86_64.pkg.tar.zst && systemctl status watchnexus` |
+| Fedora  | `sudo dnf install ./watchnexus-ultra-1.0.1-1.x86_64.rpm && systemctl status watchnexus` |
+| Debian  | `sudo apt install ./watchnexus-ultra_1.0.1_amd64.deb && systemctl status watchnexus` |
+| Arch    | `sudo pacman -U ./watchnexus-ultra-1.0.1-1-x86_64.pkg.tar.zst && systemctl status watchnexus` |
 | Windows | Double-click the EXE; confirm `services.msc` shows `WatchNexusCore` running |
 
 All four should respond on `curl http://localhost:8001/api/cellar/first-launch`.

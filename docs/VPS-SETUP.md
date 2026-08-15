@@ -175,7 +175,7 @@ timedatectl   # confirms 'NTP service: active'
 We're using **Caddy** instead of nginx because:
 - One-line HTTPS via Let's Encrypt (no certbot wrangling)
 - Config file is human-readable (one block per subdomain)
-- Free, MIT-licensed, single binary
+- Free, proprietary, single binary
 
 ### 3.1 Install Caddy
 

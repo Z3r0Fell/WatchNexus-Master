@@ -19,7 +19,7 @@ namespace WatchNexus.Core.Controllers;
 public class SorbetAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "sorbet", name = "Weather Dashboard", version = "1.0.0", status = "active", route = "/api/gadgets/weather", description = "Weather dashboard powered by Open-Meteo" });
+    public IActionResult Status() => Ok(new { module = "sorbet", name = "Weather Dashboard", version = "1.0.1", status = "active", route = "/api/gadgets/weather", description = "Weather dashboard powered by Open-Meteo" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/sorbet", "/api/gadgets/weather") ?? "/api/gadgets/weather");
 }
@@ -31,7 +31,7 @@ public class SorbetAliasController : ControllerBase
 public class BriocheAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "brioche", name = "Podcasts", version = "1.0.0", status = "active", route = "/api/gadgets/podcasts", description = "Podcast player with iTunes search and RSS feeds" });
+    public IActionResult Status() => Ok(new { module = "brioche", name = "Podcasts", version = "1.0.1", status = "active", route = "/api/gadgets/podcasts", description = "Podcast player with iTunes search and RSS feeds" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/brioche", "/api/gadgets/podcasts") ?? "/api/gadgets/podcasts");
 }
@@ -43,7 +43,7 @@ public class BriocheAliasController : ControllerBase
 public class NectarAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "nectar", name = "Internet Radio", version = "1.0.0", status = "active", route = "/api/gadgets/radio", description = "Live radio streams via Radio Browser API" });
+    public IActionResult Status() => Ok(new { module = "nectar", name = "Internet Radio", version = "1.0.1", status = "active", route = "/api/gadgets/radio", description = "Live radio streams via Radio Browser API" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/nectar", "/api/gadgets/radio") ?? "/api/gadgets/radio");
 }
@@ -55,7 +55,7 @@ public class NectarAliasController : ControllerBase
 public class GanacheAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "ganache", name = "Photo Gallery", version = "1.0.0", status = "active", route = "/api/gadgets/photos", description = "Browse and view photos from local libraries" });
+    public IActionResult Status() => Ok(new { module = "ganache", name = "Photo Gallery", version = "1.0.1", status = "active", route = "/api/gadgets/photos", description = "Browse and view photos from local libraries" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/ganache", "/api/gadgets/photos") ?? "/api/gadgets/photos");
 }
@@ -67,7 +67,7 @@ public class GanacheAliasController : ControllerBase
 public class BisqueAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "bisque", name = "Web Video", version = "1.0.0", status = "active", route = "/api/gadgets/webvideo", description = "Web video bookmarks, history, and YouTube info" });
+    public IActionResult Status() => Ok(new { module = "bisque", name = "Web Video", version = "1.0.1", status = "active", route = "/api/gadgets/webvideo", description = "Web video bookmarks, history, and YouTube info" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/bisque", "/api/gadgets/webvideo") ?? "/api/gadgets/webvideo");
 }
@@ -82,7 +82,7 @@ public class MarzipanController : ControllerBase
     public MarzipanController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "marzipan", name = "Playlists & Collections", version = "1.0.0", status = "active",
+    public IActionResult Status() => Ok(new { module = "marzipan", name = "Playlists & Collections", version = "1.0.1", status = "active",
         description = "Playlists, smart collections, and Matrix messaging",
         features = new[] { "playlists", "smart_collections", "matrix_chat", "auto_playlists" } });
 
@@ -141,7 +141,7 @@ public class MarzipanController : ControllerBase
 public class CinnamonAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "cinnamon", name = "Synapse Admin", version = "1.0.0", status = "active", route = "/api/gadgets/synapse-admin", description = "Synapse homeserver user, room, and media management" });
+    public IActionResult Status() => Ok(new { module = "cinnamon", name = "Synapse Admin", version = "1.0.1", status = "active", route = "/api/gadgets/synapse-admin", description = "Synapse homeserver user, room, and media management" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/cinnamon", "/api/gadgets/synapse-admin") ?? "/api/gadgets/synapse-admin");
 }
@@ -153,7 +153,7 @@ public class CinnamonAliasController : ControllerBase
 public class WaffleAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "waffle", name = "Movie Quiz", version = "1.0.0", status = "active", route = "/api/gadgets/gamebot", description = "Guess-the-poster games with blur and reveal effects" });
+    public IActionResult Status() => Ok(new { module = "waffle", name = "Movie Quiz", version = "1.0.1", status = "active", route = "/api/gadgets/gamebot", description = "Guess-the-poster games with blur and reveal effects" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/waffle", "/api/gadgets/gamebot") ?? "/api/gadgets/gamebot");
 }
@@ -165,7 +165,7 @@ public class WaffleAliasController : ControllerBase
 public class CustardAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "custard", name = "Media Bridge", version = "1.0.0", status = "active", route = "/api/gadgets/media-bridge", description = "Browse and manage your external Emby-compatible media server library" });
+    public IActionResult Status() => Ok(new { module = "custard", name = "Media Bridge", version = "1.0.1", status = "active", route = "/api/gadgets/media-bridge", description = "Browse and manage your external Emby-compatible media server library" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/custard", "/api/gadgets/media-bridge") ?? "/api/gadgets/media-bridge");
 }
@@ -177,7 +177,7 @@ public class CustardAliasController : ControllerBase
 public class YeastAliasController : ControllerBase
 {
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "yeast", name = "Background Automation", version = "1.0.0", status = "active", route = "/api/gadgets/bot", description = "Inactivity checks, token drip, and featured film rotation" });
+    public IActionResult Status() => Ok(new { module = "yeast", name = "Background Automation", version = "1.0.1", status = "active", route = "/api/gadgets/bot", description = "Inactivity checks, token drip, and featured film rotation" });
     [HttpGet("{**path}")]
     public IActionResult CatchAll() => RedirectPermanent(Request.Path.Value?.Replace("/api/yeast", "/api/gadgets/bot") ?? "/api/gadgets/bot");
 }
@@ -196,7 +196,7 @@ public class GlazeController : ControllerBase
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
-        module = "glaze", version = "1.0.0", status = "active",
+        module = "glaze", version = "1.0.1", status = "active",
         description = "Trakt.tv and Last.fm scrobbling, history sync, and profile integration",
         features = new[] { "trakt_scrobble", "trakt_sync", "lastfm_scrobble", "watch_history_import", "collection_sync" }
     });
@@ -299,7 +299,7 @@ public class SetupWizardController : ControllerBase
     public async Task<IActionResult> Status()
     {
         var completed = await _db.Settings.AnyAsync(s => s.Key == "setup_completed" && s.Value == "true");
-        return Ok(new { module = "setup", version = "1.0.0", completed, requires_setup = !completed });
+        return Ok(new { module = "setup", version = "1.0.1", completed, requires_setup = !completed });
     }
 
     [HttpGet("state")]

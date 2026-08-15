@@ -112,12 +112,28 @@ public static class Fortress
         }).RequireAuthorization(policy => policy.RequireRole("admin"));
 
         // 7. Map Fortress audit export (full log as JSON download) — admin only
-        app.MapGet("/api/fortress/audit/export", () =>
+        app.MapGet("/api/fortress/audit/export", (int? limit, int? offset) =>
         {
-            List<AuditEntry> entries;
-            lock (_auditLock) { entries = _auditLog.ToList(); }
-            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
-            return Results.Text(json, "application/json");
+            var take = Math.Clamp(limit ?? 1000, 1, 5000);
+            var skip = Math.Max(offset ?? 0, 0);
+            lock (_auditLock)
+            {
+                var entries = _auditLog
+                    .OrderByDescending(e => e.Timestamp)
+                    .Skip(skip)
+                    .Take(take)
+                    .Select(e => new
+                    {
+                        timestamp = e.Timestamp.ToString("o"),
+                        action = e.Action,
+                        result = e.Result,
+                        detail = e.Detail,
+                        instanceId = e.InstanceId
+                    })
+                    .ToList();
+                var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+                return Results.Text(json, "application/json");
+            }
         }).RequireAuthorization(policy => policy.RequireRole("admin"));
 
         // Record startup in audit log

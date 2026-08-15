@@ -49,11 +49,11 @@ Pre-built installers for RTP v1.0.1 are published at
 
 | Platform | File |
 |---|---|
-| Windows  | `watchnexus-<tier>-1.0.0-windows-x64.exe` |
-| Fedora   | `watchnexus-<tier>-1.0.0-1.x86_64.rpm` |
-| Debian   | `watchnexus-<tier>_1.0.0_amd64.deb` |
-| Arch     | `watchnexus-<tier>-1.0.0-1-x86_64.pkg.tar.zst` |
-| Docker   | `docker pull watchnexus/watchnexus:1.0.0-<tier>` |
+| Windows  | `watchnexus-<tier>-1.0.1-windows-x64.exe` |
+| Fedora   | `watchnexus-<tier>-1.0.1-1.x86_64.rpm` |
+| Debian   | `watchnexus-<tier>_1.0.1_amd64.deb` |
+| Arch     | `watchnexus-<tier>-1.0.1-1-x86_64.pkg.tar.zst` |
+| Docker   | `docker pull watchnexus/watchnexus:1.0.1-<tier>` |
 | Unraid   | Community Apps → search "WatchNexus" |
 
 After install, browse to `http://<host>:8001` and enter your license key

@@ -157,7 +157,7 @@ So I decided to build what I wished existed: **WatchNexus** -- a single applicat
 - Chose .NET 10 for the self-contained binary story (58 MB, no runtime deps)
 - React 18 + TailwindCSS + Shadcn UI for the frontend
 - SQLite via EF Core 10 for zero-config database
-- Currently at v1.0.0 with 136 API endpoints
+- Currently at v1.0.1 with 136 API endpoints
 
 **What makes it sticky (for me at least):**
 1. **One database.** Sonarr and Radarr duplicating indexer configs is infuriating. In WatchNexus, indexer settings are configured once and shared across all modules.

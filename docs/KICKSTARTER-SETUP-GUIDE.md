@@ -501,7 +501,7 @@ Add these questions:
 
 **Q: Is WatchNexus really free/open source?**
 ```
-A: Yes! WatchNexus is MIT licensed and always will be. The Kickstarter funds development of mobile apps and new features. You can self-host the web app for free today.
+A: Yes! WatchNexus is proprietary software with a commercial license. The Kickstarter funds development of mobile apps and new features. You can self-host the web app for free today.
 ```
 
 ---

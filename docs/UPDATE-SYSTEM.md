@@ -18,14 +18,14 @@ Set in `appsettings.Production.json` (or environment):
 
 ```json
 {
-  "PATCH_REPO_URL": "https://api.github.com/repos/WN-Admin/WatchNexus",
+  "PATCH_REPO_URL": "https://api.github.com/repos/Z3r0Fell/WatchNexus-Master",
   "PATCH_REPO_TOKEN": "github_pat_..."
 }
 ```
 
 ## Patch repo layout
 
-The update repo is `WN-Admin/WatchNexus` (github.com/WN-Admin/WatchNexus)
+The update repo is `Z3r0Fell/WatchNexus-Master` (github.com/Z3r0Fell/WatchNexus-Master)
 with three channels:
 
 ```
@@ -48,8 +48,8 @@ Releases/                           ← downloadable installers/builds
   "latest_version": "1.0.1",
   "release_date": "2026-08-01",
   "release_notes": "Fixes X, adds Y",
-  "changelog": "https://github.com/WN-Admin/WatchNexus/blob/main/Updates/CHANGELOG-1.0.1.md",
-  "download_url": "https://github.com/WN-Admin/WatchNexus/tree/main/Releases",
+  "changelog": "https://github.com/Z3r0Fell/WatchNexus-Master/blob/main/Updates/CHANGELOG-1.0.1.md",
+  "download_url": "https://github.com/Z3r0Fell/WatchNexus-Master/tree/main/Releases",
   "size_mb": 85,
   "mandatory": false,
   "min_version": "1.0.0"

@@ -22,9 +22,8 @@ systemctl --user daemon-reload
 # Disable lingering
 loginctl disable-linger "$(whoami)" 2>/dev/null || true
 
-# Stop any running instances
-pkill -f "WatchNexus.Core" 2>/dev/null || true
-pkill -f "dotnet WatchNexus" 2>/dev/null || true
+# Stop any running instances (more specific patterns to avoid killing unrelated processes)
+pkill -f "WatchNexus.Core.dll" 2>/dev/null || true
 
 # Remove systemd unit
 rm -f "$HOME/.config/systemd/user/${SERVICE_NAME}.service"

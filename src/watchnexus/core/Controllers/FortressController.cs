@@ -149,21 +149,33 @@ public static class FortressIntegrity
     public static async Task SealBuild(AppDbContext db)
     {
         var baseDir = AppContext.BaseDirectory;
-        var criticalFiles = new[]
+        var criticalFiles = new List<string>();
+
+        try
         {
-            "WatchNexus.Core.dll",
-            "WatchNexus.Shared.dll",
-            "appsettings.json",
-        };
+            foreach (var dll in Directory.GetFiles(baseDir, "*.dll", SearchOption.TopDirectoryOnly))
+            {
+                criticalFiles.Add(Path.GetFileName(dll));
+            }
+            foreach (var json in Directory.GetFiles(baseDir, "*.json", SearchOption.TopDirectoryOnly))
+            {
+                criticalFiles.Add(Path.GetFileName(json));
+            }
+        }
+        catch { /* ignore directory enumeration errors */ }
 
         var hashes = new Dictionary<string, string>();
-        foreach (var file in criticalFiles)
+        foreach (var file in criticalFiles.Distinct())
         {
             var fullPath = Path.Combine(baseDir, file);
             if (File.Exists(fullPath))
             {
-                var bytes = await File.ReadAllBytesAsync(fullPath);
-                hashes[file] = Convert.ToHexString(SHA256.HashData(bytes)).ToLower();
+                try
+                {
+                    var bytes = await File.ReadAllBytesAsync(fullPath);
+                    hashes[file] = Convert.ToHexString(SHA256.HashData(bytes)).ToLower();
+                }
+                catch { /* skip unreadable files */ }
             }
         }
 
@@ -171,7 +183,7 @@ public static class FortressIntegrity
         {
             version = FORTRESS_VERSION,
             sealed_at = DateTime.UtcNow.ToString("o"),
-            app_version = "1.0.0",
+            app_version = "1.0.1",
             file_hashes = hashes,
             machine_id = Environment.MachineName,
         });
@@ -254,7 +266,7 @@ public class FortressController : ControllerBase
         return Ok(new
         {
             fortress_version = "1.0",
-            app_version = "1.0.0",
+            app_version = "1.0.1",
             integrity_valid = valid,
             violations = violations.Count > 0 ? violations : null,
             sealed_at = sealedAt,

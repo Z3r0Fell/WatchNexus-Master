@@ -42,6 +42,10 @@ public class CellarController : ControllerBase
                 return false;
             }
             attempts.RemoveAll(t => now - t > TimeSpan.FromMinutes(5));
+            if (attempts.Count == 0)
+            {
+                _activationAttempts.Remove(ip);
+            }
             if (attempts.Count >= 5)
                 return true;
             attempts.Add(now);
@@ -91,6 +95,10 @@ public class CellarController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> FirstLaunch()
     {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (IsRateLimited(ip))
+            return StatusCode(429, new { success = false, message = "Too many requests. Please wait 5 minutes and try again." });
+
         var license = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
         var setupDone = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_completed" && s.UserId == "");
         return Ok(new

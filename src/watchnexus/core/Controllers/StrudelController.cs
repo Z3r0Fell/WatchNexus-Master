@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Auth;
 using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Controllers;
@@ -37,7 +38,7 @@ public class StrudelController : ControllerBase
         return Ok(new
         {
             module = "strudel",
-            version = "1.0.0",
+            version = "1.0.1",
             status = "active",
             description = "Optical Disc Ripping & Transcoding Pipeline",
             features = new[] { "dvd_ripping", "bluray_ripping", "transcoding", "subtitle_extraction", "library_import", "queue_management" },
@@ -112,6 +113,13 @@ public class StrudelController : ControllerBase
         if (makemkvPath == null)
             return BadRequest(new { error = "MakeMKV is not installed." });
 
+        if (request.DriveIndex < 0 || request.DriveIndex > 9)
+            return BadRequest(new { error = "Invalid drive index. Must be between 0 and 9." });
+
+        var outputPath = request.OutputPath ?? "/media/rips";
+        if (!MediaPaths.IsAllowedPath(outputPath))
+            return BadRequest(new { error = "Output path is not inside an allowed media root." });
+
         var jobId = Guid.NewGuid().ToString("N")[..12];
         var job = new RipJob
         {
@@ -123,7 +131,7 @@ public class StrudelController : ControllerBase
             SelectedTitles = request.Titles ?? new List<int> { 0 },
             TranscodeProfile = request.TranscodeProfile ?? "direct",
             OutputFormat = request.OutputFormat ?? "mkv",
-            OutputPath = request.OutputPath ?? "/media/rips",
+            OutputPath = outputPath,
             RipProgress = 0,
             TranscodeProgress = 0,
             StartedAt = DateTime.UtcNow
@@ -405,6 +413,9 @@ public class StrudelController : ControllerBase
     [HttpPost("eject/{driveIndex}")]
     public IActionResult EjectDrive(int driveIndex)
     {
+        if (driveIndex < 0 || driveIndex > 9)
+            return BadRequest(new { error = "Invalid drive index. Must be between 0 and 9." });
+
         try
         {
             var device = $"/dev/sr{driveIndex}";
@@ -622,13 +633,19 @@ public class StrudelController : ControllerBase
             {
                 if (job.CancellationRequested) { job.Status = "cancelled"; break; }
 
-                var args = $"mkv --cache=256 --minlength=120 -r disc:{job.DriveIndex} {titleIndex} \"{outputDir}\"";
-                var psi = new ProcessStartInfo(makemkvPath, args)
+                var psi = new ProcessStartInfo(makemkvPath)
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false
                 };
+                psi.ArgumentList.Add("mkv");
+                psi.ArgumentList.Add("--cache=256");
+                psi.ArgumentList.Add("--minlength=120");
+                psi.ArgumentList.Add("-r");
+                psi.ArgumentList.Add($"disc:{job.DriveIndex}");
+                psi.ArgumentList.Add(titleIndex.ToString());
+                psi.ArgumentList.Add(outputDir);
 
                 var proc = Process.Start(psi);
                 if (proc == null) { job.Status = "failed"; job.Error = "Failed to start makemkvcon"; break; }
@@ -680,16 +697,62 @@ public class StrudelController : ControllerBase
 
                         var outExt = job.OutputFormat == "mp4" ? "mp4" : "mkv";
                         var outFile = Path.ChangeExtension(mkvFile, $".transcoded.{outExt}");
-                        var hbArgs = BuildHandBrakeArgs(mkvFile, outFile, job.TranscodeProfile);
+                    var hbPsi = new ProcessStartInfo(handbrake)
+                    {
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false
+                    };
+                    hbPsi.ArgumentList.Add("-i");
+                    hbPsi.ArgumentList.Add(mkvFile);
+                    hbPsi.ArgumentList.Add("-o");
+                    hbPsi.ArgumentList.Add(outFile);
+                    switch (job.TranscodeProfile)
+                    {
+                        case "1080p-h265-crf20":
+                            hbPsi.ArgumentList.Add("-e"); hbPsi.ArgumentList.Add("x265");
+                            hbPsi.ArgumentList.Add("-q"); hbPsi.ArgumentList.Add("20");
+                            hbPsi.ArgumentList.Add("--encoder-preset"); hbPsi.ArgumentList.Add("medium");
+                            hbPsi.ArgumentList.Add("-B"); hbPsi.ArgumentList.Add("160");
+                            hbPsi.ArgumentList.Add("--all-audio"); hbPsi.ArgumentList.Add("--all-subtitles");
+                            break;
+                        case "1080p-h264-crf18":
+                            hbPsi.ArgumentList.Add("-e"); hbPsi.ArgumentList.Add("x264");
+                            hbPsi.ArgumentList.Add("-q"); hbPsi.ArgumentList.Add("18");
+                            hbPsi.ArgumentList.Add("--encoder-preset"); hbPsi.ArgumentList.Add("medium");
+                            hbPsi.ArgumentList.Add("-B"); hbPsi.ArgumentList.Add("160");
+                            hbPsi.ArgumentList.Add("--all-audio"); hbPsi.ArgumentList.Add("--all-subtitles");
+                            break;
+                        case "720p-h265-crf22":
+                            hbPsi.ArgumentList.Add("-e"); hbPsi.ArgumentList.Add("x265");
+                            hbPsi.ArgumentList.Add("-q"); hbPsi.ArgumentList.Add("22");
+                            hbPsi.ArgumentList.Add("--encoder-preset"); hbPsi.ArgumentList.Add("medium");
+                            hbPsi.ArgumentList.Add("-w"); hbPsi.ArgumentList.Add("1280");
+                            hbPsi.ArgumentList.Add("-B"); hbPsi.ArgumentList.Add("128");
+                            hbPsi.ArgumentList.Add("--all-audio"); hbPsi.ArgumentList.Add("--all-subtitles");
+                            break;
+                        case "nvenc-h265-crf24":
+                            hbPsi.ArgumentList.Add("-e"); hbPsi.ArgumentList.Add("nvenc_h265");
+                            hbPsi.ArgumentList.Add("-q"); hbPsi.ArgumentList.Add("24");
+                            hbPsi.ArgumentList.Add("-B"); hbPsi.ArgumentList.Add("160");
+                            hbPsi.ArgumentList.Add("--all-audio"); hbPsi.ArgumentList.Add("--all-subtitles");
+                            break;
+                        case "qsv-h265-crf22":
+                            hbPsi.ArgumentList.Add("-e"); hbPsi.ArgumentList.Add("qsv_h265");
+                            hbPsi.ArgumentList.Add("-q"); hbPsi.ArgumentList.Add("22");
+                            hbPsi.ArgumentList.Add("-B"); hbPsi.ArgumentList.Add("160");
+                            hbPsi.ArgumentList.Add("--all-audio"); hbPsi.ArgumentList.Add("--all-subtitles");
+                            break;
+                        default:
+                            hbPsi.ArgumentList.Add("-e"); hbPsi.ArgumentList.Add("x265");
+                            hbPsi.ArgumentList.Add("-q"); hbPsi.ArgumentList.Add("20");
+                            hbPsi.ArgumentList.Add("--encoder-preset"); hbPsi.ArgumentList.Add("medium");
+                            hbPsi.ArgumentList.Add("-B"); hbPsi.ArgumentList.Add("160");
+                            hbPsi.ArgumentList.Add("--all-audio"); hbPsi.ArgumentList.Add("--all-subtitles");
+                            break;
+                    }
 
-                        var hbPsi = new ProcessStartInfo(handbrake, hbArgs)
-                        {
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false
-                        };
-
-                        var hbProc = Process.Start(hbPsi);
+                    var hbProc = Process.Start(hbPsi);
                         if (hbProc == null) continue;
 
                         while (!hbProc.HasExited)

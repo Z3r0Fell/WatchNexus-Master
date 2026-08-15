@@ -545,7 +545,7 @@ Shared theme files should follow this format:
 2. **Test thoroughly**: Check all pages and states
 3. **Document custom CSS**: Comment any advanced customizations
 4. **Provide screenshots**: Show how the theme looks
-5. **Include license info**: MIT, CC0, etc.
+5. **Include license info**: proprietary, LicenseRef-OWN, etc.
 
 ---
 

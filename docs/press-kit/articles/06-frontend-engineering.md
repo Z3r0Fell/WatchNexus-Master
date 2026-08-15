@@ -13,7 +13,7 @@ This article covers the design decisions, component architecture, and CSS strate
 
 ## The Problem: Feature Density vs. Usability
 
-WatchNexus started with 8 modules. By version 1.0.0, it had 35. The sidebar navigation, which initially listed every module as a flat list, became unusable around module 15. We needed a system that could:
+WatchNexus started with 8 modules. By version 1.0.1, it had 35. The sidebar navigation, which initially listed every module as a flat list, became unusable around module 15. We needed a system that could:
 
 1. Show the most-used modules immediately
 2. Hide less-used modules without making them hard to find
@@ -241,7 +241,7 @@ A simple CSS spinner using the brand color. No external animation library needed
 
 ---
 
-*WatchNexus is a self-hosted media management pipeline at version 1.0.0. Built with React 18, TailwindCSS, and Shadcn UI.*
+*WatchNexus is a self-hosted media management pipeline at version 1.0.1. Built with React 18, TailwindCSS, and Shadcn UI.*
 
 ---
 

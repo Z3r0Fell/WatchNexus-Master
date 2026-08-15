@@ -3,9 +3,8 @@
 ## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/watchnexus.git
-cd watchnexus/installers/docker
+# Pull the official image
+docker pull watchnexus/watchnexus:1.0.1-standard
 
 # Start WatchNexus
 docker compose up -d

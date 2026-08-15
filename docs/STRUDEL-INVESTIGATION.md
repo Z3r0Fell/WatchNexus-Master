@@ -465,4 +465,4 @@ WatchNexus does **not** include or distribute any decryption libraries or copy p
 
 ---
 
-*Document created: April 8, 2026 | Module: Strudel v1.0.0*
+*Document created: April 8, 2026 | Module: Strudel v1.0.1*

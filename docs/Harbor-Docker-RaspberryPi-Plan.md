@@ -1,6 +1,8 @@
 # WatchNexus Docker & Raspberry Pi Deployment
 ## Codename: **Harbor**
 
+> **NOTE:** This document describes an early Python-based Docker design with uvicorn. The current WatchNexus codebase is C#/.NET 10 with multi-stage Docker builds in the root `Dockerfile`. This file is kept for historical reference only.
+
 ### Overview
 
 This document outlines containerization and embedded device deployment strategies for WatchNexus.

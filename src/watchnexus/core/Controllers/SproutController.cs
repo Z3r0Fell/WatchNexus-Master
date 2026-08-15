@@ -24,7 +24,7 @@ public class SproutController : ControllerBase
     [Authorize]
     public IActionResult Status() => Ok(new
     {
-        module = "sprout", version = "1.0.0", status = "active",
+        module = "sprout", version = "1.0.1", status = "active",
         description = "RSS/Atom feed generator for library content",
         features = new[] { "rss_2.0", "atom", "custom_feeds", "media_enclosures", "category_feeds", "api_key_auth" }
     });

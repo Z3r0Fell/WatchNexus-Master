@@ -125,7 +125,7 @@ Section "Core (required)" SecCore
     ; is resolved at install time, not at NSIS compile time.
     nsExec::ExecToLog 'cmd.exe /c if not exist "%PROGRAMDATA%\WatchNexus" mkdir "%PROGRAMDATA%\WatchNexus"'
     nsExec::ExecToLog 'cmd.exe /c if not exist "%PROGRAMDATA%\WatchNexus\logs" mkdir "%PROGRAMDATA%\WatchNexus\logs"'
-    nsExec::ExecToLog 'cmd.exe /c icacls "%PROGRAMDATA%\WatchNexus" /grant "*S-1-5-18:(OI)(CI)F" /grant "*S-1-5-32-544:(OI)(CI)F" /T /C /Q'
+    nsExec::ExecToLog 'cmd.exe /c icacls "%PROGRAMDATA%\WatchNexus" /grant "*S-1-5-18:(OI)(CI)F" /grant "*S-1-5-32-544:(OI)(CI)F" /grant "*S-1-5-20:(OI)(CI)F" /T /C /Q'
 
     ; Register the Windows service (run as NetworkService, not LocalSystem)
     nsExec::ExecToLog 'sc.exe create ${SERVICE_NAME} \
@@ -225,7 +225,6 @@ Section "Uninstall"
     Delete   "$INSTDIR\LICENSE.txt"
     Delete   "$INSTDIR\LICENSE.html"
     Delete   "$INSTDIR\README.md"
-    Delete   "$INSTDIR\license.key"
     Delete   "$INSTDIR\OpenLogs.cmd"
     Delete   "$INSTDIR\WatchNexus-Tray.cmd"
     Delete   "$INSTDIR\watchnexus.ico"
