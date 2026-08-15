@@ -75,7 +75,8 @@ public class ZestController : ControllerBase
         var logFile = Path.Combine(AppContext.BaseDirectory, "logs", "watchnexus.log");
         if (!System.IO.File.Exists(logFile)) return Ok(Array.Empty<object>());
         var allLines = System.IO.File.ReadAllLines(logFile);
-        return Ok(allLines.TakeLast(lines).Select(l => new { line = l, timestamp = DateTime.UtcNow }));
+        var take = Math.Clamp(lines, 1, 1000);
+        return Ok(allLines.TakeLast(take).Select(l => new { line = l, timestamp = DateTime.UtcNow }));
     }
     [HttpPost("logs/clear")]
     public IActionResult ClearLogs()

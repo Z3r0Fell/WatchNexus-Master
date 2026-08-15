@@ -138,7 +138,7 @@ public class VpnController : ControllerBase
         var p = await _db.VpnPeers.FindAsync(id);
         if (p == null) return NotFound();
         var s = await GetOrCreateServer();
-        var config = $"[Interface]\nPrivateKey = {p.PrivateKey}\nAddress = {p.Address}\nDNS = {s.Dns}\n\n[Peer]\nPublicKey = {s.PublicKey}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {s.Endpoint}:{s.ListenPort}\n";
+        var config = $"[Interface]\nAddress = {p.Address}\nDNS = {s.Dns}\n\n[Peer]\nPublicKey = {s.PublicKey}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {s.Endpoint}:{s.ListenPort}\n";
         return Ok(new { qr_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(config)), peer_id = id });
     }
 

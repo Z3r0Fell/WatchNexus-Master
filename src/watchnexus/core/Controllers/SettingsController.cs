@@ -171,6 +171,13 @@ public class SettingsController : ControllerBase
     {
         if (SsrfGuard.IsBlocked(req.Host))
             return BadRequest(new { success = false, detail = "That host is not allowed." });
+
+        if (!IPAddress.TryParse(req.Host, out var ip) && !Uri.CheckHostName(req.Host).Equals(UriHostNameType.Dns))
+            return BadRequest(new { success = false, detail = "Invalid host format." });
+
+        if (ip != null && (IPAddress.IsLoopback(ip) || ip.ToString() is "127.0.0.1" or "::1"))
+            return BadRequest(new { success = false, detail = "Loopback addresses are not allowed." });
+
         try
         {
             var client = _httpFactory.CreateClient();
@@ -208,7 +215,8 @@ public class LogsController : ControllerBase
         var logFile = Path.Combine(LogDir, "watchnexus.log");
         if (!System.IO.File.Exists(logFile)) return Ok(new { entries = Array.Empty<object>(), total = 0 });
         var allLines = System.IO.File.ReadAllLines(logFile);
-        var entries = allLines.TakeLast(lines).Select(l => new { line = l, timestamp = DateTime.UtcNow });
+        var take = Math.Clamp(lines, 1, 1000);
+        var entries = allLines.TakeLast(take).Select(l => new { line = l, timestamp = DateTime.UtcNow });
         return Ok(new { entries, total = allLines.Length });
     }
 
