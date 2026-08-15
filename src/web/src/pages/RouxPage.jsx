@@ -10,8 +10,9 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
+import { BACKEND_URL } from '../lib/config';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 const headers = { 'Content-Type': 'application/json' };
 
 const collectionIcons = {

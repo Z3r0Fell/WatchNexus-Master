@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../../components/layout/Layout';
 import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 import { toast } from 'sonner';
 import { BarChart3, Clock, Film, Tv, TrendingUp, Calendar, PlayCircle, Activity } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 const headers = { 'Content-Type': 'application/json' };
 
 const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (

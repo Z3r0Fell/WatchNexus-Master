@@ -73,6 +73,8 @@ const VideoPlayer = () => {
   const volumeRef = useRef(volume);
   const fullscreenRef = useRef(fullscreen);
   const showSubtitleMenuRef = useRef(showSubtitleMenu);
+  const subtitleOffsetToastRef = useRef(null);
+  const subtitleOffsetTimerRef = useRef(null);
   const showSettingsRef = useRef(showSettings);
   const subtitleOffsetRef = useRef(subtitleOffset);
   const subtitlesEnabledRef = useRef(subtitlesEnabled);
@@ -86,9 +88,11 @@ const VideoPlayer = () => {
 
   // Fetch media info
   useEffect(() => {
+    let ignore = false;
     const fetchMedia = async () => {
       try {
         const res = await marmaladeMedia.getMediaItem(mediaId);
+        if (ignore) return;
         setMedia(res.data);
         setCurrentTime(res.data.watch_progress || 0);
 
@@ -96,38 +100,43 @@ const VideoPlayer = () => {
         // <video> element can use directly.
         try {
           const url = await marmaladeStream.getStreamUrl(mediaId);
+          if (ignore) return;
           setStreamUrl(url);
         } catch {
           setError('Failed to authorize playback');
         }
         
         // Fetch skip segments if available
-        fetchSkipSegments(mediaId);
+        await fetchSkipSegments(mediaId, ignore);
         
         // Fetch next episode if this is a TV show
         if (res.data.type === 'tv' || res.data.series_name) {
-          fetchNextEpisode(res.data);
+          await fetchNextEpisode(res.data, ignore);
         }
       } catch (err) {
-        console.error('Failed to load media:', err);
-        setError('Failed to load media');
+        if (!ignore) {
+          console.error('Failed to load media:', err);
+          setError('Failed to load media');
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     };
     
     if (mediaId) {
       fetchMedia();
     }
+    
+    return () => { ignore = true; };
   }, [mediaId]);
 
   // Fetch skip segments (intro, credits, etc.)
-  const fetchSkipSegments = async (id) => {
+  const fetchSkipSegments = async (id, ignore = false) => {
     try {
-      const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`, {
-        
-      });
-      if (res.data && res.data.segments) {
+      const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`);
+      if (!ignore && res.data && res.data.segments) {
         setSkipSegments(res.data.segments);
       }
     } catch (err) {
@@ -137,12 +146,10 @@ const VideoPlayer = () => {
   };
 
   // Fetch next episode in series
-  const fetchNextEpisode = async (currentMedia) => {
+  const fetchNextEpisode = async (currentMedia, ignore = false) => {
     try {
-      const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`, {
-        
-      });
-      if (res.data) {
+      const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`);
+      if (!ignore && res.data) {
         setNextEpisode(res.data);
       }
     } catch (err) {
@@ -267,7 +274,6 @@ const VideoPlayer = () => {
         
         const res = await axios.get(`${API_URL}${endpoint}`, {
           params,
-          
         });
         
         if (res.data && res.data.length > 0) {
@@ -290,8 +296,6 @@ const VideoPlayer = () => {
       const res = await axios.post(`${API_URL}/api/subtitles/download`, {
         download_url: subtitle.download_url,
         media_id: mediaId,
-      }, {
-        
       });
       
       if (res.data.file_path) {
@@ -445,11 +449,12 @@ const VideoPlayer = () => {
 
   // Subtitle offset adjustment with keyboard
   const adjustSubtitleOffset = useCallback((delta) => {
-    setSubtitleOffset(prev => {
-      const newOffset = prev + delta;
-      toast.info(`Subtitle offset: ${newOffset}ms`);
-      return newOffset;
-    });
+    setSubtitleOffset(prev => prev + delta);
+    if (subtitleOffsetTimerRef.current) return;
+    subtitleOffsetToastRef.current = toast.info(`Subtitle offset: ${subtitleOffsetRef.current + delta}ms`);
+    subtitleOffsetTimerRef.current = setTimeout(() => {
+      subtitleOffsetTimerRef.current = null;
+    }, 300);
   }, []);
 
   const handleKeyDown = useCallback((e) => {
@@ -491,11 +496,11 @@ const VideoPlayer = () => {
         e.preventDefault();
         setSubtitlesEnabled(prev => !prev);
         break;
-      case 'g': // Delay subtitles
+      case 'g':
         e.preventDefault();
         adjustSubtitleOffset(-100);
         break;
-      case 'h': // Advance subtitles
+      case 'h':
         e.preventDefault();
         adjustSubtitleOffset(100);
         break;
@@ -915,7 +920,7 @@ const VideoPlayer = () => {
                   <p className="text-xs text-gray-500 px-3 py-2">Available ({availableSubtitles.length})</p>
                   {availableSubtitles.map((sub, idx) => (
                     <button
-                      key={idx}
+                      key={sub.id || sub.download_url || idx}
                       onClick={() => loadSubtitle(sub)}
                       className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/10 ${
                         currentSubtitle?.download_url === sub.download_url && subtitlesEnabled ? 'bg-white/10' : ''

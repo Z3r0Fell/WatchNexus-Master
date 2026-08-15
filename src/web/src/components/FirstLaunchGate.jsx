@@ -394,7 +394,9 @@ const IdentityStep = ({ accent, setAccent, onNext, onBack, initialName }) => {
     const serverName = name.trim() || 'WatchNexus';
     try {
       await axios.put(`${API}/api/settings`, { server_name: serverName, ui_accent: chosen });
-    } catch { /* non-blocking */ }
+    } catch (error) {
+      console.error('Non-blocking identity save failed:', error);
+    }
     setBusy(false);
     onNext({ server: serverName, accent: chosen });
   };

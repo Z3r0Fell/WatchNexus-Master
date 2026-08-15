@@ -7,6 +7,7 @@ const API = process.env.REACT_APP_BACKEND_URL || '';
 const marmaladeClient = axios.create({
   baseURL: `${API}/api/marmalade`,
   timeout: 30000,
+  withCredentials: true,
 });
 
 // Response interceptor for centralized error handling

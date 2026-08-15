@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BACKEND_URL , tmdbImageUrl} from '../../lib/config';
+import { BACKEND_URL, tmdbImageUrl } from '../../lib/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, FastForward, SkipForward, Clock, Zap, 

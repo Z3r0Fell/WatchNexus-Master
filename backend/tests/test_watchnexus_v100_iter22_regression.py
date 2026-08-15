@@ -33,12 +33,16 @@ import time
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://ffmpeg-wizard-2.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
 
-OWNER_EMAIL = "owner@watchnexus.local"
-OWNER_PASSWORD = "password123"
-MEMBER_EMAIL = "member@home.local"
-MEMBER_PASSWORD = "hometime1"
+OWNER_EMAIL = os.environ.get("TEST_OWNER_EMAIL", "")
+OWNER_PASSWORD = os.environ.get("TEST_OWNER_PASSWORD", "")
+MEMBER_EMAIL = os.environ.get("TEST_MEMBER_EMAIL", "")
+MEMBER_PASSWORD = os.environ.get("TEST_MEMBER_PASSWORD", "")
+if not all([OWNER_EMAIL, OWNER_PASSWORD, MEMBER_EMAIL, MEMBER_PASSWORD]):
+    pytest.skip("TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD, TEST_MEMBER_EMAIL, TEST_MEMBER_PASSWORD required", allow_module_level=True)
 
 
 # --------------------------------------------------------------------------

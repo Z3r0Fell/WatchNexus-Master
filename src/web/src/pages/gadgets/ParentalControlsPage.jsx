@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../../components/layout/Layout';
 import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 import { toast } from 'sonner';
 import { Shield, Plus, Trash2, Save, Lock, UserCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 
 const RATINGS = ['G', 'PG', 'PG-13', 'R', 'NC-17', 'TV-Y', 'TV-G', 'TV-PG', 'TV-14', 'TV-MA'];
 

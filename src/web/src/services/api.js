@@ -313,26 +313,6 @@ export const torrentEngineApi = {
 // Health check
 export const healthCheck = () => apiClient.get(`/health`);
 
-// Watch Party API calls
-export const watchPartyApi = {
-  list: () => apiClient.get(`/watch-party/list`),
-  
-  create: (mediaId, mediaTitle, mediaType = 'movie') =>
-    apiClient.post(`/watch-party/create`, null, { 
-      params: { media_id: mediaId, media_title: mediaTitle, media_type: mediaType } 
-    }),
-  
-  get: (partyCode) => apiClient.get(`/watch-party/${partyCode}`),
-  
-  // WebSocket URL builder
-  getWebSocketUrl: (partyCode) => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Use current host if BACKEND_URL is empty (production standalone mode)
-    const backendHost = BACKEND_URL ? BACKEND_URL.replace(/^https?:\/\//, '') : window.location.host;
-    return `${wsProtocol}//${backendHost}/ws/party/${partyCode}`;
-  },
-};
-
 // Subtitle API calls
 export const subtitleApi = {
   searchTV: (showName, season, episode, languages = 'en') =>
@@ -369,11 +349,13 @@ export const gelatinApi = {
   closeTunnel: (tunnelId) => apiClient.delete(`/gelatin/tunnel/${tunnelId}`),
   
   generateAccessToken: (permissions = 'view,watch_party') => {
-    const allowedPermissions = ['view', 'watch_party', 'admin'];
-    if (!allowedPermissions.includes(permissions)) {
-      return Promise.reject(new Error('Invalid permissions specified'));
+    const allowed = ['view', 'watch_party', 'admin'];
+    const requested = typeof permissions === 'string' ? permissions.split(',').map(p => p.trim()).filter(Boolean) : [permissions];
+    const invalid = requested.filter(p => !allowed.includes(p));
+    if (invalid.length > 0) {
+      return Promise.reject(new Error(`Invalid permissions specified: ${invalid.join(', ')}`));
     }
-    return apiClient.post(`/gelatin/access-token`, null, { params: { permissions } });
+    return apiClient.post(`/gelatin/access-token`, null, { params: { permissions: requested.join(',') } });
   },
   
   getShareLink: (partyCode, useExternal = false) =>

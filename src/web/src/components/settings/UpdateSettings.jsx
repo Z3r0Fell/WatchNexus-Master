@@ -28,19 +28,19 @@ export const UpdateSettings = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   const fetchCurrent = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/current`); setCurrentInfo(res.data); } catch {}
+    try { const res = await axios.get(`${API}/api/system/updates/current`); setCurrentInfo(res.data); } catch (error) { console.error('Failed to fetch current update info:', error); }
   }, []);
 
   const fetchSettings = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/settings`); setUpdateSettings(res.data); } catch {}
+    try { const res = await axios.get(`${API}/api/system/updates/settings`); setUpdateSettings(res.data); } catch (error) { console.error('Failed to fetch update settings:', error); }
   }, []);
 
   const fetchHistory = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/history`); setUpdateHistory(res.data.history || []); } catch {}
+    try { const res = await axios.get(`${API}/api/system/updates/history`); setUpdateHistory(res.data.history || []); } catch (error) { console.error('Failed to fetch update history:', error); }
   }, []);
 
   const fetchRestartPending = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/system/updates/restart-pending`); setRestartPending(!!res.data.restart_pending); } catch {}
+    try { const res = await axios.get(`${API}/api/system/updates/restart-pending`); setRestartPending(!!res.data.restart_pending); } catch (error) { console.error('Failed to fetch restart pending status:', error); }
   }, []);
 
   useEffect(() => {

@@ -7,7 +7,7 @@ import { Radio, Play, Pause, Heart, Search, Globe, Music, Volume2, Star, X } fro
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { BACKEND_URL } from '../../lib/config';
 
 export const RadioPage = () => {
   const [stations, setStations] = useState([]);

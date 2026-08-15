@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../../components/layout/Layout';
 import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 import { toast } from 'sonner';
 import { Cog, Play, Pause, Trash2, Plus, HardDrive, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 
 const STATUS_STYLES = {
   completed: { color: 'text-green-400', bg: 'bg-green-400/10', icon: CheckCircle },

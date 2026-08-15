@@ -9,7 +9,13 @@ import pytest
 import requests
 import os
 
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD required", allow_module_level=True)
 
 class TestRipenGadgets:
     """Tests for /api/ripen endpoints - gadget listing and toggle persistence"""
@@ -18,8 +24,8 @@ class TestRipenGadgets:
     def auth_token(self):
         """Get authentication token"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
@@ -150,8 +156,8 @@ class TestCrumbsServices:
     def auth_token(self):
         """Get authentication token"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         return response.json()["access_token"]

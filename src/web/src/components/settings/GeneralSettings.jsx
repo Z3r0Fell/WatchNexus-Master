@@ -82,7 +82,9 @@ export const GeneralSettings = ({
         try {
           const saved = localStorage.getItem('watchnexus_visible_tabs');
           if (saved) setVisibleTabs(JSON.parse(saved));
-        } catch {}
+        } catch (e) {
+          console.warn('Failed to parse localStorage preferences:', e);
+        }
       } finally {
         setLoadingPrefs(false);
       }
@@ -367,6 +369,8 @@ const PreferencesTab = ({ settings, setSettings, onSave }) => {
     show_genres: true,
     use_24h_time: false,
     compact_mode: false,
+    notify_download_complete: true,
+    notify_new_episodes: true,
   });
   const [savingPrefs, setSavingPrefs] = useState(false);
 
@@ -491,7 +495,12 @@ const PreferencesTab = ({ settings, setSettings, onSave }) => {
               <p className="font-medium">Download Complete</p>
               <p className="text-xs text-gray-500">Notify when downloads finish</p>
             </div>
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-white/10" />
+            <input 
+              type="checkbox" 
+              checked={prefs.notify_download_complete}
+              onChange={() => handleToggle('notify_download_complete')}
+              className="w-4 h-4 rounded bg-white/10" 
+            />
           </div>
         </div>
         
@@ -501,7 +510,12 @@ const PreferencesTab = ({ settings, setSettings, onSave }) => {
               <p className="font-medium">New Episodes</p>
               <p className="text-xs text-gray-500">Notify when new episodes are available</p>
             </div>
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-white/10" />
+            <input 
+              type="checkbox" 
+              checked={prefs.notify_new_episodes}
+              onChange={() => handleToggle('notify_new_episodes')}
+              className="w-4 h-4 rounded bg-white/10" 
+            />
           </div>
         </div>
       </div>

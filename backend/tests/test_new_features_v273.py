@@ -14,7 +14,14 @@ import os
 import time
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
+
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD required", allow_module_level=True)
 
 
 class TestHealthAndAuth:
@@ -34,14 +41,14 @@ class TestHealthAndAuth:
     def test_auth_login(self):
         """POST /api/auth/login - login with test credentials"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200
         data = response.json()
         assert 'access_token' in data
         assert 'user' in data
-        assert data['user']['email'] == 'test@test.com'
+        assert data['user']['email'] == TEST_EMAIL
         print(f"✓ Login OK for user: {data['user']['email']}")
         return data['access_token']
 
@@ -50,8 +57,8 @@ class TestHealthAndAuth:
 def auth_token():
     """Get authentication token for protected endpoints"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
-        "email": "test@test.com",
-        "password": "password"
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD
     })
     if response.status_code != 200:
         pytest.skip("Authentication failed - cannot test protected endpoints")

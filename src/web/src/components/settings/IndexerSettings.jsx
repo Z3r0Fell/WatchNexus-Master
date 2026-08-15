@@ -10,6 +10,15 @@ import { compoteApi } from '../../services/api';
 import { IndexerHealthCheck } from './IndexerHealthCheck';
 
 export const IndexerSettings = () => {
+  const presets = [
+    { name: '1337x', type: 'torznab', url: 'https://1337x.to', cf: true },
+    { name: 'YTS Movies', type: 'torznab', url: 'https://yts.mx', cf: false },
+    { name: 'EZTV', type: 'torznab', url: 'https://eztv.re', cf: false },
+    { name: 'Nyaa', type: 'torznab', url: 'https://nyaa.si', cf: false },
+    { name: 'ShowRSS', type: 'rss', url: 'https://showrss.info/other/all.rss', cf: false },
+    { name: 'Custom RSS', type: 'rss', url: '', cf: false },
+  ];
+
   const [indexers, setIndexers] = useState([]);
   const [showAddIndexer, setShowAddIndexer] = useState(false);
   const [testingIndexer, setTestingIndexer] = useState(null);
@@ -77,15 +86,6 @@ export const IndexerSettings = () => {
     try { await compoteApi.removeIndexer(indexerId); setIndexers(prev => prev.filter(i => i.id !== indexerId)); toast.success('Indexer removed'); }
     catch { toast.error('Failed to remove indexer'); }
   };
-
-  const presets = [
-    { name: '1337x', type: 'torznab', url: 'https://1337x.to', cf: true },
-    { name: 'YTS Movies', type: 'torznab', url: 'https://yts.mx', cf: false },
-    { name: 'EZTV', type: 'torznab', url: 'https://eztv.re', cf: false },
-    { name: 'Nyaa', type: 'torznab', url: 'https://nyaa.si', cf: false },
-    { name: 'ShowRSS', type: 'rss', url: 'https://showrss.info/other/all.rss', cf: false },
-    { name: 'Custom RSS', type: 'rss', url: '', cf: false },
-  ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" data-testid="indexer-settings">

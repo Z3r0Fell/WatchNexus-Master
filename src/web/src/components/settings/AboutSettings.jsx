@@ -9,8 +9,9 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = BACKEND_URL;
 
 // Submenu tabs
 const ABOUT_TABS = [
@@ -740,7 +741,7 @@ const CreditTier = ({ tier, badge }) => {
         </div>
       </div>
       {hasMembers ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pl-13">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pl-12">
           {tier.members.map((member, idx) => (
             <div key={idx} className="group relative bg-black/30 border border-white/10 rounded-xl p-3 hover:bg-white/5">
               <div className="w-12 h-12 mx-auto mb-2 rounded-full overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800">
@@ -753,7 +754,7 @@ const CreditTier = ({ tier, badge }) => {
           ))}
         </div>
       ) : (
-        <div className="pl-13">
+        <div className="pl-12">
           <div className="bg-black/20 border border-dashed border-white/10 rounded-xl p-6 text-center">
             <Icon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
             <p className="text-sm text-gray-500">Be the first {tier.title.toLowerCase().slice(0, -1)}!</p>

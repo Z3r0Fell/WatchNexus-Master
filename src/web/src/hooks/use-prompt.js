@@ -8,15 +8,21 @@ export function usePrompt() {
   const [options, setOptions] = useState({ title: 'Input required', description: '', placeholder: '', defaultValue: '', onConfirm: () => {} });
   const [value, setValue] = useState('');
   const valueRef = useRef('');
+  const optionsRef = useRef(options);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   const prompt = useCallback((opts) => {
     return new Promise((resolve) => {
+      const onConfirm = () => resolve(valueRef.current);
       setOptions({
         title: opts.title || 'Input required',
         description: opts.description || '',
         placeholder: opts.placeholder || '',
         defaultValue: opts.defaultValue || '',
-        onConfirm: () => resolve(valueRef.current),
+        onConfirm,
       });
       setValue(opts.defaultValue || '');
       valueRef.current = opts.defaultValue || '';
@@ -26,8 +32,8 @@ export function usePrompt() {
 
   const handleConfirm = useCallback(() => {
     setOpen(false);
-    options.onConfirm();
-  }, [options]);
+    optionsRef.current.onConfirm();
+  }, []);
 
   const handleCancel = useCallback(() => {
     setOpen(false);

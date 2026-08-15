@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { BACKEND_URL } from '../lib/config';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const GadgetContext = createContext(null);
 
 export const useGadgets = () => {

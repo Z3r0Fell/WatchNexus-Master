@@ -11,15 +11,21 @@ import pytest
 import requests
 import os
 
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD required", allow_module_level=True)
 
 
 @pytest.fixture(scope='module')
 def auth_token():
     """Authenticate and get token for all tests"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
-        "email": "test@test.com",
-        "password": "password"
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD
     })
     assert response.status_code == 200, f"Auth failed: {response.text}"
     data = response.json()

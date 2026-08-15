@@ -96,6 +96,7 @@ export const ZestSettings = () => {
       setLogs(res.data.logs || []);
     } catch (err) {
       console.error('Failed to fetch logs:', err);
+      toast.error('Failed to fetch logs');
     }
   }, [filters]);
 

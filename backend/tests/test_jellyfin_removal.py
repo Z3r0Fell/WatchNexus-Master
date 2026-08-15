@@ -52,10 +52,14 @@ class TestJellyfinRemovalHealthAuth:
         assert 'jellyfin' not in response.text.lower(), f"Found 'jellyfin' in register response"
 
     def test_login_existing_user(self):
-        """POST /api/auth/login - login with test@test.com / password"""
+        """POST /api/auth/login - login with test credentials"""
+        TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+        TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+        if not TEST_EMAIL or not TEST_PASSWORD:
+            pytest.skip("TEST_EMAIL and TEST_PASSWORD required")
         payload = {
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         }
         response = requests.post(f"{BASE_URL}/api/auth/login", json=payload, timeout=10)
         assert response.status_code == 200, f"Login failed: {response.status_code} - {response.text}"
@@ -66,14 +70,18 @@ class TestJellyfinRemovalHealthAuth:
         
         # Verify no Jellyfin in response
         assert 'jellyfin' not in response.text.lower(), f"Found 'jellyfin' in login response"
-        print(f"✓ Login successful for test@test.com")
+        print(f"✓ Login successful for {TEST_EMAIL}")
         return data['access_token']
 
 
 @pytest.fixture
 def auth_token():
     """Get authentication token for protected endpoints"""
-    payload = {"email": "test@test.com", "password": "password"}
+    TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+    TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+    if not TEST_EMAIL or not TEST_PASSWORD:
+        pytest.skip("TEST_EMAIL and TEST_PASSWORD required")
+    payload = {"email": TEST_EMAIL, "password": TEST_PASSWORD}
     response = requests.post(f"{BASE_URL}/api/auth/login", json=payload, timeout=10)
     if response.status_code == 200:
         return response.json()['access_token']

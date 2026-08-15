@@ -19,7 +19,7 @@ import axios from 'axios';
 import { BACKEND_URL } from '../../lib/config';
 import { usePrompt } from '../../hooks/use-prompt';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = BACKEND_URL;
 
 export const AddToPlaylistButton = ({ 
   mediaItem, // { tmdb_id, title, media_type, poster_path, backdrop_path, duration }

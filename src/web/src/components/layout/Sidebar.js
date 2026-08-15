@@ -116,7 +116,7 @@ const settingsSubItems = [
   { icon: Rss, label: 'RSS Feeds', path: '/rss', hideable: true },
   { icon: Disc, label: 'Disc Ripping', path: '/disc-ripping', hideable: true },
   { icon: MonitorPlay, label: 'Jellyseerr', path: '/jellyseerr', hideable: true },
-  { icon: Clapperboard, label: 'Requests', path: '/requests-manager', hideable: true },
+  { icon: Clapperboard, label: 'Request Manager', path: '/requests-manager', hideable: true },
   { icon: Gamepad2, label: 'Gaming', path: '/gaming', hideable: true },
   { icon: BookOpen, label: 'Ebooks', path: '/ebooks', hideable: true },
   { icon: Music, label: 'Music Lib', path: '/music-library', hideable: true },

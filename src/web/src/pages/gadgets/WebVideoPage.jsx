@@ -6,8 +6,9 @@ import { Input } from '../../components/ui/input';
 import { Video, Play, Pause, Bookmark, Clock, User, Eye, Search, X, ExternalLink, BookmarkPlus, History } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { BACKEND_URL } from '../../../lib/config';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 
 export const WebVideoPage = () => {
   const [url, setUrl] = useState('');

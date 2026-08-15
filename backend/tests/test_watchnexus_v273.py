@@ -7,7 +7,13 @@ import pytest
 import requests
 import os
 
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD required", allow_module_level=True)
 
 class TestAuth:
     """Authentication endpoint tests"""
@@ -15,14 +21,14 @@ class TestAuth:
     def test_login_success(self):
         """Auth: Login with valid credentials returns JWT token"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         data = response.json()
         assert "access_token" in data, "Response missing access_token"
         assert "user" in data, "Response missing user object"
-        assert data["user"]["email"] == "test@test.com", "Email mismatch in response"
+        assert data["user"]["email"] == TEST_EMAIL, "Email mismatch in response"
         assert len(data["access_token"]) > 20, "Access token too short"
         
     def test_login_invalid_credentials(self):
@@ -77,8 +83,8 @@ class TestGadgetsAndRipen:
     def setup(self):
         """Get auth token for authenticated requests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com",
-            "password": "password"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         if response.status_code == 200:
             self.token = response.json()["access_token"]
@@ -125,7 +131,7 @@ class TestWeather:
     @pytest.fixture(autouse=True)
     def setup(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com", "password": "password"
+            "email": TEST_EMAIL, "password": TEST_PASSWORD
         })
         if response.status_code == 200:
             self.token = response.json()["access_token"]
@@ -155,7 +161,7 @@ class TestCrumbs:
     @pytest.fixture(autouse=True)
     def setup(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com", "password": "password"
+            "email": TEST_EMAIL, "password": TEST_PASSWORD
         })
         if response.status_code == 200:
             self.token = response.json()["access_token"]
@@ -187,7 +193,7 @@ class TestLibraries:
     @pytest.fixture(autouse=True)
     def setup(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com", "password": "password"
+            "email": TEST_EMAIL, "password": TEST_PASSWORD
         })
         if response.status_code == 200:
             self.token = response.json()["access_token"]
@@ -209,7 +215,7 @@ class TestSystemStats:
     @pytest.fixture(autouse=True)
     def setup(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com", "password": "password"
+            "email": TEST_EMAIL, "password": TEST_PASSWORD
         })
         if response.status_code == 200:
             self.token = response.json()["access_token"]
@@ -248,7 +254,7 @@ class TestGadgetsPlugins:
     @pytest.fixture(autouse=True)
     def setup(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "test@test.com", "password": "password"
+            "email": TEST_EMAIL, "password": TEST_PASSWORD
         })
         if response.status_code == 200:
             self.token = response.json()["access_token"]

@@ -103,9 +103,7 @@ export const QualityProfilesSettings = () => {
 
   const fetchProfiles = useCallback(async () => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/quality-profiles`, {
-        
-      });
+      const res = await axios.get(`${BACKEND_URL}/api/quality-profiles`);
       // Handle both array and object responses
       let data = res.data;
       if (!Array.isArray(data)) {
@@ -117,7 +115,9 @@ export const QualityProfilesSettings = () => {
         if (typeof qualities === 'string') {
           try {
             qualities = JSON.parse(qualities);
-          } catch {
+          } catch (error) {
+            console.warn('Failed to parse qualities JSON:', error);
+            toast.warn('Some qualities could not be parsed and were skipped');
             qualities = [];
           }
         }
@@ -149,9 +149,7 @@ export const QualityProfilesSettings = () => {
     
     setSaving(true);
     try {
-      await axios.post(`${BACKEND_URL}/api/quality-profiles`, newProfile, {
-        
-      });
+      await axios.post(`${BACKEND_URL}/api/quality-profiles`, newProfile);
       toast.success('Profile created');
       fetchProfiles();
       setShowCreateModal(false);
@@ -172,9 +170,7 @@ export const QualityProfilesSettings = () => {
   const handleUpdateProfile = async (profile) => {
     setSaving(true);
     try {
-      await axios.put(`${BACKEND_URL}/api/quality-profiles/${profile.id}`, profile, {
-        
-      });
+      await axios.put(`${BACKEND_URL}/api/quality-profiles/${profile.id}`, profile);
       toast.success('Profile updated');
       fetchProfiles();
       setEditingProfile(null);
@@ -190,9 +186,7 @@ export const QualityProfilesSettings = () => {
     if (!ok) return;
     
     try {
-      await axios.delete(`${BACKEND_URL}/api/quality-profiles/${profileId}`, {
-        
-      });
+      await axios.delete(`${BACKEND_URL}/api/quality-profiles/${profileId}`);
       toast.success('Profile deleted');
       fetchProfiles();
     } catch (err) {
@@ -203,9 +197,8 @@ export const QualityProfilesSettings = () => {
   const handleSetDefault = async (profileId) => {
     try {
       const profile = profiles.find(p => p.id === profileId);
-      await axios.put(`${BACKEND_URL}/api/quality-profiles/${profileId}`, 
+      await axios.put(`${BACKEND_URL}/api/quality-profiles/${profileId}`,
         { ...profile, is_default: true },
-        {  }
       );
       toast.success('Default profile set');
       fetchProfiles();
@@ -226,9 +219,7 @@ export const QualityProfilesSettings = () => {
     setSaving(true);
     try {
       for (const profile of DEFAULT_PROFILES) {
-        await axios.post(`${BACKEND_URL}/api/quality-profiles`, profile, {
-          
-        });
+        await axios.post(`${BACKEND_URL}/api/quality-profiles`, profile);
       }
       toast.success('Default profiles imported');
       fetchProfiles();

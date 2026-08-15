@@ -41,6 +41,10 @@ export const AuthProvider = ({ children }) => {
       if (error.response?.status === 401) {
         setUser(null);
         setIsAuthenticated(false);
+      } else {
+        console.warn('Failed to fetch user:', error);
+        setUser(null);
+        setIsAuthenticated(false);
       }
       return null;
     } finally {

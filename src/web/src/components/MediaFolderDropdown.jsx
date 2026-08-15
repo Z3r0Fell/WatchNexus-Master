@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FolderTree } from 'lucide-react';
 import axios from 'axios';
+import { BACKEND_URL } from '../lib/config';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = BACKEND_URL;
 
 // Quick-pick dropdown: lists the direct subfolders of the media root(s) the
 // server can see (e.g. /data/media in Docker). Saves Docker users from typing

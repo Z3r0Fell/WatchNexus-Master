@@ -26,7 +26,6 @@ const MusicPage = lazy(() => import("./pages/MusicPage").then(m => ({ default: m
 const AudiobooksPage = lazy(() => import("./pages/AudiobooksPage").then(m => ({ default: m.AudiobooksPage })));
 const LiveTVPage = lazy(() => import("./pages/LiveTVPage").then(m => ({ default: m.LiveTVPage })));
 const LibraryPage = lazy(() => import("./pages/LibraryPage").then(m => ({ default: m.LibraryPage })));
-const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage").then(m => ({ default: m.WatchPartyPage })));
 const PluginMarketplacePage = lazy(() => import("./pages/PluginMarketplacePage").then(m => ({ default: m.PluginMarketplacePage })));
 const ThemeCommunityPage = lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage })));
 const WatchHistoryPage = lazy(() => import("./pages/WatchHistoryPage").then(m => ({ default: m.WatchHistoryPage })));
@@ -158,7 +157,6 @@ function AppRouter() {
         <Route path="/music" element={<ProtectedRoute><MusicPage /></ProtectedRoute>} />
         <Route path="/audiobooks" element={<ProtectedRoute><AudiobooksPage /></ProtectedRoute>} />
         <Route path="/live" element={<TierRoute path="/live"><LiveTVPage /></TierRoute>} />
-        <Route path="/party/:partyCode" element={<ProtectedRoute><WatchPartyPage /></ProtectedRoute>} />
         <Route path="/plugins" element={<ProtectedRoute><PluginMarketplacePage /></ProtectedRoute>} />
         <Route path="/themes" element={<ProtectedRoute><ThemeCommunityPage /></ProtectedRoute>} />
         <Route path="/playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />

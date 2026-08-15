@@ -4,6 +4,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 export function useConfirm() {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState({ title: 'Are you sure?', description: '', confirmText: 'Confirm', cancelText: 'Cancel', onConfirm: () => {} });
+  const optionsRef = useRef(options);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   const confirm = useCallback((opts) => {
     return new Promise((resolve) => {
@@ -20,8 +25,8 @@ export function useConfirm() {
 
   const handleConfirm = useCallback(() => {
     setOpen(false);
-    options.onConfirm();
-  }, [options]);
+    optionsRef.current.onConfirm();
+  }, []);
 
   const handleCancel = useCallback(() => {
     setOpen(false);

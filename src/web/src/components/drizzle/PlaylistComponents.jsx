@@ -15,8 +15,9 @@ import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { useConfirm } from '../../hooks/use-confirm';
 import { usePrompt } from '../../hooks/use-prompt';
+import { BACKEND_URL } from '../../lib/config';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = BACKEND_URL;
 
 // Helper function to format duration
 const formatDuration = (seconds) => {

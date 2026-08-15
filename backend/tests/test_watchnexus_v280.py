@@ -6,7 +6,16 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ffmpeg-wizard-2.preview.emergentagent.com')
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD required", allow_module_level=True)
+
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
 
 class TestAuth:
     """Authentication endpoint tests"""
@@ -15,8 +24,8 @@ class TestAuth:
     def auth_token(self):
         """Get authentication token for admin user"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
@@ -26,8 +35,8 @@ class TestAuth:
     def test_login_success(self):
         """Test login with valid credentials"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200
         data = response.json()
@@ -51,8 +60,8 @@ class TestSettings:
     def auth_headers(self):
         """Get auth headers"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -86,8 +95,8 @@ class TestLibraries:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -114,8 +123,8 @@ class TestTruffleAnalytics:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -134,8 +143,8 @@ class TestPepperNotifications:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -168,8 +177,8 @@ class TestMeringueRequests:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -201,8 +210,8 @@ class TestRindParentalControls:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -221,8 +230,8 @@ class TestCrucibleProcessing:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -241,8 +250,8 @@ class TestUsenetGadgets:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -268,8 +277,8 @@ class TestSystemInfo:
     @pytest.fixture(scope="class")
     def auth_headers(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}

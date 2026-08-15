@@ -150,12 +150,12 @@ const LoginsTab = ({
           onChange={(e) => setServiceCredentials(p => ({ ...p, email: e.target.value }))}
           placeholder="Email / Username" className="bg-white/5 border-white/10" />
         <div className="relative">
-          <Input type={showPassword['new'] ? 'text' : 'password'} value={serviceCredentials.password}
+          <Input type={showPassword.password ? 'text' : 'password'} value={serviceCredentials.password}
             onChange={(e) => setServiceCredentials(p => ({ ...p, password: e.target.value }))}
             placeholder="Password" className="bg-white/5 border-white/10 pr-10" />
-          <button type="button" onClick={() => setShowPassword(p => ({ ...p, new: !p.new }))}
+          <button type="button" onClick={() => setShowPassword(p => ({ ...p, password: !p.password }))}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-            {showPassword['new'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword.password ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
       </div>

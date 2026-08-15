@@ -1,4 +1,4 @@
-import { tmdbImageUrl } from '../lib/config';
+import { tmdbImageUrl, BACKEND_URL } from '../lib/config';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,7 +9,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = BACKEND_URL;
 
 export const DiscoverPage = () => {
   const [mediaType, setMediaType] = useState('movie');

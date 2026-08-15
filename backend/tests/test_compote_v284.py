@@ -128,8 +128,8 @@ class TestCompoteGrab:
     def setup(self):
         """Get auth token for all tests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200
         self.token = response.json().get("access_token")
@@ -180,8 +180,8 @@ class TestCompoteIndexers:
     def setup(self):
         """Get auth token for all tests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200
         self.token = response.json().get("access_token")
@@ -249,8 +249,8 @@ class TestSystemEndpoints:
     def setup(self):
         """Get auth token for all tests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200
         self.token = response.json().get("access_token")
@@ -289,8 +289,8 @@ class TestModulePages:
     def setup(self):
         """Get auth token for all tests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200
         self.token = response.json().get("access_token")

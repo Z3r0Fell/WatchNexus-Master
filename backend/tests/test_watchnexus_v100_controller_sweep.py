@@ -18,13 +18,17 @@ import os
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://ffmpeg-wizard-2.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+if not BASE_URL:
+    pytest.skip("REACT_APP_BACKEND_URL not set", allow_module_level=True)
 
-OWNER_EMAIL = "owner@watchnexus.local"
-OWNER_PASSWORD = "password123"
+OWNER_EMAIL = os.environ.get("TEST_OWNER_EMAIL", "")
+OWNER_PASSWORD = os.environ.get("TEST_OWNER_PASSWORD", "")
+if not OWNER_EMAIL or not OWNER_PASSWORD:
+    pytest.skip("TEST_OWNER_EMAIL and TEST_OWNER_PASSWORD required", allow_module_level=True)
 
-ULTRA_SERIAL = "WNX-ULT-AAAA-BBBB-CCCC"
-PRO_SERIAL = "WNX-PRO-AAAA-BBBB-CCCC"
+ULTRA_SERIAL = os.environ.get("TEST_ULTRA_SERIAL", "")
+PRO_SERIAL = os.environ.get("TEST_PRO_SERIAL", "")
 INVALID_SERIAL = "INVALID-KEY-123"
 
 
@@ -66,6 +70,8 @@ def _current_tier(auth_headers):
 
 
 def _ensure_ultra(auth_headers):
+    if not ULTRA_SERIAL:
+        pytest.skip("TEST_ULTRA_SERIAL required for Ultra-tier tests")
     if _current_tier(auth_headers) == "ultra":
         return
     # If currently Pro (or other), deactivate first

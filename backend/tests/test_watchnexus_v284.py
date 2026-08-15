@@ -22,7 +22,7 @@ class TestAuth:
     def test_login_success(self):
         """Test login with admin credentials"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
+            "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
@@ -39,7 +39,7 @@ class TestHealthAndInfo:
     @pytest.fixture
     def auth_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
+            "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
         return response.json().get("access_token")
@@ -117,7 +117,7 @@ class TestBastion:
     @pytest.fixture
     def auth_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
+            "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
         return response.json().get("access_token")
@@ -253,7 +253,7 @@ class TestTunnel:
     @pytest.fixture
     def auth_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
+            "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
         return response.json().get("access_token")
@@ -366,7 +366,7 @@ class TestConfigureMe:
     @pytest.fixture
     def auth_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
+            "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
         return response.json().get("access_token")
@@ -397,7 +397,7 @@ class TestModulePages:
     @pytest.fixture
     def auth_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
+            "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
         return response.json().get("access_token")

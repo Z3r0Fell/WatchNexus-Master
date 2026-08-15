@@ -12,8 +12,9 @@ import {
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import axios from 'axios';
+import { BACKEND_URL } from '../lib/config';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = BACKEND_URL;
 
 // OS-specific icons and colors
 const OS_CONFIG = {

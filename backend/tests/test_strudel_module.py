@@ -6,7 +6,13 @@ import pytest
 import requests
 import os
 
+TEST_EMAIL = os.environ.get('TEST_EMAIL', '')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', '')
+
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+if not TEST_EMAIL or not TEST_PASSWORD:
+    pytest.skip("TEST_EMAIL and TEST_PASSWORD required", allow_module_level=True)
 
 class TestStrudelModule:
     """Strudel optical disc ripping module API tests"""
@@ -15,8 +21,8 @@ class TestStrudelModule:
     def setup(self):
         """Get auth token for all tests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "admin@watchnexus.local",
-            "password": "admin"
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         self.token = response.json().get("access_token")

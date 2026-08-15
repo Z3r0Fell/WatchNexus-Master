@@ -7,8 +7,9 @@ import { Image, Plus, FolderOpen, RefreshCw, Trash2, Grid, X, ChevronLeft, Chevr
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useConfirm } from '../../hooks/use-confirm';
+import { BACKEND_URL } from '../../../lib/config';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 
 export const PhotosPage = () => {
   const { confirm, ConfirmDialog } = useConfirm();

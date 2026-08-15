@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../../components/layout/Layout';
 import axios from 'axios';
+import { BACKEND_URL } from '../../lib/config';
 import { toast } from 'sonner';
 import { MessageSquare, Plus, Clock, CheckCircle, XCircle, Film, Tv, Search } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 
 const STATUS_COLORS = {
   pending: 'text-yellow-400 bg-yellow-400/10',

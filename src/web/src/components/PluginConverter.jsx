@@ -91,7 +91,6 @@ export const PluginConverter = () => {
             <EcosystemButton id="" label="Auto-detect" icon={Zap} selected={convertEcosystem === ''} onSelect={setConvertEcosystem} />
             <EcosystemButton id="kodi" label="Kodi" icon={Globe} selected={convertEcosystem === 'kodi'} onSelect={setConvertEcosystem} />
             <EcosystemButton id="plex" label="Plex" icon={Tv} selected={convertEcosystem === 'plex'} onSelect={setConvertEcosystem} />
-            <EcosystemButton id="plex" label="Plex" icon={Play} selected={convertEcosystem === 'plex'} onSelect={setConvertEcosystem} />
           </div>
         </div>
 
@@ -164,7 +163,7 @@ export const PluginConverter = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <EcoCard name="Kodi" icon={Globe} desc="Add-ons with addon.xml manifest. Supports video, audio, subtitle, metadata, and service plugins." colorClass="text-blue-400" />
           <EcoCard name="Plex" icon={Tv} desc="Convert Plex plugins to the WatchNexus format with full metadata support." colorClass="text-purple-400" />
-          <EcoCard name="Plex" icon={Play} desc="Channel bundles with Info.plist. Python-based plugins with Framework API conversion." colorClass="text-orange-400" />
+          <EcoCard name="Plex Channels" icon={Play} desc="Channel bundles with Info.plist. Python-based plugins with Framework API conversion." colorClass="text-orange-400" />
         </div>
       </div>
     </div>

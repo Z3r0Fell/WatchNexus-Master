@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
+import { BACKEND_URL } from '../lib/config';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = BACKEND_URL;
 
 const profileDescriptions = {
   direct: { label: 'Direct Copy', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
