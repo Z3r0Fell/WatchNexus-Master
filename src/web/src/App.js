@@ -79,6 +79,7 @@ const MarshmallowPage = lazy(() => import("./pages/MarshmallowPage"));
 const ChowderPage = lazy(() => import("./pages/ChowderPage"));
 const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage"));
 const RoadmapPage = lazy(() => import("./pages/RoadmapPage"));
+const ChangelogPage = lazy(() => import("./pages/ChangelogPage"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
@@ -208,6 +209,7 @@ function AppRouter() {
          <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
          <Route path="/watch-party" element={<TierRoute path="/watch-party"><WatchPartyPage /></TierRoute>} />
          <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
+         <Route path="/changelog" element={<ProtectedRoute><ChangelogPage /></ProtectedRoute>} />
 
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

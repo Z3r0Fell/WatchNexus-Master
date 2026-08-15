@@ -189,4 +189,14 @@ public class DbControllerReal : ControllerBase
         };
         return Ok(new { version = "1.0.1", endpoints = items, total = items.Length });
     }
+
+    [HttpGet("changelog")]
+    public IActionResult Changelog()
+    {
+        var changelogPath = Path.Combine(AppContext.BaseDirectory, "CHANGELOG.md");
+        if (!System.IO.File.Exists(changelogPath))
+            return Ok(new { version = "1.0.1", content = "# WatchNexus Changelog\n\nNo changelog available." });
+        var content = System.IO.File.ReadAllText(changelogPath);
+        return Ok(new { version = "1.0.1", content = content });
+    }
 }

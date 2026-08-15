@@ -129,6 +129,7 @@ const settingsSubItems = [
   { icon: ArrowDownToLine, label: 'Media Sync', path: '/media-sync', hideable: true },
   { icon: Users, label: 'Watch Party', path: '/watch-party', hideable: true },
   { icon: HelpCircle, label: 'Roadmap', path: '/roadmap', hideable: true },
+  { icon: FileText, label: 'Changelog', path: '/changelog', hideable: true },
 ];
 
 // Default visible tabs
@@ -138,7 +139,7 @@ const defaultVisibleTabs = [
   'Analytics', 'Notifications', 'Requests', 'Parental', 'Processing', 'Usenet',
   'Security', 'VPN Portal', 'Lib Manager', 'Browse Media', 'Log Viewer', 'System', 'Marketplace',
   'Tasks', 'DL Clients', 'Backups', 'Scrobbling', 'RSS Feeds', 'Disc Ripping', 'Jellyseerr', 'Requests', 'Gaming',
-  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync', 'Media Sync', 'Watch Party', 'Roadmap',
+  'Ebooks', 'Music Lib', 'For You', 'DVR', 'Offline', 'Backup', 'Sync', 'Media Sync', 'Watch Party', 'Roadmap', 'Changelog',
 ];
 
 // Get visible tabs from localStorage

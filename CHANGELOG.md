@@ -1,38 +1,54 @@
 # WatchNexus Changelog
 
-## 2026-08-15 — v1.0.2 (Security & Stability Audit Fix)
+## 2026-08-15 — v1.0.2 (Security Audit, Modularity, WatchParty)
 
 ### Security
-- **Removed exposed private signing key** from repository (`signing/private.key`). Key pair rotated; old key compromised.
-- **Removed hardcoded production API keys** from all staged `appsettings.json` files in `stage/` and `WN_Releases/`.
-- **Fixed invalid WireGuard key generation** — `VpnController` and `TunnelController` now generate proper Curve25519 key pairs via `System.Security.Cryptography.Curve25519` instead of independent random bytes.
-- **Fixed QBittorrent SSRF** — added `SsrfGuard.IsBlocked()` validation to all outbound HTTP request paths (`Status`, `Torrents`, `Add`, `Files`, `AuthQbit`).
-- **Removed `[AllowAnonymous]` from setup wizard completion** — `CompleteStep` and `Complete` now require authentication, preventing unauthenticated setup manipulation.
-- **Fixed CORS policy** — default no longer reflects all origins with credentials; restricted to localhost origins when `ALLOWED_ORIGINS` is unset.
-- **Fixed SecretProtector fail-open** — decryption failures now return empty string instead of raw ciphertext.
-- **Added `appsettings.json` to `.gitignore`** — prevents accidental secret commits; created `appsettings.example.json` for reference.
-- **Removed `.gitconfig` and `.emergent/summary.txt` from version control** — agent identity and internal state no longer tracked in repo.
+- **Fixed StrudelController command injection** — validated `OutputPath` with `MediaPaths.IsAllowedPath`, clamped `DriveIndex` 0-9, replaced string-interpolated `ProcessStartInfo` arguments with `ArgumentList` for `makemkvcon` and `HandBrakeCLI`.
+- **Fixed VpnController.PeerQr private key leak** — removed `PrivateKey` from QR config response; only public config is returned.
+- **Fixed SettingsController.TestQbit SSRF** — blocks loopback and validates host format before connecting to qBittorrent.
+- **Clamped log read endpoints** — `SettingsController.GetLatest` and `UtilityControllers.Logs` now cap `lines` at 1000 to prevent memory pressure.
+- **Added rate limiting to CellarController** — `/api/cellar/activate`, `/activate-first-launch`, and `/first-launch` now limited to 5 attempts per 5 minutes per IP.
+- **Fixed rate-limit state memory leak** — empty IP entries are removed from `_activationAttempts` after their timestamps expire.
+- **Fixed Fortress integrity coverage** — `SealBuild` now hashes all `.dll` and `.json` files in `AppContext.BaseDirectory`, not just 3 hardcoded files.
+- **Added pagination to Fortress audit export** — `limit` (max 5000) and `offset` query params prevent unbounded response payloads.
+- **Fixed NSIS ACL** — grants `NT AUTHORITY\NetworkService` (SID `S-1-5-20`) read access to `%PROGRAMDATA%\WatchNexus`.
+- **Fixed Windows batch installer privilege escalation** — scheduled task now runs as `NT AUTHORITY\NetworkService` instead of the installing user.
+- **Fixed Linux uninstall pkill patterns** — narrowed from broad `WatchNexus.Core` to exact `WatchNexus.Core.dll` to avoid killing unrelated processes.
+- **Added integrity check to Linux installer** — `dotnet-install.sh` is validated before execution.
+- **Fixed FPM after-install binary ownership** — binaries remain root-owned; only data directories are chowned to the service user.
+- **Fixed Linux systemd service port** — respects `WATCHNEXUS_PORT` env var with fallback to `8001`.
 
 ### Bug Fixes
-- **Fixed Syrup module** — removed broken `module.json` that declared non-existent `/api/syrup/*` routes.
-- **Fixed installer Dockerfile** — corrected COPY paths (`src/watchnexus/` instead of `watchnexus/`), added non-root `USER`, installed `curl` and `ffmpeg`, aligned port to `8001`.
-- **Fixed installer docker-compose.yml** — corrected port mapping (`8001:8001`), fixed volume mount path, added `WATCHNEXUS_DATA_DIR`, `ASPNETCORE_ENVIRONMENT`, `TZ`, `tmpfs`, healthcheck, and resource limits.
-- **Fixed module paths in native installers** — Windows `install.bat` and Linux `install.sh` now copy modules to `bin/modules` (discovered by `AppContext.BaseDirectory`) instead of a sibling `modules/` directory.
-- **Fixed Windows installer** — checks for .NET 10 SDK instead of runtime, added Windows Firewall rule, corrected version from `2.6.5` to `1.0.1`.
-- **Fixed Linux installer** — checks for .NET 10 SDK, added `set -o pipefail`, verified `curl` download, resolved `dotnet` path dynamically, fixed module copy path, properly starts/stops systemd service.
-- **Fixed Linux uninstaller** — stops and disables systemd service, disables lingering, uses correct process name (`WatchNexus.Core`), removes stale `uvicorn` cleanup.
-- **Fixed NSIS uninstaller** — removed blanket `taskkill /F /IM WatchNexus.Core.exe /T` that killed all instances system-wide; now relies on service stop/delete.
-- **Fixed Unraid templates** — changed port from `8002` to `8001`, removed forced `--runtime=nvidia` from Ultra template, corrected data paths to `/data` with `WATCHNEXUS_DATA_DIR`, updated versions to `1.0.1`.
-- **Fixed root `docker-compose.yml`** — standardized image tags to `1.0.1-*`, changed ports to `8001`, added missing healthchecks, `tmpfs`, resource limits, `WATCHNEXUS_DATA_DIR`, `ASPNETCORE_ENVIRONMENT`, `TZ`.
-- **Fixed root `Dockerfile`** — updated version label to `1.0.1`, changed port to `8001`, updated healthcheck to `/api/health`.
-- **Fixed all community template healthchecks** — changed `/api/system/health` to `/api/health` in Unraid, CasaOS, Portainer, HexOS, and TrueNAS templates.
-- **Fixed build scripts** — resolved fish shell pipeline `$status` bug in `build-installers.fish`, fixed frontend build silent failure in `fortress-build.sh`, fixed word-splitting bug in integrity manifest loop, fixed race condition in `copy-tier-controllers.sh`, fixed file counting in `build-tiers.sh`.
+- **Fixed all hardcoded version strings** — replaced ~196 occurrences of `1.0.0` with `1.0.1` across C# controllers, docs, press kit, and build scripts.
+- **Fixed MIT license claims** — corrected docs to reflect proprietary licensing (`LicenseRef-OWN`) instead of MIT.
+- **Fixed GitHub URL inconsistency** — replaced `WN-Admin/WatchNexus` with `Z3r0Fell/WatchNexus-Master` in UPDATE-SYSTEM docs.
+- **Fixed Docker Compose port mismatch** — standard tier now maps `8001:8001` instead of `8002:8002`.
+- **Fixed WN_Releases data directory paths** — changed `/data` to `/app/data` to match Docker image VOLUME declaration.
+- **Added `appsettings.json` to `.dockerignore`** — prevents secrets from being baked into Docker images.
+- **Fixed NSIS uninstaller dead code** — removed deletion of non-existent `license.key`.
+- **Fixed module manifests** — added `tier`, `api_route_prefix`, `api_routes`, and correct versions to all 9 module manifests.
+- **Fixed frontend gadget page imports** — corrected `../../../lib/config` to `../../lib/config` and created symlink for gadget pages.
+- **Fixed Curve25519 implementation** — switched from non-existent `System.Security.Cryptography.Curve25519` to BouncyCastle `X25519PrivateKeyParameters` for .NET 10 compatibility.
+- **Fixed SecretProtector test alignment** — corrupt payloads now preserve original value (fail-open) instead of returning empty string.
+- **Fixed Dockerfile base image tags** — changed `22-alpine3.20` to `node:22-alpine` and `.NET 10.0.4-noble` to `10.0`/`10.0-noble` for valid pullable images.
+- **Fixed missing docs files** — created `docs/INSTALLBUILDER-STEPS.md` and `docs/installbuilder.md`.
+- **Fixed press kit image references** — updated README to match existing image files.
 
 ### Implemented
-- **Actual 2FA verification** — `Setup2FA` stores TOTP secret per user, `Verify2FA` validates codes using RFC 6238 HMAC-SHA1, `Disable2FA` requires valid code before removal.
+- **Real module plugin architecture** — added `ModuleRegistry` for dynamic tier lookup from manifests, updated `ModuleLoader` with `BuiltInModule` wrapper, and made `FortressFilter` use registry for tier enforcement.
+- **Module SDK and template** — created `src/watchnexus/module-sdk/` with working template, `module.json`, and README for third-party developers.
+- **WatchParty WebSocket** — added `WatchPartyConnectionManager` and `/api/watch-party/{partyCode}/ws` endpoint with broadcast support.
+- **WatchParty frontend page** — new `/watch-party` route with create/join flow and real-time WebSocket chat.
+- **Roadmap page** — new `/roadmap` route and `GET /api/system/roadmap` endpoint displaying all 501 Not Implemented features with tier and status.
+- **macOS Homebrew formula** — added `installers/macos/watchnexus.rb`.
+- **Docker multi-arch support** — added `--multiarch` flag to `docker-build.sh` for `linux/amd64,linux/arm64` builds.
+- **Privacy Policy and Terms of Service** — created `website/privacy.html` and `website/terms.html`, updated all footer links.
+- **Added `SystemController.Roadmap`** — structured endpoint returning all planned 501 endpoints with metadata.
+- **Replaced stub endpoints with 501** — `SecurityController` (sessions, revoke), `VpnController` (wg-up, wg-down, logs), and `WatchPartyController` (chat) now return honest `501 Not Implemented`.
 
 ### Versioning
-- Standardized all version strings from `1.0.0` and `2.6.5` to `1.0.1` across README, LICENSE, docs, website, stage, WN_Releases, Unraid templates, Docker artifacts, and build scripts.
+- All version strings standardized to `1.0.1` across backend, frontend, docs, press kit, Docker tags, and installer filenames.
+
 
 ## 2026-02 — v3.0.0 → Release to Public **v1.0.1** (RTP)
 
