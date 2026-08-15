@@ -18,6 +18,9 @@ namespace WatchNexus.Core.Controllers;
 [ApiController]
 public class CellarController : ControllerBase
 {
+    private static readonly Dictionary<string, List<DateTime>> _activationAttempts = new();
+    private static readonly object _rateLimitLock = new();
+
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpFactory;
     private readonly IConfiguration _config;
@@ -26,6 +29,24 @@ public class CellarController : ControllerBase
         _db = db;
         _httpFactory = httpFactory;
         _config = config;
+    }
+
+    private static bool IsRateLimited(string ip)
+    {
+        lock (_rateLimitLock)
+        {
+            var now = DateTime.UtcNow;
+            if (!_activationAttempts.TryGetValue(ip, out var attempts))
+            {
+                _activationAttempts[ip] = new List<DateTime> { now };
+                return false;
+            }
+            attempts.RemoveAll(t => now - t > TimeSpan.FromMinutes(5));
+            if (attempts.Count >= 5)
+                return true;
+            attempts.Add(now);
+            return false;
+        }
     }
 
     // ── Tier Module Definitions ─────────────────────────────────────
@@ -134,6 +155,10 @@ public class CellarController : ControllerBase
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> Activate([FromBody] JsonElement body)
     {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (IsRateLimited(ip))
+            return StatusCode(429, new { success = false, message = "Too many activation attempts. Please wait 5 minutes and try again." });
+
         var serial = body.TryGetProperty("serial", out var s) ? s.GetString()?.Trim() : null;
         if (string.IsNullOrEmpty(serial))
             return BadRequest(new { success = false, message = "Serial number is required" });
@@ -246,6 +271,10 @@ public class CellarController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ActivateFirstLaunch([FromBody] JsonElement body)
     {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (IsRateLimited(ip))
+            return StatusCode(429, new { success = false, message = "Too many activation attempts. Please wait 5 minutes and try again." });
+
         // First-launch only: once setup is complete this anonymous endpoint is
         // closed. Post-setup license changes must go through the authenticated
         // /api/cellar/activate endpoint.

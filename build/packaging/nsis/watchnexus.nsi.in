@@ -217,7 +217,7 @@ Section "Uninstall"
     nsExec::ExecToLog 'netsh.exe advfirewall firewall delete rule \
         name="WatchNexus ${DEFAULT_PORT}"'
 
-    ; Remove files (keep $INSTDIR\data if it exists — user data)
+    ; Remove files (keep %PROGRAMDATA%\WatchNexus — user data)
     Delete   "$INSTDIR\Uninstall.exe"
     Delete   "$INSTDIR\tier.json"
     Delete   "$INSTDIR\tier.lock"

@@ -221,14 +221,15 @@ echo ""
 echo "[2/7] Building Linux packages via fpm..."
 
 function build_linux_packages -a tier
-    set -l payload "$STAGE_DIR/$tier/publish/linux-x64"
+    set -l payload_x64 "$STAGE_DIR/$tier/publish/linux-x64"
+    set -l payload_arm64 "$STAGE_DIR/$tier/publish/linux-arm64"
     set -l web_payload "$STAGE_DIR/$tier/publish/web"
     set -l out "$RELEASE_DIR/$tier"
     set -l pkg_name "watchnexus-$tier"
     set -l tier_title (string upper -- (string sub -l 1 -- $tier))(string sub -s 2 -- $tier)
 
-    if not test -d "$payload"
-        echo "  [!] Missing payload: $payload"
+    if not test -d "$payload_x64"
+        echo "  [!] Missing x64 payload: $payload_x64"
         echo "      STAGE_DIR=$STAGE_DIR  RELEASE_DIR=$RELEASE_DIR"
         echo "      Did prepare-installers.sh complete? Inspect $STAGE_DIR/$tier/ tree."
         return 1
@@ -236,126 +237,144 @@ function build_linux_packages -a tier
 
     mkdir -p "$out"
 
-    # Layout fpm pulls from. We feed it a staging root with:
-    #   opt/watchnexus/bin/        (linux binaries)
-    #   opt/watchnexus/web/        (frontend bundle)
-    #   opt/watchnexus/tier.lock   (marker file the post-install reads)
-    #   opt/watchnexus/version.lock
-    #   opt/watchnexus/LICENSE.txt
-    #   opt/watchnexus/LICENSE.html
-    #   opt/watchnexus/README.md
-    #   usr/lib/systemd/system/watchnexus.service
-    set -l root "$out/_fpm_root_$tier"
-    rm -rf "$root"
-    mkdir -p "$root/opt/watchnexus/bin" \
-             "$root/opt/watchnexus/web" \
-             "$root/usr/lib/systemd/system" \
-             "$root/usr/bin" \
-             "$root/etc/xdg/autostart" \
-             "$root/usr/share/icons/hicolor/256x256/apps" \
-             "$root/usr/share/applications"
-
-    cp -a "$payload/." "$root/opt/watchnexus/bin/"
-    cp -a "$web_payload/." "$root/opt/watchnexus/web/"
-    echo "$tier"    > "$root/opt/watchnexus/tier.lock"
-    echo "$VERSION" > "$root/opt/watchnexus/version.lock"
-    cp "$STAGE_DIR/$tier/LICENSE.txt"  "$root/opt/watchnexus/LICENSE.txt"  2>/dev/null
-    cp "$STAGE_DIR/$tier/LICENSE.html" "$root/opt/watchnexus/LICENSE.html" 2>/dev/null
-    cp "$STAGE_DIR/$tier/README.md"    "$root/opt/watchnexus/README.md"    2>/dev/null
-
-    # systemd unit (same for all tiers)
-    cp "$FPM_HOOKS_DIR/service/watchnexus.service" \
-       "$root/usr/lib/systemd/system/watchnexus.service"
-
-    # ── User-session tray controller (new in v1.0.0) ─────────────
-    # /usr/bin/watchnexus-tray launches the Core binary in --tray mode
-    # for each interactive user. /etc/xdg/autostart/* auto-starts it on
-    # GUI login. The hicolor icon supports the AppIndicator's "icon=watchnexus".
-    cp "$FPM_HOOKS_DIR/bin/watchnexus-tray" "$root/usr/bin/watchnexus-tray"
-    chmod +x "$root/usr/bin/watchnexus-tray"
-    cp "$FPM_HOOKS_DIR/xdg-autostart/watchnexus-tray.desktop" \
-       "$root/etc/xdg/autostart/watchnexus-tray.desktop"
-    # App launcher entry (Activities / app drawer)
-    cp "$FPM_HOOKS_DIR/xdg-autostart/watchnexus-tray.desktop" \
-       "$root/usr/share/applications/watchnexus.desktop"
-    # System icon (so `Icon=watchnexus` in the .desktop resolves)
-    cp "$SCRIPT_DIR/packaging/resources/watchnexus-logo.png" \
-       "$root/usr/share/icons/hicolor/256x256/apps/watchnexus.png" 2>/dev/null
-    # Drop the .ico into /opt so the TrayController can find a square icon
-    # via its candidate path resolver.
-    cp "$SCRIPT_DIR/packaging/resources/watchnexus.ico" \
-       "$root/opt/watchnexus/watchnexus.ico" 2>/dev/null
-
-    set -l common_args \
-        --name "$pkg_name" \
-        --version "$VERSION" \
-        --license "$LICENSE" \
-        --vendor "$VENDOR" \
-        --maintainer "$MAINTAINER" \
-        --url "$URL" \
-        --description "WatchNexus $tier_title — modular media server, v$VERSION (RTP 1.0)" \
-        --architecture x86_64 \
-        --after-install "$FPM_HOOKS_DIR/after-install.sh" \
-        --before-remove "$FPM_HOOKS_DIR/before-remove.sh" \
-        --after-remove  "$FPM_HOOKS_DIR/after-remove.sh"
-
-    # ── DEB ────────────────────────────────────────────────────────
-    echo "  [$tier] → .deb"
-    mkdir -p "$out/deb"
-    fpm -s dir -t deb \
-        $common_args \
-        --depends "libicu70 | libicu71 | libicu72 | libicu74" \
-        --depends "libkrb5-3" \
-        --depends "zlib1g" \
-        --deb-priority optional \
-        --deb-compression xz \
-        --category "video" \
-        --package "$out/deb/" \
-        -C "$root" \
-        opt usr etc 2>&1
-    set -l deb_status $status
-    if test $deb_status -ne 0
-        echo "  [!] fpm deb exited $deb_status for $tier"
+    # Build for each available architecture
+    set -l arches
+    if test -d "$payload_x64"
+        set -a arches x86_64
+    end
+    if test -d "$payload_arm64"
+        set -a arches arm64
     end
 
-    # ── RPM ────────────────────────────────────────────────────────
-    echo "  [$tier] → .rpm"
-    mkdir -p "$out/rpm"
-    fpm -s dir -t rpm \
-        $common_args \
-        --depends "libicu" \
-        --depends "krb5-libs" \
-        --depends "zlib" \
-        --rpm-summary "WatchNexus $tier_title media server" \
-        --rpm-os linux \
-        --rpm-compression xz \
-        --package "$out/rpm/" \
-        -C "$root" \
-        opt usr etc 2>&1
-    set -l rpm_status $status
-    if test $rpm_status -ne 0
-        echo "  [!] fpm rpm exited $rpm_status for $tier"
-    end
+    for arch in $arches
+        set -l payload
+        if test "$arch" = "x86_64"
+            set payload "$payload_x64"
+        else
+            set payload "$payload_arm64"
+        end
 
-    # ── Arch pkg.tar.zst (fpm target 'pacman') ─────────────────────
-    echo "  [$tier] → .pkg.tar.zst"
-    mkdir -p "$out/arch"
-    fpm -s dir -t pacman \
-        $common_args \
-        --depends "icu" \
-        --depends "krb5" \
-        --depends "zlib" \
-        --pacman-compression zstd \
-        --package "$out/arch/" \
-        -C "$root" \
-        opt usr etc 2>&1
-    set -l pac_status $status
-    if test $pac_status -ne 0
-        echo "  [!] fpm pacman exited $pac_status for $tier"
-    end
+        # Layout fpm pulls from. We feed it a staging root with:
+        #   opt/watchnexus/bin/        (linux binaries)
+        #   opt/watchnexus/web/        (frontend bundle)
+        #   opt/watchnexus/tier.lock   (marker file the post-install reads)
+        #   opt/watchnexus/version.lock
+        #   opt/watchnexus/LICENSE.txt
+        #   opt/watchnexus/LICENSE.html
+        #   opt/watchnexus/README.md
+        #   usr/lib/systemd/system/watchnexus.service
+        set -l root "$out/_fpm_root_${tier}_${arch}"
+        rm -rf "$root"
+        mkdir -p "$root/opt/watchnexus/bin" \
+                 "$root/opt/watchnexus/web" \
+                 "$root/usr/lib/systemd/system" \
+                 "$root/usr/bin" \
+                 "$root/etc/xdg/autostart" \
+                 "$root/usr/share/icons/hicolor/256x256/apps" \
+                 "$root/usr/share/applications"
 
-    # ── Cleanup the fpm root ───────────────────────────────────────
-    rm -rf "$root"
+        cp -a "$payload/." "$root/opt/watchnexus/bin/"
+        cp -a "$web_payload/." "$root/opt/watchnexus/web/"
+        echo "$tier"    > "$root/opt/watchnexus/tier.lock"
+        echo "$VERSION" > "$root/opt/watchnexus/version.lock"
+        cp "$STAGE_DIR/$tier/LICENSE.txt"  "$root/opt/watchnexus/LICENSE.txt"  2>/dev/null
+        cp "$STAGE_DIR/$tier/LICENSE.html" "$root/opt/watchnexus/LICENSE.html" 2>/dev/null
+        cp "$STAGE_DIR/$tier/README.md"    "$root/opt/watchnexus/README.md"    2>/dev/null
+
+        # systemd unit (same for all tiers)
+        cp "$FPM_HOOKS_DIR/service/watchnexus.service" \
+           "$root/usr/lib/systemd/system/watchnexus.service"
+
+        # ── User-session tray controller (new in v1.0.0) ─────────────
+        # /usr/bin/watchnexus-tray launches the Core binary in --tray mode
+        # for each interactive user. /etc/xdg/autostart/* auto-starts it on
+        # GUI login. The hicolor icon supports the AppIndicator's "icon=watchnexus".
+        cp "$FPM_HOOKS_DIR/bin/watchnexus-tray" "$root/usr/bin/watchnexus-tray"
+        chmod +x "$root/usr/bin/watchnexus-tray"
+        cp "$FPM_HOOKS_DIR/xdg-autostart/watchnexus-tray.desktop" \
+           "$root/etc/xdg/autostart/watchnexus-tray.desktop"
+        # App launcher entry (Activities / app drawer)
+        cp "$FPM_HOOKS_DIR/xdg-autostart/watchnexus-tray.desktop" \
+           "$root/usr/share/applications/watchnexus.desktop"
+        # System icon (so `Icon=watchnexus` in the .desktop resolves)
+        cp "$SCRIPT_DIR/packaging/resources/watchnexus-logo.png" \
+           "$root/usr/share/icons/hicolor/256x256/apps/watchnexus.png" 2>/dev/null
+        # Drop the .ico into /opt so the TrayController can find a square icon
+        # via its candidate path resolver.
+        cp "$SCRIPT_DIR/packaging/resources/watchnexus.ico" \
+           "$root/opt/watchnexus/watchnexus.ico" 2>/dev/null
+
+        set -l common_args \
+            --name "$pkg_name" \
+            --version "$VERSION" \
+            --license "$LICENSE" \
+            --vendor "$VENDOR" \
+            --maintainer "$MAINTAINER" \
+            --url "$URL" \
+            --description "WatchNexus $tier_title — modular media server, v$VERSION (RTP 1.0)" \
+            --architecture "$arch" \
+            --after-install "$FPM_HOOKS_DIR/after-install.sh" \
+            --before-remove "$FPM_HOOKS_DIR/before-remove.sh" \
+            --after-remove  "$FPM_HOOKS_DIR/after-remove.sh"
+
+        # ── DEB ────────────────────────────────────────────────────────
+        echo "  [$tier] → .deb ($arch)"
+        mkdir -p "$out/deb"
+        fpm -s dir -t deb \
+            $common_args \
+            --depends "libicu70 | libicu71 | libicu72 | libicu74" \
+            --depends "libkrb5-3" \
+            --depends "zlib1g" \
+            --deb-priority optional \
+            --deb-compression xz \
+            --category "video" \
+            --package "$out/deb/" \
+            -C "$root" \
+            opt usr etc 2>&1
+        set -l deb_status $status
+        if test $deb_status -ne 0
+            echo "  [!] fpm deb exited $deb_status for $tier ($arch)"
+        end
+
+        # ── RPM ────────────────────────────────────────────────────────
+        echo "  [$tier] → .rpm ($arch)"
+        mkdir -p "$out/rpm"
+        fpm -s dir -t rpm \
+            $common_args \
+            --depends "libicu" \
+            --depends "krb5-libs" \
+            --depends "zlib" \
+            --rpm-summary "WatchNexus $tier_title media server" \
+            --rpm-os linux \
+            --rpm-compression xz \
+            --package "$out/rpm/" \
+            -C "$root" \
+            opt usr etc 2>&1
+        set -l rpm_status $status
+        if test $rpm_status -ne 0
+            echo "  [!] fpm rpm exited $rpm_status for $tier ($arch)"
+        end
+
+        # ── Arch pkg.tar.zst (fpm target 'pacman') ─────────────────────
+        echo "  [$tier] → .pkg.tar.zst ($arch)"
+        mkdir -p "$out/arch"
+        fpm -s dir -t pacman \
+            $common_args \
+            --depends "icu" \
+            --depends "krb5" \
+            --depends "zlib" \
+            --pacman-compression zstd \
+            --package "$out/arch/" \
+            -C "$root" \
+            opt usr etc 2>&1
+        set -l pac_status $status
+        if test $pac_status -ne 0
+            echo "  [!] fpm pacman exited $pac_status for $tier ($arch)"
+        end
+
+        # ── Cleanup the fpm root ───────────────────────────────────────
+        rm -rf "$root"
+    end
 
     # Move outputs into final-named files
     for d in deb rpm arch

@@ -22,12 +22,17 @@ Alpha/
 separated/
 memory/
 
+# Ignore release artifacts
+stage/
+WN_Releases/
+
 # Ignore other
 *.md
 LICENSE
 .env*
 yarn-error.log
 
+# Secrets & environment
 appsettings.Production.json
 appsettings.Development.json
 **/appsettings.Production.json
@@ -42,5 +47,3 @@ public.key
 **/public.key
 *.db
 **/data/
-
-test_reports/

@@ -59,7 +59,7 @@ sudo systemctl status watchnexus
 
 That's it. Open `http://your-server-ip:8001` in your browser.
 
-**Default credentials:** `admin@watchnexus.local` / `admin` (change these immediately)
+**Default credentials:** `admin@watchnexus.ca` / `admin` (change these immediately)
 
 ### Option 2: From Source
 

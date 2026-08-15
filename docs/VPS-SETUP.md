@@ -252,7 +252,7 @@ releases.watchnexus.ca {
 # ── License API (proxied to FastAPI on :8002)
 licenses.watchnexus.ca {
     encode zstd gzip
-    reverse_proxy 127.0.0.1:8002
+    reverse_proxy 127.0.0.1:8001
 
     # Rate-limit activation endpoint to 60 req/min per IP
     rate_limit {

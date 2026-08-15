@@ -111,3 +111,8 @@ appImage:
 publish:
   provider: generic
   url: https://github.com/watchnexus/watchnexus/releases/download/
+
+hooks:
+  beforeBuild: echo "Starting WatchNexus Electron build..."
+  afterPack: echo "WatchNexus Electron package created."
+  afterSign: echo "WatchNexus Electron package signed."

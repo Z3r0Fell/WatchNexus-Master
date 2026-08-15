@@ -35,6 +35,9 @@ public static class Fortress
         _fortressDataPath = Path.Combine(AppContext.BaseDirectory, "data", "fortress");
         Directory.CreateDirectory(_fortressDataPath);
 
+        // Load persisted audit log from disk
+        LoadAuditLog();
+
         // Load or create config
         LoadConfig();
 
@@ -48,7 +51,7 @@ public static class Fortress
         app.Use(async (context, next) =>
         {
             // Periodic runtime check on API requests (every 100th request to minimize overhead)
-            if (context.Request.Path.StartsWithSegments("/api") && Interlocked.Increment(ref _requestCounter) % 100 == 0)
+            if (context.Request.Path.StartsWithSegments("/api") && Interlocked.Increment(ref _requestCounter) % 10 == 0)
             {
                 PerformRuntimeCheck();
             }
@@ -348,6 +351,39 @@ public static class Fortress
     }
 
     // ── Audit Log ───────────────────────────────────────────────
+
+    private static void LoadAuditLog()
+    {
+        try
+        {
+            var auditPath = Path.Combine(_fortressDataPath, "audit.jsonl");
+            if (!File.Exists(auditPath)) return;
+
+            var lines = File.ReadAllLines(auditPath);
+            var loaded = 0;
+            foreach (var line in lines)
+            {
+                try
+                {
+                    var entry = JsonSerializer.Deserialize<AuditEntry>(line);
+                    if (entry != null)
+                    {
+                        lock (_auditLock)
+                        {
+                            _auditLog.Add(entry);
+                        }
+                        loaded++;
+                    }
+                }
+                catch { /* skip corrupt lines */ }
+            }
+            Log($"[Fortress] Loaded {loaded} audit entries from disk");
+        }
+        catch (Exception ex)
+        {
+            Log($"[Fortress] Failed to load audit log: {ex.Message}");
+        }
+    }
 
     private static void RecordAudit(string action, string result, string detail)
     {

@@ -96,7 +96,7 @@ public class BastionController : ControllerBase
         var user = this.UserId();
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "user";
         var issuer = "WatchNexus";
-        var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30&algorithm=SHA1";
+        var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30&algorithm=SHA256";
 
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_2fa_secret" && s.UserId == user);
         if (setting != null) setting.Value = secret; else _db.Settings.Add(new AppSetting { UserId = user, Key = "bastion_2fa_secret", Value = secret });
@@ -111,7 +111,7 @@ public class BastionController : ControllerBase
             issuer,
             digits = 6,
             period = 30,
-            algorithm = "SHA1",
+            algorithm = "SHA256",
             backup_codes = Enumerable.Range(0, 8).Select(_ =>
                 Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(4)).ToLower()
             ).ToArray()
@@ -281,7 +281,7 @@ public class BastionController : ControllerBase
             var counter = timeStep + offset;
             var counterBytes = BitConverter.GetBytes(counter);
             if (BitConverter.IsLittleEndian) Array.Reverse(counterBytes);
-            using var hmac = new System.Security.Cryptography.HMACSHA1(secretBytes);
+            using var hmac = new System.Security.Cryptography.HMACSHA256(secretBytes);
             var hash = hmac.ComputeHash(counterBytes);
             var offsetVal = hash[^1] & 0x0F;
             var binary = ((hash[offsetVal] & 0x7F) << 24) |

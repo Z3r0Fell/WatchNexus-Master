@@ -1,14 +1,18 @@
 # ══════════════════════════════════════════════════════════════════════
 # WatchNexus — Multi-Tier Docker Build
 # Build args: TIER=standard|pro|ultra (default: standard)
+#            NODE_VERSION=22-alpine3.20
+#            DOTNET_SDK_VERSION=10.0.4-noble
+#            DOTNET_ASPNET_VERSION=10.0.4-noble
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Frontend Build ──────────────────────────────────────────
-FROM node:22-alpine AS frontend-build
+ARG NODE_VERSION=22-alpine3.20
+FROM ${NODE_VERSION} AS frontend-build
 WORKDIR /build/frontend
 
 COPY frontend/package.json frontend/yarn.lock ./
-RUN yarn install --frozen-lockfile || yarn install
+RUN yarn install --frozen-lockfile
 
 COPY frontend/ ./
 # Empty backend URL = same-origin mode for standalone deployment
@@ -16,7 +20,8 @@ ENV REACT_APP_BACKEND_URL=""
 RUN yarn build
 
 # ── Stage 2: Backend Build ───────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
+ARG DOTNET_SDK_VERSION=10.0.4-noble
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION} AS backend-build
 ARG TIER=standard
 WORKDIR /build
 
@@ -49,7 +54,8 @@ RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
     /p:SkipFrontendBuild=true
 
 # ── Stage 3: Runtime ─────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
+ARG DOTNET_ASPNET_VERSION=10.0.4-noble
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_ASPNET_VERSION} AS runtime
 ARG TIER=standard
 
 # Install runtime dependencies
@@ -100,10 +106,10 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -sf http://localhost:8001/api/health || exit 1
 
-# Note: For production, consider:
-# - Pinning base images by digest (e.g., node:22-alpine@sha256:...)
-# - Enabling HTTPS with TLS certificates
-# - Adding security headers (HSTS, CSP, X-Frame-Options)
-# - Using a reverse proxy (nginx, traefik) for TLS termination
+# Security hardening notes:
+# - HSTS, CSP, X-Frame-Options, etc. are set by middleware in Program.cs
+# - For production, also consider:
+#   - Pinning base images by digest (e.g., node:22-alpine@sha256:...)
+#   - Using a reverse proxy (nginx, traefik) for TLS termination
 
 ENTRYPOINT ["dotnet", "WatchNexus.Core.dll"]
