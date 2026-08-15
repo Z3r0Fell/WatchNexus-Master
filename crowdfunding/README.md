@@ -2,8 +2,8 @@
 
 > **Target:** USD $15,000
 > **Use of funds:** Code-signing certificates, OS-store legitimacy fees, and
-> dev-runway to ship the v1.0.0 RTP cleanly across every platform.
-> **Status:** v1.0.0 RTP code-complete; campaigns fund legitimacy + stretch.
+> dev-runway to ship the v1.0.1 RTP cleanly across every platform.
+> **Status:** v1.0.1 RTP code-complete; campaigns fund legitimacy + stretch.
 
 This directory holds **fully drafted, platform-tailored campaigns**.
 Each subfolder contains everything you need to launch on that platform

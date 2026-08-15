@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: standard
-    image: watchnexus/watchnexus:1.0.0-standard
+    image: watchnexus/watchnexus:1.0.1-standard
     container_name: watchnexus-standard
     profiles: ["standard"]
     ports:
@@ -25,9 +25,9 @@ services:
       - media-library:/data/media
     environment:
       - WATCHNEXUS_TIER=standard
-      # Leave JWT_SECRET unset — the server auto-generates a strong per-install
-      # secret on first boot and persists it to the data volume. Never ship a
-      # shared/hardcoded signing key.
+      - WATCHNEXUS_DATA_DIR=/app/data
+      - ASPNETCORE_ENVIRONMENT=Production
+      - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
       - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
     read_only: true
@@ -35,6 +35,21 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     restart: unless-stopped
 
   # ── Pro Edition ──────────────────────────────────────────────────
@@ -44,20 +59,20 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: pro
-    image: watchnexus/watchnexus:1.0.0-pro
+    image: watchnexus/watchnexus:1.0.1-pro
     container_name: watchnexus-pro
     profiles: ["pro"]
     ports:
-      - "8002:8002"
+      - "8001:8001"
     volumes:
       - watchnexus-data-pro:/app/data
       - media-library:/data/media
       - rips:/data/rips
     environment:
       - WATCHNEXUS_TIER=pro
-      # Leave JWT_SECRET unset — the server auto-generates a strong per-install
-      # secret on first boot and persists it to the data volume. Never ship a
-      # shared/hardcoded signing key.
+      - WATCHNEXUS_DATA_DIR=/app/data
+      - ASPNETCORE_ENVIRONMENT=Production
+      - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
       - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
     read_only: true
@@ -65,6 +80,21 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     restart: unless-stopped
 
   # ── Ultra Edition ────────────────────────────────────────────────
@@ -74,11 +104,11 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: ultra
-    image: watchnexus/watchnexus:1.0.0-ultra
+    image: watchnexus/watchnexus:1.0.1-ultra
     container_name: watchnexus-ultra
     profiles: ["ultra"]
     ports:
-      - "8002:8002"
+      - "8001:8001"
     volumes:
       - watchnexus-data-ultra:/app/data
       - media-library:/data/media
@@ -87,9 +117,9 @@ services:
       - offline:/data/offline
     environment:
       - WATCHNEXUS_TIER=ultra
-      # Leave JWT_SECRET unset — the server auto-generates a strong per-install
-      # secret on first boot and persists it to the data volume. Never ship a
-      # shared/hardcoded signing key.
+      - WATCHNEXUS_DATA_DIR=/app/data
+      - ASPNETCORE_ENVIRONMENT=Production
+      - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
       - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
     read_only: true
@@ -97,10 +127,21 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    # GPU passthrough for hardware transcoding (NVIDIA)
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
+        limits:
+          cpus: '4'
+          memory: 4G
         reservations:
+          cpus: '1'
+          memory: 1G
           devices:
             - driver: nvidia
               count: all

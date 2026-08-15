@@ -2,7 +2,7 @@
 
 > **Stack:** fpm + NSIS. All open-source. Net tooling cost: **$0**.
 > Replaces the BitRock InstallBuilder workflow entirely.
-> Outcome: twelve installer artifacts for v1.0.0 RTP —
+> Outcome: twelve installer artifacts for v1.0.1 RTP —
 > three tiers × four formats (DEB / RPM / pacman / NSIS .exe).
 
 ---
@@ -37,13 +37,13 @@ set -x WN_SIGN_PASS 'your-pfx-passphrase'
 
 ---
 
-## 1. Get the v1.0.0 source
+## 1. Get the v1.0.1 source
 
 ```fish
 cd ~
-git clone https://github.com/z3r0fell/watchnexus.git
+git clone https://github.com/Z3r0Fell/WatchNexus-Master.git
 cd watchnexus
-git checkout main   # or 'git checkout v1.0.0' once the tag is pushed
+git checkout main   # or 'git checkout v1.0.1' once the tag is pushed
 ```
 
 ---
@@ -224,10 +224,10 @@ All four should respond on `curl http://localhost:8001/api/cellar/first-launch`.
 
 ```fish
 rsync -avh --progress release/ \
-    watchnexus@releases.watchnexus.ca:/srv/releases/v1.0.0/
+    watchnexus@releases.watchnexus.ca:/srv/releases/v1.0.1/
 
 ssh watchnexus@releases.watchnexus.ca \
-    'ln -sfn v1.0.0 /srv/releases/latest'
+    'ln -sfn v1.0.1 /srv/releases/latest'
 ```
 
 Done.
@@ -279,11 +279,11 @@ Neither needs fpm or NSIS.
 
 | Symptom | Fix |
 |---|---|
-| Windows: app crashes on launch looking for `src\separated` | You're running a pre-v1.0.0 build. The runtime DLL-compile path was removed. Update to the current `main`. |
+| Windows: app crashes on launch looking for `src\separated` | You're running a pre-v1.0.1 build. The runtime DLL-compile path was removed. Update to the current `main`. |
 | No Start-Menu icon / no Desktop icon | You ran `WatchNexus.Core.exe` directly instead of installing via the NSIS `.exe`. Run the NSIS installer (it creates Start-Menu + Desktop shortcuts automatically). |
 | Where are the Windows logs? | `%PROGRAMDATA%\WatchNexus\logs\boot-*.log` — also reachable via Start Menu → WatchNexus → "WatchNexus Logs Folder" |
 | Where are the Linux logs? | `/var/lib/watchnexus/logs/boot-*.log` (systemd) or `<install dir>/logs/boot-*.log` (standalone). Also `journalctl -u watchnexus`. |
-| App opens a console window and immediately closes | Should now pause with "Press any key to close..." before exiting on Windows interactive launches. If it still vanishes, you're on a pre-v1.0.0 build. |
+| App opens a console window and immediately closes | Should now pause with "Press any key to close..." before exiting on Windows interactive launches. If it still vanishes, you're on a pre-v1.0.1 build. |
 | `fpm: command not found` | `gem install --user-install fpm` and add `~/.local/share/gem/.../bin` to PATH |
 | `fpm` dies with `cannot load such file -- erb (LoadError)` (and similar for `mutex_m`, `getoptlong`, `base64`, `fiddle`) | Ruby 3.4 split these out of stdlib. `build-installers.fish` now runs an `fpm --version` health-check loop on every run: it parses the LoadError, `gem install --user-install`s the missing module, and retries (up to 8 times) until fpm prints its version cleanly. Manual fix: `gem install --user-install erb mutex_m getoptlong base64 fiddle` |
 | `makensis: command not found` | `sudo pacman -S nsis` |

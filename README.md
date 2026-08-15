@@ -10,7 +10,7 @@
 <h1 align="center">WatchNexus</h1>
 
 <p align="center">
-  <strong>Release To Public — v1.0.0</strong><br>
+  <strong>Release To Public — RTP v1.0.1</strong><br>
   A unified, self-hosted media server with tier-locked module licensing.
 </p>
 
@@ -44,8 +44,8 @@ A complete module matrix lives in [`docs/TIER-MANIFESTS.md`](docs/TIER-MANIFESTS
 
 ## Installation
 
-Pre-built installers for v1.0.0 are published at
-<https://releases.watchnexus.ca/v1.0.0/>:
+Pre-built installers for RTP v1.0.1 are published at
+<https://releases.watchnexus.ca/RTP v1.0.1/>:
 
 | Platform | File |
 |---|---|
@@ -135,4 +135,4 @@ Third-party component notices: <https://watchnexus.ca/legal/notices>.
 
 ---
 
-<p align="center"><sub>WatchNexus &middot; v1.0.0 (RTP) &middot; Built with care for self-hosters.</sub></p>
+<p align="center"><sub>WatchNexus &middot; RTP v1.0.1 (RTP) &middot; Built with care for self-hosters.</sub></p>

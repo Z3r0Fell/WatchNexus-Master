@@ -180,13 +180,13 @@ build_tier() {
   "tier": "$TIER",
   "version": "1.0.1",
   "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "controllers": $(ls "$OUT/backend/Controllers/" 2>/dev/null | wc -l),
+  "controllers": $(find "$OUT/backend/Controllers" -maxdepth 1 -type f -name "*.cs" 2>/dev/null | wc -l),
   "pages": $(find "$OUT/frontend/pages" \( -name "*.js" -o -name "*.jsx" \) 2>/dev/null | wc -l)
 }
 EOF
 
   echo "  Output: $OUT"
-  echo "  Controllers: $(ls "$OUT/backend/Controllers/" 2>/dev/null | wc -l)"
+  echo "  Controllers: $(find "$OUT/backend/Controllers" -maxdepth 1 -type f -name "*.cs" 2>/dev/null | wc -l)"
   echo "  Pages: $(find "$OUT/frontend/pages" \( -name "*.js" -o -name "*.jsx" \) 2>/dev/null | wc -l)"
   echo ""
 }

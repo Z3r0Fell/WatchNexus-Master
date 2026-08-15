@@ -6,7 +6,7 @@
 > using the dollar value of their first 6 months of pledges.
 
 ## 🥇 $15,000 — Base Goal (already detailed in `budget.md`)
-**Ships:** v1.0.0 RTP fully signed across Windows + Linux + Docker, 12 months of licence-server hosting, 3 months of dev runway for v1.1 polish.
+**Ships:** v1.0.1 RTP fully signed across Windows + Linux + Docker, 12 months of licence-server hosting, 3 months of dev runway for v1.1 polish.
 
 ---
 

@@ -22,14 +22,23 @@ public class VpnController : ControllerBase
     {
         var config = await _db.VpnServerConfigs.FindAsync("default");
         if (config != null) return config;
+        var (privKey, pubKey) = GenerateWgKeyPair();
         config = new VpnServerConfig
         {
-            PublicKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
-            PrivateKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
+            PublicKey = pubKey,
+            PrivateKey = privKey,
         };
         _db.VpnServerConfigs.Add(config);
         await _db.SaveChangesAsync();
         return config;
+    }
+
+    private static (string PrivateKey, string PublicKey) GenerateWgKeyPair()
+    {
+        var privateKey = new byte[32];
+        RandomNumberGenerator.Fill(privateKey);
+        var publicKey = System.Security.Cryptography.Curve25519.PublicKeyFromSeed(privateKey);
+        return (Convert.ToBase64String(privateKey), Convert.ToBase64String(publicKey));
     }
 
     [HttpGet("server")]
@@ -77,14 +86,16 @@ public class VpnController : ControllerBase
     public async Task<IActionResult> CreatePeer([FromBody] PeerCreate req)
     {
         var count = await _db.VpnPeers.CountAsync();
+        var (privKey, pubKey) = GenerateWgKeyPair();
+        var psk = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         var peer = new VpnPeer
         {
             Name = req.Name,
             AllowedIps = req.AllowedIps,
             Address = $"10.0.0.{count + 2}/32",
-            PublicKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
-            PrivateKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
-            PresharedKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
+            PublicKey = pubKey,
+            PrivateKey = privKey,
+            PresharedKey = psk,
         };
         _db.VpnPeers.Add(peer);
         await _db.SaveChangesAsync();

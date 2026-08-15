@@ -127,10 +127,11 @@ Section "Core (required)" SecCore
     nsExec::ExecToLog 'cmd.exe /c if not exist "%PROGRAMDATA%\WatchNexus\logs" mkdir "%PROGRAMDATA%\WatchNexus\logs"'
     nsExec::ExecToLog 'cmd.exe /c icacls "%PROGRAMDATA%\WatchNexus" /grant "*S-1-5-18:(OI)(CI)F" /grant "*S-1-5-32-544:(OI)(CI)F" /T /C /Q'
 
-    ; Register the Windows service
+    ; Register the Windows service (run as NetworkService, not LocalSystem)
     nsExec::ExecToLog 'sc.exe create ${SERVICE_NAME} \
         binPath= "\"$INSTDIR\bin\WatchNexus.Core.exe\" --urls http://0.0.0.0:${DEFAULT_PORT}" \
         start= auto \
+        obj= "NT AUTHORITY\NetworkService" \
         DisplayName= "WatchNexus @TIER_TITLE@"'
 
     ; Add firewall rule
@@ -207,11 +208,8 @@ SectionEnd
 ; ══════════════════════════════════════════════════════════════════════
 
 Section "Uninstall"
-    ; Kill any running user-session tray controller so its file lock
-    ; releases before we try to delete the binary.
-    nsExec::ExecToLog 'cmd.exe /c taskkill /F /IM WatchNexus.Core.exe /T'
-
-    ; Stop + delete the service
+    ; Stop the service first — this releases the binary lock and lets
+    ; us delete files cleanly without killing unrelated instances.
     nsExec::ExecToLog 'sc.exe stop ${SERVICE_NAME}'
     nsExec::ExecToLog 'sc.exe delete ${SERVICE_NAME}'
 

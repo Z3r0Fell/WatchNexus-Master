@@ -401,8 +401,12 @@ function build_windows_installer -a tier
         "$NSIS_TEMPLATE" > "$nsi"
 
     echo "  [$tier] → makensis"
-    makensis -V2 "$nsi" 2>&1 | tail -8
-    or echo "  [!] NSIS build failed for $tier"
+    makensis -V2 "$nsi" >/dev/null 2>&1
+    if test $status -ne 0
+        echo "  [!] NSIS build failed for $tier"
+    else
+        tail -8 <(makensis -V2 "$nsi" 2>&1)
+    end
 
     set -l outfile "$out/watchnexus-$tier-$VERSION-windows-x64.exe"
     if test -f "$outfile"
@@ -430,7 +434,7 @@ if test "$DO_DOCKER" = "1"
             -t "$img" \
             -t "$latest" \
             -f "$ROOT_DIR/Dockerfile" \
-            "$ROOT_DIR" 2>&1 | tail -3
+            "$ROOT_DIR"
         if test $status -ne 0
             echo "  [!] Docker build failed for $tier"
             continue
@@ -438,8 +442,12 @@ if test "$DO_DOCKER" = "1"
         # Export as a loadable tarball for offline distribution
         mkdir -p "$RELEASE_DIR/$tier/docker"
         set -l tarball "$RELEASE_DIR/$tier/docker/watchnexus-$tier-$VERSION-docker.tar"
-        docker save "$img" -o "$tarball" 2>&1 | tail -1
-        and echo "    saved tarball: "(basename "$tarball")"  ("(du -h "$tarball" | cut -f1)")"
+        docker save "$img" -o "$tarball"
+        if test $status -eq 0
+            echo "    saved tarball: "(basename "$tarball")"  ("(du -h "$tarball" | cut -f1)")"
+        else
+            echo "    [!] docker save failed for $tier"
+        end
     end
 else
     echo ""

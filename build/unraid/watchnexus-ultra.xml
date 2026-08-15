@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>WatchNexus-Ultra</Name>
-  <Repository>watchnexus/watchnexus:1.0.0-ultra</Repository>
+  <Repository>watchnexus/watchnexus:1.0.1-ultra</Repository>
   <Registry>https://hub.docker.com/r/watchnexus/watchnexus</Registry>
   <Network>bridge</Network>
   <MyIP/>
@@ -17,14 +17,14 @@ Requires an Ultra serial number ($60 CAD one-time) from licenses.watchnexus.ca
 For NVIDIA GPU transcoding, install the NVIDIA Driver plugin on Unraid and enable GPU passthrough.
   </Overview>
   <Category>MediaServer:Video MediaServer:Music MediaServer:Books MediaServer:Other</Category>
-  <WebUI>http://[IP]:[PORT:8002]</WebUI>
+  <WebUI>http://[IP]:[PORT:8001]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/Z3r0Fell/watchnexus-unraid/main/watchnexus-ultra.xml</TemplateURL>
   <Icon>https://watchnexus.ca/assets/images/watchnexus-logo.png</Icon>
-  <ExtraParams>--restart=unless-stopped --runtime=nvidia</ExtraParams>
-  <Config Name="Web UI Port" Target="8002" Default="8002" Mode="tcp" Description="WatchNexus web interface port" Type="Port" Display="always" Required="true" Mask="false">8002</Config>
-  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <Config Name="Web UI Port" Target="8001" Default="8001" Mode="tcp" Description="WatchNexus web interface port" Type="Port" Display="always" Required="true" Mask="false">8001</Config>
+  <Config Name="App Data" Target="/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
   <Config Name="Media Library" Target="/data/media" Default="/mnt/user/media" Mode="rw" Description="Media files" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media</Config>
-  <Config Name="Rips Output" Target="/data/rips" Default="/mnt/user/appdata/watchnexus/rips" Mode="rw" Description="Disc rips output" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/watchnexus/rips</Config>
+  <Config Name="Rips Output" Target="/data/rips" Default="/mnt/user/appdata/watchnexus/rips" Mode="rw" Description="Disc rips output" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/rips</Config>
   <Config Name="Transcoded Output" Target="/data/transcoded" Default="/mnt/user/appdata/watchnexus/transcoded" Mode="rw" Description="Transcoded files" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/transcoded</Config>
   <Config Name="Offline Downloads" Target="/data/offline" Default="/mnt/user/appdata/watchnexus/offline" Mode="rw" Description="Offline sync" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/watchnexus/offline</Config>
   <Config Name="NVIDIA GPU" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Mode="" Description="NVIDIA GPU passthrough (set to GPU UUID or 'all')" Type="Variable" Display="always" Required="false" Mask="false">all</Config>

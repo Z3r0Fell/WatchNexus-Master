@@ -329,7 +329,6 @@ public class SetupWizardController : ControllerBase
     }
 
     [HttpPost("step/{stepNumber}")]
-    [AllowAnonymous]
     public async Task<IActionResult> CompleteStep(int stepNumber, [FromBody] JsonElement data)
     {
         if (await _db.Settings.AnyAsync(s => s.Key == "setup_completed" && s.Value == "true"))
@@ -351,7 +350,6 @@ public class SetupWizardController : ControllerBase
     }
 
     [HttpPost("complete")]
-    [AllowAnonymous]
     public async Task<IActionResult> Complete()
     {
         if (await _db.Settings.AnyAsync(s => s.Key == "setup_completed" && s.Value == "true"))

@@ -44,7 +44,7 @@ subscriptions, no ads, no usage analytics, no AI
 training on your library."
 
 [0:45 — close-up on the developer's hands typing on a
-mechanical keyboard. Screen shows the v1.0.0 commit
+mechanical keyboard. Screen shows the v1.0.1 commit
 landing on GitHub.]
 
 VO: "I'm Auz. I built WatchNexus because nobody else

@@ -2,13 +2,13 @@
 <!-- WatchNexus Unraid Community Applications Template -->
 <Container version="2">
     <Name>WatchNexus</Name>
-    <Repository>watchnexus/watchnexus:latest</Repository>
+    <Repository>watchnexus/watchnexus:1.0.1-standard</Repository>
     <Registry>https://hub.docker.com/r/watchnexus/watchnexus</Registry>
     <Network>bridge</Network>
     <Shell>bash</Shell>
     <Privileged>false</Privileged>
-    <Support>https://github.com/your-org/watchnexus/issues</Support>
-    <Project>https://github.com/your-org/watchnexus</Project>
+    <Support>https://watchnexus.ca/support</Support>
+    <Project>https://watchnexus.ca</Project>
     <Overview>
         WatchNexus - Unified, self-hosted media pipeline.
         Request, acquire, organize, and watch your media.
@@ -18,15 +18,15 @@
     <Category>MediaApp:Video MediaApp:Music MediaServer:Video</Category>
     <WebUI>http://[IP]:[PORT:8001]</WebUI>
     <TemplateURL/>
-    <Icon>https://raw.githubusercontent.com/your-org/watchnexus/main/frontend/public/watchnexus-logo.png</Icon>
+    <Icon>https://watchnexus.ca/assets/images/watchnexus-logo.png</Icon>
     <ExtraParams/>
     <PostArgs/>
     <DonateText/>
     <DonateLink/>
     <Requires/>
     <Config Name="Web UI Port" Target="8001" Default="8001" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">8001</Config>
-    <Config Name="Data" Target="/opt/watchnexus/backend/data" Default="/mnt/user/appdata/watchnexus/data" Mode="rw" Description="Application data and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus/data</Config>
-    <Config Name="Logs" Target="/opt/watchnexus/backend/logs" Default="/mnt/user/appdata/watchnexus/logs" Mode="rw" Description="Application logs" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/watchnexus/logs</Config>
-    <Config Name="Media" Target="/media" Default="/mnt/user/media" Mode="ro" Description="Media library root" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/media</Config>
+    <Config Name="Data" Target="/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
+    <Config Name="Logs" Target="/data/logs" Default="/mnt/user/appdata/watchnexus/logs" Mode="rw" Description="Application logs" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/watchnexus/logs</Config>
+    <Config Name="Media" Target="/data/media" Default="/mnt/user/media" Mode="ro" Description="Media library root" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/media</Config>
     <Config Name="TMDB API Key" Target="TMDB_API_KEY" Default="" Mode="" Description="TheMovieDB API key for metadata" Type="Variable" Display="always" Required="false" Mask="true"/>
 </Container>

@@ -5,7 +5,7 @@
 
 ## What could go wrong, and how I'm handling it
 
-WatchNexus v1.0.0 RTP is **code-complete today**. The campaign isn't
+WatchNexus v1.0.1 RTP is **code-complete today**. The campaign isn't
 funding "an idea" — it's funding the **legitimacy** that turns the
 build into a software product real users can install without their OS
 yelling at them. That changes the risk profile from typical
@@ -63,7 +63,7 @@ project stalls.
 
 ## What is *not* a risk
 
-- **The product not existing.** v1.0.0 RTP code is complete and live in
+- **The product not existing.** v1.0.1 RTP code is complete and live in
   the repo; you can compile and run it today.
 - **Features not landing.** Stretch goals expand the roadmap, but the
   base $15K goal is fully covered by deliverables that already exist.

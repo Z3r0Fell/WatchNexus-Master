@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "Unified media pipeline - request, acquire, organize, and watch",
   "author": "WatchNexus",
-  "license": "MIT",
+  "license": "LicenseRef-OWN",
   "private": true,
   "main": "electron/main.js",
   "homepage": "./",

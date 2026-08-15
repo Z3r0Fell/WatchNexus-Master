@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
-VERSION="1.0.0"
+VERSION="1.0.1"
 PUSH=false
 TIERS=("standard" "pro" "ultra")
 

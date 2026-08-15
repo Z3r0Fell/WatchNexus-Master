@@ -221,7 +221,7 @@ WatchNexus isn't a concept - it's a working application:
 ```markdown
 ## 💡 Why Open Source?
 
-WatchNexus is **MIT Licensed** because:
+WatchNexus is **Proprietary** because:
 
 • **Your data stays yours** - Self-hosted, no cloud
 • **No subscriptions** - Pay once, own forever

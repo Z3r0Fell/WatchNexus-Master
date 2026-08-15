@@ -118,8 +118,8 @@
 - Default: **wait until $400 pledged** (no personal float
   required); the unsigned Windows installer ships in the interim.
 
-### 18. v1.0.0 RTP shipping plan
-- Is v1.0.0 RTP going up on GitHub releases **before** the campaign
+### 18. v1.0.1 RTP shipping plan
+- Is v1.0.1 RTP going up on GitHub releases **before** the campaign
   launches, or **on launch day**?
 - Default: **on launch day** — gives the campaign maximum "the
   product exists, here it is" credibility.

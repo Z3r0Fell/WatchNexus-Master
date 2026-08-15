@@ -35,6 +35,6 @@ public static class SecretProtector
         if (_protector is null) return stored;
         if (!stored.StartsWith(Prefix)) return stored;       // legacy plaintext
         try { return _protector.Unprotect(stored.Substring(Prefix.Length)); }
-        catch { return stored; }                              // corrupt / foreign payload — fail open
+        catch { return string.Empty; }                        // corrupt / foreign payload — fail closed
     }
 }

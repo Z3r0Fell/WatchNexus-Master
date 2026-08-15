@@ -72,7 +72,7 @@ A single, beautiful application that handles:
 ### Legal & Compliance
 - ✅ Terms of Service page
 - ✅ Legal Disclaimer page
-- ✅ MIT License
+- ✅ Proprietary
 
 ### Hidden Features
 - ✅ **Emby-Compatible API** - Connect existing Emby-compatible media server clients
@@ -194,7 +194,7 @@ WatchNexus
 ## 👨‍💻 About the Project
 
 WatchNexus is:
-- **Open Source** - MIT License
+- **Open Source** - Proprietary
 - **Self-Hosted** - Your data, your server
 - **Privacy-First** - No tracking, no cloud dependency
 - **Community-Driven** - Plugin & theme ecosystem

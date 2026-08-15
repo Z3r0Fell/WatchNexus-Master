@@ -2,7 +2,7 @@
 ## Comparing with Other Media Servers, Plex, and the *arr Suite (Sonarr/Radarr)
 
 **Document Date**: February 15, 2026  
-**WatchNexus Version**: 2.0.1
+**WatchNexus Version**: 1.0.1
 
 ---
 

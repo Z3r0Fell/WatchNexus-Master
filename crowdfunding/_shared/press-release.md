@@ -50,7 +50,7 @@ sweat-equity alone:**
    the first wave of paying-user feedback.
 
 **The campaign sets no precedent of "fund or no product."** WatchNexus
-v1.0.0 RTP is code-complete today; the unsigned Linux + Docker
+v1.0.1 RTP is code-complete today; the unsigned Linux + Docker
 installers ship on day one regardless of campaign outcome. The funding
 specifically enables Windows / macOS legitimacy and turns a personal
 project into a sustainably operated software product.

@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Labels
 LABEL org.opencontainers.image.title="WatchNexus ${TIER}" \
       org.opencontainers.image.description="WatchNexus Media Server - ${TIER} Edition" \
-      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.version="1.0.1" \
       org.opencontainers.image.vendor="WatchNexus" \
       org.opencontainers.image.source="https://github.com/Z3r0Fell/watchnexus" \
       com.watchnexus.tier="${TIER}"
@@ -85,8 +85,8 @@ RUN groupadd -r watchnexus && useradd -r -g watchnexus -d /app watchnexus \
 USER watchnexus
 
 # Environment
-ENV ASPNETCORE_URLS=http://0.0.0.0:8002 \
-    WATCHNEXUS_PORT=8002 \
+ENV ASPNETCORE_URLS=http://0.0.0.0:8001 \
+    WATCHNEXUS_PORT=8001 \
     WATCHNEXUS_TIER=${TIER} \
     DOTNET_RUNNING_IN_CONTAINER=true \
     DOTNET_EnableDiagnostics=0
@@ -94,11 +94,11 @@ ENV ASPNETCORE_URLS=http://0.0.0.0:8002 \
 # Volume mounts
 VOLUME ["/app/data", "/data/media", "/data/rips"]
 
-EXPOSE 8002
+EXPOSE 8001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -sf http://localhost:8002/api/health || exit 1
+    CMD curl -sf http://localhost:8001/api/health || exit 1
 
 # Note: For production, consider:
 # - Pinning base images by digest (e.g., node:22-alpine@sha256:...)

@@ -96,7 +96,7 @@ every stretch milestone has a fixed budget and ships a fixed deliverable.
 Priority order if we land below $15K:
 
 1. **First $2,500** → code-signing (Windows EV + Apple Developer). This
-   is non-negotiable; without it the v1.0.0 release would be flagged as
+   is non-negotiable; without it the v1.0.1 release would be flagged as
    malware by SmartScreen.
 2. **Next $1,200** → licence-server infrastructure for 12 months.
 3. **Next $9,000** → developer runway (scaled down to 1–3 months).

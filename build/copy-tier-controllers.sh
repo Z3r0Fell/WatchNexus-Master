@@ -7,8 +7,12 @@
 set -e
 
 TIER="${1:-standard}"
-SRC="/build/src/watchnexus/core/Controllers"
 CONTROLLERS_DIR="/build/src/watchnexus/core/Controllers"
+
+if [[ "$TIER" != "standard" && "$TIER" != "pro" && "$TIER" != "ultra" ]]; then
+    echo "[WatchNexus] ERROR: Invalid tier '$TIER'. Use standard, pro, or ultra." >&2
+    exit 1
+fi
 
 echo "[WatchNexus] Building ${TIER} tier..."
 
@@ -52,15 +56,20 @@ ULTRA_FILES=(
     "UtilityControllers.cs"
 )
 
-# All controller source files
-ALL_SRC="/build/src/watchnexus/core/Controllers_all"
+# Use a tier-specific staging directory to avoid race conditions
+ALL_SRC="/build/src/watchnexus/core/Controllers_all_${TIER}"
 
-# Move all controllers to a temp location, then selectively copy back
-if [ -d "$ALL_SRC" ]; then
-    echo "  Controllers_all already exists, using it"
-else
-    cp -r "$CONTROLLERS_DIR" "$ALL_SRC"
-fi
+# Clear staging and copy all controllers there
+rm -rf "$ALL_SRC"
+cp -r "$CONTROLLERS_DIR" "$ALL_SRC"
+
+# Clear the controllers directory so we only copy back what this tier needs
+rm -f "$CONTROLLERS_DIR"/*.cs
+
+# Always copy core controllers
+for f in "$ALL_SRC"/*.cs; do
+    [ -f "$f" ] && cp "$f" "$CONTROLLERS_DIR/"
+done
 
 if [ "$TIER" = "pro" ] || [ "$TIER" = "ultra" ]; then
     echo "  Including Pro controllers..."
@@ -82,4 +91,7 @@ if [ "$TIER" = "ultra" ]; then
     done
 fi
 
-echo "[WatchNexus] ${TIER} tier: $(ls $CONTROLLERS_DIR/*.cs 2>/dev/null | wc -l) controllers"
+# Clean up staging
+rm -rf "$ALL_SRC"
+
+echo "[WatchNexus] ${TIER} tier: $(find "$CONTROLLERS_DIR" -maxdepth 1 -type f -name "*.cs" | wc -l) controllers"

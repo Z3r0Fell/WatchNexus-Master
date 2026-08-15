@@ -43,7 +43,7 @@ WatchNexus consolidates this into a single process:
 
 ## What's Inside the Binary
 
-WatchNexus v1.0.0 ships with 35 modules. Here are the ones that matter most for homelab use:
+WatchNexus v1.0.1 ships with 35 modules. Here are the ones that matter most for homelab use:
 
 ### Media Pipeline
 - **Marmalade** (Library Manager): Scans directories, fetches TMDB metadata, organizes into Movies/TV/Anime libraries. Equivalent to Jellyfin's library scanner.
@@ -175,7 +175,7 @@ For homelabbers who prioritize simplicity and resource efficiency over maximum t
 
 ---
 
-*WatchNexus v1.0.0 -- 58 MB binary, 35 modules, 2-minute install.*
+*WatchNexus v1.0.1 -- 58 MB binary, 35 modules, 2-minute install.*
 
 ---
 

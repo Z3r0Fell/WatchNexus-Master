@@ -3,16 +3,22 @@ services:
     build: .
     container_name: watchnexus
     ports:
-      - "8002:8002"
+      - "8001:8001"
     volumes:
-      - watchnexus-data:/app/data
+      - watchnexus-data:/opt/watchnexus/data
       - /path/to/your/media:/data/media:ro    # Mount your media libraries here
     environment:
-      - WATCHNEXUS_PORT=8002
+      - WATCHNEXUS_PORT=8001
+      - WATCHNEXUS_DATA_DIR=/opt/watchnexus/data
+      - ASPNETCORE_ENVIRONMENT=Production
+      - TZ=America/Toronto
       - TMDB_API_KEY=               # Optional: Your TMDB API key
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3

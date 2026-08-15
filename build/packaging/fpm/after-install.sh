@@ -14,10 +14,14 @@ PORT="${WATCHNEXUS_PORT:-8001}"
 
 # 1. Create the service user (idempotent across deb/rpm/pacman)
 if ! id -u "$SERVICE_USER" >/dev/null 2>&1; then
+    NOLOGIN_SHELL=""
+    for candidate in /usr/sbin/nologin /sbin/nologin /usr/bin/false; do
+        if [ -f "$candidate" ]; then NOLOGIN_SHELL="$candidate"; break; fi
+    done
     if command -v useradd >/dev/null 2>&1; then
-        useradd --system --home "$INSTALLDIR" --shell /usr/sbin/nologin "$SERVICE_USER"
+        useradd --system --home "$INSTALLDIR" --shell "${NOLOGIN_SHELL:-/usr/sbin/nologin}" "$SERVICE_USER"
     elif command -v adduser >/dev/null 2>&1; then
-        adduser --system --home "$INSTALLDIR" --shell /usr/sbin/nologin "$SERVICE_USER"
+        adduser --system --home "$INSTALLDIR" --shell "${NOLOGIN_SHELL:-/usr/sbin/nologin}" "$SERVICE_USER"
     fi
 fi
 

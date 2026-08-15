@@ -1,8 +1,42 @@
 # WatchNexus Changelog
 
-## 2026-02 — v3.0.0 → Release to Public **v1.0.0** 🎉
+## 2026-08-15 — v1.0.2 (Security & Stability Audit Fix)
 
-> **Issued Release to Public version 1.0.0** — internal build `3.0.0` is the basis of the first general-availability release. From this point on, the public version line resets to `1.0.0` (RTP) while the internal build sequence continues independently.
+### Security
+- **Removed exposed private signing key** from repository (`signing/private.key`). Key pair rotated; old key compromised.
+- **Removed hardcoded production API keys** from all staged `appsettings.json` files in `stage/` and `WN_Releases/`.
+- **Fixed invalid WireGuard key generation** — `VpnController` and `TunnelController` now generate proper Curve25519 key pairs via `System.Security.Cryptography.Curve25519` instead of independent random bytes.
+- **Fixed QBittorrent SSRF** — added `SsrfGuard.IsBlocked()` validation to all outbound HTTP request paths (`Status`, `Torrents`, `Add`, `Files`, `AuthQbit`).
+- **Removed `[AllowAnonymous]` from setup wizard completion** — `CompleteStep` and `Complete` now require authentication, preventing unauthenticated setup manipulation.
+- **Fixed CORS policy** — default no longer reflects all origins with credentials; restricted to localhost origins when `ALLOWED_ORIGINS` is unset.
+- **Fixed SecretProtector fail-open** — decryption failures now return empty string instead of raw ciphertext.
+- **Added `appsettings.json` to `.gitignore`** — prevents accidental secret commits; created `appsettings.example.json` for reference.
+- **Removed `.gitconfig` and `.emergent/summary.txt` from version control** — agent identity and internal state no longer tracked in repo.
+
+### Bug Fixes
+- **Fixed Syrup module** — removed broken `module.json` that declared non-existent `/api/syrup/*` routes.
+- **Fixed installer Dockerfile** — corrected COPY paths (`src/watchnexus/` instead of `watchnexus/`), added non-root `USER`, installed `curl` and `ffmpeg`, aligned port to `8001`.
+- **Fixed installer docker-compose.yml** — corrected port mapping (`8001:8001`), fixed volume mount path, added `WATCHNEXUS_DATA_DIR`, `ASPNETCORE_ENVIRONMENT`, `TZ`, `tmpfs`, healthcheck, and resource limits.
+- **Fixed module paths in native installers** — Windows `install.bat` and Linux `install.sh` now copy modules to `bin/modules` (discovered by `AppContext.BaseDirectory`) instead of a sibling `modules/` directory.
+- **Fixed Windows installer** — checks for .NET 10 SDK instead of runtime, added Windows Firewall rule, corrected version from `2.6.5` to `1.0.1`.
+- **Fixed Linux installer** — checks for .NET 10 SDK, added `set -o pipefail`, verified `curl` download, resolved `dotnet` path dynamically, fixed module copy path, properly starts/stops systemd service.
+- **Fixed Linux uninstaller** — stops and disables systemd service, disables lingering, uses correct process name (`WatchNexus.Core`), removes stale `uvicorn` cleanup.
+- **Fixed NSIS uninstaller** — removed blanket `taskkill /F /IM WatchNexus.Core.exe /T` that killed all instances system-wide; now relies on service stop/delete.
+- **Fixed Unraid templates** — changed port from `8002` to `8001`, removed forced `--runtime=nvidia` from Ultra template, corrected data paths to `/data` with `WATCHNEXUS_DATA_DIR`, updated versions to `1.0.1`.
+- **Fixed root `docker-compose.yml`** — standardized image tags to `1.0.1-*`, changed ports to `8001`, added missing healthchecks, `tmpfs`, resource limits, `WATCHNEXUS_DATA_DIR`, `ASPNETCORE_ENVIRONMENT`, `TZ`.
+- **Fixed root `Dockerfile`** — updated version label to `1.0.1`, changed port to `8001`, updated healthcheck to `/api/health`.
+- **Fixed all community template healthchecks** — changed `/api/system/health` to `/api/health` in Unraid, CasaOS, Portainer, HexOS, and TrueNAS templates.
+- **Fixed build scripts** — resolved fish shell pipeline `$status` bug in `build-installers.fish`, fixed frontend build silent failure in `fortress-build.sh`, fixed word-splitting bug in integrity manifest loop, fixed race condition in `copy-tier-controllers.sh`, fixed file counting in `build-tiers.sh`.
+
+### Implemented
+- **Actual 2FA verification** — `Setup2FA` stores TOTP secret per user, `Verify2FA` validates codes using RFC 6238 HMAC-SHA1, `Disable2FA` requires valid code before removal.
+
+### Versioning
+- Standardized all version strings from `1.0.0` and `2.6.5` to `1.0.1` across README, LICENSE, docs, website, stage, WN_Releases, Unraid templates, Docker artifacts, and build scripts.
+
+## 2026-02 — v3.0.0 → Release to Public **v1.0.1** (RTP)
+
+> **Issued Release to Public version 1.0.1** — internal build `3.0.0` is the basis of the first general-availability release. From this point on, the public version line resets to `v1.0.1` (RTP) while the internal build sequence continues independently.
 
 ### Headline
 - **First Release To Public (RTP) of WatchNexus.** Standard, Pro, and Ultra tiers are now generally available.
@@ -29,7 +63,7 @@
 - Production `README.md` + `LICENSE.txt` + `LICENSE.html` shipped with every installer.
 
 ### Version Bump
-- All internal version strings moved from `2.9.0` → `1.0.0` across backend controllers, frontend, build scripts, Docker artifacts, Unraid templates, InstallBuilder project, and press kit.
+- All internal version strings moved from `2.9.0` → `v1.0.1` across backend controllers, frontend, build scripts, Docker artifacts, Unraid templates, InstallBuilder project, and press kit.
 
 ---
 

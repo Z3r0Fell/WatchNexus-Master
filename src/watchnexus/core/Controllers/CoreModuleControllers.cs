@@ -89,7 +89,7 @@ public class BastionController : ControllerBase
 
     // ── 2FA / TOTP ──
     [HttpPost("2fa/setup")]
-    public IActionResult Setup2FA()
+    public async Task<IActionResult> Setup2FA()
     {
         var secretBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(20);
         var secret = Base32Encode(secretBytes);
@@ -97,6 +97,10 @@ public class BastionController : ControllerBase
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "user";
         var issuer = "WatchNexus";
         var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30&algorithm=SHA1";
+
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_2fa_secret" && s.UserId == user);
+        if (setting != null) setting.Value = secret; else _db.Settings.Add(new AppSetting { UserId = user, Key = "bastion_2fa_secret", Value = secret });
+        await _db.SaveChangesAsync();
 
         return Ok(new
         {
@@ -115,21 +119,48 @@ public class BastionController : ControllerBase
     }
 
     [HttpPost("2fa/verify")]
-    public IActionResult Verify2FA([FromBody] JsonElement body)
+    public async Task<IActionResult> Verify2FA([FromBody] JsonElement body)
     {
         var code = body.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
         if (code.Length != 6 || !code.All(char.IsDigit))
             return BadRequest(new { status = "invalid", message = "Code must be 6 digits" });
 
-        return Ok(new { status = "verified", valid = true, message = "Two-factor authentication enabled" });
+        var user = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_2fa_secret" && s.UserId == user);
+        if (setting?.Value == null)
+            return BadRequest(new { status = "invalid", message = "2FA not set up" });
+
+        var secretBytes = Base32Decode(setting.Value);
+        if (secretBytes == null)
+            return BadRequest(new { status = "invalid", message = "Invalid 2FA secret" });
+
+        var isValid = ValidateTotp(secretBytes, code);
+        if (!isValid)
+            return BadRequest(new { status = "invalid", message = "Invalid code" });
+
+        return Ok(new { status = "verified", valid = true, message = "Two-factor authentication verified" });
     }
 
     [HttpPost("2fa/disable")]
-    public IActionResult Disable2FA([FromBody] JsonElement body)
+    public async Task<IActionResult> Disable2FA([FromBody] JsonElement body)
     {
         var code = body.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
         if (code.Length != 6) return BadRequest(new { status = "invalid" });
-        return Ok(new { status = "disabled", message = "Two-factor authentication disabled" });
+
+        var user = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_2fa_secret" && s.UserId == user);
+        if (setting?.Value == null)
+            return Ok(new { status = "disabled", message = "Two-factor authentication was not enabled" });
+
+        var secretBytes = Base32Decode(setting.Value);
+        if (secretBytes != null && ValidateTotp(secretBytes, code))
+        {
+            _db.Settings.Remove(setting);
+            await _db.SaveChangesAsync();
+            return Ok(new { status = "disabled", message = "Two-factor authentication disabled" });
+        }
+
+        return BadRequest(new { status = "invalid", message = "Invalid code" });
     }
 
     // ── Sessions ──
@@ -205,6 +236,50 @@ public class BastionController : ControllerBase
         }
         if (bitsLeft > 0) result.Append(alphabet[(buffer << (5 - bitsLeft)) & 0x1F]);
         return result.ToString();
+    }
+
+    private static byte[]? Base32Decode(string encoded)
+    {
+        const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        var result = new List<byte>();
+        int buffer = 0, bitsLeft = 0;
+        foreach (var ch in encoded.Trim().ToUpperInvariant())
+        {
+            var idx = alphabet.IndexOf(ch);
+            if (idx < 0) return null;
+            buffer = (buffer << 5) | idx;
+            bitsLeft += 5;
+            if (bitsLeft >= 8)
+            {
+                bitsLeft -= 8;
+                result.Add((byte)(buffer >> bitsLeft));
+                buffer &= (1 << bitsLeft) - 1;
+            }
+        }
+        return result.ToArray();
+    }
+
+    private static bool ValidateTotp(byte[] secretBytes, string code)
+    {
+        if (!long.TryParse(code, out var codeValue)) return false;
+        var codeDigits = codeValue.ToString("D6");
+        var timeStep = (long)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        for (var offset = -1; offset <= 1; offset++)
+        {
+            var counter = timeStep + offset;
+            var counterBytes = BitConverter.GetBytes(counter);
+            if (BitConverter.IsLittleEndian) Array.Reverse(counterBytes);
+            using var hmac = new System.Security.Cryptography.HMACSHA1(secretBytes);
+            var hash = hmac.ComputeHash(counterBytes);
+            var offsetVal = hash[^1] & 0x0F;
+            var binary = ((hash[offsetVal] & 0x7F) << 24) |
+                         ((hash[offsetVal + 1] & 0xFF) << 16) |
+                         ((hash[offsetVal + 2] & 0xFF) << 8) |
+                         (hash[offsetVal + 3] & 0xFF);
+            var otp = binary % 1_000_000;
+            if (otp.ToString("D6") == codeDigits) return true;
+        }
+        return false;
     }
 }
 
@@ -345,15 +420,11 @@ public class TunnelController : ControllerBase
     {
         var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "New Peer" : "New Peer";
 
-        // Generate a real WireGuard-style keypair (Curve25519). We can't link
-        // libsodium from .NET portably, so we use a CSPRNG-derived 32-byte
-        // private key + the corresponding base64 representation. Operators
-        // wanting a fully cryptographically-correct Curve25519 derivation
-        // should supply the public key explicitly via `body.public_key`.
-        var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        var privKeyBytes = new byte[32]; rng.GetBytes(privKeyBytes);
-        var pubKeyBytes  = new byte[32]; rng.GetBytes(pubKeyBytes);
-        var psk          = new byte[32]; rng.GetBytes(psk);
+        var privateKeyBytes = new byte[32];
+        RandomNumberGenerator.Fill(privateKeyBytes);
+        var publicKeyBytes = System.Security.Cryptography.Curve25519.PublicKeyFromSeed(privateKeyBytes);
+        var psk = new byte[32];
+        RandomNumberGenerator.Fill(psk);
 
         var explicitPub = body.TryGetProperty("public_key", out var pk) ? pk.GetString() : null;
 
@@ -371,8 +442,8 @@ public class TunnelController : ControllerBase
         var peer = new WatchNexus.Core.Data.VpnPeer
         {
             Name          = name,
-            PublicKey     = explicitPub ?? Convert.ToBase64String(pubKeyBytes),
-            PrivateKey    = Convert.ToBase64String(privKeyBytes),
+            PublicKey     = explicitPub ?? Convert.ToBase64String(publicKeyBytes),
+            PrivateKey    = Convert.ToBase64String(privateKeyBytes),
             PresharedKey  = Convert.ToBase64String(psk),
             AllowedIps    = "0.0.0.0/0",
             Address       = address,

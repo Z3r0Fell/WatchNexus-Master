@@ -26,6 +26,8 @@ public class QBittorrentController : ControllerBase
             var doc = JsonDocument.Parse(cfg.Value).RootElement;
             var host = doc.TryGetProperty("host", out var h) ? h.GetString() : "localhost";
             var port = doc.TryGetProperty("port", out var p) ? p.GetInt32() : 8080;
+            if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(host))
+                return Ok(new { connected = false, status = "blocked", error = "Host is not allowed." });
             var http = this.Http();
             http.Timeout = TimeSpan.FromSeconds(5);
             var resp = await http.GetAsync($"http://{host}:{port}/api/v2/app/version");
@@ -48,6 +50,8 @@ public class QBittorrentController : ControllerBase
         {
             var (host, port, cookie) = await AuthQbit(cfgVal.Value);
             if (cookie == null) return Ok(Array.Empty<object>());
+            if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(host))
+                return Ok(Array.Empty<object>());
             var http = this.Http();
             http.DefaultRequestHeaders.Add("Cookie", cookie);
             var resp = await http.GetStringAsync($"http://{host}:{port}/api/v2/torrents/info");
@@ -66,6 +70,8 @@ public class QBittorrentController : ControllerBase
         {
             var (host, port, cookie) = await AuthQbit(cfgVal.Value);
             if (cookie == null) return BadRequest(new { detail = "qBittorrent auth failed" });
+            if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(host))
+                return BadRequest(new { detail = "That host is not allowed." });
             var http = this.Http();
             http.DefaultRequestHeaders.Add("Cookie", cookie);
             var content = new MultipartFormDataContent();
@@ -94,6 +100,8 @@ public class QBittorrentController : ControllerBase
         {
             var (host, port, cookie) = await AuthQbit(cfgVal.Value);
             if (cookie == null) return Ok(Array.Empty<object>());
+            if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(host))
+                return Ok(Array.Empty<object>());
             var http = this.Http();
             http.DefaultRequestHeaders.Add("Cookie", cookie);
             var resp = await http.GetStringAsync($"http://{host}:{port}/api/v2/torrents/files?hash={hash}");
@@ -171,6 +179,8 @@ public class QBittorrentController : ControllerBase
     {
         var host = cfg.TryGetProperty("host", out var h) ? h.GetString() ?? "localhost" : "localhost";
         var port = cfg.TryGetProperty("port", out var p) ? p.GetInt32() : 8080;
+        if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(host))
+            return (host, port, null);
         var username = cfg.TryGetProperty("username", out var u) ? u.GetString() ?? "" : "";
         var password = cfg.TryGetProperty("password", out var pw) ? pw.GetString() ?? "" : "";
         var http = this.Http();

@@ -93,7 +93,7 @@ batched into a monthly summary expense.
 Monthly "where we are" post:
 - Month 1 (post-funding): "Where the money went so far" — itemised
   spend summary, screenshots of signing certs working, link to the
-  v1.0.0 signed releases.
+  v1.0.1 signed releases.
 - Months 2–12: monthly progress reports tied to dev runway
   milestones.
 

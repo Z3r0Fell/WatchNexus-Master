@@ -339,7 +339,12 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
     if (allowedOrigins is { Length: > 0 })
         pol.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
     else
-        pol.SetIsOriginAllowed(_ => true).AllowAnyMethod().AllowAnyHeader();
+        pol.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrEmpty(origin)) return false;
+            return origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase)
+                || origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase);
+        }).AllowAnyMethod().AllowAnyHeader();
 }));
 
 // ── Load external modules ─────────────────────────────────────

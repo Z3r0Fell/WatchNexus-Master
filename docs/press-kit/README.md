@@ -7,7 +7,7 @@
 **Current Version:** 1.0.0  
 **Platform:** Self-hosted (Linux, Windows, macOS, Docker)  
 **License:** Proprietary  
-**Website:** [watchnexus.local](http://watchnexus.local)
+**Website:** [watchnexus.ca](http://watchnexus.ca)
 
 ---
 
@@ -248,4 +248,4 @@ For press inquiries, partnership opportunities, or technical questions:
 
 ---
 
-*This press kit was last updated on March 24, 2026 for WatchNexus v1.0.0.*
+*This press kit was last updated on March 24, 2026 for WatchNexus v1.0.1.*

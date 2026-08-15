@@ -10,6 +10,7 @@ directories:
 files:
   - build/**/*
   - electron/**/*
+  - assets/**/*
   - package.json
 
 extraResources:
@@ -31,7 +32,7 @@ mac:
         - x64
         - arm64
   hardenedRuntime: true
-  gatekeeperAssess: false
+  gatekeeperAssess: true
   entitlements: electron/entitlements.mac.plist
   entitlementsInherit: electron/entitlements.mac.plist
 
@@ -52,13 +53,17 @@ win:
     - target: nsis
       arch:
         - x64
+        - arm64
     - target: portable
       arch:
         - x64
+        - arm64
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  perMachine: true
+  deleteAppDataOnUninstall: false
   installerIcon: assets/watchnexus.ico
   uninstallerIcon: assets/watchnexus.ico
   installerHeaderIcon: assets/watchnexus.ico
@@ -78,12 +83,21 @@ linux:
     - target: AppImage
       arch:
         - x64
+        - arm64
     - target: deb
       arch:
         - x64
+        - arm64
     - target: rpm
       arch:
         - x64
+        - arm64
+
+  deb:
+    afterInstall: build/packaging/fpm/after-install.sh
+
+  rpm:
+    afterInstall: build/packaging/fpm/after-install.sh
 
 appImage:
   artifactName: WatchNexus-${version}.AppImage
@@ -91,6 +105,7 @@ appImage:
     Name: WatchNexus
     Comment: Unified Media Pipeline
     Categories: AudioVideo;Video;Player;
+    StartupWMClass: WatchNexus
     Keywords: media;movies;tv;torrent;streaming;
 
 publish:

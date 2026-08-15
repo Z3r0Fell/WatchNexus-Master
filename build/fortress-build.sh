@@ -103,7 +103,10 @@ echo "  Backend compiled: $(ls "$OUT/server/"*.dll 2>/dev/null | wc -l) DLLs"
 # ── 2. Frontend: Production build, strip source maps ────────────
 echo "[2/5] Building frontend (production, no source maps)..."
 cd "$ROOT/frontend"
-GENERATE_SOURCEMAP=false REACT_APP_BACKEND_URL="" yarn build 2>/dev/null || true
+if ! GENERATE_SOURCEMAP=false REACT_APP_BACKEND_URL="" yarn build; then
+    echo "  [FATAL] Frontend build failed — aborting fortress build" >&2
+    exit 1
+fi
 
 # Remove any source maps that might have been generated
 find build -name "*.map" -delete 2>/dev/null || true
@@ -127,12 +130,12 @@ echo "  \"sealed_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"," >> "$MANIFEST"
 echo '  "files": {' >> "$MANIFEST"
 
 FIRST=true
-for f in $(find "$OUT/server" -name "*.dll" -o -name "*.json" | sort); do
+while IFS= read -r -d '' f; do
   HASH=$(sha256sum "$f" | cut -d' ' -f1)
   NAME=$(basename "$f")
   if [ "$FIRST" = true ]; then FIRST=false; else echo ',' >> "$MANIFEST"; fi
   printf '    "%s": "%s"' "$NAME" "$HASH" >> "$MANIFEST"
-done
+done < <(find "$OUT/server" -name "*.dll" -o -name "*.json" -print0 | sort -z)
 echo '' >> "$MANIFEST"
 echo '  }' >> "$MANIFEST"
 echo '}' >> "$MANIFEST"

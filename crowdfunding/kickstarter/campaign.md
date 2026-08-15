@@ -59,7 +59,7 @@ files.
 
 **Why I'm asking for $15,000**
 
-The code is done. WatchNexus v1.0.0 is committed and tagged on
+The code is done. WatchNexus v1.0.1 is committed and tagged on
 GitHub. The Linux + Docker installers ship signed (PGP, day one).
 
 But for Windows and macOS users to install WatchNexus *without

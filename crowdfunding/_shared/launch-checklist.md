@@ -36,7 +36,7 @@
       after Kickstarter closes.
 - [ ] **Lock the licence-server** to `prod` config; no schema migrations
       during the 30-day campaign window.
-- [ ] **Deploy v1.0.0** to GitHub releases with both signed (if cert
+- [ ] **Deploy v1.0.1** to GitHub releases with both signed (if cert
       arrived) and unsigned artifacts available.
 - [ ] **Record the campaign video** (see `video-script.md`).
 - [ ] **Test the donation webhook end-to-end** — make a $1 self-pledge,

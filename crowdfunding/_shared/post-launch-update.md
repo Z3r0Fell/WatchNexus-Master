@@ -130,7 +130,7 @@ Thank you for that.
 
 ## Deliverables shipped this month
 
-- ✅ v1.0.0 signed releases live on GitHub
+- ✅ v1.0.1 signed releases live on GitHub
 - ✅ Windows installer is now SmartScreen-recognised (no warnings on
   install)
 - ✅ Licence keys delivered to all $15+ backers
