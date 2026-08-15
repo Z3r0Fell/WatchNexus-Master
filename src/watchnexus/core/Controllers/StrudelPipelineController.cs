@@ -314,7 +314,7 @@ public class StrudelPipelineController : ControllerBase
     public IActionResult InstallUdevRules()
     {
         var rulesContent = "ACTION==\"change\", SUBSYSTEM==\"block\", ENV{ID_CDROM}==\"1\", RUN+=\"/usr/local/bin/watchnexus-disc-handler\"\n";
-        var handlerContent = "#!/bin/bash\ncurl -s -X POST http://localhost:8002/api/strudel/pipeline/auto-rip -H 'Content-Type: application/json' -d '{\"drive_path\":\"'$DEVNAME'\"}' &\n";
+        var handlerContent = "#!/bin/bash\ncurl -s -X POST http://localhost:${WATCHNEXUS_PORT:-8001}/api/strudel/pipeline/auto-rip -H 'Content-Type: application/json' -d '{\"drive_path\":\"'$DEVNAME'\"}' &\n";
 
         return Ok(new
         {

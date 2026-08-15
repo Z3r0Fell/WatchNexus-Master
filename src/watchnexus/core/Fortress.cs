@@ -19,6 +19,9 @@ public static class Fortress
     private static bool _initialized;
     private static string _fortressDataPath = "";
     private static FortressConfig _config = new();
+    public static Action<string>? Logger { get; set; }
+
+    private static void Log(string msg) => Logger?.Invoke(msg);
 
     public static bool IsIntact { get; private set; } = true;
     public static string Status => _initialized ? (IsIntact ? "secure" : "tampered") : "uninitialized";
@@ -26,7 +29,7 @@ public static class Fortress
     /// <summary>Initialize Fortress at startup — computes baseline hashes and validates license</summary>
     public static void Initialize(WebApplication app)
     {
-        Console.WriteLine("[Fortress] Initializing code protection...");
+        Log("[Fortress] Initializing code protection...");
 
         // Set up data directory
         _fortressDataPath = Path.Combine(AppContext.BaseDirectory, "data", "fortress");
@@ -118,7 +121,7 @@ public static class Fortress
         RecordAudit("startup", "pass", $"Fortress initialized — tracking {_assemblyHashes.Count} assemblies, instance {_config.InstanceId}");
 
         _initialized = true;
-        Console.WriteLine($"[Fortress] Protection active — tracking {_assemblyHashes.Count} assemblies, instance {_config.InstanceId}");
+        Log($"[Fortress] Protection active — tracking {_assemblyHashes.Count} assemblies, instance {_config.InstanceId}");
     }
 
     // ── Assembly Integrity ──────────────────────────────────────
@@ -220,7 +223,7 @@ public static class Fortress
                     var currentHash = ComputeFileHash(entryAssembly.Location);
                     if (currentHash != expectedHash)
                     {
-                        Console.WriteLine("[Fortress] ALERT: Entry assembly tampering detected!");
+                        Log("[Fortress] ALERT: Entry assembly tampering detected!");
                         IsIntact = false;
                         RecordAudit("runtime_check", "fail", $"Assembly {name} hash mismatch");
                     }
@@ -231,7 +234,7 @@ public static class Fortress
             var isIntactField = fortressType.GetProperty(nameof(IsIntact));
             if (isIntactField == null)
             {
-                Console.WriteLine("[Fortress] ALERT: Fortress type structure has been modified!");
+                Log("[Fortress] ALERT: Fortress type structure has been modified!");
                 IsIntact = false;
                 RecordAudit("runtime_check", "fail", "Fortress type structure modified");
             }
@@ -241,7 +244,7 @@ public static class Fortress
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Fortress] Runtime check error: {ex.Message}");
+            Log($"[Fortress] Runtime check error: {ex.Message}");
             RecordAudit("runtime_check", "error", ex.Message);
         }
     }
@@ -257,7 +260,7 @@ public static class Fortress
             _config.ActivatedAt = DateTime.UtcNow.ToString("o");
             _config.LicenseType = "self-hosted";
             SaveConfig();
-            Console.WriteLine($"[Fortress] New instance activated: {_config.InstanceId}");
+            Log($"[Fortress] New instance activated: {_config.InstanceId}");
             RecordAudit("activation", "new", $"Instance {_config.InstanceId} activated");
         }
         else
@@ -265,8 +268,8 @@ public static class Fortress
             var expectedId = GenerateInstanceId();
             if (_config.InstanceId != expectedId)
             {
-                Console.WriteLine("[Fortress] WARNING: Instance ID mismatch — hardware/environment changed");
-                Console.WriteLine("[Fortress] Re-activating for current environment...");
+                Log("[Fortress] WARNING: Instance ID mismatch — hardware/environment changed");
+                Log("[Fortress] Re-activating for current environment...");
                 RecordAudit("activation", "reactivated", $"Environment changed: {_config.InstanceId} -> {expectedId}");
                 _config.InstanceId = expectedId;
                 _config.ActivatedAt = DateTime.UtcNow.ToString("o");
@@ -276,7 +279,7 @@ public static class Fortress
             {
                 RecordAudit("activation", "verified", $"Instance {_config.InstanceId} valid");
             }
-            Console.WriteLine($"[Fortress] Instance verified: {_config.InstanceId}");
+            Log($"[Fortress] Instance verified: {_config.InstanceId}");
         }
     }
 
@@ -326,7 +329,7 @@ public static class Fortress
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Fortress] Failed to save config: {ex.Message}");
+            Log($"[Fortress] Failed to save config: {ex.Message}");
         }
     }
 
@@ -340,7 +343,7 @@ public static class Fortress
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Fortress] Failed to save baseline: {ex.Message}");
+            Log($"[Fortress] Failed to save baseline: {ex.Message}");
         }
     }
 

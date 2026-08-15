@@ -22,7 +22,7 @@ public sealed class TrayIconService : BackgroundService
     {
         _lifetime = lifetime;
         _logger = logger;
-        _port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8002;
+        _port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8001;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -437,7 +437,7 @@ public sealed class TrayIconService : BackgroundService
 import sys, os, subprocess, signal
 
 def main():
-    port = sys.argv[1] if len(sys.argv) > 1 else ""8002""
+    port = sys.argv[1] if len(sys.argv) > 1 else ""8001""
     icon_path = sys.argv[2] if len(sys.argv) > 2 else """"
     exe_path = sys.argv[3] if len(sys.argv) > 3 else """"
     ppid = os.getppid()

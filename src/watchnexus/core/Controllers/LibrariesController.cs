@@ -19,6 +19,7 @@ public class LibrariesController : ControllerBase
     private readonly IHttpClientFactory _httpFactory;
     private readonly IServiceScopeFactory _scopeFactory;
     private static readonly Dictionary<string, object> _scanJobs = new();
+    private static readonly Dictionary<string, CancellationTokenSource> _scanTokens = new();
 
     public LibrariesController(AppDbContext db, IConfiguration config, IHttpClientFactory httpFactory, IServiceScopeFactory scopeFactory)
     {
@@ -168,6 +169,9 @@ public class LibrariesController : ControllerBase
         if (_scanJobs.ContainsKey(id))
             return Ok(_scanJobs[id]);
 
+        var cts = new CancellationTokenSource();
+        _scanTokens[id] = cts;
+
         var job = new Dictionary<string, object>
         {
             ["job_id"] = Guid.NewGuid().ToString()[..8],
@@ -179,10 +183,22 @@ public class LibrariesController : ControllerBase
         };
         _scanJobs[id] = job;
 
-        // Run scan in background
-        _ = Task.Run(async () => await RunScanBackground(id, lib.Path, lib.Name, lib.MediaType));
+        _ = Task.Run(async () => await RunScanBackground(id, lib.Path, lib.Name, lib.MediaType, cts.Token));
 
         return Ok(job);
+    }
+
+    [HttpDelete("{id}/scan")]
+    public async Task<IActionResult> CancelScan(string id)
+    {
+        if (_scanTokens.TryGetValue(id, out var cts))
+        {
+            cts.Cancel();
+            cts.Dispose();
+            _scanTokens.Remove(id);
+        }
+        UpdateJob(id, "cancelled");
+        return Ok(new { status = "cancelled", library_id = id });
     }
 
     [HttpGet("{id}/scan/status")]
@@ -210,7 +226,7 @@ public class LibrariesController : ControllerBase
         }));
     }
 
-    private async Task RunScanBackground(string libraryId, string libPath, string libName, string mediaType)
+    private async Task RunScanBackground(string libraryId, string libPath, string libName, string mediaType, CancellationToken ct)
     {
         var newCount = 0; var updated = 0; var errors = new List<string>();
         var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -225,9 +241,31 @@ public class LibrariesController : ControllerBase
                 return;
             }
 
-            var files = Directory.EnumerateFiles(libPath, "*.*", SearchOption.AllDirectories)
-                .Where(f => extensions.Contains(System.IO.Path.GetExtension(f)))
-                .ToList();
+            var files = new List<string>();
+            var rootDir = new DirectoryInfo(libPath);
+            if (!rootDir.Exists) throw new DirectoryNotFoundException(libPath);
+            var stack = new Stack<DirectoryInfo>();
+            stack.Push(rootDir);
+            while (stack.Count > 0 && files.Count < 50000)
+            {
+                ct.ThrowIfCancellationRequested();
+                var currentDir = stack.Pop();
+                try
+                {
+                    foreach (var f in currentDir.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly))
+                    {
+                        if (ct.IsCancellationRequested) break;
+                        if (extensions.Contains(Path.GetExtension(f.FullName)))
+                            files.Add(f.FullName);
+                    }
+                    foreach (var d in currentDir.EnumerateDirectories())
+                    {
+                        if (stack.Count < 1000) stack.Push(d);
+                    }
+                }
+                catch (UnauthorizedAccessException) { continue; }
+                catch (DirectoryNotFoundException) { continue; }
+            }
 
             long totalSize = 0;
 
@@ -235,7 +273,6 @@ public class LibrariesController : ControllerBase
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var httpFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
-            // Check multiple sources for TMDB key: env/config first, then DB
             var tmdbKey = _config["TMDB_API_KEY"] ?? "";
             if (string.IsNullOrEmpty(tmdbKey))
             {
@@ -255,7 +292,6 @@ public class LibrariesController : ControllerBase
             }
             if (string.IsNullOrEmpty(tmdbKey))
             {
-                // Also check legacy crumbs_tmdb key
                 var crumbsSetting = await db.Settings.FirstOrDefaultAsync(s => s.Key == "crumbs_tmdb" && s.Value != null);
                 if (crumbsSetting != null)
                 {
@@ -271,6 +307,7 @@ public class LibrariesController : ControllerBase
 
             foreach (var file in files)
             {
+                ct.ThrowIfCancellationRequested();
                 try
                 {
                     var fi = new FileInfo(file);
@@ -290,7 +327,6 @@ public class LibrariesController : ControllerBase
                         MediaType = mediaType,
                     };
 
-                    // Fetch TMDB metadata
                     if (!string.IsNullOrEmpty(tmdbKey))
                     {
                         var meta = await FetchTmdbMetadataStatic(httpFactory, tmdbKey, title.name, title.year, mediaType);
@@ -310,12 +346,12 @@ public class LibrariesController : ControllerBase
                     db.MediaItems.Add(item);
                     newCount++;
                 }
+                catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { errors.Add($"{file}: {ex.Message}"); }
             }
 
             await db.SaveChangesAsync();
 
-            // Update library stats
             var dbLib = await db.Libraries.FindAsync(libraryId);
             if (dbLib != null)
             {
@@ -328,10 +364,22 @@ public class LibrariesController : ControllerBase
 
             UpdateJob(libraryId, "completed", newCount, updated, newCount + updated, errors.ToArray());
         }
+        catch (OperationCanceledException)
+        {
+            UpdateJob(libraryId, "cancelled", errors: errors.ToArray());
+        }
         catch (Exception ex)
         {
             errors.Add(ex.Message);
             UpdateJob(libraryId, "failed", errors: errors.ToArray());
+        }
+        finally
+        {
+            if (_scanTokens.TryGetValue(libraryId, out var c) && c.IsCancellationRequested)
+            {
+                c.Dispose();
+                _scanTokens.Remove(libraryId);
+            }
         }
     }
 

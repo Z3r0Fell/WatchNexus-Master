@@ -12,6 +12,9 @@ public static class ModuleLoader
     private static readonly List<IWatchNexusModule> _loadedModules = new();
     private static readonly List<IWatchNexusModule> _separatedModules = new();
     private static readonly List<ModuleManifest> _discoveredManifests = new();
+    public static Action<string>? Logger { get; set; }
+
+    private static void Log(string msg) => Logger?.Invoke(msg);
 
     public static IReadOnlyList<IWatchNexusModule> LoadedModules => _loadedModules;
     public static IReadOnlyList<IWatchNexusModule> SeparatedModules => _separatedModules;
@@ -24,11 +27,11 @@ public static class ModuleLoader
     {
         if (!Directory.Exists(modulesPath))
         {
-            Console.WriteLine($"[ModuleLoader] Modules directory not found: {modulesPath}");
+            Log($"[ModuleLoader] Modules directory not found: {modulesPath}");
             return;
         }
 
-        Console.WriteLine($"[ModuleLoader] Scanning built-in modules: {modulesPath}");
+        Log($"[ModuleLoader] Scanning built-in modules: {modulesPath}");
 
         foreach (var dir in Directory.GetDirectories(modulesPath))
         {
@@ -52,20 +55,20 @@ public static class ModuleLoader
                     {
                         module.ConfigureServices(services);
                         _loadedModules.Add(module);
-                        Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (external DLL)");
+                        Log($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (external DLL)");
                         continue;
                     }
                 }
 
-                Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (registered)");
+                Log($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (registered)");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ModuleLoader] Error loading module from {dir}: {ex.Message}");
+                        Log($"[ModuleLoader] Error loading module from {dir}: {ex.Message}");
             }
         }
 
-        Console.WriteLine($"[ModuleLoader] {_discoveredManifests.Count} modules discovered, {_loadedModules.Count} external DLLs loaded");
+        Log($"[ModuleLoader] {_discoveredManifests.Count} modules discovered, {_loadedModules.Count} external DLLs loaded");
     }
 
     /// <summary>Scans the separated/ directory, compiles each module via dotnet build, and loads the resulting DLL</summary>
@@ -73,11 +76,11 @@ public static class ModuleLoader
     {
         if (!Directory.Exists(separatedPath))
         {
-            Console.WriteLine($"[ModuleLoader] Separated directory not found: {separatedPath}");
+            Log($"[ModuleLoader] Separated directory not found: {separatedPath}");
             return;
         }
 
-        Console.WriteLine($"[ModuleLoader] Scanning separated modules: {separatedPath}");
+        Log($"[ModuleLoader] Scanning separated modules: {separatedPath}");
 
         foreach (var dir in Directory.GetDirectories(separatedPath))
         {
@@ -96,7 +99,7 @@ public static class ModuleLoader
                 var csprojFiles = Directory.GetFiles(dir, "*.csproj");
                 if (csprojFiles.Length == 0)
                 {
-                    Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName}: No .csproj found, skipping compilation");
+                        Log($"[ModuleLoader]   {manifest.DisplayName}: No .csproj found, skipping compilation");
                     continue;
                 }
 
@@ -117,15 +120,15 @@ public static class ModuleLoader
                     var dotnetPath = FindDotnetPath();
                     if (dotnetPath == null)
                     {
-                        Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName}: No pre-built DLL and dotnet SDK not available, skipping");
+                        Log($"[ModuleLoader]   {manifest.DisplayName}: No pre-built DLL and dotnet SDK not available, skipping");
                         continue;
                     }
 
-                    Console.WriteLine($"[ModuleLoader]   Compiling {manifest.DisplayName}...");
+                    Log($"[ModuleLoader]   Compiling {manifest.DisplayName}...");
                     var compiled = CompileModule(csprojPath, dir);
                     if (!compiled)
                     {
-                        Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName}: Compilation failed, skipping");
+                        Log($"[ModuleLoader]   {manifest.DisplayName}: Compilation failed, skipping");
                         continue;
                     }
 
@@ -137,7 +140,7 @@ public static class ModuleLoader
 
                 if (!File.Exists(expectedDll))
                 {
-                    Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName}: Built but DLL not found at expected path");
+                        Log($"[ModuleLoader]   {manifest.DisplayName}: Built but DLL not found at expected path");
                     continue;
                 }
 
@@ -147,20 +150,20 @@ public static class ModuleLoader
                 {
                     module.ConfigureServices(services);
                     _separatedModules.Add(module);
-                    Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (separated, compiled)");
+                    Log($"[ModuleLoader]   {manifest.DisplayName} v{manifest.Version} (separated, compiled)");
                 }
                 else
                 {
-                    Console.WriteLine($"[ModuleLoader]   {manifest.DisplayName}: DLL loaded but no IWatchNexusModule found");
+                    Log($"[ModuleLoader]   {manifest.DisplayName}: DLL loaded but no IWatchNexusModule found");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ModuleLoader] Error with separated module {dir}: {ex.Message}");
+                        Log($"[ModuleLoader] Error with separated module {dir}: {ex.Message}");
             }
         }
 
-        Console.WriteLine($"[ModuleLoader] Separated: {_separatedModules.Count} modules compiled and loaded");
+        Log($"[ModuleLoader] Separated: {_separatedModules.Count} modules compiled and loaded");
     }
 
     /// <summary>Maps routes for all loaded modules (external + separated)</summary>
@@ -174,7 +177,7 @@ public static class ModuleLoader
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ModuleLoader] Error mapping routes for {module.Manifest.DisplayName}: {ex.Message}");
+                Log($"[ModuleLoader] Error mapping routes for {module.Manifest.DisplayName}: {ex.Message}");
             }
         }
     }
@@ -220,7 +223,7 @@ public static class ModuleLoader
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ModuleLoader] Failed to load DLL {dllPath}: {ex.Message}");
+            Log($"[ModuleLoader] Failed to load DLL {dllPath}: {ex.Message}");
             return null;
         }
     }
@@ -232,7 +235,7 @@ public static class ModuleLoader
             var dotnetPath = FindDotnetPath();
             if (dotnetPath == null)
             {
-                Console.WriteLine("[ModuleLoader] dotnet CLI not found, cannot compile separated modules");
+                Log("[ModuleLoader] dotnet CLI not found, cannot compile separated modules");
                 return false;
             }
 
@@ -265,7 +268,7 @@ public static class ModuleLoader
             {
                 var stderr = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrWhiteSpace(stderr))
-                    Console.WriteLine($"[ModuleLoader] Build errors: {stderr.Trim()}");
+                    Log($"[ModuleLoader] Build errors: {stderr.Trim()}");
                 return false;
             }
 
@@ -273,7 +276,7 @@ public static class ModuleLoader
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ModuleLoader] Compilation exception: {ex.Message}");
+            Log($"[ModuleLoader] Compilation exception: {ex.Message}");
             return false;
         }
     }

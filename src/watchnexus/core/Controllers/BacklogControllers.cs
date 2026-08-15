@@ -108,14 +108,56 @@ public class BiscottiController : ControllerBase
         var path = body.TryGetProperty("path", out var p) ? p.GetString() : null;
         if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
             return BadRequest(new { success = false, message = "Invalid path" });
-        var found = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
-            .Where(f => SupportedFormats.Contains(Path.GetExtension(f).ToLower()))
-            .Select(f => new {
-                file_name = Path.GetFileName(f), file_path = f, file_size = new FileInfo(f).Length,
-                title = Path.GetFileNameWithoutExtension(f).Replace("_", " ").Replace("-", " "),
-                type = MediaTypeMap.GetValueOrDefault(Path.GetExtension(f).ToLower(), "ebook"),
-            }).ToList();
-        return Ok(new { files = found, total = found.Count });
+
+        var maxDepth = body.TryGetProperty("max_depth", out var md) && md.TryGetInt32(out var maxDepthVal) ? maxDepthVal : 5;
+        if (maxDepth < 1 || maxDepth > 20) maxDepth = 5;
+        var maxFiles = body.TryGetProperty("max_files", out var mf) && mf.TryGetInt32(out var maxFilesVal) ? maxFilesVal : 5000;
+        if (maxFiles < 1 || maxFiles > 50000) maxFiles = 5000;
+
+        var found = new List<object>();
+        var scanned = 0;
+        try
+        {
+            var rootDir = new DirectoryInfo(path);
+            if (!rootDir.Exists) return BadRequest(new { success = false, message = "Invalid path" });
+            var stack = new Stack<(DirectoryInfo dir, int depth)>();
+            stack.Push((rootDir, 0));
+            while (stack.Count > 0 && scanned < maxFiles)
+            {
+                var (currentDir, depth) = stack.Pop();
+                if (depth > maxDepth) continue;
+                try
+                {
+                    foreach (var f in currentDir.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+                    {
+                        if (scanned >= maxFiles) break;
+                        if (SupportedFormats.Contains(Path.GetExtension(f.FullName).ToLower()))
+                        {
+                            found.Add(new
+                            {
+                                file_name = f.Name,
+                                file_path = f.FullName,
+                                file_size = f.Length,
+                                title = Path.GetFileNameWithoutExtension(f.Name).Replace("_", " ").Replace("-", " "),
+                                type = MediaTypeMap.GetValueOrDefault(Path.GetExtension(f.FullName).ToLower(), "ebook"),
+                            });
+                        }
+                        scanned++;
+                    }
+                    foreach (var d in currentDir.EnumerateDirectories())
+                    {
+                        if (stack.Count < 1000) stack.Push((d, depth + 1));
+                    }
+                }
+                catch (UnauthorizedAccessException) { continue; }
+                catch (DirectoryNotFoundException) { continue; }
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = "Scan failed", error = ex.Message });
+        }
+        return Ok(new { files = found, total = found.Count, scanned });
     }
 
     [HttpGet("stats")]

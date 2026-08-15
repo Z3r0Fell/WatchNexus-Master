@@ -623,7 +623,7 @@ public class CompoteController : ControllerBase
                     }
                     catch (Exception ex)
                     {
-                        System.Console.WriteLine($"[Compote] Search failed for {name}: {ex.Message}");
+                        // Search failed for this indexer — continue with others
                     }
                 }));
             }

@@ -377,16 +377,16 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
-    Console.WriteLine($"[WatchNexus] Database migrated and ready at {dbPath}");
+    Log($"[WatchNexus] Database migrated and ready at {dbPath}");
 
     // ── FORTRESS PROTOCOL: Integrity verification ──
     var (integrityValid, violations) = FortressIntegrity.VerifyIntegrity(db).GetAwaiter().GetResult();
     if (integrityValid)
-        Console.WriteLine("[Fortress] Integrity check PASSED");
+        Log("[Fortress] Integrity check PASSED");
     else
     {
-        Console.WriteLine($"[Fortress] WARNING: Integrity violations detected ({violations.Count}):");
-        foreach (var v in violations) Console.WriteLine($"  - {v}");
+        Log($"[Fortress] WARNING: Integrity violations detected ({violations.Count}):");
+        foreach (var v in violations) Log($"  - {v}");
     }
 
     // Seed default accounts if none exist
@@ -455,11 +455,11 @@ static void SeedAccounts(AppDbContext db){
         };
         db.Users.Add(admin);
         db.SaveChanges();
-        Console.WriteLine($"[WatchNexus] Seeded admin from env: {admin.Email}");
+        Log($"[WatchNexus] Seeded admin from env: {admin.Email}");
     }
     else
     {
-        Console.WriteLine("[WatchNexus] No users present — first-launch wizard will create the admin account.");
+        Log("[WatchNexus] No users present — first-launch wizard will create the admin account.");
     }
 }
 
@@ -543,13 +543,13 @@ if (webRoot != null)
         FileProvider = new PhysicalFileProvider(fullPath),
         RequestPath = ""
     });
-    Console.WriteLine($"[WatchNexus] Serving frontend from {fullPath}");
+    Log($"[WatchNexus] Serving frontend from {fullPath}");
     WatchNexus.Core.Services.PatchService.WebRoot = fullPath;
 }
 else
 {
-    Console.WriteLine($"[WatchNexus] No frontend build found - API only mode");
-    Console.WriteLine($"[WatchNexus] Build frontend with: cd src/web && yarn build");
+    Log($"[WatchNexus] No frontend build found - API only mode");
+    Log($"[WatchNexus] Build frontend with: cd src/web && yarn build");
 }
 
 if (app.Environment.IsDevelopment())
@@ -587,7 +587,9 @@ if (webRoot != null)
 }
 
 // ── Fortress: Runtime integrity checks ────────────────────────
+Fortress.Logger = Log;
 Fortress.Initialize(app);
+ModuleLoader.Logger = Log;
 
 // ── Start ─────────────────────────────────────────────────────
 var discovered = ModuleLoader.DiscoveredManifests.Count;

@@ -165,10 +165,11 @@ public class BastionController : ControllerBase
 
     // ── Sessions ──
     [HttpGet("sessions")]
-    public IActionResult Sessions()
+    public async Task<IActionResult> Sessions()
     {
+        var userId = this.UserId();
         var ua = Request.Headers.UserAgent.ToString();
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var browser = ua.Contains("Chrome") ? "Chrome" : ua.Contains("Firefox") ? "Firefox" : ua.Contains("Safari") ? "Safari" : "Unknown";
         var osInfo = ua.Contains("Windows") ? "Windows" : ua.Contains("Mac") ? "macOS" : ua.Contains("Linux") ? "Linux" : "Unknown";
 
@@ -176,12 +177,12 @@ public class BastionController : ControllerBase
         {
             new {
                 id = "session-current",
-                user = "admin",
+                user = userId,
                 ip,
                 browser,
                 os = osInfo,
                 user_agent = ua,
-                created = DateTime.UtcNow.AddHours(-2),
+                created = DateTime.UtcNow.AddMinutes(-5),
                 last_active = DateTime.UtcNow,
                 is_current = true,
                 device_type = "desktop"
@@ -216,12 +217,23 @@ public class BastionController : ControllerBase
 
     // ── Audit Log ──
     [HttpGet("audit")]
-    public IActionResult AuditLog([FromQuery] int limit = 50) => Ok(new[]
+    public async Task<IActionResult> AuditLog([FromQuery] int limit = 50)
     {
-        new { id = 1, action = "login", user = "admin", ip = "127.0.0.1", timestamp = DateTime.UtcNow.AddMinutes(-5), details = "Successful login" },
-        new { id = 2, action = "settings_changed", user = "admin", ip = "127.0.0.1", timestamp = DateTime.UtcNow.AddHours(-1), details = "Updated bastion config" },
-        new { id = 3, action = "2fa_setup", user = "admin", ip = "127.0.0.1", timestamp = DateTime.UtcNow.AddDays(-1), details = "2FA TOTP enabled" },
-    });
+        var entries = await _db.AuditLogs
+            .OrderByDescending(a => a.Timestamp)
+            .Take(Math.Clamp(limit, 1, 500))
+            .Select(a => new
+            {
+                id = a.Id,
+                action = a.Action,
+                user = a.UserId,
+                ip = a.Ip,
+                timestamp = a.Timestamp,
+                details = a.Details
+            })
+            .ToListAsync();
+        return Ok(entries);
+    }
 
     private static string Base32Encode(byte[] data)
     {
@@ -311,7 +323,7 @@ public class TunnelController : ControllerBase
         {
             reverse_proxy = new { enabled = false, type = "nginx", external_url = "", force_https = false, proxy_header = "X-Forwarded-For" },
             vpn = new { enabled = false, type = "wireguard", listen_port = 51820, address = "10.0.0.1/24", dns = "1.1.1.1", mtu = 1420, post_up = "", post_down = "" },
-            upnp = new { enabled = false, auto_map = false, external_port = 8096, internal_port = 8002, protocol = "TCP" },
+            upnp = new { enabled = false, auto_map = false, external_port = 8096, internal_port = 8001, protocol = "TCP" },
             ssl = new { enabled = false, cert_path = "", key_path = "", auto_renew = false, provider = "letsencrypt", email = "" },
             dynamic_dns = new { enabled = false, provider = "cloudflare", hostname = "", api_token = "", update_interval = 300, zone_id = "" },
             tailscale = new { enabled = false, auth_key = "", hostname = "", advertise_exit_node = false },
@@ -358,7 +370,7 @@ public class TunnelController : ControllerBase
         return Ok(new
         {
             hostname = Environment.MachineName,
-            port = 8002,
+            port = 8001,
             protocol = "http",
             interfaces,
             upnp_available = false,
