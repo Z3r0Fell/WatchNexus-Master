@@ -187,7 +187,7 @@ public class DbControllerReal : ControllerBase
             new { endpoint = "GET /api/vpn/logs", method = "GET", path = "/api/vpn/logs", message = "VPN log streaming is not yet implemented.", tier = "ultra" },
             new { endpoint = "POST /api/watch-party/{code}/chat", method = "POST", path = "/api/watch-party/{code}/chat", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages.", tier = "ultra" },
         };
-        return Ok(new { version = "1.0.1", endpoints = items, total = items.Length });
+        return Ok(new { version = "1.0.3", endpoints = items, total = items.Length });
     }
 
     [HttpGet("changelog")]
@@ -195,8 +195,8 @@ public class DbControllerReal : ControllerBase
     {
         var changelogPath = Path.Combine(AppContext.BaseDirectory, "CHANGELOG.md");
         if (!System.IO.File.Exists(changelogPath))
-            return Ok(new { version = "1.0.1", content = "# WatchNexus Changelog\n\nNo changelog available." });
+            return Ok(new { version = "1.0.3", content = "# WatchNexus Changelog\n\nNo changelog available." });
         var content = System.IO.File.ReadAllText(changelogPath);
-        return Ok(new { version = "1.0.1", content = content });
+        return Ok(new { version = "1.0.3", content = content });
     }
 }

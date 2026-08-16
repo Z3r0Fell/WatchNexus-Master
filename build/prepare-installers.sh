@@ -33,7 +33,7 @@ STAGE_DIR="$ROOT_DIR/stage"
 SHARED_PUBLISH_ROOT="$ROOT_DIR/.publish-shared"
 CORE_CSPROJ="$ROOT_DIR/src/watchnexus/core/WatchNexus.Core.csproj"
 FRONTEND_DIR="$ROOT_DIR/src/web"       # frontend/ is a symlink to src/web/
-VERSION="1.0.1"
+VERSION="1.0.3"
 RIDS=(win-x64 linux-x64)
 
 TARGET="${1:-all}"
@@ -135,7 +135,7 @@ for TIER in "${TIERS[@]}"; do
        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
        --arg arch "$(uname -m)" \
        --arg host "$(hostname)" \
-       '{tier:$tier, version:$version, built_at:$ts, build_arch:$arch, build_host:$host, rtp:"1.0.1"}' \
+       '{tier:$tier, version:$version, built_at:$ts, build_arch:$arch, build_host:$host, rtp:"1.0.3"}' \
        > "$OUT/tier.json"
 
     # Ship legal + production docs alongside the binaries

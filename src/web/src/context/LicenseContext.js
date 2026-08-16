@@ -64,6 +64,7 @@ export const ROUTE_MODULE_MAP = {
   '/cloud-sync': 'marshmallow',
   '/media-sync': 'chowder',
   '/themes': 'milk',
+  '/lobster': 'lobster',
 };
 
 // Module → required tier
@@ -71,13 +72,13 @@ const MODULE_TIER = {
   // Standard
   core: 'standard', auth: 'standard', users: 'standard', settings: 'standard',
   setup: 'standard', dashboard: 'standard', preferences: 'standard', logs: 'standard',
-  system: 'standard', marmalade: 'standard', tmdb: 'standard', libraries: 'standard',
+  system: 'standard',   marmalade: 'standard', tmdb: 'standard', libraries: 'standard',
   watchlist: 'standard', 'watch-progress': 'standard', playlists: 'standard',
   filesystem: 'standard', 'quality-profiles': 'standard', indexers: 'standard',
   'media-ops': 'standard', downloads: 'standard', 'next-up': 'standard',
   milk: 'standard', gelatin: 'standard', churro: 'standard', roux: 'standard',
   glaze: 'standard', sorbet: 'standard', brioche: 'standard', nectar: 'standard',
-  ganache: 'standard', bisque: 'standard', ripen: 'standard',
+  ganache: 'standard', bisque: 'standard', ripen: 'standard', lobster: 'standard',
   // Pro
   compote: 'pro', fondue: 'pro', saffron: 'pro', sourdough: 'pro',
   bastion: 'pro', truffle: 'pro', tunnel: 'pro', sprout: 'pro',

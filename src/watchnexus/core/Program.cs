@@ -602,7 +602,7 @@ ModuleLoader.Logger = Log;
 // ── Start ─────────────────────────────────────────────────────
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
-Log($"[WatchNexus] v1.0.1 starting on port {port}");
+Log($"[WatchNexus] v1.0.3 starting on port {port}");
 Log($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
 Log($"[WatchNexus] Logs at: {logDir}");
 Log($"[WatchNexus] Open http://localhost:{port} in your browser to begin.");

@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
-VERSION="1.0.1"
+VERSION="1.0.3"
 PUSH=false
 NO_CACHE=false
 MULTIARCH=false
@@ -90,12 +90,20 @@ for TIER in "${TIERS[@]}"; do
   echo ""
 done
 
-# Tag the ultra edition as the default 'latest'
-if [[ " ${TIERS[*]} " =~ " ultra " ]]; then
-  docker tag "${REGISTRY}/watchnexus:${VERSION}-ultra" "${REGISTRY}/watchnexus:latest"
-  echo "Tagged ultra as ${REGISTRY}/watchnexus:latest"
+# Tag the most capable built edition as the default 'latest'
+LAST_BUILT=""
+for TIER in "${TIERS[@]}"; do
+  LAST_BUILT="${TIER}"
+done
+
+if [[ -n "$LAST_BUILT" ]]; then
+  IMAGE_LATEST="${REGISTRY}/watchnexus:latest"
+  docker tag "${REGISTRY}/watchnexus:${VERSION}-${LAST_BUILT}" "${IMAGE_LATEST}"
+  echo "Tagged ${LAST_BUILT} as ${IMAGE_LATEST}"
   if [ "$PUSH" = true ]; then
-    docker push "${REGISTRY}/watchnexus:latest"
+    echo "  Pushing latest..."
+    docker push "${IMAGE_LATEST}"
+    echo "  Pushed: ${IMAGE_LATEST}"
   fi
 fi
 
@@ -112,6 +120,9 @@ echo "  Run with:"
 echo "    docker run -p 8001:8001 ${REGISTRY}/watchnexus:${VERSION}-standard"
 echo "    docker run -p 8001:8001 ${REGISTRY}/watchnexus:${VERSION}-pro"
 echo "    docker run -p 8001:8001 ${REGISTRY}/watchnexus:${VERSION}-ultra"
+echo ""
+echo "  Override port:"
+echo "    docker run -p 8002:8002 -e WATCHNEXUS_PORT=8002 ${REGISTRY}/watchnexus:${VERSION}-standard"
 echo ""
 echo "  Or with compose:"
 echo "    docker compose --profile standard up -d"

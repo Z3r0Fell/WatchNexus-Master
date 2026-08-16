@@ -15,7 +15,8 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: standard
-    image: watchnexus/watchnexus:1.0.1-standard
+        PORT: 8001
+    image: watchnexus/watchnexus:1.0.3-standard
     container_name: watchnexus-standard
     profiles: ["standard"]
     ports:
@@ -26,6 +27,7 @@ services:
     environment:
       - WATCHNEXUS_TIER=standard
       - WATCHNEXUS_DATA_DIR=/app/data
+      - WATCHNEXUS_PORT=8001
       - ASPNETCORE_ENVIRONMENT=Production
       - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
@@ -38,7 +40,7 @@ services:
     tmpfs:
       - /tmp
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WATCHNEXUS_PORT:-8001}/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -60,7 +62,8 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: pro
-    image: watchnexus/watchnexus:1.0.1-pro
+        PORT: 8001
+    image: watchnexus/watchnexus:1.0.3-pro
     container_name: watchnexus-pro
     profiles: ["pro"]
     ports:
@@ -72,6 +75,7 @@ services:
     environment:
       - WATCHNEXUS_TIER=pro
       - WATCHNEXUS_DATA_DIR=/app/data
+      - WATCHNEXUS_PORT=8001
       - ASPNETCORE_ENVIRONMENT=Production
       - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
@@ -84,7 +88,7 @@ services:
     tmpfs:
       - /tmp
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WATCHNEXUS_PORT:-8001}/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -106,7 +110,8 @@ services:
       dockerfile: Dockerfile
       args:
         TIER: ultra
-    image: watchnexus/watchnexus:1.0.1-ultra
+        PORT: 8001
+    image: watchnexus/watchnexus:1.0.3-ultra
     container_name: watchnexus-ultra
     profiles: ["ultra"]
     ports:
@@ -120,6 +125,7 @@ services:
     environment:
       - WATCHNEXUS_TIER=ultra
       - WATCHNEXUS_DATA_DIR=/app/data
+      - WATCHNEXUS_PORT=8001
       - ASPNETCORE_ENVIRONMENT=Production
       - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
@@ -132,7 +138,7 @@ services:
     tmpfs:
       - /tmp
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WATCHNEXUS_PORT:-8001}/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

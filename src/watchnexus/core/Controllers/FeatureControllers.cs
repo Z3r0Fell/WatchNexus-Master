@@ -245,7 +245,8 @@ public class GelatinController : ControllerBase
         if (remote == null) return Ok(new { url = (string?)null });
         if (!WatchNexus.Core.Auth.LocalRequest.IsLoopback(HttpContext) && !WatchNexus.Core.Auth.SsrfGuard.IsPrivateAddress(remote))
             return Ok(new { url = (string?)null });
-        return Ok(new { url = $"http://{Environment.MachineName}:8001" });
+        var port = int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_PORT"), out var p) ? p : 8001;
+        return Ok(new { url = $"http://{Environment.MachineName}:{port}" });
     }
 
     [HttpPost("tunnel/create")]
@@ -253,7 +254,7 @@ public class GelatinController : ControllerBase
         StatusCode(StatusCodes.Status501NotImplemented, new
         {
             detail = "Tunneling providers (Cloudflare, ngrok, Tailscale) are roadmap items. "
-                   + "For now, expose port 8001 via your router or a reverse proxy."
+                   + $"For now, expose port {Environment.GetEnvironmentVariable("WATCHNEXUS_PORT") ?? "8001"} via your router or a reverse proxy."
         });
 
     [HttpGet("tunnels")]

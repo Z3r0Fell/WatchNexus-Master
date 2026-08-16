@@ -135,3 +135,12 @@ export const integrationApi = {
   updateQbit: (settings) => apiClient.put(`/settings/integrations/qbittorrent`, settings),
   testQbit: (settings) => apiClient.post(`/settings/integrations/qbittorrent/test`, settings),
 };
+
+// Lobster Mesh (Tailscale-based P2P networking)
+export const lobsterApi = {
+  getStatus: () => apiClient.get(`/lobster/status`),
+  start: () => apiClient.post(`/lobster/start`),
+  stop: () => apiClient.post(`/lobster/stop`),
+  getPeers: () => apiClient.get(`/lobster/peers`),
+  pair: () => apiClient.post(`/lobster/pair`),
+};

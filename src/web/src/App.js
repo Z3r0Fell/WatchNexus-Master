@@ -6,6 +6,7 @@ import { GadgetProvider } from "./context/GadgetContext";
 import { LicenseProvider } from "./context/LicenseContext";
 import { FirstLaunchGate } from "./components/FirstLaunchGate";
 import { TierGate } from "./components/TierGate";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { lazy, Suspense } from "react";
 import "./App.css";
 
@@ -78,6 +79,7 @@ const PreservesPage = lazy(() => import("./pages/PreservesPage"));
 const MarshmallowPage = lazy(() => import("./pages/MarshmallowPage"));
 const ChowderPage = lazy(() => import("./pages/ChowderPage"));
 const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage"));
+const LobsterPage = lazy(() => import("./pages/LobsterPage"));
 const RoadmapPage = lazy(() => import("./pages/RoadmapPage"));
 const ChangelogPage = lazy(() => import("./pages/ChangelogPage"));
 
@@ -208,6 +210,7 @@ function AppRouter() {
          <Route path="/cloud-sync" element={<TierRoute path="/cloud-sync"><MarshmallowPage /></TierRoute>} />
          <Route path="/media-sync" element={<TierRoute path="/media-sync"><ChowderPage /></TierRoute>} />
          <Route path="/watch-party" element={<TierRoute path="/watch-party"><WatchPartyPage /></TierRoute>} />
+         <Route path="/lobster" element={<TierRoute path="/lobster"><LobsterPage /></TierRoute>} />
          <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
          <Route path="/changelog" element={<ProtectedRoute><ChangelogPage /></ProtectedRoute>} />
 
@@ -222,27 +225,29 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <AuthProvider>
-          <ThemeProvider>
-            <GadgetProvider>
-              <LicenseProvider>
-                <FirstLaunchGate>
-                  <AppRouter />
-                </FirstLaunchGate>
-                <Toaster
-                  position="bottom-right"
-                  toastOptions={{
-                    style: {
-                      background: '#1E1E1E',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#F3F4F6',
-                    },
-                  }}
-                />
-              </LicenseProvider>
-            </GadgetProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ThemeProvider>
+              <GadgetProvider>
+                <LicenseProvider>
+                  <FirstLaunchGate>
+                    <AppRouter />
+                  </FirstLaunchGate>
+                  <Toaster
+                    position="bottom-right"
+                    toastOptions={{
+                      style: {
+                        background: '#1E1E1E',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: '#F3F4F6',
+                      },
+                    }}
+                  />
+                </LicenseProvider>
+              </GadgetProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </BrowserRouter>
     </div>
   );

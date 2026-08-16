@@ -23,7 +23,7 @@ public class CoreController : ControllerBase
     {
         status = "healthy",
         timestamp = DateTime.UtcNow,
-        version = "1.0.1",
+        version = "1.0.3",
     });
 
     [Authorize]
@@ -81,7 +81,7 @@ public class CoreController : ControllerBase
 
         return Ok(new
         {
-            version = "1.0.1",
+        version = "1.0.3",
             codename = "WatchNexus",
             framework = $".NET {Environment.Version}",
             hostname = Environment.MachineName,
@@ -197,7 +197,7 @@ public class AuthController : ControllerBase
         {
             needs_setup = !hasUsers,
             user_count = _db.Users.Count(),
-            version = "1.0.1"
+            version = "1.0.3"
         });
     }
 
@@ -338,7 +338,7 @@ public class UsersController : ControllerBase
     // (Jellyfin/Plex-style). Returns ONLY display fields — never email or role —
     // so an unauthenticated caller can render avatars without leaking account data.
     [HttpGet("profiles")]
-    [Authorize]
+    [AllowAnonymous]
     public IActionResult GetProfiles()
     {
         var users = _db.Users

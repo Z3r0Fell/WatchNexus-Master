@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  headscale:
+    image: headscale/headscale:1.67
+    container_name: lobster-headscale
+    volumes:
+      - ./config:/etc/headscale
+      - headscale-data:/var/lib/headscale
+    environment:
+      - HEADSCALE_PORT=8080
+      - HEADSCALE_DATABASE_TYPE=sqlite
+    command: headscale serve
+    restart: unless-stopped
+    networks:
+      - lobster-net
+
+volumes:
+  headscale-data:
+
+networks:
+  lobster-net:
+    driver: bridge

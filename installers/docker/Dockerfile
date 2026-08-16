@@ -48,14 +48,15 @@ RUN mkdir -p data logs && chown -R watchnexus:watchnexus /opt/watchnexus
 VOLUME /opt/watchnexus/data
 VOLUME /opt/watchnexus/logs
 
-ENV ASPNETCORE_URLS=http://0.0.0.0:8001
-ENV WATCHNEXUS_PORT=8001
+ARG PORT=8001
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
+ENV WATCHNEXUS_PORT=${PORT}
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-EXPOSE 8001
+EXPOSE ${PORT}
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8001/api/health || exit 1
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
 USER watchnexus
 

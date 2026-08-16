@@ -178,7 +178,7 @@ build_tier() {
   cat > "$OUT/tier.json" <<EOF
 {
   "tier": "$TIER",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "controllers": $(find "$OUT/backend/Controllers" -maxdepth 1 -type f -name "*.cs" 2>/dev/null | wc -l),
   "pages": $(find "$OUT/frontend/pages" \( -name "*.js" -o -name "*.jsx" \) 2>/dev/null | wc -l)

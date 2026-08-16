@@ -75,4 +75,19 @@
     <Copy SourceFiles="@(FrontendFiles)" DestinationFolder="$(PublishDir)web/build/%(RecursiveDir)" SkipUnchangedFiles="true" />
   </Target>
 
+  <!-- Copy the modules directory into the publish output so external/DLL modules
+       (like Lobster) are available in production installs and update packages. -->
+  <Target Name="PublishModulesCopy" AfterTargets="Publish">
+    <PropertyGroup>
+      <ModulesSource>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../modules'))</ModulesSource>
+      <ModulesDest>$(PublishDir)modules</ModulesDest>
+    </PropertyGroup>
+    <MakeDir Directories="$(ModulesDest)" Condition="!Exists('$(ModulesDest)')" />
+    <Exec Command="rsync -av --exclude='bin/' --exclude='obj/' &quot;$(ModulesSource)/&quot; &quot;$(ModulesDest)/&quot;" Condition="Exists('$(ModulesSource)')" />
+    <Copy SourceFiles="$(ModulesSource)/lobster/bin/$(Configuration)/net10.0/WatchNexus.Module.Lobster.dll"
+          DestinationFolder="$(ModulesDest)/lobster/"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(ModulesSource)/lobster/bin/$(Configuration)/net10.0/WatchNexus.Module.Lobster.dll')" />
+  </Target>
+
 </Project>

@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  derper:
+    image: tailscale/derper:1.67
+    container_name: lobster-derper
+    ports:
+      - "8448:443"
+      - "3478:3478/udp"
+    volumes:
+      - ./certs:/certs
+      - derper-data:/data
+    environment:
+      - DERP_ADDR=:443
+      - DERP_HTTPS_ADDR=:443
+      - DERP_STUN=true
+      - DERP_VERIFY_CLIENTS=false
+      - DERP_CERT_DIR=/certs
+      - DERP_CERT=/certs/fullchain.pem
+      - DERP_KEY=/certs/privkey.pem
+    command: >
+      -c /certs
+      -a :443
+      -http-port 80
+      -stun-port 3478
+      -verify-clients false
+    restart: unless-stopped
+    networks:
+      - lobster-net
+
+volumes:
+  derper-data:
+
+networks:
+  lobster-net:
+    driver: bridge

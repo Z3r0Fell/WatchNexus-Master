@@ -55,6 +55,7 @@ RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
 # ── Stage 3: Runtime ─────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 ARG TIER=standard
+ARG PORT=8001
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -66,7 +67,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Labels
 LABEL org.opencontainers.image.title="WatchNexus ${TIER}" \
       org.opencontainers.image.description="WatchNexus Media Server - ${TIER} Edition" \
-      org.opencontainers.image.version="1.0.1" \
+      org.opencontainers.image.version="1.0.3" \
       org.opencontainers.image.vendor="WatchNexus" \
       org.opencontainers.image.source="https://github.com/Z3r0Fell/watchnexus" \
       com.watchnexus.tier="${TIER}"
@@ -89,8 +90,8 @@ RUN groupadd -r watchnexus && useradd -r -g watchnexus -d /app watchnexus \
 USER watchnexus
 
 # Environment
-ENV ASPNETCORE_URLS=http://0.0.0.0:8001 \
-    WATCHNEXUS_PORT=8001 \
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT} \
+    WATCHNEXUS_PORT=${PORT} \
     WATCHNEXUS_TIER=${TIER} \
     DOTNET_RUNNING_IN_CONTAINER=true \
     DOTNET_EnableDiagnostics=0
@@ -98,11 +99,11 @@ ENV ASPNETCORE_URLS=http://0.0.0.0:8001 \
 # Volume mounts
 VOLUME ["/app/data", "/data/media", "/data/rips"]
 
-EXPOSE 8001
+EXPOSE ${PORT}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -sf http://localhost:8001/api/health || exit 1
+    CMD curl -sf http://localhost:${PORT}/api/health || exit 1
 
 # Security hardening notes:
 # - HSTS, CSP, X-Frame-Options, etc. are set by middleware in Program.cs

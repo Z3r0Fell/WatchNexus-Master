@@ -1,5 +1,22 @@
 # WatchNexus Changelog
 
+## 2026-08-16 — v1.0.3 (Lobster Mesh, Port Configurability)
+
+### Implemented
+- **Lobster Mesh module** — new external module (`src/watchnexus/modules/lobster/`) providing Tailscale-based P2P networking: `LobsterService` supervises the Go `tsnet` sidecar, `LobsterClient` exposes `/api/lobster/{status,start,stop,peers,pair}`, and a dedicated `LobsterPage` frontend with live status polling and pairing UX.
+- **Lobster sidecar, coordination server, relay** — Go `tsnet` binary (`lobster-sidecar/`), self-hosted Headscale control plane (`lobster-coordination/`), and DERP relay (`lobster-relay/`) for NAT traversal fallback.
+- **Configurable `WATCHNEXUS_PORT`** — Dockerfile/Compose now accept a `PORT` build arg and honor `WATCHNEXUS_PORT` env at runtime; healthchecks, `install.sh` systemd unit, and Gelatin tunnel messaging all respect the configured port instead of hardcoding 8001.
+- **`PublishModulesCopy` publish target** — external module sources and the Lobster DLL are copied into the publish output so modules ship in production installs and update packages.
+- **Frontend `ErrorBoundary`** — top-level error boundary wraps the app so render errors show a recovery screen instead of a blank page.
+- **`GetProfiles` is now anonymous** — user profiles render without auth for avatar display (display fields only, no email/role leak).
+
+### Bug Fixes
+- **`docker-build.sh` `latest` tagging** — `latest` is now tagged from the last built tier (ultra by default) via a loop instead of assuming a hardcoded tier list.
+- **`GetProfiles`** corrected `[Authorize]` → `[AllowAnonymous]` to match avatar-rendering use.
+
+### Versioning
+- All version strings standardized to `1.0.3` across backend, frontend, Docker tags, installer filenames, and build scripts.
+
 ## 2026-08-15 — v1.0.2 (Security Audit, Modularity, WatchParty)
 
 ### Security

@@ -100,9 +100,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=$INSTALL_DIR/bin
-Environment="ASPNETCORE_URLS=http://0.0.0.0:8001"
-ExecStart=$DOTNET_CMD $INSTALL_DIR/bin/WatchNexus.Core.dll
+Environment="WATCHNEXUS_PORT=8001"
+ExecStart=$HOME/.local/bin/watchnexus
 Restart=always
 RestartSec=5
 
@@ -123,7 +122,7 @@ echo ""
 echo "================================================"
 echo "  Installation complete!  v$APP_VERSION"
 echo "================================================"
-echo "  Dashboard: http://localhost:8001"
+echo "  Dashboard: http://localhost:${WATCHNEXUS_PORT:-8001}"
 echo "  Data:      $INSTALL_DIR"
 echo ""
 echo -e "  ${GREEN}Auto-start: ENABLED${NC}"
