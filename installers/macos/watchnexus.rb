@@ -1,10 +1,10 @@
 class WatchNexus < Formula
   desc "Self-hosted media management pipeline"
   homepage "https://watchnexus.ca"
-  url "https://github.com/Z3r0Fell/WatchNexus-Master/archive/refs/tags/v1.0.1.tar.gz"
+  url "https://github.com/Z3r0Fell/WatchNexus-Master/archive/refs/tags/v1.0.3.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "LicenseRef-OWN"
-  version "1.0.1"
+  version "1.0.3"
 
   depends_on "dotnet@10" => :build
 

@@ -4,7 +4,7 @@
 
 ```bash
 # Pull the official image
-docker pull watchnexus/watchnexus:1.0.1-standard
+docker pull watchnexus/watchnexus:1.0.3-standard
 
 # Start WatchNexus
 docker compose up -d

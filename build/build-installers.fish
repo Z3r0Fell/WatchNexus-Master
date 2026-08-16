@@ -30,7 +30,7 @@ set -g STAGE_DIR "$ROOT_DIR/stage"
 set -g RELEASE_DIR "$ROOT_DIR/release"
 set -g NSIS_TEMPLATE "$SCRIPT_DIR/packaging/nsis/watchnexus.nsi.in"
 set -g FPM_HOOKS_DIR "$SCRIPT_DIR/packaging/fpm"
-set -g VERSION "1.0.1"
+set -g VERSION "1.0.3"
 set -g VENDOR "WatchNexus Media Systems"
 set -g URL "https://watchnexus.ca"
 set -g LICENSE "Proprietary"
@@ -263,7 +263,7 @@ function build_linux_packages -a tier
         #   opt/watchnexus/LICENSE.html
         #   opt/watchnexus/README.md
         #   usr/lib/systemd/system/watchnexus.service
-        set -l root "$out/_fpm_root_${tier}_${arch}"
+        set -l root "$out/_fpm_root_$tier"_"$arch"
         rm -rf "$root"
         mkdir -p "$root/opt/watchnexus/bin" \
                  "$root/opt/watchnexus/web" \

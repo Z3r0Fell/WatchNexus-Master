@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>WatchNexus</Name>
-  <Repository>watchnexus/watchnexus:1.0.1-standard</Repository>
+  <Repository>watchnexus/watchnexus:1.0.3-standard</Repository>
   <Registry>https://hub.docker.com/r/watchnexus/watchnexus</Registry>
   <Network>bridge</Network>
   <MyIP/>

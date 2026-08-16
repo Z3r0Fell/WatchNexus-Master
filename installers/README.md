@@ -1,6 +1,6 @@
 # WatchNexus Installers
 
-Platform-specific installers for WatchNexus v1.0.1.
+Platform-specific installers for WatchNexus v1.0.3.
 
 ## Supported Platforms
 

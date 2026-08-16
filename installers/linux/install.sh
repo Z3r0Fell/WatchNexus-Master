@@ -1,11 +1,11 @@
 #!/bin/bash
-# WatchNexus Linux Installer (.NET 10) — v1.0.1
+# WatchNexus Linux Installer (.NET 10) — v1.0.3
 # Auto-start via systemd service
 set -e
 set -o pipefail
 
 APP_NAME="WatchNexus"
-APP_VERSION="1.0.1"
+APP_VERSION="1.0.3"
 INSTALL_DIR="${HOME}/.local/share/watchnexus"
 BIN_DIR="${HOME}/.local/bin"
 DESKTOP_DIR="${HOME}/.local/share/applications"

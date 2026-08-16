@@ -1,10 +1,10 @@
 @echo off
-:: WatchNexus Windows Installer (.NET 10) — v1.0.1
+:: WatchNexus Windows Installer (.NET 10) — v1.0.3
 :: Auto-start via Scheduled Task
 setlocal EnableDelayedExpansion
 
 set APP_NAME=WatchNexus
-set APP_VERSION=1.0.1
+set APP_VERSION=1.0.3
 set INSTALL_DIR=%LOCALAPPDATA%\WatchNexus
 
 echo ================================================
