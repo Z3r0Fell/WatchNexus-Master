@@ -54,7 +54,7 @@ const fade = {
 
 // ══════════════════════════════════════════════════════════════════════
 //  FirstLaunchGate — premium cinematic OOBE wizard
-//  welcome → admin → server-identity → ffmpeg → library → license → finish
+//  welcome → admin → server-identity → ffmpeg → library → license → prepare → finish
 // ══════════════════════════════════════════════════════════════════════
 export const FirstLaunchGate = ({ children }) => {
   const [checking, setChecking] = useState(true);
@@ -85,9 +85,10 @@ export const FirstLaunchGate = ({ children }) => {
       if (needsAdmin) {
         seq = ['welcome', 'admin', 'identity', 'ffmpeg', 'library'];
         if (needsLic) seq.push('license');
+        seq.push('prepare');
         seq.push('finish');
       } else if (needsLic) {
-        seq = ['license', 'finish'];
+        seq = ['license', 'prepare', 'finish'];
       } else {
         seq = [];
       }
@@ -163,6 +164,7 @@ export const FirstLaunchGate = ({ children }) => {
           {current === 'ffmpeg' && <FfmpegStep key="ffmpeg" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
           {current === 'library' && <LibraryStep key="library" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
           {current === 'license' && <LicenseStep key="license" accent={accent} onNext={(p) => { merge(p); next(); }} onBack={idx > 0 ? back : null} />}
+          {current === 'prepare' && <PrepareStep key="prepare" accent={accent} onNext={next} />}
           {current === 'finish' && <FinishStep key="finish" accent={accent} summary={summary} onLaunch={finishWizard} />}
         </AnimatePresence>
       </div>
@@ -178,6 +180,7 @@ const RAIL_META = {
   ffmpeg:   { label: 'FFmpeg', icon: Terminal },
   library:  { label: 'First Library', icon: FolderOpen },
   license:  { label: 'Edition', icon: Key },
+  prepare:  { label: 'Preparing', icon: Loader2 },
   finish:   { label: "You're all set", icon: Rocket },
 };
 
@@ -662,6 +665,45 @@ const LicenseStep = ({ accent, onNext, onBack }) => {
           className="text-sm text-zinc-400 hover:text-white transition-colors inline-flex items-center">
           Continue with Standard (free) <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
         </button>
+      </div>
+    </motion.div>
+  );
+};
+
+// ── Step: Prepare (post-activation module enablement) ─────────────────
+const PrepareStep = ({ accent, onNext }) => {
+  const [status, setStatus] = useState('contacting');
+  const [detail, setDetail] = useState('Verifying license with server…');
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        await axios.get(`${API}/api/cellar/status`);
+        if (!cancelled) { setStatus('ready'); setDetail('Edition unlocked. Preparing modules…'); }
+      } catch { /* best-effort; move on */ }
+      const delay = setTimeout(() => {
+        if (!cancelled) onNext();
+      }, 1800);
+      return () => clearTimeout(delay);
+    }, 1200);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [onNext]);
+
+  return (
+    <motion.div {...fade} className="w-full max-w-2xl space-y-8 text-center">
+      <div className="py-12">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: `${accent}22`, border: `1px solid ${accent}44` }}
+        >
+          <Loader2 className="w-8 h-8" style={{ color: accent }} />
+        </motion.div>
+        <h2 className="font-['Outfit'] text-3xl font-extrabold tracking-tight mb-3">Preparing your edition</h2>
+        <p className="font-['Manrope'] text-zinc-400 mb-2">{detail}</p>
+        <p className="text-xs text-zinc-600 font-['JetBrains_Mono']">Downloading modules & enabling features…</p>
       </div>
     </motion.div>
   );

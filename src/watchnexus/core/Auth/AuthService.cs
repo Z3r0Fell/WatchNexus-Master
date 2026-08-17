@@ -68,7 +68,7 @@ public class AuthService
 
     public (AppUser? user, string? token) Login(string email, string password)
     {
-        var user = _db.Users.FirstOrDefault(u => u.Email == email);
+        var user = _db.Users.FirstOrDefault(u => u.Email == email || u.Username == email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return (null, null);
         return (user, GenerateToken(user));

@@ -18,6 +18,12 @@ namespace WatchNexus.Core.Controllers;
 [ApiController]
 public class CellarController : ControllerBase
 {
+    // Built-in default license server credentials so activation works out of
+    // the box without Docker env-var configuration. Override with
+    // LICENSE_SERVER_URL / LICENSE_SERVER_API_KEY env vars if needed.
+    private const string DEFAULT_LICENSE_SERVER_URL = "https://licenses.watchnexus.ca";
+    private const string DEFAULT_LICENSE_SERVER_API_KEY = "wn_live_sk_5f4dcc3b5aa765d61d8327deb882cf99";
+
     private static readonly Dictionary<string, List<DateTime>> _activationAttempts = new();
     private static readonly object _rateLimitLock = new();
 
@@ -171,9 +177,10 @@ public class CellarController : ControllerBase
         if (string.IsNullOrEmpty(serial))
             return BadRequest(new { success = false, message = "Serial number is required" });
 
-        // Get license server config
-        var lsUrl = _config["LICENSE_SERVER_URL"] ?? "";
-        var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? "";
+        // Get license server config (built-in defaults work out of the box;
+        // override with env vars or appsettings if needed)
+        var lsUrl = _config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL;
+        var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? DEFAULT_LICENSE_SERVER_API_KEY;
 
         string tier;
         string? activationId = null;
@@ -306,8 +313,8 @@ public class CellarController : ControllerBase
             return BadRequest(new { success = false, message = "Serial number is required" });
 
         // Validate via license server or locally
-        var lsUrl = _config["LICENSE_SERVER_URL"] ?? "";
-        var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? "";
+        var lsUrl = _config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL;
+        var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? DEFAULT_LICENSE_SERVER_API_KEY;
         string tier;
         string? activationId = null, activationToken = null;
 
@@ -371,8 +378,8 @@ public class CellarController : ControllerBase
             {
                 var doc = JsonDocument.Parse(setting.Value).RootElement;
                 var token = doc.TryGetProperty("activation_token", out var at) ? at.GetString() : null;
-                var lsUrl = _config["LICENSE_SERVER_URL"] ?? "";
-                var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? "";
+                var lsUrl = _config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL;
+                var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? DEFAULT_LICENSE_SERVER_API_KEY;
                 if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(lsUrl) && !string.IsNullOrEmpty(lsApiKey))
                 {
                     using var http = _httpFactory.CreateClient();

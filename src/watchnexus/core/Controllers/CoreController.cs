@@ -335,15 +335,15 @@ public class UsersController : ControllerBase
     }
 
     // Public, minimal profile list for the "Who's watching?" login picker
-    // (Jellyfin/Plex-style). Returns ONLY display fields — never email or role —
-    // so an unauthenticated caller can render avatars without leaking account data.
+    // (Jellyfin/Plex-style). Returns Id, Username, Email, and Avatar so the
+    // local login flow can pre-fill the identity and still complete auth.
     [HttpGet("profiles")]
     [AllowAnonymous]
     public IActionResult GetProfiles()
     {
         var users = _db.Users
             .OrderBy(u => u.Username)
-            .Select(u => new { u.Id, u.Username, u.Avatar })
+            .Select(u => new { u.Id, u.Username, u.Email, u.Avatar })
             .ToList();
         return Ok(users);
     }

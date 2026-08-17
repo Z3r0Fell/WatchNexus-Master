@@ -226,8 +226,8 @@ builder.Configuration["Jwt:Secret"] = jwtSecret;
 // self-hoster booted without configuring them so features fail visibly, not silently.
 if (string.IsNullOrWhiteSpace(builder.Configuration["TMDB_API_KEY"]))
     Log("[WatchNexus] WARNING: TMDB_API_KEY is not configured — content discovery/metadata will be unavailable until you add a key (Settings → Metadata, or the TMDB_API_KEY env var).");
-if (string.IsNullOrWhiteSpace(builder.Configuration["LICENSE_SERVER_API_KEY"]))
-    Log("[WatchNexus] WARNING: LICENSE_SERVER_API_KEY is not configured — paid-tier (Pro/Ultra) license activation will be unavailable. Standard tier works without it.");
+    if (string.IsNullOrWhiteSpace(builder.Configuration["LICENSE_SERVER_API_KEY"]))
+        Log("[WatchNexus] License activation: using built-in license server credentials. Override with LICENSE_SERVER_API_KEY env var if needed.");
 
 // ── Auth ──────────────────────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
