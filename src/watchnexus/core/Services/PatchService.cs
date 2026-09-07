@@ -153,6 +153,28 @@ public class PatchService
         if (string.IsNullOrEmpty(manifest.PatchId) || manifest.Files.Count == 0)
             return new PatchApplyResult(false, manifest.PatchId, appliedLive, staged, false, "Manifest has no patch_id or no files");
 
+        // C-3: Binary patches MUST be signed — no exceptions. If any file targets
+        // the app binary directory and the manifest signature has not been verified,
+        // refuse the entire patch. Web/config-only patches are still allowed without
+        // signing so that operators who haven't configured a signing key can still
+        // receive web-layer hotfixes.
+        var hasBinaryFiles = manifest.Files.Any(f =>
+        {
+            var ext = Path.GetExtension(f.Path).ToLowerInvariant();
+            var binaryExt = ext is ".dll" or ".exe" or ".so" or ".dylib";
+            return f.Target.Equals("app", StringComparison.OrdinalIgnoreCase)
+                || (f.Target.Equals("data", StringComparison.OrdinalIgnoreCase) && binaryExt);
+        });
+
+        if (hasBinaryFiles && signatureValid != true)
+        {
+            var reason = signatureValid == false
+                ? "signature verification failed"
+                : "PATCH_SIGNING_PUBLIC_KEY is not configured — binary patches require a verified signature";
+            return new PatchApplyResult(false, manifest.PatchId, appliedLive, staged, false,
+                $"Binary patch refused: {reason}. Configure PATCH_SIGNING_PUBLIC_KEY to enable binary patching.");
+        }
+
         // Phase 1: download + verify EVERYTHING before touching disk.
         var payloads = new List<(PatchFileEntry entry, byte[] data, string destFull, bool isBinary)>();
         foreach (var f in manifest.Files)

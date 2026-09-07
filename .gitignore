@@ -8,9 +8,13 @@
 !.env.example
 **/appsettings.Production.json
 **/appsettings.Development.json
-**/appsettings.json
+# appsettings.json is committed but must contain ONLY blank/empty secret values.
+# Real secrets go in appsettings.Production.json (gitignored) or environment variables.
+# DO NOT add real values to appsettings.json — it is tracked by git.
 **/dp-keys/
 **/jwt.key
+# *.key and *.pem excluded — signing/public.key is intentionally NOT secret (public key)
+# but we exclude all .key files to prevent accidental private key commits.
 *.key
 *.pem
 
