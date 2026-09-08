@@ -326,11 +326,14 @@ builder.Services.AddHostedService<WatchNexus.Core.Services.BotBackgroundService>
 builder.Services.AddHostedService<WatchNexus.Core.Services.TrayIconService>();
 builder.Services.AddScoped<WatchNexus.Core.Services.PatchService>();
 builder.Services.AddHostedService<WatchNexus.Core.Services.UpdateBackgroundService>();
+builder.Services.AddSingleton<WatchNexus.Core.Services.WatchPartyConnectionManager>();
 
 // CORS — restrict to configured origins when ALLOWED_ORIGINS is set
 // (comma-separated). When unset we reflect the request origin but DO NOT allow
-// credentials; the API is bearer-token based (no cookies), so this is safe and
-// keeps LAN access frictionless. Set ALLOWED_ORIGINS to lock it down further.
+// credentials. The API supports BOTH bearer-token auth (Authorization: Bearer)
+// AND an httpOnly cookie (wn_token, set via CookieAuthenticationScheme).
+// Reflecting origins without AllowCredentials() keeps the cookie flow safe
+// from CSRF on untrusted origins. Set ALLOWED_ORIGINS to lock it down further.
 var allowedOrigins = (builder.Configuration["ALLOWED_ORIGINS"]
         ?? Environment.GetEnvironmentVariable("ALLOWED_ORIGINS"))
     ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -470,15 +473,29 @@ void SeedAccounts(AppDbContext db){
 // ── Reverse-proxy / TLS awareness (S-19) ──────────────────────
 // Production is fronted by a TLS-terminating reverse proxy (Caddy/nginx/
 // Traefik). Honour X-Forwarded-Proto/For so the app knows the original
-// scheme + client IP. Proxies aren't on a known subnet in self-hosted
-// setups, so we accept forwarded headers from any hop.
-var fwd = new ForwardedHeadersOptions
+// scheme + client IP. Only enable when a trusted proxy network is configured
+// via TRUSTED_PROXY_IPS (CIDR comma-separated). Leaving it unset disables
+// forwarded-header processing entirely, so a LAN client cannot spoof
+// X-Forwarded-For: 127.0.0.1 to bypass the LocalRequest.IsLoopback() guard.
+var trustedProxyIps = (Environment.GetEnvironmentVariable("TRUSTED_PROXY_IPS") ?? "")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+if (trustedProxyIps.Length > 0)
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-};
-fwd.KnownIPNetworks.Clear();
-fwd.KnownProxies.Clear();
-app.UseForwardedHeaders(fwd);
+    var fwd = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    };
+    foreach (var cidr in trustedProxyIps)
+    {
+        var parts = cidr.Split('/', 2);
+        if (parts.Length == 2 && System.Net.IPAddress.TryParse(parts[0], out var ip))
+        {
+            var prefix = int.Parse(parts[1]);
+            fwd.KnownIPNetworks.Add(new System.Net.IPNetwork(ip, prefix));
+        }
+    }
+    app.UseForwardedHeaders(fwd);
+}
 
 // When FORCE_HTTPS is set, advertise HSTS so browsers pin TLS. We do NOT
 // add UseHttpsRedirection — Kestrel listens HTTP only and the proxy does

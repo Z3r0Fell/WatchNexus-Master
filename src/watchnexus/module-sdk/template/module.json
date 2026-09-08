@@ -1,7 +1,7 @@
 {
   "name": "Template",
   "display_name": "Template Module",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A starter module for WatchNexus. Replace this with your module description.",
   "codename": "template",
   "author": "Your Name",

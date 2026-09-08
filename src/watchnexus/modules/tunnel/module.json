@@ -2,7 +2,7 @@
   "name": "Tunnel",
   "codename": "tunnel",
   "display_name": "VPN Portal",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "WireGuard VPN server and peer management with QR code config generation",
   "author": "WatchNexus",
   "dependencies": [

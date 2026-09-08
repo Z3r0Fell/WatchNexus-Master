@@ -1,6 +1,6 @@
 module github.com/watchnexus/lobster-sidecar
 
-go 1.26.5
+go 1.23
 
 require tailscale.com v1.102.2
 

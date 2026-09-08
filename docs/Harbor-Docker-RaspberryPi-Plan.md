@@ -69,7 +69,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=watchnexus:watchnexus . .
 
 # Build frontend
-FROM node:20-slim AS frontend-builder
+FROM node:22-slim AS frontend-builder
 WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci

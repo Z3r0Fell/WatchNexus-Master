@@ -33,10 +33,12 @@ LICENSE
 yarn-error.log
 
 # Secrets & environment
-appsettings.json
+# NOTE: appsettings.json IS included in the image — it is the fallback config
+# and must be present so keys like TMDB_API_KEY and LICENSE_SERVER_URL resolve
+# when no env vars are set. Only appsettings.Production.json (real secrets)
+# is excluded.
 appsettings.Production.json
 appsettings.Development.json
-**/appsettings.json
 **/appsettings.Production.json
 **/appsettings.Development.json
 dp-keys/
@@ -45,7 +47,5 @@ jwt.key
 **/jwt.key
 private.key
 **/private.key
-public.key
-**/public.key
 *.db
 **/data/

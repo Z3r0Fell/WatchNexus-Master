@@ -53,13 +53,13 @@ public static class TokenVersionStore
 
     public static int Get(AppDbContext db, string userId)
     {
-        var s = db.Settings.AsNoTracking().FirstOrDefault(x => x.Key == Key(userId) && x.UserId == "");
+        var s = db.Settings.AsNoTracking().FirstOrDefault(x => x.Key == Key(userId) && string.IsNullOrEmpty(x.UserId));
         return s != null && int.TryParse(s.Value, out var v) ? v : 0;
     }
 
     public static async Task<int> GetAsync(AppDbContext db, string userId)
     {
-        var s = await db.Settings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == Key(userId) && x.UserId == "");
+        var s = await db.Settings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == Key(userId) && string.IsNullOrEmpty(x.UserId));
         return s != null && int.TryParse(s.Value, out var v) ? v : 0;
     }
 

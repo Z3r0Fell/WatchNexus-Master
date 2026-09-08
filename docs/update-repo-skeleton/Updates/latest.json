@@ -1,9 +1,9 @@
 {
-  "latest_version": "1.0.0",
-  "release_date": "2026-07-22",
-  "release_notes": "Initial public release.",
-  "changelog": "https://github.com/WN-Admin/WatchNexus/blob/main/Updates/CHANGELOG.md",
-  "download_url": "https://github.com/WN-Admin/WatchNexus/tree/main/Releases",
+  "latest_version": "1.0.3",
+  "release_date": "2026-09-07",
+  "release_notes": "v1.0.3 — Lobster Mesh module, configurable port, ErrorBoundary, WatchParty WebSocket, Changelog page.",
+  "changelog": "https://github.com/Z3r0Fell/WatchNexus-Master/blob/main/Updates/CHANGELOG.md",
+  "download_url": "https://github.com/Z3r0Fell/WatchNexus-Master/tree/main/Releases",
   "size_mb": 0,
   "mandatory": false,
   "min_version": "1.0.0"

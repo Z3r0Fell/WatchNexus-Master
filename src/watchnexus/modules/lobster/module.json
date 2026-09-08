@@ -1,7 +1,7 @@
 {
   "name": "Lobster",
   "display_name": "Lobster Mesh",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Tailscale-based mesh networking for secure P2P media streaming. Encrypted tunnels, NAT traversal, relay fallback, and device coordination.",
   "codename": "lobster",
   "author": "WatchNexus",

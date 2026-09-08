@@ -6,12 +6,18 @@ namespace WatchNexus.Core.Services;
 
 /// <summary>
 /// Simple WebSocket connection manager for WatchParty live sync.
+/// Enforces per-connection message size and rate limits to prevent amplified DoS.
 /// </summary>
 public class WatchPartyConnectionManager
 {
-    private readonly ConcurrentDictionary<string, List<WebSocket>> _connections = new();
+    private const int MaxMessageSize = 65536;      // 64 KB max per frame
+    private const int MaxMessagesPerSecond = 20;   // rate limit per connection
+    private const int MaxConnectionsPerParty = 50; // cap per party
 
-    public async Task HandleConnection(HttpContext context, string partyCode)
+    private readonly ConcurrentDictionary<string, List<WebSocket>> _connections = new();
+    private readonly ConcurrentDictionary<WebSocket, RateLimiter> _rateLimiters = new();
+
+    public async Task HandleConnection(HTTPContext context, string partyCode)
     {
         if (!context.WebSockets.IsWebSocketRequest)
         {
@@ -24,8 +30,16 @@ public class WatchPartyConnectionManager
 
         lock (connections)
         {
+            if (connections.Count >= MaxConnectionsPerParty)
+            {
+                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                _ = socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Party full", CancellationToken.None);
+                return;
+            }
             connections.Add(socket);
         }
+
+        _rateLimiters.TryAdd(socket, new RateLimiter(MaxMessagesPerSecond));
 
         try
         {
@@ -33,6 +47,7 @@ public class WatchPartyConnectionManager
         }
         finally
         {
+            _rateLimiters.TryRemove(socket, out _);
             lock (connections)
             {
                 connections.Remove(socket);
@@ -83,7 +98,7 @@ public class WatchPartyConnectionManager
 
     private async Task ReceiveLoop(WebSocket socket, string partyCode)
     {
-        var buffer = new byte[4096];
+        var buffer = new byte[MaxMessageSize];
         while (socket.State == WebSocketState.Open)
         {
             try
@@ -94,6 +109,13 @@ public class WatchPartyConnectionManager
 
                 if (result.MessageType == WebSocketMessageType.Text && result.Count > 0)
                 {
+                    if (result.Count > MaxMessageSize)
+                        continue; // drop oversized frame
+
+                    var limiter = _rateLimiters.GetValueOrDefault(socket);
+                    if (limiter != null && !limiter.Allow())
+                        continue; // rate limited
+
                     var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     await BroadcastToParty(partyCode, message);
                 }
@@ -101,6 +123,35 @@ public class WatchPartyConnectionManager
             catch
             {
                 break;
+            }
+        }
+    }
+
+    /// <summary>Simple token-bucket rate limiter for per-connection WS frames.</summary>
+    private sealed class RateLimiter
+    {
+        private readonly int _maxPerSecond;
+        private readonly Queue<DateTime> _timestamps = new();
+        private readonly object _lock = new();
+
+        public RateLimiter(int maxPerSecond)
+        {
+            _maxPerSecond = maxPerSecond;
+        }
+
+        public bool Allow()
+        {
+            var now = DateTime.UtcNow;
+            lock (_lock)
+            {
+                while (_timestamps.Count > 0 && (now - _timestamps.Peek()).TotalSeconds >= 1.0)
+                    _timestamps.Dequeue();
+
+                if (_timestamps.Count >= _maxPerSecond)
+                    return false;
+
+                _timestamps.Enqueue(now);
+                return true;
             }
         }
     }

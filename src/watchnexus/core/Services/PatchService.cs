@@ -254,7 +254,14 @@ public class PatchService
         {
             using var http = CreateClient();
             if (!string.IsNullOrEmpty(f.Url))
+            {
+                if (!IsAllowedPatchUrl(f.Url))
+                {
+                    Log($"[PatchService] Refused download from untrusted URL: {f.Url}");
+                    return null;
+                }
                 return await http.GetByteArrayAsync(f.Url);
+            }
 
             // Default layout: Patches/files/<patch_id>/<path> via GitHub contents API
             var resp = await http.GetAsync($"{RepoUrl}/contents/Patches/files/{patchId}/{f.Path}");
@@ -264,6 +271,22 @@ public class PatchService
             return Convert.FromBase64String(content.GetString()?.Replace("\n", "") ?? "");
         }
         catch { return null; }
+    }
+
+    /// <summary>
+    /// Validates that a patch manifest URL points to an allowed host.
+    /// Defaults to github.com; override with PATCH_ALLOWED_HOSTS (comma-separated).
+    /// </summary>
+    private bool IsAllowedPatchUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return false;
+
+        var allowedHosts = (_config["PATCH_ALLOWED_HOSTS"] ?? "github.com")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(h => h.ToLowerInvariant());
+
+        return allowedHosts.Contains(uri.Host.ToLowerInvariant());
     }
 
     // ── Pure helpers (unit-tested) ───────────────────────────────────

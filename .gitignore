@@ -13,10 +13,11 @@
 # DO NOT add real values to appsettings.json — it is tracked by git.
 **/dp-keys/
 **/jwt.key
-# *.key and *.pem excluded — signing/public.key is intentionally NOT secret (public key)
-# but we exclude all .key files to prevent accidental private key commits.
+# *.key and *.pem excluded — signing/public.key is intentionally tracked
+# (public key, not secret) so the exception below keeps it in version control.
 *.key
 *.pem
+!signing/public.key
 
 # Data & runtime
 *.db

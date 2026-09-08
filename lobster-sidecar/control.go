@@ -1,13 +1,22 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
+)
+
+const (
+	controlKeyEnv = "LOBSTER_CONTROL_KEY"
+	defaultKey    = "lobster-control-default-change-me"
 )
 
 type ControlServer struct {
@@ -15,6 +24,7 @@ type ControlServer struct {
 	server   *http.Server
 	state    NodeState
 	stateMu  sync.RWMutex
+controlKey string
 }
 
 type NodeState struct {
@@ -35,32 +45,55 @@ type Peer struct {
 }
 
 func NewControlServer(port int) *ControlServer {
+	key := os.Getenv(controlKeyEnv)
+	if key == "" {
+		key = defaultKey
+	}
 	return &ControlServer{
-		port:   port,
-		state: NodeState{Status: "stopped", Online: false},
+		port:       port,
+		controlKey: key,
+		state:      NodeState{Status: "stopped", Online: false},
 	}
 }
 
 func (c *ControlServer) Start() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/status", c.handleStatus)
-	mux.HandleFunc("/api/start", c.handleStart)
-	mux.HandleFunc("/api/stop", c.handleStop)
-	mux.HandleFunc("/api/peers", c.handlePeers)
-	mux.HandleFunc("/api/pair", c.handlePair)
+	mux.HandleFunc("/api/start", c.requireControlKey(c.handleStart))
+	mux.HandleFunc("/api/stop", c.requireControlKey(c.handleStop))
+	mux.HandleFunc("/api/peers", c.requireControlKey(c.handlePeers))
+	mux.HandleFunc("/api/pair", c.requireControlKey(c.handlePair))
 
-	c.server = &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", c.port), Handler: mux}
-	ln, err := net.Listen("tcp", c.server.Addr)
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", c.port))
 	if err != nil {
 		return err
 	}
 	log.Printf("[Lobster] Control API listening on %s", ln.Addr())
+
+	c.server = &http.Server{
+		Addr:         fmt.Sprintf("127.0.0.1:%d", c.port),
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1 MB
+	}
 	return c.server.Serve(ln)
 }
 
 func (c *ControlServer) Shutdown() {
 	if c.server != nil {
-		_ = c.server.Close()
+		_ = c.server.Shutdown(context.Background())
+	}
+}
+
+func (c *ControlServer) requireControlKey(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Control-Key") != c.controlKey {
+			writeJSON(w, map[string]string{"error": "unauthorized"})
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		next(w, r)
 	}
 }
 
@@ -124,7 +157,11 @@ func generatePairCode() string {
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 	var b [6]byte
 	for i := range b {
-		b[i] = alphabet[time.Now().UnixNano()%int64(len(alphabet))]
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
+		if err != nil {
+			log.Fatalf("[Lobster] crypto/rand failure: %v", err)
+		}
+		b[i] = alphabet[n.Int64()]
 	}
 	return string(b[:])
 }

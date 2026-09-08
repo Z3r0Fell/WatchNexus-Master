@@ -304,15 +304,16 @@ public static class Fortress
 
     private static string GenerateInstanceId()
     {
-        // Derive a stable instance ID from machine-specific properties
+        // Derive a stable instance ID from machine-specific properties.
+        // NOTE: AppContext.BaseDirectory is deliberately excluded — install path
+        // changes (upgrades, service moves) would otherwise invalidate the
+        // instance ID and trigger spurious "re-activation" audit noise.
         var components = new StringBuilder();
         components.Append(Environment.MachineName);
         components.Append('|');
         components.Append(Environment.OSVersion.Platform);
         components.Append('|');
         components.Append(Environment.ProcessorCount);
-        components.Append('|');
-        components.Append(AppContext.BaseDirectory);
 
         using var sha = SHA256.Create();
         var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(components.ToString()));
@@ -420,12 +421,31 @@ public static class Fortress
                 _auditLog.RemoveRange(0, _auditLog.Count - 10_000);
         }
 
-        // Persist to disk (append to JSONL file)
+        // Persist to disk (append to JSONL file, with rotation at 50 MB)
         try
         {
             var auditPath = Path.Combine(_fortressDataPath, "audit.jsonl");
             var line = JsonSerializer.Serialize(entry) + "\n";
             File.AppendAllText(auditPath, line);
+
+            // Rotate: if the file exceeds 50 MB, archive the old file and start fresh.
+            const long MaxAuditBytes = 50L * 1024 * 1024;
+            var info = new FileInfo(auditPath);
+            if (info.Exists && info.Length > MaxAuditBytes)
+            {
+                var archive = Path.Combine(_fortressDataPath,
+                    $"audit.{DateTime.UtcNow:yyyyMMdd-HHmmss}.jsonl");
+                File.Move(auditPath, archive);
+                // Purge archives older than 30 days
+                var cutoff = DateTime.UtcNow.AddDays(-30);
+                foreach (var old in Directory.GetFiles(_fortressDataPath, "audit.*.jsonl"))
+                {
+                    if (File.GetLastWriteTimeUtc(old) < cutoff)
+                    {
+                        try { File.Delete(old); } catch { }
+                    }
+                }
+            }
         }
         catch { /* non-critical */ }
     }

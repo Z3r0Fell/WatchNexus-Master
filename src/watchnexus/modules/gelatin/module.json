@@ -2,7 +2,7 @@
   "name": "Gelatin",
   "codename": "gelatin",
   "display_name": "Transcoding Engine",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "FFmpeg-based media transcoding with quality profiles",
   "author": "WatchNexus",
   "dependencies": [

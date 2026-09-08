@@ -9,7 +9,7 @@ namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
 // UPDATE SYSTEM — Version Check, Changelog, Silent Patching
-// Checks the WN-Admin/WatchNexus GitHub repo:
+// Checks the Z3r0Fell/WatchNexus-Master GitHub repo:
 //   • Updates/latest.json  → full version updates (primary channel)
 //   • Patches/{version}.json → silent hotfix patches for the running version
 //   • Releases/            → downloadable installers/builds
@@ -32,7 +32,7 @@ public class UpdateController : ControllerBase
     }
 
     private const string CURRENT_VERSION = "1.0.3";
-    private const string RELEASES_PAGE = "https://github.com/WN-Admin/WatchNexus/tree/main/Releases";
+    private const string RELEASES_PAGE = "https://github.com/Z3r0Fell/WatchNexus-Master/tree/main/Releases";
 
     // Fetch + base64-decode a JSON file from the GitHub repo via the contents API.
     private async Task<JsonElement?> FetchRepoJson(string repoPath)

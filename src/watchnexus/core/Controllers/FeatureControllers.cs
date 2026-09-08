@@ -387,7 +387,12 @@ public class StreamingServicesController : ControllerBase
 [Authorize]
 public class WatchPartyController : ControllerBase
 {
-    private static readonly WatchPartyConnectionManager _connectionManager = new();
+    private readonly WatchPartyConnectionManager _connectionManager;
+
+    public WatchPartyController(WatchPartyConnectionManager connectionManager)
+    {
+        _connectionManager = connectionManager;
+    }
 
     [HttpGet("list")]
     public IActionResult List() => Ok(Array.Empty<object>());
