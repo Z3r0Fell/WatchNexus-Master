@@ -90,6 +90,18 @@ public static class ModuleRegistry
         }
     }
 
+    /// <summary>
+    /// Clears the registry - for testing purposes only
+    /// </summary>
+    internal static void ClearForTesting()
+    {
+        lock (_lock)
+        {
+            _modules.Clear();
+            _routeToCodename.Clear();
+        }
+    }
+
     public static bool TryGetTier(string codename, out string? tier)
     {
         lock (_lock)

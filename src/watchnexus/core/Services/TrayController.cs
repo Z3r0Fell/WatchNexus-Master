@@ -16,7 +16,7 @@ namespace WatchNexus.Core.Services;
 /// </summary>
 public static class TrayController
 {
-    public const string AppVersion = "1.0.3";
+    public const string AppVersion = "1.0.4";
 
     public static int Run(int port, Action<string> log)
     {

@@ -1,0 +1,9 @@
+# WatchNexus Kubernetes Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+    app.kubernetes.io/managed-by: kubectl

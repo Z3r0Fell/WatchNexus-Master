@@ -106,7 +106,7 @@ public class BiscottiController : ControllerBase
     public IActionResult Scan([FromBody] JsonElement body)
     {
         var path = body.TryGetProperty("path", out var p) ? p.GetString() : null;
-        if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
+        if (string.IsNullOrEmpty(path) || !Directory.Exists(path) || !WatchNexus.Core.Auth.MediaPaths.IsAllowedPath(path))
             return BadRequest(new { success = false, message = "Invalid path" });
 
         var maxDepth = body.TryGetProperty("max_depth", out var md) && md.TryGetInt32(out var maxDepthVal) ? maxDepthVal : 5;
@@ -257,7 +257,7 @@ public class TreacleController : ControllerBase
     public IActionResult Scan([FromBody] JsonElement body)
     {
         var path = body.TryGetProperty("path", out var p) ? p.GetString() : null;
-        if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return BadRequest(new { success = false, message = "Invalid path" });
+        if (string.IsNullOrEmpty(path) || !Directory.Exists(path) || !WatchNexus.Core.Auth.MediaPaths.IsAllowedPath(path)) return BadRequest(new { success = false, message = "Invalid path" });
         var found = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
             .Where(f => AudioFormats.Contains(Path.GetExtension(f).ToLower()))
             .Select(f => new { file_name = Path.GetFileName(f), file_path = f, file_size = new FileInfo(f).Length, title = Path.GetFileNameWithoutExtension(f), format = Path.GetExtension(f).TrimStart('.') })

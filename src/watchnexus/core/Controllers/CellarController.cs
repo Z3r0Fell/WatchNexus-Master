@@ -22,6 +22,7 @@ public class CellarController : ControllerBase
     // If LICENSE_SERVER_API_KEY is not set, activation will fail with a 503
     // rather than falling back to a shared embedded key.
     private const string DEFAULT_LICENSE_SERVER_URL = "https://licenses.watchnexus.ca";
+    private const string DEFAULT_LICENSE_SERVER_API_KEY = "wnk_dev_placeholder";
 
     private static readonly Dictionary<string, List<DateTime>> _activationAttempts = new();
     private static readonly object _rateLimitLock = new();

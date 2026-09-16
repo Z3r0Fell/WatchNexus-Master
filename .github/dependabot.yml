@@ -1,0 +1,134 @@
+# ══════════════════════════════════════════════════════════════════════
+# WatchNexus — Dependabot Configuration
+# Automated dependency updates for .NET (NuGet) and frontend (npm/yarn)
+# ═════════════════════════════════════════════════════════════════════
+
+version: 2
+updates:
+  # ── .NET Dependencies (NuGet) ──────────────────────────────────────
+  - package-ecosystem: "nuget"
+    directory: "/src/watchnexus"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Toronto"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "backend"
+    commit-message:
+      prefix: "chore(nuget)"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "-"
+    groups:
+      microsoft-packages:
+        patterns:
+          - "Microsoft.*"
+          - "AspNetCore.*"
+          - "EntityFrameworkCore.*"
+        update-types:
+          - "minor"
+          - "patch"
+      security-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "security"
+    ignore:
+      # Major version upgrades require manual review
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.Text.Json"
+        update-types: ["version-update:semver-major"]
+
+  # ── Frontend Dependencies (npm/yarn) ───────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/src/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "America/Toronto"
+    open-pull-requests-limit: 15
+    labels:
+      - "dependencies"
+      - "npm"
+      - "frontend"
+    commit-message:
+      prefix: "chore(npm)"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "-"
+    groups:
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+        update-types:
+          - "minor"
+          - "patch"
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@testing-library/*"
+          - "react-router*"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+        dependency-type: "development"
+    ignore:
+      # Major React version requires migration
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-router-dom"
+        update-types: ["version-update:semver-major"]
+      # Playwright is dev-only but in dependencies (known issue)
+      - dependency-name: "playwright"
+        update-types: ["version-update:semver-major"]
+      # Tailwind v4 breaking changes
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ─────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Toronto"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+
+  # ── Docker Base Images ─────────────────────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:30"
+      timezone: "America/Toronto"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"

@@ -1,0 +1,52 @@
+# WatchNexus Ingress (nginx-ingress)
+# 
+# Requires:
+#   - cert-manager for TLS (Let's Encrypt)
+#   - nginx-ingress controller with WebSocket support
+#
+# Annotations explained:
+#   - proxy-body-size: Allow large uploads (ISO rips, backups)
+#   - proxy-read/send-timeout: Long operations (scan, transcode)
+#   - websocket-services: Enable WebSocket upgrade for WatchParty
+#   - configuration-snippet: Custom proxy settings for SSE/streaming
+#
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: watchnexus
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50G"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/websocket-services: "watchnexus"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # WebSocket support
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      # SSE support
+      proxy_cache off;
+      proxy_set_header Connection "";
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - watchnexus.yourdomain.com
+      secretName: watchnexus-tls
+  rules:
+    - host: watchnexus.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: watchnexus
+                port:
+                  number: 8001

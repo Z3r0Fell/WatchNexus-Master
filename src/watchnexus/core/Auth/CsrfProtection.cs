@@ -42,10 +42,13 @@ public class CsrfProtectionMiddleware
             return;
         }
 
-        // Pure programmatic client (Bearer header, no auth cookie) → not CSRF-exposed.
+        // Pure programmatic client (no auth cookie) → not CSRF-exposed.
+        // CSRF only matters for browser-session requests authenticated by the
+        // wn_token cookie (SameSite=Strict). Requests that carry no auth cookie
+        // cannot be a state-changing cookie-session forgery — whether they
+        // authenticate via a Bearer/token header or are anonymous.
         var hasAuthCookie = req.Cookies.ContainsKey("wn_token");
-        var hasBearer = req.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
-        if (!hasAuthCookie && hasBearer)
+        if (!hasAuthCookie)
         {
             await _next(ctx);
             return;

@@ -146,12 +146,6 @@ public class VpnController : ControllerBase
         return Ok(new { qr_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(config)), peer_id = id });
     }
 
-    [HttpPost("server/wg-up")]
-    public IActionResult WgUp() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "WireGuard interface activation requires server-side wg-quick integration." });
-
-    [HttpPost("server/wg-down")]
-    public IActionResult WgDown() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "WireGuard interface deactivation requires server-side wg-quick integration." });
-
     [HttpGet("server/wg-status")]
     public async Task<IActionResult> WgStatus()
     {
@@ -159,9 +153,6 @@ public class VpnController : ControllerBase
         return Ok(new { @interface = "wg0", is_running = s.IsActive, s.ListenPort, public_key = s.PublicKey,
             peers_connected = await _db.VpnPeers.CountAsync(p => p.IsActive), total_peers = await _db.VpnPeers.CountAsync() });
     }
-
-    [HttpGet("logs")]
-    public IActionResult Logs() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "VPN log streaming is not yet implemented." });
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()

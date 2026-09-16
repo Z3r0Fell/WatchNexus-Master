@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using WatchNexus.Core.Services;
 
 namespace WatchNexus.Core.Tests;
@@ -99,13 +100,15 @@ public class PatchApplyPendingTests
     public async Task Apply_rejects_manifest_without_hashes()
     {
         // ApplyAsync must refuse unverifiable patches before touching disk.
-        var svc = new PatchService(new DummyHttpFactory(), new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+        var svc = new PatchService(new DummyHttpFactory(), new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build(), DummyLogger);
         var manifest = new PatchManifest("p1", "test", "low", true,
             new List<PatchFileEntry> { new("a.js", "web", null, null) });
         var result = await svc.ApplyAsync(manifest);
         Assert.False(result.Success);
         Assert.Contains("sha256", result.Error);
     }
+
+    private static ILogger<PatchService> DummyLogger => new LoggerFactory().CreateLogger<PatchService>();
 
     private class DummyHttpFactory : IHttpClientFactory
     {
@@ -115,6 +118,8 @@ public class PatchApplyPendingTests
 
 public class ManifestSignerTests
 {
+    private static ILogger<PatchService> DummyLogger => new LoggerFactory().CreateLogger<PatchService>();
+
     [Fact]
     public void GenerateKeyPair_produces_valid_keys()
     {
@@ -218,7 +223,7 @@ public class ManifestSignerTests
     {
         var (pub, _) = ManifestSigner.GenerateKeyPair();
         var config = BuildConfig(new Dictionary<string, string?> { { "PATCH_SIGNING_PUBLIC_KEY", pub } });
-        var svc = new PatchService(new DummyHttpFactory(), config);
+        var svc = new PatchService(new DummyHttpFactory(), config, DummyLogger);
 
         var manifest = """{"patch_id":"test-01","description":"test","severity":"low","silent":true,"files":[]}""";
         var (valid, error) = svc.VerifyManifestSignature(manifest);
@@ -231,7 +236,7 @@ public class ManifestSignerTests
     {
         var (pub, priv) = ManifestSigner.GenerateKeyPair();
         var config = BuildConfig(new Dictionary<string, string?> { { "PATCH_SIGNING_PUBLIC_KEY", pub } });
-        var svc = new PatchService(new DummyHttpFactory(), config);
+        var svc = new PatchService(new DummyHttpFactory(), config, DummyLogger);
 
         var manifest = """{"patch_id":"test-01","description":"test","severity":"low","silent":true,"files":[]}""";
         var signature = ManifestSigner.Sign(manifest, priv);
@@ -255,7 +260,7 @@ public class ManifestSignerTests
     public void PatchService_VerifyManifestSignature_skips_when_not_configured()
     {
         var config = new ConfigurationBuilder().Build();
-        var svc = new PatchService(new DummyHttpFactory(), config);
+        var svc = new PatchService(new DummyHttpFactory(), config, DummyLogger);
 
         var manifest = """{"patch_id":"test-01"}""";
         var (valid, error) = svc.VerifyManifestSignature(manifest);

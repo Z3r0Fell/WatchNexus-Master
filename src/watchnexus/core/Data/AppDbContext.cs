@@ -57,6 +57,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(m => m.Id);
             e.HasIndex(m => m.LibraryId);
+            e.HasOne(m => m.Library).WithMany().HasForeignKey(m => m.LibraryId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<AuditLog>().HasKey(a => a.Id);
         b.Entity<IpRule>().HasKey(r => r.Id);
@@ -107,6 +108,7 @@ public class MediaItem
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string LibraryId { get; set; } = "";
+    public Library? Library { get; set; }
     public string Title { get; set; } = "";
     public string? OriginalTitle { get; set; }
     public string? Overview { get; set; }

@@ -1,0 +1,18 @@
+# WatchNexus Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: watchnexus
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP
+      name: http
+  selector:
+    app: watchnexus

@@ -1,0 +1,254 @@
+# ══════════════════════════════════════════════════════════════════════
+# WatchNexus — Staging Deployment
+# Deploys to staging environment on push to develop branch
+# ═════════════════════════════════════════════════════════════════════
+
+name: Deploy Staging
+
+on:
+  push:
+    branches: [develop, Dev]
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Tier to deploy'
+        required: false
+        default: 'ultra'
+        type: choice
+        options: [standard, pro, ultra]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/watchnexus
+  STAGING_HOST: ${{ secrets.STAGING_HOST }}
+  STAGING_USER: ${{ secrets.STAGING_USER }}
+  STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+
+jobs:
+  # ── Build Staging Images ────────────────────────────────────────────
+  build:
+    name: Build Staging ${{ matrix.tier }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tier: [standard, pro, ultra]
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=staging-${{ matrix.tier }}
+            type=sha,prefix=staging-
+          labels: |
+            com.watchnexus.tier=${{ matrix.tier }}
+            com.watchnexus.environment=staging
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            TIER=${{ matrix.tier }}
+          cache-from: type=gha,scope=staging-${{ matrix.tier }}
+          cache-to: type=gha,mode=max,scope=staging-${{ matrix.tier }}
+          platforms: linux/amd64
+
+  # ── Deploy to Staging Server ────────────────────────────────────────
+  deploy:
+    name: Deploy to Staging
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/Dev'
+    environment: staging
+    steps:
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ env.STAGING_SSH_KEY }}
+          known_hosts: ${{ secrets.STAGING_KNOWN_HOSTS }}
+          name: staging_key
+          if_key_exists: replace
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ env.STAGING_USER }}@${{ env.STAGING_HOST }} << 'EOF'
+            set -e
+            
+            # Pull latest images
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-standard
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-pro
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-ultra
+            
+            # Update docker-compose with staging images
+            cd /opt/watchnexus-staging
+            
+            # Create staging docker-compose override
+            cat > docker-compose.staging.yml << 'COMPOSE'
+    version: '3.8'
+    services:
+      watchnexus-staging-standard:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-standard
+        container_name: watchnexus-staging-standard
+        ports:
+          - "8001:8001"
+        volumes:
+          - watchnexus-staging-data:/app/data
+          - /mnt/media:/data/media
+        environment:
+          - WATCHNEXUS_TIER=standard
+          - WATCHNEXUS_DATA_DIR=/app/data
+          - WATCHNEXUS_PORT=8001
+          - ASPNETCORE_ENVIRONMENT=Staging
+          - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+        restart: unless-stopped
+        healthcheck:
+          test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
+          interval: 30s
+          timeout: 5s
+          retries: 3
+      
+      watchnexus-staging-pro:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-pro
+        container_name: watchnexus-staging-pro
+        ports:
+          - "8002:8001"
+        volumes:
+          - watchnexus-staging-pro-data:/app/data
+          - /mnt/media:/data/media
+          - /mnt/rips:/data/rips
+        environment:
+          - WATCHNEXUS_TIER=pro
+          - WATCHNEXUS_DATA_DIR=/app/data
+          - WATCHNEXUS_PORT=8001
+          - ASPNETCORE_ENVIRONMENT=Staging
+          - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+        restart: unless-stopped
+        healthcheck:
+          test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
+          interval: 30s
+          timeout: 5s
+          retries: 3
+      
+      watchnexus-staging-ultra:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-ultra
+        container_name: watchnexus-staging-ultra
+        ports:
+          - "8003:8001"
+        volumes:
+          - watchnexus-staging-ultra-data:/app/data
+          - /mnt/media:/data/media
+          - /mnt/rips:/data/rips
+          - /mnt/transcoded:/data/transcoded
+          - /mnt/offline:/data/offline
+        environment:
+          - WATCHNEXUS_TIER=ultra
+          - WATCHNEXUS_DATA_DIR=/app/data
+          - WATCHNEXUS_PORT=8001
+          - ASPNETCORE_ENVIRONMENT=Staging
+          - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+        restart: unless-stopped
+        healthcheck:
+          test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
+          interval: 30s
+          timeout: 5s
+          retries: 3
+      
+    volumes:
+      watchnexus-staging-data:
+      watchnexus-staging-pro-data:
+      watchnexus-staging-ultra-data:
+COMPOSE
+            
+            # Deploy
+            docker compose -f docker-compose.staging.yml up -d
+            
+            # Wait for health checks
+            sleep 10
+            for port in 8001 8002 8003; do
+              for i in {1..10}; do
+                if curl -sf http://localhost:$port/api/health >/dev/null; then
+                  echo "✅ Tier on port $port healthy"
+                  break
+                fi
+                sleep 3
+              done
+            done
+            
+            # Cleanup old images
+            docker image prune -f
+          EOF
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          for port in 8001 8002 8003; do
+            curl -sf http://${{ env.STAGING_HOST }}:$port/api/health && echo "✅ Port $port OK" || echo "❌ Port $port FAILED"
+          done
+
+  # ── Run Smoke Tests ─────────────────────────────────────────────────
+  smoke-test:
+    name: Smoke Tests
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: API health checks
+        run: |
+          for tier in standard pro ultra; do
+            port=$((8000 + ${tier == standard && echo 1 || ${tier == pro && echo 2 || echo 3}}))
+            echo "Testing $tier on port $port..."
+            curl -sf http://${{ env.STAGING_HOST }}:$port/api/health || exit 1
+            curl -sf http://${{ env.STAGING_HOST }}:$port/api/info || exit 1
+          done
+
+      - name: License activation test
+        run: |
+          # Test with a known test license
+          curl -sf -X POST http://${{ env.STAGING_HOST }}:8001/api/cellar/activate-first-launch \
+            -H "Content-Type: application/json" \
+            -d '{"license_key":"WNX-STD-TEST-TEST-TEST","hardware_id":"staging-test","device_name":"staging"}' || true
+
+      - name: Frontend load test
+        run: |
+          for port in 8001 8002 8003; do
+            curl -sf http://${{ env.STAGING_HOST }}:$port/ | grep -q "WatchNexus" && echo "✅ Frontend on $port loads" || echo "❌ Frontend on $port failed"
+          done
+
+  # ── Notify ──────────────────────────────────────────────────────────
+  notify:
+    name: Notify Staging Deployment
+    needs: [deploy, smoke-test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Status
+        run: |
+          STATUS="${{ needs.smoke-test.result }}"
+          if [ "$STATUS" = "success" ]; then
+            echo "✅ Staging deployment successful"
+            # curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text":"✅ Staging deployed"}'
+          else
+            echo "❌ Staging deployment failed"
+            # curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text":"❌ Staging deployment failed"}'
+            exit 1
+          fi

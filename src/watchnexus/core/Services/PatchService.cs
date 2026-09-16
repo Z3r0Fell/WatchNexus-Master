@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace WatchNexus.Core.Services;
 
@@ -35,14 +36,16 @@ public class PatchService
 
     private readonly IHttpClientFactory _httpFactory;
     private readonly IConfiguration _config;
+    private readonly ILogger<PatchService> _logger;
 
     // Set from Program.cs once the SPA root is resolved.
     public static string? WebRoot { get; set; }
 
-    public PatchService(IHttpClientFactory httpFactory, IConfiguration config)
+    public PatchService(IHttpClientFactory httpFactory, IConfiguration config, ILogger<PatchService> logger)
     {
         _httpFactory = httpFactory;
         _config = config;
+        _logger = logger;
     }
 
     private string RepoUrl => (_config["PATCH_REPO_URL"] ?? "").TrimEnd('/');
@@ -257,7 +260,7 @@ public class PatchService
             {
                 if (!IsAllowedPatchUrl(f.Url))
                 {
-                    Log($"[PatchService] Refused download from untrusted URL: {f.Url}");
+                    _logger.LogWarning("[PatchService] Refused download from untrusted URL: {Url}", f.Url);
                     return null;
                 }
                 return await http.GetByteArrayAsync(f.Url);

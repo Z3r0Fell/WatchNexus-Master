@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace WatchNexus.Core.Services;
 
@@ -17,7 +18,7 @@ public class WatchPartyConnectionManager
     private readonly ConcurrentDictionary<string, List<WebSocket>> _connections = new();
     private readonly ConcurrentDictionary<WebSocket, RateLimiter> _rateLimiters = new();
 
-    public async Task HandleConnection(HTTPContext context, string partyCode)
+    public async Task HandleConnection(HttpContext context, string partyCode)
     {
         if (!context.WebSockets.IsWebSocketRequest)
         {

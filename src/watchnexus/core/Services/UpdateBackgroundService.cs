@@ -15,7 +15,7 @@ public class UpdateBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<UpdateBackgroundService> _logger;
-    public const string CurrentVersion = "1.0.3";
+    public const string CurrentVersion = "1.0.4";
 
     public UpdateBackgroundService(IServiceScopeFactory scopeFactory, ILogger<UpdateBackgroundService> logger)
     {

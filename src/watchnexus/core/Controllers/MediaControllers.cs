@@ -324,13 +324,7 @@ public class MediaOpsController : ControllerBase
         return _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ScanScheduleKey + id);
     }
 
-    [HttpPost("redownload")]
-    public IActionResult Redownload([FromQuery] string? media_id, [FromQuery] string? file_path) =>
-        StatusCode(StatusCodes.Status501NotImplemented, new
-        {
-            detail = "Re-download is handled by the Compote indexer module. Open the media in the UI and click 'Search indexers'.",
-            redirect = "/api/compote/search"
-        });
+    
 
     // ── Media-root allowlist ─────────────────────────────────────────
     // Confines the file-oracle / ffmpeg-overwrite endpoints to the server's
@@ -397,21 +391,6 @@ public class QualityProfilesController : ControllerBase
         new { id = "hd", name = "HD (720p)", min_quality = 480, max_quality = 720, preferred = "720p" },
         new { id = "fhd", name = "Full HD (1080p)", min_quality = 720, max_quality = 1080, preferred = "1080p" },
         new { id = "uhd", name = "4K UHD", min_quality = 1080, max_quality = 2160, preferred = "2160p" },
-    });
-    [HttpPost]
-    public IActionResult Create() => StatusCode(StatusCodes.Status501NotImplemented, new
-    {
-        detail = "Custom quality profiles are not supported in v1.0.0. Choose from the built-in list (any, sd, hd, fhd, uhd)."
-    });
-    [HttpPut("{id}")]
-    public IActionResult Update(string id) => StatusCode(StatusCodes.Status501NotImplemented, new
-    {
-        detail = "Built-in quality profiles are read-only. Custom profiles are not supported in v1.0.0."
-    });
-    [HttpDelete("{id}")]
-    public IActionResult Delete(string id) => StatusCode(StatusCodes.Status501NotImplemented, new
-    {
-        detail = "Built-in quality profiles are read-only."
     });
 }
 

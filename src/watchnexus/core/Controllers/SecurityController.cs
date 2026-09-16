@@ -110,12 +110,6 @@ public class SecurityController : ControllerBase
         return Ok(new { status = "revoked" });
     }
 
-    [HttpGet("sessions")]
-    public IActionResult Sessions() => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "Session management is not yet implemented." });
-
-    [HttpPost("sessions/{id}/revoke")]
-    public IActionResult RevokeSession(string id) => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "Session revocation is not yet implemented." });
-
     private async Task LogAudit(string action, string details)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";

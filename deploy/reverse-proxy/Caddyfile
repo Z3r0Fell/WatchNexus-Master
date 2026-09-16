@@ -1,0 +1,95 @@
+# WatchNexus Caddyfile
+# 
+# Usage: caddy run --config Caddyfile
+# Auto-HTTPS via Let's Encrypt (requires public domain)
+# 
+# For local development without HTTPS:
+#   watchnexus.localhost {
+#       reverse_proxy localhost:8001
+#   }
+#
+
+{
+    # Global options
+    admin off
+    # email admin@yourdomain.com  # Uncomment for Let's Encrypt notifications
+}
+
+watchnexus.yourdomain.com {
+    # Automatic HTTPS via Let's Encrypt
+    # For staging: tls internal @staging
+    
+    encode zstd gzip
+    
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # HSTS (1 year) - only after confirming HTTPS works
+        # Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+    
+    # API routes
+    @api path /api/*
+    reverse_proxy @api localhost:8001 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+    }
+    
+    # WatchParty WebSocket
+    @ws path /api/watch-party/*/ws
+    reverse_proxy @ws localhost:8001 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+        header_up Upgrade {http.request.header.Upgrade}
+        header_up Connection "upgrade"
+    }
+    
+    # Media streaming (large files, range requests)
+    @media path /api/media/stream/*
+    reverse_proxy @media localhost:8001 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+        # Disable buffering for streaming
+        flush_interval -1
+    }
+    
+    # Static frontend
+    @static path /build/* /static/* /favicon.ico /manifest.json /robots.txt
+    reverse_proxy @static localhost:8001 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+    }
+    
+    # SPA fallback - all other routes serve index.html
+    @spa not @api not @ws not @media not @static
+    reverse_proxy @spa localhost:8001 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+    }
+    
+    # Large uploads (ISO rips, backups)
+    client_max_body_size 50G
+    
+    # Timeouts for long operations
+    reverse_proxy {
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+}
+
+# Optional: Health check endpoint (no auth, no rate limit)
+watchnexus-health.yourdomain.com {
+    respond /api/health "healthy" 200 {
+        close
+    }
+}

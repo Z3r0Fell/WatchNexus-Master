@@ -1,0 +1,37 @@
+# WatchNexus Configuration (Non-Sensitive)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: watchnexus-config
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+data:
+  # Tier: standard, pro, ultra
+  WATCHNEXUS_TIER: "ultra"
+  
+  # HTTP port
+  WATCHNEXUS_PORT: "8001"
+  
+  # Environment
+  ASPNETCORE_ENVIRONMENT: "Production"
+  
+  # Timezone
+  TZ: "America/Toronto"
+  
+  # License server
+  LICENSE_SERVER_URL: "https://licenses.watchnexus.ca"
+  
+  # Media roots (comma-separated)
+  MEDIA_ROOTS: "/data/media,/data/rips,/data/transcoded,/data/offline"
+  
+  # Reverse proxy trusted IPs (CIDR, comma-separated)
+  # Set this to your ingress controller's CIDR for X-Forwarded-* headers
+  TRUSTED_PROXY_IPS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  
+  # Force HTTPS (behind TLS-terminating proxy)
+  FORCE_HTTPS: "true"
+  
+  # CORS allowed origins (comma-separated)
+  # ALLOWED_ORIGINS: "https://watchnexus.yourdomain.com"

@@ -1,0 +1,131 @@
+# WatchNexus Deployment
+# 
+# Image: watchnexus/watchnexus:1.0.4-ultra (or -standard, -pro)
+# GPU: Requires nvidia.com/gpu resource (Ultra tier only)
+# Replicas: 1 (SQLite doesn't support multi-writer; use external PostgreSQL for HA)
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watchnexus
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # SQLite requires single writer
+  selector:
+    matchLabels:
+      app: watchnexus
+  template:
+    metadata:
+      labels:
+        app: watchnexus
+        app.kubernetes.io/name: watchnexus
+        app.kubernetes.io/version: "1.0.4"
+      annotations:
+        # Reload on config/secret change
+        checksum/config: "{{ include (print $.Template.BasePath "/configmap.yaml") | sha256sum }}"
+        checksum/secret: "{{ include (print $.Template.BasePath "/secret.yaml") | sha256sum }}"
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: watchnexus
+          image: watchnexus/watchnexus:1.0.4-ultra
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: watchnexus-config
+            - secretRef:
+                name: watchnexus-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: media
+              mountPath: /data/media
+            - name: rips
+              mountPath: /data/rips
+            - name: transcoded
+              mountPath: /data/transcoded
+            - name: offline
+              mountPath: /data/offline
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "4Gi"
+              nvidia.com/gpu: 1  # Ultra tier hardware transcoding
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: watchnexus-data
+        - name: media
+          persistentVolumeClaim:
+            claimName: watchnexus-media
+        - name: rips
+          persistentVolumeClaim:
+            claimName: watchnexus-rips
+        - name: transcoded
+          persistentVolumeClaim:
+            claimName: watchnexus-transcoded
+        - name: offline
+          persistentVolumeClaim:
+            claimName: watchnexus-offline
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
+      # Node affinity for GPU nodes (Ultra tier)
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: nvidia.com/gpu.present
+                    operator: Exists
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule

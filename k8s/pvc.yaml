@@ -1,0 +1,84 @@
+# WatchNexus Persistent Volume Claims
+# 
+# StorageClass: Use your cluster's default or specify one (e.g., "fast-ssd", "nfs-client")
+# AccessMode: ReadWriteOnce for single-node, ReadWriteMany for multi-node (requires RWX storage)
+#
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: watchnexus-data
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  # storageClassName: fast-ssd  # Uncomment and set if needed
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: watchnexus-media
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
+  # storageClassName: bulk-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: watchnexus-rips
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  # storageClassName: bulk-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: watchnexus-transcoded
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  # storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: watchnexus-offline
+  namespace: watchnexus
+  labels:
+    app.kubernetes.io/name: watchnexus
+    app.kubernetes.io/version: "1.0.4"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  # storageClassName: bulk-storage

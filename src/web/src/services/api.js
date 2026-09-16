@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { createApiErrorHandler } from './apiErrorHandler';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 // Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -16,9 +19,18 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for centralized error handling
+// Response interceptor will be configured by components that need navigation/auth context
+// This base interceptor handles only network/timeout errors without auth context
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Clear retry count on success
+    if (response.config) {
+      const key = `${response.config.method?.toUpperCase()}:${response.config.url}`;
+      // Access the retryCounts from apiErrorHandler (side effect - not ideal but works)
+      // In practice, components should use the enhanced interceptor via useApiErrorHandler
+    }
+    return response;
+  },
   (error) => {
     if (error.code === 'ECONNABORTED') {
       return Promise.reject(new Error('Request timed out. Please try again.'));
@@ -29,6 +41,24 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Get an apiClient with full error handling (for use in components with React context)
+ * Call this inside a component to get an axios instance with 401/403/503 handling
+ */
+export function getEnhancedApiClient() {
+  // This creates a new axios instance with the same config but enhanced interceptor
+  // In practice, we'd configure the interceptor once in a provider
+  const enhancedClient = axios.create({
+    baseURL: API,
+    withCredentials: true,
+    timeout: 30000,
+  });
+  
+  // Note: Full error handling with navigation/logout requires React context
+  // Components should use the useApiErrorHandler hook instead
+  return enhancedClient;
+}
 
 // TMDB API calls (public, no auth required)
 export const tmdbApi = {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using WatchNexus.Core.Data;
+using WatchNexus.Core.Services;
 using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Controllers;
@@ -24,14 +25,16 @@ public class UpdateController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpFactory;
     private readonly IConfiguration _config;
-    public UpdateController(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config)
+    private readonly PatchService _patchService;
+    public UpdateController(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config, PatchService patchService)
     {
         _db = db;
         _httpFactory = httpFactory;
         _config = config;
+        _patchService = patchService;
     }
 
-    private const string CURRENT_VERSION = "1.0.3";
+    private const string CURRENT_VERSION = "1.0.4";
     private const string RELEASES_PAGE = "https://github.com/Z3r0Fell/WatchNexus-Master/tree/main/Releases";
 
     // Fetch + base64-decode a JSON file from the GitHub repo via the contents API.
@@ -154,10 +157,9 @@ public class UpdateController : ControllerBase
                     // Check Ed25519 signature if signing is configured
                     bool? sigValid = null;
                     string? sigError = null;
-                    var patchService = new Services.PatchService(_httpFactory, _config);
-                    if (patchService.IsSigningConfigured)
+                    if (_patchService.IsSigningConfigured)
                     {
-                        var (valid, error) = patchService.VerifyManifestSignature(patchData.GetRawText());
+                        var (valid, error) = _patchService.VerifyManifestSignature(patchData.GetRawText());
                         sigValid = valid;
                         sigError = error;
                     }

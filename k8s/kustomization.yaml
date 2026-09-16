@@ -1,0 +1,38 @@
+# WatchNexus Kustomize Overlay
+# Usage: kubectl apply -k k8s/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: watchnexus
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/name: watchnexus
+  app.kubernetes.io/version: "1.0.4"
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+  - name: watchnexus/watchnexus
+    newTag: 1.0.4-ultra
+
+configMapGenerator:
+  - name: watchnexus-config
+    behavior: merge
+    literals:
+      - WATCHNEXUS_TIER=ultra
+
+secretGenerator:
+  - name: watchnexus-secrets
+    behavior: merge
+    literals:
+      - JWT_SECRET=REPLACE_ME
+      - LICENSE_SERVER_API_KEY=REPLACE_ME
+      - TMDB_API_KEY=REPLACE_ME

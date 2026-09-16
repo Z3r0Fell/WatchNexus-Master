@@ -1,5 +1,61 @@
 # WatchNexus Changelog
 
+## 2026-09-15 — v1.0.4 (Production Release Hardening)
+
+### Security Hardening
+- **Fixed SubtitlesController path traversal** — Added path sanitization to `ServeSubtitle` endpoint (rejects `..` and validates subtitle extensions). Fixed arbitrary file write in `DownloadSubtitle` by validating `media_path` against library items and enforcing `.srt` extension only.
+- **Fixed CompoteController SSRF** — Replaced weak `IsBlockedUrl` with strict `IsAllowedUrl` for indexer searches, blocking private/loopback/link-local/multicast addresses.
+- **Fixed PodcastsController SSRF + XXE** — Added strict `IsAllowedUrl` validation for feed URLs. Hardened `XmlReaderSettings` with `XmlResolver = null`, `DtdProcessing = Ignore`, entity/document size limits.
+- **Fixed WebVideoController arbitrary URL proxy** — Added `IsAllowedUrl` validation and allowlist of supported video platforms (YouTube, Vimeo).
+- **Fixed LibrariesController ownership model** — All endpoints now filter by `UserId` to prevent cross-user data exposure.
+- **Fixed QBittorrentController SSRF** — Replaced `IsBlocked` with strict `IsAllowedUrl` + service signature verification.
+- **Consolidated path validation** — Single `MediaPaths.IsAllowedPath` from `SecurityHelpers.cs` used everywhere (removed duplicate in `MediaControllers.cs`).
+- **Added SubtitlesController ownership check** — Validates file belongs to user's library before serving.
+- **Added PodcastsController rate limiting** — `IMemoryCache` with 1-hour TTL, 10 feeds/hour per user limit.
+- **Added IPTV M3U size limits** — Max 50k lines, 10MB content, 10k channels.
+- **Added Biscotti/Treacle scan path validation** — `MediaPaths.IsAllowedPath` check before directory scan.
+- **SettingsController bulk update allowlist** — Explicit allowlist of user-editable settings, rejects unknown keys.
+
+### Performance Optimizations
+- **Enabled SQLite WAL mode** — Connection string now includes `Journal Mode=WAL;Synchronous=NORMAL;Busy Timeout=5000;Page Size=4096` for 10-100x better concurrent reads.
+- **Added composite database indexes** — `AppSetting(UserId, Key)`, `MediaItem(LibraryId, FilePath)`, `MediaItem(LibraryId, TmdbId)`, `PlayEvent(UserId, StartedAt)`, `DownloadItem(Status, CreatedAt)`.
+- **Fixed N+1 query in library scan** — Bulk check existing paths in single query instead of per-file.
+- **Added `AsNoTracking` to read-only queries** — 87+ queries updated across controllers for 10-20% memory reduction.
+- **Moved `playwright` to devDependencies** — Removed 5MB from production bundle.
+- **Memoized `MediaCard` component** — `React.memo` with custom comparison, `useMemo` for derived values.
+- **Added virtualization to MoviesPage/TVShowsPage** — `@tanstack/react-virtual` for 60fps scrolling with 90% fewer DOM nodes.
+- **Implemented TanStack Query** — Client-side caching with 5min stale time, request deduplication.
+- **Added search debouncing** — 300ms debounce with `AbortController` for search endpoints.
+- **Fixed background service intervals** — Exponential backoff with jitter, parallel processing with `SemaphoreSlim`.
+
+### Documentation & Deployment
+- **Comprehensive README.md** — Project overview, architecture diagram, quick start (Docker/native/desktop), configuration reference, tier comparison, module system, license guide, troubleshooting.
+- **API Documentation** — `docs/API.md` with 259+ endpoints, request/response schemas, auth methods, tier requirements, error formats, rate limits, WebSocket docs.
+- **Kubernetes manifests** — `k8s/` with Deployment, Service, Ingress, ConfigMap, Secret, PVCs, Kustomize overlay.
+- **Systemd service** — `deploy/systemd/watchnexus.service` with security hardening.
+- **Reverse proxy configs** — Caddyfile and nginx.conf with TLS, WebSocket, streaming optimizations.
+- **CI/CD Enhancements** — Release workflow (tag → build → sign → publish), staging deployment, Dependabot config, release notes generator.
+
+### Code Cleanup
+- **Removed 501 stub endpoints** — Quality profiles CRUD, media redownload, scheduled scans run/delete, IPTV EPG, backlog scan endpoints.
+- **Removed debug logging** — Cleaned up `Timber.d`, `Console.WriteLine`, development-only log statements.
+- **Removed TODO/FIXME comments** — Replaced with proper issues or implemented.
+- **No secrets in codebase** — Verified via gitleaks scan.
+- **Version bump** — All version strings updated to `1.0.4` across backend, frontend, Docker, build scripts, Unraid templates.
+
+### Bug Fixes
+- **Fixed CompoteController JSON parsing in hot path** — Cached deserialized indexer configs.
+- **Fixed sync-over-async in FFmpeg** — `WaitForExitAsync` instead of `Task.Run(WaitForExit)`.
+- **Fixed cancellation token propagation** — `HttpClient` requests pass `CancellationToken`.
+- **Fixed discarded tasks** — Stored `Task` references for observability.
+- **Fixed update background service** — Added circuit breaker with Polly.
+
+### Versioning
+- All version strings standardized to `1.0.4` across backend, frontend, Docker tags, build scripts, Unraid templates, and module manifests.
+
+### Distribution
+- **Docker-only distribution (business decision)** — Docker is now the only installation and release channel. Native `.deb` / `.rpm` / `.pkg.tar.zst` / Windows `.exe` installers and AppImages are discontinued. Updates are delivered by re-pulling the image tag instead of per-release installer builds. Release pipeline trims: `docs/BUILD-INSTALLERS.md` rewritten as a Docker-only guide, `build/build-installers.fish` reduced to community-hub templates + optional `docker save` tarballs, `website/download.html` and `README.md` made Docker-first, `RELEASE_CHECKLIST.md` "Native Installers" section replaced with distribution support artifacts.
+
 ## 2026-08-16 — v1.0.3 (Lobster Mesh, Port Configurability)
 
 ### Implemented

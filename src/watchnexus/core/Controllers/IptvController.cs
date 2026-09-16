@@ -177,7 +177,13 @@ public class IptvController : ControllerBase
     }
 
     [HttpGet("epg/{channelId}")]
-    public IActionResult Epg(string channelId) => Ok(Array.Empty<object>());
+    public async Task<IActionResult> Epg(string channelId)
+    {
+        var ch = await _db.IptvChannels.FindAsync(channelId);
+        if (ch == null) return NotFound();
+        // EPG data would come from XMLTV parsing; for now return empty
+        return Ok(Array.Empty<object>());
+    }
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()

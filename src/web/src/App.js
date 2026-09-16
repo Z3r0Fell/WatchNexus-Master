@@ -7,6 +7,8 @@ import { LicenseProvider } from "./context/LicenseContext";
 import { FirstLaunchGate } from "./components/FirstLaunchGate";
 import { TierGate } from "./components/TierGate";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { RouteErrorBoundary, withErrorBoundary } from "./components/RouteErrorBoundary";
+import { ApiProvider } from "./services/enhancedApi";
 import { lazy, Suspense } from "react";
 import "./App.css";
 
@@ -15,73 +17,74 @@ import { Dashboard } from "./pages/Dashboard";
 import { AuthPage } from "./pages/AuthPage";
 
 // Lazy: everything else is code-split into its own chunk.
-const MoviesPage = lazy(() => import("./pages/MoviesPage").then(m => ({ default: m.MoviesPage })));
-const TVShowsPage = lazy(() => import("./pages/TVShowsPage").then(m => ({ default: m.TVShowsPage })));
-const MediaDetails = lazy(() => import("./pages/MediaDetails").then(m => ({ default: m.MediaDetails })));
-const SearchPage = lazy(() => import("./pages/SearchPage").then(m => ({ default: m.SearchPage })));
-const IndexerSearchPage = lazy(() => import("./pages/IndexerSearchPage").then(m => ({ default: m.IndexerSearchPage })));
-const DownloadsPage = lazy(() => import("./pages/DownloadsPage").then(m => ({ default: m.DownloadsPage })));
-const SettingsPage = lazy(() => import("./pages/SettingsPage").then(m => ({ default: m.SettingsPage })));
-const StreamingPage = lazy(() => import("./pages/StreamingPage").then(m => ({ default: m.StreamingPage })));
-const MusicPage = lazy(() => import("./pages/MusicPage").then(m => ({ default: m.MusicPage })));
-const AudiobooksPage = lazy(() => import("./pages/AudiobooksPage").then(m => ({ default: m.AudiobooksPage })));
-const LiveTVPage = lazy(() => import("./pages/LiveTVPage").then(m => ({ default: m.LiveTVPage })));
-const LibraryPage = lazy(() => import("./pages/LibraryPage").then(m => ({ default: m.LibraryPage })));
-const PluginMarketplacePage = lazy(() => import("./pages/PluginMarketplacePage").then(m => ({ default: m.PluginMarketplacePage })));
-const ThemeCommunityPage = lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage })));
-const WatchHistoryPage = lazy(() => import("./pages/WatchHistoryPage").then(m => ({ default: m.WatchHistoryPage })));
-const WatchlistPage = lazy(() => import("./pages/WatchlistPage").then(m => ({ default: m.WatchlistPage })));
-const DiscoverPage = lazy(() => import("./pages/DiscoverPage").then(m => ({ default: m.DiscoverPage })));
-const PlaylistsPage = lazy(() => import("./pages/PlaylistsPage"));
-const AnimePage = lazy(() => import("./pages/AnimePage"));
-const VideoPlayer = lazy(() => import("./components/VideoPlayer"));
+// Each route is wrapped with RouteErrorBoundary for crash isolation.
+const MoviesPage = withErrorBoundary(lazy(() => import("./pages/MoviesPage").then(m => ({ default: m.MoviesPage }))), 'Movies');
+const TVShowsPage = withErrorBoundary(lazy(() => import("./pages/TVShowsPage").then(m => ({ default: m.TVShowsPage }))), 'TV Shows');
+const MediaDetails = withErrorBoundary(lazy(() => import("./pages/MediaDetails").then(m => ({ default: m.MediaDetails }))), 'Media Details');
+const SearchPage = withErrorBoundary(lazy(() => import("./pages/SearchPage").then(m => ({ default: m.SearchPage }))), 'Search');
+const IndexerSearchPage = withErrorBoundary(lazy(() => import("./pages/IndexerSearchPage").then(m => ({ default: m.IndexerSearchPage }))), 'Indexers');
+const DownloadsPage = withErrorBoundary(lazy(() => import("./pages/DownloadsPage").then(m => ({ default: m.DownloadsPage }))), 'Downloads');
+const SettingsPage = withErrorBoundary(lazy(() => import("./pages/SettingsPage").then(m => ({ default: m.SettingsPage }))), 'Settings');
+const StreamingPage = withErrorBoundary(lazy(() => import("./pages/StreamingPage").then(m => ({ default: m.StreamingPage }))), 'Streaming');
+const MusicPage = withErrorBoundary(lazy(() => import("./pages/MusicPage").then(m => ({ default: m.MusicPage }))), 'Music');
+const AudiobooksPage = withErrorBoundary(lazy(() => import("./pages/AudiobooksPage").then(m => ({ default: m.AudiobooksPage }))), 'Audiobooks');
+const LiveTVPage = withErrorBoundary(lazy(() => import("./pages/LiveTVPage").then(m => ({ default: m.LiveTVPage }))), 'Live TV');
+const LibraryPage = withErrorBoundary(lazy(() => import("./pages/LibraryPage").then(m => ({ default: m.LibraryPage }))), 'Library');
+const PluginMarketplacePage = withErrorBoundary(lazy(() => import("./pages/PluginMarketplacePage").then(m => ({ default: m.PluginMarketplacePage }))), 'Plugin Marketplace');
+const ThemeCommunityPage = withErrorBoundary(lazy(() => import("./pages/ThemeCommunityPage").then(m => ({ default: m.ThemeCommunityPage }))), 'Themes');
+const WatchHistoryPage = withErrorBoundary(lazy(() => import("./pages/WatchHistoryPage").then(m => ({ default: m.WatchHistoryPage }))), 'Watch History');
+const WatchlistPage = withErrorBoundary(lazy(() => import("./pages/WatchlistPage").then(m => ({ default: m.WatchlistPage }))), 'Watchlist');
+const DiscoverPage = withErrorBoundary(lazy(() => import("./pages/DiscoverPage").then(m => ({ default: m.DiscoverPage }))), 'Discover');
+const PlaylistsPage = withErrorBoundary(lazy(() => import("./pages/PlaylistsPage")), 'Playlists');
+const AnimePage = withErrorBoundary(lazy(() => import("./pages/AnimePage")), 'Anime');
+const VideoPlayer = withErrorBoundary(lazy(() => import("./components/VideoPlayer")), 'Video Player');
 
 // Admin / Security / VPN / System
-const SecurityPage = lazy(() => import("./pages/SecurityPage"));
-const VpnPage = lazy(() => import("./pages/VpnPage"));
-const SystemPage = lazy(() => import("./pages/SystemPage"));
-const LibraryManagerPage = lazy(() => import("./pages/LibraryManagerPage"));
-const LogViewerPage = lazy(() => import("./pages/LogViewerPage"));
-const MediaBrowserPage = lazy(() => import("./pages/MediaBrowserPage"));
-const HelpPage = lazy(() => import("./pages/HelpPage"));
+const SecurityPage = withErrorBoundary(lazy(() => import("./pages/SecurityPage")), 'Security');
+const VpnPage = withErrorBoundary(lazy(() => import("./pages/VpnPage")), 'VPN');
+const SystemPage = withErrorBoundary(lazy(() => import("./pages/SystemPage")), 'System');
+const LibraryManagerPage = withErrorBoundary(lazy(() => import("./pages/LibraryManagerPage")), 'Library Manager');
+const LogViewerPage = withErrorBoundary(lazy(() => import("./pages/LogViewerPage")), 'Log Viewer');
+const MediaBrowserPage = withErrorBoundary(lazy(() => import("./pages/MediaBrowserPage")), 'Media Browser');
+const HelpPage = withErrorBoundary(lazy(() => import("./pages/HelpPage")), 'Help');
 
 // Gadget Pages
-const WeatherPage = lazy(() => import("./pages/gadgets/WeatherPage"));
-const PodcastsPage = lazy(() => import("./pages/gadgets/PodcastsPage"));
-const RadioPage = lazy(() => import("./pages/gadgets/RadioPage"));
-const PhotosPage = lazy(() => import("./pages/gadgets/PhotosPage"));
-const WebVideoPage = lazy(() => import("./pages/gadgets/WebVideoPage"));
-const AnalyticsPage = lazy(() => import("./pages/gadgets/AnalyticsPage"));
-const NotificationsPage = lazy(() => import("./pages/gadgets/NotificationsPage"));
-const RequestsPage = lazy(() => import("./pages/gadgets/RequestsPage"));
-const ParentalControlsPage = lazy(() => import("./pages/gadgets/ParentalControlsPage"));
-const ProcessingPage = lazy(() => import("./pages/gadgets/ProcessingPage"));
-const UsenetPage = lazy(() => import("./pages/gadgets/UsenetPage"));
+const WeatherPage = withErrorBoundary(lazy(() => import("./pages/gadgets/WeatherPage")), 'Weather');
+const PodcastsPage = withErrorBoundary(lazy(() => import("./pages/gadgets/PodcastsPage")), 'Podcasts');
+const RadioPage = withErrorBoundary(lazy(() => import("./pages/gadgets/RadioPage")), 'Radio');
+const PhotosPage = withErrorBoundary(lazy(() => import("./pages/gadgets/PhotosPage")), 'Photos');
+const WebVideoPage = withErrorBoundary(lazy(() => import("./pages/gadgets/WebVideoPage")), 'Web Video');
+const AnalyticsPage = withErrorBoundary(lazy(() => import("./pages/gadgets/AnalyticsPage")), 'Analytics');
+const NotificationsPage = withErrorBoundary(lazy(() => import("./pages/gadgets/NotificationsPage")), 'Notifications');
+const RequestsPage = withErrorBoundary(lazy(() => import("./pages/gadgets/RequestsPage")), 'Requests');
+const ParentalControlsPage = withErrorBoundary(lazy(() => import("./pages/gadgets/ParentalControlsPage")), 'Parental Controls');
+const ProcessingPage = withErrorBoundary(lazy(() => import("./pages/gadgets/ProcessingPage")), 'Processing');
+const UsenetPage = withErrorBoundary(lazy(() => import("./pages/gadgets/UsenetPage")), 'Usenet');
 
 // Module Pages
-const GlazePage = lazy(() => import("./pages/GlazePage"));
-const SaffronPage = lazy(() => import("./pages/SaffronPage"));
-const FonduePage = lazy(() => import("./pages/FonduePage"));
-const SourdoughPage = lazy(() => import("./pages/SourdoughPage"));
-const ChurroPage = lazy(() => import("./pages/ChurroPage"));
-const RouxPage = lazy(() => import("./pages/RouxPage"));
-const SproutPage = lazy(() => import("./pages/SproutPage"));
-const StrudelPage = lazy(() => import("./pages/StrudelPage"));
-const ParfaitPage = lazy(() => import("./pages/ParfaitPage"));
-const MenuPage = lazy(() => import("./pages/MenuPage"));
-const PretzelPage = lazy(() => import("./pages/PretzelPage"));
-const BiscottiPage = lazy(() => import("./pages/BiscottiPage"));
-const TreaclePage = lazy(() => import("./pages/TreaclePage"));
-const SagePage = lazy(() => import("./pages/SagePage"));
-const TerrinePage = lazy(() => import("./pages/TerrinePage"));
-const PopsiclePage = lazy(() => import("./pages/PopsiclePage"));
-const PreservesPage = lazy(() => import("./pages/PreservesPage"));
-const MarshmallowPage = lazy(() => import("./pages/MarshmallowPage"));
-const ChowderPage = lazy(() => import("./pages/ChowderPage"));
-const WatchPartyPage = lazy(() => import("./pages/WatchPartyPage"));
-const LobsterPage = lazy(() => import("./pages/LobsterPage"));
-const RoadmapPage = lazy(() => import("./pages/RoadmapPage"));
-const ChangelogPage = lazy(() => import("./pages/ChangelogPage"));
+const GlazePage = withErrorBoundary(lazy(() => import("./pages/GlazePage")), 'Scrobbling');
+const SaffronPage = withErrorBoundary(lazy(() => import("./pages/SaffronPage")), 'Tasks');
+const FonduePage = withErrorBoundary(lazy(() => import("./pages/FonduePage")), 'Automation');
+const SourdoughPage = withErrorBoundary(lazy(() => import("./pages/SourdoughPage")), 'Backups');
+const ChurroPage = withErrorBoundary(lazy(() => import("./pages/ChurroPage")), 'Download Clients');
+const RouxPage = withErrorBoundary(lazy(() => import("./pages/RouxPage")), 'Collections');
+const SproutPage = withErrorBoundary(lazy(() => import("./pages/SproutPage")), 'RSS');
+const StrudelPage = withErrorBoundary(lazy(() => import("./pages/StrudelPage")), 'Disc Ripping');
+const ParfaitPage = withErrorBoundary(lazy(() => import("./pages/ParfaitPage")), 'Jellyseerr');
+const MenuPage = withErrorBoundary(lazy(() => import("./pages/MenuPage")), 'Requests Manager');
+const PretzelPage = withErrorBoundary(lazy(() => import("./pages/PretzelPage")), 'Gaming');
+const BiscottiPage = withErrorBoundary(lazy(() => import("./pages/BiscottiPage")), 'Ebooks');
+const TreaclePage = withErrorBoundary(lazy(() => import("./pages/TreaclePage")), 'Music Library');
+const SagePage = withErrorBoundary(lazy(() => import("./pages/SagePage")), 'For You');
+const TerrinePage = withErrorBoundary(lazy(() => import("./pages/TerrinePage")), 'DVR');
+const PopsiclePage = withErrorBoundary(lazy(() => import("./pages/PopsiclePage")), 'Offline');
+const PreservesPage = withErrorBoundary(lazy(() => import("./pages/PreservesPage")), 'Cloud Backup');
+const MarshmallowPage = withErrorBoundary(lazy(() => import("./pages/MarshmallowPage")), 'Cloud Sync');
+const ChowderPage = withErrorBoundary(lazy(() => import("./pages/ChowderPage")), 'Media Sync');
+const WatchPartyPage = withErrorBoundary(lazy(() => import("./pages/WatchPartyPage")), 'Watch Party');
+const LobsterPage = withErrorBoundary(lazy(() => import("./pages/LobsterPage")), 'Lobster');
+const RoadmapPage = withErrorBoundary(lazy(() => import("./pages/RoadmapPage")), 'Roadmap');
+const ChangelogPage = withErrorBoundary(lazy(() => import("./pages/ChangelogPage")), 'Changelog');
 
 const PageLoader = () => (
   <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
@@ -227,25 +230,27 @@ function App() {
       <BrowserRouter>
         <ErrorBoundary>
           <AuthProvider>
-            <ThemeProvider>
-              <GadgetProvider>
-                <LicenseProvider>
-                  <FirstLaunchGate>
-                    <AppRouter />
-                  </FirstLaunchGate>
-                  <Toaster
-                    position="bottom-right"
-                    toastOptions={{
-                      style: {
-                        background: '#1E1E1E',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: '#F3F4F6',
-                      },
-                    }}
-                  />
-                </LicenseProvider>
-              </GadgetProvider>
-            </ThemeProvider>
+            <ApiProvider>
+              <ThemeProvider>
+                <GadgetProvider>
+                  <LicenseProvider>
+                    <FirstLaunchGate>
+                      <AppRouter />
+                    </FirstLaunchGate>
+                    <Toaster
+                      position="bottom-right"
+                      toastOptions={{
+                        style: {
+                          background: '#1E1E1E',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          color: '#F3F4F6',
+                        },
+                      }}
+                    />
+                  </LicenseProvider>
+                </GadgetProvider>
+              </ThemeProvider>
+            </ApiProvider>
           </AuthProvider>
         </ErrorBoundary>
       </BrowserRouter>

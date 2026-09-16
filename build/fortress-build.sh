@@ -10,23 +10,23 @@
 #
 # Subcommands:
 #   ./fortress-build.sh [tier]            # build a tier (default: ultra)
-#   ./fortress-build.sh sign [release_dir] # hash installer artifacts + optional upload
+#   ./fortress-build.sh sign [release_dir] # hash release artifacts + optional upload
 # ══════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# ── Subcommand: sign — walks installer release dir, emits SHA256SUMS.txt ──
+# ── Subcommand: sign — walks release dir, emits SHA256SUMS.txt ──
 if [ "${1:-}" = "sign" ]; then
   RELEASE_DIR="${2:-$ROOT/release}"
-  VERSION="1.0.3"
+  VERSION="1.0.4"
   LICENSE_API="${WN_LICENSE_API:-https://licenses.watchnexus.ca}"
   UPLOAD="${WN_UPLOAD_HASHES:-0}"
 
   [ -d "$RELEASE_DIR" ] || { echo "release dir not found: $RELEASE_DIR" >&2; exit 1; }
 
   echo "══════════════════════════════════════════════════"
-  echo "  FORTRESS PROTOCOL — Hash + Sign Installers"
+  echo "  FORTRESS PROTOCOL — Hash + Sign Release Artifacts"
   echo "  Release dir : $RELEASE_DIR"
   echo "  License API : $LICENSE_API"
   echo "  Upload      : $UPLOAD"
@@ -41,9 +41,7 @@ if [ "${1:-}" = "sign" ]; then
     while IFS= read -r -d '' f; do
       ( cd "$(dirname "$f")" && sha256sum "$(basename "$f")" ) >> "$SUMS"
     done < <(find "$TIER_DIR" -type f \
-                \( -name "*.exe" -o -name "*.rpm" -o -name "*.deb" \
-                   -o -name "*.pkg.tar.zst" -o -name "*.tar" \
-                   -o -name "*.run" \) \
+                \( -name "*.tar" -o -name "*.tar.gz" -o -name "*.zip" \) \
                 -not -name "SHA256SUMS.txt" -print0)
 
     COUNT=$(wc -l < "$SUMS")
@@ -73,7 +71,7 @@ fi
 
 # ── Default: per-tier sealed build ─────────────────────────────────────
 TIER="${1:-ultra}"
-VERSION="1.0.3"
+VERSION="1.0.4"
 OUT="$ROOT/release/${TIER}"
 
 echo "══════════════════════════════════════════════════"

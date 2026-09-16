@@ -896,6 +896,17 @@ namespace WatchNexus.Core.Data.Migrations
 
                     b.ToTable("Users");
                 });
+
+            modelBuilder.Entity("WatchNexus.Core.Data.MediaItem", b =>
+                {
+                    b.HasOne("WatchNexus.Core.Data.Library", "Library")
+                        .WithMany()
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Library");
+                });
 #pragma warning restore 612, 618
         }
     }

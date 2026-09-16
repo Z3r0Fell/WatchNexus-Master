@@ -1,0 +1,375 @@
+# ══════════════════════════════════════════════════════════════════════
+# WatchNexus — Release Workflow
+# Triggered on version tags (v*.*.*)
+# Builds, signs, and publishes Docker images + GitHub Release
+# ══════════════════════════════════════════════════════════════════════
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.4)'
+        required: true
+        type: string
+      tier:
+        description: 'Tier to build'
+        required: false
+        default: 'all'
+        type: choice
+        options: [standard, pro, ultra, all]
+      sign:
+        description: 'Sign artifacts with cosign'
+        required: false
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/watchnexus
+
+jobs:
+  # ── Prepare: Extract version, validate, determine tiers ─────────────
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tiers: ${{ steps.tiers.outputs.matrix }}
+      tag: ${{ steps.version.outputs.tag }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="v${VERSION}"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          fi
+          
+          # Validate semver
+          if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION (expected semver)"
+            exit 1
+          fi
+          
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VERSION} (tag: ${TAG})"
+
+      - name: Determine tiers
+        id: tiers
+        run: |
+          TIER_INPUT="${{ github.event.inputs.tier || 'all' }}"
+          if [ "$TIER_INPUT" = "all" ]; then
+            echo 'matrix=["standard","pro","ultra"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=[\"${TIER_INPUT}\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Extract changelog for this version from CHANGELOG.md
+          VERSION="${{ steps.version.outputs.version }}"
+          awk -v ver="$VERSION" '
+            /^## / { if (found) exit; if ($0 ~ ver) found=1 }
+            found { print }
+          ' CHANGELOG.md | head -n -1 > /tmp/changelog.md
+          
+          if [ ! -s /tmp/changelog.md ]; then
+            echo "changelog=Release ${VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            # Escape for JSON
+            CHANGELOG=$(cat /tmp/changelog.md | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
+            echo "changelog=${CHANGELOG}" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Build & Push Docker Images ──────────────────────────────────────
+  build:
+    name: Build ${{ matrix.tier }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tier: ${{ fromJson(needs.prepare.outputs.tiers) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
+            type=raw,value=latest-${{ matrix.tier }}
+            type=semver,pattern={{version}}-${{ matrix.tier }}
+            type=semver,pattern={{major}}.{{minor}}-${{ matrix.tier }}
+          labels: |
+            com.watchnexus.tier=${{ matrix.tier }}
+            com.watchnexus.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.title=WatchNexus ${{ matrix.tier }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=LicenseRef-OWN
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            TIER=${{ matrix.tier }}
+          cache-from: type=gha,scope=${{ matrix.tier }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.tier }}
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          sbom: true
+
+      - name: Sign image with cosign
+        if: ${{ github.event.inputs.sign != 'false' }}
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.0'
+
+      - name: Sign and verify
+        if: ${{ github.event.inputs.sign != 'false' }}
+        run: |
+          cosign sign --yes \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
+          cosign verify \
+            --certificate-identity-regexp ".*" \
+            --certificate-oidc-issuer-regexp ".*" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
+
+      - name: Output image info
+        run: |
+          echo "## ${{ matrix.tier }} image built" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.tier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ matrix.tier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Platforms: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+
+  # ── Tag Ultra as default latest ─────────────────────────────────────
+  tag-latest:
+    name: Tag Latest (Ultra)
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    if: contains(fromJson(needs.prepare.outputs.tiers), 'ultra')
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag ultra as latest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-ultra
+          echo "## Tagged as latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\` → ultra" >> $GITHUB_STEP_SUMMARY
+
+  # ── Build Native Installers (Linux/Windows/macOS) ───────────────────
+  build-installers:
+    name: Build Native Installers
+    needs: prepare
+    runs-on: ubuntu-latest
+    # Requires self-hosted runner with InstallBuilder 26 + Windows/macOS builders
+    # For now, this is a placeholder - see docs/INSTALLBUILDER-STEPS.md
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm fpm nsis xorriso
+
+      - name: Build .NET publish
+        run: |
+          dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
+            -c Release -o ./publish \
+            /p:SkipFrontendBuild=true \
+            /p:Version=${{ needs.prepare.outputs.version }}
+
+      - name: Build frontend
+        working-directory: src/web
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Create installer staging
+        run: |
+          ./build/prepare-installers.sh ${{ needs.prepare.outputs.version }}
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ needs.prepare.outputs.version }}
+          path: stage/
+          retention-days: 30
+
+  # ── Create GitHub Release ───────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [prepare, build, tag-latest, build-installers]
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-${{ needs.prepare.outputs.version }}
+          path: ./release-artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: WatchNexus v${{ needs.prepare.outputs.version }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          body: |
+            ## WatchNexus v${{ needs.prepare.outputs.version }}
+            
+            ${{ needs.prepare.outputs.changelog }}
+            
+            ### Docker Images
+            ```bash
+            # Standard (free)
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-standard
+            
+            # Pro
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-pro
+            
+            # Ultra
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-ultra
+            ```
+            
+            ### Quick Start
+            ```bash
+            docker run -d -p 8001:8001 \
+              -v watchnexus-data:/app/data \
+              -v /path/to/media:/data/media \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-standard
+            ```
+            
+            ### Tier Comparison
+            | Feature | Standard | Pro | Ultra |
+            |---------|----------|-----|-------|
+            | Media Library | ✅ | ✅ | ✅ |
+            | Automation (*arr) | ❌ | ✅ | ✅ |
+            | Analytics | ❌ | ✅ | ✅ |
+            | Live TV / DVR | ❌ | ✅ | ✅ |
+            | Hardware Transcoding | ❌ | ❌ | ✅ |
+            | Disc Ripping | ❌ | ❌ | ✅ |
+            | Security Suite (2FA, VPN) | ❌ | ❌ | ✅ |
+            | Gaming / Ebooks | ❌ | ❌ | ✅ |
+            | Cloud Sync / Backup | ❌ | ❌ | ✅ |
+            
+            Activate Pro/Ultra with a serial from [licenses.watchnexus.ca](https://licenses.watchnexus.ca)
+          files: |
+            ./release-artifacts/**/*
+          generate_release_notes: false
+          draft: false
+          prerelease: ${{ contains(needs.prepare.outputs.version, '-') }}
+
+  # ── Update License Server Manifest ──────────────────────────────────
+  update-license-server:
+    name: Update License Server Manifest
+    needs: [prepare, release]
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Checkout license server repo
+        uses: actions/checkout@v4
+        with:
+          repository: Z3r0Fell/WN-License-Server
+          token: ${{ secrets.LICENSE_SERVER_PAT }}
+          path: license-server
+
+      - name: Update manifest
+        working-directory: license-server
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          DATE=$(date -u +%Y-%m-%d)
+          
+          # Update MongoDB settings via API (requires admin token)
+          # This is a placeholder - actual implementation uses the license server's admin API
+          echo "Would update license server manifest to ${VERSION}"
+          
+          # Example API call:
+          # curl -X PUT "https://licenses.watchnexus.ca/api/admin/settings/UPDATES_LATEST_VERSION" \
+          #   -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+          #   -d "{\"value\": \"${VERSION}\"}"
+
+      - name: Commit and push
+        run: |
+          cd license-server
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: update manifest to v${{ needs.prepare.outputs.version }}" || true
+          git push || true
+
+  # ── Notify (Slack/Discord/Email) ────────────────────────────────────
+  notify:
+    name: Notify Release
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Release status
+        run: |
+          STATUS="${{ needs.release.result }}"
+          VERSION="${{ needs.prepare.outputs.version }}"
+          
+          if [ "$STATUS" = "success" ]; then
+            echo "✅ WatchNexus v${VERSION} released successfully!"
+            # Slack webhook example:
+            # curl -X POST -H 'Content-type: application/json' \
+            #   --data '{"text":"🚀 WatchNexus v'${VERSION}' released!"}' \
+            #   ${{ secrets.SLACK_WEBHOOK }}
+          else
+            echo "❌ WatchNexus v${VERSION} release failed!"
+            # Alert on-call
+            exit 1
+          fi
