@@ -20,6 +20,9 @@ VERSION="1.0.4"
 PUSH=false
 NO_CACHE=false
 MULTIARCH=false
+# Optional build network (e.g. "host"). Needed on hosts where the default
+# docker bridge has no egress/DNS (systemd-resolved stub, firewalld, etc.).
+NETWORK="${DOCKER_BUILD_NETWORK:-}"
 TIERS=("standard" "pro" "ultra")
 
 # Parse args
@@ -73,6 +76,10 @@ for TIER in "${TIERS[@]}"; do
 
   if [ "$NO_CACHE" = true ]; then
     BUILD_ARGS+=(--no-cache)
+  fi
+
+  if [ -n "$NETWORK" ]; then
+    BUILD_ARGS+=(--network "$NETWORK")
   fi
 
   $BUILD_CMD "${BUILD_ARGS[@]}"

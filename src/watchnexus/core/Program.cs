@@ -39,10 +39,13 @@ static string ResolveLogDir()
     return Path.Combine(AppContext.BaseDirectory, "logs");
 }
 
-// Early check for test environment to skip problematic initialization
-var isTesting = args.Contains("--test") || 
-                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" ||
-                Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+// Early check for test environment to skip problematic initialization.
+// NOTE: do NOT key this off DOTNET_RUNNING_IN_CONTAINER — the release
+// Docker image sets that to true, and treating a container as "testing"
+// skipped migrations, account seeding, background services and module
+// loading in production.
+var isTesting = args.Contains("--test") ||
+                string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Testing", StringComparison.OrdinalIgnoreCase);
 
 string? logDir = null;
 StreamWriter? bootLog = null;
