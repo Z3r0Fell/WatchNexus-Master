@@ -50,6 +50,8 @@ public class TmdbProxyController : ControllerBase
         return _config["TMDB_API_KEY"];
     }
 
+    private static readonly HashSet<string> AllowedMediaTypes = new(StringComparer.OrdinalIgnoreCase) { "movie", "tv" };
+
     private async Task<IActionResult> ProxyGet(string path, Dictionary<string, string>? extra = null)
     {
         var key = await GetApiKey();
@@ -75,20 +77,34 @@ public class TmdbProxyController : ControllerBase
     }
 
     [HttpGet("search")]
-    public Task<IActionResult> Search(string query, int page = 1, string media_type = "multi") =>
-        ProxyGet($"/search/{media_type}", new() { ["query"] = query, ["page"] = page.ToString() });
+    public Task<IActionResult> Search(string query, int page = 1, string media_type = "multi")
+    {
+        if (!AllowedMediaTypes.Contains(media_type) && media_type != "multi")
+            return Task.FromResult<IActionResult>(BadRequest(new { detail = "media_type must be 'movie', 'tv', or 'multi'" }));
+        return ProxyGet($"/search/{media_type}", new() { ["query"] = query, ["page"] = page.ToString() });
+    }
 
     [HttpGet("trending")]
     public Task<IActionResult> TrendingDefault() =>
         ProxyGet("/trending/all/day");
 
     [HttpGet("trending/{mediaType}/{timeWindow}")]
-    public Task<IActionResult> Trending(string mediaType, string timeWindow) =>
-        ProxyGet($"/trending/{mediaType}/{timeWindow}");
+    public Task<IActionResult> Trending(string mediaType, string timeWindow)
+    {
+        if (!AllowedMediaTypes.Contains(mediaType) && mediaType != "all" && mediaType != "person")
+            return Task.FromResult<IActionResult>(BadRequest(new { detail = "mediaType must be 'movie', 'tv', or 'all'" }));
+        if (timeWindow != "day" && timeWindow != "week")
+            return Task.FromResult<IActionResult>(BadRequest(new { detail = "timeWindow must be 'day' or 'week'" }));
+        return ProxyGet($"/trending/{mediaType}/{timeWindow}");
+    }
 
     [HttpGet("popular/{mediaType}")]
-    public Task<IActionResult> Popular(string mediaType, int page = 1) =>
-        ProxyGet($"/{mediaType}/popular", new() { ["page"] = page.ToString() });
+    public Task<IActionResult> Popular(string mediaType, int page = 1)
+    {
+        if (!AllowedMediaTypes.Contains(mediaType))
+            return Task.FromResult<IActionResult>(BadRequest(new { detail = "mediaType must be 'movie' or 'tv'" }));
+        return ProxyGet($"/{mediaType}/popular", new() { ["page"] = page.ToString() });
+    }
 
     [HttpGet("movie/now_playing")]
     public Task<IActionResult> NowPlaying(int page = 1) =>
@@ -113,6 +129,8 @@ public class TmdbProxyController : ControllerBase
     [HttpGet("discover/{mediaType}")]
     public Task<IActionResult> Discover(string mediaType, int page = 1, string? with_genres = null, string? sort_by = null)
     {
+        if (!AllowedMediaTypes.Contains(mediaType) && mediaType != "all" && mediaType != "person")
+            return Task.FromResult<IActionResult>(BadRequest(new { detail = "mediaType must be 'movie', 'tv', or 'all'" }));
         var p = new Dictionary<string, string> { ["page"] = page.ToString() };
         if (!string.IsNullOrEmpty(with_genres)) p["with_genres"] = with_genres;
         if (!string.IsNullOrEmpty(sort_by)) p["sort_by"] = sort_by;
@@ -120,8 +138,12 @@ public class TmdbProxyController : ControllerBase
     }
 
     [HttpGet("genres/{mediaType}")]
-    public Task<IActionResult> Genres(string mediaType) =>
-        ProxyGet($"/genre/{mediaType}/list");
+    public Task<IActionResult> Genres(string mediaType)
+    {
+        if (!AllowedMediaTypes.Contains(mediaType))
+            return Task.FromResult<IActionResult>(BadRequest(new { detail = "mediaType must be 'movie' or 'tv'" }));
+        return ProxyGet($"/genre/{mediaType}/list");
+    }
 }
 
 /// <summary>Watchlist — per-user list of saved items</summary>

@@ -363,8 +363,8 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddControllers(options =>
 {
-    // ── FORTRESS PROTOCOL: API-level tier enforcement ──
-    options.Filters.Add<FortressFilter>();
+    // Fortress tier enforcement is now applied as middleware (see app.UseMiddleware below)
+    // so it runs before routing and returns 403 even for non-existent sub-routes on paid modules.
 });
 builder.Services.AddEndpointsApiExplorer();
 // Swagger is a dev-time convenience only — never expose the API schema on a
@@ -460,6 +460,16 @@ using (var scope = app.Services.CreateScope())
 
         // Seed default accounts if none exist
         SeedAccounts(db);
+
+        // Libraries created before per-user ownership (AddLibraryUserId) have an
+        // empty UserId and would be invisible to everyone — hand them to the
+        // oldest admin so they stay reachable after upgrade.
+        var ownerId = db.Users.Where(u => u.Role == "admin").OrderBy(u => u.CreatedAt).Select(u => u.Id).FirstOrDefault();
+        if (ownerId != null)
+        {
+            var claimed = db.Libraries.Where(l => l.UserId == "").ExecuteUpdate(s => s.SetProperty(l => l.UserId, ownerId));
+            if (claimed > 0) Log($"[WatchNexus] Assigned {claimed} unowned librar{(claimed == 1 ? "y" : "ies")} to admin {ownerId}");
+        }
     }
 }
 
@@ -590,7 +600,7 @@ app.Use(async (ctx, next) =>
     // the CRA build (no nonce); external script origins are still denied.
     ctx.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "script-src 'self' 'unsafe-inline'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: blob: https:; " +
         "font-src 'self' data:; " +
@@ -656,6 +666,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ── FORTRESS PROTOCOL: API-level tier enforcement (as middleware so it
+// runs BEFORE routing — returns 403 even for non-existent sub-routes on paid modules)
+app.UseMiddleware<FortressFilter>();
+
 app.UseRateLimiter();
 app.UseCsrfProtection();
 app.UseWebSockets();
@@ -718,7 +733,7 @@ if (!isTesting)
 // ── Start ─────────────────────────────────────────────────────
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
-Log($"[WatchNexus] v1.0.4 starting on port {port}");
+Log($"[WatchNexus] v1.0.5 starting on port {port}");
 Log($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
 Log($"[WatchNexus] Logs at: {logDir}");
 Log($"[WatchNexus] Open http://localhost:{port} in your browser to begin.");

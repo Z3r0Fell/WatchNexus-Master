@@ -86,3 +86,4 @@ src/watchnexus/core/publish/
 
 # Go build artifacts
 lobster-sidecar/lobster-sidecar
+.aider*

@@ -20,6 +20,9 @@ public class LibrariesController : ControllerBase
     private readonly IServiceScopeFactory _scopeFactory;
     private static readonly Dictionary<string, object> _scanJobs = new();
     private static readonly Dictionary<string, CancellationTokenSource> _scanTokens = new();
+    private static readonly object _scanLock = new();
+
+    private string UserId => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
 
     public LibrariesController(AppDbContext db, IConfiguration config, IHttpClientFactory httpFactory, IServiceScopeFactory scopeFactory)
     {
@@ -34,7 +37,8 @@ public class LibrariesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var libs = await _db.Libraries.OrderByDescending(l => l.CreatedAt).ToListAsync();
+        var uid = UserId;
+        var libs = await _db.Libraries.Where(l => l.UserId == uid).OrderByDescending(l => l.CreatedAt).ToListAsync();
         return Ok(libs.Select(l => new
         {
             l.Id, l.Name, l.Path, media_type = l.MediaType,
@@ -77,7 +81,7 @@ public class LibrariesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound(new { detail = "Library not found" });
         return Ok(new
         {
@@ -94,6 +98,7 @@ public class LibrariesController : ControllerBase
         if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.Path))
             return BadRequest(new { detail = "Name and path are required" });
 
+        var uid = UserId;
         var trimmedPath = req.Path.Trim();
         // Library roots must live under a configured media root so scanned items
         // can actually be streamed. Prevents registration of arbitrary folders.
@@ -118,6 +123,7 @@ public class LibrariesController : ControllerBase
         };
         var lib = new Library
         {
+            UserId = uid,
             Name = req.Name,
             Path = trimmedPath,
             MediaType = typeMap.GetValueOrDefault(req.MediaType, req.MediaType.ToLower()),
@@ -136,8 +142,10 @@ public class LibrariesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] LibraryRequest req)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound();
+        if (!MediaPaths.IsAllowedPath(req.Path))
+            return BadRequest(new { detail = "Path must be inside a configured media root" });
         lib.Name = req.Name;
         lib.Path = req.Path;
         await _db.SaveChangesAsync();
@@ -152,7 +160,7 @@ public class LibrariesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound();
         _db.MediaItems.RemoveRange(_db.MediaItems.Where(m => m.LibraryId == id));
         _db.Libraries.Remove(lib);
@@ -163,55 +171,77 @@ public class LibrariesController : ControllerBase
     [HttpPost("{id}/scan")]
     public async Task<IActionResult> Scan(string id)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound(new { detail = "Library not found" });
 
-        if (_scanJobs.ContainsKey(id))
-            return Ok(_scanJobs[id]);
-
-        var cts = new CancellationTokenSource();
-        _scanTokens[id] = cts;
-
-        var job = new Dictionary<string, object>
+        // Check-and-register atomically so concurrent requests can't both start a scan.
+        CancellationTokenSource cts;
+        Dictionary<string, object> job, snapshot;
+        lock (_scanLock)
         {
-            ["job_id"] = Guid.NewGuid().ToString()[..8],
-            ["library_id"] = id,
-            ["library_name"] = lib.Name,
-            ["status"] = "scanning",
-            ["started_at"] = DateTime.UtcNow,
-            ["progress"] = 0,
-        };
-        _scanJobs[id] = job;
+            if (_scanJobs.TryGetValue(id, out var existing)
+                && existing is Dictionary<string, object> running
+                && running["status"] is "scanning" or "cancelling")
+                return Ok(new Dictionary<string, object>(running));
+            cts = new CancellationTokenSource();
+            _scanTokens[id] = cts;
+            job = new Dictionary<string, object>
+            {
+                ["job_id"] = Guid.NewGuid().ToString()[..8],
+                ["library_id"] = id,
+                ["library_name"] = lib.Name,
+                ["status"] = "scanning",
+                ["started_at"] = DateTime.UtcNow,
+                ["progress"] = 0,
+            };
+            _scanJobs[id] = job;
+            snapshot = new Dictionary<string, object>(job);
+        }
 
-        _ = Task.Run(async () => await RunScanBackground(id, lib.Path, lib.Name, lib.MediaType, cts.Token));
+        _ = Task.Run(async () => await RunScanBackground(id, lib.Path, lib.Name, lib.MediaType, job, cts));
 
-        return Ok(job);
+        // Return a copy: the background scan mutates the live job under _scanLock.
+        return Ok(snapshot);
     }
 
     [HttpDelete("{id}/scan")]
     public async Task<IActionResult> CancelScan(string id)
     {
-        if (_scanTokens.TryGetValue(id, out var cts))
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
+        if (lib == null) return NotFound(new { detail = "Library not found" });
+
+        // Signal only; the background scan disposes its token and marks the job
+        // "cancelled" once it has actually stopped, so a rescan can't overlap it.
+        lock (_scanLock)
         {
-            cts.Cancel();
-            cts.Dispose();
-            _scanTokens.Remove(id);
+            if (_scanTokens.TryGetValue(id, out var cts))
+                cts.Cancel();
+            if (_scanJobs.TryGetValue(id, out var jobObj) && jobObj is Dictionary<string, object> job
+                && job["status"] is "scanning")
+                job["status"] = "cancelling";
         }
-        UpdateJob(id, "cancelled");
         return Ok(new { status = "cancelled", library_id = id });
     }
 
     [HttpGet("{id}/scan/status")]
-    public IActionResult ScanStatus(string id)
+    public async Task<IActionResult> ScanStatus(string id)
     {
-        if (_scanJobs.TryGetValue(id, out var job))
-            return Ok(job);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
+        if (lib == null) return NotFound(new { detail = "Library not found" });
+        lock (_scanLock)
+        {
+            if (_scanJobs.TryGetValue(id, out var jobObj) && jobObj is Dictionary<string, object> job)
+                return Ok(new Dictionary<string, object>(job));
+        }
         return Ok(new { library_id = id, status = "idle", progress = 0 });
     }
 
     [HttpGet("{id}/media")]
     public async Task<IActionResult> GetMedia(string id, int limit = 50, int offset = 0)
     {
+        var uid = UserId;
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == uid);
+        if (lib == null) return NotFound(new { detail = "Library not found" });
         var items = await _db.MediaItems
             .Where(m => m.LibraryId == id)
             .OrderBy(m => m.Title)
@@ -226,8 +256,9 @@ public class LibrariesController : ControllerBase
         }));
     }
 
-    private async Task RunScanBackground(string libraryId, string libPath, string libName, string mediaType, CancellationToken ct)
+    private async Task RunScanBackground(string libraryId, string libPath, string libName, string mediaType, Dictionary<string, object> job, CancellationTokenSource cts)
     {
+        var ct = cts.Token;
         var newCount = 0; var updated = 0; var errors = new List<string>();
         var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".m4v", ".webm",
@@ -237,7 +268,7 @@ public class LibrariesController : ControllerBase
         {
             if (!Directory.Exists(libPath))
             {
-                UpdateJob(libraryId, "failed", errors: new[] { $"Path not found: {libPath}" });
+                UpdateJob(job, "failed", errors: new[] { $"Path not found: {libPath}" });
                 return;
             }
 
@@ -362,30 +393,31 @@ public class LibrariesController : ControllerBase
                 await db.SaveChangesAsync();
             }
 
-            UpdateJob(libraryId, "completed", newCount, updated, newCount + updated, errors.ToArray());
+            UpdateJob(job, "completed", newCount, updated, newCount + updated, errors.ToArray());
         }
         catch (OperationCanceledException)
         {
-            UpdateJob(libraryId, "cancelled", errors: errors.ToArray());
+            UpdateJob(job, "cancelled", errors: errors.ToArray());
         }
         catch (Exception ex)
         {
             errors.Add(ex.Message);
-            UpdateJob(libraryId, "failed", errors: errors.ToArray());
+            UpdateJob(job, "failed", errors: errors.ToArray());
         }
         finally
         {
-            if (_scanTokens.TryGetValue(libraryId, out var c) && c.IsCancellationRequested)
+            lock (_scanLock)
             {
-                c.Dispose();
-                _scanTokens.Remove(libraryId);
+                if (_scanTokens.TryGetValue(libraryId, out var c) && ReferenceEquals(c, cts))
+                    _scanTokens.Remove(libraryId);
             }
+            cts.Dispose();
         }
     }
 
-    private void UpdateJob(string id, string status, int newItems = 0, int updatedItems = 0, int total = 0, string[]? errors = null)
+    private static void UpdateJob(Dictionary<string, object> job, string status, int newItems = 0, int updatedItems = 0, int total = 0, string[]? errors = null)
     {
-        if (_scanJobs.TryGetValue(id, out var jobObj) && jobObj is Dictionary<string, object> job)
+        lock (_scanLock)
         {
             job["status"] = status;
             job["completed_at"] = DateTime.UtcNow;

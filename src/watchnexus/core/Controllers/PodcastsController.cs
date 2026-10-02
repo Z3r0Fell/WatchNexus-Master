@@ -75,9 +75,25 @@ public class PodcastsController : ControllerBase
         try
         {
             var http = this.Http();
-            using var stream = await http.GetStreamAsync(sub.FeedUrl);
-            var xmlSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit };
-            using var reader = XmlReader.Create(stream, xmlSettings);
+            http.Timeout = TimeSpan.FromSeconds(15);
+            using var response = await http.GetAsync(sub.FeedUrl, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode) throw new HttpRequestException($"HTTP {(int)response.StatusCode}");
+            var maxBytes = 5 * 1024 * 1024;
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var limited = new MemoryStream();
+            var buffer = new byte[8192];
+            int read;
+            var total = 0;
+            while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                total += read;
+                if (total > maxBytes)
+                    throw new InvalidOperationException("Feed response exceeds 5 MB limit");
+                await limited.WriteAsync(buffer, 0, read);
+            }
+            limited.Position = 0;
+            var xmlSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersFromEntities = 1024 * 1024 };
+            using var reader = XmlReader.Create(limited, xmlSettings);
             var feed = SyndicationFeed.Load(reader);
             foreach (var item in feed.Items.Take(50))
             {

@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { createApiErrorHandler } from './apiErrorHandler';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 // Use REACT_APP_BACKEND_URL if set, otherwise use empty string for same-origin requests
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';

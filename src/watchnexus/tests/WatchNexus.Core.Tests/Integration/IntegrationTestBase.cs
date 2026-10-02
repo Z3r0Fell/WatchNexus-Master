@@ -292,6 +292,7 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// </summary>
     protected async Task SeedLicenseAsync(string tier, string? serial = null)
     {
+        DbContext.ChangeTracker.Clear();
         serial ??= tier switch
         {
             "pro" => "WNX-PRO-AAAA-BBBB-CCCC",
@@ -342,11 +343,12 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// <summary>
     /// Create a test library
     /// </summary>
-    protected async Task<Library> CreateTestLibraryAsync(string name = "Test Library", string path = "/data/media/movies", string mediaType = "movies")
+    protected async Task<Library> CreateTestLibraryAsync(string name = "Test Library", string path = "/data/media/movies", string mediaType = "movies", string userId = "test-user")
     {
         var library = new Library
         {
             Id = Guid.NewGuid().ToString(),
+            UserId = userId,
             Name = name,
             Path = path,
             MediaType = mediaType,

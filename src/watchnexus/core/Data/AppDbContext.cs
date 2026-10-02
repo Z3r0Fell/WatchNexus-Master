@@ -52,7 +52,11 @@ public class AppDbContext : DbContext
             e.HasKey(s => new { s.Key, s.UserId });
             e.Property(s => s.Value).HasConversion(secret);
         });
-        b.Entity<Library>().HasKey(l => l.Id);
+        b.Entity<Library>(e =>
+        {
+            e.HasKey(l => l.Id);
+            e.HasIndex(l => l.UserId);
+        });
         b.Entity<MediaItem>(e =>
         {
             e.HasKey(m => m.Id);
@@ -91,11 +95,12 @@ public class AppDbContext : DbContext
 }
 
 // Module entities
-public class Library
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Name { get; set; } = "";
-    public string Path { get; set; } = "";
+    public class Library
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string UserId { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
     public string MediaType { get; set; } = "movies";
     public int ItemCount { get; set; }
     public long TotalSize { get; set; }

@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 const ThemeContext = createContext();
 
 // Default theme values
-const DEFAULT_DARK_THEME = {
+export const DEFAULT_DARK_THEME = {
   primary: '#8B5CF6',
   primaryHover: '#7C3AED',
   secondary: '#EC4899',
@@ -26,7 +26,7 @@ const DEFAULT_DARK_THEME = {
   accent: '#EC4899',
 };
 
-const DEFAULT_LIGHT_THEME = {
+export const DEFAULT_LIGHT_THEME = {
   primary: '#7C3AED',
   primaryHover: '#6D28D9',
   secondary: '#DB2777',

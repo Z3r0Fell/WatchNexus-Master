@@ -1,11 +1,13 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using Microsoft.Extensions.DependencyInjection;
 using WatchNexus.Core.Controllers;
 using WatchNexus.Core.Data;
+using WatchNexus.Shared;
+using Xunit;
 
 namespace WatchNexus.Core.Tests;
 
@@ -44,7 +46,7 @@ public class FortressControllerTests
         var props = value!.GetType().GetProperties();
         
         Assert.Equal("1.0", props.First(p => p.Name == "fortress_version").GetValue(value));
-        Assert.Equal("1.0.4", props.First(p => p.Name == "app_version").GetValue(value));
+        Assert.Equal("1.0.5", props.First(p => p.Name == "app_version").GetValue(value));
         Assert.NotNull(props.First(p => p.Name == "integrity_valid").GetValue(value));
         Assert.NotNull(props.First(p => p.Name == "protections").GetValue(value));
     }
@@ -173,35 +175,21 @@ public class FortressControllerTests
     [Fact]
     public async Task FortressFilter_BlocksProModuleOnStandardTier()
     {
-        var filter = new FortressFilter(_db);
+        var filter = new FortressFilter(_ => Task.CompletedTask);
         var httpContext = new DefaultHttpContext
         {
-            Request = { Path = "/api/compote/indexers" }
+            Request = { Path = "/api/compote/indexers" },
+            RequestServices = CreateServicesWithDb(_db)
         };
+        httpContext.Response.Body = new MemoryStream();
         
-        var actionExecuted = false;
-        var actionDelegate = new ActionExecutionDelegate(async () => 
-        { 
-            actionExecuted = true; 
-            return; 
-        });
+        await filter.InvokeAsync(httpContext);
         
-        var context = new ActionExecutingContext(
-            new ActionContext { HttpContext = httpContext },
-            new List<IFilterMetadata>(),
-            new Dictionary<string, object?>(),
-            Mock.Of<Controller>()
-        );
-        
-        await filter.OnActionExecutionAsync(context, actionDelegate);
-        
-        Assert.False(actionExecuted);
-        Assert.NotNull(context.Result);
-        var jsonResult = Assert.IsType<JsonResult>(context.Result);
-        Assert.Equal(403, jsonResult.StatusCode);
-        var value = jsonResult.Value;
-        var props = value!.GetType().GetProperties();
-        Assert.Equal("FORTRESS_TIER_LOCKED", props.First(p => p.Name == "error").GetValue(value));
+        Assert.Equal(403, httpContext.Response.StatusCode);
+        httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
+        var body = await new StreamReader(httpContext.Response.Body).ReadToEndAsync();
+        var doc = JsonDocument.Parse(body);
+        Assert.Equal("FORTRESS_TIER_LOCKED", doc.RootElement.GetProperty("error").GetString());
     }
 
     [Fact]
@@ -214,30 +202,16 @@ public class FortressControllerTests
         _db.Settings.Add(new AppSetting { Key = "cellar_license", UserId = "", Value = licenseJson });
         await _db.SaveChangesAsync();
 
-        var filter = new FortressFilter(_db);
+        var filter = new FortressFilter(_ => Task.CompletedTask);
         var httpContext = new DefaultHttpContext
         {
-            Request = { Path = "/api/compote/indexers" }
+            Request = { Path = "/api/compote/indexers" },
+            RequestServices = CreateServicesWithDb(_db)
         };
         
-        var actionExecuted = false;
-        var actionDelegate = new ActionExecutionDelegate(async () => 
-        { 
-            actionExecuted = true; 
-            return; 
-        });
+        await filter.InvokeAsync(httpContext);
         
-        var context = new ActionExecutingContext(
-            new ActionContext { HttpContext = httpContext },
-            new List<IFilterMetadata>(),
-            new Dictionary<string, object?>(),
-            Mock.Of<Controller>()
-        );
-        
-        await filter.OnActionExecutionAsync(context, actionDelegate);
-        
-        Assert.True(actionExecuted);
-        Assert.Null(context.Result);
+        Assert.Equal(200, httpContext.Response.StatusCode);
     }
 
     [Fact]
@@ -250,90 +224,46 @@ public class FortressControllerTests
         _db.Settings.Add(new AppSetting { Key = "cellar_license", UserId = "", Value = licenseJson });
         await _db.SaveChangesAsync();
 
-        var filter = new FortressFilter(_db);
+        var filter = new FortressFilter(_ => Task.CompletedTask);
         var httpContext = new DefaultHttpContext
         {
-            Request = { Path = "/api/crucible/jobs" }
+            Request = { Path = "/api/crucible/jobs" },
+            RequestServices = CreateServicesWithDb(_db)
         };
         
-        var actionExecuted = false;
-        var actionDelegate = new ActionExecutionDelegate(async () => 
-        { 
-            actionExecuted = true; 
-            return; 
-        });
+        await filter.InvokeAsync(httpContext);
         
-        var context = new ActionExecutingContext(
-            new ActionContext { HttpContext = httpContext },
-            new List<IFilterMetadata>(),
-            new Dictionary<string, object?>(),
-            Mock.Of<Controller>()
-        );
-        
-        await filter.OnActionExecutionAsync(context, actionDelegate);
-        
-        Assert.True(actionExecuted);
-        Assert.Null(context.Result);
+        Assert.Equal(200, httpContext.Response.StatusCode);
     }
 
     [Fact]
     public async Task FortressFilter_ExemptsCrucibleFfmpegStatus()
     {
-        var filter = new FortressFilter(_db);
+        var filter = new FortressFilter(_ => Task.CompletedTask);
         var httpContext = new DefaultHttpContext
         {
-            Request = { Path = "/api/crucible/ffmpeg-status" }
+            Request = { Path = "/api/crucible/ffmpeg-status" },
+            RequestServices = CreateServicesWithDb(_db)
         };
         
-        var actionExecuted = false;
-        var actionDelegate = new ActionExecutionDelegate(async () => 
-        { 
-            actionExecuted = true; 
-            return; 
-        });
+        await filter.InvokeAsync(httpContext);
         
-        var context = new ActionExecutingContext(
-            new ActionContext { HttpContext = httpContext },
-            new List<IFilterMetadata>(),
-            new Dictionary<string, object?>(),
-            Mock.Of<Controller>()
-        );
-        
-        await filter.OnActionExecutionAsync(context, actionDelegate);
-        
-        Assert.True(actionExecuted);
-        Assert.Null(context.Result);
+        Assert.Equal(200, httpContext.Response.StatusCode);
     }
 
     [Fact]
     public async Task FortressFilter_GadgetRoute_BlocksProModuleOnStandardTier()
     {
-        var filter = new FortressFilter(_db);
+        var filter = new FortressFilter(_ => Task.CompletedTask);
         var httpContext = new DefaultHttpContext
         {
-            Request = { Path = "/api/gadgets/synapse-admin/status" }
+            Request = { Path = "/api/gadgets/synapse-admin/status" },
+            RequestServices = CreateServicesWithDb(_db)
         };
         
-        var actionExecuted = false;
-        var actionDelegate = new ActionExecutionDelegate(async () => 
-        { 
-            actionExecuted = true; 
-            return; 
-        });
+        await filter.InvokeAsync(httpContext);
         
-        var context = new ActionExecutingContext(
-            new ActionContext { HttpContext = httpContext },
-            new List<IFilterMetadata>(),
-            new Dictionary<string, object?>(),
-            Mock.Of<Controller>()
-        );
-        
-        await filter.OnActionExecutionAsync(context, actionDelegate);
-        
-        Assert.False(actionExecuted);
-        Assert.NotNull(context.Result);
-        var jsonResult = Assert.IsType<JsonResult>(context.Result);
-        Assert.Equal(403, jsonResult.StatusCode);
+        Assert.Equal(403, httpContext.Response.StatusCode);
     }
 
     [Fact]
@@ -347,10 +277,16 @@ public class FortressControllerTests
         };
         ModuleRegistry.Register(module);
 
-        var filter = new FortressFilter(_db);
-        var tierMethod = typeof(FortressFilter).GetMethod("GetRequiredTier", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var tier = tierMethod!.Invoke(filter, new object[] { "test-module" });
+        var tierMethod = typeof(FortressFilter).GetMethod("GetRequiredTier", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var tier = tierMethod!.Invoke(null, new object[] { "test-module" });
         
         Assert.Equal("pro", tier);
+    }
+
+    private static IServiceProvider CreateServicesWithDb(AppDbContext db)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<AppDbContext>(db);
+        return services.BuildServiceProvider();
     }
 }

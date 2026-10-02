@@ -10,7 +10,7 @@
 <h1 align="center">WatchNexus</h1>
 
 <p align="center">
-  <strong>Release To Public — RTP v1.0.4</strong><br>
+  <strong>Release To Public — RTP v1.0.5</strong><br>
   A unified, self-hosted media server with tier-locked module licensing.
 </p>
 
@@ -134,7 +134,7 @@ docker run -d \
   -v /path/to/media:/data/media \
   -e WATCHNEXUS_TIER=standard \
   -e TZ=America/Toronto \
-  watchnexus/watchnexus:1.0.4-standard
+  watchnexus/watchnexus:1.0.5-standard
 
 # Pro
 docker run -d \
@@ -146,7 +146,7 @@ docker run -d \
   -e WATCHNEXUS_TIER=pro \
   -e TZ=America/Toronto \
   -e LICENSE_SERVER_API_KEY=your_api_key \
-  watchnexus/watchnexus:1.0.4-pro
+  watchnexus/watchnexus:1.0.5-pro
 
 # Ultra (with GPU)
 docker run -d \
@@ -161,7 +161,7 @@ docker run -d \
   -e TZ=America/Toronto \
   -e LICENSE_SERVER_API_KEY=your_api_key \
   --gpus all \
-  watchnexus/watchnexus:1.0.4-ultra
+  watchnexus/watchnexus:1.0.5-ultra
 ```
 
 **Docker Compose (Multi-Tier):**
@@ -191,7 +191,7 @@ docker run -d --name watchnexus \
   -v watchnexus-data:/app/data \
   -v /path/to/media:/data/media \
   -e WATCHNEXUS_TIER=standard \
-  watchnexus/watchnexus:1.0.4-standard
+  watchnexus/watchnexus:1.0.5-standard
 ```
 
 ### Unraid / TrueNAS / CasaOS / HexOS / Portainer / Synology
@@ -556,7 +556,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: watchnexus
-          image: watchnexus/watchnexus:1.0.4-ultra
+          image: watchnexus/watchnexus:1.0.5-ultra
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
@@ -758,4 +758,4 @@ Third-party component notices: <https://watchnexus.ca/legal/notices>.
 
 ---
 
-<p align="center"><sub>WatchNexus · RTP v1.0.4 · Built with care for self-hosters.</sub></p>
+<p align="center"><sub>WatchNexus · RTP v1.0.5 · Built with care for self-hosters.</sub></p>

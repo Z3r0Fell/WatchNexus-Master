@@ -1,3 +1,4 @@
+import React from 'react';
 import { toast } from '../components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -319,8 +320,5 @@ export function useApiErrorHandler(apiClient) {
     [apiClient, navigate, logout]
   );
   
-  return handler;
+   return handler;
 }
-
-// Need to import React for useMemo
-import React from 'react';
