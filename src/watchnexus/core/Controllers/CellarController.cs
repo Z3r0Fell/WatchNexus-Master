@@ -22,7 +22,6 @@ public class CellarController : ControllerBase
     // If LICENSE_SERVER_API_KEY is not set, activation will fail with a 503
     // rather than falling back to a shared embedded key.
     private const string DEFAULT_LICENSE_SERVER_URL = "https://licenses.watchnexus.ca";
-    private const string DEFAULT_LICENSE_SERVER_API_KEY = "wnk_dev_placeholder";
 
     private static readonly Dictionary<string, List<DateTime>> _activationAttempts = new();
     private static readonly object _rateLimitLock = new();
@@ -164,6 +163,107 @@ public class CellarController : ControllerBase
         }
     }
 
+    // ── License server round-trip ───────────────────────────────────
+    private sealed record ServerActivation(string Tier, string? ActivationId, string? ActivationToken, bool Reused);
+
+    private static string TierName(string tier) => tier switch { "pro" => "Pro", "ultra" => "Ultra", _ => "Standard" };
+
+    // Stable per-install hardware id. Environment.MachineName is the container
+    // id under Docker and changes on every recreate, which made each update
+    // consume a fresh seat on the license server.
+    private async Task<string> GetOrCreateInstallId()
+    {
+        var rec = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "install_id" && s.UserId == "");
+        if (rec != null && !string.IsNullOrEmpty(rec.Value)) return rec.Value;
+        var id = "wn-" + Guid.NewGuid().ToString("N");
+        _db.Settings.Add(new AppSetting { Key = "install_id", UserId = "", Value = id });
+        await _db.SaveChangesAsync();
+        return id;
+    }
+
+    private HttpClient CreateLicenseClient(string apiKey)
+    {
+        var http = _httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+        return http;
+    }
+
+    private string LicenseServerUrl => (_config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL).TrimEnd('/');
+
+    private async Task<(ServerActivation? Activation, IActionResult? Error)> ActivateWithLicenseServer(string serial)
+    {
+        var lsApiKey = _config["LICENSE_SERVER_API_KEY"];
+        // No offline/format-based unlock: a paid tier can only be granted by the
+        // WatchNexus license server (the free Standard tier always works).
+        if (string.IsNullOrEmpty(lsApiKey))
+            return (null, StatusCode(503, new { success = false, message = "License activation requires LICENSE_SERVER_API_KEY to be configured." }));
+
+        var installId = await GetOrCreateInstallId();
+        try
+        {
+            using var http = CreateLicenseClient(lsApiKey);
+            var payload = JsonSerializer.Serialize(new
+            {
+                license_key = serial,
+                hardware_id = installId,
+                device_name = $"WatchNexus-{Environment.MachineName}"
+            });
+            var resp = await http.PostAsync($"{LicenseServerUrl}/api/integrate/activate",
+                new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
+            var resBody = await resp.Content.ReadAsStringAsync();
+            if (!resp.IsSuccessStatusCode)
+            {
+                try
+                {
+                    var err = JsonDocument.Parse(resBody).RootElement;
+                    var detail = err.TryGetProperty("detail", out var d) ? d.GetString() : null;
+                    return (null, BadRequest(new { success = false, message = detail ?? "License server rejected the key" }));
+                }
+                catch { return (null, BadRequest(new { success = false, message = $"License server error: HTTP {(int)resp.StatusCode}" })); }
+            }
+
+            var result = JsonDocument.Parse(resBody).RootElement;
+            var lic = result.TryGetProperty("license", out var l) ? l : default;
+            // Prefer the server's explicit tier; fall back to mapping the plan name.
+            var tier = lic.ValueKind == JsonValueKind.Object && lic.TryGetProperty("tier", out var t) && t.GetString() is { Length: > 0 } ts
+                ? ts.ToLowerInvariant()
+                : MapPlanToTier(lic.ValueKind == JsonValueKind.Object && lic.TryGetProperty("plan", out var p) ? p.GetString() : null);
+            if (tier is not ("standard" or "pro" or "ultra")) tier = "standard";
+            return (new ServerActivation(
+                tier,
+                result.TryGetProperty("activation_id", out var aid) ? aid.GetString() : null,
+                result.TryGetProperty("activation_token", out var at) ? at.GetString() : null,
+                result.TryGetProperty("reused", out var r) && r.ValueKind == JsonValueKind.True), null);
+        }
+        catch (Exception ex)
+        {
+            return (null, StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" }));
+        }
+    }
+
+    // Best-effort seat release on the license server.
+    private async Task ReleaseActivation(string? activationToken)
+    {
+        var lsApiKey = _config["LICENSE_SERVER_API_KEY"];
+        if (string.IsNullOrEmpty(activationToken) || string.IsNullOrEmpty(lsApiKey)) return;
+        try
+        {
+            using var http = CreateLicenseClient(lsApiKey);
+            var payload = JsonSerializer.Serialize(new { activation_token = activationToken });
+            await http.PostAsync($"{LicenseServerUrl}/api/integrate/deactivate",
+                new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
+        }
+        catch { /* best effort */ }
+    }
+
+    private static string? StoredActivationToken(string? licenseJson)
+    {
+        if (string.IsNullOrEmpty(licenseJson)) return null;
+        try { return JsonDocument.Parse(licenseJson).RootElement.TryGetProperty("activation_token", out var at) ? at.GetString() : null; }
+        catch { return null; }
+    }
+
     // ── Activate Serial Number (integrates with WN-License-Server) ──
     [HttpPost("activate")]
     [Authorize(Roles = "admin")]
@@ -177,97 +277,44 @@ public class CellarController : ControllerBase
         if (string.IsNullOrEmpty(serial))
             return BadRequest(new { success = false, message = "Serial number is required" });
 
-        // Get license server config (built-in defaults work out of the box;
-        // override with env vars or appsettings if needed)
-        var lsUrl = _config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL;
-        var lsApiKey = _config["LICENSE_SERVER_API_KEY"];
-        if (string.IsNullOrEmpty(lsApiKey))
-            return StatusCode(503, new { success = false, message = "License activation requires LICENSE_SERVER_API_KEY to be configured." });
+        var (act, error) = await ActivateWithLicenseServer(serial);
+        if (error != null) return error;
+        var tier = act!.Tier;
 
-        string tier;
-        string? activationId = null;
-        string? activationToken = null;
-
-        if (!string.IsNullOrEmpty(lsUrl) && !string.IsNullOrEmpty(lsApiKey))
-        {
-            // ── Remote validation via WN-License-Server ──
-            try
-            {
-                using var http = _httpFactory.CreateClient();
-                http.Timeout = TimeSpan.FromSeconds(15);
-                http.DefaultRequestHeaders.Add("X-API-Key", lsApiKey);
-
-                var payload = JsonSerializer.Serialize(new
-                {
-                    license_key = serial,
-                    hardware_id = Environment.MachineName,
-                    device_name = $"WatchNexus-{Environment.MachineName}"
-                });
-                var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
-                var resp = await http.PostAsync($"{lsUrl.TrimEnd('/')}/api/integrate/activate", content);
-                var resBody = await resp.Content.ReadAsStringAsync();
-
-                if (!resp.IsSuccessStatusCode)
-                {
-                    // Parse error from license server
-                    try
-                    {
-                        var err = JsonDocument.Parse(resBody).RootElement;
-                        var detail = err.TryGetProperty("detail", out var d) ? d.GetString() : resBody;
-                        return BadRequest(new { success = false, message = detail ?? "License server rejected the key" });
-                    }
-                    catch { return BadRequest(new { success = false, message = $"License server error: HTTP {(int)resp.StatusCode}" }); }
-                }
-
-                var result = JsonDocument.Parse(resBody).RootElement;
-                activationId = result.TryGetProperty("activation_id", out var aid) ? aid.GetString() : null;
-                activationToken = result.TryGetProperty("activation_token", out var at) ? at.GetString() : null;
-                var plan = result.TryGetProperty("license", out var lic) && lic.TryGetProperty("plan", out var p) ? p.GetString() : null;
-                tier = MapPlanToTier(plan);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" });
-            }
-        }
-        else
-        {
-            // No offline/format-based unlock. A paid tier can only be granted by
-            // the WatchNexus license server — otherwise any pattern-matching string
-            // would unlock Ultra and bypass payment entirely. If the server isn't
-            // configured, activation is unavailable (the free Standard tier still works).
-            return StatusCode(503, new
-            {
-                success = false,
-                message = "License activation is unavailable: this server isn't configured to reach the WatchNexus license server. You can keep using the free Standard tier."
-            });
-        }
-
-        // Check upgrade path validity
+        // Check upgrade path validity. The server already counted a seat, so a
+        // rejected *new* activation must hand it back (a reused one is this
+        // install's live activation and must be left alone).
         var currentTier = await GetCurrentTier();
         if (!IsValidUpgrade(currentTier, tier))
+        {
+            if (!act.Reused) await ReleaseActivation(act.ActivationToken);
             return BadRequest(new { success = false, message = $"Cannot activate {tier} license. Current tier ({currentTier}) is equal or higher." });
+        }
 
-        // Store license
+        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
+        var previousToken = StoredActivationToken(existing?.Value);
+
         var licenseData = JsonSerializer.Serialize(new
         {
             tier,
             serial,
-            activation_id = activationId,
-            activation_token = activationToken,
+            activation_id = act.ActivationId,
+            activation_token = act.ActivationToken,
             activated_at = DateTime.UtcNow.ToString("o"),
             activated_by = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "system",
             machine_id = Environment.MachineName,
             previous_tier = currentTier,
             hash = ComputeHash(serial)
         });
-
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
         if (existing != null)
             existing.Value = licenseData;
         else
             _db.Settings.Add(new AppSetting { Key = "cellar_license", UserId = "", Value = licenseData });
         await _db.SaveChangesAsync();
+
+        // Upgrading (e.g. Pro -> Ultra) frees the old serial's seat.
+        if (previousToken != null && previousToken != act.ActivationToken)
+            await ReleaseActivation(previousToken);
 
         var unlockedModules = GetUnlockedModules(tier);
         var upgradeMsg = currentTier != "standard" ? $" Upgraded from {currentTier} to {tier}." : "";
@@ -275,8 +322,8 @@ public class CellarController : ControllerBase
         {
             success = true,
             tier,
-            tier_name = tier switch { "pro" => "Pro", "ultra" => "Ultra", _ => "Standard" },
-            message = $"License activated! Welcome to WatchNexus {(tier == "pro" ? "Pro" : "Ultra")}.{upgradeMsg}",
+            tier_name = TierName(tier),
+            message = $"License activated! Welcome to WatchNexus {TierName(tier)}.{upgradeMsg}",
             previous_tier = currentTier,
             modules_unlocked = unlockedModules,
             total_modules = unlockedModules.Length
@@ -303,7 +350,6 @@ public class CellarController : ControllerBase
         var skip = body.TryGetProperty("skip", out var sk) && sk.GetBoolean();
         if (skip)
         {
-            // Mark setup as done with Standard tier
             var setupSetting = await _db.Settings.FirstOrDefaultAsync(s2 => s2.Key == "setup_completed" && s2.UserId == "");
             if (setupSetting != null) setupSetting.Value = "true";
             else _db.Settings.Add(new AppSetting { Key = "setup_completed", UserId = "", Value = "true" });
@@ -314,50 +360,17 @@ public class CellarController : ControllerBase
         if (string.IsNullOrEmpty(serial))
             return BadRequest(new { success = false, message = "Serial number is required" });
 
-        // Validate via license server or locally
-        var lsUrl = _config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL;
-        var lsApiKey = _config["LICENSE_SERVER_API_KEY"];
-        if (string.IsNullOrEmpty(lsApiKey))
-            return StatusCode(503, new { success = false, message = "License activation requires LICENSE_SERVER_API_KEY to be configured." });
-        string tier;
-        string? activationId = null, activationToken = null;
-
-        if (!string.IsNullOrEmpty(lsUrl) && !string.IsNullOrEmpty(lsApiKey))
+        var (act, error) = await ActivateWithLicenseServer(serial);
+        if (error != null) return error;
+        var tier = act!.Tier;
+        if (tier == "standard")
         {
-            try
-            {
-                using var http = _httpFactory.CreateClient();
-                http.Timeout = TimeSpan.FromSeconds(15);
-                http.DefaultRequestHeaders.Add("X-API-Key", lsApiKey);
-                var payload = JsonSerializer.Serialize(new { license_key = serial, hardware_id = Environment.MachineName, device_name = $"WatchNexus-{Environment.MachineName}" });
-                var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
-                var resp = await http.PostAsync($"{lsUrl.TrimEnd('/')}/api/integrate/activate", content);
-                var resBody = await resp.Content.ReadAsStringAsync();
-                if (!resp.IsSuccessStatusCode)
-                {
-                    try { var err = JsonDocument.Parse(resBody).RootElement; return BadRequest(new { success = false, message = err.TryGetProperty("detail", out var d) ? d.GetString() : "Invalid key" }); }
-                    catch { return BadRequest(new { success = false, message = $"License server error" }); }
-                }
-                var result = JsonDocument.Parse(resBody).RootElement;
-                activationId = result.TryGetProperty("activation_id", out var aid) ? aid.GetString() : null;
-                activationToken = result.TryGetProperty("activation_token", out var at) ? at.GetString() : null;
-                var plan = result.TryGetProperty("license", out var lic) && lic.TryGetProperty("plan", out var p) ? p.GetString() : null;
-                tier = MapPlanToTier(plan);
-            }
-            catch (Exception ex) { return StatusCode(503, new { success = false, message = $"Cannot reach license server: {ex.Message}" }); }
-        }
-        else
-        {
-            // See Activate(): no offline format-based unlock for paid tiers.
-            return StatusCode(503, new
-            {
-                success = false,
-                message = "License activation requires the WatchNexus license server. Continue on the free Standard tier and upgrade later from Settings."
-            });
+            if (!act.Reused) await ReleaseActivation(act.ActivationToken);
+            return BadRequest(new { success = false, message = "This serial is for the free Standard tier — no activation needed. Choose \"Continue with Standard\" instead." });
         }
 
         // Store license and mark setup done
-        var licenseData = JsonSerializer.Serialize(new { tier, serial, activation_id = activationId, activation_token = activationToken, activated_at = DateTime.UtcNow.ToString("o"), machine_id = Environment.MachineName, hash = ComputeHash(serial) });
+        var licenseData = JsonSerializer.Serialize(new { tier, serial, activation_id = act.ActivationId, activation_token = act.ActivationToken, activated_at = DateTime.UtcNow.ToString("o"), machine_id = Environment.MachineName, hash = ComputeHash(serial) });
         var existing = await _db.Settings.FirstOrDefaultAsync(s2 => s2.Key == "cellar_license" && s2.UserId == "");
         if (existing != null) existing.Value = licenseData;
         else _db.Settings.Add(new AppSetting { Key = "cellar_license", UserId = "", Value = licenseData });
@@ -366,7 +379,7 @@ public class CellarController : ControllerBase
         else _db.Settings.Add(new AppSetting { Key = "setup_completed", UserId = "", Value = "true" });
         await _db.SaveChangesAsync();
 
-        return Ok(new { success = true, tier, tier_name = tier switch { "pro" => "Pro", "ultra" => "Ultra", _ => "Standard" }, message = $"WatchNexus {(tier == "pro" ? "Pro" : "Ultra")} activated!" });
+        return Ok(new { success = true, tier, tier_name = TierName(tier), message = $"WatchNexus {TierName(tier)} activated!" });
     }
 
     // ── Deactivate License ──────────────────────────────────────────
@@ -374,25 +387,11 @@ public class CellarController : ControllerBase
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> Deactivate()
     {
-        // Try to deactivate on the license server too
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
         if (setting?.Value != null)
         {
-            try
-            {
-                var doc = JsonDocument.Parse(setting.Value).RootElement;
-                var token = doc.TryGetProperty("activation_token", out var at) ? at.GetString() : null;
-                var lsUrl = _config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL;
-                var lsApiKey = _config["LICENSE_SERVER_API_KEY"] ?? DEFAULT_LICENSE_SERVER_API_KEY;
-                if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(lsUrl) && !string.IsNullOrEmpty(lsApiKey))
-                {
-                    using var http = _httpFactory.CreateClient();
-                    http.DefaultRequestHeaders.Add("X-API-Key", lsApiKey);
-                    var payload = JsonSerializer.Serialize(new { activation_token = token });
-                    await http.PostAsync($"{lsUrl.TrimEnd('/')}/api/integrate/deactivate", new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
-                }
-            }
-            catch { /* best effort */ }
+            // Release the seat on the license server too
+            await ReleaseActivation(StoredActivationToken(setting.Value));
             _db.Settings.Remove(setting);
             await _db.SaveChangesAsync();
         }
