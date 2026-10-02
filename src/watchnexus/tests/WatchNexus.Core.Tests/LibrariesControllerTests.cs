@@ -63,6 +63,7 @@ public class LibrariesControllerTests
     {
         _db.Libraries.Add(new Library
         {
+            UserId = "test-user",
             Id = "lib-1",
             Name = "Movies",
             Path = "/data/media/Movies",
@@ -95,6 +96,7 @@ public class LibrariesControllerTests
     {
         var lib = new Library
         {
+            UserId = "test-user",
             Id = "lib-1",
             Name = "Movies",
             Path = "/data/media/Movies",
@@ -178,6 +180,7 @@ public class LibrariesControllerTests
     {
         var lib = new Library
         {
+            UserId = "test-user",
             Id = "lib-1",
             Name = "Old Name",
             Path = "/data/media/Movies",
@@ -198,7 +201,7 @@ public class LibrariesControllerTests
     [Fact]
     public async Task Delete_RemovesLibraryAndMediaItems()
     {
-        var lib = new Library { Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
+        var lib = new Library { UserId = "test-user", Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
         _db.Libraries.Add(lib);
         _db.MediaItems.Add(new MediaItem { Id = "item-1", LibraryId = "lib-1", Title = "Test", FilePath = "/data/media/Movies/test.mkv", FileSize = 1000 });
         await _db.SaveChangesAsync();
@@ -219,7 +222,7 @@ public class LibrariesControllerTests
     [Fact]
     public async Task Scan_ReturnsExistingJob_WhenAlreadyScanning()
     {
-        var lib = new Library { Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
+        var lib = new Library { UserId = "test-user", Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
         _db.Libraries.Add(lib);
         await _db.SaveChangesAsync();
 
@@ -234,7 +237,7 @@ public class LibrariesControllerTests
     [Fact]
     public async Task CancelScan_CancelsActiveJob()
     {
-        var lib = new Library { Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
+        var lib = new Library { UserId = "test-user", Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
         _db.Libraries.Add(lib);
         await _db.SaveChangesAsync();
 
@@ -262,7 +265,7 @@ public class LibrariesControllerTests
     [Fact]
     public async Task GetMedia_ReturnsPaginatedResults()
     {
-        var lib = new Library { Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
+        var lib = new Library { UserId = "test-user", Id = "lib-1", Name = "Movies", Path = "/data/media/Movies", MediaType = "movies" };
         _db.Libraries.Add(lib);
         
         for (int i = 0; i < 10; i++)

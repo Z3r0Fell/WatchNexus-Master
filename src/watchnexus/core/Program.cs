@@ -460,6 +460,16 @@ using (var scope = app.Services.CreateScope())
 
         // Seed default accounts if none exist
         SeedAccounts(db);
+
+        // Libraries created before per-user ownership (AddLibraryUserId) have an
+        // empty UserId and would be invisible to everyone — hand them to the
+        // oldest admin so they stay reachable after upgrade.
+        var ownerId = db.Users.Where(u => u.Role == "admin").OrderBy(u => u.CreatedAt).Select(u => u.Id).FirstOrDefault();
+        if (ownerId != null)
+        {
+            var claimed = db.Libraries.Where(l => l.UserId == "").ExecuteUpdate(s => s.SetProperty(l => l.UserId, ownerId));
+            if (claimed > 0) Log($"[WatchNexus] Assigned {claimed} unowned librar{(claimed == 1 ? "y" : "ies")} to admin {ownerId}");
+        }
     }
 }
 

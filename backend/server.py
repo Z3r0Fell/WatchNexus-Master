@@ -29,9 +29,23 @@ async def proxy(request: Request, path: str):
     if ".." in path or path.startswith("/"):
         return Response(content="Invalid path", status_code=400)
 
-    body = await request.body()
-    if len(body) > _MAX_BODY:
+    # Reject on the declared length first, then enforce the cap while streaming
+    # so an oversized (or lying/chunked) upload is never fully buffered.
+    try:
+        declared = int(request.headers.get("content-length", "0"))
+    except ValueError:
+        return Response(content="Invalid Content-Length", status_code=400)
+    if declared > _MAX_BODY:
         return Response(content="Request body too large", status_code=413)
+
+    chunks = []
+    received = 0
+    async for chunk in request.stream():
+        received += len(chunk)
+        if received > _MAX_BODY:
+            return Response(content="Request body too large", status_code=413)
+        chunks.append(chunk)
+    body = b"".join(chunks)
 
     url = f"{BACKEND_URL}/api/{path}"
     if request.url.query:
@@ -39,7 +53,6 @@ async def proxy(request: Request, path: str):
 
     headers = dict(request.headers)
     headers.pop("host", None)
-    body = await request.body()
 
     try:
         resp = await _client.request(

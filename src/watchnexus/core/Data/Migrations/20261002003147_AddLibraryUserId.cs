@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -26,8 +26,13 @@ namespace WatchNexus.Core.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Libraries");
+            migrationBuilder.DropIndex(
+                name: "IX_Libraries_UserId",
+                table: "Libraries");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "Libraries");
         }
     }
 }

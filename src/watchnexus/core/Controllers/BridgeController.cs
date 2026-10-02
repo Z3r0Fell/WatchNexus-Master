@@ -18,6 +18,8 @@ public class MarmaladeBridgeController : ControllerBase
     private readonly IHttpClientFactory _httpFactory;
     private readonly IServiceScopeFactory _scopeFactory;
 
+    private string UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
     public MarmaladeBridgeController(AppDbContext db, IConfiguration config, IHttpClientFactory httpFactory, IServiceScopeFactory scopeFactory)
     {
         _db = db;
@@ -28,7 +30,7 @@ public class MarmaladeBridgeController : ControllerBase
 
     [HttpGet("libraries")]
     public async Task<IActionResult> GetLibraries() =>
-        Ok((await _db.Libraries.OrderByDescending(l => l.CreatedAt).ToListAsync())
+        Ok((await _db.Libraries.Where(l => l.UserId == UserId).OrderByDescending(l => l.CreatedAt).ToListAsync())
             .Select(l => new {
                 l.Id, l.Name, l.Path, media_type = l.MediaType,
                 item_count = l.ItemCount, total_size = l.TotalSize,
@@ -67,6 +69,7 @@ public class MarmaladeBridgeController : ControllerBase
 
         var lib = new Library
         {
+            UserId = UserId,
             Name = name,
             Path = trimmedPath,
             MediaType = typeMap.GetValueOrDefault(media_type, media_type.ToLower()),
@@ -84,7 +87,7 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpDelete("libraries/{id}")]
     public async Task<IActionResult> DeleteLibrary(string id)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound();
         _db.MediaItems.RemoveRange(_db.MediaItems.Where(m => m.LibraryId == id));
         _db.Libraries.Remove(lib);
@@ -95,7 +98,7 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpPost("libraries/{id}/scan")]
     public async Task<IActionResult> ScanLibrary(string id)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound(new { detail = "Library not found" });
 
         var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -396,7 +399,7 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpPost("libraries/{id}/refresh-metadata")]
     public async Task<IActionResult> RefreshMetadata(string id)
     {
-        var lib = await _db.Libraries.FindAsync(id);
+        var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound(new { detail = "Library not found" });
         // Get TMDB API key from settings - check multiple sources
         var tmdbApiKey = "";

@@ -474,26 +474,52 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var library = await CreateTestLibraryAsync("Concurrent Scan", "/tmp/concurrent", "movies");
-        
-        // Start two scans simultaneously
-        var scan1 = Client.PostAsync($"/api/libraries/{library.Id}/scan", null);
-        var scan2 = Client.PostAsync($"/api/libraries/{library.Id}/scan", null);
+        await SeedTmdbKeyAsync();
+        var dir = Path.Combine(Path.GetTempPath(), $"concurrent-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "movie.mkv"), "test");
+        var library = await CreateTestLibraryAsync("Concurrent Scan", dir, "movies");
 
-        await Task.WhenAll(scan1, scan2);
+        // Hold the first scan inside its TMDB lookup so it is still running
+        // when both requests are evaluated — makes the race deterministic.
+        var gate = new TaskCompletionSource();
+        var handler = new Mock<HttpMessageHandler>();
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .Returns(async (HttpRequestMessage _, CancellationToken ct) =>
+            {
+                await gate.Task.WaitAsync(ct);
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            });
+        HandlerMocks.Add(handler);
 
-        var resp1 = scan1.Result;
-        var resp2 = scan2.Result;
+        try
+        {
+            // Start two scans simultaneously
+            var scan1 = Client.PostAsync($"/api/libraries/{library.Id}/scan", null);
+            var scan2 = Client.PostAsync($"/api/libraries/{library.Id}/scan", null);
 
-        // Both should return job info (second returns existing job)
-        AssertJsonResponse(resp1);
-        AssertJsonResponse(resp2);
+            await Task.WhenAll(scan1, scan2);
 
-        var json1 = await DeserializeResponseElement(resp1);
-        var json2 = await DeserializeResponseElement(resp2);
+            var resp1 = scan1.Result;
+            var resp2 = scan2.Result;
 
-        // Both should have same job_id (second returns existing)
-        Assert.Equal(json1.GetProperty("job_id").GetString(), json2.GetProperty("job_id").GetString());
+            // Both should return job info (second returns existing job)
+            AssertJsonResponse(resp1);
+            AssertJsonResponse(resp2);
+
+            var json1 = await DeserializeResponseElement(resp1);
+            var json2 = await DeserializeResponseElement(resp2);
+
+            // Both should have same job_id (second returns existing)
+            Assert.Equal(json1.GetProperty("job_id").GetString(), json2.GetProperty("job_id").GetString());
+        }
+        finally
+        {
+            gate.TrySetResult();
+            await Client.DeleteAsync($"/api/libraries/{library.Id}/scan");
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
     }
 
     [Fact]
