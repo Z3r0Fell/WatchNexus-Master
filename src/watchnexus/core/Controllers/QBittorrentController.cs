@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -154,8 +155,24 @@ public class QBittorrentController : ControllerBase
     {
         var h = req.Host ?? "localhost";
         var p = req.Port ?? 8080;
+        if (p < 1 || p > 65535) return BadRequest(new { success = false, error = "Invalid port" });
         if (WatchNexus.Core.Auth.SsrfGuard.IsBlocked(h))
             return BadRequest(new { success = false, detail = "That host is not allowed." });
+
+        // DNS-based SSRF check: resolve hostname and verify no resolved IP targets
+        // cloud metadata/link-local. Loopback and private IPs are allowed because
+        // qBittorrent legitimately runs on localhost or the LAN.
+        if (!IPAddress.TryParse(h, out var ip))
+        {
+            try
+            {
+                var addresses = Dns.GetHostAddresses(h);
+                if (addresses.Length == 0 || addresses.Any(addr => WatchNexus.Core.Auth.SsrfGuard.IsBlocked(addr.ToString())))
+                    return BadRequest(new { success = false, detail = "Host resolved to a blocked address." });
+            }
+            catch { return BadRequest(new { success = false, detail = "Unable to resolve host." }); }
+        }
+
         try
         {
             var http = this.Http();

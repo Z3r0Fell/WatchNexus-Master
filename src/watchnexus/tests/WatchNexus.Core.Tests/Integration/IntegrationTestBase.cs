@@ -292,6 +292,7 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// </summary>
     protected async Task SeedLicenseAsync(string tier, string? serial = null)
     {
+        DbContext.ChangeTracker.Clear();
         serial ??= tier switch
         {
             "pro" => "WNX-PRO-AAAA-BBBB-CCCC",

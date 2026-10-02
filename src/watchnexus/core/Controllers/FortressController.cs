@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WatchNexus.Core.Data;
@@ -15,13 +16,18 @@ namespace WatchNexus.Core.Controllers;
 // ══════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Middleware filter that enforces tier licensing at the API level.
+/// Middleware that enforces tier licensing at the API level.
 /// Prevents Pro/Ultra endpoints from being accessed without a valid license,
 /// even if the frontend tier gate is bypassed.
+///
+/// As midddleware (rather than an action filter) it runs BEFORE routing so
+/// that requests to protected module routes return 403 even when no specific
+/// controller action exists for the sub-path. This prevents unauthorised users
+/// from enumerating valid/exists endpoints on paid modules.
 /// </summary>
-public class FortressFilter : IAsyncActionFilter
+public class FortressFilter
 {
-    private readonly AppDbContext _db;
+    private readonly RequestDelegate _next;
 
     // Module codename → required tier
     internal static readonly Dictionary<string, string> ProtectedRoutes = new()
@@ -70,16 +76,16 @@ public class FortressFilter : IAsyncActionFilter
         "/api/crucible/ffmpeg-status",
     };
 
-    public FortressFilter(AppDbContext db) => _db = db;
+    public FortressFilter(RequestDelegate next) => _next = next;
 
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    public async Task InvokeAsync(HttpContext context, AppDbContext? db = null)
     {
-        var path = context.HttpContext.Request.Path.Value?.ToLower() ?? "";
+        var path = context.Request.Path.Value?.ToLower() ?? "";
 
         // System diagnostics / onboarding probes bypass tier enforcement entirely.
         if (ExemptPaths.Contains(path.TrimEnd('/')))
         {
-            await next();
+            await _next(context);
             return;
         }
 
@@ -99,39 +105,41 @@ public class FortressFilter : IAsyncActionFilter
                 moduleName = segments[1];
             }
 
-            if (moduleName != null)
-            {
-                var requiredTier = GetRequiredTier(moduleName);
-                if (requiredTier != null)
+                if (moduleName != null)
                 {
-                    var currentTier = await GetCurrentTier();
-                    var currentRank = TierRank.GetValueOrDefault(currentTier, 0);
-                    var requiredRank = TierRank.GetValueOrDefault(requiredTier, 0);
+                    var requiredTier = GetRequiredTier(moduleName);
+                    if (requiredTier != null)
+                    {
+                        var currentTier = await GetCurrentTier(db ?? context.RequestServices.GetService<AppDbContext>() ?? throw new InvalidOperationException("AppDbContext not found"));
+                        var currentRank = TierRank.GetValueOrDefault(currentTier, 0);
+                        var requiredRank = TierRank.GetValueOrDefault(requiredTier, 0);
 
                     if (currentRank < requiredRank)
                     {
-                        context.Result = new JsonResult(new
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Response.ContentType = "application/json";
+                        var json = JsonSerializer.Serialize(new
                         {
                             error = "FORTRESS_TIER_LOCKED",
                             message = $"This feature requires a {requiredTier} license.",
                             required_tier = requiredTier,
                             current_tier = currentTier,
                             upgrade_url = "/settings?section=activation",
-                        })
-                        { StatusCode = 403 };
+                        });
+                        await context.Response.WriteAsync(json);
                         return;
                     }
                 }
             }
         }
 
-        await next();
+        await _next(context);
     }
 
-    private static string? GetRequiredTier(string moduleName)
+    internal static string? GetRequiredTier(string moduleName)
     {
         // 1. Check dynamic module registry (populated from module.json manifests)
-        if (ModuleRegistry.TryGetByRoute(moduleName, out var codename) && ModuleRegistry.TryGetTier(codename!, out var registryTier))
+        if (ModuleRegistry.TryGetByRoute($"api/{moduleName}", out var codename) && ModuleRegistry.TryGetTier(codename!, out var registryTier))
             return registryTier;
 
         // 2. Check direct codename match in registry
@@ -145,11 +153,11 @@ public class FortressFilter : IAsyncActionFilter
         return null;
     }
 
-    private async Task<string> GetCurrentTier()
+    internal static async Task<string> GetCurrentTier(AppDbContext db)
     {
         try
         {
-            var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
+            var setting = await db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
             // Tamper-evident read: hash must match the stored serial (CellarController.ResolveTier).
             return CellarController.ResolveTier(setting?.Value);
         }

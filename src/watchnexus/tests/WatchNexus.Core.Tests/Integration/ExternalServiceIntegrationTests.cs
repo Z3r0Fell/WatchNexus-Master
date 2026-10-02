@@ -160,12 +160,12 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Compote_IndexerTest_BlocksLocalhost()
+    public async Task Compote_IndexerTest_BlocksCloudMetadata()
     {
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var indexerBody = JsonSerializer.Serialize(new { name = "Local", indexer_type = "torznab", url = "http://localhost:9696", api_key = "key" });
+        var indexerBody = JsonSerializer.Serialize(new { name = "CloudMeta", indexer_type = "torznab", url = "http://169.254.169.254", api_key = "key" });
         var createResponse = await Client.PostAsync("/api/compote/indexers", new StringContent(indexerBody, System.Text.Encoding.UTF8, "application/json"));
         var created = await DeserializeResponseElement(createResponse);
         var indexerId = created.GetProperty("id").GetString();
@@ -220,25 +220,27 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Qbit_TestConnection_BlocksLocalhost()
+    public async Task Qbit_TestConnection_AllowsLocalhost()
     {
         AuthenticateAsUser();
 
         var body = JsonSerializer.Serialize(new { host = "localhost", port = 8080, username = "admin", password = "admin" });
         var response = await Client.PostAsync("/api/settings/integrations/qbittorrent/test", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
         
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Loopback is allowed for qBittorrent connection tests (qBittorrent runs locally)
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task Qbit_TestConnection_BlocksLoopbackIP()
+    public async Task Qbit_TestConnection_AllowsLoopbackIP()
     {
         AuthenticateAsUser();
 
         var body = JsonSerializer.Serialize(new { host = "127.0.0.1", port = 8080, username = "admin", password = "admin" });
         var response = await Client.PostAsync("/api/settings/integrations/qbittorrent/test", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
         
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Loopback is allowed for qBittorrent connection tests (qBittorrent runs locally)
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     #endregion

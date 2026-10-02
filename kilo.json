@@ -15,5 +15,6 @@
     "question": "allow",
     "skill": "allow",
     "external_directory": "allow"
-  }
+  },
+  "snapshot": false
 }

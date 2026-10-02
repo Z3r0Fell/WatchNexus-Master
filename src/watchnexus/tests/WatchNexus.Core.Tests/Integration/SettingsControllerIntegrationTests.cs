@@ -381,7 +381,7 @@ public class SettingsControllerIntegrationTests : IntegrationTestBase
     {
         AuthenticateAsUser();
 
-        var body = JsonSerializer.Serialize(new { host = "localhost", port = 8080, username = "admin", password = "pass" });
+        var body = JsonSerializer.Serialize(new { host = "169.254.169.254", port = 8080, username = "admin", password = "pass" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var response = await Client.PostAsync("/api/settings/integrations/qbittorrent/test", content);
@@ -390,7 +390,7 @@ public class SettingsControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TestQbitConnection_LoopbackIP_Returns400()
+    public async Task TestQbitConnection_LoopbackIP_Returns200()
     {
         AuthenticateAsUser();
 
@@ -399,7 +399,7 @@ public class SettingsControllerIntegrationTests : IntegrationTestBase
 
         var response = await Client.PostAsync("/api/settings/integrations/qbittorrent/test", content);
         
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     #endregion

@@ -363,8 +363,8 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddControllers(options =>
 {
-    // ── FORTRESS PROTOCOL: API-level tier enforcement ──
-    options.Filters.Add<FortressFilter>();
+    // Fortress tier enforcement is now applied as middleware (see app.UseMiddleware below)
+    // so it runs before routing and returns 403 even for non-existent sub-routes on paid modules.
 });
 builder.Services.AddEndpointsApiExplorer();
 // Swagger is a dev-time convenience only — never expose the API schema on a
@@ -590,7 +590,7 @@ app.Use(async (ctx, next) =>
     // the CRA build (no nonce); external script origins are still denied.
     ctx.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "script-src 'self' 'unsafe-inline'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: blob: https:; " +
         "font-src 'self' data:; " +
@@ -656,6 +656,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ── FORTRESS PROTOCOL: API-level tier enforcement (as middleware so it
+// runs BEFORE routing — returns 403 even for non-existent sub-routes on paid modules)
+app.UseMiddleware<FortressFilter>();
+
 app.UseRateLimiter();
 app.UseCsrfProtection();
 app.UseWebSockets();

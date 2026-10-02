@@ -19,6 +19,29 @@ public class IptvController : ControllerBase
 
     private const string IptvFavKey = "iptv_favorite:";
 
+    private async Task<string> FetchM3UAsync(string url)
+    {
+        var http = this.Http();
+        http.Timeout = TimeSpan.FromSeconds(30);
+        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"HTTP {(int)response.StatusCode}");
+        var maxBytes = 50 * 1024 * 1024;
+        using var stream = await response.Content.ReadAsStreamAsync();
+        using var mem = new MemoryStream();
+        var buffer = new byte[8192];
+        int read;
+        var total = 0;
+        while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        {
+            total += read;
+            if (total > maxBytes) throw new InvalidOperationException("M3U content exceeds 50 MB limit");
+            await mem.WriteAsync(buffer, 0, read);
+        }
+        return Encoding.UTF8.GetString(mem.ToArray());
+    }
+
+    private static readonly HashSet<string> AllowedMediaTypes = new(StringComparer.OrdinalIgnoreCase) { "movie", "tv", "person" };
+
     [HttpGet("sources")]
     public async Task<IActionResult> Sources()
     {
@@ -43,8 +66,7 @@ public class IptvController : ControllerBase
         await _db.SaveChangesAsync();
         try
         {
-            var http = this.Http();
-            var content = await http.GetStringAsync(url ?? "");
+            var content = await FetchM3UAsync(url ?? "");
             var channels = ParseM3U(content, source.Id);
             _db.IptvChannels.AddRange(channels);
             source.ChannelCount = channels.Count;
@@ -67,8 +89,8 @@ public class IptvController : ControllerBase
         if (body.TryGetProperty("url", out var u))
         {
             var newUrl = u.GetString();
-            if (!SsrfGuard.IsAllowedUrl(newUrl))
-                return BadRequest(new { detail = "Source URL is not allowed (only public http/https URLs)" });
+            if (string.IsNullOrEmpty(newUrl) || !SsrfGuard.IsAllowedUrl(newUrl))
+                return BadRequest(new { detail = "Source URL is not an allowed http(s) URL" });
             source.Url = newUrl;
         }
         if (body.TryGetProperty("epg_url", out var e)) source.EpgUrl = e.GetString();
@@ -87,8 +109,7 @@ public class IptvController : ControllerBase
         _db.IptvChannels.RemoveRange(oldChannels);
         try
         {
-            var http = this.Http();
-            var content = await http.GetStringAsync(source.Url);
+            var content = await FetchM3UAsync(source.Url);
             var channels = ParseM3U(content, source.Id);
             _db.IptvChannels.AddRange(channels);
             source.ChannelCount = channels.Count;

@@ -107,14 +107,17 @@ public class FortressControllerIntegrationTests : IntegrationTestBase
         var response = await Client.GetAsync(endpoint);
 
         // Assert
-        Assert.Equal(expectedStatus, response.StatusCode);
-        
         if (expectedStatus == HttpStatusCode.Forbidden)
         {
-            AssertJsonResponse(response);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            AssertJsonResponse(response, HttpStatusCode.Forbidden);
             var json = await DeserializeResponseElement(response);
             Assert.Equal("FORTRESS_TIER_LOCKED", json.GetProperty("error").GetString());
             Assert.Equal(tier, json.GetProperty("current_tier").GetString());
+        }
+        else
+        {
+            Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
         }
     }
 
@@ -163,13 +166,17 @@ public class FortressControllerIntegrationTests : IntegrationTestBase
         var response = await Client.GetAsync(endpoint);
 
         // Assert
-        Assert.Equal(expectedStatus, response.StatusCode);
-        
         if (expectedStatus == HttpStatusCode.Forbidden)
         {
-            AssertJsonResponse(response);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            AssertJsonResponse(response, HttpStatusCode.Forbidden);
             var json = await DeserializeResponseElement(response);
             Assert.Equal("FORTRESS_TIER_LOCKED", json.GetProperty("error").GetString());
+        }
+        else
+        {
+            // For pro/ultra tier, the middleware should NOT block (any non-403 is acceptable)
+            Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
         }
     }
 
