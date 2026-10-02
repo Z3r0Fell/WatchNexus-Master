@@ -184,7 +184,7 @@ public class FortressIntegrityTests
 
         var doc = JsonDocument.Parse(manifest.Value).RootElement;
         Assert.Equal("1.0", doc.GetProperty("version").GetString());
-        Assert.Equal("1.0.4", doc.GetProperty("app_version").GetString());
+        Assert.Equal("1.0.5", doc.GetProperty("app_version").GetString());
         Assert.NotNull(doc.GetProperty("file_hashes"));
         Assert.NotNull(doc.GetProperty("sealed_at"));
         Assert.NotNull(doc.GetProperty("machine_id"));

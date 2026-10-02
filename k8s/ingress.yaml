@@ -17,7 +17,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.4"
+    app.kubernetes.io/version: "1.0.5"
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/proxy-body-size: "50G"

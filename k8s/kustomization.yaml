@@ -16,12 +16,12 @@ resources:
 
 commonLabels:
   app.kubernetes.io/name: watchnexus
-  app.kubernetes.io/version: "1.0.4"
+  app.kubernetes.io/version: "1.0.5"
   app.kubernetes.io/managed-by: kustomize
 
 images:
   - name: watchnexus/watchnexus
-    newTag: 1.0.4-ultra
+    newTag: 1.0.5-ultra
 
 configMapGenerator:
   - name: watchnexus-config

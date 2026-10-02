@@ -1,6 +1,6 @@
 # WatchNexus Deployment
 # 
-# Image: watchnexus/watchnexus:1.0.4-ultra (or -standard, -pro)
+# Image: watchnexus/watchnexus:1.0.5-ultra (or -standard, -pro)
 # GPU: Requires nvidia.com/gpu resource (Ultra tier only)
 # Replicas: 1 (SQLite doesn't support multi-writer; use external PostgreSQL for HA)
 #
@@ -11,7 +11,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.4"
+    app.kubernetes.io/version: "1.0.5"
     app.kubernetes.io/component: backend
 spec:
   replicas: 1
@@ -25,7 +25,7 @@ spec:
       labels:
         app: watchnexus
         app.kubernetes.io/name: watchnexus
-        app.kubernetes.io/version: "1.0.4"
+        app.kubernetes.io/version: "1.0.5"
       annotations:
         # Reload on config/secret change
         checksum/config: "{{ include (print $.Template.BasePath "/configmap.yaml") | sha256sum }}"
@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: watchnexus
-          image: watchnexus/watchnexus:1.0.4-ultra
+          image: watchnexus/watchnexus:1.0.5-ultra
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001

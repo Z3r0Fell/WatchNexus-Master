@@ -46,7 +46,7 @@ public class FortressControllerTests
         var props = value!.GetType().GetProperties();
         
         Assert.Equal("1.0", props.First(p => p.Name == "fortress_version").GetValue(value));
-        Assert.Equal("1.0.4", props.First(p => p.Name == "app_version").GetValue(value));
+        Assert.Equal("1.0.5", props.First(p => p.Name == "app_version").GetValue(value));
         Assert.NotNull(props.First(p => p.Name == "integrity_valid").GetValue(value));
         Assert.NotNull(props.First(p => p.Name == "protections").GetValue(value));
     }

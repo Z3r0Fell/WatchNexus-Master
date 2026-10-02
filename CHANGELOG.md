@@ -1,5 +1,19 @@
 # WatchNexus Changelog
 
+## 2026-10-01 — v1.0.5 (Per-User Libraries)
+
+### Fixes
+- **Per-user library ownership now actually migrates** — `AddLibraryUserId` ships with its EF Designer so `Migrate()` applies it; `Down()` drops only the new column/index.
+- **Existing libraries survive the upgrade** — libraries created before v1.0.5 are assigned to the oldest admin on startup instead of disappearing.
+- **Marmalade bridge respects ownership** — `/api/marmalade/libraries/*` list/delete/scan/refresh-metadata are scoped to the caller; new libraries record their owner.
+- **Library scan race fixed** — concurrent scan requests share one job; a cancelled scan can no longer overwrite a newer one; libraries can be rescanned once a scan finishes.
+
+### Security
+- Frontend: `axios` 1.20.0 and `react-router` 7.18.4 (patches all high-severity advisories in shipped runtime dependencies).
+
+### Cleanup
+- Removed the unused Emergent preview proxy (`backend/`), AI/design tool configs, and internal audit reports from the repository.
+
 ## 2026-09-15 — v1.0.4 (Production Release Hardening)
 
 ### Security Hardening

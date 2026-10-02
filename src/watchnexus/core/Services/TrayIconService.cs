@@ -16,7 +16,7 @@ public sealed class TrayIconService : BackgroundService
     private readonly int _port;
     private Process? _linuxTrayProcess;
 
-    private const string AppVersion = "1.0.4";
+    private const string AppVersion = "1.0.5";
 
     public TrayIconService(IHostApplicationLifetime lifetime, ILogger<TrayIconService> logger)
     {
