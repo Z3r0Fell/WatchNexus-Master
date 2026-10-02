@@ -46,7 +46,7 @@ public class FortressControllerIntegrationTests : IntegrationTestBase
         var json = await DeserializeResponseElement(response);
         
         Assert.Equal("1.0", json.GetProperty("fortress_version").GetString());
-        Assert.Equal("1.0.5", json.GetProperty("app_version").GetString());
+        Assert.Equal("1.0.6", json.GetProperty("app_version").GetString());
         Assert.NotNull(json.GetProperty("integrity_valid"));
         Assert.NotNull(json.GetProperty("protections"));
         Assert.True(json.GetProperty("protections").GetProperty("tier_enforcement").GetBoolean());

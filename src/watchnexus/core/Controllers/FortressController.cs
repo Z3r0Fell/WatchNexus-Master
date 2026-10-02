@@ -212,7 +212,7 @@ public static class FortressIntegrity
         {
             version = FORTRESS_VERSION,
             sealed_at = DateTime.UtcNow.ToString("o"),
-            app_version = "1.0.5",
+            app_version = "1.0.6",
             file_hashes = hashes,
             machine_id = Environment.MachineName,
         });
@@ -295,7 +295,7 @@ public class FortressController : ControllerBase
         return Ok(new
         {
             fortress_version = "1.0",
-            app_version = "1.0.5",
+            app_version = "1.0.6",
             integrity_valid = valid,
             violations = violations.Count > 0 ? violations : null,
             sealed_at = sealedAt,

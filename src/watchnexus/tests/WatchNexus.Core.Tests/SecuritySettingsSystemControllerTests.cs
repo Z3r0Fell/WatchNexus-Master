@@ -654,7 +654,7 @@ public class DbControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var value = okResult.Value;
         var props = value!.GetType().GetProperties();
-        Assert.Equal("1.0.5", props.First(p => p.Name == "version").GetValue(value));
+        Assert.Equal("1.0.6", props.First(p => p.Name == "version").GetValue(value));
         var endpoints = Assert.IsAssignableFrom<IEnumerable<object>>(props.First(p => p.Name == "endpoints").GetValue(value));
         Assert.NotEmpty(endpoints);
     }
@@ -667,7 +667,7 @@ public class DbControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var value = okResult.Value;
         var props = value!.GetType().GetProperties();
-        Assert.Equal("1.0.5", props.First(p => p.Name == "version").GetValue(value));
+        Assert.Equal("1.0.6", props.First(p => p.Name == "version").GetValue(value));
         Assert.NotNull(props.First(p => p.Name == "content").GetValue(value));
     }
 }

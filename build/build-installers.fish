@@ -24,7 +24,7 @@ set -g SCRIPT_DIR (dirname (status -f))
 set -g ROOT_DIR (realpath "$SCRIPT_DIR/..")
 set -g STAGE_DIR "$ROOT_DIR/stage"
 set -g RELEASE_DIR "$ROOT_DIR/release"
-set -g VERSION "1.0.5"
+set -g VERSION "1.0.6"
 set -g VENDOR "WatchNexus Media Systems"
 set -g URL "https://watchnexus.ca"
 set -g LICENSE "Proprietary"

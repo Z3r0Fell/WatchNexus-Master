@@ -1,5 +1,13 @@
 # WatchNexus Changelog
 
+## 2026-10-01 — v1.0.6 (License Activation)
+
+### Fixes
+- **Pro/Ultra serials activate out of the box** — official images ship a publishable activate-only license-server key (`LICENSE_SERVER_CLIENT_KEY`, injected at build time; it cannot mint serials). `LICENSE_SERVER_API_KEY` remains an optional override.
+- **Seats are released correctly** — upgrading Pro → Ultra frees the Pro seat, a rejected activation hands its seat back, and deactivating releases the seat on the license server.
+- **Container updates no longer consume seats** — a persistent install id replaces the container hostname as the hardware id.
+- First-launch activation rejects Standard serials instead of reporting "Ultra activated".
+
 ## 2026-10-01 — v1.0.5 (Per-User Libraries)
 
 ### Fixes

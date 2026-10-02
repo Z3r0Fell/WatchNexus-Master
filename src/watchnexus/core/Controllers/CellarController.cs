@@ -18,9 +18,12 @@ namespace WatchNexus.Core.Controllers;
 [ApiController]
 public class CellarController : ControllerBase
 {
-    // License server config is loaded exclusively from environment variables.
-    // If LICENSE_SERVER_API_KEY is not set, activation will fail with a 503
-    // rather than falling back to a shared embedded key.
+    // License server credentials come from configuration only (never source):
+    //  - LICENSE_SERVER_API_KEY: operator-supplied key (full integrator access).
+    //  - LICENSE_SERVER_CLIENT_KEY: publishable activate/validate/deactivate-only
+    //    key baked into official images at build time, so customer installs can
+    //    activate a purchased serial out of the box. It cannot mint serials.
+    // With neither set, activation returns 503 (Standard keeps working).
     private const string DEFAULT_LICENSE_SERVER_URL = "https://licenses.watchnexus.ca";
 
     private static readonly Dictionary<string, List<DateTime>> _activationAttempts = new();
@@ -189,15 +192,18 @@ public class CellarController : ControllerBase
         return http;
     }
 
+    private string? LicenseApiKey =>
+        _config["LICENSE_SERVER_API_KEY"] is { Length: > 0 } operatorKey ? operatorKey : _config["LICENSE_SERVER_CLIENT_KEY"];
+
     private string LicenseServerUrl => (_config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL).TrimEnd('/');
 
     private async Task<(ServerActivation? Activation, IActionResult? Error)> ActivateWithLicenseServer(string serial)
     {
-        var lsApiKey = _config["LICENSE_SERVER_API_KEY"];
+        var lsApiKey = LicenseApiKey;
         // No offline/format-based unlock: a paid tier can only be granted by the
         // WatchNexus license server (the free Standard tier always works).
         if (string.IsNullOrEmpty(lsApiKey))
-            return (null, StatusCode(503, new { success = false, message = "License activation requires LICENSE_SERVER_API_KEY to be configured." }));
+            return (null, StatusCode(503, new { success = false, message = "License activation is unavailable: this build has no license server key (set LICENSE_SERVER_API_KEY). You can keep using the free Standard tier." }));
 
         var installId = await GetOrCreateInstallId();
         try
@@ -245,7 +251,7 @@ public class CellarController : ControllerBase
     // Best-effort seat release on the license server.
     private async Task ReleaseActivation(string? activationToken)
     {
-        var lsApiKey = _config["LICENSE_SERVER_API_KEY"];
+        var lsApiKey = LicenseApiKey;
         if (string.IsNullOrEmpty(activationToken) || string.IsNullOrEmpty(lsApiKey)) return;
         try
         {

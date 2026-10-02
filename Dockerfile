@@ -55,6 +55,9 @@ RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
 # ── Stage 3: Runtime ─────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 ARG TIER=standard
+# Publishable activate-only license key for official images (see CellarController).
+# Supplied at release time: --build-arg LICENSE_SERVER_CLIENT_KEY=wnk_...
+ARG LICENSE_SERVER_CLIENT_KEY=""
 ARG PORT=8001
 
 # Install runtime dependencies
@@ -67,7 +70,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Labels
 LABEL org.opencontainers.image.title="WatchNexus ${TIER}" \
       org.opencontainers.image.description="WatchNexus Media Server - ${TIER} Edition" \
-      org.opencontainers.image.version="1.0.5" \
+      org.opencontainers.image.version="1.0.6" \
       org.opencontainers.image.vendor="WatchNexus" \
       org.opencontainers.image.source="https://github.com/Z3r0Fell/watchnexus" \
       com.watchnexus.tier="${TIER}"
@@ -93,6 +96,7 @@ USER watchnexus
 ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT} \
     WATCHNEXUS_PORT=${PORT} \
     WATCHNEXUS_TIER=${TIER} \
+    LICENSE_SERVER_CLIENT_KEY=${LICENSE_SERVER_CLIENT_KEY} \
     DOTNET_RUNNING_IN_CONTAINER=true \
     DOTNET_EnableDiagnostics=0
 

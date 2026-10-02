@@ -5,5 +5,5 @@ metadata:
   name: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.5"
+    app.kubernetes.io/version: "1.0.6"
     app.kubernetes.io/managed-by: kubectl

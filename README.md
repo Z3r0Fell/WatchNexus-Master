@@ -10,7 +10,7 @@
 <h1 align="center">WatchNexus</h1>
 
 <p align="center">
-  <strong>Release To Public — RTP v1.0.5</strong><br>
+  <strong>Release To Public — RTP v1.0.6</strong><br>
   A unified, self-hosted media server with tier-locked module licensing.
 </p>
 
@@ -134,7 +134,7 @@ docker run -d \
   -v /path/to/media:/data/media \
   -e WATCHNEXUS_TIER=standard \
   -e TZ=America/Toronto \
-  watchnexus/watchnexus:1.0.5-standard
+  watchnexus/watchnexus:1.0.6-standard
 
 # Pro
 docker run -d \
@@ -145,8 +145,7 @@ docker run -d \
   -v /path/to/rips:/data/rips \
   -e WATCHNEXUS_TIER=pro \
   -e TZ=America/Toronto \
-  -e LICENSE_SERVER_API_KEY=your_api_key \
-  watchnexus/watchnexus:1.0.5-pro
+  watchnexus/watchnexus:1.0.6-pro
 
 # Ultra (with GPU)
 docker run -d \
@@ -159,9 +158,8 @@ docker run -d \
   -v /path/to/offline:/data/offline \
   -e WATCHNEXUS_TIER=ultra \
   -e TZ=America/Toronto \
-  -e LICENSE_SERVER_API_KEY=your_api_key \
   --gpus all \
-  watchnexus/watchnexus:1.0.5-ultra
+  watchnexus/watchnexus:1.0.6-ultra
 ```
 
 **Docker Compose (Multi-Tier):**
@@ -191,7 +189,7 @@ docker run -d --name watchnexus \
   -v watchnexus-data:/app/data \
   -v /path/to/media:/data/media \
   -e WATCHNEXUS_TIER=standard \
-  watchnexus/watchnexus:1.0.5-standard
+  watchnexus/watchnexus:1.0.6-standard
 ```
 
 ### Unraid / TrueNAS / CasaOS / HexOS / Portainer / Synology
@@ -227,7 +225,7 @@ Community Apps → Search "WatchNexus" → Install.
 | `ASPNETCORE_ENVIRONMENT` | No | `Production` | `Development`/`Production` |
 | `TZ` | No | `UTC` | Timezone (e.g., `America/Toronto`) |
 | `LICENSE_SERVER_URL` | No | `https://licenses.watchnexus.ca` | License server endpoint |
-| `LICENSE_SERVER_API_KEY` | Pro/Ultra | Built-in | API key for license validation |
+| `LICENSE_SERVER_API_KEY` | No | Built into official images | Override key for the license server. Official Docker Hub images ship an activate-only client key, so Pro/Ultra serials activate without setting this. |
 | `TMDB_API_KEY` | Recommended | — | TMDB v3 API key for metadata |
 | `JWT_SECRET` | No | Auto-generated | 32+ char signing secret (set for consistency) |
 | `ALLOWED_ORIGINS` | No | `localhost` | CORS origins (comma-separated) |
@@ -556,7 +554,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: watchnexus
-          image: watchnexus/watchnexus:1.0.5-ultra
+          image: watchnexus/watchnexus:1.0.6-ultra
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
@@ -758,4 +756,4 @@ Third-party component notices: <https://watchnexus.ca/legal/notices>.
 
 ---
 
-<p align="center"><sub>WatchNexus · RTP v1.0.5 · Built with care for self-hosters.</sub></p>
+<p align="center"><sub>WatchNexus · RTP v1.0.6 · Built with care for self-hosters.</sub></p>

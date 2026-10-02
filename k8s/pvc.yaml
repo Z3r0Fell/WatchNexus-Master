@@ -10,7 +10,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.5"
+    app.kubernetes.io/version: "1.0.6"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -26,7 +26,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.5"
+    app.kubernetes.io/version: "1.0.6"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -42,7 +42,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.5"
+    app.kubernetes.io/version: "1.0.6"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -58,7 +58,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.5"
+    app.kubernetes.io/version: "1.0.6"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -74,7 +74,7 @@ metadata:
   namespace: watchnexus
   labels:
     app.kubernetes.io/name: watchnexus
-    app.kubernetes.io/version: "1.0.5"
+    app.kubernetes.io/version: "1.0.6"
 spec:
   accessModes:
     - ReadWriteOnce

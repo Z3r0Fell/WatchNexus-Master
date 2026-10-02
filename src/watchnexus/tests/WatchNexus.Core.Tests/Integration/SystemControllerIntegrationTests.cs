@@ -29,7 +29,7 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
         
-        Assert.Equal("1.0.5", json.GetProperty("version").GetString());
+        Assert.Equal("1.0.6", json.GetProperty("version").GetString());
         Assert.NotNull(json.GetProperty("hostname").GetString());
         Assert.NotNull(json.GetProperty("platform").GetString());
         Assert.NotNull(json.GetProperty("architecture").GetString());
@@ -241,7 +241,7 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
         
-        Assert.Equal("1.0.5", json.GetProperty("current_version").GetString());
+        Assert.Equal("1.0.6", json.GetProperty("current_version").GetString());
         Assert.NotNull(json.GetProperty("tier"));
         Assert.NotNull(json.GetProperty("main_update"));
         Assert.NotNull(json.GetProperty("hotfix_patch"));
@@ -259,7 +259,7 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
         
-        Assert.Equal("1.0.5", json.GetProperty("version").GetString());
+        Assert.Equal("1.0.6", json.GetProperty("version").GetString());
         Assert.NotNull(json.GetProperty("tier"));
         Assert.NotNull(json.GetProperty("tier_name"));
         Assert.NotNull(json.GetProperty("update_channels"));
@@ -343,7 +343,7 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
     {
         AuthenticateAsUser();
 
-        var body = JsonSerializer.Serialize(new { version = "1.0.5" });
+        var body = JsonSerializer.Serialize(new { version = "1.0.6" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var response = await Client.PostAsync("/api/system/updates/dismiss", content);
