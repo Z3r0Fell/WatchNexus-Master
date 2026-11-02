@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -81,10 +81,10 @@ const PopsiclePage = withErrorBoundary(lazy(() => import("./pages/PopsiclePage")
 const PreservesPage = withErrorBoundary(lazy(() => import("./pages/PreservesPage")), 'Cloud Backup');
 const MarshmallowPage = withErrorBoundary(lazy(() => import("./pages/MarshmallowPage")), 'Cloud Sync');
 const ChowderPage = withErrorBoundary(lazy(() => import("./pages/ChowderPage")), 'Media Sync');
-const WatchPartyPage = withErrorBoundary(lazy(() => import("./pages/WatchPartyPage")), 'Watch Party');
+const WatchPartyPage = withErrorBoundary(lazy(() => import("./pages/WatchPartyPage").then(m => ({ default: m.WatchPartyPage }))), 'Watch Party');
 const LobsterPage = withErrorBoundary(lazy(() => import("./pages/LobsterPage")), 'Lobster');
-const RoadmapPage = withErrorBoundary(lazy(() => import("./pages/RoadmapPage")), 'Roadmap');
-const ChangelogPage = withErrorBoundary(lazy(() => import("./pages/ChangelogPage")), 'Changelog');
+const RoadmapPage = withErrorBoundary(lazy(() => import("./pages/RoadmapPage").then(m => ({ default: m.RoadmapPage }))), 'Roadmap');
+const ChangelogPage = withErrorBoundary(lazy(() => import("./pages/ChangelogPage").then(m => ({ default: m.ChangelogPage }))), 'Changelog');
 
 const PageLoader = () => (
   <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
@@ -95,12 +95,6 @@ const PageLoader = () => (
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  const location = useLocation();
-
-  // Skip auth check if user data was passed from OAuth callback
-  if (location.state?.user) {
-    return children;
-  }
 
   if (loading) {
     return <PageLoader />;
