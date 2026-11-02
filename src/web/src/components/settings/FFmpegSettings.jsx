@@ -45,10 +45,12 @@ export const FFmpegSettings = () => {
   const probeInstalled = !!status?.ffprobe_installed;
   const hint = status?.install_hint;
 
-  const copy = () => {
+  const copy = async () => {
     if (!hint) return;
     try {
-      navigator.clipboard.writeText(hint);
+      // navigator.clipboard is undefined outside secure contexts (plain-HTTP
+      // LAN access) and writeText rejects asynchronously when denied.
+      await navigator.clipboard.writeText(hint);
       setCopied(true);
       toast.success('Install command copied');
       setTimeout(() => setCopied(false), 1500);
@@ -62,7 +64,8 @@ export const FFmpegSettings = () => {
       <SettingsTabHeader
         icon={Film}
         title="FFmpeg"
-        description="Media transcoding, playback, repair and disc-ripping all depend on FFmpeg. This panel checks whether it's installed and where."
+        tabs={[]}
+        subtitle="Media transcoding, playback, repair and disc-ripping all depend on FFmpeg. This panel checks whether it's installed and where."
       />
 
       <SettingsTabContent>

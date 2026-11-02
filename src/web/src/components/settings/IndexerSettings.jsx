@@ -78,7 +78,7 @@ export const IndexerSettings = () => {
     try {
       const res = await compoteApi.testIndexer(indexerId);
       res.data.success ? toast.success(res.data.message || 'Connection successful') : toast.error(res.data.error || 'Connection failed');
-    } catch (error) { toast.error('Test failed: ' + (error.response?.data?.detail || error.message)); }
+    } catch (error) { toast.error('Test failed: ' + (error.response?.data?.detail || error.response?.data?.error || error.message)); }
     finally { setTestingIndexer(null); }
   };
 
@@ -221,7 +221,7 @@ export const IndexerSettings = () => {
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{indexer.name}</p>
                       <span className={`text-xs px-2 py-0.5 rounded ${indexer.type === 'torznab' ? 'bg-blue-500/20 text-blue-400' : indexer.type === 'newznab' ? 'bg-purple-500/20 text-purple-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                        {indexer.type.toUpperCase()}
+                        {(indexer.type || 'torznab').toUpperCase()}
                       </span>
                       {indexer.cloudflare_protected && <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400">CF</span>}
                     </div>

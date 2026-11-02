@@ -33,7 +33,9 @@ export const IPTVSettings = () => {
       const response = await axios.get(`${BACKEND_URL}/api/iptv/sources`, {
         
       });
-      setIptvSources(response.data.sources || []);
+      // GET /api/iptv/sources returns a bare array (older builds wrapped it in { sources }).
+      const data = response.data;
+      setIptvSources(Array.isArray(data) ? data : (data?.sources || []));
     } catch (error) {
       console.error('Failed to fetch IPTV sources:', error);
       toast.error('Failed to load IPTV sources');
@@ -63,12 +65,17 @@ export const IPTVSettings = () => {
         
       });
       
-      setIptvSources([...iptvSources, response.data]);
+      // The add response only carries id/name/status; keep the submitted url/type for display.
+      setIptvSources(prev => [...prev, { ...newIptvSource, ...response.data }]);
       setNewIptvSource({ name: '', url: '', epg_url: '', type: 'm3u' });
-      toast.success('IPTV source added');
+      if (response.data?.parse_error) {
+        toast.warning(`IPTV source added, but the playlist could not be loaded: ${response.data.parse_error}`);
+      } else {
+        toast.success('IPTV source added');
+      }
     } catch (error) {
       console.error('Failed to add IPTV source:', error);
-      toast.error('Failed to add IPTV source');
+      toast.error(error.response?.data?.detail || 'Failed to add IPTV source');
     } finally {
       setSaving(false);
     }
@@ -79,7 +86,7 @@ export const IPTVSettings = () => {
       await axios.delete(`${BACKEND_URL}/api/iptv/sources/${id}`, {
         
       });
-      setIptvSources(iptvSources.filter(s => s.id !== id));
+      setIptvSources(prev => prev.filter(s => s.id !== id));
       toast.success('IPTV source removed');
     } catch (error) {
       console.error('Failed to delete IPTV source:', error);
