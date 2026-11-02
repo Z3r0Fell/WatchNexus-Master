@@ -509,8 +509,12 @@ using (var scope = app.Services.CreateScope())
 static string ResolveJwtSecret(IConfiguration config, string dataDir, Action<string> log, bool isTesting)
 {
     const string legacyWeak = "WatchNexus_DefaultSecret_ChangeInProduction_32chars!";
+    // Also reject the placeholder shipped as the default in the Unraid
+    // templates (build/unraid/*.xml) — it is public, so tokens signed with it
+    // could be forged on every install that kept the default.
+    const string unraidTemplateDefault = "ChangeThisToASecureRandomString32!";
     var provided = config["Jwt:Secret"] ?? Environment.GetEnvironmentVariable("JWT_SECRET");
-    if (!string.IsNullOrWhiteSpace(provided) && provided != legacyWeak && provided.Length >= 32)
+    if (!string.IsNullOrWhiteSpace(provided) && provided != legacyWeak && provided != unraidTemplateDefault && provided.Length >= 32)
         return provided;
 
     if (isTesting)

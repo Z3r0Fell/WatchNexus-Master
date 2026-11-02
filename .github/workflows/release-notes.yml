@@ -136,80 +136,84 @@ jobs:
 
       - name: Generate release notes
         id: generate
+        # Commit subjects / PR titles / changelog text are untrusted: pass them
+        # via env instead of ${{ }} interpolation into the script (script
+        # injection via a crafted commit message or PR title).
+        env:
+          COMMITS: ${{ steps.commits.outputs.commits }}
+          PRS: ${{ steps.prs.outputs.result }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         run: |
           VERSION="${{ steps.prev_tag.outputs.version }}"
           PREV_TAG="${{ steps.prev_tag.outputs.previous_tag }}"
-          COMMITS="${{ steps.commits.outputs.commits }}"
-          PRS="${{ steps.prs.outputs.result }}"
-          CHANGELOG="${{ steps.changelog.outputs.changelog }}"
           
           cat > /tmp/release_notes.md << EOF
-  # WatchNexus v${VERSION}
-  
-  **Release Date:** $(date -u +"%B %d, %Y")
-  
-  ${CHANGELOG}
-  
-  ---
-  
-  ## 📦 Merged Pull Requests
-  
-  ${PRS:-"No PRs in this range"}
-  
-  ---
-  
-  ## 🔧 Commits
-  
-  ${COMMITS:-"No commits in this range"}
-  
-  ---
-  
-  ## 🐳 Docker Images
-  
-  \`\`\`bash
-  # Standard (free)
-  docker pull ghcr.io/${{ github.repository_owner }}/watchnexus:${VERSION}-standard
-  
-  # Pro
-  docker pull ghcr.io/${{ github.repository_owner }}/watchnexus:${VERSION}-pro
-  
-  # Ultra
-  docker pull ghcr.io/${{ github.repository_owner }}/watchnexus:${VERSION}-ultra
-  \`\`\`
-  
-  ## 📥 Native Installers
-  
-  Download from [GitHub Releases](https://github.com/${{ github.repository }}/releases/tag/v${VERSION}) or [watchnexus.ca](https://watchnexus.ca/download).
-  
-  | Platform | Standard | Pro | Ultra |
-  |----------|----------|-----|-------|
-  | Windows | `.exe` | `.exe` | `.exe` |
-  | Debian/Ubuntu | `.deb` | `.deb` | `.deb` |
-  | Fedora/RHEL | `.rpm` | `.rpm` | `.rpm` |
-  | Arch Linux | `.pkg.tar.zst` | `.pkg.tar.zst` | `.pkg.tar.zst` |
-  | macOS | Homebrew | Homebrew | Homebrew |
-  
-  ## 🔐 License Activation
-  
-  Pro and Ultra tiers require a license key from [licenses.watchnexus.ca](https://licenses.watchnexus.ca).
-  
-  ## ⬆️ Upgrade Notes
-  
-  - Run \`docker compose pull && docker compose up -d\` for Docker deployments
-  - Native packages: upgrade via package manager (dpkg/rpm/pacman)
-  - Fortress integrity check runs automatically on startup
-  - Database migrations apply automatically
-  
-  ## 📚 Documentation
-  
-  - [API Reference](https://docs.watchnexus.ca/api)
-  - [User Guide](https://docs.watchnexus.ca/guide)
-  - [Tier Comparison](https://watchnexus.ca/pricing)
-  
-  ---
-  
-  **Full Changelog:** https://github.com/${{ github.repository }}/compare/${PREV_TAG}...v${VERSION}
-  EOF
+          # WatchNexus v${VERSION}
+
+          **Release Date:** $(date -u +"%B %d, %Y")
+
+          ${CHANGELOG}
+
+          ---
+
+          ## 📦 Merged Pull Requests
+
+          ${PRS:-"No PRs in this range"}
+
+          ---
+
+          ## 🔧 Commits
+
+          ${COMMITS:-"No commits in this range"}
+
+          ---
+
+          ## 🐳 Docker Images
+
+          \`\`\`bash
+          # Standard (free)
+          docker pull ghcr.io/${{ github.repository_owner }}/watchnexus:${VERSION}-standard
+
+          # Pro
+          docker pull ghcr.io/${{ github.repository_owner }}/watchnexus:${VERSION}-pro
+
+          # Ultra
+          docker pull ghcr.io/${{ github.repository_owner }}/watchnexus:${VERSION}-ultra
+          \`\`\`
+
+          ## 📥 Native Installers
+
+          Download from [GitHub Releases](https://github.com/${{ github.repository }}/releases/tag/v${VERSION}) or [watchnexus.ca](https://watchnexus.ca/download).
+
+          | Platform | Standard | Pro | Ultra |
+          |----------|----------|-----|-------|
+          | Windows | `.exe` | `.exe` | `.exe` |
+          | Debian/Ubuntu | `.deb` | `.deb` | `.deb` |
+          | Fedora/RHEL | `.rpm` | `.rpm` | `.rpm` |
+          | Arch Linux | `.pkg.tar.zst` | `.pkg.tar.zst` | `.pkg.tar.zst` |
+          | macOS | Homebrew | Homebrew | Homebrew |
+
+          ## 🔐 License Activation
+
+          Pro and Ultra tiers require a license key from [licenses.watchnexus.ca](https://licenses.watchnexus.ca).
+
+          ## ⬆️ Upgrade Notes
+
+          - Run \`docker compose pull && docker compose up -d\` for Docker deployments
+          - Native packages: upgrade via package manager (dpkg/rpm/pacman)
+          - Fortress integrity check runs automatically on startup
+          - Database migrations apply automatically
+
+          ## 📚 Documentation
+
+          - [API Reference](https://docs.watchnexus.ca/api)
+          - [User Guide](https://docs.watchnexus.ca/guide)
+          - [Tier Comparison](https://watchnexus.ca/pricing)
+
+          ---
+
+          **Full Changelog:** https://github.com/${{ github.repository }}/compare/${PREV_TAG}...v${VERSION}
+          EOF
           
           cat /tmp/release_notes.md
           RELEASE_NOTES=$(cat /tmp/release_notes.md | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
