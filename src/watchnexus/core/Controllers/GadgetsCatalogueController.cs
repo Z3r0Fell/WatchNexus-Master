@@ -1,5 +1,8 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -8,40 +11,86 @@ namespace WatchNexus.Core.Controllers;
 [Authorize]
 public class GadgetsCatalogueController : ControllerBase
 {
-    [HttpGet("plugins")]
-    public IActionResult Plugins() => Ok(new[]
+    // Same per-user setting as RipenController (/api/ripen/activate|deactivate),
+    // so both UIs see one source of truth for enabled/disabled gadgets.
+    private const string DisabledKey = "ripen_disabled_gadgets";
+    private readonly AppDbContext _db;
+    public GadgetsCatalogueController(AppDbContext db) => _db = db;
+
+    private async Task<(WatchNexus.Shared.AppSetting? row, HashSet<string> set)> LoadDisabled()
     {
-        new { id = "weather", codename = "sorbet", name = "Weather", version = "1.0.1", author = "WatchNexus", status = "active", description = "Weather dashboard using Open-Meteo", plugin_type = "weather", category = "weather" },
-        new { id = "podcasts", codename = "brioche", name = "Podcasts", version = "1.0.1", author = "WatchNexus", status = "active", description = "Podcast player with iTunes search and RSS feeds", plugin_type = "audio", category = "audio" },
-        new { id = "radio", codename = "nectar", name = "Internet Radio", version = "1.0.1", author = "WatchNexus", status = "active", description = "Live radio streams via Radio Browser API", plugin_type = "audio", category = "audio" },
-        new { id = "photos", codename = "ganache", name = "Photo Gallery", version = "1.0.1", author = "WatchNexus", status = "active", description = "Browse and view photos from local libraries", plugin_type = "image", category = "image" },
-        new { id = "webvideo", codename = "bisque", name = "Web Video", version = "1.0.1", author = "WatchNexus", status = "active", description = "Web video bookmarks, history, and YouTube info", plugin_type = "video", category = "video" },
-        new { id = "matrix", codename = "marzipan", name = "Matrix Chat", version = "1.0.1", author = "WatchNexus", status = "active", description = "Matrix messaging, room management, and event sync", plugin_type = "notification", category = "notification" },
-        new { id = "synapse-admin", codename = "cinnamon", name = "Synapse Admin", version = "1.0.1", author = "WatchNexus", status = "active", description = "Synapse homeserver user, room, and media management", plugin_type = "system", category = "system" },
-        new { id = "gamebot", codename = "waffle", name = "Movie Quiz", version = "1.0.1", author = "WatchNexus", status = "active", description = "Guess-the-poster games with blur and reveal effects", plugin_type = "game", category = "game" },
-        new { id = "media-bridge", codename = "custard", name = "Media Bridge", version = "1.0.1", author = "WatchNexus", status = "active", description = "Browse and manage your external Emby-compatible media server library", plugin_type = "metadata", category = "metadata" },
-        new { id = "bot", codename = "yeast", name = "Background Automation", version = "1.0.1", author = "WatchNexus", status = "active", description = "Inactivity checks, token drip, and featured film rotation", plugin_type = "service", category = "service" },
-        new { id = "truffle", codename = "truffle", name = "Watch Analytics", version = "1.0.1", author = "WatchNexus", status = "active", description = "Play tracking, viewing stats, trends, and Year Wrapped", plugin_type = "analytics", category = "analytics" },
-        new { id = "pepper", codename = "pepper", name = "Notification Hub", version = "1.0.1", author = "WatchNexus", status = "active", description = "Discord, Telegram, Slack, and Pushover alerts for media events", plugin_type = "notification", category = "notification" },
-        new { id = "meringue", codename = "meringue", name = "User Requests", version = "1.0.1", author = "WatchNexus", status = "active", description = "Users request movies/TV shows, admins approve or reject", plugin_type = "social", category = "social" },
-        new { id = "rind", codename = "rind", name = "Parental Controls", version = "1.0.1", author = "WatchNexus", status = "active", description = "Content rating filters, PIN locks, and per-user restrictions", plugin_type = "security", category = "security" },
-        new { id = "crucible", codename = "crucible", name = "Media Processing", version = "1.0.1", author = "WatchNexus", status = "active", description = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis", plugin_type = "processing", category = "processing" },
-        new { id = "brine", codename = "brine", name = "Usenet Indexer", version = "1.0.1", author = "WatchNexus", status = "active", description = "Search NZBs via Prowlarr or Newznab-compatible indexers", plugin_type = "usenet", category = "usenet" },
-        new { id = "ladle", codename = "ladle", name = "Usenet Downloader", version = "1.0.1", author = "WatchNexus", status = "active", description = "SABnzbd queue management, downloads, history, and speed control", plugin_type = "usenet", category = "usenet" },
-        new { id = "glaze", codename = "glaze", name = "Scrobbling", version = "1.0.1", author = "WatchNexus", status = "active", description = "Trakt.tv and Last.fm scrobbling, watch history sync", plugin_type = "social", category = "social" },
-        new { id = "fondue", codename = "fondue", name = "Movie Automation", version = "1.0.1", author = "WatchNexus", status = "active", description = "Auto-grab, monitor, and upgrade movies (Radarr-like)", plugin_type = "automation", category = "automation" },
-        new { id = "bastion", codename = "bastion", name = "Advanced Auth", version = "1.0.1", author = "WatchNexus", status = "active", description = "LDAP, SSO, 2FA, and session management", plugin_type = "security", category = "security" },
-        new { id = "tunnel", codename = "tunnel", name = "Network Config", version = "1.0.1", author = "WatchNexus", status = "active", description = "Reverse proxy, UPnP, SSL certificates, and dynamic DNS", plugin_type = "system", category = "system" },
-        new { id = "sourdough", codename = "sourdough", name = "Backup & Restore", version = "1.0.1", author = "WatchNexus", status = "active", description = "Full backups, scheduled snapshots, config export/import", plugin_type = "system", category = "system" },
-        new { id = "taffy", codename = "taffy", name = "Metadata Agents", version = "1.0.1", author = "WatchNexus", status = "active", description = "TMDB, TVDB, IMDb, MusicBrainz provider management", plugin_type = "metadata", category = "metadata" },
-        new { id = "churro", codename = "churro", name = "Download Clients", version = "1.0.1", author = "WatchNexus", status = "active", description = "qBittorrent, SABnzbd, Transmission, Deluge client management", plugin_type = "downloads", category = "downloads" },
-        new { id = "saffron", codename = "saffron", name = "Scheduled Tasks", version = "1.0.1", author = "WatchNexus", status = "active", description = "Library scans, metadata refresh, cleanup, and custom schedules", plugin_type = "system", category = "system" },
-        new { id = "pantry", codename = "pantry", name = "Storage Manager", version = "1.0.1", author = "WatchNexus", status = "active", description = "Disk monitoring, file cleanup, path mappings, storage analytics", plugin_type = "system", category = "system" },
-        new { id = "nutmeg", codename = "nutmeg", name = "Recommendations", version = "1.0.1", author = "WatchNexus", status = "active", description = "AI-powered recommendations based on watch history", plugin_type = "discovery", category = "discovery" },
-        new { id = "roux", codename = "roux", name = "Collections", version = "1.0.1", author = "WatchNexus", status = "active", description = "Smart & manual collections, auto-curated media groups", plugin_type = "library", category = "library" },
-        new { id = "sprout", codename = "sprout", name = "RSS Feeds", version = "1.0.1", author = "WatchNexus", status = "active", description = "RSS/Atom feed generator for library content", plugin_type = "social", category = "social" },
-        new { id = "setup", codename = "setup", name = "Setup Wizard", version = "1.0.1", author = "WatchNexus", status = "active", description = "First-run setup wizard for initial configuration", plugin_type = "system", category = "system" },
-    });
+        var uid = this.UserId();
+        var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == DisabledKey);
+        var set = new HashSet<string>();
+        if (row?.Value != null)
+            try { set = JsonSerializer.Deserialize<HashSet<string>>(row.Value) ?? set; } catch (JsonException) { }
+        return (row, set);
+    }
+
+    [HttpGet("plugins")]
+    public async Task<IActionResult> Plugins()
+    {
+        var (_, disabled) = await LoadDisabled();
+        return Ok(PluginList.Select(p => new
+        {
+            p.id, p.codename, p.name, p.version, p.author,
+            status = disabled.Contains(p.id) ? "inactive" : p.status,
+            p.description, p.plugin_type, p.category
+        }));
+    }
+
+    // PluginMarketplacePage toggles via these; they share Ripen's per-user setting.
+    [HttpPost("plugins/{id}/enable")]
+    public Task<IActionResult> Enable(string id) => SetEnabled(id, true);
+
+    [HttpPost("plugins/{id}/disable")]
+    public Task<IActionResult> Disable(string id) => SetEnabled(id, false);
+
+    private async Task<IActionResult> SetEnabled(string id, bool enabled)
+    {
+        if (!PluginList.Any(p => p.id == id)) return NotFound(new { detail = "Unknown plugin" });
+        var (row, disabled) = await LoadDisabled();
+        if (enabled) disabled.Remove(id); else disabled.Add(id);
+        var json = JsonSerializer.Serialize(disabled);
+        if (row != null) row.Value = json;
+        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = DisabledKey, Value = json, UserId = this.UserId() });
+        await _db.SaveChangesAsync();
+        return Ok(new { id, status = enabled ? "active" : "inactive" });
+    }
+
+    private static readonly (string id, string codename, string name, string version, string author, string status, string description, string plugin_type, string category)[] PluginList =
+    {
+        ("weather", "sorbet", "Weather", "1.0.1", "WatchNexus", "active", "Weather dashboard using Open-Meteo", "weather", "weather"),
+        ("podcasts", "brioche", "Podcasts", "1.0.1", "WatchNexus", "active", "Podcast player with iTunes search and RSS feeds", "audio", "audio"),
+        ("radio", "nectar", "Internet Radio", "1.0.1", "WatchNexus", "active", "Live radio streams via Radio Browser API", "audio", "audio"),
+        ("photos", "ganache", "Photo Gallery", "1.0.1", "WatchNexus", "active", "Browse and view photos from local libraries", "image", "image"),
+        ("webvideo", "bisque", "Web Video", "1.0.1", "WatchNexus", "active", "Web video bookmarks, history, and YouTube info", "video", "video"),
+        ("matrix", "marzipan", "Matrix Chat", "1.0.1", "WatchNexus", "active", "Matrix messaging, room management, and event sync", "notification", "notification"),
+        ("synapse-admin", "cinnamon", "Synapse Admin", "1.0.1", "WatchNexus", "active", "Synapse homeserver user, room, and media management", "system", "system"),
+        ("gamebot", "waffle", "Movie Quiz", "1.0.1", "WatchNexus", "active", "Guess-the-poster games with blur and reveal effects", "game", "game"),
+        ("media-bridge", "custard", "Media Bridge", "1.0.1", "WatchNexus", "active", "Browse and manage your external Emby-compatible media server library", "metadata", "metadata"),
+        ("bot", "yeast", "Background Automation", "1.0.1", "WatchNexus", "active", "Inactivity checks, token drip, and featured film rotation", "service", "service"),
+        ("truffle", "truffle", "Watch Analytics", "1.0.1", "WatchNexus", "active", "Play tracking, viewing stats, trends, and Year Wrapped", "analytics", "analytics"),
+        ("pepper", "pepper", "Notification Hub", "1.0.1", "WatchNexus", "active", "Discord, Telegram, Slack, and Pushover alerts for media events", "notification", "notification"),
+        ("meringue", "meringue", "User Requests", "1.0.1", "WatchNexus", "active", "Users request movies/TV shows, admins approve or reject", "social", "social"),
+        ("rind", "rind", "Parental Controls", "1.0.1", "WatchNexus", "active", "Content rating filters, PIN locks, and per-user restrictions", "security", "security"),
+        ("crucible", "crucible", "Media Processing", "1.0.1", "WatchNexus", "active", "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis", "processing", "processing"),
+        ("brine", "brine", "Usenet Indexer", "1.0.1", "WatchNexus", "active", "Search NZBs via Prowlarr or Newznab-compatible indexers", "usenet", "usenet"),
+        ("ladle", "ladle", "Usenet Downloader", "1.0.1", "WatchNexus", "active", "SABnzbd queue management, downloads, history, and speed control", "usenet", "usenet"),
+        ("glaze", "glaze", "Scrobbling", "1.0.1", "WatchNexus", "active", "Trakt.tv and Last.fm scrobbling, watch history sync", "social", "social"),
+        ("fondue", "fondue", "Movie Automation", "1.0.1", "WatchNexus", "active", "Auto-grab, monitor, and upgrade movies (Radarr-like)", "automation", "automation"),
+        ("bastion", "bastion", "Advanced Auth", "1.0.1", "WatchNexus", "active", "LDAP, SSO, 2FA, and session management", "security", "security"),
+        ("tunnel", "tunnel", "Network Config", "1.0.1", "WatchNexus", "active", "Reverse proxy, UPnP, SSL certificates, and dynamic DNS", "system", "system"),
+        ("sourdough", "sourdough", "Backup & Restore", "1.0.1", "WatchNexus", "active", "Full backups, scheduled snapshots, config export/import", "system", "system"),
+        ("taffy", "taffy", "Metadata Agents", "1.0.1", "WatchNexus", "active", "TMDB, TVDB, IMDb, MusicBrainz provider management", "metadata", "metadata"),
+        ("churro", "churro", "Download Clients", "1.0.1", "WatchNexus", "active", "qBittorrent, SABnzbd, Transmission, Deluge client management", "downloads", "downloads"),
+        ("saffron", "saffron", "Scheduled Tasks", "1.0.1", "WatchNexus", "active", "Library scans, metadata refresh, cleanup, and custom schedules", "system", "system"),
+        ("pantry", "pantry", "Storage Manager", "1.0.1", "WatchNexus", "active", "Disk monitoring, file cleanup, path mappings, storage analytics", "system", "system"),
+        ("nutmeg", "nutmeg", "Recommendations", "1.0.1", "WatchNexus", "active", "AI-powered recommendations based on watch history", "discovery", "discovery"),
+        ("roux", "roux", "Collections", "1.0.1", "WatchNexus", "active", "Smart & manual collections, auto-curated media groups", "library", "library"),
+        ("sprout", "sprout", "RSS Feeds", "1.0.1", "WatchNexus", "active", "RSS/Atom feed generator for library content", "social", "social"),
+        ("setup", "setup", "Setup Wizard", "1.0.1", "WatchNexus", "active", "First-run setup wizard for initial configuration", "system", "system"),
+    };
 
     [HttpGet("plugins/{id}")]
     public IActionResult Plugin(string id) => Ok(new { id, name = id, status = "active" });
@@ -109,9 +158,18 @@ public class GadgetsCatalogueController : ControllerBase
     [HttpGet("discover")]
     public IActionResult Discover() => Ok(Array.Empty<object>());
 
+    // Third-party gadget import is not implemented; these previously returned a fake
+    // {status:"imported"} and the UI announced 'Gadget "undefined" imported!'.
     [HttpPost("import-url")]
-    public IActionResult ImportUrl() => Ok(new { status = "imported" });
+    public IActionResult ImportUrl() => NotSupported();
 
     [HttpPost("import-file")]
-    public IActionResult ImportFile() => Ok(new { status = "imported" });
+    public IActionResult ImportFile() => NotSupported();
+
+    private IActionResult NotSupported() => StatusCode(StatusCodes.Status501NotImplemented, new
+    {
+        error = "Importing third-party gadgets is not supported in this version.",
+        detail = "Importing third-party gadgets is not supported in this version.",
+        code = "not_supported"
+    });
 }

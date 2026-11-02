@@ -183,10 +183,15 @@ public class MilkController : ControllerBase
     public IActionResult Themes() => Ok(GetThemes());
 
     [HttpPost("set-theme")]
-    public async Task<IActionResult> SetTheme([FromBody] JsonElement body)
+    public async Task<IActionResult> SetTheme(
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body,
+        [FromQuery] string? theme_type = null)
     {
+        // ThemeContext posts ?theme_type=X with no body (was a 400 under [ApiController]);
+        // ThemeCommunityPage posts { theme_name }.
         var userId = this.UserId();
-        var themeId = body.TryGetProperty("theme_id", out var t) ? t.GetString() ?? "default" : "default";
+        string? Prop(string n) => body.ValueKind == JsonValueKind.Object && body.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+        var themeId = Prop("theme_id") ?? Prop("theme_type") ?? Prop("theme_name") ?? theme_type ?? "default";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "active_theme");
         if (existing != null) existing.Value = themeId;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "active_theme", Value = themeId, UserId = userId });
@@ -377,8 +382,17 @@ public class StreamingServicesController : ControllerBase
         new { id = "amazon", name = "Prime Video", enabled = false },
     });
     [HttpPut("{serviceId}")]
-    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username) =>
-        Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
+    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body = default)
+    {
+        // api.js sends { enabled, username } in the JSON body, not the query string.
+        if (body.ValueKind == JsonValueKind.Object)
+        {
+            if (enabled == null && body.TryGetProperty("enabled", out var e) && e.ValueKind is JsonValueKind.True or JsonValueKind.False) enabled = e.GetBoolean();
+            if (username == null && body.TryGetProperty("username", out var u) && u.ValueKind == JsonValueKind.String) username = u.GetString();
+        }
+        return Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
+    }
 }
 
 // ── Watch Party ──────────────────────────────────
