@@ -25,8 +25,8 @@
     <DonateLink/>
     <Requires/>
     <Config Name="Web UI Port" Target="8001" Default="8001" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">8001</Config>
-    <Config Name="Data" Target="/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
-    <Config Name="Logs" Target="/data/logs" Default="/mnt/user/appdata/watchnexus/logs" Mode="rw" Description="Application logs" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/watchnexus/logs</Config>
+    <Config Name="Data" Target="/app/data" Default="/mnt/user/appdata/watchnexus" Mode="rw" Description="Application data and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watchnexus</Config>
+    <Config Name="Logs" Target="/app/data/logs" Default="/mnt/user/appdata/watchnexus/logs" Mode="rw" Description="Application logs" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/watchnexus/logs</Config>
     <Config Name="Media" Target="/data/media" Default="/mnt/user/media" Mode="ro" Description="Media library root" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/media</Config>
     <Config Name="TMDB API Key" Target="TMDB_API_KEY" Default="" Mode="" Description="TheMovieDB API key for metadata" Type="Variable" Display="always" Required="false" Mask="true"/>
 </Container>
