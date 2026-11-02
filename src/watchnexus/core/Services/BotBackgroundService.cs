@@ -191,7 +191,8 @@ public class BotBackgroundService : BackgroundService
                         expiry_time = expiry,
                     });
                     var content = new StringContent(payload, Encoding.UTF8, "application/json");
-                    await http.PostAsync($"{homeserver}/_synapse/admin/v1/registration_tokens", content, ct);
+                    using var postResp = await http.PostAsync($"{homeserver}/_synapse/admin/v1/registration_tokens", content, ct);
+                    postResp.EnsureSuccessStatusCode();
                     _logger.LogInformation("[BotService] Token drip: Created registration token for user {User}", cfg.UserId);
                 }
             }
@@ -268,7 +269,8 @@ public class BotBackgroundService : BackgroundService
                     id = movie.TryGetProperty("id", out var id) ? id.GetInt32().ToString() : null,
                     name = movie.TryGetProperty("title", out var t) ? t.GetString() : null,
                     overview = movie.TryGetProperty("overview", out var ov) ? ov.GetString() : null,
-                    year = movie.TryGetProperty("release_date", out var rd) ? rd.GetString()?[..4] : null,
+                    year = movie.TryGetProperty("release_date", out var rd) && rd.ValueKind == JsonValueKind.String
+                           && rd.GetString() is { Length: >= 4 } rds ? rds[..4] : null,
                     rating = movie.TryGetProperty("vote_average", out var va) ? va.GetDouble() : 0,
                     poster = movie.TryGetProperty("poster_path", out var pp) ? $"https://image.tmdb.org/t/p/w500{pp.GetString()}" : null,
                     source = "tmdb",
@@ -276,11 +278,13 @@ public class BotBackgroundService : BackgroundService
 
                 var reportKey = "bot_featured_film:global";
                 var existing = await db.Settings.FirstOrDefaultAsync(
-                    s => s.Key == reportKey, ct);
+                    s => s.Key == reportKey && s.UserId == "", ct);
                 var report = JsonSerializer.Serialize(featured);
                 if (existing != null) existing.Value = report;
+                // UserId is part of the composite key — a null key value made
+                // EF reject the insert, so the featured film was never stored.
                 else db.Settings.Add(new WatchNexus.Shared.AppSetting
-                { Key = reportKey, Value = report });
+                { Key = reportKey, Value = report, UserId = "" });
                 await db.SaveChangesAsync(ct);
 
                 _logger.LogInformation("[BotService] Featured film: {Movie}", featured.name);
