@@ -68,6 +68,7 @@ public class MenuController : ControllerBase
     {
         var apiKey = await GetTmdbKey();
         if (string.IsNullOrEmpty(apiKey)) return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0 });
+        if (type is not ("all" or "movie" or "tv" or "person")) type = "all";
         var url = $"https://api.themoviedb.org/3/trending/{type}/week?api_key={apiKey}&page={page}";
         return await TmdbGet(url);
     }
@@ -77,7 +78,7 @@ public class MenuController : ControllerBase
     {
         var apiKey = await GetTmdbKey();
         if (string.IsNullOrEmpty(apiKey)) return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0 });
-        var url = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&page={page}&sort_by={sort}&include_adult=false";
+        var url = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&page={page}&sort_by={Uri.EscapeDataString(sort)}&include_adult=false";
         return await TmdbGet(url);
     }
 
@@ -86,7 +87,7 @@ public class MenuController : ControllerBase
     {
         var apiKey = await GetTmdbKey();
         if (string.IsNullOrEmpty(apiKey)) return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0 });
-        var url = $"https://api.themoviedb.org/3/discover/tv?api_key={apiKey}&page={page}&sort_by={sort}&include_adult=false";
+        var url = $"https://api.themoviedb.org/3/discover/tv?api_key={apiKey}&page={page}&sort_by={Uri.EscapeDataString(sort)}&include_adult=false";
         return await TmdbGet(url);
     }
 
@@ -179,12 +180,12 @@ public class MenuController : ControllerBase
     public async Task<IActionResult> CreateRequest([FromBody] JsonElement body)
     {
         var mediaType = body.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movie" : "movie";
-        var tmdbId = body.TryGetProperty("tmdb_id", out var tid) ? tid.GetInt32() : 0;
+        var tmdbId = body.TryGetProperty("tmdb_id", out var tid) && tid.ValueKind == JsonValueKind.Number && tid.TryGetInt32(out var tidv) ? tidv : 0;
         var title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
         var posterPath = body.TryGetProperty("poster_path", out var pp) ? pp.GetString() : null;
         var overview = body.TryGetProperty("overview", out var ov) ? ov.GetString() : "";
-        var year = body.TryGetProperty("year", out var y) ? y.GetString() : null;
-        var voteAverage = body.TryGetProperty("vote_average", out var va) ? va.GetDouble() : 0;
+        var year = body.TryGetProperty("year", out var y) && y.ValueKind == JsonValueKind.String ? y.GetString() : null;
+        var voteAverage = body.TryGetProperty("vote_average", out var va) && va.ValueKind == JsonValueKind.Number ? va.GetDouble() : 0;
 
         if (tmdbId == 0) return BadRequest(new { success = false, message = "tmdb_id is required" });
 
@@ -265,7 +266,7 @@ public class MenuController : ControllerBase
     public async Task<IActionResult> GetSonarrConfig()
     {
         var (url, apiKey) = await GetServiceConfig(SONARR_KEY);
-        return Ok(new { url = url ?? "", api_key = !string.IsNullOrEmpty(apiKey) ? "****" + apiKey[^4..] : "", configured = !string.IsNullOrEmpty(url) });
+        return Ok(new { url = url ?? "", api_key = MaskKey(apiKey), configured = !string.IsNullOrEmpty(url) });
     }
 
     [HttpPost("sonarr/config")]
@@ -318,7 +319,7 @@ public class MenuController : ControllerBase
     public async Task<IActionResult> GetRadarrConfig()
     {
         var (url, apiKey) = await GetServiceConfig(RADARR_KEY);
-        return Ok(new { url = url ?? "", api_key = !string.IsNullOrEmpty(apiKey) ? "****" + apiKey[^4..] : "", configured = !string.IsNullOrEmpty(url) });
+        return Ok(new { url = url ?? "", api_key = MaskKey(apiKey), configured = !string.IsNullOrEmpty(url) });
     }
 
     [HttpPost("radarr/config")]
@@ -489,6 +490,10 @@ public class MenuController : ControllerBase
         catch (Exception ex) { return StatusCode(500, new { success = false, message = ex.Message }); }
     }
 
+    // Keys shorter than 8 chars are fully masked (apiKey[^4..] would throw / leak them).
+    private static string MaskKey(string? apiKey) =>
+        string.IsNullOrEmpty(apiKey) ? "" : apiKey.Length >= 8 ? "****" + apiKey[^4..] : "****";
+
     private async Task<IActionResult> TmdbGet(string url)
     {
         try
@@ -509,6 +514,8 @@ public class MenuController : ControllerBase
         var apiKey = body.TryGetProperty("api_key", out var k) ? k.GetString() : null;
         if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             return BadRequest(new { success = false, message = "URL and API key are required" });
+        if (SsrfGuard.IsBlockedUrl(url))
+            return BadRequest(new { success = false, message = "URL must be an allowed http(s) endpoint" });
 
         // Test connection
         try
