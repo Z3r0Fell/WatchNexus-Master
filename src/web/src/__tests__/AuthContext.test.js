@@ -57,6 +57,37 @@ describe('AuthContext (httpOnly cookie auth)', () => {
     await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('in'))
   })
 
+  test('login normalizes camelCase user (createdAt) to the same shape as fetchUser', async () => {
+    axios.get.mockRejectedValueOnce({ response: { status: 401 } })
+    axios.post.mockResolvedValueOnce({ data: { user: {
+      id: '1', email: 'owner@watchnexus.local', username: 'owner', avatar: null, role: 'admin', createdAt: '2026-01-02T03:04:05Z',
+    } } })
+
+    let auth
+    const Grab = () => { auth = useAuth(); return <Probe />; }
+    render(<AuthProvider><Grab /></AuthProvider>)
+    await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('out'))
+
+    let returned
+    await act(async () => { returned = await auth.login('owner@watchnexus.local', 'password123'); })
+    await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('in'))
+    const expected = {
+      id: '1', email: 'owner@watchnexus.local', username: 'owner', avatar: null, role: 'admin', created_at: '2026-01-02T03:04:05Z',
+    }
+    expect(auth.user).toEqual(expected)
+    expect(returned).toEqual(expected)
+    expect(auth.user).not.toHaveProperty('createdAt')
+  })
+
+  test('fetchUser accepts camelCase createdAt too', async () => {
+    axios.get.mockResolvedValueOnce({ data: { id: '1', username: 'owner', createdAt: '2026-01-02T03:04:05Z' } })
+    let auth
+    const Grab = () => { auth = useAuth(); return <Probe />; }
+    render(<AuthProvider><Grab /></AuthProvider>)
+    await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('in'))
+    expect(auth.user.created_at).toBe('2026-01-02T03:04:05Z')
+  })
+
   test('logout calls backend and clears state even if request fails', async () => {
     axios.get.mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })
     axios.post.mockRejectedValueOnce(new Error('network'))

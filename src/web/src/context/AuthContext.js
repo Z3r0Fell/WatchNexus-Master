@@ -6,6 +6,17 @@ const API = API_URL;
 
 const AuthContext = createContext(null);
 
+// Backend user payloads arrive as PascalCase (/users/me) or camelCase (/auth/login).
+// Normalize to one shape so consumers can rely on `created_at` etc.
+const normalizeUser = (d) => ({
+  id: d.Id ?? d.id,
+  email: d.Email ?? d.email,
+  username: d.Username ?? d.username,
+  avatar: d.Avatar ?? d.avatar,
+  role: d.Role ?? d.role,
+  created_at: d.CreatedAt ?? d.createdAt ?? d.created_at,
+});
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -24,16 +35,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/users/me`, { withCredentials: true });
-      const d = response.data;
-      // Normalize PascalCase to lowercase for consistent access
-      const normalized = {
-        id: d.Id || d.id,
-        email: d.Email || d.email,
-        username: d.Username || d.username,
-        avatar: d.Avatar || d.avatar,
-        role: d.Role || d.role,
-        created_at: d.CreatedAt || d.created_at,
-      };
+      const normalized = normalizeUser(response.data);
       setUser(normalized);
       setIsAuthenticated(true);
       return normalized;
@@ -61,11 +63,12 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
     const { user: userData } = response.data;
     if (userData) {
-      setUser(userData);
+      const normalized = normalizeUser(userData);
+      setUser(normalized);
       setIsAuthenticated(true);
-    } else {
-      await fetchUser();
+      return normalized;
     }
+    await fetchUser();
     return userData;
   }, [fetchUser]);
 
