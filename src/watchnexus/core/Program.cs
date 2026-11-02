@@ -646,7 +646,12 @@ if (!isTesting)
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(fullPath),
-            RequestPath = ""
+            RequestPath = "",
+            // index.html must never be cached: after an upgrade a stale shell
+            // references old hashed chunks that no longer exist, so lazy routes
+            // (e.g. the video player) fail to load. Hashed /static assets are
+            // content-addressed and safe to cache forever.
+            OnPrepareResponse = ctx => SpaCacheHeaders.Apply(ctx.Context)
         });
         Log($"[WatchNexus] Serving frontend from {fullPath}");
         WatchNexus.Core.Services.PatchService.WebRoot = fullPath;
@@ -716,6 +721,16 @@ if (!isTesting)
                 await context.Response.WriteAsync("{\"detail\":\"Not Found\"}");
                 return;
             }
+            // Missing build assets (old chunk hashes after an upgrade, typos)
+            // must 404 — serving index.html as JavaScript makes lazy imports
+            // fail with an opaque error instead of a recoverable ChunkLoadError.
+            if (SpaCacheHeaders.IsAssetRequest(context.Request.Path))
+            {
+                context.Response.StatusCode = 404;
+                context.Response.Headers.CacheControl = "no-store";
+                return;
+            }
+            SpaCacheHeaders.ApplyNoCache(context);
             context.Response.ContentType = "text/html";
             await context.Response.SendFileAsync(Path.Combine(fullPath, "index.html"));
         });
