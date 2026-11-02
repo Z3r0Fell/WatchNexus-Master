@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import {
   Download, Server, Plus, Trash2, RefreshCw, CheckCircle,
   AlertCircle, Settings, Wifi, WifiOff, ArrowDown, HardDrive, Zap
@@ -41,6 +42,7 @@ export const ChurroPage = () => {
       setCategories(Array.isArray(catsRes.data) ? catsRes.data : []);
     } catch (e) {
       console.error('Churro fetch error:', e);
+      toast.error('Failed to load download clients');
     } finally {
       setLoading(false);
     }
@@ -99,9 +101,12 @@ export const ChurroPage = () => {
             <Button onClick={fetchData} variant="outline" className="border-white/10" data-testid="churro-refresh-btn">
               <RefreshCw className="w-4 h-4" />
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" data-testid="churro-add-btn">
-              <Plus className="w-4 h-4 mr-2" /> Add Client
-            </Button>
+            {/* Clients are configured in Settings -> Downloads; this button previously had no handler. */}
+            <Link to="/settings">
+              <Button className="bg-blue-600 hover:bg-blue-700" data-testid="churro-add-btn">
+                <Plus className="w-4 h-4 mr-2" /> Add Client
+              </Button>
+            </Link>
           </div>
         </div>
 
