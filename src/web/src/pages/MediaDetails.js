@@ -31,6 +31,17 @@ export const normalizeDetailsType = (raw) => {
 
 const isTmdbId = (id) => /^\d+$/.test(String(id || ''));
 
+// The TMDB proxy returns TMDB's raw body (append_to_response=videos), which has
+// no trailer_key field — pick the YouTube trailer out of videos.results.
+export const getTrailerKey = (media) => {
+  if (!media) return null;
+  if (media.trailer_key) return media.trailer_key;
+  const videos = Array.isArray(media.videos?.results) ? media.videos.results : [];
+  const yt = videos.filter(v => v && v.key && String(v.site || '').toLowerCase() === 'youtube');
+  const pick = yt.find(v => v.type === 'Trailer' && v.official) || yt.find(v => v.type === 'Trailer') || yt.find(v => v.type === 'Teaser');
+  return pick ? pick.key : null;
+};
+
 export const MediaDetails = () => {
   const { type: rawType, id } = useParams();
   // A non-numeric id is a local library item id (e.g. a stale /movies/<guid>
@@ -52,6 +63,11 @@ const MediaDetailsInner = ({ type, id }) => {
   const [showTrailer, setShowTrailer] = useState(false);
 
   useEffect(() => {
+    // Navigating to another title (e.g. "More Like This") must not keep the
+    // previous show's season/episodes or season number.
+    setSeason(null);
+    setSelectedSeason(1);
+    setShowTrailer(false);
     fetchMediaDetails();
     checkWatchlist();
     fetchLocalItems();
@@ -188,6 +204,7 @@ const MediaDetailsInner = ({ type, id }) => {
   const year = media.release_date?.slice(0, 4) || media.first_air_date?.slice(0, 4);
   const backdropUrl = media.backdrop_url || (media.backdrop_path ? tmdbImageUrl(media.backdrop_path, 'w1280') : null);
   const posterUrl = media.poster_url || (media.poster_path ? tmdbImageUrl(media.poster_path, 'w500') : null);
+  const trailerKey = getTrailerKey(media);
   const cast = media.credits?.cast?.slice(0, 10) || [];
   const similar = media.similar?.results?.slice(0, 6) || media.recommendations?.results?.slice(0, 6) || [];
 
@@ -291,7 +308,7 @@ const MediaDetailsInner = ({ type, id }) => {
                       Play
                     </Button>
                   )}
-                  {media.trailer_key && (
+                  {trailerKey && (
                     <Button
                       onClick={() => setShowTrailer(true)}
                       data-testid="play-trailer-btn"
@@ -347,7 +364,7 @@ const MediaDetailsInner = ({ type, id }) => {
         </div>
 
         {/* Trailer Modal */}
-        {showTrailer && media.trailer_key && (
+        {showTrailer && trailerKey && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -356,7 +373,7 @@ const MediaDetailsInner = ({ type, id }) => {
           >
             <div className="w-full max-w-5xl aspect-video">
               <iframe
-                src={`https://www.youtube.com/embed/${media.trailer_key}?autoplay=1`}
+                src={`https://www.youtube.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1`}
                 className="w-full h-full rounded-xl"
                 allowFullScreen
                 allow="autoplay"
