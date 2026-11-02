@@ -130,6 +130,10 @@ public class DrizzleController : ControllerBase
 
     [HttpGet("queue")]
     public IActionResult Queue() => Ok(Array.Empty<object>());
+    // The play queue is not persisted server-side (GET always returns empty),
+    // so clearing it is an idempotent acknowledgement.
+    [HttpDelete("queue")]
+    public IActionResult ClearQueue() => Ok(new { status = "cleared" });
     [HttpPost("queue/set/{id}")]
     public IActionResult QueueSet(string id) => Ok(new { status = "queued" });
     [HttpPost("play-collection")]

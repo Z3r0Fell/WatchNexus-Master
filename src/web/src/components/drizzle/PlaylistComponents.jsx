@@ -178,10 +178,12 @@ export const ActiveQueuePanel = ({ onClose }) => {
   
   const handleClearQueue = async () => {
     try {
-      await fetch(`${API_URL}/api/drizzle/queue`, {
+      const res = await fetch(`${API_URL}/api/drizzle/queue`, {
         method: 'DELETE',
         credentials: 'include',
       });
+      // fetch() only rejects on network errors — treat HTTP errors as failures too.
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setQueueState({ active: false, queue: null });
       toast.success('Queue cleared');
     } catch (err) {
