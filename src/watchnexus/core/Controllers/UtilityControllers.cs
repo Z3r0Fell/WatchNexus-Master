@@ -62,27 +62,52 @@ public class ZestController : ControllerBase
             timestamp = DateTime.UtcNow
         });
     }
+    private readonly WatchNexus.Core.Services.FileLogSink _sink;
+    public ZestController(WatchNexus.Core.Services.FileLogSink sink) => _sink = sink;
+
+    // Same log dir / active file the file logger writes (see Services/FileLogging.cs).
+    private string? ActiveLogFile()
+    {
+        var current = _sink.CurrentFilePath;
+        if (current != null && System.IO.File.Exists(current)) return current;
+        if (!Directory.Exists(_sink.Directory)) return null;
+        return new DirectoryInfo(_sink.Directory)
+            .EnumerateFiles(WatchNexus.Core.Services.FileLogSink.FilePrefix + "*.log")
+            .OrderByDescending(f => f.LastWriteTimeUtc)
+            .FirstOrDefault()?.FullName;
+    }
+
     [HttpGet("stats")]
     public IActionResult Stats()
     {
-        var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
+        var logDir = _sink.Directory;
         var logFiles = Directory.Exists(logDir) ? Directory.GetFiles(logDir, "*.log*") : Array.Empty<string>();
         return Ok(new { log_files = logFiles.Length, total_log_size = logFiles.Sum(f => new FileInfo(f).Length), last_scan = (string?)null });
     }
     [HttpGet("logs")]
     public IActionResult Logs([FromQuery] int lines = 100)
     {
-        var logFile = Path.Combine(AppContext.BaseDirectory, "logs", "watchnexus.log");
-        if (!System.IO.File.Exists(logFile)) return Ok(Array.Empty<object>());
-        var allLines = System.IO.File.ReadAllLines(logFile);
+        var logFile = ActiveLogFile();
+        if (logFile == null) return Ok(Array.Empty<object>());
         var take = Math.Clamp(lines, 1, 1000);
-        return Ok(allLines.TakeLast(take).Select(l => new { line = l, timestamp = DateTime.UtcNow }));
+        var tail = new Queue<string>(take);
+        using (var fs = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+        using (var reader = new StreamReader(fs))
+        {
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (tail.Count == take) tail.Dequeue();
+                tail.Enqueue(line);
+            }
+        }
+        return Ok(tail.Select(l => new { line = l, timestamp = DateTime.UtcNow }));
     }
     [HttpPost("logs/clear")]
     public IActionResult ClearLogs()
     {
-        var logFile = Path.Combine(AppContext.BaseDirectory, "logs", "watchnexus.log");
-        if (System.IO.File.Exists(logFile)) System.IO.File.WriteAllText(logFile, "");
+        var logFile = ActiveLogFile();
+        if (logFile != null) _sink.Truncate(logFile);
         return Ok(new { status = "cleared" });
     }
 }

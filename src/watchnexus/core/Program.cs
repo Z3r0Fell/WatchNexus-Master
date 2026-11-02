@@ -18,26 +18,14 @@ using WatchNexus.Core.Services;
 
 // ══════════════════════════════════════════════════════════════════════
 //  Crash-safe boot logger
-//  Writes to %PROGRAMDATA%\WatchNexus\logs (Win) or
-//  $WATCHNEXUS_DATA_DIR/logs (Linux/Docker, env-overridable),
+//  Writes to $WATCHNEXUS_LOG_DIR, else %PROGRAMDATA%\WatchNexus\logs (Win)
+//  or $WATCHNEXUS_DATA_DIR/logs (Linux/Docker, env-overridable),
 //  falling back to <app>/logs. Catches any startup crash and dumps
 //  the full exception so the user has something to send to support.
+//  The same directory holds the rolling runtime log (Services/FileLogging.cs)
+//  that the Zest Log Viewer reads via /api/logs.
 // ══════════════════════════════════════════════════════════════════════
-static string ResolveLogDir()
-{
-    var envDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR");
-    if (!string.IsNullOrWhiteSpace(envDir))
-        return Path.Combine(envDir, "logs");
-
-    if (OperatingSystem.IsWindows())
-    {
-        var pd = Environment.GetEnvironmentVariable("PROGRAMDATA")
-                 ?? @"C:\ProgramData";
-        return Path.Combine(pd, "WatchNexus", "logs");
-    }
-
-    return Path.Combine(AppContext.BaseDirectory, "logs");
-}
+static string ResolveLogDir() => LogPaths.ResolveLogDir();
 
 // Early check for test environment to skip problematic initialization.
 // NOTE: do NOT key this off DOTNET_RUNNING_IN_CONTAINER — the release
@@ -257,6 +245,23 @@ if (!builder.Environment.IsDevelopment() && !isTesting)
     builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 }
 
+// ── Rolling file log (feeds the Zest Log Viewer / /api/logs) ──
+// Written alongside the console in every environment. Under the test host it
+// is only enabled when WATCHNEXUS_LOG_DIR is set explicitly, so integration
+// tests don't litter the build output with log files.
+{
+    var fileLogSink = new FileLogSink(logDir ?? LogPaths.ResolveLogDir());
+    builder.Services.AddSingleton(fileLogSink);
+    var fileLogEnabled = !isTesting
+        || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WATCHNEXUS_LOG_DIR"));
+    if (fileLogEnabled)
+    {
+        builder.Logging.AddProvider(new FileLoggerProvider(fileLogSink));
+        builder.Logging.AddFilter<FileLoggerProvider>(null, LogLevel.Information);
+        builder.Logging.AddFilter<FileLoggerProvider>("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+    }
+}
+
 // ── JWT signing secret ────────────────────────────────────────
 // A self-hosted server must NEVER ship a shared/hardcoded signing key (anyone
 // could forge admin tokens). Resolve from config/env; if it's missing — or set
@@ -328,6 +333,23 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Frontend crash reports (POST /api/logs/client): a render loop can fire
+    // reports rapidly, so cap per user/IP. Registered under the test host too
+    // (as a no-op) because the endpoint references the policy by name.
+    options.AddPolicy("client-log", httpContext =>
+        isTesting
+            ? RateLimitPartition.GetNoLimiter("client-log-test")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                "client-log:" + (httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                 ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    Window = TimeSpan.FromMinutes(1),
+                    PermitLimit = 30,
+                    QueueLimit = 0,
+                }));
+
     if (isTesting)
         return;
     options.AddPolicy("auth", httpContext =>
@@ -424,6 +446,17 @@ if (!isTesting)
 
 // ── Build app ─────────────────────────────────────────────────
 var app = builder.Build();
+
+// Surface fire-and-forget task failures and process-level crashes in the
+// runtime log (and therefore the Log Viewer), not just the boot log.
+if (!isTesting)
+{
+    var crashLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("WatchNexus.Unhandled");
+    TaskScheduler.UnobservedTaskException += (_, e) =>
+        crashLogger.LogError(e.Exception, "Unobserved task exception");
+    AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        crashLogger.LogCritical(e.ExceptionObject as Exception, "Unhandled exception (terminating: {Terminating})", e.IsTerminating);
+}
 
 // ── Wire encryption-at-rest protector (S-20/S-21) ─────────────
 // Must happen before any DbContext query materializes so the EF value

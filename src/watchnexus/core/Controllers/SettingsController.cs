@@ -197,51 +197,6 @@ public class SettingsController : ControllerBase
 }
 
 [ApiController]
-[Route("api/logs")]
-[Authorize]
-public class LogsController : ControllerBase
-{
-    private static readonly string LogDir = Path.Combine(AppContext.BaseDirectory, "logs");
-
-    [HttpGet]
-    [HttpGet("list")]
-    public IActionResult GetFiles()
-    {
-        if (!Directory.Exists(LogDir)) return Ok(Array.Empty<object>());
-        var files = Directory.GetFiles(LogDir, "*.log*").Select(f =>
-        {
-            var fi = new FileInfo(f);
-            return new { filename = fi.Name, size = fi.Length, modified = fi.LastWriteTimeUtc };
-        });
-        return Ok(files);
-    }
-
-    [HttpGet("latest")]
-    public IActionResult GetLatest(int lines = 100)
-    {
-        var logFile = Path.Combine(LogDir, "watchnexus.log");
-        if (!System.IO.File.Exists(logFile)) return Ok(new { entries = Array.Empty<object>(), total = 0 });
-        var allLines = System.IO.File.ReadAllLines(logFile);
-        var take = Math.Clamp(lines, 1, 1000);
-        var entries = allLines.TakeLast(take).Select(l => new { line = l, timestamp = DateTime.UtcNow });
-        return Ok(new { entries, total = allLines.Length });
-    }
-
-    [HttpGet("system")]
-    public IActionResult SystemHealth()
-    {
-        var process = System.Diagnostics.Process.GetCurrentProcess();
-        return Ok(new
-        {
-            uptime_seconds = (DateTime.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds,
-            memory_mb = process.WorkingSet64 / 1024.0 / 1024.0,
-            cpu_time_seconds = process.TotalProcessorTime.TotalSeconds,
-            threads = process.Threads.Count,
-        });
-    }
-}
-
-[ApiController]
 [Route("api/downloads")]
 [Authorize]
 public class DownloadsController : ControllerBase

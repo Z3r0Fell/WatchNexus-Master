@@ -191,8 +191,9 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
         
-        Assert.NotNull(json.GetProperty("entries"));
+        Assert.Equal(JsonValueKind.Array, json.GetProperty("lines").ValueKind);
         Assert.NotNull(json.GetProperty("total"));
+        Assert.NotNull(json.GetProperty("file"));
     }
 
     [Fact]

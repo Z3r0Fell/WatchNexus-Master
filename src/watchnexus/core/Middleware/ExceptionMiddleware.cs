@@ -33,6 +33,16 @@ public sealed class ExceptionMiddleware
         try
         {
             await _next(context);
+
+            // Handled 5xx responses (controllers returning StatusCode(500), upstream
+            // 502/503s, ...) never reach the catch below — record them too so
+            // they show up in the Log Viewer.
+            if (context.Response.StatusCode >= 500)
+            {
+                _logger.LogError(
+                    "[{CorrelationId}] {Method} {Path} responded {StatusCode}",
+                    correlationId, context.Request.Method, context.Request.Path, context.Response.StatusCode);
+            }
         }
         catch (Exception ex)
         {
