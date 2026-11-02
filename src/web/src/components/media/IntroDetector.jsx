@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Fingerprint, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -8,73 +8,94 @@ import { BACKEND_URL } from '../../lib/config';
 
 const API_URL = BACKEND_URL;
 
+// Statuses that mean "this server has no intro-detection backend" rather than a real failure.
+const UNAVAILABLE_STATUSES = new Set([404, 405, 501]);
+const isUnavailable = (err) => UNAVAILABLE_STATUSES.has(err?.response?.status);
+
+/**
+ * Intro/credits detection trigger. The core backend currently only exposes
+ * GET /api/system/chromaprint-status; the analyze endpoints may not exist.
+ * This component therefore degrades silently: it renders nothing unless
+ * Chromaprint is reported as installed, and if the analyze endpoint is missing
+ * (404/405/501) it shows a disabled hint instead of erroring.
+ */
 export const IntroDetector = ({ seriesName, onDetectionComplete }) => {
+  const [available, setAvailable] = useState(null); // null = checking, true, false
+  const [unsupported, setUnsupported] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [status, setStatus] = useState(null); // null, 'success', 'error', 'no-intros'
+  const timerRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    axios.get(`${API_URL}/api/system/chromaprint-status`)
+      .then((res) => { if (mountedRef.current) setAvailable(!!res?.data?.installed); })
+      .catch(() => { if (mountedRef.current) setAvailable(false); });
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleDetect = async () => {
-    if (!seriesName) {
-      toast.error('Series name is required');
-      return;
-    }
+    if (!seriesName || unsupported) return;
 
     setDetecting(true);
     setStatus(null);
 
     try {
       const encodedName = encodeURIComponent(seriesName);
-      
-      const res = await axios.post(
-        `${API_URL}/api/marmalade/series/${encodedName}/analyze-intros`,
-        {},
-        {  }
-      );
+      const res = await axios.post(`${API_URL}/api/marmalade/series/${encodedName}/analyze-intros`, {});
+      if (!mountedRef.current) return;
 
-      if (res.data.success) {
-        toast.success(`Analyzing ${res.data.episodes_queued} episodes for intro/credits detection`);
+      if (res?.data?.success) {
+        toast.success(`Analyzing ${res.data.episodes_queued ?? 0} episodes for intro/credits detection`);
         setStatus('success');
-        
-        // Check status after a delay
-        setTimeout(async () => {
+
+        timerRef.current = setTimeout(async () => {
           try {
-            const statusRes = await axios.get(
-              `${API_URL}/api/marmalade/series/${encodedName}/intro-status`,
-              {  }
-            );
-            
-            if (statusRes.data.with_segments > 0) {
+            const statusRes = await axios.get(`${API_URL}/api/marmalade/series/${encodedName}/intro-status`);
+            if (!mountedRef.current) return;
+            if (statusRes?.data?.with_segments > 0) {
               toast.success(`Detected skip segments in ${statusRes.data.with_segments} episodes!`);
               onDetectionComplete?.();
             } else {
               setStatus('no-intros');
               toast.info('No repeated intro/credits patterns found. Try again with more episodes.');
             }
-          } catch (e) {
-            console.error('Failed to check status:', e);
+          } catch {
+            // Status endpoint is optional; stay quiet.
           }
-        }, 10000); // Check after 10 seconds
-        
+        }, 10000);
       } else {
-        toast.error(res.data.message || 'Failed to start detection');
+        toast.error(res?.data?.message || 'Failed to start detection');
         setStatus('error');
       }
     } catch (err) {
-      console.error('Intro detection error:', err);
-      toast.error(err.response?.data?.detail || 'Failed to detect intros');
-      setStatus('error');
+      if (!mountedRef.current) return;
+      if (isUnavailable(err)) {
+        setUnsupported(true);
+      } else {
+        toast.error(err?.response?.data?.detail || 'Failed to detect intros');
+        setStatus('error');
+      }
     } finally {
-      setDetecting(false);
+      if (mountedRef.current) setDetecting(false);
     }
   };
+
+  if (!available) return null;
 
   return (
     <div className="relative">
       <Button
         onClick={handleDetect}
-        disabled={detecting}
+        disabled={detecting || unsupported}
         variant="outline"
         className="border-violet-500/30 hover:bg-violet-500/10 gap-2"
         data-testid="detect-intros-btn"
+        title={unsupported ? 'Intro detection is not available on this server' : undefined}
       >
         {detecting ? (
           <>
@@ -99,9 +120,15 @@ export const IntroDetector = ({ seriesName, onDetectionComplete }) => {
         )}
       </Button>
 
+      {unsupported && (
+        <p className="mt-1 text-xs text-gray-500" data-testid="detect-intros-unavailable">
+          Intro detection is not available on this server.
+        </p>
+      )}
+
       {/* Tooltip explanation */}
       <AnimatePresence>
-        {!detecting && status === null && (
+        {!detecting && !unsupported && status === null && (
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}

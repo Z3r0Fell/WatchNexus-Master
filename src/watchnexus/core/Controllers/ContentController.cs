@@ -253,8 +253,25 @@ public class WatchProgressController : ControllerBase
     [HttpDelete]
     public async Task<IActionResult> Delete(string? tmdb_id = null, string? media_type = null, int? season = null, int? episode = null)
     {
-        var prefix = $"progress:{tmdb_id}";
-        var items = await _db.Settings.Where(s => s.UserId == UserId && s.Key.StartsWith(prefix)).ToListAsync();
+        // Keys are written by Update() as "progress:{tmdb_id}:{media_type}". Match the id
+        // segment exactly (with its trailing ':' boundary) so deleting 12 never touches 123/1200,
+        // and refuse an empty id rather than wiping every progress row for this user.
+        var id = tmdb_id?.Trim();
+        if (string.IsNullOrEmpty(id) || id.Contains(':'))
+            return BadRequest(new { error = "tmdb_id is required" });
+
+        var mediaType = media_type?.Trim();
+        List<Shared.AppSetting> items;
+        if (!string.IsNullOrEmpty(mediaType))
+        {
+            var key = $"progress:{id}:{mediaType}";
+            items = await _db.Settings.Where(s => s.UserId == UserId && s.Key == key).ToListAsync();
+        }
+        else
+        {
+            var prefix = $"progress:{id}:";
+            items = await _db.Settings.Where(s => s.UserId == UserId && s.Key.StartsWith(prefix)).ToListAsync();
+        }
         _db.Settings.RemoveRange(items);
         await _db.SaveChangesAsync();
         return Ok(new { status = "deleted" });
