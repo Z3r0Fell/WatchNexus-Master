@@ -57,6 +57,10 @@ export const marmaladeMedia = {
   getMedia: (params = {}) =>
     marmaladeClient.get('/media', { params }),
   
+  // Local library items matching a TMDB id (movie, or every episode of a show)
+  getByTmdb: (tmdbId) =>
+    marmaladeClient.get(`/media/by-tmdb/${encodeURIComponent(tmdbId)}`),
+
   // Get a specific media item
   getMediaItem: (mediaId) =>
     marmaladeClient.get(`/media/${mediaId}`),

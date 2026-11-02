@@ -221,6 +221,22 @@ describe('Dashboard', () => {
     expect(screen.getByText('NEW')).toBeInTheDocument()
   })
 
+  test('recently added items link to the player with the library item id', async () => {
+    // Real shape of GET /api/marmalade/media/recent (BridgeController.RecentMedia):
+    // no tmdb_id, `id` is the library item GUID.
+    libraryApi.getRecentlyAdded.mockResolvedValue({ data: [
+      { id: '3f2b9c1e-7a4d-4e1b-9d55-0c2a8f1e6b77', title: 'Local Movie', year: 2008, rating: 6.5,
+        poster_url: null, backdrop_url: null, media_type: 'movie', overview: '' },
+      { id: 'ep-guid-1', title: 'Pilot', media_type: 'tv', poster_url: null },
+    ]})
+
+    render(<Dashboard />)
+    await waitFor(() => expect(screen.getByTestId('recently-added-section')).toBeInTheDocument())
+    expect(screen.getByTestId('recent-3f2b9c1e-7a4d-4e1b-9d55-0c2a8f1e6b77'))
+      .toHaveAttribute('href', '/watch/3f2b9c1e-7a4d-4e1b-9d55-0c2a8f1e6b77')
+    expect(screen.getByTestId('recent-ep-guid-1')).toHaveAttribute('href', '/watch/ep-guid-1')
+  })
+
   test('handles API errors gracefully', async () => {
     tmdbApi.getTrending.mockRejectedValue(new Error('Network error'))
     const toast = require('sonner').toast
