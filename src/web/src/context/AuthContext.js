@@ -25,6 +25,9 @@ export const useAuth = () => {
   return context;
 };
 
+// Like useAuth but returns null instead of throwing outside an AuthProvider.
+export const useOptionalAuth = () => useContext(AuthContext);
+
 export const AuthProvider = ({ children }) => {
   // S-02: the JWT lives in an httpOnly cookie the browser sends automatically.
   // We never read/store it in JS. Auth state is derived from a /users/me probe.
