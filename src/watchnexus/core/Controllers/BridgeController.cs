@@ -241,14 +241,17 @@ public class MarmaladeBridgeController : ControllerBase
         foreach (var item in items)
         {
             if (result.Count >= limit) break;
-            var key = (item.tmdb_id.HasValue && (item.media_type == "tv" || item.media_type == "episode"))
+            var isEpisodic = item.media_type == "tv" || item.media_type == "episode" || item.media_type == "anime";
+            var key = (item.tmdb_id.HasValue && isEpisodic)
                 ? $"tv:{item.tmdb_id}" : $"item:{item.Id}";
             if (seen.Contains(key)) continue;
             seen.Add(key);
 
             // For TV shows, relabel media_type
             var mediaType = (item.media_type == "episode") ? "tv" : item.media_type;
-            result.Add(new { item.Id, item.Title, item.Year, item.Rating, item.poster_url, item.backdrop_url, media_type = mediaType, item.Overview });
+            // `id` is the library item id (what /watch/:id plays); tmdb_id is
+            // included so clients can also link to the TMDB details page.
+            result.Add(new { item.Id, item.Title, item.Year, item.Rating, item.poster_url, item.backdrop_url, media_type = mediaType, item.Overview, item.tmdb_id });
         }
         return Ok(result);
     }
@@ -279,6 +282,27 @@ public class MarmaladeBridgeController : ControllerBase
             m.Genres, m.Year, m.Runtime, library_id = m.LibraryId,
             created_at = m.CreatedAt
         });
+    }
+
+    // Local library items matching a TMDB id — lets the TMDB details page offer
+    // "Play" for titles (and individual episodes) that exist on disk.
+    [HttpGet("media/by-tmdb/{tmdbId:int}")]
+    public async Task<IActionResult> GetMediaByTmdb(int tmdbId)
+    {
+        var items = await _db.MediaItems.Where(m => m.TmdbId == tmdbId)
+            .OrderBy(m => m.FilePath).Take(2000).ToListAsync();
+        var episodeRegex = new System.Text.RegularExpressions.Regex(
+            @"[Ss](\d{1,2})[Ee](\d{1,3})", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return Ok(items.Select(m =>
+        {
+            var match = episodeRegex.Match(m.FilePath ?? m.Title ?? "");
+            return new
+            {
+                m.Id, m.Title, media_type = m.MediaType, tmdb_id = m.TmdbId,
+                season_number = match.Success ? int.Parse(match.Groups[1].Value) : (int?)null,
+                episode_number = match.Success ? int.Parse(match.Groups[2].Value) : (int?)null,
+            };
+        }));
     }
 
     [HttpGet("media/search")]
@@ -524,7 +548,7 @@ public class MarmaladeBridgeController : ControllerBase
         var media = await _db.MediaItems.FindAsync(id);
         if (media == null) return NotFound(new { detail = "Media not found" });
         if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
-            return Ok(new { error = "File not found on disk", file_path = (string?)null });
+            return NotFound(new { detail = "Media file not found on disk" });
         var fi = new FileInfo(media.FilePath);
         var streamToken = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
         return Ok(new
@@ -545,6 +569,10 @@ public class MarmaladeBridgeController : ControllerBase
     {
         var media = await _db.MediaItems.FindAsync(id);
         if (media == null) return NotFound(new { detail = "Media not found" });
+        // Fail fast with a clear message instead of handing the player a URL
+        // that will 404 (the <video> element can't surface the reason).
+        if (string.IsNullOrEmpty(media.FilePath) || !MediaPaths.IsAllowedPath(media.FilePath) || !System.IO.File.Exists(media.FilePath))
+            return NotFound(new { detail = "Media file not found on disk" });
         var token = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
         return Ok(new { stream_url = $"/api/marmalade/stream/{id}/file?token={token}" });
     }

@@ -1,6 +1,6 @@
 import { BACKEND_URL } from '../lib/config';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Component, useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { marmaladeMedia, marmaladeProgress, marmaladeStream, formatDuration, formatResolution } from '../services/marmaladeApi';
 import axios from 'axios';
@@ -24,9 +24,32 @@ const SKIP_TYPES = {
   PREVIEW: 'preview',
 };
 
-const VideoPlayer = () => {
+// Turn an axios/fetch failure into a message a user can act on.
+const describeLoadError = (err, fallback) => {
+  const status = err?.response?.status;
+  if (status === 404) return 'This item was not found in your library — it may have been removed or rescanned';
+  if (status === 401 || status === 403) return 'You are not authorised to play this item';
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  return fallback;
+};
+
+const PlaybackErrorScreen = ({ message, onBack }) => (
+  <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white" data-testid="video-error">
+    <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
+    <h2 className="text-xl font-bold mb-2">Playback Error</h2>
+    <p className="text-gray-400 mb-4 text-center px-6">{message || 'Media not found'}</p>
+    <Button data-testid="video-error-back-btn" onClick={onBack} variant="outline">
+      <ArrowLeft className="w-4 h-4 mr-2" />
+      Go Back
+    </Button>
+  </div>
+);
+
+const PlayerInner = () => {
   const { mediaId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const progressInterval = useRef(null);
@@ -90,11 +113,23 @@ const VideoPlayer = () => {
   useEffect(() => {
     let ignore = false;
     const fetchMedia = async () => {
+      setLoading(true);
+      setError(null);
+      setMedia(null);
+      setStreamUrl('');
       try {
         const res = await marmaladeMedia.getMediaItem(mediaId);
         if (ignore) return;
-        setMedia(res.data);
-        setCurrentTime(res.data.watch_progress || 0);
+        const item = res?.data;
+        // Guard against a non-JSON / unexpected payload (e.g. an HTML page
+        // from a misrouted proxy) — never put a non-object into `media`.
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          setError('This item could not be loaded from your library');
+          return;
+        }
+        setMedia(item);
+        const progress = Number(item.watch_progress);
+        setCurrentTime(Number.isFinite(progress) && progress > 0 ? progress : 0);
 
         // Authorise playback — mints a short-lived signed stream URL the
         // <video> element can use directly.
@@ -102,21 +137,24 @@ const VideoPlayer = () => {
           const url = await marmaladeStream.getStreamUrl(mediaId);
           if (ignore) return;
           setStreamUrl(url);
-        } catch {
-          setError('Failed to authorize playback');
+        } catch (err) {
+          if (ignore) return;
+          console.error('Failed to authorize playback:', err);
+          // The server explains why (e.g. "Media file not found on disk").
+          const detail = err?.response?.data?.detail;
+          setError(typeof detail === 'string' && detail ? detail : describeLoadError(err, 'Failed to authorize playback'));
+          return;
         }
-        
-        // Fetch skip segments if available
-        await fetchSkipSegments(mediaId, ignore);
-        
-        // Fetch next episode if this is a TV show
-        if (res.data.type === 'tv' || res.data.series_name) {
-          await fetchNextEpisode(res.data, ignore);
+
+        // Optional extras — failures here must never block playback.
+        fetchSkipSegments(mediaId, () => ignore);
+        if (item.media_type === 'episode' || item.type === 'tv' || item.series_name) {
+          fetchNextEpisode(item, () => ignore);
         }
       } catch (err) {
         if (!ignore) {
           console.error('Failed to load media:', err);
-          setError('Failed to load media');
+          setError(describeLoadError(err, 'Failed to load media'));
         }
       } finally {
         if (!ignore) {
@@ -124,20 +162,24 @@ const VideoPlayer = () => {
         }
       }
     };
-    
+
     if (mediaId) {
       fetchMedia();
+    } else {
+      setError('No media selected');
+      setLoading(false);
     }
-    
+
     return () => { ignore = true; };
   }, [mediaId]);
 
   // Fetch skip segments (intro, credits, etc.)
-  const fetchSkipSegments = async (id, ignore = false) => {
+  const fetchSkipSegments = async (id, isIgnored = () => false) => {
     try {
       const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`);
-      if (!ignore && res.data && res.data.segments) {
-        setSkipSegments(res.data.segments);
+      const segments = res?.data?.segments;
+      if (!isIgnored() && Array.isArray(segments)) {
+        setSkipSegments(segments.filter(s => s && Number.isFinite(s.start) && Number.isFinite(s.end)));
       }
     } catch (err) {
       // Skip segments are optional - generate estimates based on duration
@@ -146,11 +188,12 @@ const VideoPlayer = () => {
   };
 
   // Fetch next episode in series
-  const fetchNextEpisode = async (currentMedia, ignore = false) => {
+  const fetchNextEpisode = async (currentMedia, isIgnored = () => false) => {
     try {
       const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`);
-      if (!ignore && res.data) {
-        setNextEpisode(res.data);
+      const next = res?.data;
+      if (!isIgnored() && next && typeof next === 'object' && next.id) {
+        setNextEpisode(next);
       }
     } catch (err) {
       // No next episode available
@@ -276,8 +319,8 @@ const VideoPlayer = () => {
           params,
         });
         
-        if (res.data && res.data.length > 0) {
-          setAvailableSubtitles(res.data);
+        if (Array.isArray(res?.data) && res.data.length > 0) {
+          setAvailableSubtitles(res.data.filter(sub => sub && typeof sub === 'object'));
         }
       } catch (err) {
         console.error('Failed to search subtitles:', err);
@@ -378,13 +421,13 @@ const VideoPlayer = () => {
     if (videoElement?.error) {
       const errorCode = videoElement.error.code;
       switch (errorCode) {
-        case MediaError.MEDIA_ERR_NETWORK:
+        case 2: // MediaError.MEDIA_ERR_NETWORK
           setError('Network error - media file may not exist or server is unreachable');
           break;
-        case MediaError.MEDIA_ERR_DECODE:
+        case 3: // MediaError.MEDIA_ERR_DECODE
           setError('Media decoding error - file may be corrupted');
           break;
-        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        case 4: // MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
           setError('Media format not supported');
           break;
         default:
@@ -401,10 +444,19 @@ const VideoPlayer = () => {
     if (videoRef.current) {
       if (playing) {
         videoRef.current.pause();
+        setPlaying(false);
       } else {
-        videoRef.current.play();
+        const p = videoRef.current.play();
+        setPlaying(true);
+        if (p && typeof p.catch === 'function') {
+          p.catch((err) => {
+            setPlaying(false);
+            if (err?.name === 'NotSupportedError') {
+              setError('Media format not supported by this browser');
+            }
+          });
+        }
       }
-      setPlaying(!playing);
     }
   }, [playing]);
 
@@ -532,17 +584,7 @@ const VideoPlayer = () => {
   }
 
   if (error || !media) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
-        <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
-        <h2 className="text-xl font-bold mb-2">Playback Error</h2>
-        <p className="text-gray-400 mb-4">{error || 'Media not found'}</p>
-        <Button data-testid="video-error-back-btn" onClick={() => navigate(-1)} variant="outline">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Go Back
-        </Button>
-      </div>
-    );
+    return <PlaybackErrorScreen message={error} onBack={() => goBack(navigate, location)} />;
   }
 
   return (
@@ -560,7 +602,7 @@ const VideoPlayer = () => {
       {/* Video */}
       <video
         ref={videoRef}
-        src={streamUrl}
+        src={streamUrl || undefined}
         className="w-full h-full absolute inset-0 object-contain"
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
@@ -1094,6 +1136,58 @@ const VideoPlayer = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// navigate(-1) does nothing useful when the player was opened directly (deep
+// link / new tab; React Router marks that first entry with key 'default') —
+// fall back to the dashboard in that case.
+function goBack(navigate, location) {
+  if (location && location.key && location.key !== 'default') {
+    navigate(-1);
+  } else {
+    navigate('/', { replace: true });
+  }
+}
+
+// Local boundary: any unexpected render error inside the player is shown as
+// the player's own "Playback Error" screen (with a back button) rather than
+// bubbling up to the generic route-level crash screen.
+class PlayerErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[VideoPlayer] render error:', error, info?.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <PlaybackErrorScreen
+          message="Something went wrong while starting playback"
+          onBack={this.props.onBack}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const VideoPlayer = () => {
+  const { mediaId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  return (
+    <PlayerErrorBoundary key={mediaId} onBack={() => goBack(navigate, location)}>
+      <PlayerInner />
+    </PlayerErrorBoundary>
   );
 };
 

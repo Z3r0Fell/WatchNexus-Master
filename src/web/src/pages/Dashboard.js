@@ -11,7 +11,19 @@ import { Play, Clock, TrendingUp, Tv, ChevronRight, Film, Sparkles, FolderPlus, 
 import { Link } from 'react-router-dom';
 import { formatTime, getTitle, getMediaType } from '../lib/utils';
 
-const ContinueWatchingCard = ({ item, index, onRemove }) => {
+// Recently Added items are local library rows, so clicking one should play the
+// file via /watch/<library item id>. Previously this linked to
+// /<media_type>/<tmdb_id || id> — the TMDB details page — but the recent
+// endpoint does not return tmdb_id, so the library GUID was fed to TMDB and
+// the item could never be played from the dashboard.
+export const recentItemLink = (item) => {
+  if (item?.id != null && item.id !== '') return `/watch/${encodeURIComponent(item.id)}`;
+  // Library media_type values are plural ("movies", "tv", "anime").
+  if (item?.tmdb_id) return `/${['movie', 'movies'].includes(item.media_type) ? 'movie' : 'tv'}/${item.tmdb_id}`;
+  return '/library';
+};
+
+const ContinueWatchingCard =({ item, index, onRemove }) => {
   const getRemainingTime = () => {
     if (!item.duration || !item.current_time) {
       const pct = item.progress || 0;
@@ -305,7 +317,9 @@ export const Dashboard = () => {
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
               {recentlyAdded.slice(0, 8).map((item, index) => (
                 <motion.div key={item.id || `recent-${index}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.03 }}>
-                  <Link to={`/${item.media_type || 'movie'}/${item.tmdb_id || item.id}`} data-testid={`recent-${item.id}`} className="aspect-[2/3] rounded-xl overflow-hidden media-card block relative group">
+                  {/* Recently Added comes from the local library (/api/marmalade/media/recent):
+                      `id` is the library item id, which is what the player expects. */}
+                  <Link to={recentItemLink(item)} data-testid={`recent-${item.id}`} className="aspect-[2/3] rounded-xl overflow-hidden media-card block relative group">
                     {(item.poster_url || item.poster_path) ? (
                       <img src={item.poster_url || tmdbImageUrl(item.poster_path, 'w342')} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
