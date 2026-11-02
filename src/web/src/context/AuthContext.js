@@ -76,6 +76,7 @@ export const AuthProvider = ({ children }) => {
   // (e.g. setup wizard / quick-login). No token handling in JS.
   const loginWithToken = useCallback((_token, userData) => {
     if (userData) {
+      userData = normalizeUser(userData);
       setUser(userData);
       setIsAuthenticated(true);
       return userData;
@@ -87,8 +88,10 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.post(`${API}/auth/register`, { email, password, username }, { withCredentials: true });
     const { user: userData } = response.data;
     if (userData) {
-      setUser(userData);
+      const normalized = normalizeUser(userData);
+      setUser(normalized);
       setIsAuthenticated(true);
+      return normalized;
     }
     return userData;
   }, []);
