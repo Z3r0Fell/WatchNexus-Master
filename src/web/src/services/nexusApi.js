@@ -125,7 +125,8 @@ export const settingsApi = {
   get: (key) => apiClient.get(`/settings/${key}`),
   set: (key, value, global_) => apiClient.put(`/settings/${key}`, { value, global: global_ }),
   remove: (key) => apiClient.delete(`/settings/${key}`),
-  bulkSet: (settings) => apiClient.post(`/settings/bulk`, settings),
+  // Backend bulk upsert is PUT /api/settings with a { key: value } object (null deletes).
+  bulkSet: (settings) => apiClient.put(`/settings`, settings),
 };
 
 // Integration Settings (TMDB, qBittorrent)
