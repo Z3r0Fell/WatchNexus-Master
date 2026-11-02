@@ -1,0 +1,101 @@
+using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Moq;
+using WatchNexus.Core.Controllers;
+using WatchNexus.Core.Data;
+using WatchNexus.Shared;
+using Xunit;
+
+namespace WatchNexus.Core.Tests.Audit;
+
+public class B5Tests
+{
+    private static AppDbContext NewDb() =>
+        new(new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase($"B5_{Guid.NewGuid()}").Options);
+
+    private static void SetUser(ControllerBase c, string uid, string role = "user")
+    {
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, uid),
+            new Claim(ClaimTypes.Role, role),
+        }, "TestAuth"));
+        c.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = user } };
+    }
+
+    private static JsonElement Json(IActionResult r) =>
+        JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(r).Value);
+
+    private static SettingsController NewSettings(AppDbContext db, string? envTmdb = null)
+    {
+        var cfg = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["TMDB_API_KEY"] = envTmdb })
+            .Build();
+        var c = new SettingsController(db, cfg, new Mock<IHttpClientFactory>().Object);
+        SetUser(c, "u1");
+        return c;
+    }
+
+    [Fact]
+    public async Task Integrations_NeverReturnsEnvTmdbKey()
+    {
+        using var db = NewDb();
+        var json = Json(await NewSettings(db, "SERVERSECRETKEY1234").GetIntegrations());
+        var tmdb = json.GetProperty("tmdb");
+        Assert.DoesNotContain("SERVERSECRET", tmdb.GetRawText());
+        Assert.True(tmdb.GetProperty("has_key").GetBoolean());
+        Assert.Equal("1234", tmdb.GetProperty("last4").GetString());
+    }
+
+    [Fact]
+    public async Task Integrations_ReadsLegacyPascalCaseQbit_AndMasksPassword()
+    {
+        using var db = NewDb();
+        db.Settings.Add(new AppSetting { Key = "qbittorrent_settings", UserId = "u1",
+            Value = "{\"Host\":\"10.0.0.5\",\"Port\":9090,\"Username\":\"bob\",\"Password\":\"hunter22\",\"Enabled\":true}" });
+        await db.SaveChangesAsync();
+        var q = Json(await NewSettings(db).GetIntegrations()).GetProperty("qbittorrent");
+        Assert.Equal("10.0.0.5", q.GetProperty("host").GetString());
+        Assert.Equal(9090, q.GetProperty("port").GetInt32());
+        Assert.DoesNotContain("hunter22", q.GetRawText());
+    }
+
+    [Fact]
+    public async Task UpdateQbit_WritesLowercaseKeys_KeepsPasswordOnMask_AndSyncsQbitConfig()
+    {
+        using var db = NewDb();
+        var c = NewSettings(db);
+        await c.UpdateQbit(new SettingsController.QbitUpdate("10.0.0.5", 9090, "bob", "hunter22", true));
+        await c.UpdateQbit(new SettingsController.QbitUpdate("10.0.0.5", 9091, "bob", SettingsController.MaskSecret("hunter22"), true));
+
+        var cfg = QBittorrentController.ParseCfg(db.Settings.Single(s => s.Key == "qbit_config" && s.UserId == "u1").Value);
+        Assert.NotNull(cfg);
+        Assert.Equal(9091, cfg!.Port);
+        Assert.Equal("hunter22", cfg.Password);
+        Assert.Contains("\"host\"", db.Settings.Single(s => s.Key == "qbittorrent_settings").Value);
+    }
+
+    [Fact]
+    public void QbitParseCfg_ToleratesPascalCaseAndStringPort()
+    {
+        var cfg = QBittorrentController.ParseCfg("{\"Host\":\"nas\",\"Port\":\"8081\",\"Username\":\"a\",\"Password\":\"b\"}");
+        Assert.Equal(("nas", 8081, "a", "b"), (cfg!.Host, cfg.Port, cfg.Username, cfg.Password));
+    }
+
+    [Fact]
+    public async Task QbitGetConfig_MasksPassword()
+    {
+        using var db = NewDb();
+        db.Settings.Add(new AppSetting { Key = "qbit_config", UserId = "u1", Value = "{\"host\":\"nas\",\"port\":8080,\"username\":\"a\",\"password\":\"topsecret\"}" });
+        await db.SaveChangesAsync();
+        var c = new QBittorrentController(db);
+        SetUser(c, "u1");
+        var json = Json(await c.GetConfig());
+        Assert.DoesNotContain("topsecret", json.GetRawText());
+        Assert.True(json.GetProperty("configured").GetBoolean());
+    }
+}

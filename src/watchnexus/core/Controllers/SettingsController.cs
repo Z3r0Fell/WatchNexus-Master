@@ -127,19 +127,65 @@ public class SettingsController : ControllerBase
         return Ok(new { key, deleted = existing != null });
     }
 
+    // Secrets are never echoed back in plaintext. The UI round-trips the masked
+    // value, so a save that sends the mask back means "keep the stored secret".
+    internal const string SecretMask = "********";
+
+    internal static string MaskSecret(string? secret) =>
+        string.IsNullOrEmpty(secret) ? "" : SecretMask + (secret.Length > 4 ? secret[^4..] : "");
+
+    internal static bool IsMasked(string? value) =>
+        !string.IsNullOrEmpty(value) && value.StartsWith(SecretMask, StringComparison.Ordinal);
+
+    private static string? ReadProp(JsonElement doc, string name)
+    {
+        foreach (var prop in doc.EnumerateObject())
+            if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
+                return prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString() : prop.Value.GetRawText();
+        return null;
+    }
+
+    /// <summary>Reads a stored qBittorrent settings row, tolerant of legacy PascalCase and lowercase keys.</summary>
+    internal static QbitUpdate? ParseQbit(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            var doc = JsonDocument.Parse(json).RootElement;
+            if (doc.ValueKind != JsonValueKind.Object) return null;
+            var host = ReadProp(doc, "host");
+            var port = int.TryParse(ReadProp(doc, "port"), out var p) ? p : 8080;
+            var enabled = string.Equals(ReadProp(doc, "enabled"), "true", StringComparison.OrdinalIgnoreCase);
+            return new QbitUpdate(string.IsNullOrWhiteSpace(host) ? "localhost" : host!, port,
+                ReadProp(doc, "username") ?? "", ReadProp(doc, "password") ?? "", enabled);
+        }
+        catch (JsonException) { return null; }
+    }
+
     [HttpGet("integrations")]
     public async Task<IActionResult> GetIntegrations()
     {
         var tmdbSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.UserId == UserId);
         var qbitSetting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbittorrent_settings" && s.UserId == UserId);
         var envKey = _config["TMDB_API_KEY"] ?? "";
-        var tmdbKey = tmdbSetting?.Value ?? envKey;
+        var userKey = tmdbSetting?.Value ?? "";
+        var source = !string.IsNullOrEmpty(userKey) ? "user" : (!string.IsNullOrEmpty(envKey) ? "env" : "none");
+        var tmdbKey = source == "user" ? userKey : envKey;
+        var qbit = ParseQbit(qbitSetting?.Value);
 
         return Ok(new
         {
-            tmdb = new { api_key = tmdbKey, has_key = !string.IsNullOrEmpty(tmdbKey), source = !string.IsNullOrEmpty(tmdbSetting?.Value) ? "user" : (!string.IsNullOrEmpty(envKey) ? "env" : "none") },
-            qbittorrent = !string.IsNullOrEmpty(qbitSetting?.Value)
-                ? JsonSerializer.Deserialize<object>(qbitSetting.Value)
+            // Never return a key in plaintext (the env key is a server secret).
+            tmdb = new
+            {
+                api_key = source == "user" ? MaskSecret(tmdbKey) : "",
+                has_key = !string.IsNullOrEmpty(tmdbKey),
+                configured = !string.IsNullOrEmpty(tmdbKey),
+                last4 = tmdbKey.Length > 4 ? tmdbKey[^4..] : "",
+                source
+            },
+            qbittorrent = qbit != null
+                ? new { host = qbit.Host, port = qbit.Port, username = qbit.Username, password = MaskSecret(qbit.Password), enabled = qbit.Enabled }
                 : new { host = "localhost", port = 8080, username = "admin", password = "", enabled = false }
         });
     }
@@ -147,20 +193,24 @@ public class SettingsController : ControllerBase
     [HttpPut("integrations/tmdb")]
     public async Task<IActionResult> UpdateTmdb([FromBody] TmdbUpdate req)
     {
+        // The UI echoes back the masked key when the user didn't change it.
+        if (IsMasked(req.Api_key))
+            return Ok(new { status = "unchanged", has_key = true });
+
         if (!string.IsNullOrEmpty(req.Api_key))
         {
             var client = _httpFactory.CreateClient();
             try
             {
-                var resp = await client.GetAsync($"https://api.themoviedb.org/3/configuration?api_key={req.Api_key}");
+                var resp = await client.GetAsync($"https://api.themoviedb.org/3/configuration?api_key={Uri.EscapeDataString(req.Api_key)}");
                 if (!resp.IsSuccessStatusCode) return BadRequest(new { detail = "Invalid TMDB API key" });
             }
             catch { return BadRequest(new { detail = "Could not verify TMDB API key" }); }
         }
 
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.UserId == UserId);
-        if (existing != null) existing.Value = req.Api_key;
-        else _db.Settings.Add(new AppSetting { Key = "tmdb_api_key", Value = req.Api_key, UserId = UserId });
+        if (existing != null) existing.Value = req.Api_key ?? "";
+        else _db.Settings.Add(new AppSetting { Key = "tmdb_api_key", Value = req.Api_key ?? "", UserId = UserId });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved", has_key = !string.IsNullOrEmpty(req.Api_key) });
     }
@@ -168,12 +218,27 @@ public class SettingsController : ControllerBase
     [HttpPut("integrations/qbittorrent")]
     public async Task<IActionResult> UpdateQbit([FromBody] QbitUpdate req)
     {
-        var json = JsonSerializer.Serialize(req);
+        var host = string.IsNullOrWhiteSpace(req.Host) ? "localhost" : req.Host.Trim();
+        if (req.Port < 1 || req.Port > 65535) return BadRequest(new { detail = "Port must be between 1 and 65535." });
+        if (SsrfGuard.IsBlocked(host)) return BadRequest(new { detail = "That host is not allowed." });
+
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbittorrent_settings" && s.UserId == UserId);
+        var password = req.Password ?? "";
+        if (IsMasked(password)) password = ParseQbit(existing?.Value)?.Password ?? "";
+
+        // Lowercase keys — the same shape qbit_config / QBittorrentClient.ParseConfig read.
+        var json = JsonSerializer.Serialize(new { host, port = req.Port, username = req.Username ?? "", password, enabled = req.Enabled });
         if (existing != null) existing.Value = json;
         else _db.Settings.Add(new AppSetting { Key = "qbittorrent_settings", Value = json, UserId = UserId });
+
+        // Keep the per-user qbit_config (what the qBittorrent client actually reads) in sync.
+        var cfgJson = JsonSerializer.Serialize(new { host, port = req.Port, username = req.Username ?? "", password });
+        var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == UserId);
+        if (cfg != null) cfg.Value = cfgJson;
+        else _db.Settings.Add(new AppSetting { Key = "qbit_config", Value = cfgJson, UserId = UserId });
+
         await _db.SaveChangesAsync();
-        return Ok(new { status = "saved", settings = req });
+        return Ok(new { status = "saved", settings = new { host, port = req.Port, username = req.Username ?? "", password = MaskSecret(password), enabled = req.Enabled } });
     }
 
     [HttpPost("integrations/qbittorrent/test")]
@@ -184,13 +249,30 @@ public class SettingsController : ControllerBase
 
         if (!IPAddress.TryParse(req.Host, out var ip) && !Uri.CheckHostName(req.Host).Equals(UriHostNameType.Dns))
             return BadRequest(new { success = false, detail = "Invalid host format." });
+        if (req.Port < 1 || req.Port > 65535)
+            return BadRequest(new { success = false, detail = "Invalid port." });
+
+        var password = req.Password ?? "";
+        if (IsMasked(password))
+        {
+            var stored = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbittorrent_settings" && s.UserId == UserId);
+            password = ParseQbit(stored?.Value)?.Password ?? "";
+        }
 
         try
         {
             var client = _httpFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(5);
-            var resp = await client.GetAsync($"http://{req.Host}:{req.Port}/api/v2/auth/login");
-            return Ok(new { success = resp.IsSuccessStatusCode });
+            // qBittorrent's login is POST-only and answers 200 "Fails." on bad credentials.
+            var resp = await client.PostAsync($"http://{req.Host}:{req.Port}/api/v2/auth/login",
+                new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("username", req.Username ?? ""),
+                    new KeyValuePair<string, string>("password", password),
+                }));
+            var body = (await resp.Content.ReadAsStringAsync()).Trim();
+            var ok = resp.IsSuccessStatusCode && body.StartsWith("Ok", StringComparison.OrdinalIgnoreCase);
+            return Ok(new { success = ok, error = ok ? null : (resp.IsSuccessStatusCode ? "Authentication failed" : $"HTTP {(int)resp.StatusCode}") });
         }
         catch { return Ok(new { success = false, error = "Connection failed" }); }
     }
@@ -203,6 +285,8 @@ public class DownloadsController : ControllerBase
 {
     private readonly AppDbContext _db;
     public DownloadsController(AppDbContext db) { _db = db; }
+
+    public record DownloadCreate(string? Title, string? Media_type, int? Tmdb_id, long? Size);
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? status = null)
@@ -217,8 +301,14 @@ public class DownloadsController : ControllerBase
         [FromQuery] string? title,
         [FromQuery] string? media_type,
         [FromQuery] int? tmdb_id,
-        [FromQuery] long? size)
+        [FromQuery] long? size,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] DownloadCreate? body = null)
     {
+        // The frontend sends these as a JSON body; older callers use the query string.
+        title ??= body?.Title;
+        media_type ??= body?.Media_type;
+        tmdb_id ??= body?.Tmdb_id;
+        size ??= body?.Size;
         var dl = new DownloadItem
         {
             Name = title ?? "Unknown",
