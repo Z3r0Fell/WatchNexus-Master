@@ -37,6 +37,30 @@ const itemVariants = {
   show: { opacity: 1, x: 0, transition: { duration: 0.3 } }
 };
 
+// Polling: 2s while healthy, exponential backoff on transient failures, and a
+// full stop when the server says the capability is absent (404/501), locked
+// (403) or no download client is configured (409 / status=not_configured).
+// The user can resume with the Retry button.
+export const POLL_MS = 2000;
+export const MAX_BACKOFF_MS = 60000;
+const TERMINAL_STATUSES = new Set(['not_configured', 'tier_locked', 'blocked']);
+
+const describeFetchError = (error, fallback) => {
+  const status = error?.response?.status;
+  const data = error?.response?.data || {};
+  const serverMessage = data.error && data.error !== 'FORTRESS_TIER_LOCKED' ? data.error : (data.message || data.detail);
+  if (status === 404 || status === 501) {
+    return { terminal: true, code: data.code || 'not_supported', message: serverMessage || 'This server does not support the download engine API.' };
+  }
+  if (status === 403) {
+    return { terminal: true, code: 'tier_locked', message: serverMessage || 'Downloads require a higher license tier.' };
+  }
+  if (status === 409) {
+    return { terminal: true, code: data.code || 'not_configured', message: serverMessage || 'No download client is configured.' };
+  }
+  return { terminal: false, code: 'unreachable', message: serverMessage || error?.message || fallback };
+};
+
 const statusColors = {
   queued: 'text-gray-400',
   downloading: 'text-blue-400',
@@ -70,7 +94,13 @@ export const DownloadsPage = () => {
   const [qbitTorrents, setQbitTorrents] = useState([]);
   const [qbitStatus, setQbitStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [downloadMode, setDownloadMode] = useState('qbittorrent');
+  const [downloadMode, setDownloadMode] = useState(() => {
+    try { return localStorage.getItem('watchnexus_download_mode') || 'qbittorrent'; } catch { return 'qbittorrent'; }
+  });
+  // { message, terminal, code } when the active client can't be used; null when healthy.
+  const [engineIssue, setEngineIssue] = useState(null);
+  const [qbitIssue, setQbitIssue] = useState(null);
+  const [pollToken, setPollToken] = useState(0);
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [torrentFiles, setTorrentFiles] = useState([]);
   
@@ -103,8 +133,12 @@ export const DownloadsPage = () => {
 
     setAddingMagnet(true);
     try {
-      if (downloadMode !== 'qbittorrent') {
-        toast.error('The built-in engine ships in a future release — switch to qBittorrent mode to add downloads.');
+      if (downloadMode === 'builtin') {
+        await torrentEngineApi.addTorrent(magnetLink);
+        toast.success('Magnet sent to your download client');
+        setMagnetLink('');
+        setShowMagnetInput(false);
+        fetchEngineData();
         return;
       }
       await qbittorrentApi.addTorrent(null, magnetLink);
@@ -113,66 +147,101 @@ export const DownloadsPage = () => {
       setShowMagnetInput(false);
       fetchQbitData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to add magnet');
+      toast.error(error.response?.data?.error || error.response?.data?.detail || 'Failed to add magnet');
     } finally {
       setAddingMagnet(false);
     }
   };
 
-  // Fetch built-in engine status and torrents
+  // Fetch engine status and torrents. Returns 'ok' | 'retry' | 'stop'.
   const fetchEngineData = useCallback(async () => {
     try {
-      const [statusRes, torrentsRes] = await Promise.all([
-        torrentEngineApi.getStatus(),
-        torrentEngineApi.getTorrents()
-      ]);
-      setEngineStatus(statusRes.data);
-      setEngineTorrents(torrentsRes.data || []);
+      const statusRes = await torrentEngineApi.getStatus();
+      const status = statusRes.data || {};
+      setEngineStatus(status);
+      if (status.configured === false || TERMINAL_STATUSES.has(status.status)) {
+        setEngineTorrents([]);
+        setEngineIssue({ terminal: true, code: status.status || 'not_configured', message: status.message || 'No download client is configured.' });
+        return 'stop';
+      }
+      if (!status.success) {
+        setEngineIssue({ terminal: false, code: status.status || 'unreachable', message: status.message || 'The download client is not responding.' });
+        return 'retry';
+      }
+      const torrentsRes = await torrentEngineApi.getTorrents();
+      setEngineTorrents(Array.isArray(torrentsRes.data) ? torrentsRes.data : []);
+      setEngineIssue(null);
+      return 'ok';
     } catch (error) {
-      console.error('Engine fetch failed:', error);
+      const issue = describeFetchError(error, 'Could not reach the download engine.');
       setEngineStatus({ success: false });
+      setEngineIssue(issue);
+      return issue.terminal ? 'stop' : 'retry';
     }
   }, []);
 
-  // Fetch qBittorrent status and torrents
+  // Fetch qBittorrent status and torrents. Returns 'ok' | 'retry' | 'stop'.
   const fetchQbitData = useCallback(async () => {
     try {
       const statusRes = await qbittorrentApi.getStatus();
-      setQbitStatus(statusRes.data);
-      
-      if (statusRes.data?.success) {
-        const torrentsRes = await qbittorrentApi.getTorrents('all', '', 100);
-        setQbitTorrents(torrentsRes.data || []);
+      const data = statusRes.data || {};
+      // /api/qbittorrent/status reports `connected`; older shapes used `success`.
+      const connected = Boolean(data.success ?? data.connected);
+      setQbitStatus({ ...data, success: connected });
+
+      if (TERMINAL_STATUSES.has(data.status)) {
+        setQbitTorrents([]);
+        setQbitIssue({
+          terminal: true,
+          code: data.status,
+          message: data.status === 'not_configured'
+            ? 'qBittorrent is not configured. Add its Web UI address in Settings → Downloads.'
+            : (data.error || 'The configured qBittorrent host is not allowed.'),
+        });
+        return 'stop';
       }
+      if (!connected) {
+        setQbitIssue({ terminal: false, code: data.status || 'unreachable', message: data.error || 'qBittorrent is not responding.' });
+        return 'retry';
+      }
+      const torrentsRes = await qbittorrentApi.getTorrents('all', '', 100);
+      setQbitTorrents(Array.isArray(torrentsRes.data) ? torrentsRes.data : []);
+      setQbitIssue(null);
+      return 'ok';
     } catch (error) {
-      console.error('qBittorrent fetch failed:', error);
+      const issue = describeFetchError(error, 'Could not reach qBittorrent.');
       setQbitStatus({ success: false });
+      setQbitIssue(issue);
+      return issue.terminal ? 'stop' : 'retry';
     }
   }, []);
 
+  // Poll the active client only, with backoff / stop (see POLL_MS above).
   useEffect(() => {
-    // Load saved download mode
-    const savedMode = localStorage.getItem('watchnexus_download_mode') || 'qbittorrent';
-    setDownloadMode(savedMode);
+    let cancelled = false;
+    let timer = null;
+    let failures = 0;
+    const fetchActive = downloadMode === 'builtin' ? fetchEngineData : fetchQbitData;
 
-    const fetchAll = async () => {
-      await Promise.all([fetchEngineData(), fetchQbitData()]);
+    const tick = async () => {
+      const result = await fetchActive();
+      if (cancelled) return;
       setLoading(false);
+      if (result === 'stop') return;
+      failures = result === 'ok' ? 0 : failures + 1;
+      const delay = failures === 0 ? POLL_MS : Math.min(POLL_MS * 2 ** failures, MAX_BACKOFF_MS);
+      timer = setTimeout(tick, delay);
     };
-    
-    fetchAll();
-    
-    // Poll for updates
-    const interval = setInterval(() => {
-      if (downloadMode === 'builtin') {
-        fetchEngineData();
-      } else {
-        fetchQbitData();
-      }
-    }, 2000);
-    
-    return () => clearInterval(interval);
-  }, [fetchEngineData, fetchQbitData, downloadMode]);
+
+    tick();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [fetchEngineData, fetchQbitData, downloadMode, pollToken]);
+
+  const retryPolling = () => {
+    setEngineIssue(null);
+    setQbitIssue(null);
+    setPollToken((t) => t + 1);
+  };
 
   // Built-in engine actions
   const handleEnginePauseResume = async (torrent) => {
@@ -249,6 +318,7 @@ export const DownloadsPage = () => {
   // Get current torrents based on mode
   const currentTorrents = downloadMode === 'builtin' ? engineTorrents : qbitTorrents;
   const isConnected = downloadMode === 'builtin' ? engineStatus?.success : qbitStatus?.success;
+  const currentIssue = downloadMode === 'builtin' ? engineIssue : qbitIssue;
 
   // Calculate totals
   const totalDownSpeed = downloadMode === 'builtin'
@@ -422,9 +492,9 @@ export const DownloadsPage = () => {
                       transition={{ repeat: Infinity, duration: 2 }}
                     />
                     <span className="text-green-400 text-sm">
-                      {downloadMode === 'builtin' 
-                        ? 'Built-in Engine Running'
-                        : `qBittorrent v${qbitStatus?.version}`}
+                      {downloadMode === 'builtin'
+                        ? `Connected via ${engineStatus?.engine || 'download client'}${engineStatus?.version ? ` ${engineStatus.version}` : ''}`
+                        : `qBittorrent ${String(qbitStatus?.version ?? '').startsWith('v') ? qbitStatus.version : `v${qbitStatus?.version}`}`}
                     </span>
                   </>
                 ) : (
@@ -437,7 +507,7 @@ export const DownloadsPage = () => {
 
               {downloadMode === 'builtin' && (
                 <span data-testid="builtin-engine-notice" className="text-xs text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1">
-                  The built-in engine ships in a future release — use qBittorrent for downloads today
+                  The built-in engine ships in a future release — this mode routes through your configured download client
                 </span>
               )}
             </div>
@@ -472,6 +542,41 @@ export const DownloadsPage = () => {
             <div className="glass-card rounded-xl p-12 text-center">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-violet-400" />
               <p className="text-gray-400">Loading downloads...</p>
+            </div>
+          ) : currentIssue && currentTorrents.length === 0 ? (
+            <div
+              data-testid="downloads-client-message"
+              role="status"
+              className="glass-card rounded-xl p-12 text-center"
+            >
+              {currentIssue.terminal
+                ? <Server className="w-12 h-12 mx-auto mb-4 text-amber-400" />
+                : <WifiOff className="w-12 h-12 mx-auto mb-4 text-red-400" />}
+              <h3 className="text-xl font-bold mb-2">
+                {currentIssue.code === 'not_configured'
+                  ? 'Configure a download client'
+                  : currentIssue.code === 'tier_locked'
+                  ? 'Upgrade required'
+                  : currentIssue.terminal
+                  ? 'Downloads unavailable'
+                  : 'Download client unreachable'}
+              </h3>
+              <p data-testid="downloads-client-message-text" className="text-gray-400 mb-4">{currentIssue.message}</p>
+              {!currentIssue.terminal && (
+                <p className="text-xs text-gray-500 mb-4">Retrying automatically with backoff…</p>
+              )}
+              <div className="flex gap-3 justify-center">
+                <Link to="/settings">
+                  <Button className="bg-violet-600 hover:bg-violet-700">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Open Download Settings
+                  </Button>
+                </Link>
+                <Button variant="outline" onClick={retryPolling}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
+              </div>
             </div>
           ) : currentTorrents.length === 0 ? (
             <motion.div 

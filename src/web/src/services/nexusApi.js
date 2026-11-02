@@ -99,7 +99,9 @@ export const libraryApi = {
   refreshMetadata: (id) => apiClient.post(`/marmalade/libraries/${id}/refresh-metadata`),
 };
 
-// Downloads (Fondue)
+// Downloads (Fondue). getAll/create hit the DB-backed queue (/api/downloads);
+// getById/pause/resume/remove/getStats hit the download engine facade
+// (/api/downloads/engine), which takes download-client torrent hashes as ids.
 export const downloadApi = {
   getAll: (status) => apiClient.get(`/downloads`, { params: status ? { status } : {} }),
   getById: (id) => apiClient.get(`/downloads/engine/${id}`),
