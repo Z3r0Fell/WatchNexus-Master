@@ -168,8 +168,6 @@ const createApi = (client) => ({
       client.put(`/media/notifications/${notificationId}/read`),
     deleteNotification: (notificationId) =>
       client.delete(`/media/notifications/${notificationId}`),
-    requestRedownload: (filePath, title, mediaType = 'movie', tmdbId = null) =>
-      client.post(`/media/redownload`, { file_path: filePath, title, media_type: mediaType, tmdb_id: tmdbId }),
   },
 
   // Auth

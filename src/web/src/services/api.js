@@ -148,14 +148,15 @@ export const libraryApi = {
 
 // Media Health Checker API calls
 export const mediaHealthApi = {
+  // Backend binds these from the query string ([FromQuery]), not the body.
   checkFile: (filePath, computeHash = false) =>
-    apiClient.post(`/media/health-check`, { file_path: filePath, compute_hash: computeHash }),
-  
+    apiClient.post(`/media/health-check`, null, { params: { file_path: filePath, compute_hash: computeHash } }),
+
   repairFile: (filePath, outputPath = null) =>
-    apiClient.post(`/media/repair`, { file_path: filePath, output_path: outputPath }),
-  
+    apiClient.post(`/media/repair`, null, { params: { file_path: filePath, ...(outputPath ? { output_path: outputPath } : {}) } }),
+
   scanLibrary: (directory) =>
-    apiClient.post(`/media/scan-library`, { directory }),
+    apiClient.post(`/media/scan-library`, null, { params: { directory } }),
   
   // Scheduled scans
   getScheduledScans: () =>
@@ -182,10 +183,8 @@ export const mediaHealthApi = {
   
   deleteNotification: (notificationId) =>
     apiClient.delete(`/media/notifications/${notificationId}`),
-  
-  // Re-download
-  requestRedownload: (filePath, title, mediaType = 'movie', tmdbId = null) =>
-    apiClient.post(`/media/redownload`, { file_path: filePath, title, media_type: mediaType, tmdb_id: tmdbId }),
+  // Note: there is no server-side "re-download" endpoint. The UI sends the
+  // user to Search to find a replacement (search → grab → download client).
 };
 
 // Auth API calls — local account auth only (Google OAuth removed in v1.0.0 RTP).
