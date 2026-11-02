@@ -71,13 +71,12 @@ export const vpnApi = {
   getPeerQr: (id) => apiClient.get(`/vpn/peers/${id}/qr-data`),
   
   // WireGuard control
-  wgUp: () => apiClient.post(`/vpn/server/wg-up`),
-  wgDown: () => apiClient.post(`/vpn/server/wg-down`),
+  // The backend has no wg-quick shell-out; up/down map to server activate/deactivate.
+  wgUp: () => apiClient.post(`/vpn/server/activate`),
+  wgDown: () => apiClient.post(`/vpn/server/deactivate`),
   wgStatus: () => apiClient.get(`/vpn/server/wg-status`),
   
-  // Logs & Stats
-  getConnectionLogs: (page = 1, pageSize = 50) =>
-    apiClient.get(`/vpn/logs`, { params: { page, page_size: pageSize } }),
+  // Stats (the backend does not record per-connection logs)
   getStats: () => apiClient.get(`/vpn/stats`),
 };
 

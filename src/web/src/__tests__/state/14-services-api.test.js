@@ -676,7 +676,7 @@ describe('nexusApi.js - Nexus API Client', () => {
 
     await nexusModule.vpnApi.wgUp()
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/vpn/server/wg-up')
+    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/vpn/server/activate')
   })
 
   test('systemApi.getHealth calls correct endpoint', async () => {
