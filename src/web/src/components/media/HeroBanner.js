@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Plus, Info, Star, Calendar, Clock } from 'lucide-react';
 import { getTitle, getReleaseYear, getMediaType, formatDuration } from '../../lib/utils';
 
-export const HeroBanner = ({ items = [], autoRotate = true }) => {
+export const HeroBanner = ({ items = [], autoRotate = true, onAddToWatchlist }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentItem = items[currentIndex];
 
@@ -132,12 +132,16 @@ export const HeroBanner = ({ items = [], autoRotate = true }) => {
                 <Info className="w-5 h-5" />
                 More Info
               </Link>
+              {onAddToWatchlist && (
               <button
                 data-testid="hero-add-btn"
+                onClick={() => onAddToWatchlist(currentItem)}
+                title="Add to watchlist"
                 className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white transition-colors border border-white/10"
               >
                 <Plus className="w-5 h-5" />
               </button>
+              )}
             </div>
           </motion.div>
         </AnimatePresence>
