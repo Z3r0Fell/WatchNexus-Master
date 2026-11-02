@@ -49,12 +49,10 @@ export const PluginsSettings = () => {
   const [activeView, setActiveView] = useState('catalogue');
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
-  const [togglingPlugin, setTogglingPlugin] = useState(null);
   const [showImportOptions, setShowImportOptions] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [kodiAddonUrl, setKodiAddonUrl] = useState('');
   const [importing, setImporting] = useState(false);
-  const [uninstallingPlugin, setUninstallingPlugin] = useState(null);
   const [installingGadget, setInstallingGadget] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -142,28 +140,20 @@ export const PluginsSettings = () => {
     fetchCatalogueCategories();
   }, [fetchPlugins, fetchCatalogue, fetchCatalogueCategories]);
 
-  const handleTogglePlugin = async (pluginId, currentStatus) => {
-    setTogglingPlugin(pluginId);
-    try {
-      const action = currentStatus === 'active' ? 'disable' : 'enable';
-      await axios.post(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/${action}`, {});
-      toast.success(`Gadget ${action === 'enable' ? 'enabled' : 'disabled'}!`);
-      fetchPlugins();
-    } catch {
-      toast.error('Failed to toggle gadget');
-    } finally {
-      setTogglingPlugin(null);
-    }
-  };
-
+  // Enable/disable and uninstall go through GadgetContext (/api/ripen/*);
+  // /api/gadgets/* is a read-only catalogue.
   const handleDiscoverPlugins = async () => {
     setLoadingPlugins(true);
     try {
-      await axios.post(`${BACKEND_URL}/api/gadgets/discover`, {});
-      toast.success('Gadget discovery complete!');
-      fetchPlugins();
-    } catch {
-      toast.error('Failed to discover gadgets');
+      const res = await axios.get(`${BACKEND_URL}/api/gadgets/discover`);
+      const found = Array.isArray(res.data) ? res.data.length : 0;
+      toast.success(found > 0 ? `Discovered ${found} gadget(s)` : 'Gadget discovery complete — no new gadgets found');
+      await Promise.all([fetchPlugins(), refreshGadgets?.()]);
+    } catch (error) {
+      const status = error.response?.status;
+      toast.error([404, 405, 501].includes(status)
+        ? 'Gadget discovery is not available on this server'
+        : 'Failed to discover gadgets');
     } finally {
       setLoadingPlugins(false);
     }
@@ -206,21 +196,6 @@ export const PluginsSettings = () => {
       toast.error(error.response?.data?.detail || 'Import failed');
     } finally {
       setImporting(false);
-    }
-  };
-
-  const handleUninstallPlugin = async (pluginId, pluginName) => {
-    const ok = await confirm({ title: 'Uninstall Plugin', description: `Uninstall "${pluginName}"? This will delete all gadget files.`, confirmText: 'Uninstall' });
-    if (!ok) return;
-    setUninstallingPlugin(pluginId);
-    try {
-      await axios.delete(`${BACKEND_URL}/api/gadgets/plugins/${pluginId}/uninstall`);
-      toast.success(`"${pluginName}" uninstalled`);
-      fetchPlugins();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Uninstall failed');
-    } finally {
-      setUninstallingPlugin(null);
     }
   };
 
