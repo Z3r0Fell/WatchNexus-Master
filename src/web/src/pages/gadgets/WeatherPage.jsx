@@ -10,6 +10,17 @@ import { BACKEND_URL } from '../../lib/config';
 
 const API = BACKEND_URL;
 
+// GET /weather/settings returns { location: <JSON string | object | null>, unit }.
+// Accept a bare { lat, lon } too (older builds).
+export const parseSavedLocation = (data) => {
+  let loc = data?.location !== undefined ? data.location : data;
+  if (typeof loc === 'string') {
+    try { loc = JSON.parse(loc); } catch { return null; }
+  }
+  if (loc && loc.lat != null && loc.lon != null) return loc;
+  return null;
+};
+
 const getWeatherIcon = (icon) => {
   const icons = {
     'sun': <Sun className="w-16 h-16 text-yellow-400" />,
@@ -66,8 +77,13 @@ export const WeatherPage = () => {
   const loadSettings = useCallback(async () => {
     try {
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/weather/settings`, { headers: getAuth() });
-      setLocation(resp.data);
-      fetchWeather(resp.data.lat, resp.data.lon);
+      const loc = parseSavedLocation(resp.data);
+      if (loc) {
+        setLocation(loc);
+        fetchWeather(loc.lat, loc.lon);
+      } else {
+        fetchWeather(40.7128, -74.0060);
+      }
     } catch (err) {
       // Use default
       fetchWeather(40.7128, -74.0060);
@@ -99,7 +115,8 @@ export const WeatherPage = () => {
     setSearchQuery('');
     
     try {
-      await axios.post(`${BACKEND_URL}/api/gadgets/weather/settings`, newLoc, { headers: getAuth() });
+      // Backend: PUT /api/gadgets/weather/settings with { location, unit? }.
+      await axios.put(`${BACKEND_URL}/api/gadgets/weather/settings`, { location: newLoc }, { headers: getAuth() });
       fetchWeather(loc.lat, loc.lon);
       toast.success(`Location set to ${loc.name}`);
     } catch (err) {

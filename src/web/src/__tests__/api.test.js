@@ -219,17 +219,17 @@ describe('api.js services', () => {
   describe('mediaHealthApi', () => {
     test('checkFile posts to /media/health-check', async () => {
       await mediaHealthApi.checkFile('/path/to/file', true)
-      expect(mockApiClient.post).toHaveBeenCalledWith('/media/health-check', { file_path: '/path/to/file', compute_hash: true })
+      expect(mockApiClient.post).toHaveBeenCalledWith('/media/health-check', null, { params: { file_path: '/path/to/file', compute_hash: true } })
     })
 
     test('repairFile posts to /media/repair', async () => {
       await mediaHealthApi.repairFile('/path/to/file', '/output/path')
-      expect(mockApiClient.post).toHaveBeenCalledWith('/media/repair', { file_path: '/path/to/file', output_path: '/output/path' })
+      expect(mockApiClient.post).toHaveBeenCalledWith('/media/repair', null, { params: { file_path: '/path/to/file', output_path: '/output/path' } })
     })
 
     test('scanLibrary posts to /media/scan-library', async () => {
       await mediaHealthApi.scanLibrary('/media/movies')
-      expect(mockApiClient.post).toHaveBeenCalledWith('/media/scan-library', { directory: '/media/movies' })
+      expect(mockApiClient.post).toHaveBeenCalledWith('/media/scan-library', null, { params: { directory: '/media/movies' } })
     })
 
     test('getScheduledScans calls /media/scheduled-scans', async () => {

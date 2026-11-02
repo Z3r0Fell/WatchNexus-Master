@@ -14,12 +14,17 @@ export const ChangelogPage = () => {
   const [filteredLines, setFilteredLines] = useState([]);
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/system/changelog`).then(r => {
+    axios.get(`${BACKEND_URL}/api/db/changelog`).then(r => {
       const text = r.data.content || '';
       setContent(text);
       setFilteredLines(text.split('\n'));
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      const msg = 'Failed to load the changelog. Please try again later.';
+      setContent(msg);
+      setFilteredLines([msg]);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {

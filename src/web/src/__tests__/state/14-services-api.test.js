@@ -338,7 +338,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.mediaHealthApi.checkFile('/path/to/file.mkv', true)
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/health-check', { file_path: '/path/to/file.mkv', compute_hash: true })
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/health-check', null, { params: { file_path: '/path/to/file.mkv', compute_hash: true } })
     })
 
     test('repairFile sends file_path and output_path', async () => {
@@ -346,7 +346,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.mediaHealthApi.repairFile('/path/to/file.mkv', '/path/to/repaired.mkv')
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/repair', { file_path: '/path/to/file.mkv', output_path: '/path/to/repaired.mkv' })
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/repair', null, { params: { file_path: '/path/to/file.mkv', output_path: '/path/to/repaired.mkv' } })
     })
 
     test('scanLibrary sends directory', async () => {
@@ -354,7 +354,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.mediaHealthApi.scanLibrary('/media/movies')
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/scan-library', { directory: '/media/movies' })
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/scan-library', null, { params: { directory: '/media/movies' } })
     })
   })
 
@@ -676,7 +676,7 @@ describe('nexusApi.js - Nexus API Client', () => {
 
     await nexusModule.vpnApi.wgUp()
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/vpn/server/wg-up')
+    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/vpn/server/activate')
   })
 
   test('systemApi.getHealth calls correct endpoint', async () => {
@@ -713,12 +713,12 @@ describe('nexusApi.js - Nexus API Client', () => {
     }))
   })
 
-  test('settingsApi.bulkSet posts to bulk endpoint', async () => {
-    nexusModule.apiClient.post.mockResolvedValueOnce({ data: { success: true } })
+  test('settingsApi.bulkSet PUTs to the settings bulk endpoint', async () => {
+    nexusModule.apiClient.put.mockResolvedValueOnce({ data: { success: true } })
 
     await nexusModule.settingsApi.bulkSet({ theme_mode: 'dark', ui_accent: 'violet' })
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/settings/bulk', { theme_mode: 'dark', ui_accent: 'violet' })
+    expect(nexusModule.apiClient.put).toHaveBeenCalledWith('/settings', { theme_mode: 'dark', ui_accent: 'violet' })
   })
 
   test('integrationApi.updateTmdb sends api_key', async () => {

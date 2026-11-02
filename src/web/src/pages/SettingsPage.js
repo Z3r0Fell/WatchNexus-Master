@@ -23,6 +23,8 @@ import { BACKEND_URL } from '../lib/config';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../hooks/use-confirm';
 
+const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|mpg|mpeg|m2ts)$/i;
+
 const API_URL = BACKEND_URL;
 
 export const SettingsPage = () => {
@@ -190,16 +192,38 @@ export const SettingsPage = () => {
   const handleManualImportScan = async () => {
     if (!manualImportPath) { toast.error('Please enter a path to scan'); return; }
     try {
-      const res = await axios.post(`${API_URL}/api/media-management/scan-import`, { path: manualImportPath });
-      setManualImportFiles(res.data.files || []); toast.success(`Found ${res.data.files?.length || 0} importable files`);
-    } catch { toast.error('Failed to scan directory'); }
+      // Backend directory scan (media-root allowlisted). Returns [{ file_path, status, size, ... }].
+      const res = await axios.post(`${API_URL}/api/media/scan-library`, null, { params: { directory: manualImportPath } });
+      const files = (Array.isArray(res.data) ? res.data : [])
+        .filter(f => f.status !== 'error' && VIDEO_EXT_RE.test(f.file_path || ''))
+        .map(f => ({
+          path: f.file_path,
+          name: (f.file_path || '').split(/[\\/]/).pop(),
+          size: f.size || 0,
+          status: f.status,
+        }));
+      setManualImportFiles(files); toast.success(`Found ${files.length} importable files`);
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 403) toast.error('That path is outside the configured media roots');
+      else if (status === 404) toast.error('Directory not found');
+      else toast.error('Failed to scan directory');
+    }
   };
 
-  const handleImportFiles = async (files) => {
-    try {
-      await axios.post(`${API_URL}/api/media-management/import`, { files });
-      toast.success('Files imported successfully'); setManualImportFiles([]); fetchLibraries();
-    } catch { toast.error('Failed to import files'); }
+  // There is no per-file import endpoint: media enters a library via a library
+  // scan. If the scanned path is inside a library, rescan that library;
+  // otherwise tell the user to add the folder as a library.
+  const handleImportFiles = async () => {
+    const norm = (p) => (p || '').replace(/[\\/]+$/, '');
+    const target = norm(manualImportPath);
+    const lib = libraries.find(l => l.path && (target === norm(l.path) || target.startsWith(norm(l.path) + '/')));
+    if (!lib) {
+      toast.error('Files can only be imported from inside a library folder. Add this folder as a library (or move the files into one) and scan it.');
+      return;
+    }
+    await handleScanLibrary(lib.id);
+    setManualImportFiles([]);
   };
 
   // Settings handlers

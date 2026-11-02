@@ -71,15 +71,38 @@ const ServerConfig = ({ config, onRefresh }) => {
     finally { setToggling(false); }
   };
 
+  // Backend has no raw wg-quick output: up/down activate/deactivate the
+  // server and wg-status returns structured JSON, rendered here as text.
+  const formatWgStatus = (d) => {
+    if (!d) return 'No WireGuard status available';
+    if (d.output) return d.output;
+    return [
+      `interface: ${d.interface || 'wg0'}`,
+      `  state: ${d.is_running ? 'up' : 'down'}`,
+      d.listenPort != null || d.ListenPort != null ? `  listening port: ${d.listenPort ?? d.ListenPort}` : null,
+      d.public_key ? `  public key: ${d.public_key}` : null,
+      `  peers: ${d.peers_connected ?? 0} active / ${d.total_peers ?? 0} total`,
+    ].filter(Boolean).join('\n');
+  };
+
+  const showStatusAfter = async (prefix) => {
+    try {
+      const st = await vpnApi.wgStatus();
+      setWgOutput(`${prefix}\n\n${formatWgStatus(st.data)}`);
+    } catch {
+      setWgOutput(prefix);
+    }
+    setShowWgTerminal(true);
+  };
+
   const handleWgUp = async () => {
     try {
-      const res = await vpnApi.wgUp();
-      setWgOutput(res.data.output || res.data.message);
-      setShowWgTerminal(true);
-      toast.success('WireGuard interface up');
+      await vpnApi.wgUp();
+      toast.success('WireGuard server activated');
+      await showStatusAfter('Server activated.');
       onRefresh();
     } catch (e) {
-      setWgOutput(e.response?.data?.message || 'Command failed');
+      setWgOutput(e.response?.data?.message || e.response?.data?.detail || 'Activation failed');
       setShowWgTerminal(true);
       toast.error('WireGuard up failed');
     }
@@ -87,21 +110,21 @@ const ServerConfig = ({ config, onRefresh }) => {
 
   const handleWgDown = async () => {
     try {
-      const res = await vpnApi.wgDown();
-      setWgOutput(res.data.output || res.data.message);
-      setShowWgTerminal(true);
-      toast.success('WireGuard interface down');
+      await vpnApi.wgDown();
+      toast.success('WireGuard server deactivated');
+      await showStatusAfter('Server deactivated.');
       onRefresh();
     } catch (e) {
-      setWgOutput(e.response?.data?.message || 'Command failed');
+      setWgOutput(e.response?.data?.message || e.response?.data?.detail || 'Deactivation failed');
       setShowWgTerminal(true);
+      toast.error('WireGuard down failed');
     }
   };
 
   const handleWgStatus = async () => {
     try {
       const res = await vpnApi.wgStatus();
-      setWgOutput(res.data.output || 'No WireGuard interfaces found');
+      setWgOutput(formatWgStatus(res.data));
       setShowWgTerminal(true);
     } catch (e) {
       setWgOutput(e.response?.data?.message || 'Status check failed');
@@ -345,47 +368,20 @@ const PeerCard = ({ peer, onToggle, onDelete }) => {
 };
 
 // Connection Logs Panel
-const ConnectionLogs = () => {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    vpnApi.getConnectionLogs().then(r => setLogs(r.data.items || []))
-      .catch(() => {}).finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div data-testid="vpn-logs">
-      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/[0.06] text-left text-xs text-gray-500 uppercase tracking-wider">
-              <th className="px-4 py-3">Endpoint</th>
-              <th className="px-4 py-3">Rx / Tx</th>
-              <th className="px-4 py-3">Connected</th>
-              <th className="px-4 py-3">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log, i) => (
-              <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
-                <td className="px-4 py-3 font-mono text-xs">{log.endpoint || '—'}</td>
-                <td className="px-4 py-3 text-xs">
-                  {formatBytes(log.bytes_received)} / {formatBytes(log.bytes_sent)}
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-400">{new Date(log.connected_at).toLocaleString()}</td>
-                <td className="px-4 py-3 text-xs">{log.duration_seconds}s</td>
-              </tr>
-            ))}
-            {logs.length === 0 && !loading && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No connection logs yet</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+// The backend does not record per-connection history (there is no
+// /api/vpn/logs), so explain that instead of showing a permanently empty table.
+const ConnectionLogs = () => (
+  <div data-testid="vpn-logs">
+    <div className="rounded-xl border border-white/[0.06] px-4 py-8 text-center text-sm text-gray-400">
+      <Activity className="w-8 h-8 mx-auto mb-3 text-gray-600" />
+      <p className="font-medium text-gray-300">Connection logs are not available</p>
+      <p className="text-xs text-gray-500 mt-1">
+        This server doesn&apos;t record per-connection history. Per-peer transfer totals and last
+        handshake times are shown on the Peers tab.
+      </p>
     </div>
-  );
-};
+  </div>
+);
 
 export default function VpnPage() {
   const [serverConfig, setServerConfig] = useState(null);

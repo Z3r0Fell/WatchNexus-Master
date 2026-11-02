@@ -421,15 +421,20 @@ const SessionsPanel = () => {
                 <Globe className="w-4 h-4 text-blue-400" />
               </div>
               <div>
-                <p className="text-sm">{s.ip_address || 'Unknown IP'}</p>
+                <p className="text-sm">{s.ip_address || s.ip || 'Unknown IP'}</p>
                 <p className="text-xs text-gray-500 truncate max-w-[300px]">{s.user_agent || 'Unknown device'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500">{new Date(s.last_activity).toLocaleString()}</span>
-              <Button size="sm" variant="ghost" onClick={() => handleRevoke(s.id)}>
-                <XCircle className="w-4 h-4 text-red-400" />
-              </Button>
+              <span className="text-xs text-gray-500">{new Date(s.last_activity || s.last_active).toLocaleString()}</span>
+              {s.is_current ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400"
+                  title="Sign out to end your current session">This session</span>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => handleRevoke(s.id)} title="Revoke session">
+                  <XCircle className="w-4 h-4 text-red-400" />
+                </Button>
+              )}
             </div>
           </motion.div>
         ))}

@@ -17,8 +17,8 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor will be configured by components that need navigation/auth context
-// This base interceptor handles only network/timeout errors without auth context
+// Base response interceptor: network/timeout errors, plus a minimal 401 →
+// /login redirect (see handleUnauthorized below).
 apiClient.interceptors.response.use(
   (response) => {
     // Clear retry count on success
@@ -36,9 +36,39 @@ apiClient.interceptors.response.use(
     if (!error.response) {
       return Promise.reject(new Error('Network error. Please check your connection.'));
     }
+    if (error.response.status === 401) {
+      handleUnauthorized(error.config);
+    }
     return Promise.reject(error);
   }
 );
+
+// ── 401 handling ──────────────────────────────────────────
+// Auth is an httpOnly cookie, so on 401 the session is gone: purge any
+// legacy client-side auth state and send the user to /login. Skipped for the
+// credential endpoints themselves (a failed login is a normal 401) and when
+// already on an auth page, so we never loop.
+const AUTH_REQUEST_RE = /\/auth\/(login|register|logout|refresh)(\/|\?|$)/;
+const AUTH_PAGE_RE = /^\/(login|register|setup|forgot-password|reset-password)(\/|$)/;
+let redirectingToLogin = false;
+
+export function handleUnauthorized(config, win = typeof window !== 'undefined' ? window : undefined) {
+  const url = `${config?.baseURL || ''}${config?.url || ''}`;
+  if (AUTH_REQUEST_RE.test(url)) return false;
+  if (!win || redirectingToLogin) return false;
+  const path = win.location?.pathname || '';
+  if (AUTH_PAGE_RE.test(path)) return false;
+  try {
+    ['token', 'access_token', 'watchnexus_token', 'watchnexus_user'].forEach(k => win.localStorage?.removeItem(k));
+  } catch { /* storage unavailable (private mode) */ }
+  redirectingToLogin = true;
+  const from = `${path}${win.location?.search || ''}`;
+  win.location.assign(`/login${from && from !== '/' ? `?redirect=${encodeURIComponent(from)}` : ''}`);
+  return true;
+}
+
+// Test hook: reset the one-shot redirect guard.
+export function __resetUnauthorizedGuard() { redirectingToLogin = false; }
 
 /**
  * Get an apiClient with full error handling (for use in components with React context)
@@ -148,14 +178,15 @@ export const libraryApi = {
 
 // Media Health Checker API calls
 export const mediaHealthApi = {
+  // Backend binds these from the query string ([FromQuery]), not the body.
   checkFile: (filePath, computeHash = false) =>
-    apiClient.post(`/media/health-check`, { file_path: filePath, compute_hash: computeHash }),
-  
+    apiClient.post(`/media/health-check`, null, { params: { file_path: filePath, compute_hash: computeHash } }),
+
   repairFile: (filePath, outputPath = null) =>
-    apiClient.post(`/media/repair`, { file_path: filePath, output_path: outputPath }),
-  
+    apiClient.post(`/media/repair`, null, { params: { file_path: filePath, ...(outputPath ? { output_path: outputPath } : {}) } }),
+
   scanLibrary: (directory) =>
-    apiClient.post(`/media/scan-library`, { directory }),
+    apiClient.post(`/media/scan-library`, null, { params: { directory } }),
   
   // Scheduled scans
   getScheduledScans: () =>
@@ -182,10 +213,8 @@ export const mediaHealthApi = {
   
   deleteNotification: (notificationId) =>
     apiClient.delete(`/media/notifications/${notificationId}`),
-  
-  // Re-download
-  requestRedownload: (filePath, title, mediaType = 'movie', tmdbId = null) =>
-    apiClient.post(`/media/redownload`, { file_path: filePath, title, media_type: mediaType, tmdb_id: tmdbId }),
+  // Note: there is no server-side "re-download" endpoint. The UI sends the
+  // user to Search to find a replacement (search → grab → download client).
 };
 
 // Auth API calls — local account auth only (Google OAuth removed in v1.0.0 RTP).

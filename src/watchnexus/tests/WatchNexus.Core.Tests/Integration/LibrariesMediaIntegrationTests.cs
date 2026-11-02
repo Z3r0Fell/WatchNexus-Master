@@ -301,7 +301,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
-        Assert.Equal(6, json.GetArrayLength()); // any, sd, hd, fhd, uhd
+        Assert.Equal(5, json.GetArrayLength()); // any, sd, hd, fhd, uhd
         
         var ids = json.EnumerateArray().Select(x => x.GetProperty("id").GetString()).ToList();
         Assert.Contains("any", ids);
@@ -311,19 +311,30 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         Assert.Contains("uhd", ids);
     }
 
-    [Theory]
-    [InlineData("POST", "/api/quality-profiles")]
-    [InlineData("PUT", "/api/quality-profiles/fhd")]
-    [InlineData("DELETE", "/api/quality-profiles/fhd")]
-    public async Task QualityProfiles_Mutations_Return501(string method, string endpoint)
+    [Fact]
+    public async Task QualityProfiles_Crud_RoundTrip()
     {
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var request = new HttpRequestMessage(new HttpMethod(method), endpoint);
-        var response = await Client.SendAsync(request);
-        
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
+        var create = await Client.PostAsync("/api/quality-profiles",
+            new StringContent(JsonSerializer.Serialize(new { name = "Integration", cutoff = "webdl_1080p", qualities = new[] { "webdl_1080p" } }),
+                System.Text.Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.OK, create.StatusCode);
+        var id = (await DeserializeResponseElement(create)).GetProperty("id").GetString();
+
+        var update = await Client.PutAsync($"/api/quality-profiles/{id}",
+            new StringContent(JsonSerializer.Serialize(new { is_default = true }), System.Text.Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+
+        var list = await DeserializeResponseElement(await Client.GetAsync("/api/quality-profiles"));
+        var mine = list.EnumerateArray().Single(p => p.GetProperty("id").GetString() == id);
+        Assert.True(mine.GetProperty("is_default").GetBoolean());
+        Assert.Single(list.EnumerateArray(), p => p.GetProperty("is_default").GetBoolean());
+
+        var delete = await Client.DeleteAsync($"/api/quality-profiles/{id}");
+        Assert.Equal(HttpStatusCode.OK, delete.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Client.DeleteAsync($"/api/quality-profiles/{id}")).StatusCode);
     }
 
     #endregion

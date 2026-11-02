@@ -114,7 +114,7 @@ const ProfileCard = ({ profile, onEdit, onDelete, onSetDefault }) => {
           <div>
             <div className="flex items-center gap-2">
               <p className="font-semibold">{profile.name}</p>
-              {profile.is_default === 1 && (
+              {Boolean(profile.is_default) && (
                 <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400">Default</span>
               )}
             </div>
@@ -122,7 +122,7 @@ const ProfileCard = ({ profile, onEdit, onDelete, onSetDefault }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {profile.is_default !== 1 && (
+          {!profile.is_default && (
             <Button size="sm" variant="ghost" className="text-gray-400 hover:text-green-400" onClick={onSetDefault} title="Set as default">
               <CheckCircle className="w-4 h-4" />
             </Button>
@@ -149,7 +149,7 @@ const ProfileCard = ({ profile, onEdit, onDelete, onSetDefault }) => {
 const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
   const [name, setName] = useState(profile?.name || '');
   const [cutoff, setCutoff] = useState(profile?.cutoff || 'Bluray-1080p');
-  const [upgradeAllowed, setUpgradeAllowed] = useState(profile?.upgrade_allowed !== 0);
+  const [upgradeAllowed, setUpgradeAllowed] = useState(profile?.upgrade_allowed !== 0 && profile?.upgrade_allowed !== false);
   const [qualities, setQualities] = useState(() => {
     if (profile?.qualities && profile.qualities.length > 0) {
       return profile.qualities;
@@ -284,6 +284,35 @@ const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
   );
 };
 
+// Used when the backend doesn't supply quality definitions (it currently doesn't).
+const FALLBACK_QUALITY_DEFINITIONS = [
+  { name: '4K Remux', resolution: '2160p', rank: 15 },
+  { name: '4K Bluray', resolution: '2160p', rank: 14 },
+  { name: '4K WEBDL', resolution: '2160p', rank: 13 },
+  { name: '1080p Remux', resolution: '1080p', rank: 12 },
+  { name: '1080p Bluray', resolution: '1080p', rank: 11 },
+  { name: '1080p WEBDL', resolution: '1080p', rank: 10 },
+  { name: '1080p WEBRip', resolution: '1080p', rank: 9 },
+  { name: '1080p HDTV', resolution: '1080p', rank: 8 },
+  { name: '720p Bluray', resolution: '720p', rank: 7 },
+  { name: '720p WEBDL', resolution: '720p', rank: 6 },
+  { name: '720p HDTV', resolution: '720p', rank: 5 },
+  { name: 'DVD', resolution: '480p', rank: 2 },
+  { name: 'SDTV', resolution: '480p', rank: 1 },
+];
+
+// Profiles may store qualities as plain strings (QualityProfilesSettings) or
+// as { name, enabled } objects (this editor) — normalise to objects.
+const normalizeProfile = (profile) => {
+  let qualities = profile.qualities;
+  if (typeof qualities === 'string') {
+    try { qualities = JSON.parse(qualities); } catch { qualities = []; }
+  }
+  if (!Array.isArray(qualities)) qualities = [];
+  qualities = qualities.map(q => (typeof q === 'string' ? { name: q, enabled: true } : q));
+  return { ...profile, qualities };
+};
+
 export const QualityProfilesSubTab = () => {
   const [profiles, setProfiles] = useState([]);
   const [definitions, setDefinitions] = useState([]);
@@ -296,9 +325,14 @@ export const QualityProfilesSubTab = () => {
       const res = await fetch(`${API_URL}/api/quality-profiles`, {
         credentials: 'include',
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setProfiles(data.profiles || []);
-      setDefinitions(data.quality_definitions || []);
+      // Backend returns a plain array; older builds returned { profiles, quality_definitions }.
+      const list = Array.isArray(data) ? data : (data.profiles || []);
+      setProfiles(list.map(normalizeProfile));
+      setDefinitions(
+        (!Array.isArray(data) && data.quality_definitions?.length) ? data.quality_definitions : FALLBACK_QUALITY_DEFINITIONS
+      );
     } catch (error) {
       console.error('Failed to fetch quality profiles:', error);
       toast.error('Failed to load quality profiles');
@@ -321,31 +355,24 @@ export const QualityProfilesSubTab = () => {
     setShowEditor(true);
   };
 
+  const sendJson = async (url, method, body) => {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res;
+  };
+
   const handleSave = async (data) => {
     try {
       if (editingProfile) {
-        // Update existing
-        await fetch(`${API_URL}/api/quality-profiles/${editingProfile.id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data),
-          credentials: 'include',
-        });
+        await sendJson(`${API_URL}/api/quality-profiles/${editingProfile.id}`, 'PUT', data);
         toast.success('Profile updated');
       } else {
-        // Create new
-        const params = new URLSearchParams({
-          name: data.name,
-          cutoff: data.cutoff,
-          qualities: JSON.stringify(data.qualities),
-          upgrade_allowed: data.upgrade_allowed.toString()
-        });
-        await fetch(`${API_URL}/api/quality-profiles?${params}`, {
-          method: 'POST',
-          credentials: 'include',
-        });
+        await sendJson(`${API_URL}/api/quality-profiles`, 'POST', data);
         toast.success('Profile created');
       }
       setShowEditor(false);
@@ -361,10 +388,7 @@ export const QualityProfilesSubTab = () => {
     if (!ok) return;
     
     try {
-      await fetch(`${API_URL}/api/quality-profiles/${profileId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      await sendJson(`${API_URL}/api/quality-profiles/${profileId}`, 'DELETE');
       toast.success('Profile deleted');
       fetchProfiles();
     } catch (error) {
@@ -375,14 +399,7 @@ export const QualityProfilesSubTab = () => {
 
   const handleSetDefault = async (profileId) => {
     try {
-      await fetch(`${API_URL}/api/quality-profiles/${profileId}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ is_default: true }),
-        credentials: 'include',
-      });
+      await sendJson(`${API_URL}/api/quality-profiles/${profileId}`, 'PUT', { is_default: true });
       toast.success('Default profile updated');
       fetchProfiles();
     } catch (error) {

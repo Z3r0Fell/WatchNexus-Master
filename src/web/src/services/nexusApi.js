@@ -47,8 +47,9 @@ export const securityApi = {
   revokeApiKey: (id) => apiClient.delete(`/security/api-keys/${id}`),
   
   // Sessions
-  getSessions: () => apiClient.get(`/security/sessions`),
-  revokeSession: (id) => apiClient.post(`/security/sessions/${id}/revoke`),
+  // Sessions live under the Bastion (advanced auth) module.
+  getSessions: () => apiClient.get(`/bastion/sessions`),
+  revokeSession: (id) => apiClient.delete(`/bastion/sessions/${encodeURIComponent(id)}`),
 };
 
 // VPN API
@@ -70,13 +71,12 @@ export const vpnApi = {
   getPeerQr: (id) => apiClient.get(`/vpn/peers/${id}/qr-data`),
   
   // WireGuard control
-  wgUp: () => apiClient.post(`/vpn/server/wg-up`),
-  wgDown: () => apiClient.post(`/vpn/server/wg-down`),
+  // The backend has no wg-quick shell-out; up/down map to server activate/deactivate.
+  wgUp: () => apiClient.post(`/vpn/server/activate`),
+  wgDown: () => apiClient.post(`/vpn/server/deactivate`),
   wgStatus: () => apiClient.get(`/vpn/server/wg-status`),
   
-  // Logs & Stats
-  getConnectionLogs: (page = 1, pageSize = 50) =>
-    apiClient.get(`/vpn/logs`, { params: { page, page_size: pageSize } }),
+  // Stats (the backend does not record per-connection logs)
   getStats: () => apiClient.get(`/vpn/stats`),
 };
 
@@ -127,7 +127,8 @@ export const settingsApi = {
   get: (key) => apiClient.get(`/settings/${key}`),
   set: (key, value, global_) => apiClient.put(`/settings/${key}`, { value, global: global_ }),
   remove: (key) => apiClient.delete(`/settings/${key}`),
-  bulkSet: (settings) => apiClient.post(`/settings/bulk`, settings),
+  // Backend bulk upsert is PUT /api/settings with a { key: value } object (null deletes).
+  bulkSet: (settings) => apiClient.put(`/settings`, settings),
 };
 
 // Integration Settings (TMDB, qBittorrent)
