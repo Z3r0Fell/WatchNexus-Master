@@ -37,6 +37,10 @@ public class PhotosController : ControllerBase
     {
         var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
         var path = body.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "";
+        // Libraries feed ServePhoto, so they must live inside a configured media root —
+        // otherwise registering "/" would expose any server file.
+        if (!MediaPaths.IsAllowedPath(path))
+            return StatusCode(403, new { detail = "path must be inside a configured media root" });
         if (!Directory.Exists(path)) return BadRequest(new { detail = $"Path does not exist: {path}" });
         var lib = new PhotoLibrary { UserId = this.UserId(), Name = name, Path = path };
         _db.PhotoLibraries.Add(lib);
@@ -104,6 +108,7 @@ public class PhotosController : ControllerBase
     {
         var full = MediaPaths.ResolveRealPath("/" + filePath);
         if (full == null || !System.IO.File.Exists(full)) return NotFound();
+        if (!ImageExts.Contains(Path.GetExtension(full)) || !MediaPaths.IsAllowedPath(full)) return NotFound();
         // Ownership: only serve files living under one of the caller's own photo
         // libraries — blocks cross-user and arbitrary server file reads.
         var libs = await _db.PhotoLibraries.Where(l => l.UserId == this.UserId()).ToListAsync();

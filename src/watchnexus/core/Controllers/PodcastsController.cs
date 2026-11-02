@@ -23,9 +23,13 @@ public class PodcastsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(q)) return Ok(Array.Empty<object>());
         var http = this.Http();
-        var resp = await http.GetStringAsync(
-            $"https://itunes.apple.com/search?term={Uri.EscapeDataString(q)}&media=podcast&limit=25");
-        return Content(resp, "application/json");
+        try
+        {
+            var resp = await http.GetStringAsync(
+                $"https://itunes.apple.com/search?term={Uri.EscapeDataString(q)}&media=podcast&limit=25");
+            return Content(resp, "application/json");
+        }
+        catch (Exception ex) { return StatusCode(502, new { detail = $"Podcast search failed: {ex.Message}" }); }
     }
 
     [HttpGet]
@@ -77,6 +81,9 @@ public class PodcastsController : ControllerBase
             var http = this.Http();
             http.Timeout = TimeSpan.FromSeconds(15);
             using var response = await http.GetAsync(sub.FeedUrl, HttpCompletionOption.ResponseHeadersRead);
+            // Redirects are followed automatically — re-validate where we actually landed.
+            if (!SsrfGuard.IsAllowedUrl(response.RequestMessage?.RequestUri?.ToString()))
+                throw new HttpRequestException("Feed redirected to a disallowed URL");
             if (!response.IsSuccessStatusCode) throw new HttpRequestException($"HTTP {(int)response.StatusCode}");
             var maxBytes = 5 * 1024 * 1024;
             using var stream = await response.Content.ReadAsStreamAsync();
