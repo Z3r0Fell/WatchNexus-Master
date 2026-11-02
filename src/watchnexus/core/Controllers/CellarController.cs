@@ -33,7 +33,6 @@ public class CellarController : ControllerBase
     // The first-launch probe is a read-only status check the app makes on every
     // full page load; it gets its own bucket so reloads can't burn the activation
     // budget (and lock the wizard out of activating).
-    private const int MaxFirstLaunchChecks = 5;
     private static DateTime _lastSweep = DateTime.MinValue;
 
     private readonly AppDbContext _db;
@@ -121,10 +120,9 @@ public class CellarController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> FirstLaunch()
     {
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        if (IsRateLimited("first-launch:" + ip, MaxFirstLaunchChecks))
-            return StatusCode(429, new { success = false, message = "Too many requests. Please wait 5 minutes and try again." });
-
+        // Read-only probe called on every page load by the SPA's FirstLaunchGate.
+        // It is intentionally NOT rate-limited: a 429 here made the gate skip the
+        // admin-setup wizard on fresh installs (no account, no way to create one).
         var license = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
         var setupDone = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_completed" && s.UserId == "");
         return Ok(new
