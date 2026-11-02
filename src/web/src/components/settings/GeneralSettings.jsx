@@ -48,6 +48,21 @@ const hideableTabs = [
   { label: 'Marketplace', description: 'Plugin marketplace', group: 'Admin' },
 ];
 
+// PUT /api/user/preferences replaces the stored blob wholesale, so every write
+// must merge into the current preferences or it wipes keys owned by other
+// screens (theme_mode, download_mode, visible_tabs, display prefs).
+export const mergeUserPreferences = async (patch) => {
+  let current = {};
+  try {
+    const res = await axios.get(`${BACKEND_URL}/api/user/preferences`);
+    if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) current = res.data;
+  } catch { /* nothing stored yet */ }
+  return axios.put(`${BACKEND_URL}/api/user/preferences`,
+    { ...current, ...patch },
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+};
+
 const defaultVisibleTabs = [
   'Library', 'Movies', 'TV Shows', 'Anime', 'Playlists', 'Music', 'Audiobooks', 'Streaming', 'Indexers',
   'Weather', 'Podcasts', 'Radio', 'Photos', 'Web Video',
@@ -104,10 +119,7 @@ export const GeneralSettings = ({
   const saveTabVisibility = async () => {
     try {
       setSavingTabs(true);
-      await axios.put(`${BACKEND_URL}/api/user/preferences`, 
-        { visible_tabs: visibleTabs },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      await mergeUserPreferences({ visible_tabs: visibleTabs });
       // Also update localStorage for backwards compatibility and immediate sidebar update
       localStorage.setItem('watchnexus_visible_tabs', JSON.stringify(visibleTabs));
       window.dispatchEvent(new Event('watchnexus_tabs_updated'));
@@ -363,16 +375,34 @@ const SidebarTab = ({ visibleTabs, toggleTab, showAllTabs, hideAllTabs, saveTabV
 );
 
 // Preferences Tab
-const PreferencesTab = ({ settings, setSettings, onSave }) => {
-  const [prefs, setPrefs] = useState({
-    show_ratings: true,
-    show_genres: true,
-    use_24h_time: false,
-    compact_mode: false,
-    notify_download_complete: true,
-    notify_new_episodes: true,
-  });
+const DEFAULT_DISPLAY_PREFS = {
+  show_ratings: true,
+  show_genres: true,
+  use_24h_time: false,
+  compact_mode: false,
+  notify_download_complete: true,
+  notify_new_episodes: true,
+};
+
+const PreferencesTab = () => {
+  const [prefs, setPrefs] = useState(DEFAULT_DISPLAY_PREFS);
   const [savingPrefs, setSavingPrefs] = useState(false);
+
+  // Load the saved values (stored in the per-user preferences blob).
+  useEffect(() => {
+    let cancelled = false;
+    axios.get(`${BACKEND_URL}/api/user/preferences`)
+      .then(res => {
+        if (cancelled || !res.data || typeof res.data !== 'object') return;
+        const saved = {};
+        Object.keys(DEFAULT_DISPLAY_PREFS).forEach(k => {
+          if (typeof res.data[k] === 'boolean') saved[k] = res.data[k];
+        });
+        setPrefs(prev => ({ ...prev, ...saved }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const handleToggle = (key) => {
     setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
@@ -381,7 +411,7 @@ const PreferencesTab = ({ settings, setSettings, onSave }) => {
   const handleSavePrefs = async () => {
     setSavingPrefs(true);
     try {
-      await onSave({ ...settings, ...prefs });
+      await mergeUserPreferences(prefs);
       toast.success('Preferences saved');
     } catch {
       toast.error('Failed to save preferences');
