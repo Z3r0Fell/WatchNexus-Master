@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { MediaCard } from '../components/media/MediaCard';
@@ -9,7 +9,7 @@ import {
   Tv, Filter, ChevronDown, Plus, RefreshCw, Search, 
   FolderOpen, Play, Globe, HardDrive, Clock, Star, Layers
 } from 'lucide-react';
-import { getTitle } from '../lib/utils';
+import { getTitle, localMediaHref, fetchLibraryItems, isMediaType } from '../lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,9 @@ export const TVShowsPage = () => {
   const [scanning, setScanning] = useState({});
   const [showAddLibrary, setShowAddLibrary] = useState(false);
   const [newLibrary, setNewLibrary] = useState({ name: '', path: '' });
+  // Library card the user clicked; null = show every TV library.
+  const [selectedLibraryId, setSelectedLibraryId] = useState(null);
+  const libraryContentsRef = useRef(null);
 
   // Discover state
   const [shows, setShows] = useState([]);
@@ -53,16 +56,15 @@ export const TVShowsPage = () => {
   // ===================== LIBRARY FUNCTIONS =====================
   const fetchLibraryData = useCallback(async () => {
     try {
-      const [librariesRes, mediaRes, seriesRes] = await Promise.all([
+      const [librariesRes, seriesRes] = await Promise.all([
         marmaladeLibrary.getLibraries(),
-        marmaladeMedia.getMedia({ media_type: 'episode', limit: 500 }),
         marmaladeMedia.getTVSeriesGrouped(),
       ]);
-      const tvLibraries = (librariesRes.data || []).filter(lib => 
-        lib.media_type === 'tv' || lib.media_type === 'tv_shows'
-      );
+      const tvLibraries = (librariesRes.data || []).filter(lib => isMediaType(lib.media_type, 'tv'));
       setLibraries(tvLibraries);
-      setLocalEpisodes(mediaRes.data || []);
+      // Items are fetched per library: scanned items store their library's
+      // media_type ("tv"), so filtering on media_type 'episode' matched nothing.
+      setLocalEpisodes(await fetchLibraryItems(marmaladeMedia.getMedia, tvLibraries));
       setTvSeries(seriesRes.data || []);
     } catch (error) {
       console.error('Failed to fetch TV library data:', error);
@@ -101,9 +103,18 @@ export const TVShowsPage = () => {
     }
   };
 
-  // Group episodes by series for display
+  const selectedLibrary = libraries.find(lib => lib.id === selectedLibraryId) || null;
+
+  const handleSelectLibrary = (libraryId) => {
+    setSelectedLibraryId(prev => (prev === libraryId ? null : libraryId));
+    libraryContentsRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Group episodes by series for display (selected library only, if any)
   const seriesMap = {};
-  localEpisodes.forEach(ep => {
+  localEpisodes
+    .filter(ep => !selectedLibraryId || ep.library_id === selectedLibraryId)
+    .forEach(ep => {
     const seriesKey = ep.series_name || ep.title || 'Unknown Series';
     if (!seriesMap[seriesKey]) {
       seriesMap[seriesKey] = {
@@ -345,7 +356,20 @@ export const TVShowsPage = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {libraries.map(lib => (
-                    <div key={lib.id} className="glass-card rounded-xl p-4">
+                    <div
+                      key={lib.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedLibraryId === lib.id}
+                      data-testid={`library-card-${lib.id}`}
+                      onClick={() => handleSelectLibrary(lib.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectLibrary(lib.id); }
+                      }}
+                      className={`glass-card rounded-xl p-4 cursor-pointer transition-all hover:bg-white/10 ${
+                        selectedLibraryId === lib.id ? 'ring-2 ring-blue-500 bg-blue-600/10' : ''
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-semibold">{lib.name}</h3>
@@ -355,8 +379,10 @@ export const TVShowsPage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleScanLibrary(lib.id)}
+                          onClick={(e) => { e.stopPropagation(); handleScanLibrary(lib.id); }}
+                          onKeyDown={(e) => e.stopPropagation()}
                           disabled={scanning[lib.id]}
+                          data-testid={`scan-library-${lib.id}`}
                         >
                           <RefreshCw className={`w-4 h-4 ${scanning[lib.id] ? 'animate-spin' : ''}`} />
                         </Button>
@@ -367,15 +393,38 @@ export const TVShowsPage = () => {
               </div>
             )}
 
-            {/* TV Series Grid */}
-            {seriesList.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-blue-400" /> All Series ({seriesList.length})
+            <div ref={libraryContentsRef} />
+
+            {/* Selected library header + empty state */}
+            {selectedLibrary && (
+              <div className="flex items-center justify-between mb-4" data-testid="selected-library-header">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <FolderOpen className="w-5 h-5 text-blue-400" /> {selectedLibrary.name} ({seriesList.length})
                 </h2>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedLibraryId(null)} data-testid="show-all-libraries-btn">
+                  Show all libraries
+                </Button>
+              </div>
+            )}
+            {selectedLibrary && seriesList.length === 0 && !libraryLoading && (
+              <p className="text-gray-400 py-8" data-testid="selected-library-empty">
+                {librarySearch
+                  ? 'No series in this library match your search.'
+                  : 'No episodes found in this library yet. Use the refresh button on the card to scan it.'}
+              </p>
+            )}
+
+            {/* TV Series Grid (all TV libraries, or the selected one) */}
+            {seriesList.length > 0 && (
+              <div data-testid="library-items">
+                {!selectedLibrary && (
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-blue-400" /> All Series ({seriesList.length})
+                  </h2>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {seriesList.map((series, index) => (
-                    <Link key={series.name} to={series.tmdb_id ? `/tv/${series.tmdb_id}` : '#'} data-testid={`local-series-${index}`}>
+                    <Link key={series.name} to={localMediaHref({ tmdb_id: series.tmdb_id, media_type: 'tv', id: series.episodes[0]?.id })} data-testid={`local-series-${index}`}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

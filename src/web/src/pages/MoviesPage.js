@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { MediaCard } from '../components/media/MediaCard';
@@ -9,7 +9,7 @@ import {
   Film, Filter, ChevronDown, Plus, RefreshCw, Search, 
   FolderOpen, Play, Globe, HardDrive, Clock, Star
 } from 'lucide-react';
-import { getTitle, getMediaType, formatFileSize } from '../lib/utils';
+import { getTitle, localMediaHref, fetchLibraryItems, isMediaType } from '../lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +40,9 @@ export const MoviesPage = () => {
   const [scanning, setScanning] = useState({});
   const [showAddLibrary, setShowAddLibrary] = useState(false);
   const [newLibrary, setNewLibrary] = useState({ name: '', path: '' });
+  // Library card the user clicked; null = show every movie library.
+  const [selectedLibraryId, setSelectedLibraryId] = useState(null);
+  const libraryContentsRef = useRef(null);
 
   // Discover state
   const [movies, setMovies] = useState([]);
@@ -54,15 +57,16 @@ export const MoviesPage = () => {
   // ===================== LIBRARY FUNCTIONS =====================
   const fetchLibraryData = useCallback(async () => {
     try {
-      const [librariesRes, mediaRes, recentRes] = await Promise.all([
+      const [librariesRes, recentRes] = await Promise.all([
         marmaladeLibrary.getLibraries(),
-        marmaladeMedia.getMedia({ media_type: 'movie', limit: 200 }),
         marmaladeMedia.getRecent(20),
       ]);
-      const movieLibraries = (librariesRes.data || []).filter(lib => lib.media_type === 'movies');
+      const movieLibraries = (librariesRes.data || []).filter(lib => isMediaType(lib.media_type, 'movie'));
       setLibraries(movieLibraries);
-      setLocalMovies(mediaRes.data || []);
-      const recentFiltered = (recentRes.data || []).filter(m => m.media_type === 'movie');
+      // Items are fetched per library: scanned items store their library's
+      // media_type ("movies"), so filtering on media_type 'movie' matched nothing.
+      setLocalMovies(await fetchLibraryItems(marmaladeMedia.getMedia, movieLibraries));
+      const recentFiltered = (recentRes.data || []).filter(m => isMediaType(m.media_type, 'movie'));
       setRecentMovies(recentFiltered.slice(0, 8));
     } catch (error) {
       console.error('Failed to fetch library data:', error);
@@ -101,10 +105,19 @@ export const MoviesPage = () => {
     }
   };
 
-  const filteredLocalMovies = localMovies.filter(movie =>
-    movie.title?.toLowerCase().includes(librarySearch.toLowerCase()) ||
-    movie.series_name?.toLowerCase().includes(librarySearch.toLowerCase())
-  );
+  const selectedLibrary = libraries.find(lib => lib.id === selectedLibraryId) || null;
+
+  const handleSelectLibrary = (libraryId) => {
+    setSelectedLibraryId(prev => (prev === libraryId ? null : libraryId));
+    libraryContentsRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
+
+  const filteredLocalMovies = localMovies
+    .filter(movie => !selectedLibraryId || movie.library_id === selectedLibraryId)
+    .filter(movie =>
+      movie.title?.toLowerCase().includes(librarySearch.toLowerCase()) ||
+      movie.series_name?.toLowerCase().includes(librarySearch.toLowerCase())
+    );
 
   // ===================== DISCOVER FUNCTIONS =====================
   const fetchGenres = async () => {
@@ -332,7 +345,20 @@ export const MoviesPage = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {libraries.map(lib => (
-                    <div key={lib.id} className="glass-card rounded-xl p-4">
+                    <div
+                      key={lib.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedLibraryId === lib.id}
+                      data-testid={`library-card-${lib.id}`}
+                      onClick={() => handleSelectLibrary(lib.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectLibrary(lib.id); }
+                      }}
+                      className={`glass-card rounded-xl p-4 cursor-pointer transition-all hover:bg-white/10 ${
+                        selectedLibraryId === lib.id ? 'ring-2 ring-violet-500 bg-violet-600/10' : ''
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-semibold">{lib.name}</h3>
@@ -342,7 +368,8 @@ export const MoviesPage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleScanLibrary(lib.id)}
+                          onClick={(e) => { e.stopPropagation(); handleScanLibrary(lib.id); }}
+                          onKeyDown={(e) => e.stopPropagation()}
                           disabled={scanning[lib.id]}
                           data-testid={`scan-library-${lib.id}`}
                         >
@@ -355,15 +382,17 @@ export const MoviesPage = () => {
               </div>
             )}
 
-            {/* Recently Added */}
-            {recentMovies.length > 0 && (
+            <div ref={libraryContentsRef} />
+
+            {/* Recently Added (hidden while a single library is open) */}
+            {!selectedLibrary && recentMovies.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-violet-400" /> Recently Added
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {recentMovies.map(movie => (
-                    <Link key={movie.id} to={movie.tmdb_id ? `/movie/${movie.tmdb_id}` : '#'} data-testid={`recent-movie-${movie.id}`}>
+                    <Link key={movie.id} to={localMediaHref(movie)} data-testid={`recent-movie-${movie.id}`}>
                       <div className="rounded-xl bg-white/5 hover:bg-white/10 transition-all overflow-hidden group">
                         <div className="aspect-[2/3] relative">
                           {movie.poster_url ? (
@@ -390,15 +419,36 @@ export const MoviesPage = () => {
               </div>
             )}
 
-            {/* All Local Movies */}
-            {filteredLocalMovies.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Film className="w-5 h-5 text-violet-400" /> All Movies ({filteredLocalMovies.length})
+            {/* Selected library header + empty state */}
+            {selectedLibrary && (
+              <div className="flex items-center justify-between mb-4" data-testid="selected-library-header">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <FolderOpen className="w-5 h-5 text-violet-400" /> {selectedLibrary.name} ({filteredLocalMovies.length})
                 </h2>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedLibraryId(null)} data-testid="show-all-libraries-btn">
+                  Show all libraries
+                </Button>
+              </div>
+            )}
+            {selectedLibrary && filteredLocalMovies.length === 0 && !libraryLoading && (
+              <p className="text-gray-400 py-8" data-testid="selected-library-empty">
+                {librarySearch
+                  ? 'No movies in this library match your search.'
+                  : 'No movies found in this library yet. Use the refresh button on the card to scan it.'}
+              </p>
+            )}
+
+            {/* Local Movies (all movie libraries, or the selected one) */}
+            {filteredLocalMovies.length > 0 && (
+              <div data-testid="library-items">
+                {!selectedLibrary && (
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Film className="w-5 h-5 text-violet-400" /> All Movies ({filteredLocalMovies.length})
+                  </h2>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {filteredLocalMovies.map((movie, index) => (
-                    <Link key={movie.id} to={movie.tmdb_id ? `/movie/${movie.tmdb_id}` : '#'} data-testid={`local-movie-${movie.id}`}>
+                    <Link key={movie.id} to={localMediaHref(movie)} data-testid={`local-movie-${movie.id}`}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

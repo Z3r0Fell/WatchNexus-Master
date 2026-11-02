@@ -203,18 +203,34 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("media")]
     public async Task<IActionResult> GetMedia(string? library_id = null, string? media_type = null, int limit = 50, int offset = 0)
     {
-        var q = _db.MediaItems.AsQueryable();
+        // Libraries are per-user: only return items from the caller's libraries.
+        var uid = UserId;
+        var userLibraryIds = _db.Libraries.Where(l => l.UserId == uid).Select(l => l.Id);
+        var q = _db.MediaItems.Where(m => userLibraryIds.Contains(m.LibraryId));
         if (!string.IsNullOrEmpty(library_id)) q = q.Where(m => m.LibraryId == library_id);
-        if (!string.IsNullOrEmpty(media_type)) q = q.Where(m => m.MediaType == media_type);
+        if (!string.IsNullOrEmpty(media_type))
+        {
+            // Scanned items carry their library's media_type ("movies", "tv"),
+            // while pages historically asked for "movie" / "episode".
+            var types = MediaTypeAliases(media_type);
+            q = q.Where(m => types.Contains(m.MediaType));
+        }
         var items = await q.OrderBy(m => m.Title).Skip(offset).Take(limit).ToListAsync();
         return Ok(items.Select(m => new
         {
             m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
             media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
-            m.Genres, m.Year, m.Runtime
+            m.Genres, m.Year, m.Runtime, library_id = m.LibraryId
         }));
     }
+
+    internal static string[] MediaTypeAliases(string mediaType) => mediaType.Trim().ToLowerInvariant() switch
+    {
+        "movie" or "movies" => new[] { "movie", "movies" },
+        "tv" or "episode" or "tv_shows" => new[] { "tv", "episode", "tv_shows" },
+        var other => new[] { other },
+    };
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()
@@ -340,7 +356,10 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("tv-series")]
     public async Task<IActionResult> GetTVSeries(string? library_id = null)
     {
-        var q = _db.MediaItems.Where(m => m.MediaType == "tv" || m.MediaType == "episode");
+        var uid = UserId;
+        var userLibraryIds = _db.Libraries.Where(l => l.UserId == uid).Select(l => l.Id);
+        var q = _db.MediaItems.Where(m => userLibraryIds.Contains(m.LibraryId)
+            && (m.MediaType == "tv" || m.MediaType == "episode"));
         if (!string.IsNullOrEmpty(library_id)) q = q.Where(m => m.LibraryId == library_id);
         var items = await q.OrderBy(m => m.Title).ToListAsync();
 

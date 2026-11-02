@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { formatFileSize } from '../lib/utils';
+import { formatFileSize, fetchLibraryItems, isMediaType } from '../lib/utils';
 
 export const AudiobooksPage = () => {
   const [libraries, setLibraries] = useState([]);
@@ -33,19 +33,20 @@ export const AudiobooksPage = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [librariesRes, mediaRes, recentRes] = await Promise.all([
+      const [librariesRes, recentRes] = await Promise.all([
         marmaladeLibrary.getLibraries(),
-        marmaladeMedia.getMedia({ media_type: 'audiobook', limit: 100 }),
         marmaladeMedia.getRecent(20),
       ]);
       
       // Filter for audiobook libraries only
-      const audiobookLibraries = (librariesRes.data || []).filter(lib => lib.media_type === 'audiobooks');
+      const audiobookLibraries = (librariesRes.data || []).filter(lib => isMediaType(lib.media_type, 'audiobook'));
       setLibraries(audiobookLibraries);
-      setAudiobooks(mediaRes.data || []);
+      // Items are fetched per library: scanned items store the library's
+      // media_type ("audiobooks"), so filtering on 'audiobook' matched nothing.
+      setAudiobooks(await fetchLibraryItems(marmaladeMedia.getMedia, audiobookLibraries, 100));
       
       // Filter recent for audiobooks only
-      const recentAudiobooks = (recentRes.data || []).filter(m => m.media_type === 'audiobook');
+      const recentAudiobooks = (recentRes.data || []).filter(m => isMediaType(m.media_type, 'audiobook'));
       setRecentBooks(recentAudiobooks.slice(0, 8));
     } catch (error) {
       console.error('Failed to fetch audiobook data:', error);

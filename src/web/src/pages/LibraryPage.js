@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { formatFileSize } from '../lib/utils';
+import { formatFileSize, normalizeMediaType } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../hooks/use-confirm';
 import FolderBrowser from '../components/FolderBrowser';
@@ -31,6 +31,13 @@ const MEDIA_TYPE_COLORS = {
   music: 'from-green-600 to-emerald-500',
   audiobook: 'from-orange-600 to-amber-500',
   unknown: 'from-gray-600 to-gray-500',
+};
+
+// Icon/colour tables are keyed by the legacy singular names; libraries and
+// scanned items use plural ones ("movies", "tv"), so normalize before lookup.
+const typeKey = (type) => {
+  const t = normalizeMediaType(type);
+  return t === 'tv' || t === 'anime' ? 'episode' : t;
 };
 
 export const LibraryPage = () => {
@@ -335,7 +342,7 @@ export const LibraryPage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {libraries.map((library) => {
-                const Icon = MEDIA_TYPE_ICONS[library.media_type] || FolderOpen;
+                const Icon = MEDIA_TYPE_ICONS[typeKey(library.media_type)] || FolderOpen;
                 const isScanning = scanning[library.id];
                 const isRefreshing = refreshingMetadata[library.id];
                 
@@ -356,7 +363,7 @@ export const LibraryPage = () => {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${MEDIA_TYPE_COLORS[library.media_type] || MEDIA_TYPE_COLORS.unknown} flex items-center justify-center`}>
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${MEDIA_TYPE_COLORS[typeKey(library.media_type)] || MEDIA_TYPE_COLORS.unknown} flex items-center justify-center`}>
                           <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -415,7 +422,7 @@ export const LibraryPage = () => {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {recentMedia.map((item) => {
-                const Icon = MEDIA_TYPE_ICONS[item.media_type] || Film;
+                const Icon = MEDIA_TYPE_ICONS[typeKey(item.media_type)] || Film;
                 return (
                   <Link key={item.id} to={`/watch/${item.id}`}>
                     <div className="glass-card rounded-xl overflow-hidden hover:border-white/20 transition-all group">
@@ -431,7 +438,7 @@ export const LibraryPage = () => {
                         )}
                         {item.media_type && (
                           <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-medium bg-violet-500/80 uppercase">
-                            {item.media_type === 'movie' ? 'MOVIE' : item.media_type === 'episode' ? 'TV' : item.media_type}
+                            {typeKey(item.media_type) === 'movie' ? 'MOVIE' : typeKey(item.media_type) === 'episode' ? 'TV' : item.media_type}
                           </span>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -516,7 +523,7 @@ export const LibraryPage = () => {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                   {media.map((item) => {
-                    const Icon = MEDIA_TYPE_ICONS[item.media_type] || Film;
+                    const Icon = MEDIA_TYPE_ICONS[typeKey(item.media_type)] || Film;
                     return (
                       <Link key={item.id} to={`/watch/${item.id}`}>
                         <div className="glass-card rounded-xl overflow-hidden hover:border-white/20 transition-all group">
