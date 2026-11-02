@@ -47,8 +47,9 @@ export const securityApi = {
   revokeApiKey: (id) => apiClient.delete(`/security/api-keys/${id}`),
   
   // Sessions
-  getSessions: () => apiClient.get(`/security/sessions`),
-  revokeSession: (id) => apiClient.post(`/security/sessions/${id}/revoke`),
+  // Sessions live under the Bastion (advanced auth) module.
+  getSessions: () => apiClient.get(`/bastion/sessions`),
+  revokeSession: (id) => apiClient.delete(`/bastion/sessions/${encodeURIComponent(id)}`),
 };
 
 // VPN API
