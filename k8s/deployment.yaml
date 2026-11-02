@@ -26,10 +26,10 @@ spec:
         app: watchnexus
         app.kubernetes.io/name: watchnexus
         app.kubernetes.io/version: "1.0.6"
-      annotations:
-        # Reload on config/secret change
-        checksum/config: "{{ include (print $.Template.BasePath "/configmap.yaml") | sha256sum }}"
-        checksum/secret: "{{ include (print $.Template.BasePath "/secret.yaml") | sha256sum }}"
+      # NOTE: Helm-style checksum/config annotations were removed — this is a
+      # plain kustomize manifest, and the unescaped template text made the file
+      # invalid YAML. Use `kubectl rollout restart deployment/watchnexus -n
+      # watchnexus` after changing the ConfigMap/Secret.
     spec:
       securityContext:
         runAsUser: 1000
