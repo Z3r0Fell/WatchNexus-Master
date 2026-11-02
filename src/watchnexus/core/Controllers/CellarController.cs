@@ -103,10 +103,9 @@ public class CellarController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> FirstLaunch()
     {
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        if (IsRateLimited(ip))
-            return StatusCode(429, new { success = false, message = "Too many requests. Please wait 5 minutes and try again." });
-
+        // Read-only probe called on every page load by the SPA's FirstLaunchGate.
+        // It must NOT share the activation rate-limit bucket: 5 page loads would
+        // otherwise 429 both this probe and the subsequent activation attempt.
         var license = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
         var setupDone = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_completed" && s.UserId == "");
         return Ok(new
