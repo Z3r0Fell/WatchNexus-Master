@@ -87,4 +87,43 @@ public class MarmaladeBridgePlaybackTests : IntegrationTestBase
         Assert.Equal(2, json[0].GetProperty("season_number").GetInt32());
         Assert.Equal(5, json[0].GetProperty("episode_number").GetInt32());
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AddLibrary_AcceptsJsonBody_AndQueryFallback(bool jsonBody)
+    {
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        const string badRoot = "/definitely/not/a/media/root";
+
+        var response = jsonBody
+            ? await Client.PostAsync("/api/marmalade/libraries", new StringContent(
+                JsonSerializer.Serialize(new { name = "Anime", path = badRoot, media_type = "anime" }),
+                System.Text.Encoding.UTF8, "application/json"))
+            : await Client.PostAsync($"/api/marmalade/libraries?name=Anime&path={Uri.EscapeDataString(badRoot)}&media_type=anime", null);
+
+        // Reaching path validation proves name/path were bound (not "Name and path are required").
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var detail = (await DeserializeResponseElement(response)).GetProperty("detail").GetString();
+        Assert.DoesNotContain("Name and path are required", detail);
+        Assert.Contains("media roots", detail);
+    }
+
+    [Fact]
+    public async Task OtherUsersItem_IsNotFound_OnMediaAndStreamEndpoints()
+    {
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        var theirs = await CreateTestLibraryAsync(userId: "someone-else");
+        var item = await AddItemAsync(theirs.Id, "Theirs", "movies", 550, "/data/media/movies/theirs.mkv");
+
+        foreach (var url in new[] { $"/api/marmalade/media/{item.Id}", $"/api/marmalade/stream/{item.Id}",
+                     $"/api/marmalade/stream/{item.Id}/authorize", $"/api/marmalade/media/{item.Id}/skip-segments",
+                     $"/api/marmalade/media/{item.Id}/next-episode" })
+            Assert.Equal(HttpStatusCode.NotFound, (await Client.GetAsync(url)).StatusCode);
+
+        var byTmdb = await DeserializeResponseElement(await Client.GetAsync("/api/marmalade/media/by-tmdb/550"));
+        Assert.Equal(0, byTmdb.GetArrayLength());
+    }
 }

@@ -72,7 +72,12 @@ export const isMediaType = (type, canonical) => normalizeMediaType(type) === nor
 export const localMediaHref = (item) => {
   if (!item) return '#';
   if (item.tmdb_id) {
-    const isTv = normalizeMediaType(item.media_type) === 'tv';
+    // tmdb_kind ("tv" | "movie") says which TMDB namespace tmdb_id belongs to
+    // (anime can match either). Legacy rows without it fall back to media_type.
+    const kind = String(item.tmdb_kind || '').toLowerCase();
+    const isTv = kind === 'tv' || kind === 'movie'
+      ? kind === 'tv'
+      : normalizeMediaType(item.media_type) === 'tv';
     return `/${isTv ? 'tv' : 'movie'}/${item.tmdb_id}`;
   }
   return item.id ? `/watch/${item.id}` : '#';

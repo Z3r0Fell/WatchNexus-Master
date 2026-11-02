@@ -313,6 +313,9 @@ namespace WatchNexus.Core.Data.Migrations
                     b.Property<int?>("TmdbId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("TmdbKind")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("Year")
                         .HasColumnType("INTEGER");
 

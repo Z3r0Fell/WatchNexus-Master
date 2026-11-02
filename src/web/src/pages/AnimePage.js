@@ -116,7 +116,7 @@ const AnimePage = () => {
         const name = ep.series_name || ep.title || 'Unknown';
         const key = `${ep.library_id}::${name}`;
         if (!seriesMap[key]) {
-          seriesMap[key] = { key, name, library_id: ep.library_id, media_type: ep.media_type, episodes: [], poster_url: ep.poster_url, year: ep.year, tmdb_id: ep.tmdb_id };
+          seriesMap[key] = { key, name, library_id: ep.library_id, media_type: ep.media_type, episodes: [], poster_url: ep.poster_url, year: ep.year, tmdb_id: ep.tmdb_id, tmdb_kind: ep.tmdb_kind };
         }
         seriesMap[key].episodes.push(ep);
       });
@@ -423,7 +423,7 @@ const AnimePage = () => {
                 )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {filteredAnimeSeries.map((series, index) => (
-                    <Link key={series.key} to={localMediaHref({ tmdb_id: series.tmdb_id, media_type: series.media_type, id: series.episodes[0]?.id })} data-testid={`local-anime-${index}`}>
+                    <Link key={series.key} to={localMediaHref({ tmdb_id: series.tmdb_id, tmdb_kind: series.tmdb_kind, media_type: series.media_type, id: series.episodes[0]?.id })} data-testid={`local-anime-${index}`}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
