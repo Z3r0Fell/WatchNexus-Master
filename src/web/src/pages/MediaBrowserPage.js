@@ -11,6 +11,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const TMDB_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' fill='%23181818'%3E%3Crect width='200' height='300'/%3E%3Ctext x='100' y='150' text-anchor='middle' fill='%23444' font-size='14'%3ENo Poster%3C/text%3E%3C/svg%3E";
 
@@ -64,6 +65,7 @@ const MediaCard = ({ item, onClick }) => (
 );
 
 const MediaDetail = ({ item, onClose }) => {
+  const navigate = useNavigate();
   if (!item) return null;
   const genres = item.genres ? item.genres.split(', ') : [];
 
@@ -141,7 +143,8 @@ const MediaDetail = ({ item, onClose }) => {
               )}
 
               <div className="mt-4 flex gap-2">
-                <Button size="sm" className="bg-white text-black hover:bg-gray-200">
+                <Button size="sm" className="bg-white text-black hover:bg-gray-200"
+                  onClick={() => navigate(`/watch/${item.id}`)} data-testid="media-detail-play-btn">
                   <Play className="w-4 h-4 mr-1.5 fill-black" /> Play
                 </Button>
                 <Button size="sm" variant="outline" className="border-white/20">
