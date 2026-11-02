@@ -33,12 +33,30 @@ export const DownloadSettings = () => {
   const [testingQbit, setTestingQbit] = useState(false);
   const [savingQbit, setSavingQbit] = useState(false);
 
+  // Non-null when the server can't provide engine tuning (501 not_supported) or
+  // the request failed; shown inline instead of failing silently.
+  const [engineSettingsIssue, setEngineSettingsIssue] = useState(null);
+  const [qbitLoadError, setQbitLoadError] = useState(null);
+
   const fetchEngineStatus = useCallback(async () => {
-    try { const res = await torrentEngineApi.getStatus(); setEngineStatus(res.data); } catch { setEngineStatus({ success: false, error: 'Engine not available' }); }
+    try { const res = await torrentEngineApi.getStatus(); setEngineStatus(res.data); }
+    catch (err) {
+      setEngineStatus({ success: false, message: err.response?.data?.error || err.message || 'Download engine not available' });
+    }
   }, []);
 
   const fetchEngineSettings = useCallback(async () => {
-    try { const res = await torrentEngineApi.getSettings(); setEngineSettings(prev => ({ ...prev, ...res.data })); } catch {}
+    try {
+      const res = await torrentEngineApi.getSettings();
+      setEngineSettings(prev => ({ ...prev, ...res.data }));
+      setEngineSettingsIssue(null);
+    } catch (err) {
+      const status = err.response?.status;
+      setEngineSettingsIssue({
+        unsupported: status === 501 || status === 404,
+        message: err.response?.data?.error || err.message || 'Could not load engine settings.',
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -79,7 +97,7 @@ export const DownloadSettings = () => {
   const saveEngineSettings = async () => {
     setSavingEngineSettings(true);
     try { await torrentEngineApi.updateSettings(engineSettings); toast.success('Engine settings saved'); }
-    catch { toast.error('Failed to save settings'); }
+    catch (err) { toast.error(err.response?.data?.error || 'Failed to save settings'); }
     finally { setSavingEngineSettings(false); }
   };
 
@@ -115,7 +133,11 @@ export const DownloadSettings = () => {
           password: res.data.password ?? prev.password,
         }));
       }
-    } catch { /* non-fatal */ }
+      setQbitLoadError(null);
+    } catch (err) {
+      // Non-fatal (the form still works), but tell the user why it's blank.
+      setQbitLoadError(err.response?.data?.message || err.response?.data?.detail || err.message || 'Could not load saved qBittorrent settings.');
+    }
   }, []);
 
   useEffect(() => {
@@ -134,9 +156,9 @@ export const DownloadSettings = () => {
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${downloadClientMode === 'builtin' ? 'bg-violet-500' : 'bg-white/10'}`}>
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <div><h3 className="font-bold">Built-in Engine</h3><span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">Recommended</span></div>
+              <div><h3 className="font-bold">Built-in Engine</h3><span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">Coming soon</span></div>
             </div>
-            <p className="text-sm text-gray-400">No external apps required! Fully integrated torrent engine with streaming support.</p>
+            <p className="text-sm text-gray-400">A native engine ships in a future release. Until then this mode routes downloads through your configured qBittorrent client.</p>
           </button>
           <button onClick={() => handleSetDownloadMode('qbittorrent')}
             className={`p-4 rounded-xl border-2 text-left transition-all ${downloadClientMode === 'qbittorrent' ? 'border-violet-500 bg-violet-500/10' : 'border-white/10 bg-surface hover:border-white/20'}`}>
@@ -160,8 +182,10 @@ export const DownloadSettings = () => {
               <div className="flex items-center gap-3">
                 {engineStatus?.success ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertTriangle className="w-5 h-5 text-yellow-400" />}
                 <div className="flex-1">
-                  <p className={engineStatus?.success ? 'text-green-400 font-medium' : 'text-yellow-400'}>
-                    {engineStatus?.success ? `${engineStatus.engine} - Running` : 'Engine Starting...'}
+                  <p data-testid="engine-status-text" className={engineStatus?.success ? 'text-green-400 font-medium' : 'text-yellow-400'}>
+                    {engineStatus?.success
+                      ? `Connected via ${engineStatus.engine}${engineStatus.version ? ` ${engineStatus.version}` : ''}`
+                      : engineStatus ? (engineStatus.message || 'Download client not connected') : 'Checking…'}
                   </p>
                   {engineStatus?.transfer && (
                     <p className="text-sm text-gray-400">
@@ -175,6 +199,13 @@ export const DownloadSettings = () => {
               </div>
             </div>
           </div>
+
+          {engineSettingsIssue && (
+            <div data-testid="engine-settings-notice" role="status" className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm text-amber-300 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{engineSettingsIssue.message}</span>
+            </div>
+          )}
 
           <div className="glass-card rounded-xl p-6">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><DownloadCloud className="w-5 h-5 text-blue-400" /> Queue Management</h3>
@@ -313,7 +344,7 @@ export const DownloadSettings = () => {
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={saveEngineSettings} disabled={savingEngineSettings} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={saveEngineSettings} disabled={savingEngineSettings || engineSettingsIssue?.unsupported} className="bg-violet-600 hover:bg-violet-700">
               {savingEngineSettings ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
               Save Engine Settings
             </Button>
@@ -333,6 +364,7 @@ export const DownloadSettings = () => {
                   {qbitStatus?.success ? `Connected - v${qbitStatus.version}` : 'Not Connected'}
                 </p>
                 {qbitStatus?.error && <p className="text-sm text-red-400">{qbitStatus.error}</p>}
+                {qbitLoadError && <p data-testid="qbit-load-error" className="text-sm text-amber-400">{qbitLoadError}</p>}
               </div>
             </div>
           </div>

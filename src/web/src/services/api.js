@@ -286,8 +286,12 @@ export const qbittorrentApi = {
     apiClient.put(`/qbittorrent/config`, { host, port, username, password }),
 };
 
-// Built-in Torrent Engine API (not available in v1.0.0 — endpoints return 501;
-// use qbittorrentApi for real downloads)
+// Download engine API — backed by DownloadEngineController (/api/downloads/engine).
+// There is no native torrent engine yet; the backend delegates to the user's
+// configured download client (qBittorrent). GET status always returns 200 with
+// { success, configured, status, message } — status is 'not_configured',
+// 'tier_locked', 'connected', etc. Action routes return 409 {code:'not_configured'}
+// when no client is set up, and settings return 501 {code:'not_supported'}.
 export const torrentEngineApi = {
   // Status
   getStatus: () =>
