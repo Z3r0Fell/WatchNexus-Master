@@ -60,16 +60,21 @@ public class ChowderController : ControllerBase
     }
 
     [HttpPost("servers")]
+    [Authorize(Roles = "admin")] // server-wide remote-server registry
     public async Task<IActionResult> AddServer([FromBody] JsonElement body)
     {
+        if (body.ValueKind != JsonValueKind.Object)
+            return BadRequest(new { success = false, message = "JSON object body required" });
         var name = body.TryGetProperty("name", out var n) ? n.GetString()?.Trim() ?? "" : "";
         var url = body.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') ?? "" : "";
         var apiKey = body.TryGetProperty("api_key", out var k) ? k.GetString() ?? "" : "";
         var serverType = body.TryGetProperty("type", out var t) ? t.GetString() ?? "jellyfin" : "jellyfin";
-        var workers = body.TryGetProperty("workers", out var w) ? w.GetInt32() : 2;
+        var workers = body.TryGetProperty("workers", out var w) && w.TryGetInt32(out var wv) ? wv : 2;
 
         if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             return BadRequest(new { success = false, message = "Name, URL, and API key are required" });
+        if (SsrfGuard.IsBlockedUrl(url))
+            return BadRequest(new { success = false, message = "URL must be an http(s) address and may not target link-local/metadata hosts" });
 
         // Test connection
         try
@@ -96,6 +101,7 @@ public class ChowderController : ControllerBase
     }
 
     [HttpDelete("servers/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> RemoveServer(string id)
     {
         var item = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"chowder_srv:{id}");
@@ -108,12 +114,10 @@ public class ChowderController : ControllerBase
     [HttpPost("servers/{id}/test")]
     public async Task<IActionResult> TestServer(string id)
     {
-        var srv = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"chowder_srv:{id}");
-        if (srv?.Value == null) return NotFound();
-        var doc = JsonDocument.Parse(srv.Value).RootElement;
-        var url = doc.TryGetProperty("url", out var u) ? u.GetString() : "";
-        var apiKey = doc.TryGetProperty("api_key", out var k) ? k.GetString() : "";
-        var sType = doc.TryGetProperty("type", out var t) ? t.GetString() ?? "jellyfin" : "jellyfin";
+        // GetServerConfig applies SsrfGuard to the stored URL (null when blocked/missing).
+        var (url, apiKey, sTypeRaw) = await GetServerConfig(id);
+        if (url == null) return NotFound();
+        var sType = sTypeRaw ?? "jellyfin";
 
         try
         {
@@ -188,8 +192,8 @@ public class ChowderController : ControllerBase
             var userId = users.GetArrayLength() > 0 && users[0].TryGetProperty("Id", out var uid) ? uid.GetString() : "";
 
             var endpoint = !string.IsNullOrEmpty(search)
-                ? $"{url}/Users/{userId}/Items?SearchTerm={Uri.EscapeDataString(search)}&ParentId={libraryId}&Recursive=true&StartIndex={start}&Limit={limit}&Fields=Overview,MediaSources,Path&IncludeItemTypes=Movie,Series,Episode"
-                : $"{url}/Users/{userId}/Items?ParentId={libraryId}&StartIndex={start}&Limit={limit}&Fields=Overview,MediaSources,Path&SortBy=SortName&SortOrder=Ascending";
+                ? $"{url}/Users/{userId}/Items?SearchTerm={Uri.EscapeDataString(search)}&ParentId={Uri.EscapeDataString(libraryId)}&Recursive=true&StartIndex={start}&Limit={limit}&Fields=Overview,MediaSources,Path&IncludeItemTypes=Movie,Series,Episode"
+                : $"{url}/Users/{userId}/Items?ParentId={Uri.EscapeDataString(libraryId)}&StartIndex={start}&Limit={limit}&Fields=Overview,MediaSources,Path&SortBy=SortName&SortOrder=Ascending";
 
             var resp = await http.GetStringAsync(endpoint);
             var data = JsonDocument.Parse(resp).RootElement;
@@ -347,6 +351,7 @@ public class ChowderController : ControllerBase
     }
 
     [HttpPost("queue/pause")]
+    [Authorize(Roles = "admin")] // affects every queued download server-wide
     public async Task<IActionResult> PauseAll()
     {
         var items = await _db.Settings.Where(s => s.Key.StartsWith("chowder_dl:")).ToListAsync();
@@ -366,6 +371,7 @@ public class ChowderController : ControllerBase
     }
 
     [HttpPost("queue/resume")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ResumeAll()
     {
         var items = await _db.Settings.Where(s => s.Key.StartsWith("chowder_dl:")).ToListAsync();
@@ -415,6 +421,7 @@ public class ChowderController : ControllerBase
     }
 
     [HttpPost("sync-maps")]
+    [Authorize(Roles = "admin")] // writes into server-side local_path
     public async Task<IActionResult> CreateSyncMap([FromBody] JsonElement body)
     {
         var serverId = body.TryGetProperty("server_id", out var si) ? si.GetString() ?? "" : "";
@@ -434,6 +441,7 @@ public class ChowderController : ControllerBase
     }
 
     [HttpDelete("sync-maps/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeleteSyncMap(string id)
     {
         var item = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"chowder_sync:{id}");
@@ -506,6 +514,7 @@ public class ChowderController : ControllerBase
     }
 
     [HttpPost("schedule")]
+    [Authorize(Roles = "admin")] // server-wide schedule/bandwidth config
     public async Task<IActionResult> SaveSchedule([FromBody] JsonElement body)
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "chowder_schedule" && s.UserId == "");
@@ -523,7 +532,10 @@ public class ChowderController : ControllerBase
     {
         var srv = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"chowder_srv:{serverId}");
         if (srv?.Value == null) return (null, null, null);
-        var doc = JsonDocument.Parse(srv.Value).RootElement;
+        JsonElement doc;
+        try { doc = JsonDocument.Parse(srv.Value).RootElement; }
+        catch (JsonException) { return (null, null, null); }
+        if (doc.ValueKind != JsonValueKind.Object) return (null, null, null);
         var url = doc.TryGetProperty("url", out var u) ? u.GetString() : null;
         if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
         return (
