@@ -13,7 +13,7 @@ export const RoadmapPage = () => {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/system/roadmap`).then(r => { setEndpoints(r.data.endpoints || []); setLoading(false); }).catch(() => setLoading(false));
+    axios.get(`${BACKEND_URL}/api/db/roadmap`).then(r => { setEndpoints(r.data.endpoints || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   const filtered = endpoints.filter(ep => ep.endpoint.toLowerCase().includes(search.toLowerCase()) || ep.message.toLowerCase().includes(search.toLowerCase()));
