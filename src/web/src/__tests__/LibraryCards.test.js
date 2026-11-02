@@ -44,6 +44,15 @@ describe('normalizeMediaType', () => {
     expect(localMediaHref({ id: 'g1', media_type: 'tv', tmdb_id: 7 })).toBe('/tv/7')
     expect(localMediaHref({ id: 'g1', media_type: 'movies' })).toBe('/watch/g1')
   })
+
+  test('localMediaHref follows tmdb_kind so TV-matched anime links to /tv', () => {
+    expect(localMediaHref({ id: 'a1', media_type: 'anime', tmdb_id: 209867, tmdb_kind: 'tv' })).toBe('/tv/209867')
+    expect(localMediaHref({ id: 'a2', media_type: 'anime', tmdb_id: 4935, tmdb_kind: 'movie' })).toBe('/movie/4935')
+    // Legacy anime rows (no tmdb_kind) were always matched against TMDB movies
+    expect(localMediaHref({ id: 'a3', media_type: 'anime', tmdb_id: 4935 })).toBe('/movie/4935')
+    // tmdb_kind wins over media_type
+    expect(localMediaHref({ id: 't1', media_type: 'tv', tmdb_id: 9, tmdb_kind: 'movie' })).toBe('/movie/9')
+  })
 })
 
 describe('MediaCard', () => {
@@ -112,5 +121,17 @@ describe('TV and Anime library cards', () => {
     expect(screen.getByTestId('selected-library-header')).toHaveTextContent('Anime Movies (1)')
     expect(screen.queryByText('Cowboy Bebop')).not.toBeInTheDocument()
     expect(screen.getByTestId('local-anime-0')).toHaveAttribute('href', '/movie/10494')
+  })
+
+  test('Anime: TV-matched series link to /tv/<tmdb_id>', async () => {
+    marmaladeLibrary.getLibraries.mockResolvedValue({ data: [
+      { id: 'an1', name: 'Anime', path: '/a', media_type: 'anime', item_count: 1 },
+    ] })
+    marmaladeMedia.getMedia.mockResolvedValue({ data: [
+      { id: 'f1', title: 'Frieren', media_type: 'anime', tmdb_id: 209867, tmdb_kind: 'tv', library_id: 'an1' },
+    ] })
+
+    render(<AnimePage />)
+    await waitFor(() => expect(screen.getByTestId('local-anime-0')).toHaveAttribute('href', '/tv/209867'))
   })
 })
