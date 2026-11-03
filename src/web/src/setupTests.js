@@ -89,6 +89,9 @@ if (typeof window.IntersectionObserver === 'undefined') {
 }
 if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = function scrollIntoView() {};
 if (!Element.prototype.hasPointerCapture) Element.prototype.hasPointerCapture = function hasPointerCapture() { return false; };
+// jsdom's window.scrollTo only logs "Not implemented"; make it a silent no-op.
+window.scrollTo = () => {};
+if (!Element.prototype.scrollTo) Element.prototype.scrollTo = function scrollTo() {};
 if (!Element.prototype.releasePointerCapture) Element.prototype.releasePointerCapture = function releasePointerCapture() {};
 
 const createAxiosInstanceMock = () => ({
