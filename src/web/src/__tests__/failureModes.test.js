@@ -391,10 +391,7 @@ describe('Failure Mode Simulation Tests', () => {
       // Should handle gracefully
     })
 
-    // SKIPPED (product bug): ThemeContext.js loadThemeMode (lines ~169/175) and toggleMode (~223)
-    // touch localStorage outside any try/catch, so a browser with storage disabled
-    // throws (ReferenceError/SecurityError). Re-enable once ThemeContext guards storage access.
-    test.skip('handles missing localStorage', async () => {
+    test('handles missing localStorage', async () => {
       const originalLocalStorage = global.localStorage
       delete global.localStorage
       

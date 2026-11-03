@@ -49,10 +49,7 @@ describe('Failure Recovery Tests', () => {
   })
 
   describe('Corrupted localStorage → Fallback to Defaults', () => {
-    // SKIPPED (product bug): ThemeContext.loadThemeMode (ThemeContext.js ~169-176)
-    // applies whatever string is in localStorage as the mode without validating
-    // it against 'dark'/'light'.
-    test.skip('ThemeContext: invalid theme_mode in localStorage falls back to dark', async () => {
+    test('ThemeContext: invalid theme_mode in localStorage falls back to dark', async () => {
       localStorage.getItem.mockReturnValueOnce('not-a-valid-mode')
       axios.get
         .mockRejectedValueOnce(new Error('Network error'))             // /api/user/preferences
@@ -70,10 +67,7 @@ describe('Failure Recovery Tests', () => {
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
     })
 
-    // SKIPPED (product bug): ThemeContext.loadThemeMode reads localStorage inside
-    // its catch block (ThemeContext.js ~175) with no guard, so a throwing storage
-    // (disabled/blocked) escapes as an unhandled rejection.
-    test.skip('ThemeContext: corrupted JSON in localStorage falls back gracefully', async () => {
+    test('ThemeContext: corrupted JSON in localStorage falls back gracefully', async () => {
       // Simulate corrupted localStorage (though theme_mode is stored as plain string)
       localStorage.getItem.mockImplementationOnce(() => {
         throw new Error('localStorage corrupted')
@@ -297,10 +291,7 @@ describe('Failure Recovery Tests', () => {
   })
 
   describe('License Server Down → Cached Tier Used, Warning Banner', () => {
-    // SKIPPED (product issue): LicenseContext.fetchLicense (LicenseContext.js ~116)
-    // resets tier to 'standard' on ANY error, so a transient /cellar/status
-    // failure drops an activated Pro/Ultra user to Standard until the next fetch.
-    test.skip('LicenseContext: uses cached tier when server unavailable', async () => {
+    test('LicenseContext: uses cached tier when server unavailable', async () => {
       // First load succeeds
       axios.get.mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
 

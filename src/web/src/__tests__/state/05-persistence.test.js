@@ -97,10 +97,7 @@ describe('Persistence Tests - localStorage, sessionStorage, Cookies', () => {
       expect(localStorage.setItem).toHaveBeenCalledWith('watchnexus_theme_mode', 'light')
     })
 
-    // SKIPPED (product bug): ThemeContext.toggleMode calls localStorage.setItem
-    // (ThemeContext.js ~223) without try/catch, so a quota/security error escapes
-    // the click handler as an unhandled rejection.
-    test.skip('ThemeContext: handles localStorage quota exceeded', async () => {
+    test('ThemeContext: handles localStorage quota exceeded', async () => {
       const quotaError = new DOMException('Quota exceeded', 'QuotaExceededError')
       localStorage.setItem.mockImplementationOnce(() => { throw quotaError; })
 
@@ -132,9 +129,7 @@ describe('Persistence Tests - localStorage, sessionStorage, Cookies', () => {
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('light'))
     })
 
-    // SKIPPED (product bug): ThemeContext.loadThemeMode applies any stored string
-    // as the mode without validating it is 'dark'/'light' (ThemeContext.js ~169-176).
-    test.skip('ThemeContext: handles corrupted localStorage data', async () => {
+    test('ThemeContext: handles corrupted localStorage data', async () => {
       localStorage.getItem.mockReturnValueOnce('invalid-value')
       axios.get
         .mockRejectedValueOnce(new Error('Network error'))

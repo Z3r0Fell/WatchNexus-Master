@@ -347,18 +347,15 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
   })
 
   describe('Error Recovery Flow', () => {
-    // SKIPPED (product issue): LicenseContext.fetchLicense (LicenseContext.js ~116)
-    // resets the tier to 'standard' on any error instead of keeping the last
-    // known tier, so a transient failure downgrades the session.
-    test.skip('network failure during session - graceful degradation', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'user' } })   // Auth
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } }) // License
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })          // Theme
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
-        .mockResolvedValueOnce({ data: { gadgets: [] } })                 // Gadgets
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+    test('network failure during session - graceful degradation', async () => {
+      // Route by URL: providers fetch concurrently and the license is re-fetched on auth change.
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'user' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       const App = () => {
         const auth = useAuth()
@@ -402,8 +399,8 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       await waitFor(() => expect(screen.getByTestId('tier')).toHaveTextContent('pro'))
 
-      // Network fails
-      axios.get.mockRejectedValueOnce(new Error('Network error'))
+      // Network fails for the license refresh (transient, not 401)
+      setRoute('/cellar/status', new Error('Network error'))
 
       await act(async () => {
         await screen.getByTestId('refresh').click()

@@ -113,8 +113,16 @@ export const LicenseProvider = ({ children }) => {
       setTier(res.data.tier || 'standard');
       setUnlockedModules(res.data.modules_unlocked || []);
     } catch (error) {
-      console.warn('Failed to fetch license, defaulting to standard:', error);
-      setTier('standard');
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        // Not signed in (or no access): no unlocks apply.
+        setTier('standard');
+        setUnlockedModules([]);
+      } else {
+        // Transient failure (network/5xx): keep the tier we already know rather than
+        // downgrading an activated Pro/Ultra user to Standard until the next reload.
+        console.warn('Failed to refresh license; keeping current tier:', error);
+      }
     } finally {
       setLoading(false);
     }

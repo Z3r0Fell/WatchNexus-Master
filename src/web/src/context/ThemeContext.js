@@ -5,6 +5,12 @@ import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
 
+// Only 'dark' / 'light' are valid; anything else (corrupted storage, stale values) is ignored.
+const validMode = (m) => (m === 'dark' || m === 'light' ? m : null);
+const readSavedMode = () => {
+  try { return validMode(localStorage.getItem('watchnexus_theme_mode')); } catch { return null; }
+};
+
 // Default theme values
 export const DEFAULT_DARK_THEME = {
   primary: '#8B5CF6',
@@ -164,15 +170,16 @@ export const ThemeProvider = ({ children }) => {
       try {
         // Cookie auth: the httpOnly wn_token is sent automatically.
         const response = await axios.get(`${BACKEND_URL}/api/user/preferences`);
-        if (response.data.theme_mode) {
-          setMode(response.data.theme_mode);
+        const serverMode = validMode(response.data?.theme_mode);
+        if (serverMode) {
+          setMode(serverMode);
         } else {
-          const saved = localStorage.getItem('watchnexus_theme_mode');
+          const saved = readSavedMode();
           if (saved) setMode(saved);
         }
       } catch (error) {
-        // Fall back to localStorage
-        const saved = localStorage.getItem('watchnexus_theme_mode');
+        // Fall back to localStorage (guarded: storage may be blocked or corrupted)
+        const saved = readSavedMode();
         if (saved) setMode(saved);
       } finally {
         setModeLoaded(true);
@@ -224,7 +231,7 @@ export const ThemeProvider = ({ children }) => {
     }
     
     // Also save to localStorage for backwards compatibility
-    localStorage.setItem('watchnexus_theme_mode', newMode);
+    try { localStorage.setItem('watchnexus_theme_mode', newMode); } catch { /* storage unavailable */ }
     
     // Apply current theme colors with new mode
     if (theme?.colors) {

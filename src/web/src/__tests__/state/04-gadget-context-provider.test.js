@@ -128,11 +128,7 @@ describe('GadgetContext Provider - Module Registry + Tier Gating', () => {
       expect(screen.getByTestId('installed-count')).toHaveTextContent('0')
     })
 
-    // SKIPPED (product issue): GadgetContext.refresh() loads /ripen/installed and
-    // /ripen/hooks with Promise.all, so a failing /hooks call discards the
-    // successfully loaded installed list (installed stays []). Re-enable if
-    // refresh() is changed to handle the two requests independently.
-    test.skip('handles partial failure (one endpoint succeeds, one fails)', async () => {
+    test('handles partial failure (one endpoint succeeds, one fails)', async () => {
       axios.get
         .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather', status: 'active' }] } })
         .mockRejectedValueOnce(new Error('Network Error'))
