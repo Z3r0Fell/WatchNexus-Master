@@ -25,6 +25,21 @@ public class GameBotController : ControllerBase
     private readonly AppDbContext _db;
     private static readonly string CacheDir = Path.Combine(AppContext.BaseDirectory, "cache", "gamebot");
 
+    /// <summary>
+    /// Decoder options for remote images: only JPEG/PNG/GIF/WebP decoders are registered (no TIFF,
+    /// whose decoders carry unpatched heap-overflow/loop advisories in ImageSharp &lt; 3.2.0) and
+    /// metadata is skipped so embedded ICC profiles are never parsed.
+    /// </summary>
+    internal static readonly SixLabors.ImageSharp.Formats.DecoderOptions SafeDecoderOptions = new()
+    {
+        Configuration = new Configuration(
+            new SixLabors.ImageSharp.Formats.Jpeg.JpegConfigurationModule(),
+            new SixLabors.ImageSharp.Formats.Png.PngConfigurationModule(),
+            new SixLabors.ImageSharp.Formats.Gif.GifConfigurationModule(),
+            new SixLabors.ImageSharp.Formats.Webp.WebpConfigurationModule()),
+        SkipMetadata = true,
+    };
+
     internal const float MaxSigma = 100f;
     internal const int MaxRevealSteps = 20;
     internal const int MaxDimension = 4096;
@@ -56,7 +71,7 @@ public class GameBotController : ControllerBase
             var http = this.Http();
             var imageData = await http.GetByteArrayAsync(imageUrl);
 
-            using var image = Image.Load<Rgba32>(imageData);
+            using var image = Image.Load<Rgba32>(SafeDecoderOptions, imageData);
             image.Mutate(x => x.GaussianBlur(sigma));
             await image.SaveAsJpegAsync(outputPath);
 
@@ -93,7 +108,7 @@ public class GameBotController : ControllerBase
 
                 if (!System.IO.File.Exists(outputPath))
                 {
-                    using var image = Image.Load<Rgba32>(imageData);
+                    using var image = Image.Load<Rgba32>(SafeDecoderOptions, imageData);
                     if (sigma > 0.5f) image.Mutate(x => x.GaussianBlur(sigma));
                     await image.SaveAsJpegAsync(outputPath);
                 }
@@ -103,7 +118,7 @@ public class GameBotController : ControllerBase
             var finalPath = Path.Combine(CacheDir, $"reveal_{hash}_final.jpg");
             if (!System.IO.File.Exists(finalPath))
             {
-                using var image = Image.Load<Rgba32>(imageData);
+                using var image = Image.Load<Rgba32>(SafeDecoderOptions, imageData);
                 await image.SaveAsJpegAsync(finalPath);
             }
             urls.Add($"/api/gadgets/gamebot/cache/{hash}_final");
@@ -227,7 +242,7 @@ public class GameBotController : ControllerBase
             var http = this.Http();
             var imageData = await http.GetByteArrayAsync(imageUrl);
 
-            using var image = Image.Load<Rgba32>(imageData);
+            using var image = Image.Load<Rgba32>(SafeDecoderOptions, imageData);
             if (height <= 0) height = Math.Clamp((int)(image.Height * ((float)width / image.Width)), 1, MaxDimension);
             image.Mutate(x => x.Resize(width, height));
 
@@ -250,7 +265,7 @@ public class GameBotController : ControllerBase
             var http = this.Http();
             var imageData = await http.GetByteArrayAsync(imageUrl);
 
-            using var image = Image.Load<Rgba32>(imageData);
+            using var image = Image.Load<Rgba32>(SafeDecoderOptions, imageData);
             image.Mutate(x => x.Grayscale());
 
             using var ms = new MemoryStream();
@@ -274,7 +289,7 @@ public class GameBotController : ControllerBase
             var http = this.Http();
             var imageData = await http.GetByteArrayAsync(imageUrl);
 
-            using var image = Image.Load<Rgba32>(imageData);
+            using var image = Image.Load<Rgba32>(SafeDecoderOptions, imageData);
             image.Mutate(x => x.Pixelate(size));
 
             using var ms = new MemoryStream();

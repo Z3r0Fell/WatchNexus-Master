@@ -33,9 +33,10 @@ public class WebVideoController : ControllerBase
             Url = body.TryGetProperty("url", out var u) ? u.GetString() ?? "" : "",
             Title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
             Thumbnail = body.TryGetProperty("thumbnail", out var th) ? th.GetString() : null,
-            Duration = body.TryGetProperty("duration", out var d) ? d.GetInt32() : null,
+            Duration = body.TryGetProperty("duration", out var d) && d.TryGetInt32(out var dv) ? dv : null,
         };
-        if (!string.IsNullOrEmpty(bm.Url) && !Uri.IsWellFormedUriString(bm.Url, UriKind.Absolute))
+        // Only http(s)/magnet: a stored javascript:/data: URL would be an XSS when rendered as a link.
+        if (!IsSafeUrl(bm.Url))
             return BadRequest(new { detail = "Invalid URL" });
         _db.WebVideoBookmarks.Add(bm);
         await _db.SaveChangesAsync();
@@ -59,7 +60,7 @@ public class WebVideoController : ControllerBase
     {
         var hist = await _db.WebVideoHistories
             .Where(h => h.UserId == this.UserId())
-            .OrderByDescending(h => h.ViewedAt).Take(limit).ToListAsync();
+            .OrderByDescending(h => h.ViewedAt).Take(Math.Clamp(limit, 1, 500)).ToListAsync();
         return Ok(hist.Select(h => new { h.Id, h.Url, h.Title, viewed_at = h.ViewedAt }));
     }
 
@@ -72,6 +73,8 @@ public class WebVideoController : ControllerBase
             Url = body.TryGetProperty("url", out var u) ? u.GetString() ?? "" : "",
             Title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
         };
+        if (!IsSafeUrl(entry.Url))
+            return BadRequest(new { detail = "Invalid URL" });
         _db.WebVideoHistories.Add(entry);
         await _db.SaveChangesAsync();
         return Ok(new { entry.Id, status = "added" });
@@ -94,12 +97,17 @@ public class WebVideoController : ControllerBase
                 var videoId = ExtractYoutubeId(uri);
                 if (videoId != null)
             {
-                thumbnail = $"https://img.youtube.com/vi/{videoId}/maxresdefault.jpg";
+                thumbnail = $"https://img.youtube.com/vi/{Uri.EscapeDataString(videoId)}/maxresdefault.jpg";
                 title = $"YouTube Video ({videoId})";
             }
         }
         return Ok(new { url, title, thumbnail, formats = Array.Empty<object>() });
     }
+
+    private static bool IsSafeUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var u) &&
+        (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps ||
+         u.Scheme.Equals("magnet", StringComparison.OrdinalIgnoreCase));
 
     private static string? ExtractYoutubeId(Uri uri)
     {
