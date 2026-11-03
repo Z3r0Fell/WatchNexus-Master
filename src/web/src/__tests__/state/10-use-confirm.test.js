@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor, act, userEvent } from '../test-utils'
+import { render, screen, waitFor, act, userEvent, fireEvent } from '../test-utils'
 import { useConfirm } from '../../hooks/use-confirm'
 
 const TestComponent = ({ onConfirm }) => {
@@ -69,17 +69,29 @@ describe('useConfirm Hook', () => {
     expect(screen.getByTestId('result')).toHaveTextContent('false')
   })
 
-  test('resolves false on backdrop click', async () => {
+  // ConfirmDialog is a Radix *Alert*Dialog: by design an outside/backdrop
+  // click does NOT dismiss it (the user must choose); it stays open and the
+  // promise stays pending until Cancel/Escape/Confirm.
+  test('backdrop click does not dismiss the alert dialog; Escape then resolves false', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
 
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
-      const dialog = screen.getByRole('alertdialog')
-      await userEvent.click(dialog.parentElement)
     })
+    const dialog = await screen.findByRole('alertdialog')
+    // fireEvent: Radix sets pointer-events:none on <body> while modal
+    await act(async () => {
+      fireEvent.pointerDown(document.body)
+      fireEvent.click(document.body)
+    })
+    expect(dialog).toBeInTheDocument()
+    expect(screen.getByTestId('result')).toHaveTextContent('null')
 
-    expect(screen.getByTestId('result')).toHaveTextContent('false')
+    await act(async () => {
+      await userEvent.keyboard('{Escape}')
+    })
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('false'))
   })
 
   test('resolves false on Escape key', async () => {
@@ -163,8 +175,14 @@ describe('useConfirm Hook', () => {
   })
 
   test('ConfirmDialog component renders correctly', () => {
-    const { ConfirmDialog } = useConfirm()
-    const dialogElement = ConfirmDialog()
+    // hooks must run inside a component
+    let dialogElement
+    const Harness = () => {
+      const { ConfirmDialog } = useConfirm()
+      dialogElement = ConfirmDialog()
+      return null
+    }
+    render(<Harness />)
     expect(dialogElement).toBeDefined()
     expect(dialogElement.type).toBeDefined()
   })

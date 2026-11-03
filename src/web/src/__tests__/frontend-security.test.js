@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from '../test-utils'
+import { render, screen, waitFor, act } from './test-utils'
 import { AuthProvider, useAuth } from '../context/AuthContext'
 import axios from 'axios'
 import { BACKEND_URL } from '../lib/config'
@@ -46,15 +46,18 @@ describe('Frontend Security - Auth Storage', () => {
     expect(localStorage.getItem('watchnexus_user')).toBeNull()
   })
 
+  // index.js is the app entry point (it renders into #root), so it is not
+  // imported here; check the global axios configuration in its source instead.
+  const indexSource = () => require('fs').readFileSync(require('path').join(__dirname, '..', 'index.js'), 'utf8')
+
   test('axios defaults to withCredentials=true', () => {
-    // This is set in index.js
-    expect(axios.defaults.withCredentials).toBe(true)
+    expect(indexSource()).toMatch(/axios\.defaults\.withCredentials\s*=\s*true/)
   })
 
   test('axios configured with XSRF-TOKEN cookie/header names', () => {
-    // This is set in index.js
-    expect(axios.defaults.xsrfCookieName).toBe('XSRF-TOKEN')
-    expect(axios.defaults.xsrfHeaderName).toBe('X-XSRF-TOKEN')
+    const src = indexSource()
+    expect(src).toMatch(/axios\.defaults\.xsrfCookieName\s*=\s*["']XSRF-TOKEN["']/)
+    expect(src).toMatch(/axios\.defaults\.xsrfHeaderName\s*=\s*["']X-XSRF-TOKEN["']/)
   })
 
   test('index.js purges legacy localStorage tokens on load', () => {
@@ -81,7 +84,7 @@ describe('Frontend Security - Tier Enforcement', () => {
     })
 
     const { TierGate } = await import('../components/TierGate')
-    
+
     const TestComponent = () => (
       <TierGate path="/indexers">
         <div data-testid="protected-content">Protected Content</div>
@@ -100,7 +103,7 @@ describe('Frontend Security - Tier Enforcement', () => {
     })
 
     const { TierGate } = await import('../components/TierGate')
-    
+
     const TestComponent = () => (
       <TierGate path="/indexers">
         <div data-testid="protected-content">Protected Content</div>
@@ -118,7 +121,7 @@ describe('Frontend Security - Tier Enforcement', () => {
     })
 
     const { TierGate } = await import('../components/TierGate')
-    
+
     const TestComponent = () => (
       <TierGate path="/security">
         <div data-testid="protected-content">Protected Content</div>
@@ -132,7 +135,7 @@ describe('Frontend Security - Tier Enforcement', () => {
 
   test('LicenseContext maps all routes to module codenames', () => {
     const { ROUTE_MODULE_MAP } = require('../context/LicenseContext')
-    
+
     // Verify critical routes are mapped
     expect(ROUTE_MODULE_MAP['/indexers']).toBe('compote')
     expect(ROUTE_MODULE_MAP['/security']).toBe('security')
@@ -144,18 +147,23 @@ describe('Frontend Security - Tier Enforcement', () => {
   })
 
   test('MODULE_TIER has correct tier for all modules', () => {
-    const { MODULE_TIER } = require('../context/LicenseContext')
-    
+    // MODULE_TIER is module-private; read it through useLicense().getRequiredTier
+    const { renderHook } = require('@testing-library/react')
+    const { LicenseProvider, useLicense } = require('../context/LicenseContext')
+    axios.get.mockResolvedValue({ data: { tier: 'standard', modules_unlocked: [] } })
+    const { result } = renderHook(() => useLicense(), { wrapper: LicenseProvider })
+    const MODULE_TIER = new Proxy({}, { get: (_, mod) => result.current.getRequiredTier(mod) })
+
     // Standard modules
     expect(MODULE_TIER.core).toBe('standard')
     expect(MODULE_TIER.marmalade).toBe('standard')
     expect(MODULE_TIER.libraries).toBe('standard')
-    
+
     // Pro modules
     expect(MODULE_TIER.compote).toBe('pro')
     expect(MODULE_TIER.fondue).toBe('pro')
     expect(MODULE_TIER.iptv).toBe('pro')
-    
+
     // Ultra modules
     expect(MODULE_TIER.security).toBe('ultra')
     expect(MODULE_TIER.rind).toBe('ultra')
@@ -165,7 +173,7 @@ describe('Frontend Security - Tier Enforcement', () => {
 
   test('isRouteUnlocked returns false for unknown routes (fail-closed)', () => {
     const { MODULE_TIER, TIER_RANK } = require('../context/LicenseContext')
-    
+
     // Unknown module defaults to 'standard' but isRouteUnlocked returns false for unknown routes
     // Actually, isRouteUnlocked returns true for unknown routes (no module mapping)
     // This is a design decision - unknown routes are accessible

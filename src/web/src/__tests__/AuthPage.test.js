@@ -2,16 +2,24 @@ import { render, screen, waitFor, act, userEvent } from './test-utils'
 import { AuthPage } from '../pages/AuthPage'
 import axios from 'axios'
 
+// One shared auth object: the old factory built fresh jest.fn()s on every
+// useAuth() call, so the login stub configured by a test was never the one
+// AuthPage called.
+const mockAuth = {
+  login: jest.fn(),
+  register: jest.fn(),
+  logout: jest.fn(),
+  isAuthenticated: false,
+  user: null,
+  loading: false,
+}
 jest.mock('../context/AuthContext', () => ({
   ...jest.requireActual('../context/AuthContext'),
-  useAuth: () => ({
-    login: jest.fn(),
-    register: jest.fn(),
-    logout: jest.fn(),
-    isAuthenticated: false,
-    user: null,
-    loading: false,
-  }),
+  useAuth: () => mockAuth,
+}))
+jest.mock('sonner', () => ({
+  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() },
+  Toaster: () => null,
 }))
 
 jest.mock('../components/LanguageSwitcher', () => ({
@@ -40,7 +48,7 @@ describe('AuthPage', () => {
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('auth-page')).toBeInTheDocument())
     // There's no register toggle in the current AuthPage, so test login form
-    expect(screen.getByTestId('username-input')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('username-input')).not.toBeInTheDocument()
   })
 
   test('shows password toggle button', async () => {
@@ -55,14 +63,14 @@ describe('AuthPage', () => {
     axios.get.mockRejectedValue({ response: { status: 404 } })
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('auth-page')).toBeInTheDocument())
-    
+
     const passwordInput = screen.getByTestId('password-input')
     expect(passwordInput).toHaveAttribute('type', 'password')
-    
+
     await act(async () => {
       await userEvent.click(screen.getByRole('button', { name: /show password/i }))
     })
-    
+
     expect(passwordInput).toHaveAttribute('type', 'text')
   })
 
@@ -85,16 +93,16 @@ describe('AuthPage', () => {
     axios.get.mockRejectedValue({ response: { status: 404 } })
     const { login } = require('../context/AuthContext').useAuth()
     login.mockResolvedValue({ id: '1', username: 'testuser' })
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('auth-page')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.type(screen.getByTestId('email-input'), 'test@test.com')
       await userEvent.type(screen.getByTestId('password-input'), 'password123')
       await userEvent.click(screen.getByTestId('auth-submit-btn'))
     })
-    
+
     expect(login).toHaveBeenCalledWith('test@test.com', 'password123')
   })
 
@@ -102,16 +110,16 @@ describe('AuthPage', () => {
     axios.get.mockRejectedValue({ response: { status: 404 } })
     const { login } = require('../context/AuthContext').useAuth()
     login.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('auth-page')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.type(screen.getByTestId('email-input'), 'test@test.com')
       await userEvent.type(screen.getByTestId('password-input'), 'password123')
       await userEvent.click(screen.getByTestId('auth-submit-btn'))
     })
-    
+
     expect(screen.getByTestId('auth-submit-btn')).toBeDisabled()
     expect(screen.getByText('Processing...')).toBeInTheDocument()
   })
@@ -121,22 +129,22 @@ describe('AuthPage', () => {
     const { login } = require('../context/AuthContext').useAuth()
     login.mockRejectedValue({ response: { data: { detail: 'Invalid credentials' } } })
     const toast = require('sonner').toast
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('auth-page')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.type(screen.getByTestId('email-input'), 'test@test.com')
       await userEvent.type(screen.getByTestId('password-input'), 'wrong')
       await userEvent.click(screen.getByTestId('auth-submit-btn'))
     })
-    
+
     expect(toast.error).toHaveBeenCalledWith('Invalid credentials')
   })
 
   test('shows local user profiles on local network', async () => {
     axios.get.mockResolvedValueOnce({ data: [{ id: '1', username: 'user1', email: 'user1@test.com' }] })
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('whos-watching')).toBeInTheDocument())
     expect(screen.getByText('Who\'s Watching?')).toBeInTheDocument()
@@ -145,14 +153,14 @@ describe('AuthPage', () => {
 
   test('allows manual login from profile selection', async () => {
     axios.get.mockResolvedValueOnce({ data: [{ id: '1', username: 'user1', email: 'user1@test.com' }] })
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('whos-watching')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('manual-login-btn'))
     })
-    
+
     expect(screen.getByTestId('email-input')).toBeInTheDocument()
   })
 
@@ -160,34 +168,34 @@ describe('AuthPage', () => {
     axios.get.mockResolvedValueOnce({ data: [{ id: '1', username: 'user1', email: 'user1@test.com', avatar: '👤' }] })
     const { login } = require('../context/AuthContext').useAuth()
     login.mockResolvedValue({ id: '1', username: 'user1' })
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('whos-watching')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('user-profile-1'))
     })
-    
+
     expect(screen.getByText('Enter Password')).toBeInTheDocument()
     expect(screen.getByText('user1')).toBeInTheDocument()
   })
 
   test('allows changing selected user', async () => {
     axios.get.mockResolvedValueOnce({ data: [{ id: '1', username: 'user1', email: 'user1@test.com' }] })
-    
+
     render(<AuthPage />)
     await waitFor(() => expect(screen.getByTestId('whos-watching')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('user-profile-1'))
     })
-    
+
     expect(screen.getByText('Change')).toBeInTheDocument()
-    
+
     await act(async () => {
       await userEvent.click(screen.getByText('Change'))
     })
-    
+
     expect(screen.getByTestId('whos-watching')).toBeInTheDocument()
   })
 

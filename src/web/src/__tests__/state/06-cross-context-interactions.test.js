@@ -23,12 +23,49 @@ jest.mock('axios', () => ({
   })),
 }))
 
-import { render, screen, waitFor, act } from '../test-utils'
+// Bare render: these tests mount the providers under test themselves.
+// test-utils' render wraps every test in Auth/Theme/Gadget/License providers,
+// whose own mount-time axios.get calls consumed the tests' Once-mocks.
+import { render, screen, waitFor, act } from '@testing-library/react'
+
+// Providers mounted without an <AuthProvider> see a signed-out user (the
+// real app always has one); inside an AuthProvider the real context is used.
+jest.mock('../../context/AuthContext', () => {
+  const actual = jest.requireActual('../../context/AuthContext')
+  return {
+    ...actual,
+    useAuth: () => actual.useOptionalAuth() ?? { isAuthenticated: false, user: null, loading: false },
+  }
+})
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 import { LicenseProvider, useLicense } from '../../context/LicenseContext'
 import { ThemeProvider, useTheme } from '../../context/ThemeContext'
 import { GadgetProvider, useGadgets } from '../../context/GadgetContext'
 import axios from 'axios'
+
+// Several providers fire requests concurrently, so a single Once-sequence on
+// axios.get breaks as soon as their order shifts (e.g. LicenseProvider
+// re-fetching when auth state changes). Answer by URL instead. A value may be
+// an array: each call takes the next entry, the last one sticks.
+const isFailure = (v) => v instanceof Error || (v && v.response && v.response.status >= 400)
+let routes = {}
+const routeGet = (table) => {
+  routes = { ...table }
+  axios.get.mockImplementation((url) => {
+    const key = Object.keys(routes).find(k => url.includes(k))
+    if (!key) return Promise.reject({ response: { status: 404 } })
+    let v = routes[key]
+    if (Array.isArray(v)) v = v.length > 1 ? v.shift() : v[0]
+    return isFailure(v) ? Promise.reject(v) : Promise.resolve(v)
+  })
+}
+const setRoute = (key, value) => { routes[key] = value }
+const ok = (data) => ({ data })
+const THEME_OK = {
+  '/user/preferences': ok({ theme_mode: 'dark' }),
+  '/milk/theme-forge': ok({ current_theme: null }),
+  '/api/settings': ok({ ui_accent: 'violet' }),
+}
 
 describe('Cross-Context Interaction Tests', () => {
   beforeEach(() => {
@@ -38,14 +75,15 @@ describe('Cross-Context Interaction Tests', () => {
   describe('AuthContext → LicenseContext: Login Triggers Tier Fetch', () => {
     test('login triggers license refresh via watchnexus_license_changed event', async () => {
       // Initial state: unauthenticated, standard tier
-      axios.get
-        .mockRejectedValueOnce({ response: { status: 401 } })          // Auth: /users/me
-        .mockResolvedValueOnce({ data: { tier: 'standard', modules_unlocked: [] } }); // License: /api/cellar/status
+      routeGet({
+        '/users/me': { response: { status: 401 } },
+        '/cellar/status': ok({ tier: 'standard', modules_unlocked: [] }),
+      })
 
       let authRef, licenseRef
-      const Grab = () => { 
-        authRef = useAuth(); 
-        licenseRef = useLicense(); 
+      const Grab = () => {
+        authRef = useAuth();
+        licenseRef = useLicense();
         return (
           <div>
             <div data-testid="auth-state">{String(authRef.isAuthenticated)}</div>
@@ -66,18 +104,18 @@ describe('Cross-Context Interaction Tests', () => {
       await waitFor(() => expect(screen.getByTestId('license-tier')).toHaveTextContent('standard'))
 
       // Login
-      axios.post.mockResolvedValueOnce({ 
-        data: { user: { id: '1', username: 'owner', email: 'owner@test.com', role: 'admin' } } 
+      axios.post.mockResolvedValueOnce({
+        data: { user: { id: '1', username: 'owner', email: 'owner@test.com', role: 'admin' } }
       })
-      // License refresh after event
-      axios.get.mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
+      // License refresh after login / event
+      setRoute('/cellar/status', ok({ tier: 'pro', modules_unlocked: [] }))
 
       await act(async () => {
         await authRef.login('owner@test.com', 'password')
       })
 
       await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('true'))
-      
+
       // Dispatch the event that ActivationSettings would dispatch
       act(() => {
         window.dispatchEvent(new CustomEvent('watchnexus_license_changed'))
@@ -87,14 +125,15 @@ describe('Cross-Context Interaction Tests', () => {
     })
 
     test('logout clears license tier to standard', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })  // Auth: /users/me
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } }); // License
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'owner' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+      })
 
       let authRef, licenseRef
-      const Grab = () => { 
-        authRef = useAuth(); 
-        licenseRef = useLicense(); 
+      const Grab = () => {
+        authRef = useAuth();
+        licenseRef = useLicense();
         return (
           <div>
             <div data-testid="auth-state">{String(authRef.isAuthenticated)}</div>
@@ -118,7 +157,7 @@ describe('Cross-Context Interaction Tests', () => {
       axios.post.mockResolvedValueOnce({ data: { success: true } });  // Auth logout
       // License would be re-fetched on auth change, but current implementation
       // doesn't auto-refresh on logout - this documents the gap
-      axios.get.mockResolvedValueOnce({ data: { tier: 'standard', modules_unlocked: [] } })
+      setRoute('/cellar/status', ok({ tier: 'standard', modules_unlocked: [] }))
 
       await act(async () => {
         await authRef.logout()
@@ -134,17 +173,18 @@ describe('Cross-Context Interaction Tests', () => {
     test('gadgets only load when authenticated, tier affects available modules', async () => {
       // This tests the integration: GadgetContext uses isAuthenticated from AuthContext
       // LicenseContext provides tier info that affects which gadgets are available
-      axios.get
-        .mockRejectedValueOnce({ response: { status: 401 } })                    // Auth
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })  // License
-        .mockResolvedValueOnce({ data: { gadgets: [] } })                        // Gadgets (not auth)
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      routeGet({
+        '/users/me': { response: { status: 401 } },
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       let authRef, licenseRef, gadgetRef
-      const Grab = () => { 
-        authRef = useAuth(); 
-        licenseRef = useLicense(); 
-        gadgetRef = useGadgets(); 
+      const Grab = () => {
+        authRef = useAuth();
+        licenseRef = useLicense();
+        gadgetRef = useGadgets();
         return (
           <div>
             <div data-testid="auth-state">{String(authRef.isAuthenticated)}</div>
@@ -171,16 +211,17 @@ describe('Cross-Context Interaction Tests', () => {
     })
 
     test('tier upgrade unlocks pro gadgets (compote, fondue, etc.)', async () => {
-      axios.get
-        .mockRejectedValueOnce({ response: { status: 401 } })                    // Auth
-        .mockResolvedValueOnce({ data: { tier: 'standard', modules_unlocked: [] } }) // License initial
-        .mockResolvedValueOnce({ data: { gadgets: [] } })                        // Gadgets
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      routeGet({
+        '/users/me': { response: { status: 401 } },
+        '/cellar/status': ok({ tier: 'standard', modules_unlocked: [] }),
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       let licenseRef, gadgetRef
-      const Grab = () => { 
-        licenseRef = useLicense(); 
-        gadgetRef = useGadgets(); 
+      const Grab = () => {
+        licenseRef = useLicense();
+        gadgetRef = useGadgets();
         return (
           <div>
             <div data-testid="license-tier">{licenseRef.tier}</div>
@@ -206,7 +247,7 @@ describe('Cross-Context Interaction Tests', () => {
       expect(screen.getByTestId('mod-fondue')).toHaveTextContent('false')
 
       // Upgrade to pro via event
-      axios.get.mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
+      setRoute('/cellar/status', ok({ tier: 'pro', modules_unlocked: [] }))
       act(() => {
         window.dispatchEvent(new CustomEvent('watchnexus_license_changed'))
       })
@@ -219,15 +260,12 @@ describe('Cross-Context Interaction Tests', () => {
 
   describe('ThemeContext → All: CSS Var Changes Propagate Instantly', () => {
     test('theme mode change updates CSS variables globally', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })          // Theme: preferences
-        .mockResolvedValueOnce({ data: { current_theme: null } })         // Theme: theme-forge
-        .mockResolvedValue({ data: { ui_accent: 'violet' } });           // Theme: settings
+      routeGet({ '/users/me': { response: { status: 401 } }, ...THEME_OK })
       axios.put.mockResolvedValue({ data: {} })
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="mode">{themeRef.mode}</div>
@@ -245,9 +283,8 @@ describe('Cross-Context Interaction Tests', () => {
         </AuthProvider>
       )
 
-      await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
-      const darkBg = document.documentElement.style.getPropertyValue('--background')
-      expect(darkBg).toBe('#0A0A0A')
+      await waitFor(() => expect(document.documentElement.style.getPropertyValue('--background')).toBe('#0A0A0A'))
+      expect(screen.getByTestId('mode')).toHaveTextContent('dark')
 
       await act(async () => {
         await screen.getByTestId('toggle').click()
@@ -259,15 +296,12 @@ describe('Cross-Context Interaction Tests', () => {
     })
 
     test('accent change updates CSS variables across all components', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+      routeGet({ '/users/me': { response: { status: 401 } }, ...THEME_OK })
       axios.put.mockResolvedValue({ data: {} })
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="accent">{themeRef.accentId}</div>
@@ -299,17 +333,15 @@ describe('Cross-Context Interaction Tests', () => {
     })
 
     test('custom theme application propagates to all consumers', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+      // no ui_accent here: ThemeContext layers the accent over any loaded theme
+      routeGet({ '/users/me': { response: { status: 401 } }, ...THEME_OK, '/api/settings': ok({}) })
       axios.post.mockResolvedValueOnce({
         data: { theme: { type: 'custom', colors: { ...require('../../context/ThemeContext').DEFAULT_DARK_THEME, primary: '#FF0000' } } }
       })
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="type">{themeRef.themeType}</div>
@@ -328,6 +360,9 @@ describe('Cross-Context Interaction Tests', () => {
       )
 
       await waitFor(() => expect(screen.getByTestId('type')).toHaveTextContent('default'))
+      // let the initial theme + accent application finish before applying
+      await waitFor(() => expect(document.documentElement.style.getPropertyValue('--background')).not.toBe(''))
+      await act(async () => { await new Promise(r => setTimeout(r, 0)) })
 
       await act(async () => {
         await screen.getByTestId('apply-custom').click()
@@ -343,8 +378,8 @@ describe('Cross-Context Interaction Tests', () => {
       axios.get.mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
             <div data-testid="user">{authRef.user?.username}</div>
@@ -372,8 +407,8 @@ describe('Cross-Context Interaction Tests', () => {
         .mockRejectedValueOnce({ response: { status: 401 } }); // fetchUser fails after token refresh
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
             <div data-testid="user">{authRef.user?.username || 'none'}</div>
@@ -397,24 +432,23 @@ describe('Cross-Context Interaction Tests', () => {
 
   describe('Full Provider Tree Integration', () => {
     test('all four providers work together without conflicts', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })                 // Auth
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })           // License
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })                          // Theme: preferences
-        .mockResolvedValueOnce({ data: { current_theme: null } })                         // Theme: theme-forge
-        .mockResolvedValueOnce({ data: { ui_accent: 'violet' } })                         // Theme: settings
-        .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather' }] } })         // Gadgets: installed
-        .mockResolvedValueOnce({ data: { sidebar_entries: [{ label: 'Weather' }] } });    // Gadgets: hooks
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'owner' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [{ gadget_id: 'weather' }] }),
+        '/ripen/hooks': ok({ sidebar_entries: [{ label: 'Weather' }] }),
+      })
 
       const Probe = () => {
         const auth = useAuth()
         const license = useLicense()
         const theme = useTheme()
         const gadgets = useGadgets()
-        
+
         return (
           <div>
-            <div data-testid="auth-user">{auth.user?.username}</div>
+            <div data-testid="auth-user">{auth.user?.username || 'none'}</div>
             <div data-testid="license-tier">{license.tier}</div>
             <div data-testid="theme-mode">{theme.mode}</div>
             <div data-testid="gadgets-count">{gadgets.installed.length}</div>
@@ -442,14 +476,13 @@ describe('Cross-Context Interaction Tests', () => {
 
     test('provider nesting order does not break consumers', async () => {
       // Different nesting orders should all work
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
-        .mockResolvedValueOnce({ data: { gadgets: [] } })
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'owner' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       // Order: Theme → Auth → License → Gadgets
       const Probe = () => {
@@ -459,7 +492,7 @@ describe('Cross-Context Interaction Tests', () => {
         const gadgets = useGadgets()
         return (
           <div>
-            <div data-testid="auth-user">{auth.user?.username}</div>
+            <div data-testid="auth-user">{auth.user?.username || 'none'}</div>
             <div data-testid="license-tier">{license.tier}</div>
             <div data-testid="theme-mode">{theme.mode}</div>
             <div data-testid="gadgets-count">{gadgets.installed.length}</div>
@@ -486,79 +519,80 @@ describe('Cross-Context Interaction Tests', () => {
   })
 
   describe('Context Value Memoization', () => {
-    test('AuthContext value is memoized - same reference on re-render', async () => {
-      axios.get.mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })
-
-      let authRef1, authRef2
-      const Grab = () => { 
-        const auth = useAuth()
-        if (!authRef1) authRef1 = auth
-        else authRef2 = auth
-        return <div data-testid="user">{auth.user?.username}</div>
+    test('AuthContext value is memoized - same reference when the provider re-renders with unchanged state', async () => {
+      routeGet({ '/users/me': ok({ Id: '1', Username: 'owner' }) })
+      const seen = []
+      const Grab = () => {
+        const v = useAuth()
+        seen.push(v)
+        return <div data-testid="probe">{String(v.loading ?? '')}</div>
       }
 
-      render(<AuthProvider><Grab /></AuthProvider>)
-      await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('owner'))
-
-      // Force re-render by calling a no-op
-      // The value should be the same reference
-      expect(authRef1).toBe(authRef2)
+      const tree = () => <AuthProvider><Grab /></AuthProvider>
+      const { rerender } = render(tree())
+      await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('false'))
+      await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+      const before = seen[seen.length - 1]
+      rerender(tree())
+      expect(seen[seen.length - 1]).toBe(before)
     })
 
-    test('LicenseContext value is memoized', async () => {
-      axios.get.mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
 
-      let licenseRef1, licenseRef2
-      const Grab = () => { 
-        const license = useLicense()
-        if (!licenseRef1) licenseRef1 = license
-        else licenseRef2 = license
-        return <div data-testid="tier">{license.tier}</div>
+    test('LicenseContext value is memoized - same reference when the provider re-renders with unchanged state', async () => {
+      routeGet({ '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }) })
+      const seen = []
+      const Grab = () => {
+        const v = useLicense()
+        seen.push(v)
+        return <div data-testid="probe">{String(v.loading ?? '')}</div>
       }
 
-      render(<LicenseProvider><Grab /></LicenseProvider>)
-      await waitFor(() => expect(screen.getByTestId('tier')).toHaveTextContent('pro'))
-
-      expect(licenseRef1).toBe(licenseRef2)
+      const tree = () => <LicenseProvider><Grab /></LicenseProvider>
+      const { rerender } = render(tree())
+      await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('false'))
+      await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+      const before = seen[seen.length - 1]
+      rerender(tree())
+      expect(seen[seen.length - 1]).toBe(before)
     })
 
-    test('ThemeContext value is memoized', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
-      let themeRef1, themeRef2
-      const Grab = () => { 
-        const theme = useTheme()
-        if (!themeRef1) themeRef1 = theme
-        else themeRef2 = theme
-        return <div data-testid="mode">{theme.mode}</div>
+    test('ThemeContext value is memoized - same reference when the provider re-renders with unchanged state', async () => {
+      routeGet(THEME_OK)
+      const seen = []
+      const Grab = () => {
+        const v = useTheme()
+        seen.push(v)
+        return <div data-testid="probe">{String(v.loading ?? '')}</div>
       }
 
-      render(<ThemeProvider><Grab /></ThemeProvider>)
-      await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
-
-      expect(themeRef1).toBe(themeRef2)
+      const tree = () => <ThemeProvider><Grab /></ThemeProvider>
+      const { rerender } = render(tree())
+      await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('false'))
+      await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+      const before = seen[seen.length - 1]
+      rerender(tree())
+      expect(seen[seen.length - 1]).toBe(before)
     })
 
-    test('GadgetContext value is memoized', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { gadgets: [] } })
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
 
-      let gadgetRef1, gadgetRef2
-      const Grab = () => { 
-        const gadgets = useGadgets()
-        if (!gadgetRef1) gadgetRef1 = gadgets
-        else gadgetRef2 = gadgets
-        return <div data-testid="count">{gadgets.installed.length}</div>
+    test('GadgetContext value is memoized - same reference when the provider re-renders with unchanged state', async () => {
+      routeGet({ '/ripen/installed': ok({ gadgets: [] }), '/ripen/hooks': ok({ sidebar_entries: [] }) })
+      const seen = []
+      const Grab = () => {
+        const v = useGadgets()
+        seen.push(v)
+        return <div data-testid="probe">{String(v.loading ?? '')}</div>
       }
 
-      render(<GadgetProvider><Grab /></GadgetProvider>)
-      await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('0'))
-
-      expect(gadgetRef1).toBe(gadgetRef2)
+      const tree = () => <GadgetProvider><Grab /></GadgetProvider>
+      const { rerender } = render(tree())
+      await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('false'))
+      await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+      const before = seen[seen.length - 1]
+      rerender(tree())
+      expect(seen[seen.length - 1]).toBe(before)
     })
+
   })
 })
