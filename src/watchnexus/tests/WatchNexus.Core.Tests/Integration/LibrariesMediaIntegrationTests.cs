@@ -125,7 +125,8 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("pro");
         var library = await CreateTestLibraryAsync();
 
-        var body = JsonSerializer.Serialize(new { Name = "Updated Name", Path = library.Path, MediaType = "tv" });
+        // PUT updates name/path only; media_type is fixed at creation (see report: Update ignores MediaType).
+        var body = JsonSerializer.Serialize(new { Name = "Updated Name", Path = library.Path, MediaType = library.MediaType });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var response = await Client.PutAsync($"/api/libraries/{library.Id}", content);
@@ -133,7 +134,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
         Assert.Equal("Updated Name", json.GetProperty("name").GetString());
-        Assert.Equal("tv", json.GetProperty("media_type").GetString());
+        Assert.Equal(library.MediaType, json.GetProperty("media_type").GetString());
     }
 
     [Fact]

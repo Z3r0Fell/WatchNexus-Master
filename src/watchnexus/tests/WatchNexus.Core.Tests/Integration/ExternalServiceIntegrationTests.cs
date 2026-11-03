@@ -187,8 +187,8 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
     {
         AuthenticateAsUser();
 
-        // Mock qBittorrent login API
-        SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK));
+        // Mock qBittorrent login API: success is 200 with body "Ok." (bad creds are 200 "Fails.")
+        SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Ok.") });
 
         var body = JsonSerializer.Serialize(new { host = "qbit.example.com", port = 8080, username = "admin", password = "admin" });
         var response = await Client.PostAsync("/api/settings/integrations/qbittorrent/test", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));

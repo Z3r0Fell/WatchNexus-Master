@@ -92,20 +92,11 @@ public class FortressControllerTests
     [Fact]
     public async Task VerifyIntegrity_DetectsMissingFiles()
     {
+        // Sacrificial file: never delete a real assembly from the test bin dir.
+        var fakeFile = Path.Combine(AppContext.BaseDirectory, $"zz_fortress_test_{Guid.NewGuid():N}.json");
+        File.WriteAllText(fakeFile, "{}");
         await FortressIntegrity.SealBuild(_db);
-        
-        var manifest = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "fortress_manifest" && s.UserId == "");
-        Assert.NotNull(manifest);
-        
-        var doc = JsonDocument.Parse(manifest!.Value!).RootElement;
-        var hashes = doc.GetProperty("file_hashes");
-        var firstFile = hashes.EnumerateObject().First().Name;
-        
-        var fakeFile = Path.Combine(AppContext.BaseDirectory, firstFile);
-        if (File.Exists(fakeFile))
-        {
-            File.Delete(fakeFile);
-        }
+        File.Delete(fakeFile);
 
         var (valid, violations) = await FortressIntegrity.VerifyIntegrity(_db);
 
@@ -116,27 +107,22 @@ public class FortressControllerTests
     [Fact]
     public async Task VerifyIntegrity_DetectsTamperedFiles()
     {
-        await FortressIntegrity.SealBuild(_db);
-        
-        var manifest = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "fortress_manifest" && s.UserId == "");
-        Assert.NotNull(manifest);
-        
-        var doc = JsonDocument.Parse(manifest!.Value!).RootElement;
-        var hashes = doc.GetProperty("file_hashes");
-        var firstFile = hashes.EnumerateObject().First().Name;
-        var filePath = Path.Combine(AppContext.BaseDirectory, firstFile);
-        
-        if (File.Exists(filePath))
+        // Sacrificial file: never overwrite a real assembly in the test bin dir.
+        var filePath = Path.Combine(AppContext.BaseDirectory, $"zz_fortress_test_{Guid.NewGuid():N}.json");
+        File.WriteAllText(filePath, "{}");
+        try
         {
-            var originalContent = await File.ReadAllBytesAsync(filePath);
+            await FortressIntegrity.SealBuild(_db);
             await File.WriteAllBytesAsync(filePath, System.Text.Encoding.UTF8.GetBytes("TAMPERED CONTENT"));
-            
+
             var (valid, violations) = await FortressIntegrity.VerifyIntegrity(_db);
-            
-            await File.WriteAllBytesAsync(filePath, originalContent);
-            
+
             Assert.False(valid);
             Assert.Contains(violations, v => v.StartsWith("TAMPERED:"));
+        }
+        finally
+        {
+            File.Delete(filePath);
         }
     }
 

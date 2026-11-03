@@ -202,18 +202,11 @@ public class FortressIntegrityTests
     [Fact]
     public async Task VerifyIntegrity_DetectsMissingFiles()
     {
+        // Sacrificial file: never delete a real assembly from the test bin dir.
+        var fakeFile = Path.Combine(AppContext.BaseDirectory, $"zz_fortress_test_{Guid.NewGuid():N}.json");
+        File.WriteAllText(fakeFile, "{}");
         await FortressIntegrity.SealBuild(_db);
-
-        var manifest = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "fortress_manifest" && s.UserId == "");
-        var doc = JsonDocument.Parse(manifest!.Value!).RootElement;
-        var hashes = doc.GetProperty("file_hashes");
-        var firstFile = hashes.EnumerateObject().First().Name;
-        var filePath = Path.Combine(AppContext.BaseDirectory, firstFile);
-
-        if (File.Exists(filePath))
-        {
-            File.Delete(filePath);
-        }
+        File.Delete(fakeFile);
 
         var (valid, violations) = await FortressIntegrity.VerifyIntegrity(_db);
 
@@ -224,25 +217,22 @@ public class FortressIntegrityTests
     [Fact]
     public async Task VerifyIntegrity_DetectsTamperedFiles()
     {
-        await FortressIntegrity.SealBuild(_db);
-
-        var manifest = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "fortress_manifest" && s.UserId == "");
-        var doc = JsonDocument.Parse(manifest!.Value!).RootElement;
-        var hashes = doc.GetProperty("file_hashes");
-        var firstFile = hashes.EnumerateObject().First().Name;
-        var filePath = Path.Combine(AppContext.BaseDirectory, firstFile);
-
-        if (File.Exists(filePath))
+        // Sacrificial file: never overwrite a real assembly in the test bin dir.
+        var filePath = Path.Combine(AppContext.BaseDirectory, $"zz_fortress_test_{Guid.NewGuid():N}.json");
+        File.WriteAllText(filePath, "{}");
+        try
         {
-            var originalContent = await File.ReadAllBytesAsync(filePath);
+            await FortressIntegrity.SealBuild(_db);
             await File.WriteAllBytesAsync(filePath, System.Text.Encoding.UTF8.GetBytes("TAMPERED CONTENT"));
 
             var (valid, violations) = await FortressIntegrity.VerifyIntegrity(_db);
 
-            await File.WriteAllBytesAsync(filePath, originalContent);
-
             Assert.False(valid);
             Assert.Contains(violations, v => v.StartsWith("TAMPERED:"));
+        }
+        finally
+        {
+            File.Delete(filePath);
         }
     }
 
@@ -283,21 +273,31 @@ public class ModuleLoaderIntegrationTests
     [Fact]
     public void GetModuleStatus_ReturnsDiscoveredManifests()
     {
-        var manifest = new ModuleManifest
+        // GetModuleStatus reports manifests *discovered on disk* (not the
+        // ModuleRegistry), so discover a real module.json from a temp dir.
+        // Previously this only passed when an earlier test had populated
+        // the discovered list (order-dependent).
+        var name = $"test-module-{Guid.NewGuid():N}";
+        var root = Path.Combine(Path.GetTempPath(), $"wnx_modules_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, "test"));
+        File.WriteAllText(Path.Combine(root, "test", "module.json"),
+            System.Text.Json.JsonSerializer.Serialize(new { name, displayName = "Test Module", version = "1.0.0", codename = "test", tier = "standard" }));
+        try
         {
-            Name = "test-module",
-            DisplayName = "Test Module",
-            Version = "1.0.0",
-            Codename = "test",
-            Tier = "standard"
-        };
-        ModuleRegistry.Register(manifest);
+            ModuleLoader.Logger = _ => { };
+            ModuleLoader.DiscoverAndRegister(new ServiceCollection(), root);
 
-        var status = ModuleLoader.GetModuleStatus();
+            var status = ModuleLoader.GetModuleStatus();
 
-        Assert.NotEmpty(status);
-        var found = status.FirstOrDefault(s => s.GetType().GetProperty("name")!.GetValue(s)!.ToString() == "test-module");
-        Assert.NotNull(found);
+            Assert.NotEmpty(status);
+            var found = status.FirstOrDefault(s => s.GetType().GetProperty("name")!.GetValue(s)?.ToString() == name);
+            Assert.NotNull(found);
+            Assert.Equal("built-in", found!.GetType().GetProperty("source")!.GetValue(found));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
     }
 }
 
