@@ -23,7 +23,21 @@ jest.mock('axios', () => ({
   })),
 }))
 
-import { render, screen, waitFor, act, userEvent } from '../test-utils'
+// Bare render: these tests mount the providers under test themselves.
+// test-utils' render wraps every test in Auth/Theme/Gadget/License providers,
+// whose own mount-time axios.get calls consumed the tests' Once-mocks.
+import { render, screen, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+// Providers mounted without an <AuthProvider> see a signed-out user (the
+// real app always has one); inside an AuthProvider the real context is used.
+jest.mock('../../context/AuthContext', () => {
+  const actual = jest.requireActual('../../context/AuthContext')
+  return {
+    ...actual,
+    useAuth: () => actual.useOptionalAuth() ?? { isAuthenticated: false, user: null, loading: false },
+  }
+})
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 import { LicenseProvider, useLicense } from '../../context/LicenseContext'
 import { ThemeProvider, useTheme } from '../../context/ThemeContext'
