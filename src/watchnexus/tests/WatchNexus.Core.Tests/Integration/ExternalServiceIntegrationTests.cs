@@ -465,7 +465,7 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -489,7 +489,7 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "corrupt video");
         
         try

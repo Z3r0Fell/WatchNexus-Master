@@ -48,7 +48,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var body = JsonSerializer.Serialize(new { name = "Test Source", url = "https://example.com/playlist.m3u", epg_url = "https://example.com/epg.xml" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
-        var response = await Client.PostAsync("/api/iptv/sources", content);
+        var response = await PostIptvSourceAsync(body);
         
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
@@ -68,7 +68,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var body = JsonSerializer.Serialize(new { name = "Test", url = "http://localhost:8080/playlist.m3u" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
-        var response = await Client.PostAsync("/api/iptv/sources", content);
+        var response = await PostIptvSourceAsync(body);
         
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -84,7 +84,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var body = JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/notfound.m3u" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
-        var response = await Client.PostAsync("/api/iptv/sources", content);
+        var response = await PostIptvSourceAsync(body);
         
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
@@ -104,7 +104,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
         var createBody = JsonSerializer.Serialize(new { name = "Original", url = "https://example.com/orig.m3u" });
-        var createResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(createBody, System.Text.Encoding.UTF8, "application/json"));
+        var createResponse = await PostIptvSourceAsync(createBody);
         var created = await DeserializeResponseElement(createResponse);
         var sourceId = created.GetProperty("id").GetString();
 
@@ -129,7 +129,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
         var createBody = JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" });
-        var createResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(createBody, System.Text.Encoding.UTF8, "application/json"));
+        var createResponse = await PostIptvSourceAsync(createBody);
         var created = await DeserializeResponseElement(createResponse);
         var sourceId = created.GetProperty("id").GetString();
 
@@ -151,7 +151,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
         var createBody = JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" });
-        var createResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(createBody, System.Text.Encoding.UTF8, "application/json"));
+        var createResponse = await PostIptvSourceAsync(createBody);
         var created = await DeserializeResponseElement(createResponse);
         var sourceId = created.GetProperty("id").GetString();
 
@@ -182,7 +182,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
         var createBody = JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" });
-        await Client.PostAsync("/api/iptv/sources", new StringContent(createBody, System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(createBody);
 
         var response = await Client.GetAsync("/api/iptv/channels?limit=10&offset=0");
         
@@ -208,12 +208,12 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3u2 = "#EXTM3U\n#EXTINF:-1,Source2 Ch1\nhttp://test.com/s2c1.m3u8";
         
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3u1) });
-        var create1 = await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Source 1", url = "https://example.com/s1.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        var create1 = await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Source 1", url = "https://example.com/s1.m3u" }));
         var source1 = await DeserializeResponseElement(create1);
         var source1Id = source1.GetProperty("id").GetString();
 
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3u2) });
-        var create2 = await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Source 2", url = "https://example.com/s2.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        var create2 = await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Source 2", url = "https://example.com/s2.m3u" }));
         var source2 = await DeserializeResponseElement(create2);
         var source2Id = source2.GetProperty("id").GetString();
 
@@ -233,7 +233,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 group-title=\"News\",News Channel\nhttp://test.com/news.m3u8\n#EXTINF:-1 group-title=\"Sports\",Sports Channel\nhttp://test.com/sports.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var response = await Client.GetAsync("/api/iptv/channels?group=News");
         var json = await DeserializeResponseElement(response);
@@ -250,7 +250,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1,BBC News\nhttp://test.com/bbc.m3u8\n#EXTINF:-1,CNN News\nhttp://test.com/cnn.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var response = await Client.GetAsync("/api/iptv/channels?search=BBC");
         var json = await DeserializeResponseElement(response);
@@ -267,7 +267,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 tvg-id=\"ch1\",Channel 1\nhttp://test.com/1.m3u8\n#EXTINF:-1 tvg-id=\"ch2\",Channel 2\nhttp://test.com/2.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         // Get channel IDs
         var channelsResponse = await Client.GetAsync("/api/iptv/channels");
@@ -297,7 +297,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 tvg-id=\"ch1\",Channel 1\nhttp://test.com/1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var channelsResponse = await Client.GetAsync("/api/iptv/channels");
         var channels = await DeserializeResponseElement(channelsResponse);
@@ -319,7 +319,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 tvg-id=\"ch1\",Channel 1\nhttp://test.com/1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var channelsResponse = await Client.GetAsync("/api/iptv/channels");
         var channels = await DeserializeResponseElement(channelsResponse);
@@ -342,7 +342,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 tvg-id=\"ch1\" tvg-logo=\"http://logo.png\" group-title=\"News\",Channel 1\nhttp://test.com/1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var channelsResponse = await Client.GetAsync("/api/iptv/channels");
         var channels = await DeserializeResponseElement(channelsResponse);
@@ -370,7 +370,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 group-title=\"News\",News 1\nhttp://test.com/n1.m3u8\n#EXTINF:-1 group-title=\"News\",News 2\nhttp://test.com/n2.m3u8\n#EXTINF:-1 group-title=\"Sports\",Sports 1\nhttp://test.com/s1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var response = await Client.GetAsync("/api/iptv/groups");
         
@@ -412,7 +412,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1,Ch1\nhttp://test.com/1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var response = await Client.GetAsync("/api/iptv/stats");
         
@@ -437,7 +437,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1 tvg-id=\"ch1\",Channel 1\nhttp://test.com/1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
 
         var response = await Client.GetAsync("/api/iptv/export");
         

@@ -42,6 +42,30 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// </summary>
     protected virtual bool UseRelationalDatabase => false;
 
+    /// <summary>
+    /// Per-test media root. MEDIA_ROOTS points here for the lifetime of the
+    /// test (tests run serially), so file/library paths used by tests must
+    /// live under it — the product rejects paths outside media roots.
+    /// </summary>
+    protected readonly string MediaRoot = Path.Combine(Path.GetTempPath(), $"wnx_media_{Guid.NewGuid():N}");
+
+    /// <summary>Create a file under <see cref="MediaRoot"/> and return its path.</summary>
+    protected string CreateMediaFile(string relativePath, string content = "test")
+    {
+        var full = Path.Combine(MediaRoot, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, content);
+        return full;
+    }
+
+    /// <summary>Create a directory under <see cref="MediaRoot"/> and return its path.</summary>
+    protected string CreateMediaDir(string relativePath)
+    {
+        var full = Path.Combine(MediaRoot, relativePath);
+        Directory.CreateDirectory(full);
+        return full;
+    }
+
     public IServiceProvider Services => Factory.Services;
 
     protected IntegrationTestBase()
@@ -58,6 +82,9 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         // activation limiter and the static test principal.
         CellarController.ResetRateLimits();
         TestAuthHandler.SetTestUser(null);
+
+        Directory.CreateDirectory(MediaRoot);
+        Environment.SetEnvironmentVariable("MEDIA_ROOTS", MediaRoot);
 
         HttpClientFactoryMock = new Mock<IHttpClientFactory>();
         HandlerMocks = new List<Mock<HttpMessageHandler>>();
@@ -84,6 +111,9 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
                     cfg.AddInMemoryCollection(new Dictionary<string, string?>
                     {
                         ["LICENSE_SERVER_API_KEY"] = "test-license-server-key",
+                        // appsettings.json ships LICENSE_SERVER_URL = "" which
+                        // defeats the controller's `?? default` fallback.
+                        ["LICENSE_SERVER_URL"] = "https://licenses.test.invalid",
                     }));
                 
                 builder.ConfigureServices(services =>
@@ -248,6 +278,9 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         Client?.Dispose();
         _scope?.Dispose();
         await Factory.DisposeAsync();
+        if (Environment.GetEnvironmentVariable("MEDIA_ROOTS") == MediaRoot)
+            Environment.SetEnvironmentVariable("MEDIA_ROOTS", null);
+        try { if (Directory.Exists(MediaRoot)) Directory.Delete(MediaRoot, true); } catch { /* best effort */ }
         if (UseRelationalDatabase)
         {
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
@@ -293,6 +326,36 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     protected void AuthenticateAsAdmin(string userId = "admin-user")
     {
         AuthenticateAsUser(userId, "admin");
+    }
+
+    /// <summary>
+    /// Run <paramref name="action"/> as an admin, then restore the previous
+    /// identity. For arranging server-wide fixtures through admin-only APIs.
+    /// </summary>
+    protected async Task<T> AsAdminAsync<T>(Func<Task<T>> action)
+    {
+        var prevHeader = Client.DefaultRequestHeaders.Authorization;
+        var prevUser = TestAuthHandler.CurrentTestUser;
+        AuthenticateAsAdmin();
+        try { return await action(); }
+        finally
+        {
+            Client.DefaultRequestHeaders.Authorization = prevHeader;
+            TestAuthHandler.SetTestUser(prevUser);
+        }
+    }
+
+    /// <summary>
+    /// POST /api/iptv/sources (admin-only; binds name/url/epg_url from the
+    /// query string) from a JSON object of those fields, as admin.
+    /// </summary>
+    protected Task<HttpResponseMessage> PostIptvSourceAsync(string jsonBody)
+    {
+        var doc = JsonDocument.Parse(jsonBody).RootElement;
+        var qs = string.Join("&", doc.EnumerateObject()
+            .Where(p => p.Value.ValueKind == JsonValueKind.String)
+            .Select(p => $"{Uri.EscapeDataString(p.Name)}={Uri.EscapeDataString(p.Value.GetString()!)}"));
+        return AsAdminAsync(() => Client.PostAsync($"/api/iptv/sources?{qs}", null));
     }
 
     /// <summary>
@@ -493,6 +556,8 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     {
         _testUser = user;
     }
+
+    internal static ClaimsPrincipal? CurrentTestUser => _testUser;
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {

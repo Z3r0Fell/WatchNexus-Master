@@ -206,7 +206,7 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test video");
         
         try
@@ -237,7 +237,7 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("ultra");
 
         // Create corrupt file
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "not a video file");
         
         try
@@ -260,7 +260,7 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "corrupt");
         
         try

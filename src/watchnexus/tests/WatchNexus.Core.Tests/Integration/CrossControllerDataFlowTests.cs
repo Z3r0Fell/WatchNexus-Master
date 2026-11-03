@@ -196,7 +196,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
 
         // 1. Add IPTV source
         var sourceBody = JsonSerializer.Serialize(new { name = "Test IPTV", url = "https://example.com/playlist.m3u" });
-        var sourceResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(sourceBody, System.Text.Encoding.UTF8, "application/json"));
+        var sourceResponse = await PostIptvSourceAsync(sourceBody);
         AssertJsonResponse(sourceResponse);
         var sourceJson = await DeserializeResponseElement(sourceResponse);
         var sourceId = sourceJson.GetProperty("id").GetString();
@@ -217,7 +217,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         // 4. Submit transcode job for stream (if it were a file)
         // Note: IPTV streams are URLs, not local files, so this tests the flow concept
         // In real usage, this would be for recorded content
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "recorded stream content");
         
         try
@@ -407,7 +407,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1,Ch1\nhttp://test.com/1.m3u8\n#EXTINF:-1,Ch2\nhttp://test.com/2.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        var sourceResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        var sourceResponse = await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
         var sourceJson = await DeserializeResponseElement(sourceResponse);
         var sourceId = sourceJson.GetProperty("id").GetString();
 

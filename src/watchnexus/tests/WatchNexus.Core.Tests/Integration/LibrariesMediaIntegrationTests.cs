@@ -585,7 +585,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("pro");
         
         // Create temp file
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test content");
         
         try
