@@ -34,7 +34,7 @@ public class UpdateController : ControllerBase
         _patchService = patchService;
     }
 
-    private const string CURRENT_VERSION = "1.0.6";
+    private const string CURRENT_VERSION = Services.UpdateBackgroundService.CurrentVersion;
     private const string RELEASES_PAGE = "https://github.com/Z3r0Fell/WatchNexus-Master/tree/main/Releases";
 
     // Fetch + base64-decode a JSON file from the GitHub repo via the contents API.
@@ -359,7 +359,7 @@ public class UpdateController : ControllerBase
             }
             var (valid, error) = patchService.VerifyManifestSignature(rawJson);
             signatureValid = valid;
-            if (valid == false)
+            if (valid != true)
                 return BadRequest(new { success = false, message = $"Patch signature invalid: {error}" });
             // Apply exactly the bytes whose signature was verified (the first
             // fetch was a separate request and could differ).
