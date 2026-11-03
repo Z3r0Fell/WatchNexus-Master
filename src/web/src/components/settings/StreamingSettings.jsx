@@ -40,14 +40,21 @@ export const StreamingSettings = () => {
   const fetchStreamingLogins = useCallback(async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/api/streaming-logins`);
-      const transformed = (res.data || []).map(login => ({
-        id: login.service_id, name: login.service_name, color: login.color,
-        email: login.email, deep_link: login.deep_link, login_url: login.login_url,
-      }));
+      // Backend returns [{ service_id, has_credentials }] - name/colour come from the local catalogue.
+      const transformed = (Array.isArray(res.data) ? res.data : []).map(login => {
+        const svc = STREAMING_SERVICES.find(s => s.id === login.service_id);
+        return {
+          id: login.service_id, name: login.service_name || svc?.name || login.service_id,
+          color: login.color || svc?.color || '#555555',
+          email: login.email, deep_link: login.deep_link, login_url: login.login_url,
+        };
+      });
       setConfiguredServices(transformed);
     } catch {
-      const saved = localStorage.getItem('watchnexus_streaming_services');
-      if (saved) setConfiguredServices(JSON.parse(saved));
+      try {
+        const saved = localStorage.getItem('watchnexus_streaming_services');
+        if (saved) setConfiguredServices(JSON.parse(saved));
+      } catch { /* corrupt/blocked storage - keep the empty list */ }
     }
   }, []);
 
@@ -113,7 +120,7 @@ export const StreamingSettings = () => {
         setActiveTab={setActiveTab}
         iconBgColor="from-blue-600 to-indigo-500"
         version="Cream"
-        help={{ title: "Streaming Services", description: "Store login credentials for your streaming service subscriptions (Netflix, Disney+, etc.). These are used for tracking availability and can be shared with household members through WatchNexus.", examples: ["Add your Netflix, Hulu, or Disney+ credentials", "Credentials are stored encrypted on your server", "Share access with other WatchNexus users in your household"] }}
+        help={{ title: "Streaming Services", description: "Store login credentials for your streaming service subscriptions (Netflix, Disney+, etc.). These are used for tracking availability and can be shared with household members through WatchNexus.", examples: ["Add your Netflix, Hulu, or Disney+ credentials", "Share access with other WatchNexus users in your household"] }}
       />
 
       <SettingsTabContent activeTab={activeTab}>
