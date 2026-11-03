@@ -59,7 +59,8 @@ public class SystemController : ControllerBase
         return Ok(new
         {
             version = Services.UpdateBackgroundService.CurrentVersion,
-            hostname = Environment.MachineName,
+            // Host identity only for admins (non-admins get an empty string).
+            hostname = User.IsInRole("admin") ? Environment.MachineName : "",
             platform = Environment.OSVersion.VersionString,
             architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),
             dotnet_version = Environment.Version.ToString(),

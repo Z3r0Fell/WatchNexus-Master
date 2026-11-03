@@ -83,7 +83,7 @@ public class VpnController : ControllerBase
             public_key = s.PublicKey, is_active = s.IsActive, is_configured = s.IsConfigured,
             @interface = "wg0",
             // snake_case keys read by VpnPage.js
-            listen_port = s.ListenPort, endpoint = s.Endpoint, subnet = s.Address, dns_servers = s.Dns
+            listen_port = s.ListenPort, subnet = s.Address, dns_servers = s.Dns
         });
     }
 
