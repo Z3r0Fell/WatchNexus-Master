@@ -306,6 +306,11 @@ public class LogsControllerIntegrationTests : IntegrationTestBase, IDisposable
     {
         AuthenticateAsUser();
         Logger().LogInformation("before clear");
+        // Admin-only: a normal user is refused.
+        var denied = await Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/zest/logs/clear") { Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json") });
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        AuthenticateAsAdmin();
+
         var res = await Client.PostAsync("/api/zest/logs/clear", null);
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
 

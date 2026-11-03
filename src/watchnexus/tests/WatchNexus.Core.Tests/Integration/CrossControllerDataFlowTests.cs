@@ -95,12 +95,14 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         await SeedLicenseAsync("ultra");
 
         // Create library
-        var library = await CreateTestLibraryAsync("Flow Test", "/tmp/flow-test", "movies");
-        
+        // Library + files inside the per-test media root (paths outside media
+        // roots are rejected by both libraries and crucible).
+        var flowDir = CreateMediaDir("flow-test");
+        var library = await CreateTestLibraryAsync("Flow Test", flowDir, "movies");
+
         // Create test media files
-        Directory.CreateDirectory("/tmp/flow-test");
-        File.WriteAllText("/tmp/flow-test/movie1.mkv", "fake video");
-        File.WriteAllText("/tmp/flow-test/movie2.mkv", "fake video");
+        File.WriteAllText(Path.Combine(flowDir, "movie1.mkv"), "fake video");
+        File.WriteAllText(Path.Combine(flowDir, "movie2.mkv"), "fake video");
 
         try
         {
@@ -121,7 +123,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
 
             var mediaItemId = mediaJson[0].GetProperty("id").GetString();
             var filePathProp = mediaJson[0].GetProperty("file_path");
-            var mediaFilePath = filePathProp.ValueKind != JsonValueKind.Null ? filePathProp.GetString() ?? $"/tmp/flow-test/movie1.mkv" : $"/tmp/flow-test/movie1.mkv";
+            var mediaFilePath = filePathProp.ValueKind != JsonValueKind.Null ? filePathProp.GetString() ?? Path.Combine(flowDir, "movie1.mkv") : Path.Combine(flowDir, "movie1.mkv");
 
             // 3. Submit transcode job for media item
             var transcodeBody = JsonSerializer.Serialize(new { source_path = mediaFilePath, profile = "h265-default" });
@@ -141,7 +143,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         }
         finally
         {
-            if (Directory.Exists("/tmp/flow-test")) Directory.Delete("/tmp/flow-test", true);
+            if (Directory.Exists(flowDir)) Directory.Delete(flowDir, true);
         }
     }
 
@@ -196,7 +198,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
 
         // 1. Add IPTV source
         var sourceBody = JsonSerializer.Serialize(new { name = "Test IPTV", url = "https://example.com/playlist.m3u" });
-        var sourceResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(sourceBody, System.Text.Encoding.UTF8, "application/json"));
+        var sourceResponse = await PostIptvSourceAsync(sourceBody);
         AssertJsonResponse(sourceResponse);
         var sourceJson = await DeserializeResponseElement(sourceResponse);
         var sourceId = sourceJson.GetProperty("id").GetString();
@@ -217,7 +219,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         // 4. Submit transcode job for stream (if it were a file)
         // Note: IPTV streams are URLs, not local files, so this tests the flow concept
         // In real usage, this would be for recorded content
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "recorded stream content");
         
         try
@@ -358,7 +360,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         AssertJsonResponse(logsResponse);
         var logsJson = await DeserializeResponseElement(logsResponse);
         Assert.True(logsJson.GetArrayLength() >= 1);
-        Assert.Equal("test", logsJson[0].GetProperty("event_type").GetString());
+        Assert.Equal("test", logsJson[0].GetProperty("eventType").GetString()); // history DTO is camelCase (NotificationsPage reads item.eventType)
     }
 
     #endregion
@@ -387,6 +389,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         AssertJsonResponse(deleteResponse);
 
         // Verify cascade
+        DbContext.ChangeTracker.Clear();
         var remainingLib = await DbContext.Libraries.FindAsync(library.Id);
         Assert.Null(remainingLib);
 
@@ -407,7 +410,7 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         var m3uContent = "#EXTM3U\n#EXTINF:-1,Ch1\nhttp://test.com/1.m3u8\n#EXTINF:-1,Ch2\nhttp://test.com/2.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
-        var sourceResponse = await Client.PostAsync("/api/iptv/sources", new StringContent(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }), System.Text.Encoding.UTF8, "application/json"));
+        var sourceResponse = await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));
         var sourceJson = await DeserializeResponseElement(sourceResponse);
         var sourceId = sourceJson.GetProperty("id").GetString();
 
@@ -417,8 +420,8 @@ public class CrossControllerDataFlowTests : IntegrationTestBase
         var ch1Id = channelsJson[0].GetProperty("id").GetString();
         await Client.PostAsync($"/api/iptv/channels/{ch1Id}/favorite", null);
 
-        // Delete source
-        var deleteResponse = await Client.DeleteAsync($"/api/iptv/sources/{sourceId}");
+        // Delete source (admin-only)
+        var deleteResponse = await AsAdminAsync(() => Client.DeleteAsync($"/api/iptv/sources/{sourceId}"));
         AssertJsonResponse(deleteResponse);
 
         // Verify channels cascade deleted
