@@ -18,20 +18,6 @@ jest.mock('../services/nexusApi', () => ({
   },
 }))
 
-// framer-motion's <AnimatePresence mode="wait"> never finishes its exit
-// animation in jsdom, so switching tabs left the old panel mounted forever.
-// Render motion.* as plain elements instead.
-jest.mock('framer-motion', () => {
-  const React = require('react')
-  const strip = ({ initial, animate, exit, transition, layout, whileHover, whileTap, variants, ...rest }) => rest
-  const cache = {}
-  // cache per tag: a fresh component type per render would remount the subtree
-  const motion = new Proxy({}, {
-    get: (_, tag) => (cache[tag] ||= React.forwardRef(({ children, ...props }, ref) => React.createElement(tag, { ref, ...strip(props) }, children))),
-  })
-  return { motion, AnimatePresence: ({ children }) => React.createElement(React.Fragment, null, children) }
-})
-
 jest.mock('../hooks/use-confirm', () => ({
   useConfirm: () => ({
     confirm: jest.fn().mockResolvedValue(true),
