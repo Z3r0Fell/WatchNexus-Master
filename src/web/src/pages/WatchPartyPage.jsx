@@ -1,36 +1,72 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Users, Play, Copy, Check, Tv2, Link2, MessageSquare, Send, X } from 'lucide-react';
+import { Users, Play, Copy, Tv2, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
-import { BACKEND_URL } from '../lib/config';
+import { apiClient } from '../services/api';
+import { getWebSocketUrl } from '../lib/config';
+
+// The server (WatchPartyConnectionManager) relays every text frame to ALL
+// sockets in the party, including the sender. Tag outgoing frames with a
+// per-tab id so our own echo can be dropped (we already render it locally).
+export const shouldShowIncoming = (data, clientId) => !(data && data.client_id && data.client_id === clientId);
 
 export const WatchPartyPage = () => {
+  // partyCode = the party we are in; joinCode = what the user is typing.
+  // (Binding the input straight to partyCode flipped the page into the
+  // "in a party" view on the first keystroke.)
   const [partyCode, setPartyCode] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [partyStatus, setPartyStatus] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [ws, setWs] = useState(null);
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const wsRef = useRef(null);
+  const clientIdRef = useRef(`${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [messages]);
+
+  const closeSocket = () => {
+    const socket = wsRef.current;
+    wsRef.current = null;
+    if (socket) {
+      // Detach handlers so an intentional close doesn't toast / append.
+      socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+      try { socket.close(); } catch { /* already closed */ }
+    }
+  };
+
+  // Close the socket on unmount.
+  useEffect(() => closeSocket, []);
+
+  const connectWebSocket = (code) => {
+    closeSocket();
+    const socket = new WebSocket(getWebSocketUrl(`/api/watch-party/${encodeURIComponent(code)}/ws`));
+    socket.onopen = () => toast.success('Connected to party');
+    socket.onmessage = (event) => {
+      let data;
+      try { data = JSON.parse(event.data); } catch { data = { text: String(event.data), sender: 'Unknown' }; }
+      if (!shouldShowIncoming(data, clientIdRef.current)) return;
+      setMessages(prev => [...prev, data]);
+    };
+    socket.onerror = () => toast.error('WebSocket error');
+    socket.onclose = () => { if (wsRef.current === socket) wsRef.current = null; toast.info('Disconnected from party'); };
+    wsRef.current = socket;
+  };
 
   const createParty = async () => {
     setLoading(true);
     try {
-      const r = await axios.post(`${BACKEND_URL}/api/watch-party/create?media_type=movie`);
+      const r = await apiClient.post('/watch-party/create', null, { params: { media_type: 'movie' } });
+      setMessages([]);
       setPartyCode(r.data.party_code);
-      setPartyStatus({ ...r.data, status: 'waiting' });
+      setPartyStatus({ ...r.data, status: r.data.status || 'waiting' });
+      connectWebSocket(r.data.party_code);
       toast.success('Party created! Share the code.');
     } catch (err) {
       toast.error('Failed to create party');
@@ -40,12 +76,15 @@ export const WatchPartyPage = () => {
   };
 
   const joinParty = async () => {
-    if (!partyCode.trim()) { toast.error('Enter a party code'); return; }
+    const code = joinCode.trim();
+    if (!code) { toast.error('Enter a party code'); return; }
     setLoading(true);
     try {
-      const r = await axios.get(`${BACKEND_URL}/api/watch-party/${partyCode.trim()}`);
+      const r = await apiClient.get(`/watch-party/${encodeURIComponent(code)}`);
+      setMessages([]);
+      setPartyCode(code);
       setPartyStatus(r.data);
-      connectWebSocket(partyCode.trim());
+      connectWebSocket(code);
       toast.success('Joined party!');
     } catch (err) {
       toast.error('Party not found');
@@ -54,38 +93,32 @@ export const WatchPartyPage = () => {
     }
   };
 
-  const connectWebSocket = (code) => {
-    if (ws) ws.close();
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/watch-party/${code}/ws`;
-    const socket = new WebSocket(wsUrl);
-    socket.onopen = () => toast.success('Connected to party');
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setMessages(prev => [...prev, data]);
-      } catch { setMessages(prev => [...prev, { text: event.data, sender: 'Unknown' }]); }
-    };
-    socket.onerror = () => toast.error('WebSocket error');
-    socket.onclose = () => toast.info('Disconnected from party');
-    setWs(socket);
+  const leaveParty = () => {
+    closeSocket();
+    setPartyCode('');
+    setJoinCode('');
+    setPartyStatus(null);
+    setMessages([]);
   };
 
   const sendMessage = () => {
-    if (!chatInput.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ text: chatInput.trim(), sender: 'You', timestamp: Date.now() }));
-    setMessages(prev => [...prev, { text: chatInput.trim(), sender: 'You', timestamp: Date.now(), self: true }]);
+    const text = chatInput.trim();
+    const ws = wsRef.current;
+    if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    const timestamp = Date.now();
+    ws.send(JSON.stringify({ type: 'chat', text, sender: `Guest-${clientIdRef.current.slice(-4)}`, client_id: clientIdRef.current, timestamp }));
+    setMessages(prev => [...prev, { text, sender: 'You', timestamp, self: true }]);
     setChatInput('');
   };
 
-  const copyCode = () => {
-    navigator.clipboard.writeText(partyCode);
-    toast.success('Party code copied!');
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(partyCode);
+      toast.success('Party code copied!');
+    } catch {
+      toast.error('Could not copy party code');
+    }
   };
-
-  useEffect(() => {
-    return () => { if (ws) ws.close(); };
-  }, [ws]);
 
   return (
     <Layout title="Watch Party">
@@ -102,7 +135,7 @@ export const WatchPartyPage = () => {
                 <Play className="w-5 h-5" /> Create Party
               </Button>
               <div className="flex gap-2">
-                <Input placeholder="Enter party code" value={partyCode} onChange={e => setPartyCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && joinParty()} className="w-48" />
+                <Input placeholder="Enter party code" value={joinCode} onChange={e => setJoinCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && joinParty()} className="w-48" data-testid="party-code-input" />
                 <Button onClick={joinParty} disabled={loading} variant="secondary" size="lg">Join</Button>
               </div>
             </div>
@@ -120,7 +153,7 @@ export const WatchPartyPage = () => {
               <div className="flex items-center gap-2">
                 <code className="px-3 py-1 bg-muted rounded font-mono text-lg">{partyCode}</code>
                 <Button size="icon" variant="ghost" onClick={copyCode}><Copy className="w-4 h-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => { setPartyCode(''); setPartyStatus(null); if (ws) ws.close(); }}><X className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={leaveParty} data-testid="leave-party-btn"><X className="w-4 h-4" /></Button>
               </div>
             </div>
             <div className="border rounded-lg h-96 flex flex-col">
@@ -129,8 +162,8 @@ export const WatchPartyPage = () => {
                   {messages.map((msg, i) => (
                     <motion.div key={i} initial={{ opacity: 0, x: msg.self ? 20 : -20 }} animate={{ opacity: 1, x: 0 }} className={`flex ${msg.self ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[70%] rounded-lg px-3 py-2 ${msg.self ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                        {!msg.self && <p className="text-xs font-semibold mb-1 opacity-70">{msg.sender}</p>}
-                        <p className="text-sm">{msg.text}</p>
+                        {!msg.self && <p className="text-xs font-semibold mb-1 opacity-70">{msg.sender || msg.user || 'Guest'}</p>}
+                        <p className="text-sm">{msg.text ?? msg.message ?? ''}</p>
                       </div>
                     </motion.div>
                   ))}
@@ -148,3 +181,5 @@ export const WatchPartyPage = () => {
     </Layout>
   );
 };
+
+export default WatchPartyPage;

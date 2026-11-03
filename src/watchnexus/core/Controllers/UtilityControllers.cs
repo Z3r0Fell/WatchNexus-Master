@@ -104,6 +104,7 @@ public class ZestController : ControllerBase
         return Ok(tail.Select(l => new { line = l, timestamp = DateTime.UtcNow }));
     }
     [HttpPost("logs/clear")]
+    [Authorize(Roles = "admin")]
     public IActionResult ClearLogs()
     {
         var logFile = ActiveLogFile();

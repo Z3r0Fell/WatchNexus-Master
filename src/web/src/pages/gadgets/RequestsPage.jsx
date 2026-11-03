@@ -24,6 +24,13 @@ const STATUS_ICONS = {
   fulfilled: CheckCircle,
 };
 
+// Backend rows are serialized camelCase (mediaType, overview, ...).
+export const normalizeRequest = (r) => ({
+  ...r,
+  media_type: r.media_type ?? r.mediaType,
+  description: r.description ?? r.overview ?? r.adminNotes ?? '',
+});
+
 export const RequestsPage = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +40,16 @@ export const RequestsPage = () => {
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get(`${API}/api/meringue/requests`, { headers });
-      setRequests(res.data);
+      // GET /requests is admin-only; regular users get 403 and must use
+      // /my-requests (their own requests only).
+      let res;
+      try {
+        res = await axios.get(`${API}/api/meringue/requests`, { headers });
+      } catch (e) {
+        if (e.response?.status !== 403) throw e;
+        res = await axios.get(`${API}/api/meringue/my-requests`, { headers });
+      }
+      setRequests(Array.isArray(res.data) ? res.data.map(normalizeRequest) : []);
     } catch (e) {
       console.error('Failed to fetch requests:', e);
     } finally {
@@ -48,13 +63,13 @@ export const RequestsPage = () => {
   const submitRequest = async () => {
     if (!newReq.title.trim()) { toast.error('Title is required'); return; }
     try {
-      await axios.post(`${API}/api/meringue/request`, newReq, { headers });
-      toast.success('Request submitted');
+      const res = await axios.post(`${API}/api/meringue/request`, newReq, { headers });
+      toast.success(res.data?.status === 'already_requested' ? 'You already requested this' : 'Request submitted');
       setShowAdd(false);
       setNewReq({ title: '', media_type: 'movie', description: '' });
       fetchRequests();
     } catch (e) {
-      toast.error('Failed to submit request');
+      toast.error(e.response?.data?.detail || 'Failed to submit request');
     }
   };
 

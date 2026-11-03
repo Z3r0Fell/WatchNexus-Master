@@ -166,7 +166,9 @@ public class MilkController : ControllerBase
         };
 
         object? currentThemeColors = null;
-        if (custom?.Value != null) {
+        // Only the custom theme carries stored colors; a built-in selection must not
+        // be overridden by stale custom colors.
+        if (custom?.Value != null && activeTheme == "custom") {
             try { currentThemeColors = JsonSerializer.Deserialize<object>(custom.Value); } catch { }
         }
 
@@ -183,10 +185,15 @@ public class MilkController : ControllerBase
     public IActionResult Themes() => Ok(GetThemes());
 
     [HttpPost("set-theme")]
-    public async Task<IActionResult> SetTheme([FromBody] JsonElement body)
+    public async Task<IActionResult> SetTheme(
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body,
+        [FromQuery] string? theme_type = null)
     {
+        // ThemeContext posts ?theme_type=X with no body (was a 400 under [ApiController]);
+        // ThemeCommunityPage posts { theme_name }.
         var userId = this.UserId();
-        var themeId = body.TryGetProperty("theme_id", out var t) ? t.GetString() ?? "default" : "default";
+        string? Prop(string n) => body.ValueKind == JsonValueKind.Object && body.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+        var themeId = Prop("theme_id") ?? Prop("theme_type") ?? Prop("theme_name") ?? theme_type ?? "default";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "active_theme");
         if (existing != null) existing.Value = themeId;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "active_theme", Value = themeId, UserId = userId });
@@ -198,12 +205,31 @@ public class MilkController : ControllerBase
     public async Task<IActionResult> CustomTheme([FromBody] JsonElement body)
     {
         var userId = this.UserId();
-        var css = body.TryGetProperty("custom_css", out var c) ? c.GetString() ?? "" : "";
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_css");
-        if (existing != null) existing.Value = css;
-        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "custom_css", Value = css, UserId = userId });
+        if (body.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "JSON object body required" });
+
+        async Task Upsert(string key, string value)
+        {
+            var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
+            if (row != null) row.Value = value;
+            else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, Value = value, UserId = userId });
+        }
+
+        if (body.TryGetProperty("custom_css", out var c) && c.ValueKind == JsonValueKind.String)
+            await Upsert("custom_css", c.GetString() ?? "");
+
+        // ThemeContext / ThemeCommunityPage send { name, colors }. Persist colors under the
+        // key theme-forge reads (custom_theme_colors) and make "custom" the active theme;
+        // previously colors were dropped and never survived a reload.
+        object? theme = null;
+        if (body.TryGetProperty("colors", out var colors) && colors.ValueKind == JsonValueKind.Object)
+        {
+            await Upsert("custom_theme_colors", colors.GetRawText());
+            await Upsert("active_theme", "custom");
+            var name = body.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : "Custom Theme";
+            theme = new { type = "custom", name, colors };
+        }
         await _db.SaveChangesAsync();
-        return Ok(new { status = "saved" });
+        return Ok(new { status = "saved", theme });
     }
 
     private static object[] GetThemes() => new object[]
@@ -377,8 +403,17 @@ public class StreamingServicesController : ControllerBase
         new { id = "amazon", name = "Prime Video", enabled = false },
     });
     [HttpPut("{serviceId}")]
-    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username) =>
-        Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
+    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body = default)
+    {
+        // api.js sends { enabled, username } in the JSON body, not the query string.
+        if (body.ValueKind == JsonValueKind.Object)
+        {
+            if (enabled == null && body.TryGetProperty("enabled", out var e) && e.ValueKind is JsonValueKind.True or JsonValueKind.False) enabled = e.GetBoolean();
+            if (username == null && body.TryGetProperty("username", out var u) && u.ValueKind == JsonValueKind.String) username = u.GetString();
+        }
+        return Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
+    }
 }
 
 // ── Watch Party ──────────────────────────────────
@@ -414,11 +449,9 @@ public class WatchPartyController : ControllerBase
     [HttpGet("{partyCode}")]
     public IActionResult Get(string partyCode) => Ok(new { party_code = partyCode, status = "waiting" });
 
-    [HttpGet("{partyCode}/ws")]
-    public async Task WebSocket(string partyCode)
-    {
-        await _connectionManager.HandleConnection(HttpContext, partyCode);
-    }
+    // The WebSocket endpoint GET {partyCode}/ws is mapped once in Program.cs
+    // (MapGet + RequireAuthorization). A duplicate controller action here made
+    // every connect fail with AmbiguousMatchException.
 
     [HttpPost("{partyCode}/chat")]
     public IActionResult SendChat(string partyCode, [FromBody] JsonElement body) => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages." });

@@ -33,6 +33,10 @@ public class LadleController : ControllerBase
     [HttpPut("config")]
     public async Task<IActionResult> SaveConfig([FromBody] JsonElement body)
     {
+        // Non-object bodies were stored verbatim and then crashed every later
+        // GetSabConfig (TryGetProperty on an array/string throws).
+        if (body.ValueKind != JsonValueKind.Object)
+            return BadRequest(new { detail = "JSON object body required" });
         var uid = this.UserId();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ConfigKey);
         var value = body.GetRawText();
@@ -51,7 +55,7 @@ public class LadleController : ControllerBase
         {
             var http = this.Http();
             http.Timeout = TimeSpan.FromSeconds(10);
-            var resp = await http.GetStringAsync($"{cfg.url}/api?mode=version&apikey={cfg.apiKey}&output=json");
+            var resp = await http.GetStringAsync($"{cfg.url}/api?mode=version&apikey={Uri.EscapeDataString(cfg.apiKey ?? "")}&output=json");
             var doc = JsonDocument.Parse(resp);
             var version = doc.RootElement.TryGetProperty("version", out var v) ? v.GetString() : "unknown";
             return Ok(new { success = true, version, message = $"SABnzbd v{version} connected" });
@@ -90,10 +94,11 @@ public class LadleController : ControllerBase
     {
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "SABnzbd not configured" });
-        var nzbUrl = body.TryGetProperty("url", out var u) ? u.GetString() : null;
-        var name = body.TryGetProperty("name", out var n) ? n.GetString() : null;
-        var category = body.TryGetProperty("category", out var c) ? c.GetString() : null;
-        var priority = body.TryGetProperty("priority", out var p) ? p.GetInt32() : 0;
+        // UsenetPage sends { nzb_url, title }; also accept { url, name }.
+        var nzbUrl = BodyStr(body, "url") ?? BodyStr(body, "nzb_url");
+        var name = BodyStr(body, "name") ?? BodyStr(body, "title");
+        var category = BodyStr(body, "category");
+        var priority = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("priority", out var p) && p.TryGetInt32(out var pv) ? pv : 0;
 
         if (string.IsNullOrEmpty(nzbUrl)) return BadRequest(new { detail = "NZB URL required" });
 
@@ -101,7 +106,7 @@ public class LadleController : ControllerBase
         {
             var http = this.Http();
             http.Timeout = TimeSpan.FromSeconds(15);
-            var url = $"{cfg.url}/api?mode=addurl&apikey={cfg.apiKey}&output=json&name={Uri.EscapeDataString(nzbUrl)}&priority={priority}";
+            var url = $"{cfg.url}/api?mode=addurl&apikey={Uri.EscapeDataString(cfg.apiKey ?? "")}&output=json&name={Uri.EscapeDataString(nzbUrl)}&priority={priority}";
             if (!string.IsNullOrEmpty(name)) url += $"&nzbname={Uri.EscapeDataString(name)}";
             if (!string.IsNullOrEmpty(category)) url += $"&cat={Uri.EscapeDataString(category)}";
             var resp = await http.GetStringAsync(url);
@@ -131,7 +136,7 @@ public class LadleController : ControllerBase
     {
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        return await SabApi(cfg, "queue", $"&name=pause&value={nzoId}");
+        return await SabApi(cfg, "queue", $"&name=pause&value={Uri.EscapeDataString(nzoId)}");
     }
 
     [HttpPost("resume/{nzoId}")]
@@ -139,7 +144,7 @@ public class LadleController : ControllerBase
     {
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        return await SabApi(cfg, "queue", $"&name=resume&value={nzoId}");
+        return await SabApi(cfg, "queue", $"&name=resume&value={Uri.EscapeDataString(nzoId)}");
     }
 
     [HttpDelete("queue/{nzoId}")]
@@ -148,7 +153,7 @@ public class LadleController : ControllerBase
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         var delFiles = delete_files ? "True" : "False";
-        return await SabApi(cfg, "queue", $"&name=delete&value={nzoId}&del_files={delFiles}");
+        return await SabApi(cfg, "queue", $"&name=delete&value={Uri.EscapeDataString(nzoId)}&del_files={delFiles}");
     }
 
     // ── History ──────────────────────────────────
@@ -165,7 +170,7 @@ public class LadleController : ControllerBase
     {
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        return await SabApi(cfg, "history", $"&name=delete&value={nzoId}");
+        return await SabApi(cfg, "history", $"&name=delete&value={Uri.EscapeDataString(nzoId)}");
     }
 
     [HttpDelete("history")]
@@ -199,7 +204,7 @@ public class LadleController : ControllerBase
     {
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        var limit = body.TryGetProperty("limit", out var l) ? l.GetInt32() : 0;
+        var limit = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("limit", out var l) && l.TryGetInt32(out var lv) ? lv : 0;
         return await SabApi(cfg, "config", $"&name=speedlimit&value={limit}");
     }
 
@@ -209,8 +214,8 @@ public class LadleController : ControllerBase
     {
         var cfg = await GetSabConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        var priority = body.TryGetProperty("priority", out var p) ? p.GetInt32() : 0;
-        return await SabApi(cfg, "queue", $"&name=priority&value={nzoId}&value2={priority}");
+        var priority = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("priority", out var p) && p.TryGetInt32(out var pv) ? pv : 0;
+        return await SabApi(cfg, "queue", $"&name=priority&value={Uri.EscapeDataString(nzoId)}&value2={priority}");
     }
 
     // Frontend compatibility alias
@@ -225,7 +230,10 @@ public class LadleController : ControllerBase
         var uid = this.UserId();
         var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ConfigKey);
         if (cfg?.Value == null) return (null, null);
-        var doc = JsonDocument.Parse(cfg.Value).RootElement;
+        JsonElement doc;
+        try { doc = JsonDocument.Parse(cfg.Value).RootElement; }
+        catch (JsonException) { return (null, null); }
+        if (doc.ValueKind != JsonValueKind.Object) return (null, null);
         var url = doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
         if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
         return (
@@ -234,13 +242,17 @@ public class LadleController : ControllerBase
         );
     }
 
+    private static string? BodyStr(JsonElement body, string name) =>
+        body.ValueKind == JsonValueKind.Object && body.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String
+            ? v.GetString() : null;
+
     private async Task<IActionResult> SabApi((string? url, string? apiKey) cfg, string mode, string extra = "")
     {
         try
         {
             var http = this.Http();
             http.Timeout = TimeSpan.FromSeconds(15);
-            var resp = await http.GetStringAsync($"{cfg.url}/api?mode={mode}&apikey={cfg.apiKey}&output=json{extra}");
+            var resp = await http.GetStringAsync($"{cfg.url}/api?mode={mode}&apikey={Uri.EscapeDataString(cfg.apiKey ?? "")}&output=json{extra}");
             return Content(resp, "application/json");
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }

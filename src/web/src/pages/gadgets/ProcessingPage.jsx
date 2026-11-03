@@ -10,9 +10,24 @@ import { Input } from '../../components/ui/input';
 
 const API = BACKEND_URL;
 
+// CrucibleController.SubmitJob reads { source_path, profile } (profile ids
+// from GET /api/crucible/profiles); input_path/output_format/preset were ignored.
+const PROFILES = [
+  { id: 'h265-default', label: 'H.265 Default' },
+  { id: 'h265-quality', label: 'H.265 High Quality' },
+  { id: 'h265-compact', label: 'H.265 Compact' },
+  { id: 'h264-compat', label: 'H.264 Compatible' },
+  { id: 'extract-subs', label: 'Extract Subtitles' },
+  { id: 'burn-subs', label: 'Burn Subtitles' },
+  { id: 'audio-normalize', label: 'Normalize Audio' },
+];
+const EMPTY_JOB = { source_path: '', profile: 'h265-default' };
+
 const STATUS_STYLES = {
   completed: { color: 'text-green-400', bg: 'bg-green-400/10', icon: CheckCircle },
   running: { color: 'text-blue-400', bg: 'bg-blue-400/10', icon: Play },
+  processing: { color: 'text-blue-400', bg: 'bg-blue-400/10', icon: Play },
+  cancelled: { color: 'text-gray-400', bg: 'bg-gray-400/10', icon: Pause },
   queued: { color: 'text-yellow-400', bg: 'bg-yellow-400/10', icon: Clock },
   failed: { color: 'text-red-400', bg: 'bg-red-400/10', icon: AlertCircle },
   paused: { color: 'text-gray-400', bg: 'bg-gray-400/10', icon: Pause },
@@ -22,7 +37,7 @@ export const ProcessingPage = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [newJob, setNewJob] = useState({ input_path: '', output_format: 'mp4', preset: 'medium' });
+  const [newJob, setNewJob] = useState(EMPTY_JOB);
   const headers = { 'Content-Type': 'application/json' };
 
   const fetchJobs = async () => {
@@ -40,15 +55,15 @@ export const ProcessingPage = () => {
   useEffect(() => { fetchJobs(); const interval = setInterval(fetchJobs, 10000); return () => clearInterval(interval); }, []);
 
   const submitJob = async () => {
-    if (!newJob.input_path.trim()) { toast.error('Input path is required'); return; }
+    if (!newJob.source_path.trim()) { toast.error('Input path is required'); return; }
     try {
       await axios.post(`${API}/api/crucible/jobs`, newJob, { headers });
       toast.success('Transcode job submitted');
       setShowAdd(false);
-      setNewJob({ input_path: '', output_format: 'mp4', preset: 'medium' });
+      setNewJob(EMPTY_JOB);
       fetchJobs();
     } catch (e) {
-      toast.error('Failed to submit job');
+      toast.error(e.response?.data?.detail || 'Failed to submit job');
     }
   };
 
@@ -83,31 +98,17 @@ export const ProcessingPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 placeholder="Input file path"
-                value={newJob.input_path}
-                onChange={e => setNewJob({ ...newJob, input_path: e.target.value })}
+                value={newJob.source_path}
+                onChange={e => setNewJob({ ...newJob, source_path: e.target.value })}
                 data-testid="job-input-path"
               />
               <select
-                value={newJob.output_format}
-                onChange={e => setNewJob({ ...newJob, output_format: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
-                data-testid="job-format-select"
+                value={newJob.profile}
+                onChange={e => setNewJob({ ...newJob, profile: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white md:col-span-2"
+                data-testid="job-profile-select"
               >
-                <option value="mp4">MP4 (H.264)</option>
-                <option value="mkv">MKV (H.265)</option>
-                <option value="webm">WebM (VP9)</option>
-                <option value="mp3">MP3 (Audio)</option>
-              </select>
-              <select
-                value={newJob.preset}
-                onChange={e => setNewJob({ ...newJob, preset: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
-                data-testid="job-preset-select"
-              >
-                <option value="ultrafast">Ultrafast</option>
-                <option value="fast">Fast</option>
-                <option value="medium">Medium</option>
-                <option value="slow">Slow (best quality)</option>
+                {PROFILES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
               </select>
             </div>
             <div className="flex gap-2">
@@ -145,13 +146,13 @@ export const ProcessingPage = () => {
                         <StatusIcon className={`w-4 h-4 ${style.color}`} />
                       </div>
                       <div>
-                        <p className="text-white font-medium text-sm truncate max-w-md">{job.input_path || job.title}</p>
-                        <p className="text-gray-500 text-xs">{job.output_format} - {job.preset}</p>
+                        <p className="text-white font-medium text-sm truncate max-w-md">{job.sourcePath || job.source_path || job.input_path || job.title}</p>
+                        <p className="text-gray-500 text-xs">{job.profile}{job.error ? ` - ${job.error}` : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${style.color} ${style.bg}`}>{job.status}</span>
-                      {(job.status === 'queued' || job.status === 'running') && (
+                      {(job.status === 'queued' || job.status === 'running' || job.status === 'processing') && (
                         <Button variant="outline" size="sm" onClick={() => cancelJob(job.id)} data-testid={`cancel-job-${job.id || i}`}>
                           <Trash2 className="w-3 h-3" />
                         </Button>

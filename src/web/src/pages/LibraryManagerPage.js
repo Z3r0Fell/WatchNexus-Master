@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { libraryApi } from '../services/nexusApi';
+import { apiClient } from '../services/api';
 import { toast } from 'sonner';
 import {
   FolderOpen, Plus, Trash2, RefreshCw, Film, Tv,
@@ -21,6 +22,13 @@ const MEDIA_TYPES = [
   { value: 'Anime', label: 'Anime', icon: Play, color: 'bg-pink-500/15 text-pink-400', accent: 'border-pink-500/30' },
   { value: 'Podcast', label: 'Podcasts', icon: BookOpen, color: 'bg-amber-500/15 text-amber-400', accent: 'border-amber-500/30' },
 ];
+
+// POST /libraries/{id}/scan only starts a background scan and returns the job
+// in "scanning" state; poll /scan/status until it settles.
+const SCAN_POLL_MS = 2000;
+const SCAN_POLL_LIMIT_MS = 30 * 60 * 1000;
+const isScanRunning = (job) => job?.status === 'scanning' || job?.status === 'cancelling';
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const formatSize = (bytes) => {
   if (!bytes) return '--';
@@ -139,6 +147,12 @@ export default function LibraryManagerPage() {
   const [form, setForm] = useState({ name: '', path: '', media_type: 'Movie' });
   const [scanning, setScanning] = useState(null);
   const [scanResult, setScanResult] = useState(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,16 +181,29 @@ export default function LibraryManagerPage() {
     setScanResult(null);
     try {
       const res = await libraryApi.scan(id);
-      const result = res.data;
-      setScanResult({ ...result, library_id: id });
-      if (result.error) {
-        toast.error(`Scan error: ${result.error}`);
-      } else {
+      let result = res.data || {};
+      const deadline = Date.now() + SCAN_POLL_LIMIT_MS;
+      while (isScanRunning(result) && Date.now() < deadline) {
+        await sleep(SCAN_POLL_MS);
+        if (!mountedRef.current) return;
+        const statusRes = await apiClient.get(`/libraries/${id}/scan/status`);
+        result = statusRes.data || {};
+      }
+      if (!mountedRef.current) return;
+      if (isScanRunning(result)) {
+        toast.info('Scan is still running in the background');
+      } else if (result.status === 'completed') {
+        setScanResult({ ...result, library_id: id });
         toast.success(`Scan complete: ${result.new || 0} new, ${result.total || 0} total items`);
+      } else {
+        const firstError = Array.isArray(result.errors) && result.errors.length > 0 ? result.errors[0] : null;
+        toast.error(`Scan ${result.status || 'failed'}${firstError ? `: ${firstError}` : ''}`);
       }
       load();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Scan failed'); }
-    finally { setScanning(null); }
+    } catch (e) {
+      if (mountedRef.current) toast.error(e.response?.data?.detail || e.message || 'Scan failed');
+    }
+    finally { if (mountedRef.current) setScanning(null); }
   };
 
   const handleDelete = async (id) => {

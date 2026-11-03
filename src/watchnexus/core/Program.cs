@@ -350,8 +350,14 @@ builder.Services.AddRateLimiter(options =>
                     QueueLimit = 0,
                 }));
 
+    // "auth" is referenced by [EnableRateLimiting("auth")] on login/setup; a
+    // missing named policy makes the middleware throw (HTTP 500), so register
+    // it as a no-op under the test host too.
     if (isTesting)
+    {
+        options.AddPolicy("auth", _ => RateLimitPartition.GetNoLimiter("auth-test"));
         return;
+    }
     options.AddPolicy("auth", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -431,6 +437,8 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
 // module DLLs alongside the binaries — no source compilation at runtime.
 if (!isTesting)
 {
+    // Wire the logger BEFORE discovery so module load failures are visible.
+    ModuleLoader.Logger = Log;
     var modulesPath = Path.Combine(AppContext.BaseDirectory, "modules");
     if (!Directory.Exists(modulesPath))
         modulesPath = Path.Combine(repoRoot, "src", "watchnexus", "modules"); // dev tree
@@ -509,8 +517,12 @@ using (var scope = app.Services.CreateScope())
 static string ResolveJwtSecret(IConfiguration config, string dataDir, Action<string> log, bool isTesting)
 {
     const string legacyWeak = "WatchNexus_DefaultSecret_ChangeInProduction_32chars!";
+    // Also reject the placeholder shipped as the default in the Unraid
+    // templates (build/unraid/*.xml) — it is public, so tokens signed with it
+    // could be forged on every install that kept the default.
+    const string unraidTemplateDefault = "ChangeThisToASecureRandomString32!";
     var provided = config["Jwt:Secret"] ?? Environment.GetEnvironmentVariable("JWT_SECRET");
-    if (!string.IsNullOrWhiteSpace(provided) && provided != legacyWeak && provided.Length >= 32)
+    if (!string.IsNullOrWhiteSpace(provided) && provided != legacyWeak && provided != unraidTemplateDefault && provided.Length >= 32)
         return provided;
 
     if (isTesting)
@@ -603,10 +615,19 @@ if (!isTesting)
         foreach (var cidr in trustedProxyIps)
         {
             var parts = cidr.Split('/', 2);
-            if (parts.Length == 2 && System.Net.IPAddress.TryParse(parts[0], out var ip))
+            if (parts.Length == 2 && System.Net.IPAddress.TryParse(parts[0], out var ip)
+                && int.TryParse(parts[1], out var prefix)
+                && prefix >= 0 && prefix <= (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 ? 128 : 32))
             {
-                var prefix = int.Parse(parts[1]);
                 fwd.KnownIPNetworks.Add(new System.Net.IPNetwork(ip, prefix));
+            }
+            else if (System.Net.IPAddress.TryParse(cidr, out var single))
+            {
+                fwd.KnownProxies.Add(single);
+            }
+            else
+            {
+                Log($"[WatchNexus] WARNING: ignoring invalid TRUSTED_PROXY_IPS entry '{cidr}' (expected CIDR, e.g. 172.18.0.0/16)");
             }
         }
         app.UseForwardedHeaders(fwd);
@@ -634,9 +655,12 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline'; " +
-        "style-src 'self' 'unsafe-inline'; " +
+        // Google Fonts: index.html / index.css load Outfit, Manrope, Inter and
+        // JetBrains Mono stylesheets from fonts.googleapis.com and the font files
+        // from fonts.gstatic.com — without these the UI fonts never load.
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "img-src 'self' data: blob: https:; " +
-        "font-src 'self' data:; " +
+        "font-src 'self' data: https://fonts.gstatic.com; " +
         "media-src 'self' blob: https:; " +
         "connect-src 'self' https: wss:; " +
         "frame-ancestors 'none'; " +
@@ -774,8 +798,7 @@ if (!isTesting)
 if (!isTesting)
 {
     Fortress.Logger = Log;
-    Fortress.Initialize(app);
-    ModuleLoader.Logger = Log;
+    Fortress.Initialize(app, dataDir);
 }
 
 // ── Start ─────────────────────────────────────────────────────

@@ -27,7 +27,9 @@ WORKDIR /build
 # Copy solution + project files first (layer caching for restores)
 COPY src/watchnexus/core/WatchNexus.Core.csproj src/watchnexus/core/
 COPY src/watchnexus/shared/WatchNexus.Shared.csproj src/watchnexus/shared/
-RUN dotnet restore src/watchnexus/core/WatchNexus.Core.csproj
+COPY src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj src/watchnexus/modules/lobster/
+RUN dotnet restore src/watchnexus/core/WatchNexus.Core.csproj \
+    && dotnet restore src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj
 
 # Copy shared code
 COPY src/watchnexus/shared/ src/watchnexus/shared/
@@ -46,11 +48,25 @@ COPY src/watchnexus/core/ src/watchnexus/core/
 # UpdateController + GadgetsCatalogueController + ChowderController, which
 # are in no tier list and are required by every tier.
 
+# External modules (module.json manifests + Lobster source). ModuleLoader
+# scans <app>/modules/<name>/ at startup; the core publish's
+# PublishModulesCopy target copies every module.json there.
+COPY src/watchnexus/modules/ src/watchnexus/modules/
+
 # Publish
 ENV SkipFrontendBuild=true
 RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
     -c Release -o /publish --no-restore \
     /p:SkipFrontendBuild=true
+
+# Lobster is an external DLL module (serves /api/lobster/*), not compiled
+# into Core. Publish it next to its manifest so ModuleLoader loads
+# modules/lobster/WatchNexus.Module.Lobster.dll in every tier (tier gating
+# remains runtime-only).
+RUN dotnet publish src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj \
+    -c Release -o /publish/modules/lobster --no-restore \
+    && test -f /publish/modules/lobster/module.json \
+    && test -f /publish/modules/lobster/WatchNexus.Module.Lobster.dll
 
 # ── Stage 3: Runtime ─────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
@@ -108,7 +124,7 @@ EXPOSE ${PORT}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -sf http://localhost:${PORT}/api/health || exit 1
+    CMD curl -sf http://localhost:${WATCHNEXUS_PORT:-8001}/api/health || exit 1
 
 # Security hardening notes:
 # - HSTS, CSP, X-Frame-Options, etc. are set by middleware in Program.cs

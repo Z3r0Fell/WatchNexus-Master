@@ -25,6 +25,9 @@ export const useAuth = () => {
   return context;
 };
 
+// Like useAuth but returns null instead of throwing outside an AuthProvider.
+export const useOptionalAuth = () => useContext(AuthContext);
+
 export const AuthProvider = ({ children }) => {
   // S-02: the JWT lives in an httpOnly cookie the browser sends automatically.
   // We never read/store it in JS. Auth state is derived from a /users/me probe.
@@ -76,6 +79,7 @@ export const AuthProvider = ({ children }) => {
   // (e.g. setup wizard / quick-login). No token handling in JS.
   const loginWithToken = useCallback((_token, userData) => {
     if (userData) {
+      userData = normalizeUser(userData);
       setUser(userData);
       setIsAuthenticated(true);
       return userData;
@@ -87,8 +91,10 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.post(`${API}/auth/register`, { email, password, username }, { withCredentials: true });
     const { user: userData } = response.data;
     if (userData) {
-      setUser(userData);
+      const normalized = normalizeUser(userData);
+      setUser(normalized);
       setIsAuthenticated(true);
+      return normalized;
     }
     return userData;
   }, []);

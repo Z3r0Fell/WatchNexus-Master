@@ -22,6 +22,7 @@ import { settingsApi } from '../services/api';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../hooks/use-confirm';
+import { MANUAL_IMPORT_TARGET } from '../components/settings/LibrarySettings';
 
 const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|mpg|mpeg|m2ts)$/i;
 
@@ -30,8 +31,19 @@ const API_URL = BACKEND_URL;
 export const SettingsPage = () => {
   const { user: currentUser } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
-  // Current active setting
-  const [activeSection, setActiveSection] = useState('general');
+  // Current active setting — deep-linkable via navigate('/settings', { state: { section } })
+  // (TierGate; React Router v6 keeps navigation state in history.state.usr) or
+  // /settings?section=... (apiErrorHandler). Read without router hooks so the
+  // page still renders outside a <Router>.
+  const [activeSection, setActiveSection] = useState(() => {
+    try {
+      return window.history.state?.usr?.section
+        || new URLSearchParams(window.location.search).get('section')
+        || 'general';
+    } catch {
+      return 'general';
+    }
+  });
   
   // General settings
   const [settings, setSettings] = useState({
@@ -76,10 +88,10 @@ export const SettingsPage = () => {
     try {
       const res = await axios.get(`${API_URL}/api/users`);
       setUsers(res.data || []);
-    } catch {
-      setUsers([{ id: '1', username: 'admin', email: 'admin@watchnexus.local', role: 'admin', avatar: null, created_at: new Date().toISOString(),
-        permissions: { can_download: true, can_delete: true, can_manage_library: true, can_manage_users: true, can_access_settings: true, max_streams: 10 }
-      }]);
+    } catch (error) {
+      // Never fabricate users on failure; /api/users is admin-only (403 for normal users).
+      setUsers([]);
+      if (error?.response?.status !== 403) toast.error('Failed to load users');
     } finally { setLoadingUsers(false); }
   }, []);
 
@@ -164,7 +176,15 @@ export const SettingsPage = () => {
   // Confirm folder selection
   const confirmFolderSelection = () => {
     if (!selectedBrowserPath) return;
-    
+
+    // Manual import picker has its own target, distinct from new-library creation
+    if (browserTargetField === MANUAL_IMPORT_TARGET) {
+      setManualImportPath(selectedBrowserPath);
+      setShowFileBrowser(false);
+      setBrowserTargetField(null);
+      return;
+    }
+
     // If we have a target field (for settings), update settings directly
     if (browserTargetField) {
       setSettings(prev => ({ ...prev, [browserTargetField]: selectedBrowserPath }));
@@ -229,16 +249,19 @@ export const SettingsPage = () => {
   // Settings handlers
   const fetchData = useCallback(async () => {
     try {
-      const settingsRes = await settingsApi.get().catch(() => ({ data: settings }));
-      setSettings(settingsRes.data || settings);
-    } catch {}
+      const settingsRes = await settingsApi.get();
+      if (settingsRes?.data) setSettings(settingsRes.data);
+    } catch (error) {
+      // Keep defaults but tell the user: saving them would overwrite the real config.
+      toast.error(error?.response?.status === 403 ? 'Admin access required to view server settings' : 'Failed to load settings');
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveSettings = async () => {
     setSaving(true);
     try { await settingsApi.update(settings); toast.success('Settings saved successfully'); }
-    catch { toast.error('Failed to save settings'); }
+    catch (error) { toast.error(error?.response?.status === 403 ? 'Admin access required to change server settings' : 'Failed to save settings'); }
     finally { setSaving(false); }
   };
 

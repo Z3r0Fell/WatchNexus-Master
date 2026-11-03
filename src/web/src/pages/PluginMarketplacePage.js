@@ -22,6 +22,8 @@ const API_URL = BACKEND_URL;
 export const isKodiUnsupportedError = (err) =>
   [404, 405, 501].includes(err?.response?.status);
 
+export const isSafeExternalUrl = (url) => /^https?:\/\//i.test(String(url || '').trim());
+
 // Kodi category icons and colors
 const kodiCategoryConfig = {
   video: { icon: Tv, color: 'blue', label: 'Video Add-ons', emoji: '📺' },
@@ -489,6 +491,7 @@ export const PluginMarketplacePage = () => {
     if (!addon) return null;
     
     const categoryConfig = kodiCategoryConfig[addon.category] || kodiCategoryConfig.other;
+    const colors = colorClassMap[categoryConfig.color] || colorClassMap.gray;
     
     return (
       <motion.div
@@ -594,7 +597,10 @@ export const PluginMarketplacePage = () => {
               {addon.website && (
                 <Button
                   variant="outline"
-                  onClick={() => window.open(addon.website, '_blank')}
+                  onClick={() => {
+                    // Third-party metadata: only open http(s) links, never javascript: etc.
+                    if (isSafeExternalUrl(addon.website)) window.open(addon.website, '_blank', 'noopener,noreferrer');
+                  }}
                   className="flex-1"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />

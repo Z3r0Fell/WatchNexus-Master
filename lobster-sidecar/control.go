@@ -89,8 +89,11 @@ func (c *ControlServer) Shutdown() {
 func (c *ControlServer) requireControlKey(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Control-Key") != c.controlKey {
-			writeJSON(w, map[string]string{"error": "unauthorized"})
+			// Status must be set before the body is written, otherwise Go
+			// sends an implicit 200 and the WriteHeader call is ignored.
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 			return
 		}
 		next(w, r)

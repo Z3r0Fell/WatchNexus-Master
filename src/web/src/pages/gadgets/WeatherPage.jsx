@@ -21,6 +21,55 @@ export const parseSavedLocation = (data) => {
   return null;
 };
 
+// GET /weather proxies Open-Meteo verbatim: { current: { temperature_2m,
+// apparent_temperature, relative_humidity_2m, wind_speed_10m, weather_code },
+// daily: { time[], weather_code[], temperature_2m_max[], temperature_2m_min[] } }.
+const WMO = (code) => {
+  if (code == null) return { icon: 'cloud', description: '' };
+  if (code === 0) return { icon: 'sun', description: 'Clear sky' };
+  if (code <= 2) return { icon: 'cloud-sun', description: 'Partly cloudy' };
+  if (code === 3) return { icon: 'cloud', description: 'Overcast' };
+  if (code === 45 || code === 48) return { icon: 'cloud', description: 'Fog' };
+  if (code >= 51 && code <= 57) return { icon: 'cloud-drizzle', description: 'Drizzle' };
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return { icon: 'cloud-rain', description: 'Rain' };
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { icon: 'snowflake', description: 'Snow' };
+  if (code >= 95) return { icon: 'bolt', description: 'Thunderstorm' };
+  return { icon: 'cloud', description: '' };
+};
+
+export const normalizeWeather = (data) => {
+  if (!data || data.error) return null;
+  if (Array.isArray(data.forecast)) return data; // already normalized shape
+  const c = data.current || {};
+  const d = data.daily || {};
+  const cw = WMO(c.weather_code);
+  return {
+    current: {
+      temperature: c.temperature ?? c.temperature_2m,
+      feels_like: c.feels_like ?? c.apparent_temperature,
+      humidity: c.humidity ?? c.relative_humidity_2m,
+      wind_speed: c.wind_speed ?? c.wind_speed_10m,
+      icon: c.icon || cw.icon,
+      description: c.description || cw.description,
+    },
+    forecast: (d.time || []).map((date, i) => ({
+      date,
+      icon: WMO(d.weather_code?.[i]).icon,
+      temp_max: d.temperature_2m_max?.[i],
+      temp_min: d.temperature_2m_min?.[i],
+    })),
+  };
+};
+
+// GET /weather/search returns Open-Meteo geocoding results (bare array,
+// latitude/longitude).
+export const normalizeLocations = (data) =>
+  (Array.isArray(data) ? data : (data?.results || [])).map(r => ({
+    ...r,
+    lat: r.lat ?? r.latitude,
+    lon: r.lon ?? r.longitude,
+  }));
+
 const getWeatherIcon = (icon) => {
   const icons = {
     'sun': <Sun className="w-16 h-16 text-yellow-400" />,
@@ -66,7 +115,9 @@ export const WeatherPage = () => {
         params: { lat, lon },
         headers: getAuth()
       });
-      setWeather(resp.data);
+      const w = normalizeWeather(resp.data);
+      setWeather(w);
+      if (!w && resp.data?.error) toast.error(resp.data.error);
     } catch (err) {
       toast.error('Failed to fetch weather');
     } finally {
@@ -101,7 +152,7 @@ export const WeatherPage = () => {
         params: { q: searchQuery },
         headers: getAuth()
       });
-      setSearchResults(resp.data.results || []);
+      setSearchResults(normalizeLocations(resp.data));
     } catch (err) {
       toast.error('Search failed');
     }
@@ -125,7 +176,9 @@ export const WeatherPage = () => {
   };
 
   const formatDay = (dateStr) => {
-    const date = new Date(dateStr);
+    // Open-Meteo dates are local 'YYYY-MM-DD'; new Date('YYYY-MM-DD') is UTC
+    // midnight and shows the previous day west of Greenwich.
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(`${dateStr}T00:00`) : new Date(dateStr);
     const today = new Date();
     if (date.toDateString() === today.toDateString()) return 'Today';
     const tomorrow = new Date(today);

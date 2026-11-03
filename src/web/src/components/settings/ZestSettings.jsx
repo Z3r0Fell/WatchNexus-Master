@@ -13,6 +13,37 @@ import { useConfirm } from '../../hooks/use-confirm';
 
 const LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
 
+// /api/zest/logs returns a bare array of { line, timestamp } where each line is
+// "<iso-ts> [LEVEL] category: message" (continuation lines are indented).
+const LINE_RE = /^(\S+)\s+\[([A-Z]+)\]\s+([^:]*):\s?(.*)$/;
+export const parseZestLogs = (data) => {
+  const rows = Array.isArray(data) ? data : (Array.isArray(data?.logs) ? data.logs : []);
+  let prevLevel = 'INFO';
+  return rows.map((row) => {
+    if (row && typeof row === 'object' && row.message !== undefined) return row;
+    const raw = typeof row === 'string' ? row : String(row?.line ?? '');
+    const m = LINE_RE.exec(raw);
+    if (m) {
+      prevLevel = m[2] === 'FATAL' ? 'CRITICAL' : m[2];
+      return { timestamp: m[1], level: prevLevel, logger: m[3], message: m[4], raw };
+    }
+    return { timestamp: '', level: /^\s/.test(raw) ? prevLevel : 'INFO', logger: '', message: raw, raw };
+  });
+};
+
+const formatBytes = (n) => {
+  if (typeof n !== 'number' || !isFinite(n)) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1048576) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1048576).toFixed(1)} MB`;
+};
+
+const formatUptime = (sec) => {
+  if (typeof sec !== 'number' || !isFinite(sec)) return 'N/A';
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
 const LevelIcon = ({ level }) => {
   switch (level?.toUpperCase()) {
     case 'ERROR':
@@ -89,11 +120,13 @@ export const ZestSettings = () => {
     try {
       const params = new URLSearchParams();
       params.append('lines', filters.lines);
-      if (filters.level) params.append('level', filters.level);
-      if (filters.search) params.append('search', filters.search);
-      
+
       const res = await axios.get(`${BACKEND_URL}/api/zest/logs?${params}`);
-      setLogs(res.data.logs || []);
+      // Backend only supports `lines`; level/search are applied client-side.
+      const q = filters.search.toLowerCase();
+      setLogs(parseZestLogs(res.data).filter(l =>
+        (!filters.level || l.level === filters.level) &&
+        (!q || (l.raw || l.message || '').toLowerCase().includes(q))));
     } catch (err) {
       console.error('Failed to fetch logs:', err);
       toast.error('Failed to fetch logs');
@@ -125,14 +158,14 @@ export const ZestSettings = () => {
   };
 
   const handleClearLogs = async () => {
-    const ok = await confirm({ title: 'Clear Logs', description: 'Clear log file? A backup will be created.', confirmText: 'Clear' });
+    const ok = await confirm({ title: 'Clear Logs', description: 'Clear the active log file? This cannot be undone.', confirmText: 'Clear' });
     if (!ok) return;
     try {
       const res = await axios.post(`${BACKEND_URL}/api/zest/logs/clear`);
-      toast.success(res.data.message || 'Logs cleared');
+      toast.success(res.data?.message || 'Logs cleared');
       handleRefresh();
     } catch (err) {
-      toast.error('Failed to clear logs');
+      toast.error(err.response?.data?.detail || 'Failed to clear logs');
     }
   };
 
@@ -196,37 +229,18 @@ export const ZestSettings = () => {
         </div>
       </div>
 
-      {/* System Health Cards */}
+      {/* System Health Cards — /api/zest/health: { status, uptime_seconds, memory_mb, threads } */}
       {systemHealth && !systemHealth.error && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SystemMetricCard
-            icon={Cpu}
-            label="CPU Usage"
-            value={`${systemHealth.cpu?.percent?.toFixed(1)}%`}
-            subValue={`${systemHealth.cpu?.count} cores`}
-            color="blue"
-          />
+          <SystemMetricCard icon={Activity} label="Status" value={systemHealth.status || 'unknown'} color="green" />
+          <SystemMetricCard icon={Cpu} label="Uptime" value={formatUptime(systemHealth.uptime_seconds)} color="blue" />
           <SystemMetricCard
             icon={MemoryStick}
-            label="Memory"
-            value={`${systemHealth.memory?.percent?.toFixed(1)}%`}
-            subValue={`${systemHealth.memory?.used_formatted} / ${systemHealth.memory?.total_formatted}`}
+            label="Process Memory"
+            value={typeof systemHealth.memory_mb === 'number' ? `${systemHealth.memory_mb} MB` : 'N/A'}
             color="violet"
           />
-          <SystemMetricCard
-            icon={HardDrive}
-            label="Disk"
-            value={`${systemHealth.disk?.percent?.toFixed(1)}%`}
-            subValue={`${systemHealth.disk?.free_formatted} free`}
-            color="pink"
-          />
-          <SystemMetricCard
-            icon={Activity}
-            label="Process Memory"
-            value={systemHealth.process?.memory_rss_formatted}
-            subValue={`PID: ${systemHealth.process?.pid}`}
-            color="green"
-          />
+          <SystemMetricCard icon={HardDrive} label="Threads" value={systemHealth.threads ?? 'N/A'} color="pink" />
         </div>
       )}
 
@@ -237,7 +251,7 @@ export const ZestSettings = () => {
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-gray-400" />
               <span className="text-sm text-gray-400">
-                {logStats.total_lines?.toLocaleString()} lines • {logStats.file_size_formatted}
+                {logStats.log_files ?? 0} log file(s) • {formatBytes(logStats.total_log_size)}
               </span>
             </div>
             <div className="flex items-center gap-2">

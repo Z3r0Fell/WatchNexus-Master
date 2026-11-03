@@ -11,10 +11,34 @@ import { Progress } from '../ui/progress';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
-import { useConfirm } from '../../hooks/use-confirm';
 import { BACKEND_URL } from '../../lib/config';
 
 const API_URL = BACKEND_URL;
+
+const round1 = (n) => Math.round(n * 10) / 10;
+const fmtUptime = (sec) => {
+  if (typeof sec !== 'number' || !isFinite(sec)) return null;
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
+// Map the C# endpoint shapes onto what the tabs render.
+// /api/system/stats → { memory_mb, threads, uptime_seconds, ... }; /api/system/info → { version, hostname, platform, architecture, dotnet_version, cpu_count }
+export const normalizeSystemStats = (stats, info) => {
+  if (!stats && !info) return null;
+  const s = stats || {}, i = info || {};
+  return {
+    app: { name: 'WatchNexus', version: i.version, uptime: fmtUptime(s.uptime_seconds ?? i.uptime_seconds) },
+    resources: { cpu_count: i.cpu_count, process_memory_mb: typeof s.memory_mb === 'number' ? round1(s.memory_mb) : undefined, threads: s.threads },
+    system: { platform: i.platform, architecture: i.architecture, runtime: i.dotnet_version, hostname: i.hostname },
+  };
+};
+// /api/db/stats → { size_bytes, path, tables }
+export const normalizeDbStats = (d) => d && ({ ...d, size_mb: typeof d.size_bytes === 'number' ? round1(d.size_bytes / 1048576) : d.size_mb, status: d.status || (d.size_bytes > 0 ? 'healthy' : 'warning') });
+// /api/db/backups → [{ name, size, created }]
+export const normalizeBackups = (data) => (Array.isArray(data) ? data : (data?.backups || [])).map(b => ({
+  filename: b.filename ?? b.name, size_mb: b.size_mb ?? (typeof b.size === 'number' ? round1(b.size / 1048576) : 0), created_at: b.created_at ?? b.created,
+}));
 
 // Tabs for Maintenance Settings
 const MAINTENANCE_TABS = [
@@ -25,7 +49,6 @@ const MAINTENANCE_TABS = [
 ];
 
 export const MaintenanceSettings = () => {
-  const { confirm, ConfirmDialog } = useConfirm();
   const [activeTab, setActiveTab] = useState('system');
   const [systemStats, setSystemStats] = useState(null);
   const [dbStats, setDbStats] = useState(null);
@@ -42,17 +65,18 @@ export const MaintenanceSettings = () => {
   const fetchAllStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [systemRes, dbRes, backupsRes, cacheRes, torrentRes, logFilesRes] = await Promise.all([
+      const [systemRes, infoRes, dbRes, backupsRes, cacheRes, torrentRes, logFilesRes] = await Promise.all([
         axios.get(`${API_URL}/api/system/stats`).catch(() => ({ data: null })),
+        axios.get(`${API_URL}/api/system/info`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/db/stats`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/db/backups`).catch(() => ({ data: { backups: [] } })),
         axios.get(`${API_URL}/api/cache/stats`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/torrent/status`).catch(() => ({ data: null })),
         axios.get(`${API_URL}/api/logs/list`).catch(() => ({ data: { logs: [] } })),
       ]);
-      setSystemStats(systemRes.data);
-      setDbStats(dbRes.data);
-      setBackups(backupsRes.data?.backups || []);
+      setSystemStats(normalizeSystemStats(systemRes.data, infoRes.data));
+      setDbStats(normalizeDbStats(dbRes.data));
+      setBackups(normalizeBackups(backupsRes.data));
       setCacheStats(cacheRes.data);
       setTorrentStatus(torrentRes.data);
       setLogFiles(logFilesRes.data?.logs || []);
@@ -87,7 +111,7 @@ export const MaintenanceSettings = () => {
       await axios.post(`${API_URL}${endpoint}`);
       toast.success(successMessage);
       fetchAllStats();
-    } catch (error) { toast.error(error.response?.data?.message || `Failed to ${action}`); }
+    } catch (error) { toast.error(error.response?.data?.detail || error.response?.data?.message || `Failed to ${action}`); }
     finally { setActionLoading(prev => ({ ...prev, [action]: false })); }
   };
 
@@ -124,7 +148,7 @@ export const MaintenanceSettings = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         iconBgColor="from-orange-600 to-red-500"
-        version={systemStats?.app?.version || '2.8.2.2'}
+        version={systemStats?.app?.version}
         help={{ title: "System Maintenance", description: "Monitor server health, view resource usage, manage the database, and view application logs. Use this section to troubleshoot issues and keep your server running smoothly.", examples: ["System: CPU, RAM, and disk usage at a glance", "Database: Check SQLite health, size, and run optimizations", "Logs: View application logs to diagnose issues"] }}
       />
 
@@ -183,10 +207,10 @@ const SystemTab = ({ systemStats, loading, fetchAllStats }) => {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={Activity} title="Status" value={systemStats?.app?.name || 'WatchNexus'} subtitle={`v${systemStats?.app?.version || '2.5.8'}`} color="green" />
-          <StatCard icon={Clock} title="Uptime" value={systemStats?.app?.uptime || 'N/A'} subtitle={`Started ${systemStats?.app?.started_at ? new Date(systemStats.app.started_at).toLocaleString() : 'N/A'}`} color="blue" />
-          <StatCard icon={Cpu} title="CPU Usage" value={`${systemStats?.resources?.cpu_percent || 0}%`} subtitle={`${systemStats?.resources?.cpu_count || 0} cores`} color="orange" progress={systemStats?.resources?.cpu_percent} />
-          <StatCard icon={MemoryStick} title="Memory" value={`${systemStats?.resources?.memory_used_gb || 0} GB`} subtitle={`of ${systemStats?.resources?.memory_total_gb || 0} GB`} color="purple" progress={systemStats?.resources?.memory_percent} />
+          <StatCard icon={Activity} title="Status" value={systemStats?.app?.name || 'WatchNexus'} subtitle={systemStats?.app?.version ? `v${systemStats.app.version}` : undefined} color="green" />
+          <StatCard icon={Clock} title="Uptime" value={systemStats?.app?.uptime || 'N/A'} subtitle={undefined} color="blue" />
+          <StatCard icon={Cpu} title="CPU Cores" value={systemStats?.resources?.cpu_count ?? 'N/A'} color="orange" />
+          <StatCard icon={MemoryStick} title="Process Memory" value={systemStats?.resources?.process_memory_mb != null ? `${systemStats.resources.process_memory_mb} MB` : 'N/A'} subtitle={systemStats?.resources?.threads != null ? `${systemStats.resources.threads} threads` : undefined} color="purple" />
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -198,22 +222,11 @@ const SystemTab = ({ systemStats, loading, fetchAllStats }) => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-gray-400">Platform</span><span className="text-white">{systemStats?.system?.platform} {systemStats?.system?.platform_release}</span></div>
               <div className="flex justify-between"><span className="text-gray-400">Architecture</span><span className="text-white">{systemStats?.system?.architecture}</span></div>
-              <div className="flex justify-between"><span className="text-gray-400">Python</span><span className="text-white">{systemStats?.system?.python_version}</span></div>
+              <div className="flex justify-between"><span className="text-gray-400">.NET Runtime</span><span className="text-white">{systemStats?.system?.runtime}</span></div>
               <div className="flex justify-between"><span className="text-gray-400">Hostname</span><span className="text-white font-mono text-xs">{systemStats?.system?.hostname}</span></div>
             </div>
           </div>
 
-          <div className="bg-black/30 border border-white/10 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <HardDrive className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-medium">Disk Usage</span>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm"><span className="text-gray-400">Used</span><span className="text-white">{systemStats?.resources?.disk_used_gb || 0} GB / {systemStats?.resources?.disk_total_gb || 0} GB</span></div>
-              <Progress value={systemStats?.resources?.disk_percent || 0} className="h-2" />
-              <div className="flex justify-between text-xs text-gray-500"><span>{systemStats?.resources?.disk_free_gb || 0} GB free</span><span className={systemStats?.resources?.disk_percent > 80 ? 'text-red-400' : 'text-green-400'}>{systemStats?.resources?.disk_percent || 0}% used</span></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -224,7 +237,8 @@ const SystemTab = ({ systemStats, loading, fetchAllStats }) => {
 const DatabaseTab = ({ dbStats, backups, actionLoading, handleAction }) => {
   const StatusBadge = ({ status }) => {
     const colors = { healthy: 'bg-green-500/20 text-green-400 border-green-500/30', running: 'bg-green-500/20 text-green-400 border-green-500/30', warning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', error: 'bg-red-500/20 text-red-400 border-red-500/30' };
-    return <span className={`px-2 py-1 text-xs font-medium rounded-full border ${colors[status] || colors.error}`}>{status?.charAt(0).toUpperCase() + status?.slice(1)}</span>;
+    if (!status) return null;
+    return <span className={`px-2 py-1 text-xs font-medium rounded-full border ${colors[status] || colors.error}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>;
   };
 
   return (
@@ -238,14 +252,12 @@ const DatabaseTab = ({ dbStats, backups, actionLoading, handleAction }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-black/30 border border-white/10 rounded-xl p-4"><p className="text-gray-400 text-sm">Engine</p><p className="text-xl font-bold">{dbStats?.engine || 'SQLite'}</p><p className="text-xs text-gray-500">Mode: {dbStats?.mode || 'WAL'}</p></div>
           <div className="bg-black/30 border border-white/10 rounded-xl p-4"><p className="text-gray-400 text-sm">Size</p><p className="text-xl font-bold">{dbStats?.size_mb || 0} MB</p></div>
-          <div className="bg-black/30 border border-white/10 rounded-xl p-4"><p className="text-gray-400 text-sm">Backups</p><p className="text-xl font-bold">{dbStats?.backups || 0}</p></div>
-          <div className="bg-black/30 border border-white/10 rounded-xl p-4"><p className="text-gray-400 text-sm">Records</p><p className="text-xl font-bold">{(dbStats?.users_count || 0) + (dbStats?.library_count || 0)}</p></div>
+          <div className="bg-black/30 border border-white/10 rounded-xl p-4"><p className="text-gray-400 text-sm">Backups</p><p className="text-xl font-bold">{backups.length}</p></div>
+          <div className="bg-black/30 border border-white/10 rounded-xl p-4"><p className="text-gray-400 text-sm">Tables</p><p className="text-xl font-bold">{dbStats?.tables ?? 'N/A'}</p></div>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => handleAction('vacuum', '/api/db/vacuum', 'Database optimized')} disabled={actionLoading.vacuum} className="border-white/20">{actionLoading.vacuum ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}Optimize</Button>
           <Button variant="outline" onClick={() => handleAction('backup', '/api/db/backup', 'Backup created')} disabled={actionLoading.backup} className="border-white/20">{actionLoading.backup ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}Backup</Button>
-          <Button variant="outline" onClick={async () => { const ok = await confirm({ title: 'Reset Database', description: 'WARNING: This will delete ALL data. Are you sure?', confirmText: 'Reset' }); if (ok) handleAction('reset', '/api/db/reset', 'Database reset'); }} disabled={actionLoading.reset} className="border-red-500/30 text-red-400">{actionLoading.reset ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}Reset</Button>
         </div>
 
         {backups.length > 0 && (
@@ -254,7 +266,7 @@ const DatabaseTab = ({ dbStats, backups, actionLoading, handleAction }) => {
             <div className="bg-black/30 border border-white/10 rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-white/10"><th className="text-left p-3 text-gray-400">Filename</th><th className="text-left p-3 text-gray-400">Size</th><th className="text-left p-3 text-gray-400">Created</th></tr></thead>
-                <tbody>{backups.slice(0, 5).map((backup, i) => (<tr key={backup.filename} className={i % 2 === 0 ? 'bg-white/5' : ''}><td className="p-3 font-mono text-xs">{backup.filename}</td><td className="p-3 text-gray-400">{backup.size_mb} MB</td><td className="p-3 text-gray-400">{new Date(backup.created_at).toLocaleString()}</td></tr>))}</tbody>
+                <tbody>{backups.slice(0, 5).map((backup, i) => (<tr key={backup.filename || i} className={i % 2 === 0 ? 'bg-white/5' : ''}><td className="p-3 font-mono text-xs">{backup.filename}</td><td className="p-3 text-gray-400">{backup.size_mb} MB</td><td className="p-3 text-gray-400">{backup.created_at ? new Date(backup.created_at).toLocaleString() : ''}</td></tr>))}</tbody>
               </table>
             </div>
           </div>
@@ -271,23 +283,22 @@ const CacheTab = ({ cacheStats, torrentStatus, actionLoading, handleAction }) =>
       <div className="bg-surface border border-white/10 rounded-2xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Zap className="w-5 h-5 text-yellow-400" />Cache Management</h3>
         <div className="bg-black/30 border border-white/10 rounded-xl p-4 mb-4">
-          <div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-400">TMDB Cache Entries</span><span className="text-lg font-bold text-white">{cacheStats?.tmdb_cache_entries || 0}</span></div>
-          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Cache TTL</span><span className="text-sm text-white">{Math.round((cacheStats?.cache_ttl_seconds || 3600) / 60)} minutes</span></div>
+          <div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-400">Cache Files</span><span className="text-lg font-bold text-white">{cacheStats?.entries ?? cacheStats?.tmdb_cache_entries ?? 0}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Cache Size</span><span className="text-sm text-white">{round1((cacheStats?.size_bytes || 0) / 1048576)} MB</span></div>
         </div>
-        <Button variant="outline" onClick={() => handleAction('clearCache', '/api/cache/clear', 'Cache cleared')} disabled={actionLoading.clearCache} className="border-white/20 w-full">{actionLoading.clearCache ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}Clear TMDB Cache</Button>
+        <Button variant="outline" onClick={() => handleAction('clearCache', '/api/cache/clear', 'Cache cleared')} disabled={actionLoading.clearCache} className="border-white/20 w-full">{actionLoading.clearCache ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}Clear Cache</Button>
       </div>
 
       <div className="bg-surface border border-white/10 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2"><Download className="w-5 h-5 text-green-400" />Torrent Engine</h3>
-          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${torrentStatus?.status === 'running' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>{torrentStatus?.status || 'Unknown'}</span>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${(torrentStatus?.status === 'running' || torrentStatus?.connected === true) ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>{torrentStatus?.status || (torrentStatus?.connected ? 'running' : 'Unknown')}</span>
         </div>
         <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Engine</span><span className="text-sm text-white font-medium">{torrentStatus?.engine || 'LTorrent'}</span></div>
-          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Status</span><span className="flex items-center gap-2">{torrentStatus?.status === 'running' ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <AlertTriangle className="w-4 h-4 text-yellow-400" />}<span className={torrentStatus?.status === 'running' ? 'text-green-400' : 'text-yellow-400'}>{torrentStatus?.status === 'running' ? 'Running' : 'Idle'}</span></span></div>
-          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Active Torrents</span><span className="text-sm text-white">{torrentStatus?.active_torrents || 0}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Engine</span><span className="text-sm text-white font-medium">{torrentStatus?.engine || 'Unknown'}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Status</span><span className="flex items-center gap-2">{(torrentStatus?.status === 'running' || torrentStatus?.connected === true) ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <AlertTriangle className="w-4 h-4 text-yellow-400" />}<span className={(torrentStatus?.status === 'running' || torrentStatus?.connected === true) ? 'text-green-400' : 'text-yellow-400'}>{(torrentStatus?.status === 'running' || torrentStatus?.connected === true) ? 'Running' : 'Idle'}</span></span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-gray-400">Active Downloads</span><span className="text-sm text-white">{torrentStatus?.active_downloads ?? torrentStatus?.active_torrents ?? 0}</span></div>
         </div>
-        <p className="text-xs text-gray-500 mt-4">Fondue torrent engine using LTorrent. 100% Python.</p>
       </div>
     </div>
   </div>

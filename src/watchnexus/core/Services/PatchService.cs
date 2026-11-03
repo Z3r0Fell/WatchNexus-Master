@@ -282,7 +282,7 @@ public class PatchService
     /// </summary>
     private bool IsAllowedPatchUrl(string url)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
             return false;
 
         var allowedHosts = (_config["PATCH_ALLOWED_HOSTS"] ?? "github.com")

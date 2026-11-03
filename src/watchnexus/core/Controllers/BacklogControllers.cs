@@ -92,6 +92,7 @@ public class BiscottiController : ControllerBase
     }
 
     [HttpDelete("items/{id}")]
+    [Authorize(Roles = "admin")] // items are a shared, server-wide catalog
     public async Task<IActionResult> DeleteItem(string id)
     {
         var key = $"biscotti:{id}";
@@ -103,6 +104,7 @@ public class BiscottiController : ControllerBase
     }
 
     [HttpPost("scan")]
+    [Authorize(Roles = "admin")] // enumerates the server filesystem
     public IActionResult Scan([FromBody] JsonElement body)
     {
         var path = body.TryGetProperty("path", out var p) ? p.GetString() : null;
@@ -244,6 +246,7 @@ public class TreacleController : ControllerBase
     }
 
     [HttpDelete("tracks/{id}")]
+    [Authorize(Roles = "admin")] // tracks are a shared, server-wide catalog
     public async Task<IActionResult> DeleteTrack(string id)
     {
         var item = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"treacle:{id}");
@@ -254,11 +257,13 @@ public class TreacleController : ControllerBase
     }
 
     [HttpPost("scan")]
+    [Authorize(Roles = "admin")] // enumerates the server filesystem
     public IActionResult Scan([FromBody] JsonElement body)
     {
         var path = body.TryGetProperty("path", out var p) ? p.GetString() : null;
         if (string.IsNullOrEmpty(path) || !Directory.Exists(path) || !WatchNexus.Core.Auth.MediaPaths.IsAllowedPath(path)) return BadRequest(new { success = false, message = "Invalid path" });
-        var found = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+        // Skip unreadable subfolders instead of failing the whole scan with a 500.
+        var found = Directory.EnumerateFiles(path, "*", new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true })
             .Where(f => AudioFormats.Contains(Path.GetExtension(f).ToLower()))
             .Select(f => new { file_name = Path.GetFileName(f), file_path = f, file_size = new FileInfo(f).Length, title = Path.GetFileNameWithoutExtension(f), format = Path.GetExtension(f).TrimStart('.') })
             .ToList();
@@ -504,6 +509,7 @@ public class PopsicleController : ControllerBase
     }
 
     [HttpPost("settings")]
+    [Authorize(Roles = "admin")] // server-wide config (storage path)
     public async Task<IActionResult> SaveSettings([FromBody] JsonElement body)
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "popsicle_config" && s.UserId == "");
@@ -539,6 +545,7 @@ public class PreservesController : ControllerBase
     }
 
     [HttpPost("config")]
+    [Authorize(Roles = "admin")] // server-wide storage credentials
     public async Task<IActionResult> SaveConfig([FromBody] JsonElement body)
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "preserves_config" && s.UserId == "");
@@ -557,6 +564,7 @@ public class PreservesController : ControllerBase
     }
 
     [HttpPost("backups")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> CreateBackup([FromBody] JsonElement body)
     {
         var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? $"backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}" : $"backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
@@ -569,6 +577,7 @@ public class PreservesController : ControllerBase
     }
 
     [HttpDelete("backups/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeleteBackup(string id)
     {
         var item = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"preserves_backup:{id}");
@@ -612,6 +621,7 @@ public class MarshmallowController : ControllerBase
     }
 
     [HttpPost("config")]
+    [Authorize(Roles = "admin")] // server-wide sync config
     public async Task<IActionResult> SaveConfig([FromBody] JsonElement body)
     {
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "marshmallow_config" && s.UserId == "");

@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { useConfirm } from '../../hooks/use-confirm';
 import { usePrompt } from '../../hooks/use-prompt';
 import { BACKEND_URL } from '../../lib/config';
+import axios from 'axios';
 
 const API_URL = BACKEND_URL;
 
@@ -137,9 +138,22 @@ export const PlaylistCard = ({ playlist, onSelect, onDelete }) => {
               {playlist.item_count} items • {formatDuration(playlist.total_duration)}
             </CardDescription>
           </div>
-          <Badge className={typeColors[playlist.playlist_type] || 'bg-muted'}>
-            {playlist.playlist_type}
-          </Badge>
+          <div className="flex items-center gap-1">
+            <Badge className={typeColors[playlist.playlist_type] || 'bg-muted'}>
+              {playlist.playlist_type || playlist.media_type}
+            </Badge>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(playlist); }}
+                data-testid={`delete-playlist-${playlist.id}`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
@@ -178,12 +192,8 @@ export const ActiveQueuePanel = ({ onClose }) => {
   
   const handleClearQueue = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/drizzle/queue`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      // fetch() only rejects on network errors — treat HTTP errors as failures too.
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // axios sends the X-XSRF-TOKEN header required for mutations.
+      await axios.delete(`${API_URL}/api/drizzle/queue`);
       setQueueState({ active: false, queue: null });
       toast.success('Queue cleared');
     } catch (err) {
@@ -364,11 +374,10 @@ export const PlaylistsManager = () => {
   
   const fetchPlaylists = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/drizzle/playlists`, {
-        credentials: 'include',
-      });
-      const data = await res.json();
-      setPlaylists(data.playlists || []);
+      // GET /api/drizzle/playlists returns a bare array.
+      const res = await axios.get(`${API_URL}/api/drizzle/playlists`);
+      const data = res.data;
+      setPlaylists(Array.isArray(data) ? data : (data?.playlists || []));
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
     } finally {
@@ -381,13 +390,10 @@ export const PlaylistsManager = () => {
     if (!name) return;
     
     try {
-      const params = new URLSearchParams({ name });
-      const res = await fetch(`${API_URL}/api/drizzle/playlists?${params}`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      const newPlaylist = await res.json();
-      setPlaylists([newPlaylist, ...playlists]);
+      // JSON body (backend uses [FromBody]); axios adds the CSRF header.
+      const res = await axios.post(`${API_URL}/api/drizzle/playlists`, { name });
+      const newPlaylist = { item_count: 0, ...res.data };
+      setPlaylists((prev) => [newPlaylist, ...prev]);
       toast.success('Playlist created!');
     } catch (err) {
       toast.error('Failed to create playlist');
@@ -399,11 +405,8 @@ export const PlaylistsManager = () => {
     if (!ok) return;
     
     try {
-      await fetch(`${API_URL}/api/drizzle/playlists/${playlistId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      setPlaylists(playlists.filter(p => p.id !== playlistId));
+      await axios.delete(`${API_URL}/api/drizzle/playlists/${playlistId}`);
+      setPlaylists((prev) => prev.filter(p => p.id !== playlistId));
       if (selectedPlaylist?.id === playlistId) {
         setSelectedPlaylist(null);
       }
@@ -415,10 +418,7 @@ export const PlaylistsManager = () => {
   
   const handleSetActiveQueue = async (playlistId) => {
     try {
-      await fetch(`${API_URL}/api/drizzle/queue/set/${playlistId}`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await axios.post(`${API_URL}/api/drizzle/queue/set/${playlistId}`);
       toast.success('Playlist set as active queue!');
     } catch (err) {
       toast.error('Failed to set queue');

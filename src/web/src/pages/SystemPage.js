@@ -18,7 +18,7 @@ const MODULE_ICONS = {
   Cream: Box, Fprint: Box, Potluck: Box, Sieve: Box,
   Syrup: Box, Tiramisu: Box, Bastion: Shield, Tunnel: Wifi,
   Glaze: Activity, Roux: Layers, Sprout: Rss, Saffron: Timer,
-  Sourdough: Archive, Churro: Download, Fondue: Film,
+  Sourdough: Archive, Churro: Download,
   Taffy: Box, Pantry: Database, Nutmeg: Zap,
   Ripen: Box, Crucible: Box, Truffle: Gauge, Pepper: Box,
   Meringue: Box, Rind: Lock, Brine: Box, Crumbs: Key,

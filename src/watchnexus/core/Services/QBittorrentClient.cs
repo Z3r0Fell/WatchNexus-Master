@@ -40,7 +40,9 @@ public sealed class QBittorrentClient
             var pass = doc.TryGetProperty("password", out var pw) ? pw.GetString() : "";
             return new Config(string.IsNullOrWhiteSpace(host) ? "localhost" : host!, port, user ?? "", pass ?? "");
         }
-        catch (JsonException) { return null; }
+        // InvalidOperationException: a field of the wrong JSON type (e.g. "host": 123)
+        // — GetString() throws, which previously escaped as a 500.
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException) { return null; }
     }
 
     public async Task<string?> GetVersionAsync(CancellationToken ct = default)

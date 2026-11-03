@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { lobsterApi } from '../services/nexusApi';
@@ -30,6 +30,8 @@ export default function LobsterPage() {
   const [loading, setLoading] = useState(true);
   const [pairCode, setPairCode] = useState(null);
   const [pairing, setPairing] = useState(false);
+  // The page polls every 5s; toast a failure once per failure streak, not every poll.
+  const errorShownRef = useRef(false);
 
   const fetchStatus = async () => {
     try {
@@ -37,10 +39,18 @@ export default function LobsterPage() {
         lobsterApi.getStatus(),
         lobsterApi.getPeers(),
       ]);
-      setStatus(statusRes.data);
-      setPeers(peersRes.data || []);
+      setStatus(statusRes.data || null);
+      // Sidecar encodes an empty peer list as null; never let a non-array reach .filter/.map.
+      setPeers(Array.isArray(peersRes.data) ? peersRes.data : []);
+      errorShownRef.current = false;
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to fetch status');
+      // 503 = sidecar not running: show the node as offline.
+      setStatus(null);
+      setPeers([]);
+      if (!errorShownRef.current) {
+        errorShownRef.current = true;
+        toast.error(e.response?.data?.message || 'Failed to fetch status');
+      }
     } finally {
       setLoading(false);
     }
@@ -71,19 +81,24 @@ export default function LobsterPage() {
     setPairing(true);
     try {
       const res = await lobsterApi.pair();
-      setPairCode(res.data.pair_code);
+      const code = res.data?.pair_code;
+      if (!code) throw new Error(res.data?.error || res.data?.message || 'No pair code returned');
+      setPairCode(code);
       toast.success('Pair code generated');
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Pairing failed');
+      toast.error(e.response?.data?.message || e.message || 'Pairing failed');
     } finally {
       setPairing(false);
     }
   };
 
-  const copyPairCode = () => {
-    if (pairCode) {
-      navigator.clipboard.writeText(pairCode);
+  const copyPairCode = async () => {
+    if (!pairCode) return;
+    try {
+      await navigator.clipboard.writeText(pairCode);
       toast.success('Pair code copied');
+    } catch {
+      toast.error('Could not copy pair code');
     }
   };
 

@@ -30,13 +30,18 @@ public class RouxController : ControllerBase
     [HttpGet("collections")]
     public async Task<IActionResult> GetCollections()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections");
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
         if (setting?.Value != null)
         {
             try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
         }
 
-        // Return default smart collections
+        return Ok(DefaultCollections());
+    }
+
+    private static List<object> DefaultCollections()
+    {
         var defaults = new List<object>
         {
             new { id = "top-rated", name = "Top Rated", type = "smart", icon = "star", description = "Movies and shows rated 8+", item_count = 0, auto_refresh = true },
@@ -45,7 +50,7 @@ public class RouxController : ControllerBase
             new { id = "horror-nights", name = "Horror Nights", type = "smart", icon = "ghost", description = "Horror & Thriller picks", item_count = 0, auto_refresh = true },
             new { id = "classics", name = "Classics", type = "smart", icon = "film", description = "Pre-1990 highly rated films", item_count = 0, auto_refresh = true },
         };
-        return Ok(defaults);
+        return defaults;
     }
 
     [HttpPost("collections")]
@@ -58,8 +63,10 @@ public class RouxController : ControllerBase
         var rulesRaw = body.TryGetProperty("rules", out var r) ? r.GetRawText() : "{}";
 
         // Load existing collections
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections");
-        var collections = new List<object>();
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
+        // Seed with the defaults on first create so they don't vanish.
+        var collections = setting?.Value == null ? DefaultCollections() : new List<object>();
         if (setting?.Value != null)
         {
             try { collections = JsonSerializer.Deserialize<List<object>>(setting.Value) ?? new List<object>(); } catch { }
@@ -70,7 +77,7 @@ public class RouxController : ControllerBase
 
         var raw = JsonSerializer.Serialize(collections);
         if (setting != null) setting.Value = raw;
-        else _db.Settings.Add(new AppSetting { UserId = "", Key = "roux_collections", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = uid, Key = "roux_collections", Value = raw });
         await _db.SaveChangesAsync();
 
         return Ok(new { status = "created", collection = newCol });
@@ -80,7 +87,7 @@ public class RouxController : ControllerBase
     public async Task<IActionResult> GetCollection(string collectionId)
     {
         // Try to find collection and populate items from media library
-        var allMedia = await _db.MediaItems
+        var allMedia = await LibraryMedia.ForUser(_db, this.UserId())
             .OrderByDescending(m => m.Id)
             .Take(20)
             .Select(m => new { m.Id, m.Title, m.Year, m.Rating, m.MediaType, poster_url = m.PosterUrl })
@@ -100,8 +107,26 @@ public class RouxController : ControllerBase
         => Ok(new { status = "saved", id = collectionId });
 
     [HttpDelete("collections/{collectionId}")]
-    public IActionResult DeleteCollection(string collectionId)
-        => Ok(new { status = "deleted", id = collectionId });
+    public async Task<IActionResult> DeleteCollection(string collectionId)
+    {
+        // Previously a no-op that reported success, so deleted collections reappeared.
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
+        if (setting == null)
+        {
+            setting = new AppSetting { UserId = uid, Key = "roux_collections", Value = JsonSerializer.Serialize(DefaultCollections()) };
+            _db.Settings.Add(setting);
+        }
+        List<JsonElement> collections;
+        try { collections = JsonSerializer.Deserialize<List<JsonElement>>(setting.Value) ?? new(); }
+        catch (JsonException) { return NotFound(new { detail = "Collection not found", id = collectionId }); }
+        var remaining = collections.Where(c => !(c.ValueKind == JsonValueKind.Object
+            && c.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String && id.GetString() == collectionId)).ToList();
+        if (remaining.Count == collections.Count) return NotFound(new { detail = "Collection not found", id = collectionId });
+        setting.Value = JsonSerializer.Serialize(remaining);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deleted", id = collectionId });
+    }
 
     [HttpPost("collections/{collectionId}/items")]
     public IActionResult AddItem(string collectionId, [FromBody] JsonElement body)
@@ -134,7 +159,7 @@ public class RouxController : ControllerBase
     [HttpPost("filter")]
     public async Task<IActionResult> FilterMedia([FromBody] JsonElement filters)
     {
-        var query = _db.MediaItems.AsQueryable();
+        var query = LibraryMedia.ForUser(_db, this.UserId());
 
         if (filters.TryGetProperty("media_type", out var mt) && mt.GetString() is string mediaType)
             query = query.Where(m => m.MediaType == mediaType);
@@ -148,7 +173,7 @@ public class RouxController : ControllerBase
         if (filters.TryGetProperty("max_year", out var mxy) && mxy.TryGetInt32(out var maxYear))
             query = query.Where(m => m.Year <= maxYear);
 
-        var limit = filters.TryGetProperty("limit", out var l) && l.TryGetInt32(out var lim) ? lim : 50;
+        var limit = filters.TryGetProperty("limit", out var l) && l.TryGetInt32(out var lim) ? Math.Clamp(lim, 1, 500) : 50;
 
         var results = await query
             .OrderByDescending(m => m.Rating)

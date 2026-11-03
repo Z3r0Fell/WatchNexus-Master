@@ -93,15 +93,18 @@ public class PretzelController : ControllerBase
     }
 
     // ── Add Game ────────────────────────────────────────────────────
+    // Admin-only: the ROM library is shared by all users (delete/scan/import are admin-only too).
     [HttpPost("games")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> AddGame([FromBody] JsonElement body)
     {
-        var title = body.TryGetProperty("title", out var t) ? t.GetString()?.Trim() ?? "" : "";
-        var system = body.TryGetProperty("system", out var sys) ? sys.GetString() ?? "" : "";
-        var fileName = body.TryGetProperty("file_name", out var fn) ? fn.GetString() ?? "" : "";
-        var filePath = body.TryGetProperty("file_path", out var fp) ? fp.GetString() ?? "" : "";
-        var fileSize = body.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0;
-        var coverUrl = body.TryGetProperty("cover_url", out var cu) ? cu.GetString() : null;
+        static string? Str(JsonElement b, string n) => b.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+        var title = Str(body, "title")?.Trim() ?? "";
+        var system = Str(body, "system") ?? "";
+        var fileName = Str(body, "file_name") ?? "";
+        var filePath = Str(body, "file_path") ?? "";
+        var fileSize = body.TryGetProperty("file_size", out var fs) && fs.TryGetInt64(out var fsz) ? fsz : 0;
+        var coverUrl = Str(body, "cover_url");
 
         if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(system))
             return BadRequest(new { success = false, message = "Title and system are required" });
@@ -176,8 +179,9 @@ public class PretzelController : ControllerBase
     [HttpGet("games/{id}/saves")]
     public async Task<IActionResult> GetSaves(string id)
     {
+        var uid = this.UserId();
         var saves = await _db.Settings
-            .Where(s => s.Key.StartsWith($"pretzel_save:{id}:"))
+            .Where(s => s.Key.StartsWith($"pretzel_save:{id}:") && s.UserId == uid)
             .ToListAsync();
 
         var result = saves.Select(s =>
@@ -208,7 +212,7 @@ public class PretzelController : ControllerBase
 
         var saveId = Guid.NewGuid().ToString("N")[..8];
         var data = JsonSerializer.Serialize(new { slot, label, state_data = stateData, created_at = DateTime.UtcNow.ToString("o") });
-        _db.Settings.Add(new AppSetting { Key = $"pretzel_save:{id}:{saveId}", UserId = "", Value = data });
+        _db.Settings.Add(new AppSetting { Key = $"pretzel_save:{id}:{saveId}", UserId = this.UserId(), Value = data });
         await _db.SaveChangesAsync();
 
         return Ok(new { success = true, id = saveId, message = "Save state created" });
@@ -218,6 +222,7 @@ public class PretzelController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()
     {
+        var uid = this.UserId();
         var games = await _db.Settings.Where(s => s.Key.StartsWith("pretzel_game:")).ToListAsync();
         var systemCounts = new Dictionary<string, int>();
         int totalPlays = 0;
@@ -232,7 +237,7 @@ public class PretzelController : ControllerBase
             }
             catch { }
         }
-        return Ok(new { total_games = games.Count, total_plays = totalPlays, systems = systemCounts, save_states = await _db.Settings.CountAsync(s => s.Key.StartsWith("pretzel_save:")) });
+        return Ok(new { total_games = games.Count, total_plays = totalPlays, systems = systemCounts, save_states = await _db.Settings.CountAsync(s => s.Key.StartsWith("pretzel_save:") && s.UserId == uid) });
     }
 
     // ── Scan Directory for ROMs (admin) ─────────────────────────────

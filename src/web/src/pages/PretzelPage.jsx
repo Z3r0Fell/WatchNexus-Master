@@ -14,6 +14,8 @@ import { useConfirm } from '../hooks/use-confirm';
 
 const API = BACKEND_URL;
 
+const adminMsg = (err, fallback) => (err?.response?.status === 403 ? 'Admin access required' : (err?.response?.data?.message || fallback));
+
 const EMULATORJS_CDN = 'https://cdn.emulatorjs.org/stable/data';
 
 const PretzelPage = () => {
@@ -69,7 +71,7 @@ const PretzelPage = () => {
     const ok = await confirm({ title: 'Remove Game', description: 'Remove this game?', confirmText: 'Remove' });
     if (!ok) return;
     try { await axios.delete(`${API}/api/pretzel/games/${id}`); toast.success('Removed'); fetchGames(); fetchStats(); }
-    catch { toast.error('Failed'); }
+    catch (err) { toast.error(adminMsg(err, 'Failed to remove game')); }
   };
 
   const handleFavorite = async (id) => {
@@ -91,7 +93,7 @@ const PretzelPage = () => {
       setScanResults(res.data.files || []);
       if (res.data.total === 0) toast.info('No ROM files found');
       else toast.success(`Found ${res.data.total} ROM files`);
-    } catch (err) { toast.error(err.response?.data?.message || 'Scan failed'); }
+    } catch (err) { toast.error(adminMsg(err, 'Scan failed')); }
     finally { setScanning(false); }
   };
 
@@ -103,11 +105,11 @@ const PretzelPage = () => {
     try {
       const res = await axios.post(`${API}/api/pretzel/scan/import`, { files });
       toast.success(res.data.message); fetchGames(); fetchStats(); setShowScan(false); setScanResults([]);
-    } catch { toast.error('Import failed'); }
+    } catch (err) { toast.error(adminMsg(err, 'Import failed')); }
   };
 
   const filteredGames = games.filter(g =>
-    !searchQuery || g.title.toLowerCase().includes(searchQuery.toLowerCase())
+    !searchQuery || (g.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // ── Emulator Overlay ──────────────────────────────────────────────

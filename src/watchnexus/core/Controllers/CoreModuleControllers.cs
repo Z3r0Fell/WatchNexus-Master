@@ -20,7 +20,8 @@ namespace WatchNexus.Core.Controllers;
 public class BastionController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public BastionController(AppDbContext db) => _db = db;
+    private readonly WatchNexus.Core.Auth.AuthService _auth;
+    public BastionController(AppDbContext db, WatchNexus.Core.Auth.AuthService auth) { _db = db; _auth = auth; }
 
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
@@ -30,7 +31,10 @@ public class BastionController : ControllerBase
         features = new[] { "ldap", "sso", "two_factor", "session_management", "password_policy" }
     });
 
+    // Server-wide auth config (contains LDAP bind password / SSO client secret):
+    // admin only.
     [HttpGet("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetConfig()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "bastion_config");
@@ -47,6 +51,7 @@ public class BastionController : ControllerBase
     }
 
     [HttpPut("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
         var raw = config.GetRawText();
@@ -59,6 +64,7 @@ public class BastionController : ControllerBase
 
     // ── LDAP ──
     [HttpPost("ldap/test")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> TestLdap([FromBody] JsonElement body)
     {
         var server = body.TryGetProperty("server", out var s) ? s.GetString() ?? "" : "";
@@ -80,6 +86,7 @@ public class BastionController : ControllerBase
     }
 
     [HttpGet("ldap/users")]
+    [Authorize(Roles = "admin")]
     public IActionResult LdapUsers([FromQuery] string filter = "", [FromQuery] int limit = 50) => Ok(new
     {
         total = 0,
@@ -88,6 +95,7 @@ public class BastionController : ControllerBase
     });
 
     [HttpPost("ldap/sync")]
+    [Authorize(Roles = "admin")]
     public IActionResult LdapSync() => Ok(new { status = "initiated", message = "LDAP user sync started", synced = 0 });
 
     // ── 2FA / TOTP ──
@@ -193,11 +201,33 @@ public class BastionController : ControllerBase
         });
     }
 
+    // Sessions are stateless JWTs; the only server-side revocation primitive is
+    // the per-user token version (bumping it invalidates every issued token).
+    // The list above only ever contains "session-current", so revoking it signs
+    // the caller out; any other id doesn't exist.
     [HttpDelete("sessions/{sessionId}")]
-    public IActionResult RevokeSession(string sessionId) => Ok(new { status = "revoked", session_id = sessionId });
+    public async Task<IActionResult> RevokeSession(string sessionId)
+    {
+        if (sessionId != "session-current")
+            return NotFound(new { detail = "Session not found", session_id = sessionId });
+        await WatchNexus.Core.Auth.TokenVersionStore.IncrementAsync(_db, this.UserId());
+        AuthController.ClearAuthCookies(Request, Response);
+        return Ok(new { status = "revoked", session_id = sessionId });
+    }
 
+    // Revoke every other session: invalidate all tokens, then re-issue one for
+    // the caller so the current session survives.
     [HttpPost("sessions/revoke-all")]
-    public IActionResult RevokeAllSessions() => Ok(new { status = "revoked_all", message = "All sessions except current have been revoked" });
+    public async Task<IActionResult> RevokeAllSessions()
+    {
+        var userId = this.UserId();
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null) return NotFound(new { detail = "User not found" });
+        await WatchNexus.Core.Auth.TokenVersionStore.IncrementAsync(_db, userId);
+        var token = _auth.GenerateToken(user);
+        AuthController.WriteAuthCookies(Request, Response, token);
+        return Ok(new { status = "revoked_all", message = "All sessions except current have been revoked", access_token = token });
+    }
 
     // ── Password Policy ──
     [HttpPost("password/validate")]
@@ -220,6 +250,7 @@ public class BastionController : ControllerBase
 
     // ── Audit Log ──
     [HttpGet("audit")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> AuditLog([FromQuery] int limit = 50)
     {
         var entries = await _db.AuditLogs
@@ -304,7 +335,7 @@ public class BastionController : ControllerBase
 // ══════════════════════════════════════════════════════════════════════
 [Route("api/tunnel")]
 [ApiController]
-[Authorize]
+[Authorize] // status is open; everything else (networking, VPN private keys) is admin only
 public class TunnelController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -319,6 +350,7 @@ public class TunnelController : ControllerBase
     });
 
     [HttpGet("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetConfig()
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tunnel_config");
@@ -337,6 +369,7 @@ public class TunnelController : ControllerBase
     }
 
     [HttpPut("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
         var raw = config.GetRawText();
@@ -349,6 +382,7 @@ public class TunnelController : ControllerBase
 
     // ── Network Info ──
     [HttpGet("network-info")]
+    [Authorize(Roles = "admin")]
     public IActionResult NetworkInfo()
     {
         var interfaces = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
@@ -383,6 +417,7 @@ public class TunnelController : ControllerBase
     }
 
     [HttpPost("test-connectivity")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> TestConnectivity()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -408,6 +443,7 @@ public class TunnelController : ControllerBase
 
     // ── VPN Peers ──
     [HttpGet("peers")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetPeers()
     {
         // Real implementation: list peers from the VpnPeer table.
@@ -431,6 +467,7 @@ public class TunnelController : ControllerBase
     }
 
     [HttpPost("peers")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> CreatePeer([FromBody] JsonElement body)
     {
         var name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "New Peer" : "New Peer";
@@ -487,6 +524,7 @@ public class TunnelController : ControllerBase
     }
 
     [HttpDelete("peers/{peerId}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeletePeer(string peerId)
     {
         var peer = await _db.VpnPeers.FindAsync(peerId);
@@ -497,6 +535,7 @@ public class TunnelController : ControllerBase
     }
 
     [HttpPost("peers/{peerId}/toggle")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> TogglePeer(string peerId)
     {
         var peer = await _db.VpnPeers.FindAsync(peerId);
@@ -507,6 +546,7 @@ public class TunnelController : ControllerBase
     }
 
     [HttpGet("peers/{peerId}/config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetPeerConfig(string peerId)
     {
         var peer = await _db.VpnPeers.FindAsync(peerId);
@@ -539,6 +579,7 @@ public class TunnelController : ControllerBase
 
     // ── SSL Certificates ──
     [HttpGet("certificates")]
+    [Authorize(Roles = "admin")]
     public IActionResult Certificates() => Ok(new[]
     {
         new {
@@ -553,6 +594,7 @@ public class TunnelController : ControllerBase
     });
 
     [HttpPost("certificates/generate")]
+    [Authorize(Roles = "admin")]
     public IActionResult GenerateCert([FromBody] JsonElement body)
     {
         var domain = body.TryGetProperty("domain", out var d) ? d.GetString() ?? "localhost" : "localhost";
@@ -562,6 +604,7 @@ public class TunnelController : ControllerBase
 
     // ── Bandwidth Monitoring ──
     [HttpGet("bandwidth")]
+    [Authorize(Roles = "admin")]
     public IActionResult Bandwidth() => Ok(new
     {
         current = new { upload_kbps = 0, download_kbps = 0, connections = 1 },
@@ -578,9 +621,11 @@ public class TunnelController : ControllerBase
 
     // ── Dynamic DNS ──
     [HttpPost("ddns/update")]
+    [Authorize(Roles = "admin")]
     public IActionResult UpdateDDNS() => Ok(new { status = "updated", message = "Dynamic DNS record updated", ip = "auto-detected" });
 
     [HttpGet("ddns/status")]
+    [Authorize(Roles = "admin")]
     public IActionResult DDNSStatus() => Ok(new { enabled = false, last_update = (DateTime?)null, current_ip = "unknown" });
 }
 
@@ -600,7 +645,7 @@ public class FondueController : ControllerBase
     [HttpGet("status")]
     public async Task<IActionResult> Status()
     {
-        var movieCount = await _db.MediaItems.CountAsync(m => m.MediaType == "movies");
+        var movieCount = await LibraryMedia.ForUser(_db, this.UserId()).CountAsync(m => m.MediaType == "movies");
         var monitoredCount = await _db.Settings.CountAsync(s => s.Key.StartsWith("fondue_monitor_"));
         return Ok(new
         {
@@ -614,19 +659,24 @@ public class FondueController : ControllerBase
     [HttpGet("movies")]
     public async Task<IActionResult> GetMovies([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
-        var movies = await _db.MediaItems
-            .Where(m => m.MediaType == "movies")
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 500);
+        // Scoped to the caller's own libraries (libraries are per-user).
+        var mine = LibraryMedia.ForUser(_db, this.UserId()).Where(m => m.MediaType == "movies");
+        var movies = await mine
             .OrderByDescending(m => m.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(m => new { m.Id, m.Title, m.Year, m.TmdbId, m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl, file_path = (string?)null, file_size = m.FileSize, monitored = true })
             .ToListAsync();
-        return Ok(new { page, pageSize, total = await _db.MediaItems.CountAsync(m => m.MediaType == "movies"), movies });
+        return Ok(new { page, pageSize, total = await mine.CountAsync(), movies });
     }
 
     [HttpPost("movies/add")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> AddMovie([FromBody] JsonElement body)
     {
-        var tmdbId = body.TryGetProperty("tmdb_id", out var tid) ? tid.GetInt32() : 0;
+        var tmdbId = body.TryGetProperty("tmdb_id", out var tid) && tid.ValueKind == JsonValueKind.Number && tid.TryGetInt32(out var tv) ? tv : 0;
+        if (tmdbId <= 0) return BadRequest(new { detail = "tmdb_id (number) is required" });
         var title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
         var existing = await _db.MediaItems.AnyAsync(m => m.TmdbId == tmdbId && m.MediaType == "movies");
         if (existing) return Ok(new { status = "already_exists", tmdb_id = tmdbId });
@@ -640,10 +690,14 @@ public class FondueController : ControllerBase
         return Ok(new { status = "added", title, tmdb_id = tmdbId, monitored = true });
     }
 
+    // MediaItem.Id is a GUID string (an int route param never bound, so the
+    // UI's Remove always 400'd). Libraries are per-user: only the owner of the
+    // item's library may remove it.
     [HttpDelete("movies/{id}")]
-    public async Task<IActionResult> RemoveMovie(int id)
+    public async Task<IActionResult> RemoveMovie(string id)
     {
-        var movie = await _db.MediaItems.FindAsync(id);
+        var movie = await LibraryMedia.ForUser(_db, this.UserId())
+            .FirstOrDefaultAsync(m => m.Id == id && m.MediaType == "movies");
         if (movie == null) return NotFound();
         _db.MediaItems.Remove(movie);
         await _db.SaveChangesAsync();
@@ -674,6 +728,7 @@ public class FondueController : ControllerBase
     }
 
     [HttpPut("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
         var raw = config.GetRawText();
@@ -684,7 +739,8 @@ public class FondueController : ControllerBase
     }
 
     [HttpPost("movies/{id}/search")]
-    public IActionResult SearchMovie(int id) => Ok(new { status = "search_initiated", movie_id = id });
+    [Authorize(Roles = "admin")]
+    public IActionResult SearchMovie(string id) => Ok(new { status = "search_initiated", movie_id = id });
 
     [HttpGet("custom-formats")]
     public IActionResult CustomFormats() => Ok(new[]
@@ -700,7 +756,7 @@ public class FondueController : ControllerBase
 // ══════════════════════════════════════════════════════════════════════
 [Route("api/sourdough")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "admin")] // backups / server config: admin only
 public class SourdoughController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -824,6 +880,7 @@ public class TaffyController : ControllerBase
     }
 
     [HttpPut("providers/{providerId}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UpdateProvider(string providerId, [FromBody] JsonElement config)
     {
         var key = $"taffy_provider_{providerId}";
@@ -846,6 +903,7 @@ public class TaffyController : ControllerBase
     });
 
     [HttpPut("agent-priority")]
+    [Authorize(Roles = "admin")]
     public IActionResult UpdatePriority([FromBody] JsonElement body) => Ok(new { status = "saved" });
 
     [HttpGet("language")]
@@ -856,6 +914,7 @@ public class TaffyController : ControllerBase
     }
 
     [HttpPut("language")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UpdateLanguage([FromBody] JsonElement body)
     {
         var lang = body.TryGetProperty("language", out var l) ? l.GetString() ?? "en" : "en";
@@ -886,37 +945,80 @@ public class ChurroController : ControllerBase
         features = new[] { "torrent_clients", "usenet_clients", "health_check", "category_management", "priority_management" }
     });
 
+    // The only real download-client integration is qBittorrent, configured per
+    // user in the `qbit_config` row (written by Crumbs / Settings → Downloads).
+    // These endpoints report and act on that row instead of fake data.
+    private const string QbitId = "qbittorrent";
+
+    private Task<AppSetting?> QbitRowAsync()
+    {
+        var uid = this.UserId();
+        return _db.Settings.FirstOrDefaultAsync(s => s.Key == "qbit_config" && s.UserId == uid);
+    }
+
     [HttpGet("clients")]
     public async Task<IActionResult> GetClients()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "churro_clients");
-        if (setting?.Value != null)
-        {
-            try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
-        }
+        var cfg = WatchNexus.Core.Services.QBittorrentClient.ParseConfig((await QbitRowAsync())?.Value);
+        if (cfg == null) return Ok(Array.Empty<object>());
         return Ok(new[]
         {
-            new { id = "qbit-default", name = "qBittorrent", type = "torrent", client = "qbittorrent",
-                  host = "localhost", port = 8080, enabled = true, priority = 1, categories = new[] { "movies", "tv", "music" } },
+            new { id = QbitId, name = "qBittorrent", type = "torrent", client = QbitId,
+                  host = cfg.Host, port = cfg.Port, enabled = true, priority = 1, categories = Array.Empty<string>() },
         });
     }
 
-    [HttpPost("clients")]
-    public async Task<IActionResult> AddClient([FromBody] JsonElement client)
+    private ObjectResult NotSupported() => StatusCode(StatusCodes.Status501NotImplemented, new
     {
-        var id = Guid.NewGuid().ToString("N")[..8];
-        var name = client.TryGetProperty("name", out var n) ? n.GetString() ?? "New Client" : "New Client";
-        return Ok(new { status = "added", id, name });
-    }
+        error = "Configure download clients in Settings → Downloads (qBittorrent).",
+        code = "not_supported"
+    });
+
+    [HttpPost("clients")]
+    public IActionResult AddClient([FromBody] JsonElement client) => NotSupported();
 
     [HttpPut("clients/{clientId}")]
-    public IActionResult UpdateClient(string clientId, [FromBody] JsonElement config) => Ok(new { status = "saved", id = clientId });
+    public IActionResult UpdateClient(string clientId, [FromBody] JsonElement config) => NotSupported();
 
     [HttpDelete("clients/{clientId}")]
-    public IActionResult DeleteClient(string clientId) => Ok(new { status = "removed", id = clientId });
+    public async Task<IActionResult> DeleteClient(string clientId)
+    {
+        if (clientId != QbitId) return NotFound(new { detail = "Client not found" });
+        var uid = this.UserId();
+        var rows = await _db.Settings
+            .Where(s => s.UserId == uid && (s.Key == "qbit_config" || s.Key == "crumbs:qbittorrent"))
+            .ToListAsync();
+        if (rows.Count == 0) return NotFound(new { detail = "Client not found" });
+        _db.Settings.RemoveRange(rows);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "removed", id = clientId });
+    }
 
     [HttpPost("clients/{clientId}/test")]
-    public IActionResult TestClient(string clientId) => Ok(new { status = "ok", client_id = clientId, response_time_ms = 42, message = "Connection successful" });
+    public async Task<IActionResult> TestClient(string clientId, CancellationToken ct)
+    {
+        if (clientId != QbitId) return NotFound(new { detail = "Client not found" });
+        var cfg = WatchNexus.Core.Services.QBittorrentClient.ParseConfig((await QbitRowAsync())?.Value);
+        if (cfg == null) return NotFound(new { detail = "qBittorrent is not configured" });
+        var client = new WatchNexus.Core.Services.QBittorrentClient(this.Http(), cfg);
+        if (client.HostBlocked)
+            return BadRequest(new { status = "error", client_id = clientId, message = "The configured qBittorrent host is not allowed." });
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            if (!await client.LoginAsync(ct))
+                return StatusCode(StatusCodes.Status502BadGateway, new { status = "error", client_id = clientId, message = "qBittorrent rejected the saved credentials." });
+            var version = await client.GetVersionAsync(ct);
+            sw.Stop();
+            if (version == null)
+                return StatusCode(StatusCodes.Status502BadGateway, new { status = "error", client_id = clientId, message = "qBittorrent did not respond." });
+            return Ok(new { status = "ok", client_id = clientId, response_time_ms = sw.ElapsedMilliseconds, message = $"Connected to qBittorrent {version}" });
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { status = "error", client_id = clientId, message = $"Could not reach qBittorrent: {ex.Message}" });
+        }
+    }
 
     [HttpGet("categories")]
     public IActionResult Categories() => Ok(new[]
@@ -973,12 +1075,15 @@ public class SaffronController : ControllerBase
     }
 
     [HttpPost("tasks/{taskId}/run")]
+    [Authorize(Roles = "admin")]
     public IActionResult RunTask(string taskId) => Ok(new { status = "started", task_id = taskId, message = $"Task '{taskId}' started" });
 
     [HttpPost("tasks/{taskId}/stop")]
+    [Authorize(Roles = "admin")]
     public IActionResult StopTask(string taskId) => Ok(new { status = "stopped", task_id = taskId });
 
     [HttpPut("tasks/{taskId}/triggers")]
+    [Authorize(Roles = "admin")]
     public IActionResult UpdateTriggers(string taskId, [FromBody] JsonElement triggers) => Ok(new { status = "saved", task_id = taskId });
 
     [HttpGet("history")]
@@ -991,7 +1096,7 @@ public class SaffronController : ControllerBase
 // ══════════════════════════════════════════════════════════════════════
 [Route("api/pantry")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "admin")] // server disk paths / library roots: admin only
 public class PantryController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -1200,6 +1305,7 @@ public class NutmegController : ControllerBase
     }
 
     [HttpPut("config")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
         var raw = config.GetRawText();

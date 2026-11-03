@@ -28,6 +28,24 @@ const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
   </motion.div>
 );
 
+// /truffle/stats has no movies_watched/episodes_watched — derive them from
+// by_media_type. /truffle/recent rows are camelCase PlayEvent projections.
+export const deriveTypeCounts = (stats) => {
+  const rows = Array.isArray(stats?.by_media_type) ? stats.by_media_type : [];
+  const count = (types) => rows.filter(r => types.includes(String(r.type || '').toLowerCase())).reduce((n, r) => n + (r.count || 0), 0);
+  return {
+    movies: stats?.movies_watched ?? count(['movie', 'movies']),
+    episodes: stats?.episodes_watched ?? count(['tv', 'episode', 'episodes', 'show']),
+  };
+};
+
+export const normalizeRecent = (item) => ({
+  ...item,
+  media_type: item.media_type ?? item.mediaType,
+  played_at: item.played_at ?? item.startedAt ?? item.started_at ?? item.timestamp,
+  duration_minutes: item.duration_minutes ?? (item.durationSeconds ? Math.round(item.durationSeconds / 60) : undefined),
+});
+
 export const AnalyticsPage = () => {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
@@ -41,7 +59,7 @@ export const AnalyticsPage = () => {
         axios.get(`${API}/api/truffle/recent?limit=20`, { headers }),
       ]);
       setStats(statsRes.data);
-      setRecent(recentRes.data);
+      setRecent(Array.isArray(recentRes.data) ? recentRes.data.map(normalizeRecent) : []);
     } catch (e) {
       console.error('Analytics fetch error:', e);
     } finally {
@@ -86,8 +104,8 @@ export const AnalyticsPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard icon={PlayCircle} label="Total Plays" value={stats.total_plays} color="bg-violet-600" delay={0} />
               <StatCard icon={Clock} label="Watch Hours" value={`${stats.total_watch_hours?.toFixed(1) ?? 0}h`} color="bg-blue-600" delay={0.05} />
-              <StatCard icon={Film} label="Movies" value={stats.movies_watched} color="bg-pink-600" delay={0.1} />
-              <StatCard icon={Tv} label="Episodes" value={stats.episodes_watched} color="bg-emerald-600" delay={0.15} />
+              <StatCard icon={Film} label="Movies" value={deriveTypeCounts(stats).movies} color="bg-pink-600" delay={0.1} />
+              <StatCard icon={Tv} label="Episodes" value={deriveTypeCounts(stats).episodes} color="bg-emerald-600" delay={0.15} />
             </div>
 
             {stats.top_genres && stats.top_genres.length > 0 && (

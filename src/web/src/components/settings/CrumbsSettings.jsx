@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key, CheckCircle, XCircle, RefreshCw, Eye, EyeOff, Trash2,
@@ -26,6 +26,10 @@ export const CrumbsSettings = () => {
   const [testing, setTesting] = useState(null);
   const [showSecrets, setShowSecrets] = useState({});
   const [testResults, setTestResults] = useState({});
+  // Id of the service whose fields were requested last, so a slow response for a
+  // previously-clicked service can't overwrite the editor (and get saved under
+  // the wrong service).
+  const editorRequestRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -51,11 +55,18 @@ export const CrumbsSettings = () => {
   const openEditor = async (service) => {
     setSelectedService(service);
     setShowSecrets({});
+    setEditFields({});
+    editorRequestRef.current = service.id;
+    const isConfigured = !!getConfigFor(service.id);
     try {
       const res = await axios.get(`${API}/${service.id}/fields`);
-      setEditFields(res.data.fields || {});
-      setEditEnabled(res.data.enabled !== false);
+      if (editorRequestRef.current !== service.id) return;
+      setEditFields(res.data?.fields || {});
+      // The backend reports enabled=false for services that were never saved;
+      // default new configurations to enabled.
+      setEditEnabled(isConfigured ? res.data?.enabled !== false : true);
     } catch {
+      if (editorRequestRef.current !== service.id) return;
       setEditFields({});
       setEditEnabled(true);
     }
@@ -101,7 +112,7 @@ export const CrumbsSettings = () => {
     try {
       await axios.delete(`${API}/${serviceId}`);
       toast.success('Configuration removed');
-      if (selectedService?.id === serviceId) setSelectedService(null);
+      if (selectedService?.id === serviceId) { setSelectedService(null); editorRequestRef.current = null; }
       await fetchData();
     } catch {
       toast.error('Failed to remove');
@@ -125,6 +136,7 @@ export const CrumbsSettings = () => {
 
   return (
     <div data-testid="crumbs-settings" className="space-y-6">
+      <ConfirmDialog />
       {/* Header */}
       <div className="glass-card rounded-xl p-6">
         <div className="flex items-center gap-3 mb-2">

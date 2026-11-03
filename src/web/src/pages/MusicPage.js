@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { marmaladeLibrary, marmaladeMedia, marmaladeStream, formatDuration } from '../services/marmaladeApi';
@@ -24,6 +24,9 @@ export const MusicPage = () => {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState(null);
+  // The audio 'ended' listener is registered once; it reads the latest
+  // next-track handler through this ref instead of a stale first-render closure.
+  const nextTrackRef = useRef(() => {});
   
   // Show add library form
   const [showAddLibrary, setShowAddLibrary] = useState(false);
@@ -60,7 +63,7 @@ export const MusicPage = () => {
     audio.addEventListener('ended', () => {
       setIsPlaying(false);
       // Auto-play next track
-      handleNextTrack();
+      nextTrackRef.current();
     });
     setAudioElement(audio);
     
@@ -97,7 +100,7 @@ export const MusicPage = () => {
     setScanning(prev => ({ ...prev, [libraryId]: true }));
     try {
       const res = await marmaladeLibrary.scanLibrary(libraryId);
-      toast.success(`Scan complete: ${res.data.new} new tracks found`);
+      toast.success(`Scan complete: ${res.data?.new || 0} new tracks found`);
       fetchData();
     } catch (error) {
       toast.error('Scan failed');
@@ -106,14 +109,19 @@ export const MusicPage = () => {
     }
   };
 
-  const playTrack = (track) => {
+  const playTrack = async (track) => {
     if (!audioElement) return;
-    
-    const streamUrl = marmaladeStream.getStreamUrl(track.id);
-    audioElement.src = streamUrl;
-    audioElement.play();
     setCurrentTrack(track);
-    setIsPlaying(true);
+    try {
+      // getStreamUrl is async: it mints a signed stream token first.
+      const streamUrl = await marmaladeStream.getStreamUrl(track.id);
+      audioElement.src = streamUrl;
+      await audioElement.play();
+      setIsPlaying(true);
+    } catch (error) {
+      setIsPlaying(false);
+      toast.error(error?.response?.data?.detail || 'Failed to play track');
+    }
   };
 
   const togglePlayPause = () => {
@@ -121,10 +129,12 @@ export const MusicPage = () => {
     
     if (isPlaying) {
       audioElement.pause();
+      setIsPlaying(false);
     } else {
-      audioElement.play();
+      audioElement.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => { setIsPlaying(false); toast.error('Failed to play track'); });
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleNextTrack = () => {
@@ -133,6 +143,7 @@ export const MusicPage = () => {
     const nextIndex = (currentIndex + 1) % tracks.length;
     playTrack(tracks[nextIndex]);
   };
+  nextTrackRef.current = handleNextTrack;
 
   const handlePrevTrack = () => {
     if (!currentTrack || tracks.length === 0) return;
@@ -354,7 +365,7 @@ export const MusicPage = () => {
                         </div>
                       </td>
                       <td className="p-3 text-gray-400">{formatDuration(track.duration)}</td>
-                      <td className="p-3 text-gray-400">{formatFileSize(track.size)}</td>
+                      <td className="p-3 text-gray-400">{formatFileSize(track.size ?? track.file_size ?? 0)}</td>
                       <td className="p-3 text-gray-400 uppercase">{track.container || track.codec_audio}</td>
                     </tr>
                   ))}

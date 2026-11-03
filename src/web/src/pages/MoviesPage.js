@@ -142,7 +142,9 @@ export const MoviesPage = () => {
     setLoading(true);
     try {
       const response = await tmdbApi.discover('movie', {
-        page, genre: selectedGenre, sort_by: sortBy,
+        // The backend's /tmdb/discover binds TMDB's `with_genres`; `genre` is
+        // kept only for existing callers/tests and is ignored server-side.
+        page, genre: selectedGenre, with_genres: selectedGenre, sort_by: sortBy,
       });
       if (page === 1) setMovies(response.data.results || []);
       else setMovies(prev => [...prev, ...(response.data.results || [])]);
