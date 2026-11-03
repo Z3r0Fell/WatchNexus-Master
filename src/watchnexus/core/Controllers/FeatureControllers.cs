@@ -198,12 +198,28 @@ public class MilkController : ControllerBase
     public async Task<IActionResult> CustomTheme([FromBody] JsonElement body)
     {
         var userId = this.UserId();
-        var css = body.TryGetProperty("custom_css", out var c) ? c.GetString() ?? "" : "";
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_css");
-        if (existing != null) existing.Value = css;
-        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "custom_css", Value = css, UserId = userId });
+        // Only touch custom_css when the caller sent it — the theme UIs post
+        // { name, colors } and previously wiped the user's CSS every time.
+        if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("custom_css", out var c))
+        {
+            var css = c.ValueKind == JsonValueKind.String ? c.GetString() ?? "" : "";
+            var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_css");
+            if (existing != null) existing.Value = css;
+            else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "custom_css", Value = css, UserId = userId });
+        }
+        // Persist colors where theme-forge reads them (custom_theme_colors).
+        object? colors = null;
+        if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("colors", out var col) && col.ValueKind == JsonValueKind.Object)
+        {
+            var raw = col.GetRawText();
+            var existingColors = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_theme_colors");
+            if (existingColors != null) existingColors.Value = raw;
+            else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "custom_theme_colors", Value = raw, UserId = userId });
+            colors = JsonSerializer.Deserialize<object>(raw);
+        }
         await _db.SaveChangesAsync();
-        return Ok(new { status = "saved" });
+        var name = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : null;
+        return Ok(new { status = "saved", theme = colors == null ? null : new { type = "custom", name, colors } });
     }
 
     private static object[] GetThemes() => new object[]
