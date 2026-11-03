@@ -10,7 +10,9 @@ namespace WatchNexus.Core.Controllers;
 
 // ══════════════════════════════════════════════════════════════════════
 // SPROUT — RSS Feed Generator
-// Generates RSS/Atom feeds from library content for external readers
+// Generates RSS/Atom feeds from library content for external readers.
+// Config and feed key are per user; a feed exposes only the key owner's
+// libraries (libraries are strictly per-user).
 // ══════════════════════════════════════════════════════════════════════
 [Route("api/sprout")]
 [ApiController]
@@ -19,6 +21,8 @@ public class SproutController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
     public SproutController(AppDbContext db, IConfiguration config) { _db = db; _config = config; }
+
+    private const string ConfigKey = "sprout_config";
 
     [HttpGet("status")]
     [Authorize]
@@ -33,7 +37,8 @@ public class SproutController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetConfig()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == ConfigKey && s.UserId == uid);
         if (setting?.Value != null)
         {
             try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
@@ -61,10 +66,20 @@ public class SproutController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
-        var raw = config.GetRawText();
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
+        if (config.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "Config must be a JSON object" });
+        var uid = this.UserId();
+        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == ConfigKey && s.UserId == uid);
+
+        // The feed key is only ever minted by generate-key; never accept one from the body.
+        var storedKey = ReadKey(existing?.Value);
+        var dict = new Dictionary<string, JsonElement>();
+        foreach (var prop in config.EnumerateObject())
+            if (prop.Name != "api_key") dict[prop.Name] = prop.Value.Clone();
+        if (!string.IsNullOrEmpty(storedKey)) dict["api_key"] = JsonSerializer.SerializeToElement(storedKey);
+        var raw = JsonSerializer.Serialize(dict);
+
         if (existing != null) existing.Value = raw;
-        else _db.Settings.Add(new AppSetting { UserId = "", Key = "sprout_config", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = uid, Key = ConfigKey, Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -74,24 +89,17 @@ public class SproutController : ControllerBase
     public async Task<IActionResult> ListFeeds()
     {
         var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
-        var apiKey = "";
-        if (setting?.Value != null)
-        {
-            try
-            {
-                var doc = JsonDocument.Parse(setting.Value);
-                if (doc.RootElement.TryGetProperty("api_key", out var ak)) apiKey = ak.GetString() ?? "";
-            }
-            catch { }
-        }
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == ConfigKey && s.UserId == uid);
+        var apiKey = ReadKey(setting?.Value);
+        var media = LibraryMedia.ForUser(_db, uid);
 
-        var keyParam = !string.IsNullOrEmpty(apiKey) ? $"?key={apiKey}" : "";
+        var keyParam = !string.IsNullOrEmpty(apiKey) ? $"?key={Uri.EscapeDataString(apiKey)}" : "";
         return Ok(new[]
         {
-            new { id = "recent", name = "Recently Added", url = $"{baseUrl}/api/sprout/feed/recent{keyParam}", format = "rss", item_count = await _db.MediaItems.CountAsync() },
-            new { id = "movies", name = "Movies", url = $"{baseUrl}/api/sprout/feed/movies{keyParam}", format = "rss", item_count = await _db.MediaItems.CountAsync(m => m.MediaType == "movies") },
-            new { id = "tv", name = "TV Shows", url = $"{baseUrl}/api/sprout/feed/tv{keyParam}", format = "rss", item_count = await _db.MediaItems.CountAsync(m => m.MediaType == "tv") },
+            new { id = "recent", name = "Recently Added", url = $"{baseUrl}/api/sprout/feed/recent{keyParam}", format = "rss", item_count = await media.CountAsync() },
+            new { id = "movies", name = "Movies", url = $"{baseUrl}/api/sprout/feed/movies{keyParam}", format = "rss", item_count = await media.CountAsync(m => m.MediaType == "movies") },
+            new { id = "tv", name = "TV Shows", url = $"{baseUrl}/api/sprout/feed/tv{keyParam}", format = "rss", item_count = await media.CountAsync(m => m.MediaType == "tv") },
         });
     }
 
@@ -120,60 +128,44 @@ public class SproutController : ControllerBase
             .Replace("+", "x").Replace("/", "y").Replace("=", "");
         var key = raw.Length >= 32 ? raw[..32] : raw;
 
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
-        if (setting != null)
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == ConfigKey && s.UserId == uid);
+        var dict = new Dictionary<string, JsonElement>();
+        if (setting?.Value != null)
         {
             try
             {
-                using var doc = JsonDocument.Parse(setting.Value ?? "{}");
-                var dict = new Dictionary<string, JsonElement>();
-                foreach (var prop in doc.RootElement.EnumerateObject())
-                    dict[prop.Name] = prop.Value.Clone();
+                using var doc = JsonDocument.Parse(setting.Value);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                        dict[prop.Name] = prop.Value.Clone();
+            }
+            catch (JsonException) { }
+        }
+        if (!dict.ContainsKey("enabled")) dict["enabled"] = JsonSerializer.SerializeToElement(true);
+        if (!dict.ContainsKey("items_per_feed")) dict["items_per_feed"] = JsonSerializer.SerializeToElement(50);
+        dict["api_key"] = JsonSerializer.SerializeToElement(key);
+        var value = JsonSerializer.Serialize(dict);
 
-                // Build new JSON with api_key injected
-                using var stream = new System.IO.MemoryStream();
-                using (var writer = new Utf8JsonWriter(stream))
-                {
-                    writer.WriteStartObject();
-                    foreach (var kv in dict)
-                    {
-                        if (kv.Key == "api_key") continue;
-                        writer.WritePropertyName(kv.Key);
-                        kv.Value.WriteTo(writer);
-                    }
-                    writer.WriteString("api_key", key);
-                    writer.WriteEndObject();
-                }
-                setting.Value = System.Text.Encoding.UTF8.GetString(stream.ToArray());
-                await _db.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-                setting.Value = JsonSerializer.Serialize(new { enabled = true, api_key = key, items_per_feed = 50 });
-                await _db.SaveChangesAsync();
-            }
-        }
-        else
-        {
-            var config = new { enabled = true, api_key = key, items_per_feed = 50 };
-            _db.Settings.Add(new AppSetting { UserId = "", Key = "sprout_config", Value = JsonSerializer.Serialize(config) });
-            await _db.SaveChangesAsync();
-        }
+        if (setting != null) setting.Value = value;
+        else _db.Settings.Add(new AppSetting { UserId = uid, Key = ConfigKey, Value = value });
+        await _db.SaveChangesAsync();
 
         return Ok(new { status = "generated", api_key = key });
     }
 
-    // ── Public RSS Feed Endpoints (no auth, uses API key) ──
+    // ── Public RSS Feed Endpoints (no auth, uses the owner's feed key) ──
 
     [HttpGet("feed/recent")]
     [AllowAnonymous]
     public async Task<IActionResult> RecentFeed([FromQuery] string? key, [FromQuery] int limit = 50)
     {
-        if (!await ValidateKey(key)) return Unauthorized(new { error = "Invalid or missing API key" });
+        var owner = await ResolveFeedOwner(key);
+        if (owner == null) return Unauthorized(new { error = "Invalid or missing API key" });
 
-        var items = await _db.MediaItems
-            .OrderByDescending(m => m.Id)
-            .Take(limit)
+        var items = await LibraryMedia.ForUser(_db, owner)
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(Math.Clamp(limit, 1, 200))
             .ToListAsync();
 
         return Content(BuildRssFeed("Recently Added - WatchNexus", "Latest additions to the library", items), "application/rss+xml");
@@ -183,12 +175,13 @@ public class SproutController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> MoviesFeed([FromQuery] string? key, [FromQuery] int limit = 50)
     {
-        if (!await ValidateKey(key)) return Unauthorized(new { error = "Invalid or missing API key" });
+        var owner = await ResolveFeedOwner(key);
+        if (owner == null) return Unauthorized(new { error = "Invalid or missing API key" });
 
-        var items = await _db.MediaItems
+        var items = await LibraryMedia.ForUser(_db, owner)
             .Where(m => m.MediaType == "movies")
-            .OrderByDescending(m => m.Id)
-            .Take(limit)
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(Math.Clamp(limit, 1, 200))
             .ToListAsync();
 
         return Content(BuildRssFeed("Movies - WatchNexus", "Movie library feed", items), "application/rss+xml");
@@ -198,33 +191,56 @@ public class SproutController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> TvFeed([FromQuery] string? key, [FromQuery] int limit = 50)
     {
-        if (!await ValidateKey(key)) return Unauthorized(new { error = "Invalid or missing API key" });
+        var owner = await ResolveFeedOwner(key);
+        if (owner == null) return Unauthorized(new { error = "Invalid or missing API key" });
 
-        var items = await _db.MediaItems
+        var items = await LibraryMedia.ForUser(_db, owner)
             .Where(m => m.MediaType == "tv")
-            .OrderByDescending(m => m.Id)
-            .Take(limit)
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(Math.Clamp(limit, 1, 200))
             .ToListAsync();
 
         return Content(BuildRssFeed("TV Shows - WatchNexus", "TV show library feed", items), "application/rss+xml");
     }
 
-    private async Task<bool> ValidateKey(string? key)
+    private static string ReadKey(string? json)
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "sprout_config");
-        if (setting?.Value == null) return true; // No config = no key required
-
+        if (string.IsNullOrEmpty(json)) return "";
         try
         {
-            var doc = JsonDocument.Parse(setting.Value);
-            var requireKey = doc.RootElement.TryGetProperty("require_api_key", out var rk) && rk.GetBoolean();
-            if (!requireKey) return true;
-
-            var storedKey = doc.RootElement.TryGetProperty("api_key", out var ak) ? ak.GetString() : "";
-            if (string.IsNullOrEmpty(storedKey)) return true; // No key set = allow
-            return key == storedKey;
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("api_key", out var ak) && ak.ValueKind == JsonValueKind.String
+                ? ak.GetString() ?? "" : "";
         }
-        catch { return true; }
+        catch (JsonException) { return ""; }
+    }
+
+    /// <summary>
+    /// Maps a feed key to the user who generated it. Fails closed: a missing or
+    /// unknown key, or a disabled config, never grants access (previously a
+    /// missing config/key exposed every user's library anonymously). Values are
+    /// encrypted at rest, so rows are compared in memory, in constant time.
+    /// </summary>
+    private async Task<string?> ResolveFeedOwner(string? key)
+    {
+        if (string.IsNullOrEmpty(key)) return null;
+        var rows = await _db.Settings.Where(s => s.Key == ConfigKey && s.UserId != null && s.UserId != "").ToListAsync();
+        var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
+        foreach (var row in rows)
+        {
+            var stored = ReadKey(row.Value);
+            if (string.IsNullOrEmpty(stored)) continue;
+            if (!System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(stored), keyBytes)) continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(row.Value);
+                if (doc.RootElement.TryGetProperty("enabled", out var en) && en.ValueKind == JsonValueKind.False) return null;
+            }
+            catch (JsonException) { return null; }
+            return row.UserId;
+        }
+        return null;
     }
 
     private string BuildRssFeed(string title, string description, List<MediaItem> items)

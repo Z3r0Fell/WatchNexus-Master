@@ -150,6 +150,49 @@ public class B5Tests
         Assert.Equal("allow", json.GetProperty("rule_type").GetString());
     }
 
+    private static void SeedMedia(AppDbContext db, string owner, string title)
+    {
+        var lib = new Library { UserId = owner, Name = owner + "-lib" };
+        db.Libraries.Add(lib);
+        db.MediaItems.Add(new MediaItem { LibraryId = lib.Id, Title = title, MediaType = "movies" });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task SproutFeed_FailsClosed_AndOnlyShowsKeyOwnersLibrary()
+    {
+        using var db = NewDb();
+        SeedMedia(db, "alice", "AliceMovie");
+        SeedMedia(db, "bob", "BobMovie");
+        var cfg = new ConfigurationBuilder().Build();
+        var anon = new SproutController(db, cfg); SetUser(anon, "");
+        Assert.IsType<UnauthorizedObjectResult>(await anon.RecentFeed(null));
+        Assert.IsType<UnauthorizedObjectResult>(await anon.RecentFeed("nope"));
+
+        var alice = new SproutController(db, cfg); SetUser(alice, "alice");
+        var key = Json(await alice.GenerateApiKey()).GetProperty("api_key").GetString();
+        var feed = Assert.IsType<ContentResult>(await anon.RecentFeed(key)).Content!;
+        Assert.Contains("AliceMovie", feed);
+        Assert.DoesNotContain("BobMovie", feed);
+    }
+
+    [Fact]
+    public async Task Roux_CollectionsAndItemsArePerUser_AndDeleteWorks()
+    {
+        using var db = NewDb();
+        SeedMedia(db, "alice", "AliceMovie");
+        SeedMedia(db, "bob", "BobMovie");
+        var a = new RouxController(db); SetUser(a, "alice");
+        var b = new RouxController(db); SetUser(b, "bob");
+        var created = Json(await a.CreateCollection(JsonSerializer.SerializeToElement(new { name = "Mine" })));
+        var id = created.GetProperty("collection").GetProperty("id").GetString()!;
+        Assert.DoesNotContain("Mine", Json(await b.GetCollections()).GetRawText());
+        Assert.DoesNotContain("AliceMovie", Json(await b.GetCollection("x")).GetRawText());
+        Assert.IsType<NotFoundObjectResult>(await b.DeleteCollection(id));
+        Assert.IsType<OkObjectResult>(await a.DeleteCollection(id));
+        Assert.DoesNotContain("Mine", Json(await a.GetCollections()).GetRawText());
+    }
+
     [Fact]
     public async Task QbitGetConfig_MasksPassword()
     {

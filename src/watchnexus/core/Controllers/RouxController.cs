@@ -30,7 +30,8 @@ public class RouxController : ControllerBase
     [HttpGet("collections")]
     public async Task<IActionResult> GetCollections()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections");
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
         if (setting?.Value != null)
         {
             try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
@@ -58,7 +59,8 @@ public class RouxController : ControllerBase
         var rulesRaw = body.TryGetProperty("rules", out var r) ? r.GetRawText() : "{}";
 
         // Load existing collections
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections");
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
         var collections = new List<object>();
         if (setting?.Value != null)
         {
@@ -70,7 +72,7 @@ public class RouxController : ControllerBase
 
         var raw = JsonSerializer.Serialize(collections);
         if (setting != null) setting.Value = raw;
-        else _db.Settings.Add(new AppSetting { UserId = "", Key = "roux_collections", Value = raw });
+        else _db.Settings.Add(new AppSetting { UserId = uid, Key = "roux_collections", Value = raw });
         await _db.SaveChangesAsync();
 
         return Ok(new { status = "created", collection = newCol });
@@ -80,7 +82,7 @@ public class RouxController : ControllerBase
     public async Task<IActionResult> GetCollection(string collectionId)
     {
         // Try to find collection and populate items from media library
-        var allMedia = await _db.MediaItems
+        var allMedia = await LibraryMedia.ForUser(_db, this.UserId())
             .OrderByDescending(m => m.Id)
             .Take(20)
             .Select(m => new { m.Id, m.Title, m.Year, m.Rating, m.MediaType, poster_url = m.PosterUrl })
@@ -100,8 +102,22 @@ public class RouxController : ControllerBase
         => Ok(new { status = "saved", id = collectionId });
 
     [HttpDelete("collections/{collectionId}")]
-    public IActionResult DeleteCollection(string collectionId)
-        => Ok(new { status = "deleted", id = collectionId });
+    public async Task<IActionResult> DeleteCollection(string collectionId)
+    {
+        // Previously a no-op that reported success, so deleted collections reappeared.
+        var uid = this.UserId();
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
+        if (setting?.Value == null) return NotFound(new { detail = "Collection not found", id = collectionId });
+        List<JsonElement> collections;
+        try { collections = JsonSerializer.Deserialize<List<JsonElement>>(setting.Value) ?? new(); }
+        catch (JsonException) { return NotFound(new { detail = "Collection not found", id = collectionId }); }
+        var remaining = collections.Where(c => !(c.ValueKind == JsonValueKind.Object
+            && c.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String && id.GetString() == collectionId)).ToList();
+        if (remaining.Count == collections.Count) return NotFound(new { detail = "Collection not found", id = collectionId });
+        setting.Value = JsonSerializer.Serialize(remaining);
+        await _db.SaveChangesAsync();
+        return Ok(new { status = "deleted", id = collectionId });
+    }
 
     [HttpPost("collections/{collectionId}/items")]
     public IActionResult AddItem(string collectionId, [FromBody] JsonElement body)
@@ -134,7 +150,7 @@ public class RouxController : ControllerBase
     [HttpPost("filter")]
     public async Task<IActionResult> FilterMedia([FromBody] JsonElement filters)
     {
-        var query = _db.MediaItems.AsQueryable();
+        var query = LibraryMedia.ForUser(_db, this.UserId());
 
         if (filters.TryGetProperty("media_type", out var mt) && mt.GetString() is string mediaType)
             query = query.Where(m => m.MediaType == mediaType);
@@ -148,7 +164,7 @@ public class RouxController : ControllerBase
         if (filters.TryGetProperty("max_year", out var mxy) && mxy.TryGetInt32(out var maxYear))
             query = query.Where(m => m.Year <= maxYear);
 
-        var limit = filters.TryGetProperty("limit", out var l) && l.TryGetInt32(out var lim) ? lim : 50;
+        var limit = filters.TryGetProperty("limit", out var l) && l.TryGetInt32(out var lim) ? Math.Clamp(lim, 1, 500) : 50;
 
         var results = await query
             .OrderByDescending(m => m.Rating)
