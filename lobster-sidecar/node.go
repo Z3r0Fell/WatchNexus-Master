@@ -62,12 +62,13 @@ type NodeState struct {
 }
 
 type Peer struct {
-	Name      string    `json:"name"`
-	DNSName   string    `json:"dns_name"`
-	TailnetIP string    `json:"tailnet_ip"`
-	OS        string    `json:"os"`
-	Online    bool      `json:"online"`
-	LastSeen  time.Time `json:"last_seen"`
+	Name      string `json:"name"`
+	DNSName   string `json:"dns_name"`
+	TailnetIP string `json:"tailnet_ip"`
+	OS        string `json:"os"`
+	Online    bool   `json:"online"`
+	// LastSeen is only reported by control for offline peers; null otherwise.
+	LastSeen *time.Time `json:"last_seen"`
 }
 
 // PairInfo is the JSON shape of POST /api/pair. Joining a Headscale tailnet
@@ -331,11 +332,14 @@ func mapStatus(st *ipnstate.Status, tailnetPort int) NodeState {
 			continue
 		}
 		peer := Peer{
-			Name:     p.HostName,
-			DNSName:  strings.TrimSuffix(p.DNSName, "."),
-			OS:       p.OS,
-			Online:   p.Online,
-			LastSeen: p.LastSeen,
+			Name:    p.HostName,
+			DNSName: strings.TrimSuffix(p.DNSName, "."),
+			OS:      p.OS,
+			Online:  p.Online,
+		}
+		if !p.LastSeen.IsZero() {
+			t := p.LastSeen
+			peer.LastSeen = &t
 		}
 		if peer.Name == "" {
 			peer.Name, _, _ = strings.Cut(peer.DNSName, ".")

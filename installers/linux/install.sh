@@ -81,6 +81,16 @@ cp -r "$SCRIPT_DIR/src/watchnexus/modules/"* "$INSTALL_DIR/bin/modules/" 2>/dev/
 # Lobster is an external DLL module (/api/lobster/*); ModuleLoader needs
 # modules/lobster/WatchNexus.Module.Lobster.dll next to its module.json.
 dotnet publish modules/lobster/WatchNexus.Module.Lobster.csproj -c Release -o "$INSTALL_DIR/bin/modules/lobster"
+# Lobster sidecar (Go/tsnet). Optional: without it Lobster reports
+# "not installed". Needs Go >= 1.27.3 (see lobster-sidecar/go.mod).
+if command -v go &>/dev/null; then
+    mkdir -p "$INSTALL_DIR/bin/lobster-sidecar"
+    (cd "$SCRIPT_DIR/lobster-sidecar" && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
+        -o "$INSTALL_DIR/bin/lobster-sidecar/watchnexus-lobster" .) \
+        || echo -e "  ${YELLOW}WARN${NC}    Lobster sidecar build failed; mesh networking disabled."
+else
+    echo -e "  ${YELLOW}SKIP${NC}    Go not found; Lobster sidecar not built (mesh networking disabled)."
+fi
 
 # Create launcher
 echo "[3/4] Creating launcher..."
@@ -104,6 +114,9 @@ Wants=network-online.target
 [Service]
 Type=simple
 Environment="WATCHNEXUS_PORT=8001"
+# Lobster mesh: set your coordination (Headscale) URL and a pre-auth key.
+#Environment="LOBSTER_CONTROL_URL=https://mesh.example.com"
+#Environment="LOBSTER_AUTH_KEY=<headscale pre-auth key>"
 ExecStart=$HOME/.local/bin/watchnexus
 Restart=always
 RestartSec=5

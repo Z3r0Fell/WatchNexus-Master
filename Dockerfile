@@ -4,10 +4,14 @@
 #            NODE_VERSION=node:22-alpine
 #            DOTNET_SDK_VERSION=10.0
 #            DOTNET_ASPNET_VERSION=10.0-bookworm-slim
+#            GO_VERSION=1.27-alpine (Lobster sidecar)
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Frontend Build ──────────────────────────────────────────
 ARG NODE_VERSION=node:22-alpine
+# Declared before the first FROM so it can be used in a FROM line (the
+# legacy builder requires this too).
+ARG GO_VERSION=1.27-alpine
 FROM ${NODE_VERSION} AS frontend-build
 WORKDIR /build/frontend
 
@@ -18,6 +22,17 @@ COPY frontend/ ./
 # Empty backend URL = same-origin mode for standalone deployment
 ENV REACT_APP_BACKEND_URL=""
 RUN yarn build
+
+# ── Stage 1b: Lobster sidecar (Go, static) ──────────────────────────
+# tsnet-based mesh node supervised by the Lobster module. Built in every
+# tier; Fortress still gates Lobster at runtime.
+FROM golang:${GO_VERSION} AS lobster-build
+WORKDIR /build/lobster-sidecar
+COPY lobster-sidecar/go.mod lobster-sidecar/go.sum ./
+RUN go mod download
+COPY lobster-sidecar/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/watchnexus-lobster . \
+    && /out/watchnexus-lobster -h 2>&1 | grep -q control-url
 
 # ── Stage 2: Backend Build ───────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
@@ -106,6 +121,13 @@ RUN mkdir -p /app/data /app/logs /data/media /data/rips /data/transcoded /data/o
 # ownership on first creation; bind mounts must be chown'd on the host.
 RUN groupadd -r watchnexus && useradd -r -g watchnexus -d /app watchnexus \
     && chown -R watchnexus:watchnexus /app /data
+# Lobster sidecar: root-owned and read-only so the app user cannot replace
+# it. LobsterService looks for <app>/lobster-sidecar/watchnexus-lobster and
+# keeps its state in $WATCHNEXUS_DATA_DIR/lobster (works with read-only rootfs).
+COPY --from=lobster-build /out/watchnexus-lobster /app/lobster-sidecar/watchnexus-lobster
+RUN chown root:root /app/lobster-sidecar /app/lobster-sidecar/watchnexus-lobster \
+    && chmod 0755 /app/lobster-sidecar && chmod 0555 /app/lobster-sidecar/watchnexus-lobster
+
 USER watchnexus
 
 # Environment

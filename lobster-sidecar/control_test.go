@@ -157,10 +157,10 @@ func TestMapStatusRunning(t *testing.T) {
 	if len(got.Peers) != 2 || got.Peers[0].Name != "laptop" || got.Peers[1].Name != "phone" {
 		t.Fatalf("peers not sorted/mapped: %+v", got.Peers)
 	}
-	if got.Peers[0].TailnetIP != "fd7a:115c:a1e0::2" || got.Peers[0].Online || !got.Peers[0].LastSeen.Equal(seen) {
+	if got.Peers[0].TailnetIP != "fd7a:115c:a1e0::2" || got.Peers[0].Online || got.Peers[0].LastSeen == nil || !got.Peers[0].LastSeen.Equal(seen) {
 		t.Errorf("laptop peer: %+v", got.Peers[0])
 	}
-	if !got.Peers[1].Online || got.Peers[1].TailnetIP != "100.64.0.3" || got.Peers[1].OS != "android" {
+	if !got.Peers[1].Online || got.Peers[1].TailnetIP != "100.64.0.3" || got.Peers[1].OS != "android" || got.Peers[1].LastSeen != nil {
 		t.Errorf("phone peer: %+v", got.Peers[1])
 	}
 }
