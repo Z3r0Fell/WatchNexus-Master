@@ -74,12 +74,49 @@ public class B2Tests : IntegrationTestBase
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
+    private async Task<string> SeedMovieAsync(string ownerId)
+    {
+        var lib = await CreateTestLibraryAsync(name: "Lib " + ownerId, userId: ownerId);
+        var item = new WatchNexus.Core.Data.MediaItem { LibraryId = lib.Id, Title = "Owned " + ownerId, MediaType = "movies", FilePath = "" };
+        DbContext.MediaItems.Add(item);
+        await DbContext.SaveChangesAsync();
+        return item.Id;
+    }
+
     [Fact]
-    public async Task FondueDeleteMovie_NonAdmin_Forbidden()
+    public async Task FondueMovies_ScopedToCallersLibraries()
+    {
+        await SeedLicenseAsync("ultra");
+        await SeedMovieAsync("other-user");
+        var mineId = await SeedMovieAsync("test-user");
+        AuthenticateAsUser();
+        var json = await DeserializeResponseElement(await Client.GetAsync("/api/fondue/movies"));
+        Assert.Equal(1, json.GetProperty("total").GetInt32());
+        var movies = json.GetProperty("movies");
+        Assert.Equal(1, movies.GetArrayLength());
+        Assert.Equal(mineId, movies[0].GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task FondueDeleteMovie_OtherUsersItem_NotFound_OwnItem_Ok()
+    {
+        await SeedLicenseAsync("ultra");
+        var theirs = await SeedMovieAsync("other-user");
+        var mine = await SeedMovieAsync("test-user");
+        AuthenticateAsUser();
+        Assert.Equal(HttpStatusCode.NotFound, (await Client.DeleteAsync($"/api/fondue/movies/{theirs}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Client.DeleteAsync($"/api/fondue/movies/{mine}")).StatusCode);
+        DbContext.ChangeTracker.Clear();
+        Assert.True(await DbContext.MediaItems.AnyAsync(m => m.Id == theirs));
+        Assert.False(await DbContext.MediaItems.AnyAsync(m => m.Id == mine));
+    }
+
+    [Fact]
+    public async Task FondueConfigPut_NonAdmin_Forbidden()
     {
         await SeedLicenseAsync("ultra");
         AuthenticateAsUser();
-        var resp = await Client.DeleteAsync("/api/fondue/movies/1");
+        var resp = await Client.PutAsync("/api/fondue/config", Json(new { auto_search = false }));
         Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
     }
 

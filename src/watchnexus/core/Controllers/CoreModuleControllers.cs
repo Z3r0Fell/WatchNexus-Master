@@ -645,7 +645,7 @@ public class FondueController : ControllerBase
     [HttpGet("status")]
     public async Task<IActionResult> Status()
     {
-        var movieCount = await _db.MediaItems.CountAsync(m => m.MediaType == "movies");
+        var movieCount = await LibraryMedia.ForUser(_db, this.UserId()).CountAsync(m => m.MediaType == "movies");
         var monitoredCount = await _db.Settings.CountAsync(s => s.Key.StartsWith("fondue_monitor_"));
         return Ok(new
         {
@@ -661,13 +661,14 @@ public class FondueController : ControllerBase
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 500);
-        var movies = await _db.MediaItems
-            .Where(m => m.MediaType == "movies")
+        // Scoped to the caller's own libraries (libraries are per-user).
+        var mine = LibraryMedia.ForUser(_db, this.UserId()).Where(m => m.MediaType == "movies");
+        var movies = await mine
             .OrderByDescending(m => m.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(m => new { m.Id, m.Title, m.Year, m.TmdbId, m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl, file_path = (string?)null, file_size = m.FileSize, monitored = true })
             .ToListAsync();
-        return Ok(new { page, pageSize, total = await _db.MediaItems.CountAsync(m => m.MediaType == "movies"), movies });
+        return Ok(new { page, pageSize, total = await mine.CountAsync(), movies });
     }
 
     [HttpPost("movies/add")]
@@ -689,11 +690,14 @@ public class FondueController : ControllerBase
         return Ok(new { status = "added", title, tmdb_id = tmdbId, monitored = true });
     }
 
+    // MediaItem.Id is a GUID string (an int route param never bound, so the
+    // UI's Remove always 400'd). Libraries are per-user: only the owner of the
+    // item's library may remove it.
     [HttpDelete("movies/{id}")]
-    [Authorize(Roles = "admin")]
-    public async Task<IActionResult> RemoveMovie(int id)
+    public async Task<IActionResult> RemoveMovie(string id)
     {
-        var movie = await _db.MediaItems.FindAsync(id);
+        var movie = await LibraryMedia.ForUser(_db, this.UserId())
+            .FirstOrDefaultAsync(m => m.Id == id && m.MediaType == "movies");
         if (movie == null) return NotFound();
         _db.MediaItems.Remove(movie);
         await _db.SaveChangesAsync();
@@ -736,7 +740,7 @@ public class FondueController : ControllerBase
 
     [HttpPost("movies/{id}/search")]
     [Authorize(Roles = "admin")]
-    public IActionResult SearchMovie(int id) => Ok(new { status = "search_initiated", movie_id = id });
+    public IActionResult SearchMovie(string id) => Ok(new { status = "search_initiated", movie_id = id });
 
     [HttpGet("custom-formats")]
     public IActionResult CustomFormats() => Ok(new[]
