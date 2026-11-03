@@ -56,19 +56,23 @@ describe('Race Condition Tests', () => {
   describe('Concurrent Login + Tier Fetch + Theme Load', () => {
     test('all three contexts initialize concurrently without race conditions', async () => {
       let resolveAuth, resolveLicense, resolveThemePref, resolveThemeForge, resolveThemeSettings
-      
+
       const authPromise = new Promise(resolve => { resolveAuth = resolve; })
       const licensePromise = new Promise(resolve => { resolveLicense = resolve; })
       const themePrefPromise = new Promise(resolve => { resolveThemePref = resolve; })
       const themeForgePromise = new Promise(resolve => { resolveThemeForge = resolve; })
       const themeSettingsPromise = new Promise(resolve => { resolveThemeSettings = resolve; })
 
-      axios.get
-        .mockImplementation(() => authPromise)                    // Auth: /users/me
-        .mockImplementationOnce(() => licensePromise)             // License: /api/cellar/status
-        .mockImplementationOnce(() => themePrefPromise)           // Theme: /api/user/preferences
-        .mockImplementationOnce(() => themeForgePromise)          // Theme: /api/milk/theme-forge
-        .mockImplementation(() => themeSettingsPromise);          // Theme: /api/settings
+      // Answer by URL: the providers' request order is not deterministic (and
+      // LicenseProvider re-fetches once auth resolves).
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/users/me')) return authPromise
+        if (url.includes('/cellar/status')) return licensePromise
+        if (url.includes('/user/preferences')) return themePrefPromise
+        if (url.includes('/milk/theme-forge')) return themeForgePromise
+        if (url.includes('/api/settings')) return themeSettingsPromise
+        return Promise.reject({ response: { status: 404 } })
+      })
 
       const Probe = () => {
         const auth = useAuth()
@@ -124,15 +128,15 @@ describe('Race Condition Tests', () => {
     test('login while tier fetch in progress - both complete correctly', async () => {
       let resolveTierFetch
       const tierFetchPromise = new Promise(resolve => { resolveTierFetch = resolve; })
-      
+
       axios.get
         .mockRejectedValueOnce({ response: { status: 401 } })     // Auth initial
         .mockImplementationOnce(() => tierFetchPromise);            // License initial
 
       let authRef, licenseRef
-      const Grab = () => { 
-        authRef = useAuth(); 
-        licenseRef = useLicense(); 
+      const Grab = () => {
+        authRef = useAuth();
+        licenseRef = useLicense();
         return (
           <div>
             <div data-testid="auth-state">{String(authRef.isAuthenticated)}</div>
@@ -173,7 +177,7 @@ describe('Race Condition Tests', () => {
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: null } })
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
-      
+
       // Track put calls
       const putCalls = []
       axios.put.mockImplementation((...args) => {
@@ -182,8 +186,8 @@ describe('Race Condition Tests', () => {
       })
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="mode">{themeRef.mode}</div>
@@ -196,12 +200,18 @@ describe('Race Condition Tests', () => {
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
 
       // Rapid toggles
+      // (jest 27 has no advanceTimersByTimeAsync)
+      const tick = async () => { jest.advanceTimersByTime(10); await Promise.resolve() }
       await act(async () => {
-        themeRef.toggleMode(); // dark -> light
-        await jest.advanceTimersByTimeAsync(10)
-        themeRef.toggleMode(); // light -> dark
-        await jest.advanceTimersByTimeAsync(10)
-        themeRef.toggleMode(); // dark -> light
+        await themeRef.toggleMode(); // dark -> light
+        await tick()
+      })
+      await act(async () => {
+        await themeRef.toggleMode(); // light -> dark
+        await tick()
+      })
+      await act(async () => {
+        await themeRef.toggleMode(); // dark -> light
       })
 
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('light'))
@@ -209,7 +219,8 @@ describe('Race Condition Tests', () => {
       // Should have made 3 put calls (no debouncing in current implementation)
       // This documents current behavior - could be improved with debouncing
       expect(putCalls.length).toBe(3)
-      expect(putCalls[2][2].params.theme_mode).toBe('light')
+      // PUT body is the merged prefs blob
+      expect(putCalls[2][1].theme_mode).toBe('light')
     })
 
     test('rapid toggleMode with backend failures - local state still consistent', async () => {
@@ -217,14 +228,14 @@ describe('Race Condition Tests', () => {
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: null } })
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
-      
+
       axios.put
         .mockRejectedValueOnce(new Error('Network error'))  // First toggle fails
         .mockResolvedValue({ data: {} });                    // Subsequent succeed
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="mode">{themeRef.mode}</div>
@@ -257,7 +268,7 @@ describe('Race Condition Tests', () => {
     test('auth state change does not interfere with WebSocket reconnection', async () => {
       // This tests the interaction between AuthContext and potential WebSocket hooks
       // Current codebase doesn't have useWebSocket hook, but documents expected behavior
-      
+
       axios.get.mockResolvedValueOnce({ data: { Id: '1', Username: 'owner' } })
 
       const Probe = () => {
@@ -270,14 +281,15 @@ describe('Race Condition Tests', () => {
         )
       }
 
-      render(<AuthProvider><Probe /></AuthProvider>)
+      let authRef
+      const Grab = () => { authRef = useAuth(); return null }
+      render(<AuthProvider><Probe /><Grab /></AuthProvider>)
       await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('true'))
 
       // Simulate auth token refresh during WebSocket reconnect
       axios.get.mockResolvedValueOnce({ data: { Id: '1', Username: 'owner', Email: 'new@test.com' } })
       await act(async () => {
-        const auth = useAuth()
-        await auth.loginWithToken('new-token', null)
+        await authRef.loginWithToken('new-token', null)
       })
 
       await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('true'))
@@ -308,7 +320,8 @@ describe('Race Condition Tests', () => {
           key: 'watchnexus_theme_mode',
           newValue: 'light',
           oldValue: 'dark',
-          storageArea: localStorage
+          // storageArea omitted: jsdom only accepts a real Storage, and
+          // localStorage is a jest mock in setupTests
         }))
       })
 
@@ -354,8 +367,8 @@ describe('Race Condition Tests', () => {
         .mockResolvedValue({ data: { sidebar_entries: [] } }); // hooks
 
       let gadgetRef
-      const Grab = () => { 
-        gadgetRef = useGadgets(); 
+      const Grab = () => {
+        gadgetRef = useGadgets();
         return (
           <div>
             <div data-testid="count">{gadgetRef.installed.length}</div>
@@ -392,33 +405,31 @@ describe('Race Condition Tests', () => {
   describe('Concurrent API Calls in Services', () => {
     test('api.js interceptor handles concurrent requests', async () => {
       const apiModule = require('../../services/api')
-      
-      // Simulate concurrent requests
-      const promises = Array(10).fill(null).map((_, i) => 
-        Promise.resolve({ data: { id: i } })
+
+      // axios is mocked, so apiClient is a mock instance: answer per URL
+      apiModule.apiClient.get.mockImplementation((url) =>
+        Promise.resolve({ data: { id: Number(url.split('/').pop()) } })
       )
-      
-      axios.get.mockImplementation(() => promises.shift())
-      
+
       const results = await Promise.all(
         Array(10).fill(null).map((_, i) => apiModule.apiClient.get(`/test/${i}`))
       )
-      
+
       expect(results.length).toBe(10)
       results.forEach((r, i) => expect(r.data.id).toBe(i))
     })
 
     test('marmaladeApi concurrent requests use shared axios instance', async () => {
       const marmaladeModule = require('../../services/marmaladeApi')
-      
+
       axios.get.mockResolvedValue({ data: { success: true } })
-      
+
       const promises = [
         marmaladeModule.marmaladeLibrary.getLibraries(),
         marmaladeModule.marmaladeMedia.getMedia(),
         marmaladeModule.marmaladeStatus.getStatus()
       ]
-      
+
       const results = await Promise.all(promises)
       expect(results.length).toBe(3)
     })
@@ -432,8 +443,8 @@ describe('Race Condition Tests', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="mode">{themeRef.mode}</div>
