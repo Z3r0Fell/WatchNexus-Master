@@ -1,15 +1,29 @@
-version: "3.8"
-
+# Lobster coordination server: Headscale + Postgres.
+#   HEADSCALE_SERVER_URL=https://mesh.example.com HEADSCALE_DB_PASSWORD=... \
+#     docker compose up -d
+# For a single small deployment, docker-compose.sqlite.yml is simpler.
 services:
   headscale:
-    image: headscale/headscale:1.67
+    image: headscale/headscale:0.29.7
     container_name: lobster-headscale
+    command: serve
+    depends_on:
+      headscale-postgres:
+        condition: service_healthy
     volumes:
-      - ./config:/etc/headscale
+      - ./config:/etc/headscale:ro
       - headscale-data:/var/lib/headscale
     environment:
-      - HEADSCALE_PORT=8080
-    command: headscale serve
+      - HEADSCALE_SERVER_URL=${HEADSCALE_SERVER_URL:?set HEADSCALE_SERVER_URL to the public https URL}
+      - HEADSCALE_DATABASE_TYPE=postgres
+      - HEADSCALE_DATABASE_POSTGRES_HOST=headscale-postgres
+      - HEADSCALE_DATABASE_POSTGRES_PORT=5432
+      - HEADSCALE_DATABASE_POSTGRES_NAME=headscale
+      - HEADSCALE_DATABASE_POSTGRES_USER=headscale
+      - HEADSCALE_DATABASE_POSTGRES_PASS=${HEADSCALE_DB_PASSWORD:?set HEADSCALE_DB_PASSWORD}
+    ports:
+      # Reverse proxy (TLS) on the host forwards to this; never expose it raw.
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
     networks:
       - lobster-net
@@ -21,8 +35,13 @@ services:
       - headscale-db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=headscale
-      - POSTGRES_PASSWORD=${HEADSCALE_DB_PASSWORD:-headscale}
+      - POSTGRES_PASSWORD=${HEADSCALE_DB_PASSWORD:?set HEADSCALE_DB_PASSWORD}
       - POSTGRES_DB=headscale
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U headscale -d headscale"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
     networks:
       - lobster-net

@@ -2,169 +2,143 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
-	"math/big"
 	"net"
 	"net/http"
-	"os"
-	"sync"
 	"time"
 )
 
-const (
-	controlKeyEnv = "LOBSTER_CONTROL_KEY"
-	defaultKey    = "lobster-control-default-change-me"
-)
-
+// ControlServer is the sidecar's local control API. It binds to loopback
+// only and every endpoint requires the X-Control-Key header.
 type ControlServer struct {
-	port     int
-	server   *http.Server
-	state    NodeState
-	stateMu  sync.RWMutex
-controlKey string
+	addr    string
+	keyHash [32]byte
+	node    NodeController
+	server  *http.Server
 }
 
-type NodeState struct {
-	Status     string    `json:"status"`
-	Hostname   string    `json:"hostname"`
-	TailnetIP  string    `json:"tailnet_ip"`
-	Online     bool      `json:"online"`
-	LastSeen   time.Time `json:"last_seen"`
-	Peers      []Peer    `json:"peers"`
-	PairCode   string    `json:"pair_code"`
-}
-
-type Peer struct {
-	Name      string    `json:"name"`
-	TailnetIP string    `json:"tailnet_ip"`
-	Online    bool      `json:"online"`
-	LastSeen  time.Time `json:"last_seen"`
-}
-
-func NewControlServer(port int) *ControlServer {
-	key := os.Getenv(controlKeyEnv)
-	if key == "" {
-		key = defaultKey
+func NewControlServer(addr, key string, node NodeController) *ControlServer {
+	c := &ControlServer{addr: addr, keyHash: sha256.Sum256([]byte(key)), node: node}
+	c.server = &http.Server{
+		Addr:              addr,
+		Handler:           c.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		MaxHeaderBytes:    16 << 10,
 	}
-	return &ControlServer{
-		port:       port,
-		controlKey: key,
-		state:      NodeState{Status: "stopped", Online: false},
-	}
+	return c
 }
 
-func (c *ControlServer) Start() error {
+func (c *ControlServer) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/status", c.handleStatus)
-	mux.HandleFunc("/api/start", c.requireControlKey(c.handleStart))
-	mux.HandleFunc("/api/stop", c.requireControlKey(c.handleStop))
-	mux.HandleFunc("/api/peers", c.requireControlKey(c.handlePeers))
-	mux.HandleFunc("/api/pair", c.requireControlKey(c.handlePair))
+	mux.HandleFunc("/api/status", c.method(http.MethodGet, c.handleStatus))
+	mux.HandleFunc("/api/peers", c.method(http.MethodGet, c.handlePeers))
+	mux.HandleFunc("/api/start", c.method(http.MethodPost, c.handleStart))
+	mux.HandleFunc("/api/stop", c.method(http.MethodPost, c.handleStop))
+	mux.HandleFunc("/api/pair", c.method(http.MethodPost, c.handlePair))
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		// Unauthenticated liveness probe; reveals nothing.
+		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	})
+	return c.requireControlKey(mux)
+}
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", c.port))
+func (c *ControlServer) ListenAndServe() error {
+	ln, err := net.Listen("tcp", c.addr)
 	if err != nil {
 		return err
 	}
-	log.Printf("[Lobster] Control API listening on %s", ln.Addr())
-
-	c.server = &http.Server{
-		Addr:         fmt.Sprintf("127.0.0.1:%d", c.port),
-		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1 MB
-	}
+	log.Printf("[Lobster] control API listening on %s", ln.Addr())
 	return c.server.Serve(ln)
 }
 
-func (c *ControlServer) Shutdown() {
-	if c.server != nil {
-		_ = c.server.Shutdown(context.Background())
-	}
+func (c *ControlServer) Shutdown(ctx context.Context) {
+	_ = c.server.Shutdown(ctx)
 }
 
-func (c *ControlServer) requireControlKey(next http.HandlerFunc) http.HandlerFunc {
+// requireControlKey rejects any request (except the liveness probe) whose
+// X-Control-Key does not match. Both sides are hashed first so the
+// comparison is constant-time and does not leak the key length.
+func (c *ControlServer) requireControlKey(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/healthz" {
+			got := sha256.Sum256([]byte(r.Header.Get("X-Control-Key")))
+			if subtle.ConstantTimeCompare(got[:], c.keyHash[:]) != 1 {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (c *ControlServer) method(m string, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Control-Key") != c.controlKey {
-			// Status must be set before the body is written, otherwise Go
-			// sends an implicit 200 and the WriteHeader call is ignored.
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+		if r.Method != m {
+			w.Header().Set("Allow", m)
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 			return
 		}
-		next(w, r)
+		h(w, r)
 	}
-}
-
-func (c *ControlServer) SetState(s NodeState) {
-	c.stateMu.Lock()
-	c.state = s
-	c.stateMu.Unlock()
-}
-
-func (c *ControlServer) GetState() NodeState {
-	c.stateMu.RLock()
-	defer c.stateMu.RUnlock()
-	return c.state
 }
 
 func (c *ControlServer) handleStatus(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, c.GetState())
-}
-
-func (c *ControlServer) handleStart(w http.ResponseWriter, r *http.Request) {
-	c.stateMu.Lock()
-	c.state.Status = "running"
-	c.state.Online = true
-	c.state.LastSeen = time.Now()
-	c.stateMu.Unlock()
-	log.Println("[Lobster] Node started")
-	writeJSON(w, map[string]string{"ok": "true", "status": "running"})
-}
-
-func (c *ControlServer) handleStop(w http.ResponseWriter, r *http.Request) {
-	c.stateMu.Lock()
-	c.state.Status = "stopped"
-	c.state.Online = false
-	c.state.TailnetIP = ""
-	c.state.Peers = nil
-	c.state.PairCode = ""
-	c.stateMu.Unlock()
-	log.Println("[Lobster] Node stopped")
-	writeJSON(w, map[string]string{"ok": "true", "status": "stopped"})
+	writeJSON(w, http.StatusOK, c.node.Status(r.Context()))
 }
 
 func (c *ControlServer) handlePeers(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, c.GetState().Peers)
+	writeJSON(w, http.StatusOK, c.node.Status(r.Context()).Peers)
+}
+
+func (c *ControlServer) handleStart(w http.ResponseWriter, r *http.Request) {
+	st, err := c.node.Start(r.Context())
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, st)
+}
+
+func (c *ControlServer) handleStop(w http.ResponseWriter, r *http.Request) {
+	if err := c.node.Stop(); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "stop_failed", "message": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, c.node.Status(r.Context()))
 }
 
 func (c *ControlServer) handlePair(w http.ResponseWriter, r *http.Request) {
-	code := generatePairCode()
-	c.stateMu.Lock()
-	c.state.PairCode = code
-	c.stateMu.Unlock()
-	log.Printf("[Lobster] Pair code generated: %s", code)
-	writeJSON(w, map[string]string{"pair_code": code, "expires_in": "300s"})
-}
-
-func writeJSON(w http.ResponseWriter, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-func generatePairCode() string {
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-	var b [6]byte
-	for i := range b {
-		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
-		if err != nil {
-			log.Fatalf("[Lobster] crypto/rand failure: %v", err)
-		}
-		b[i] = alphabet[n.Int64()]
+	info, err := c.node.Pair(r.Context())
+	if err != nil {
+		writeError(w, err)
+		return
 	}
-	return string(b[:])
+	writeJSON(w, http.StatusOK, info)
+}
+
+func writeError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, errNotConfigured):
+		writeJSON(w, http.StatusConflict, map[string]string{"error": statusNotConfigured, "message": err.Error()})
+	case errors.Is(err, errNotRunning):
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "not_running", "message": err.Error()})
+	default:
+		log.Printf("[Lobster] request failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal", "message": err.Error()})
+	}
+}
+
+// writeJSON sets headers and status before writing the body (a body write
+// first would lock in an implicit 200).
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(v)
 }

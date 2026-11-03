@@ -1,16 +1,19 @@
-version: "3.8"
-
+# Lobster coordination server: Headscale with SQLite (single node).
+#   HEADSCALE_SERVER_URL=https://mesh.example.com docker compose -f docker-compose.sqlite.yml up -d
 services:
   headscale:
-    image: headscale/headscale:1.67
+    image: headscale/headscale:0.29.7
     container_name: lobster-headscale
+    command: serve
     volumes:
-      - ./config:/etc/headscale
+      - ./config:/etc/headscale:ro
       - headscale-data:/var/lib/headscale
     environment:
-      - HEADSCALE_PORT=8080
+      - HEADSCALE_SERVER_URL=${HEADSCALE_SERVER_URL:?set HEADSCALE_SERVER_URL to the public https URL}
       - HEADSCALE_DATABASE_TYPE=sqlite
-    command: headscale serve
+    ports:
+      # Reverse proxy (TLS) on the host forwards to this; never expose it raw.
+      - "${HEADSCALE_BIND:-127.0.0.1:8080}:8080"
     restart: unless-stopped
     networks:
       - lobster-net

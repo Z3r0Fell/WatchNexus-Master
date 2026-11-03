@@ -1,0 +1,15 @@
+# DERP map entry for the self-hosted lobster-relay. Copy to derp.yaml,
+# replace relay.example.com, and add /etc/headscale/derp.yaml to
+# derp.paths in config.yaml.
+regions:
+  900:
+    regionid: 900
+    regioncode: lobster
+    regionname: Lobster Relay
+    nodes:
+      - name: 900a
+        regionid: 900
+        hostname: relay.example.com
+        stunport: 3478
+        stunonly: false
+        derpport: 443

@@ -4,63 +4,52 @@ using Microsoft.Extensions.Logging;
 
 namespace WatchNexus.Module.Lobster;
 
+/// <summary>Result of a sidecar control API call: HTTP status plus JSON body.</summary>
+public readonly record struct SidecarResponse(int StatusCode, JsonElement Body)
+{
+    public bool IsSuccess => StatusCode is >= 200 and < 300;
+}
+
+/// <summary>
+/// Client for the sidecar's loopback control API (lobster-sidecar/control.go).
+/// Every call carries the per-install control key from <see cref="LobsterSettings"/>.
+/// </summary>
 public class LobsterClient
 {
     private readonly ILogger<LobsterClient>? _logger;
+    private readonly LobsterSettings _settings;
     private readonly HttpClient _http;
-    private const string ControlUrlEnv = "LOBSTER_CONTROL_URL";
-    private const int DefaultControlPort = 19091;
-    // Must match the sidecar's requireControlKey (lobster-sidecar/control.go):
-    // start/stop/peers/pair are rejected without X-Control-Key. The sidecar is
-    // spawned by LobsterService and inherits this process's environment, so
-    // both sides read the same LOBSTER_CONTROL_KEY (or the same default).
-    private const string ControlKeyEnv = "LOBSTER_CONTROL_KEY";
-    private const string DefaultControlKey = "lobster-control-default-change-me";
 
-    public LobsterClient(ILogger<LobsterClient>? logger = null)
+    public LobsterClient(LobsterSettings settings, ILogger<LobsterClient>? logger = null, HttpMessageHandler? handler = null)
     {
+        _settings = settings;
         _logger = logger;
-        _http = new HttpClient { BaseAddress = new Uri(ResolveControlUrl()), Timeout = TimeSpan.FromSeconds(10) };
+        _http = handler == null ? new HttpClient() : new HttpClient(handler);
+        _http.BaseAddress = new Uri(settings.SidecarBaseUrl);
+        // /api/start waits up to ~8s for the node to reach a reportable state.
+        _http.Timeout = TimeSpan.FromSeconds(15);
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        var key = Environment.GetEnvironmentVariable(ControlKeyEnv);
-        _http.DefaultRequestHeaders.Add("X-Control-Key", string.IsNullOrWhiteSpace(key) ? DefaultControlKey : key);
     }
 
-    public async Task<JsonElement> GetStatusAsync(CancellationToken ct = default)
+    public Task<SidecarResponse> GetStatusAsync(CancellationToken ct = default) => SendAsync(HttpMethod.Get, "/api/status", ct);
+    public Task<SidecarResponse> StartAsync(CancellationToken ct = default) => SendAsync(HttpMethod.Post, "/api/start", ct);
+    public Task<SidecarResponse> StopAsync(CancellationToken ct = default) => SendAsync(HttpMethod.Post, "/api/stop", ct);
+    public Task<SidecarResponse> GetPeersAsync(CancellationToken ct = default) => SendAsync(HttpMethod.Get, "/api/peers", ct);
+    public Task<SidecarResponse> PairAsync(CancellationToken ct = default) => SendAsync(HttpMethod.Post, "/api/pair", ct);
+
+    private async Task<SidecarResponse> SendAsync(HttpMethod method, string path, CancellationToken ct)
     {
-        var resp = await _http.GetAsync("/api/status", ct);
-        resp.EnsureSuccessStatusCode();
-        return await JsonSerializer.DeserializeAsync<JsonElement>(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        using var req = new HttpRequestMessage(method, path);
+        req.Headers.Add("X-Control-Key", _settings.ControlKey);
+        using var resp = await _http.SendAsync(req, ct);
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        var body = await JsonSerializer.DeserializeAsync<JsonElement>(stream, cancellationToken: ct);
+        if (!resp.IsSuccessStatusCode)
+            _logger?.LogDebug("[Lobster] sidecar {Method} {Path} -> {Status}", method, path, (int)resp.StatusCode);
+        return new SidecarResponse((int)resp.StatusCode, body);
     }
 
-    public async Task<JsonElement> StartAsync(CancellationToken ct = default)
-    {
-        var resp = await _http.PostAsync("/api/start", null, ct);
-        resp.EnsureSuccessStatusCode();
-        return await JsonSerializer.DeserializeAsync<JsonElement>(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-    }
-
-    public async Task<JsonElement> StopAsync(CancellationToken ct = default)
-    {
-        var resp = await _http.PostAsync("/api/stop", null, ct);
-        resp.EnsureSuccessStatusCode();
-        return await JsonSerializer.DeserializeAsync<JsonElement>(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-    }
-
-    public async Task<JsonElement> GetPeersAsync(CancellationToken ct = default)
-    {
-        var resp = await _http.GetAsync("/api/peers", ct);
-        resp.EnsureSuccessStatusCode();
-        return await JsonSerializer.DeserializeAsync<JsonElement>(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-    }
-
-    public async Task<JsonElement> PairAsync(CancellationToken ct = default)
-    {
-        var resp = await _http.PostAsync("/api/pair", null, ct);
-        resp.EnsureSuccessStatusCode();
-        return await JsonSerializer.DeserializeAsync<JsonElement>(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-    }
-
+    /// <summary>Waits until the sidecar answers an authenticated status call.</summary>
     public async Task WaitForReadyAsync(TimeSpan timeout, CancellationToken ct = default)
     {
         var deadline = DateTime.UtcNow + timeout;
@@ -68,23 +57,17 @@ public class LobsterClient
         {
             try
             {
-                using var resp = await _http.GetAsync("/api/status", ct);
-                if (resp.IsSuccessStatusCode) return;
+                var resp = await GetStatusAsync(ct);
+                if (resp.IsSuccess) return;
+                if (resp.StatusCode == 401)
+                    throw new InvalidOperationException("Lobster sidecar rejected the control key");
             }
-            catch
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or JsonException) && !ct.IsCancellationRequested)
             {
-                // ignore until deadline
+                // not listening yet
             }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"Lobster sidecar did not become ready within {timeout.TotalSeconds}s");
-    }
-
-    private string ResolveControlUrl()
-    {
-        var env = Environment.GetEnvironmentVariable(ControlUrlEnv);
-        if (!string.IsNullOrWhiteSpace(env)) return env.TrimEnd('/');
-
-        return $"http://127.0.0.1:{DefaultControlPort}";
     }
 }
