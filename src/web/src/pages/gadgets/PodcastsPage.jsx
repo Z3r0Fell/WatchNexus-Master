@@ -144,7 +144,8 @@ export const PodcastsPage = () => {
   const seek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
-    if (audioRef.current) {
+    // duration is NaN until metadata loads; assigning NaN throws.
+    if (audioRef.current && Number.isFinite(audioRef.current.duration)) {
       audioRef.current.currentTime = pct * audioRef.current.duration;
     }
   };
