@@ -4,9 +4,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { useConfirm } from '../../hooks/use-confirm';
-import { BACKEND_URL } from '../../lib/config';
-
-const API_URL = BACKEND_URL;
+import { apiClient } from '../../services/api';
 
 const Toggle = ({ checked, onChange }) => (
   <label className="relative inline-flex items-center cursor-pointer">
@@ -16,7 +14,6 @@ const Toggle = ({ checked, onChange }) => (
 );
 
 export const MediaManagementSubTab = () => {
-  const { confirm, ConfirmDialog } = useConfirm();
   const [renameEpisodes, setRenameEpisodes] = useState(true);
   const [useHardlinks, setUseHardlinks] = useState(true);
   const [importExtraFiles, setImportExtraFiles] = useState(true);
@@ -174,7 +171,8 @@ const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
     try {
       await onSave({
         name: name.trim(),
-        cutoff,
+        // The initial default may not be one of the offered names; save what the select shows.
+        cutoff: enabledQualityNames.includes(cutoff) ? cutoff : (enabledQualityNames[0] || cutoff),
         upgrade_allowed: upgradeAllowed,
         qualities: qualities
       });
@@ -211,7 +209,7 @@ const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
             <label className="text-sm text-gray-400 mb-2 block">Upgrade Cutoff</label>
             <p className="text-xs text-gray-500 mb-2">Stop upgrading once this quality is reached</p>
             <select
-              value={cutoff}
+              value={enabledQualityNames.includes(cutoff) ? cutoff : (enabledQualityNames[0] || '')}
               onChange={e => setCutoff(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-black/50 border border-white/10 text-white [&>option]:bg-[#1a1a1a] [&>option]:text-white"
               data-testid="profile-cutoff-select"
@@ -245,7 +243,7 @@ const ProfileEditorModal = ({ profile, definitions, onSave, onClose }) => {
             <label className="text-sm text-gray-400 mb-2 block">Acceptable Qualities</label>
             <p className="text-xs text-gray-500 mb-3">Select which qualities can be downloaded (higher rank = better quality)</p>
             <div className="space-y-1 max-h-[300px] overflow-y-auto">
-              {qualities.sort((a, b) => (b.rank || 0) - (a.rank || 0)).map(q => (
+              {[...qualities].sort((a, b) => (b.rank || 0) - (a.rank || 0)).map(q => (
                 <div 
                   key={q.name}
                   onClick={() => toggleQuality(q.name)}
@@ -314,6 +312,7 @@ const normalizeProfile = (profile) => {
 };
 
 export const QualityProfilesSubTab = () => {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [profiles, setProfiles] = useState([]);
   const [definitions, setDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -322,11 +321,8 @@ export const QualityProfilesSubTab = () => {
 
   const fetchProfiles = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/quality-profiles`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      // apiClient (axios) attaches the X-XSRF-TOKEN header the CSRF middleware requires.
+      const { data } = await apiClient.get('/quality-profiles');
       // Backend returns a plain array; older builds returned { profiles, quality_definitions }.
       const list = Array.isArray(data) ? data : (data.profiles || []);
       setProfiles(list.map(normalizeProfile));
@@ -355,24 +351,15 @@ export const QualityProfilesSubTab = () => {
     setShowEditor(true);
   };
 
-  const sendJson = async (url, method, body) => {
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      credentials: 'include',
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res;
-  };
+  const sendJson = (url, method, body) => apiClient.request({ url, method, data: body });
 
   const handleSave = async (data) => {
     try {
       if (editingProfile) {
-        await sendJson(`${API_URL}/api/quality-profiles/${editingProfile.id}`, 'PUT', data);
+        await sendJson(`/quality-profiles/${editingProfile.id}`, 'PUT', data);
         toast.success('Profile updated');
       } else {
-        await sendJson(`${API_URL}/api/quality-profiles`, 'POST', data);
+        await sendJson(`/quality-profiles`, 'POST', data);
         toast.success('Profile created');
       }
       setShowEditor(false);
@@ -388,7 +375,7 @@ export const QualityProfilesSubTab = () => {
     if (!ok) return;
     
     try {
-      await sendJson(`${API_URL}/api/quality-profiles/${profileId}`, 'DELETE');
+      await sendJson(`/quality-profiles/${profileId}`, 'DELETE');
       toast.success('Profile deleted');
       fetchProfiles();
     } catch (error) {
@@ -399,7 +386,7 @@ export const QualityProfilesSubTab = () => {
 
   const handleSetDefault = async (profileId) => {
     try {
-      await sendJson(`${API_URL}/api/quality-profiles/${profileId}`, 'PUT', { is_default: true });
+      await sendJson(`/quality-profiles/${profileId}`, 'PUT', { is_default: true });
       toast.success('Default profile updated');
       fetchProfiles();
     } catch (error) {
@@ -467,6 +454,8 @@ export const QualityProfilesSubTab = () => {
           <li>• <strong>Default Profile:</strong> Will be used for new additions unless overridden</li>
         </ul>
       </div>
+
+      <ConfirmDialog />
 
       {/* Editor Modal */}
       {showEditor && (
