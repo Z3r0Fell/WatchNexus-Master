@@ -96,7 +96,9 @@ export const AuthPage = () => {
 
   const handleLocalUserLogin = async (user) => {
     setSelectedUser({ ...user });
-    setEmail(user.email);
+    // /users/profiles is anonymous and no longer exposes emails; login
+    // accepts the username in place of the email.
+    setEmail(user.email || user.username);
   };
 
   // Google OAuth removed in v1.0.0 RTP — WatchNexus is a self-hosted media

@@ -67,6 +67,11 @@ public class TmdbProxyController : ControllerBase
         try
         {
             var resp = await client.GetAsync($"{TMDB_BASE}{path}{qs}");
+            // Upstream failures (bad key 401, 429, 5xx) degrade to the empty
+            // shape rather than relaying TMDB's {status_message} body as a 200,
+            // which callers would treat as data (no `results`).
+            if (!resp.IsSuccessStatusCode)
+                return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0, total_results = 0 });
             var json = await resp.Content.ReadAsStringAsync();
             return Content(json, "application/json");
         }
@@ -244,7 +249,12 @@ public class WatchProgressController : ControllerBase
     public async Task<IActionResult> Update([FromBody] JsonElement progress)
     {
         var tmdbId = progress.TryGetProperty("tmdb_id", out var id) ? id.ToString() : "";
-        var mediaType = progress.TryGetProperty("media_type", out var mt) ? mt.GetString() : "movie";
+        // Delete() matches on the "progress:{id}:" boundary, so an empty id or
+        // one containing ':' would create rows that can never be removed.
+        if (string.IsNullOrWhiteSpace(tmdbId) || tmdbId.Contains(':'))
+            return BadRequest(new { detail = "tmdb_id is required" });
+        var mediaType = progress.TryGetProperty("media_type", out var mt) && mt.ValueKind == JsonValueKind.String
+            ? mt.GetString() : "movie";
         var key = $"progress:{tmdbId}:{mediaType}";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
         if (existing != null)
@@ -309,8 +319,10 @@ public class NextUpController : ControllerBase
         var progressItems = await _db.Settings
             .Where(s => s.UserId == userId && s.Key.StartsWith("progress:"))
             .OrderByDescending(s => s.Key)
-            .Take(limit * 2)
             .ToListAsync();
+        // Filter in memory (progress is JSON); taking limit*2 rows first dropped
+        // in-progress items whenever finished/unstarted rows sorted ahead of them.
+        limit = Math.Clamp(limit, 1, 100);
 
         var nextUp = new List<object>();
         foreach (var item in progressItems)
