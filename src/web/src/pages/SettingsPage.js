@@ -22,6 +22,7 @@ import { settingsApi } from '../services/api';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../hooks/use-confirm';
+import { MANUAL_IMPORT_TARGET } from '../components/settings/LibrarySettings';
 
 const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|mpg|mpeg|m2ts)$/i;
 
@@ -175,7 +176,15 @@ export const SettingsPage = () => {
   // Confirm folder selection
   const confirmFolderSelection = () => {
     if (!selectedBrowserPath) return;
-    
+
+    // Manual import picker has its own target, distinct from new-library creation
+    if (browserTargetField === MANUAL_IMPORT_TARGET) {
+      setManualImportPath(selectedBrowserPath);
+      setShowFileBrowser(false);
+      setBrowserTargetField(null);
+      return;
+    }
+
     // If we have a target field (for settings), update settings directly
     if (browserTargetField) {
       setSettings(prev => ({ ...prev, [browserTargetField]: selectedBrowserPath }));
