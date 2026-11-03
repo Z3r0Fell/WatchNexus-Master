@@ -308,7 +308,7 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         Assert.Contains(final.Value, Enumerable.Range(0, 20).Select(i => $"value{i}").ToArray());
     }
 
-    [Fact]
+    [Fact(Skip = "EF in-memory provider has no transactions, so rollback can't be observed here. Covered against real SQLite by DatabaseIntegrationTests.FailedTransaction_RollsBack.")]
     public async Task TransactionFailure_RollsBack()
     {
         AuthenticateAsUser();

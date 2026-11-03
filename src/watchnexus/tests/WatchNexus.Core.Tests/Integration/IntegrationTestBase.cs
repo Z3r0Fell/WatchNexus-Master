@@ -33,6 +33,14 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     protected readonly Mock<IHttpClientFactory> HttpClientFactoryMock;
     protected readonly List<Mock<HttpMessageHandler>> HandlerMocks;
     private readonly IServiceScope _scope;
+    private readonly string _sqlitePath = Path.Combine(Path.GetTempPath(), $"wnx_itest_{Guid.NewGuid():N}.db");
+
+    /// <summary>
+    /// Override to true to back the test host with a temp-file SQLite
+    /// database instead of the EF in-memory provider (which enforces no
+    /// unique indexes and has no transactions).
+    /// </summary>
+    protected virtual bool UseRelationalDatabase => false;
 
     public IServiceProvider Services => Factory.Services;
 
@@ -45,6 +53,12 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         // (SQLite migrate, patch service, fortress) inside the test host.
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
 
+        // Reset process-wide static state that otherwise leaks between test
+        // classes (serial execution, shared AppDomain): the per-IP license
+        // activation limiter and the static test principal.
+        CellarController.ResetRateLimits();
+        TestAuthHandler.SetTestUser(null);
+
         HttpClientFactoryMock = new Mock<IHttpClientFactory>();
         HandlerMocks = new List<Mock<HttpMessageHandler>>();
         
@@ -52,13 +66,25 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
             .Returns(() =>
             {
                 var handler = HandlerMocks.Count > 0 ? HandlerMocks[^1].Object : new HttpClientHandler();
-                return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+                // disposeHandler: false — product code disposes its clients
+                // (`using var http`), which would dispose the shared mock
+                // handler; a Strict mock throws on the unexpected Dispose call.
+                return new HttpClient(handler, disposeHandler: false) { Timeout = TimeSpan.FromSeconds(30) };
             });
 
         Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Testing");
+
+                // Paid-tier activation requires a license-server key; tests
+                // mock the license server via IHttpClientFactory. Individual
+                // tests blank this to exercise the "no key" 503 path.
+                builder.ConfigureAppConfiguration((_, cfg) =>
+                    cfg.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["LICENSE_SERVER_API_KEY"] = "test-license-server-key",
+                    }));
                 
                 builder.ConfigureServices(services =>
                 {
@@ -84,8 +110,24 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
                     var dbName = $"IntegrationTest_{Guid.NewGuid()}";
                     services.AddDbContext<AppDbContext>(options =>
                     {
+                        if (UseRelationalDatabase)
+                        {
+                            // Real SQLite (the production provider) for tests
+                            // that exercise relational behaviour: unique
+                            // indexes, transactions/rollback, concurrent
+                            // contexts. A temp file (not :memory:) so each
+                            // context gets its own connection.
+                            options.UseSqlite($"Data Source={_sqlitePath}");
+                            options.EnableSensitiveDataLogging();
+                            return;
+                        }
                         options.UseInMemoryDatabase(dbName);
                         options.EnableSensitiveDataLogging();
+                        // Product code wraps multi-entity writes in
+                        // BeginTransaction; the in-memory provider can't do
+                        // transactions and throws by default. Ignore it.
+                        options.ConfigureWarnings(w => w.Ignore(
+                            Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
                     });
                     
                     // Disable automatic key generation for tests
@@ -206,6 +248,12 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         Client?.Dispose();
         _scope?.Dispose();
         await Factory.DisposeAsync();
+        if (UseRelationalDatabase)
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            foreach (var f in new[] { _sqlitePath, _sqlitePath + "-wal", _sqlitePath + "-shm", _sqlitePath + "-journal" })
+                try { File.Delete(f); } catch { /* best effort */ }
+        }
     }
 
     public void Dispose()
@@ -395,7 +443,12 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// </summary>
     protected static void AssertJsonResponse(HttpResponseMessage response, HttpStatusCode expectedStatus = HttpStatusCode.OK)
     {
-        Assert.Equal(expectedStatus, response.StatusCode);
+        if (response.StatusCode != expectedStatus)
+        {
+            // Surface the response body so failures are diagnosable.
+            var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            Assert.Fail($"Expected {(int)expectedStatus} {expectedStatus} but got {(int)response.StatusCode} {response.StatusCode}. Body: {body}");
+        }
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
     }
 
