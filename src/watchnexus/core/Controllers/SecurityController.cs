@@ -33,6 +33,7 @@ public class SecurityController : ControllerBase
         id = r.Id, ip = r.Ip, ip_address = r.Ip, rule_type = r.RuleType,
         is_allowed = r.RuleType == "allow", reason = r.Reason, description = r.Reason,
         hits = r.Hits, created_at = r.CreatedAt,
+        ruleType = r.RuleType, createdAt = r.CreatedAt,
     };
 
     private static object KeyDto(ApiKeyEntity k) => new
@@ -41,6 +42,8 @@ public class SecurityController : ControllerBase
         prefix = k.KeyPreview.Length > 8 ? k.KeyPreview[4..8] : k.KeyPreview,
         permissions = k.Permissions, is_active = k.IsActive, last_used = k.LastUsed,
         usage_count = 0, created_at = k.CreatedAt,
+        // camelCase aliases for callers that read the default ASP.NET shape.
+        isActive = k.IsActive, lastUsed = k.LastUsed, keyPreview = k.KeyPreview, createdAt = k.CreatedAt,
     };
 
     [HttpGet("stats")]
@@ -77,6 +80,7 @@ public class SecurityController : ControllerBase
         {
             id = a.Id, action = a.Action, user_id = a.UserId, ip = a.Ip, ip_address = a.Ip,
             details = a.Details, success = true, timestamp = a.Timestamp,
+            userId = a.UserId,
         }).ToList();
         return Ok(new { logs, items = logs, total, page, page_size });
     }
@@ -135,7 +139,8 @@ public class SecurityController : ControllerBase
         return Ok(new
         {
             id = key.Id, name = key.Name, key = rawKey, key_preview = key.KeyPreview,
-            permissions = key.Permissions, is_active = key.IsActive, created_at = key.CreatedAt
+            permissions = key.Permissions, is_active = key.IsActive, created_at = key.CreatedAt,
+            isActive = key.IsActive, keyPreview = key.KeyPreview, createdAt = key.CreatedAt
         });
     }
 

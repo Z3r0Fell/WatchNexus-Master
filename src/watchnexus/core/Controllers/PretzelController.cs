@@ -93,7 +93,9 @@ public class PretzelController : ControllerBase
     }
 
     // ── Add Game ────────────────────────────────────────────────────
+    // Admin-only: the ROM library is shared by all users (delete/scan/import are admin-only too).
     [HttpPost("games")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> AddGame([FromBody] JsonElement body)
     {
         static string? Str(JsonElement b, string n) => b.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;

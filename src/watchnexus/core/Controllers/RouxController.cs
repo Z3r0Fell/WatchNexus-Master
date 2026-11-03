@@ -37,7 +37,11 @@ public class RouxController : ControllerBase
             try { return Ok(JsonSerializer.Deserialize<object>(setting.Value)); } catch { }
         }
 
-        // Return default smart collections
+        return Ok(DefaultCollections());
+    }
+
+    private static List<object> DefaultCollections()
+    {
         var defaults = new List<object>
         {
             new { id = "top-rated", name = "Top Rated", type = "smart", icon = "star", description = "Movies and shows rated 8+", item_count = 0, auto_refresh = true },
@@ -46,7 +50,7 @@ public class RouxController : ControllerBase
             new { id = "horror-nights", name = "Horror Nights", type = "smart", icon = "ghost", description = "Horror & Thriller picks", item_count = 0, auto_refresh = true },
             new { id = "classics", name = "Classics", type = "smart", icon = "film", description = "Pre-1990 highly rated films", item_count = 0, auto_refresh = true },
         };
-        return Ok(defaults);
+        return defaults;
     }
 
     [HttpPost("collections")]
@@ -61,7 +65,8 @@ public class RouxController : ControllerBase
         // Load existing collections
         var uid = this.UserId();
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
-        var collections = new List<object>();
+        // Seed with the defaults on first create so they don't vanish.
+        var collections = setting?.Value == null ? DefaultCollections() : new List<object>();
         if (setting?.Value != null)
         {
             try { collections = JsonSerializer.Deserialize<List<object>>(setting.Value) ?? new List<object>(); } catch { }
@@ -107,7 +112,11 @@ public class RouxController : ControllerBase
         // Previously a no-op that reported success, so deleted collections reappeared.
         var uid = this.UserId();
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "roux_collections" && s.UserId == uid);
-        if (setting?.Value == null) return NotFound(new { detail = "Collection not found", id = collectionId });
+        if (setting == null)
+        {
+            setting = new AppSetting { UserId = uid, Key = "roux_collections", Value = JsonSerializer.Serialize(DefaultCollections()) };
+            _db.Settings.Add(setting);
+        }
         List<JsonElement> collections;
         try { collections = JsonSerializer.Deserialize<List<JsonElement>>(setting.Value) ?? new(); }
         catch (JsonException) { return NotFound(new { detail = "Collection not found", id = collectionId }); }

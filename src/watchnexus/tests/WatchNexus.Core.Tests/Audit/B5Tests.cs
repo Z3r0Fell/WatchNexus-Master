@@ -194,6 +194,36 @@ public class B5Tests
     }
 
     [Fact]
+    public async Task Strudel_PersistedJobRoundTrips_AndHistoryIsPerUser()
+    {
+        using var db = NewDb();
+        db.Settings.Add(new AppSetting { Key = "strudel_job_j1", UserId = "",
+            Value = "{\"id\":\"j1\",\"owner_user_id\":\"alice\",\"status\":\"failed\",\"disc_label\":\"MOVIE\",\"drive_index\":2,\"selected_titles\":[3],\"rip_progress\":40}" });
+        db.Settings.Add(new AppSetting { Key = "strudel_history_1_j1", UserId = "", Value = "{\"id\":\"j1\",\"owner_user_id\":\"alice\"}" });
+        await db.SaveChangesAsync();
+
+        var a = new StrudelController(db); SetUser(a, "alice");
+        var job = Json(await a.GetJob("j1"));
+        Assert.Equal("j1", job.GetProperty("id").GetString());
+        Assert.Equal("MOVIE", job.GetProperty("disc_label").GetString());
+        Assert.Equal(2, job.GetProperty("drive_index").GetInt32());
+
+        var b = new StrudelController(db); SetUser(b, "bob");
+        Assert.Equal(0, Json(await b.GetHistory()).GetProperty("count").GetInt32());
+        Assert.Equal(1, Json(await a.GetHistory()).GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public void GlobalWrites_AreAdminOnly()
+    {
+        static bool AdminOnly(System.Reflection.MemberInfo m) => m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>().Any(a => a.Roles == "admin");
+        Assert.True(AdminOnly(typeof(PretzelController).GetMethod(nameof(PretzelController.AddGame))!));
+        Assert.True(AdminOnly(typeof(StrudelController).GetMethod(nameof(StrudelController.UpdateConfig))!));
+        Assert.True(AdminOnly(typeof(StrudelController).GetMethod(nameof(StrudelController.CreateProfile))!));
+    }
+
+    [Fact]
     public async Task QbitGetConfig_MasksPassword()
     {
         using var db = NewDb();
