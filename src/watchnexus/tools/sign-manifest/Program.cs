@@ -66,6 +66,9 @@ int GenerateKeyPair(string[] args)
     // Write private key as PEM
     var privPem = $"-----BEGIN PRIVATE KEY-----\n{IndentBase64(Convert.ToBase64String(privateKeyBytes))}\n-----END PRIVATE KEY-----\n";
     File.WriteAllText(privateKeyPath, privPem);
+    // Private signing key: owner read/write only (default umask leaves it world-readable).
+    try { if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(privateKeyPath, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+    catch { /* best effort */ }
 
     // Write public key as PEM
     var pubPem = $"-----BEGIN PUBLIC KEY-----\n{IndentBase64(Convert.ToBase64String(publicKeyBytes))}\n-----END PUBLIC KEY-----\n";

@@ -651,9 +651,12 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline'; " +
-        "style-src 'self' 'unsafe-inline'; " +
+        // Google Fonts: index.html / index.css load Outfit, Manrope, Inter and
+        // JetBrains Mono stylesheets from fonts.googleapis.com and the font files
+        // from fonts.gstatic.com — without these the UI fonts never load.
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "img-src 'self' data: blob: https:; " +
-        "font-src 'self' data:; " +
+        "font-src 'self' data: https://fonts.gstatic.com; " +
         "media-src 'self' blob: https:; " +
         "connect-src 'self' https: wss:; " +
         "frame-ancestors 'none'; " +

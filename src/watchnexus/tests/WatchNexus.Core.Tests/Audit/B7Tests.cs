@@ -18,6 +18,24 @@ public class B7LoginRateLimitPolicyTests : IntegrationTestBase
             new { email = "nobody@example.com", password = "wrong-password1" });
         Assert.NotEqual(HttpStatusCode.InternalServerError, resp.StatusCode);
     }
+
+    [Fact]
+    public async Task Csp_AllowsGoogleFonts()
+    {
+        var resp = await Client.GetAsync("/api/health");
+        var csp = string.Join(";", resp.Headers.GetValues("Content-Security-Policy"));
+        Assert.Contains("https://fonts.googleapis.com", csp);
+        Assert.Contains("https://fonts.gstatic.com", csp);
+    }
+}
+
+public class B7QBittorrentConfigTests
+{
+    [Fact]
+    public void ParseConfig_WrongFieldType_ReturnsNullInsteadOfThrowing()
+    {
+        Assert.Null(WatchNexus.Core.Services.QBittorrentClient.ParseConfig("{\"host\":123}"));
+    }
 }
 
 [Collection("B7-env")]
