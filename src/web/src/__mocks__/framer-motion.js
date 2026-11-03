@@ -17,8 +17,23 @@ const MOTION_PROPS = [
   'axis', 'values', 'onReorder', 'value', 'as',
 ];
 
+// Layout-relevant `animate` targets are rendered as the element's settled
+// inline style (e.g. a sidebar animating width 240 <-> 72), so tests can assert
+// the end state. Transform-ish keys (x, y, scale, rotate) are ignored.
+const STYLE_KEYS = ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'opacity', 'backgroundColor', 'color'];
+const PX_KEYS = ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight'];
+
 const strip = (props) => {
   const out = { ...props };
+  const { animate } = props;
+  if (animate && typeof animate === 'object' && !Array.isArray(animate)) {
+    const style = {};
+    STYLE_KEYS.forEach((k) => {
+      if (animate[k] === undefined || Array.isArray(animate[k])) return;
+      style[k] = PX_KEYS.includes(k) && typeof animate[k] === 'number' ? `${animate[k]}px` : animate[k];
+    });
+    if (Object.keys(style).length) out.style = { ...style, ...(props.style || {}) };
+  }
   MOTION_PROPS.forEach((k) => { delete out[k]; });
   return out;
 };
