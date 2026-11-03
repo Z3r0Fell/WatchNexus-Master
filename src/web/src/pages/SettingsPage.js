@@ -87,10 +87,10 @@ export const SettingsPage = () => {
     try {
       const res = await axios.get(`${API_URL}/api/users`);
       setUsers(res.data || []);
-    } catch {
-      setUsers([{ id: '1', username: 'admin', email: 'admin@watchnexus.local', role: 'admin', avatar: null, created_at: new Date().toISOString(),
-        permissions: { can_download: true, can_delete: true, can_manage_library: true, can_manage_users: true, can_access_settings: true, max_streams: 10 }
-      }]);
+    } catch (error) {
+      // Never fabricate users on failure; /api/users is admin-only (403 for normal users).
+      setUsers([]);
+      if (error?.response?.status !== 403) toast.error('Failed to load users');
     } finally { setLoadingUsers(false); }
   }, []);
 
@@ -240,16 +240,19 @@ export const SettingsPage = () => {
   // Settings handlers
   const fetchData = useCallback(async () => {
     try {
-      const settingsRes = await settingsApi.get().catch(() => ({ data: settings }));
-      setSettings(settingsRes.data || settings);
-    } catch {}
+      const settingsRes = await settingsApi.get();
+      if (settingsRes?.data) setSettings(settingsRes.data);
+    } catch (error) {
+      // Keep defaults but tell the user: saving them would overwrite the real config.
+      toast.error(error?.response?.status === 403 ? 'Admin access required to view server settings' : 'Failed to load settings');
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveSettings = async () => {
     setSaving(true);
     try { await settingsApi.update(settings); toast.success('Settings saved successfully'); }
-    catch { toast.error('Failed to save settings'); }
+    catch (error) { toast.error(error?.response?.status === 403 ? 'Admin access required to change server settings' : 'Failed to save settings'); }
     finally { setSaving(false); }
   };
 

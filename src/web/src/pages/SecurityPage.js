@@ -12,6 +12,8 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
 
+const errMsg = (e, fallback) => (e?.response?.status === 403 ? 'Admin access required' : (e?.response?.data?.detail || e?.response?.data?.message || fallback));
+
 const StatCard = ({ icon: Icon, label, value, color, sub }) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }}
@@ -63,9 +65,9 @@ const AuditPanel = () => {
     setLoading(true);
     try {
       const res = await securityApi.getAuditLogs(page, 25, filter || null);
-      setLogs(res.data.items || []);
-      setTotal(res.data.total || 0);
-    } catch { toast.error('Failed to load audit logs'); }
+      setLogs(res.data?.logs || res.data?.items || []);
+      setTotal(res.data?.total || 0);
+    } catch (e) { toast.error(errMsg(e, 'Failed to load audit logs')); }
     finally { setLoading(false); }
   }, [page, filter]);
 
@@ -113,10 +115,10 @@ const AuditPanel = () => {
                 <td className="px-4 py-3">
                   <span className="px-2 py-1 rounded-md bg-white/5 text-xs font-mono">{log.action}</span>
                 </td>
-                <td className="px-4 py-3 text-gray-400 font-mono text-xs">{log.ip_address || '—'}</td>
+                <td className="px-4 py-3 text-gray-400 font-mono text-xs">{log.ip_address || log.ip || '—'}</td>
                 <td className="px-4 py-3 text-gray-400 text-xs max-w-[300px] truncate">{log.details}</td>
                 <td className="px-4 py-3">
-                  {log.success
+                  {log.success !== false
                     ? <CheckCircle className="w-4 h-4 text-emerald-500" />
                     : <XCircle className="w-4 h-4 text-red-500" />
                   }
@@ -156,7 +158,7 @@ const IpRulesPanel = () => {
     try {
       const res = await securityApi.getIpRules();
       setRules(res.data || []);
-    } catch { toast.error('Failed to load IP rules'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to load IP rules')); }
     finally { setLoading(false); }
   };
 
@@ -165,12 +167,12 @@ const IpRulesPanel = () => {
   const handleAdd = async () => {
     if (!newRule.ip_address) return toast.error('IP address required');
     try {
-      await securityApi.addIpRule(newRule);
+      await securityApi.addIpRule({ ip: newRule.ip_address, ruleType: newRule.is_allowed ? 'allow' : 'block', reason: newRule.description });
       toast.success('IP rule added');
       setShowAdd(false);
       setNewRule({ ip_address: '', is_allowed: false, description: '' });
       load();
-    } catch (e) { toast.error(e.response?.data?.message || 'Failed to add rule'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to add rule')); }
   };
 
   const handleDelete = async (id) => {
@@ -178,7 +180,7 @@ const IpRulesPanel = () => {
       await securityApi.deleteIpRule(id);
       toast.success('Rule deleted');
       load();
-    } catch { toast.error('Failed to delete rule'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to delete rule')); }
   };
 
   return (
@@ -223,7 +225,9 @@ const IpRulesPanel = () => {
       </AnimatePresence>
 
       <div className="space-y-2">
-        {rules.map((rule, i) => (
+        {rules.map((raw, i) => {
+          const rule = { ...raw, ip_address: raw.ip_address ?? raw.ip, is_allowed: raw.is_allowed ?? (raw.ruleType ?? raw.rule_type) === 'allow', description: raw.description ?? raw.reason };
+          return (
           <motion.div key={rule.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03 }}
             className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all">
@@ -242,7 +246,8 @@ const IpRulesPanel = () => {
               <Trash2 className="w-4 h-4 text-red-400" />
             </Button>
           </motion.div>
-        ))}
+          );
+        })}
         {rules.length === 0 && !loading && (
           <div className="text-center py-8 text-gray-500">No IP rules configured</div>
         )}
@@ -265,7 +270,7 @@ const ApiKeysPanel = () => {
     try {
       const res = await securityApi.getApiKeys();
       setKeys(res.data || []);
-    } catch { toast.error('Failed to load API keys'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to load API keys')); }
     finally { setLoading(false); }
   };
 
@@ -281,7 +286,7 @@ const ApiKeysPanel = () => {
       setShowAdd(false);
       setNewKey({ name: '' });
       load();
-    } catch (e) { toast.error(e.response?.data?.message || 'Failed to create key'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to create key')); }
   };
 
   const handleRevoke = async (id) => {
@@ -289,12 +294,15 @@ const ApiKeysPanel = () => {
       await securityApi.revokeApiKey(id);
       toast.success('API key revoked');
       load();
-    } catch { toast.error('Failed to revoke key'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to revoke key')); }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
+  const copyToClipboard = async (text) => {
+    try {
+      // navigator.clipboard is undefined on plain-HTTP (non-secure) origins.
+      await navigator.clipboard.writeText(text);
+      toast.success('Copied to clipboard');
+    } catch { toast.error('Copy failed - select the key and copy it manually'); }
   };
 
   const maskKey = (key) => {
@@ -348,7 +356,9 @@ const ApiKeysPanel = () => {
       </AnimatePresence>
 
       <div className="space-y-2">
-        {keys.map((k, i) => (
+        {keys.map((raw, i) => {
+          const k = { ...raw, is_active: raw.is_active ?? raw.isActive, last_used: raw.last_used ?? raw.lastUsed };
+          return (
           <motion.div key={k.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03 }}
             className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all">
@@ -357,7 +367,7 @@ const ApiKeysPanel = () => {
               <div>
                 <p className="text-sm font-medium">{k.name}</p>
                 <p className="text-xs text-gray-500">
-                  wn_{k.prefix}... | Used {k.usage_count}x
+                  {k.key_preview || `wn_${k.prefix}...`}{k.usage_count != null && ` | Used ${k.usage_count}x`}
                   {k.last_used && ` | Last: ${new Date(k.last_used).toLocaleDateString()}`}
                 </p>
               </div>
@@ -373,7 +383,8 @@ const ApiKeysPanel = () => {
               )}
             </div>
           </motion.div>
-        ))}
+          );
+        })}
         {keys.length === 0 && !loading && (
           <div className="text-center py-8 text-gray-500">No API keys created</div>
         )}
@@ -392,7 +403,7 @@ const SessionsPanel = () => {
     try {
       const res = await securityApi.getSessions();
       setSessions(res.data || []);
-    } catch { toast.error('Failed to load sessions'); }
+    } catch (e) { toast.error(errMsg(e, 'Failed to load sessions')); }
     finally { setLoading(false); }
   };
 
@@ -457,7 +468,7 @@ export default function SecurityPage() {
   }, []);
 
   const tabs = [
-    { id: 'audit', label: 'Audit Log', icon: Activity, count: stats?.total_audit_entries },
+    { id: 'audit', label: 'Audit Log', icon: Activity, count: stats?.total_audit_entries ?? stats?.total_audit_logs },
     { id: 'ip-rules', label: 'IP Rules', icon: Globe, count: stats?.blocked_ips },
     { id: 'api-keys', label: 'API Keys', icon: Key, count: stats?.active_api_keys },
     { id: 'sessions', label: 'Sessions', icon: Users, count: stats?.active_sessions },
@@ -482,9 +493,9 @@ export default function SecurityPage() {
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={ShieldAlert} label="Failed Logins (24h)" value={stats.failed_logins_24h}
+            <StatCard icon={ShieldAlert} label="Failed Logins (24h)" value={stats.failed_logins_24h ?? '—'}
               color="bg-red-500/15 text-red-400" />
-            <StatCard icon={CheckCircle} label="Successful Logins (24h)" value={stats.successful_logins_24h}
+            <StatCard icon={CheckCircle} label="Successful Logins (24h)" value={stats.successful_logins_24h ?? '—'}
               color="bg-emerald-500/15 text-emerald-400" />
             <StatCard icon={Ban} label="Blocked IPs" value={stats.blocked_ips}
               color="bg-amber-500/15 text-amber-400" />

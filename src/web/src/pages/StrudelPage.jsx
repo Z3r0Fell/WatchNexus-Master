@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { toast } from 'sonner';
@@ -24,6 +24,16 @@ const profileDescriptions = {
   'nvenc-h265-crf24': { label: 'NVENC GPU', color: 'text-green-400', bg: 'bg-green-500/10' },
   'qsv-h265-crf22': { label: 'QuickSync', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
 };
+
+// The backend serialises DriveInfo_/ScanResult DTOs with ASP.NET's default
+// camelCase policy (index, hasDisc, titles...). This page reads PascalCase, so
+// normalise keys recursively (accepts either casing).
+const pascalKeys = (v) => Array.isArray(v) ? v.map(pascalKeys)
+  : (v && typeof v === 'object')
+    ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k.charAt(0).toUpperCase() + k.slice(1), pascalKeys(x)]))
+    : v;
+
+const SCAN_POLL_MAX = 300; // 300 x 2s = 10 min
 
 const streamIcons = { video: Film, audio: Volume2, subtitle: Subtitles };
 
@@ -54,6 +64,9 @@ export const StrudelPage = () => {
   const [selectedProfile, setSelectedProfile] = useState('1080p-h265-crf20');
   const [outputFormat, setOutputFormat] = useState('mkv');
   const [loading, setLoading] = useState(true);
+  const scanPollRef = useRef(null);
+
+  useEffect(() => () => { if (scanPollRef.current) clearInterval(scanPollRef.current); }, []);
 
   // Cookie auth: the httpOnly wn_token is sent automatically.
   const headers = useCallback(() => ({}), []);
@@ -70,7 +83,7 @@ export const StrudelPage = () => {
         axios.get(`${API}/api/strudel/config`, { headers: h }),
       ]);
       setStatus(statusRes.data);
-      setDrives(drivesRes.data?.drives || []);
+      setDrives(pascalKeys(drivesRes.data?.drives || []));
       setJobs(jobsRes.data?.jobs || []);
       setProfiles(Array.isArray(profilesRes.data) ? profilesRes.data : []);
       setHistory(historyRes.data?.history || []);
@@ -103,26 +116,37 @@ export const StrudelPage = () => {
     try {
       const res = await axios.post(`${API}/api/strudel/scan`, { DriveIndex: driveIndex }, { headers: headers() });
       const jobId = res.data?.job_id;
+      if (!jobId) { setScanning(false); toast.error('Scan failed to start'); return; }
       toast.success('Scanning disc...');
 
-      // Poll for scan results
-      const poll = setInterval(async () => {
+      // Poll for scan results (404 until the background scan saves a result).
+      if (scanPollRef.current) clearInterval(scanPollRef.current);
+      let attempts = 0;
+      const stopPoll = () => { clearInterval(scanPollRef.current); scanPollRef.current = null; };
+      scanPollRef.current = setInterval(async () => {
+        if (++attempts > SCAN_POLL_MAX) {
+          stopPoll();
+          setScanning(false);
+          toast.error('Disc scan timed out');
+          return;
+        }
         try {
           const scanRes = await axios.get(`${API}/api/strudel/scan/${jobId}`, { headers: headers() });
-          if (scanRes.data?.Status === 'complete' || scanRes.data?.Status === 'failed' || scanRes.data?.Status === 'no_titles') {
-            clearInterval(poll);
-            setScanResult(scanRes.data);
+          const data = pascalKeys(scanRes.data);
+          if (data?.Status === 'complete' || data?.Status === 'failed' || data?.Status === 'no_titles') {
+            stopPoll();
+            setScanResult(data);
             setScanning(false);
-            if (scanRes.data?.Status === 'complete') {
-              toast.success(`Found ${scanRes.data.TitleCount} titles on ${scanRes.data.DiscLabel}`);
+            if (data?.Status === 'complete') {
+              toast.success(`Found ${data.TitleCount} titles on ${data.DiscLabel}`);
               // Auto-select longest title
-              const titles = scanRes.data.Titles || [];
+              const titles = data.Titles || [];
               if (titles.length > 0) {
                 const longest = titles.reduce((a, b) => (a.SizeBytes > b.SizeBytes ? a : b));
                 setSelectedTitles({ [longest.Index]: true });
               }
             } else {
-              toast.error(scanRes.data?.Error || 'No titles found');
+              toast.error(data?.Error || 'No titles found');
             }
           }
         } catch {}
