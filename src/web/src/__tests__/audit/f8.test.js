@@ -29,7 +29,7 @@ describe('F8 audit: ZestSettings log parsing', () => {
 describe('F8 audit: settings modules compile', () => {
   test.each([
     'LibrarySettings', 'MediaHealthSettings', 'MediaManagement', 'PlaybackSettings', 'PluginsSettings',
-    'QualityProfilesSettings', 'StreamingSettings', 'SubtitleSettings', 'ThemeForgeSettings', 'UsersSettings',
+    'QualityProfilesSettings', 'StreamingSettings', 'SubtitleSettings', 'ThemeForgeSettings', 'UsersSettings', 'UpdateSettings',
   ])('%s', (name) => {
     const mod = require(`../../components/settings/${name}`);
     expect(Object.keys(mod).length).toBeGreaterThan(0);
