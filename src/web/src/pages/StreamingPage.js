@@ -59,8 +59,10 @@ export const StreamingPage = () => {
   const enabledServices = services.filter(s => s.enabled);
 
   const openInService = (service, title) => {
+    // /api/streaming-services does not return deep_link_base; avoid opening "undefined<title>".
+    if (!service.deep_link_base) { toast.error(`No search link configured for ${service.name || service.id}`); return; }
     const url = `${service.deep_link_base}${encodeURIComponent(title)}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -166,7 +168,7 @@ export const StreamingPage = () => {
 
                 return (
                   <motion.div
-                    key={item.id}
+                    key={`${item.media_type}-${item.id}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="glass-card rounded-xl p-4"
