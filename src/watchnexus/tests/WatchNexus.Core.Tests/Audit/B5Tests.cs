@@ -87,6 +87,70 @@ public class B5Tests
     }
 
     [Fact]
+    public async Task Downloads_AreScopedToOwner()
+    {
+        using var db = NewDb();
+        var a = new DownloadsController(db); SetUser(a, "alice");
+        var b = new DownloadsController(db); SetUser(b, "bob");
+        var created = Json(await a.Add("Movie", "movie", 1, 10));
+        var id = created.GetProperty("id").GetString()!;
+
+        var bobList = Assert.IsAssignableFrom<IEnumerable<DownloadItem>>(Assert.IsType<OkObjectResult>(await b.GetAll()).Value);
+        Assert.Empty(bobList);
+        Assert.IsType<NotFoundObjectResult>(await b.Update(id, "completed", 100));
+        Assert.IsType<NotFoundObjectResult>(await b.Delete(id));
+
+        var aliceList = Assert.IsAssignableFrom<IEnumerable<DownloadItem>>(Assert.IsType<OkObjectResult>(await a.GetAll()).Value);
+        Assert.Single(aliceList);
+        Assert.IsType<OkObjectResult>(await a.Delete(id));
+        Assert.Empty(db.Downloads);
+    }
+
+    [Fact]
+    public async Task Settings_CannotForgeDownloadOwnershipOrRindRows()
+    {
+        using var db = NewDb();
+        var c = NewSettings(db);
+        Assert.IsType<BadRequestObjectResult>(await c.Set("download_owner:x", JsonSerializer.SerializeToElement(new { value = "1" })));
+        Assert.IsType<BadRequestObjectResult>(await c.Set("rind_pin", JsonSerializer.SerializeToElement(new { value = "1" })));
+    }
+
+    [Fact]
+    public void AdminOnlyAttributes_PresentOnSecurityAndRindAdmin()
+    {
+        static bool AdminOnly(System.Reflection.MemberInfo m) => m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>().Any(a => a.Roles == "admin");
+        Assert.True(AdminOnly(typeof(SecurityController)));
+        Assert.True(AdminOnly(typeof(RindController).GetMethod(nameof(RindController.AdminProfiles))!));
+        Assert.True(AdminOnly(typeof(RindController).GetMethod(nameof(RindController.AdminSetProfile))!));
+    }
+
+    [Fact]
+    public async Task Rind_ChangingOrRemovingPinRequiresCurrentPin()
+    {
+        using var db = NewDb();
+        var c = new RindController(db); SetUser(c, "kid");
+        Assert.IsType<OkObjectResult>(await c.SetPin(JsonSerializer.SerializeToElement(new { pin = "1234" })));
+        Assert.IsType<ObjectResult>(await c.SetPin(JsonSerializer.SerializeToElement(new { pin = "9999" })));
+        Assert.IsType<ObjectResult>(await c.RemovePin());
+        Assert.IsType<ObjectResult>(await c.SaveProfile(JsonSerializer.SerializeToElement(new { pin = "0000", max_rating = "R" })));
+        Assert.IsType<OkObjectResult>(await c.SetPin(JsonSerializer.SerializeToElement(new { pin = "9999", current_pin = "1234" })));
+        Assert.IsType<OkObjectResult>(await c.RemovePin("9999"));
+    }
+
+    [Fact]
+    public async Task Security_AddIpRule_AcceptsFrontendShape()
+    {
+        using var db = NewDb();
+        var c = new SecurityController(db); SetUser(c, "admin", "admin");
+        var req = new SecurityController.IpRuleRequest { Ip_address = "10.0.0.9", Is_allowed = true, Description = "lan" };
+        var json = Json(await c.AddIpRule(req));
+        Assert.Equal("10.0.0.9", json.GetProperty("ip_address").GetString());
+        Assert.True(json.GetProperty("is_allowed").GetBoolean());
+        Assert.Equal("allow", json.GetProperty("rule_type").GetString());
+    }
+
+    [Fact]
     public async Task QbitGetConfig_MasksPassword()
     {
         using var db = NewDb();
