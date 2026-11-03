@@ -57,7 +57,7 @@ export const MediaHealthSettings = () => {
       setHealthResults(res.data || []);
       const issues = (res.data || []).filter(r => r.status !== 'healthy');
       issues.length > 0 ? toast.warning(`Found ${issues.length} file(s) with issues`) : toast.success('All files are healthy!');
-    } catch { toast.error('Failed to scan library'); }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to scan library'); }
     finally { setScanning(false); }
   };
 
@@ -67,7 +67,7 @@ export const MediaHealthSettings = () => {
       const res = await mediaHealthApi.repairFile(filePath);
       res.data.success ? toast.success(res.data.message) : toast.error(res.data.message);
       if (res.data.success) await handleHealthScan();
-    } catch { toast.error('Failed to repair file'); }
+    } catch (error) { toast.error(error.response?.data?.message || error.response?.data?.detail || 'Failed to repair file'); }
     finally { setRepairing(null); }
   };
 
@@ -92,7 +92,7 @@ export const MediaHealthSettings = () => {
       toast.success('Scheduled scan created');
       setNewScanForm({ directory: '', schedule_type: 'daily', schedule_time: '03:00', notify_on_issues: true, auto_repair: false });
       fetchScheduledScans();
-    } catch { toast.error('Failed to create scheduled scan'); }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to create scheduled scan'); }
   };
 
   const handleDeleteScheduledScan = async (scanId) => {
@@ -106,7 +106,7 @@ export const MediaHealthSettings = () => {
       const res = await mediaHealthApi.runScheduledScanNow(scanId);
       toast.success(`Scan complete: ${res.data.total_files} files`);
       fetchScheduledScans(); fetchNotifications();
-    } catch { toast.error('Failed to run scan'); }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to run scan'); }
     finally { setScanning(false); }
   };
 
@@ -164,11 +164,15 @@ export const MediaHealthSettings = () => {
             >
               <FolderBrowser
                 selectedPath={healthScanPath}
-                onSelect={(path) => {
-                  setHealthScanPath(path);
-                  setShowHealthBrowser(false);
-                }}
+                onSelect={setHealthScanPath}
               />
+              {/* FolderBrowser calls onSelect on every navigation (incl. its initial
+                  load), so only close on an explicit confirm. */}
+              <div className="flex justify-end mt-2">
+                <Button size="sm" onClick={() => setShowHealthBrowser(false)} className="bg-violet-600 hover:bg-violet-700" data-testid="confirm-health-path">
+                  Use this folder
+                </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -260,11 +264,13 @@ export const MediaHealthSettings = () => {
               >
                 <FolderBrowser
                   selectedPath={newScanForm.directory}
-                  onSelect={(path) => {
-                    setNewScanForm(p => ({ ...p, directory: path }));
-                    setShowScheduledBrowser(false);
-                  }}
+                  onSelect={(path) => setNewScanForm(p => ({ ...p, directory: path }))}
                 />
+                <div className="flex justify-end mt-2">
+                  <Button size="sm" onClick={() => setShowScheduledBrowser(false)} className="bg-violet-600 hover:bg-violet-700" data-testid="confirm-scheduled-path">
+                    Use this folder
+                  </Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
