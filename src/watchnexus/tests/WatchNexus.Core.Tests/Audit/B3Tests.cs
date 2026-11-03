@@ -97,6 +97,24 @@ public class B3Tests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Milk_CustomTheme_PersistsColors_ReadByThemeForge()
+    {
+        AuthenticateAsUser();
+        var resp = await Client.PostAsync("/api/milk/custom-theme", Json(new { name = "Custom Theme", type = "custom", colors = new { primary = "#123456" } }));
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("#123456", (await DeserializeResponseElement(resp)).GetProperty("theme").GetProperty("colors").GetProperty("primary").GetString());
+
+        var forge = await DeserializeResponseElement(await Client.GetAsync("/api/milk/theme-forge"));
+        var current = forge.GetProperty("current_theme");
+        Assert.Equal("custom", current.GetProperty("type").GetString());
+        Assert.Equal("#123456", current.GetProperty("colors").GetProperty("primary").GetString());
+
+        await Client.PostAsync("/api/milk/set-theme?theme_type=ocean", null);
+        forge = await DeserializeResponseElement(await Client.GetAsync("/api/milk/theme-forge"));
+        Assert.Equal(JsonValueKind.Null, forge.GetProperty("current_theme").GetProperty("colors").ValueKind);
+    }
+
+    [Fact]
     public async Task Ladle_SaveConfig_RejectsNonObject()
     {
         await SeedLicenseAsync("ultra");
