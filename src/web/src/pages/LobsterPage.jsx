@@ -5,10 +5,16 @@ import { lobsterApi } from '../services/nexusApi';
 import { toast } from 'sonner';
 import {
   Wifi, WifiOff, RefreshCw, Users, Copy, Check,
-  Shield, Activity, Globe, Power, PowerOff, QrCode
+  Shield, Activity, Globe, Power, PowerOff, QrCode, AlertTriangle, ExternalLink
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+
+// Only render links the sidecar reports when they are plain http(s) URLs.
+const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null);
+
+// Sidecar states in which the tsnet node exists (so the button should stop it).
+const ACTIVE_STATES = ['running', 'starting', 'needs_login', 'needs_machine_auth'];
 
 const StatCard = ({ icon: Icon, label, value, sub, color }) => (
   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -28,7 +34,8 @@ export default function LobsterPage() {
   const [status, setStatus] = useState(null);
   const [peers, setPeers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [pairCode, setPairCode] = useState(null);
+  const [pairInfo, setPairInfo] = useState(null);
+  const [copied, setCopied] = useState(false);
   const [pairing, setPairing] = useState(false);
   // The page polls every 5s; toast a failure once per failure streak, not every poll.
   const errorShownRef = useRef(false);
@@ -62,14 +69,19 @@ export default function LobsterPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const nodeActive = ACTIVE_STATES.includes(status?.status);
+  const unavailable = status?.configured === false || ['not_configured', 'not_installed'].includes(status?.status);
+  const authUrl = safeUrl(status?.auth_url);
+
   const handleToggle = async () => {
     try {
-      if (status?.online) {
+      if (nodeActive) {
         await lobsterApi.stop();
         toast.success('Mesh node stopped');
+        setPairInfo(null);
       } else {
-        await lobsterApi.start();
-        toast.success('Mesh node started');
+        const res = await lobsterApi.start();
+        toast.success(res.data?.online ? 'Mesh node online' : 'Mesh node starting');
       }
       setTimeout(fetchStatus, 1000);
     } catch (e) {
@@ -81,10 +93,9 @@ export default function LobsterPage() {
     setPairing(true);
     try {
       const res = await lobsterApi.pair();
-      const code = res.data?.pair_code;
-      if (!code) throw new Error(res.data?.error || res.data?.message || 'No pair code returned');
-      setPairCode(code);
-      toast.success('Pair code generated');
+      if (!res.data || typeof res.data !== 'object') throw new Error('No pairing information returned');
+      setPairInfo(res.data);
+      setCopied(false);
     } catch (e) {
       toast.error(e.response?.data?.message || e.message || 'Pairing failed');
     } finally {
@@ -92,13 +103,17 @@ export default function LobsterPage() {
     }
   };
 
-  const copyPairCode = async () => {
-    if (!pairCode) return;
+  const pairAuthUrl = safeUrl(pairInfo?.auth_url);
+  const pairConnectUrl = safeUrl(pairInfo?.connect_url);
+
+  const copyConnectUrl = async () => {
+    if (!pairConnectUrl) return;
     try {
-      await navigator.clipboard.writeText(pairCode);
-      toast.success('Pair code copied');
+      await navigator.clipboard.writeText(pairConnectUrl);
+      setCopied(true);
+      toast.success('Address copied');
     } catch {
-      toast.error('Could not copy pair code');
+      toast.error('Could not copy address');
     }
   };
 
@@ -127,15 +142,33 @@ export default function LobsterPage() {
           </div>
           <Button
             onClick={handleToggle}
-            className={status?.online ? 'bg-red-600 hover:bg-red-700' : 'bg-violet-600 hover:bg-violet-700'}
+            disabled={unavailable || !status}
+            className={nodeActive ? 'bg-red-600 hover:bg-red-700' : 'bg-violet-600 hover:bg-violet-700'}
           >
-            {status?.online ? (
+            {nodeActive ? (
               <><PowerOff className="w-4 h-4 mr-2" /> Stop Node</>
             ) : (
               <><Power className="w-4 h-4 mr-2" /> Start Node</>
             )}
           </Button>
         </div>
+
+        {status && !status.online && (status.message || authUrl) && (
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-100 space-y-1 min-w-0">
+              {status.message && <p>{status.message}</p>}
+              {authUrl && (
+                <p>
+                  This server must be authorized on the mesh:{' '}
+                  <a href={authUrl} target="_blank" rel="noopener noreferrer" className="underline break-all text-amber-300">
+                    {authUrl}
+                  </a>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
@@ -167,30 +200,37 @@ export default function LobsterPage() {
               <QrCode className="w-5 h-5 text-violet-400" />
               Pairing
             </h2>
-            <Button onClick={handlePair} disabled={pairing} variant="outline">
-              {pairing ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : 'Generate Pair Code'}
+            <Button onClick={handlePair} disabled={pairing || !nodeActive} variant="outline">
+              {pairing ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Checking...</> : 'Pair a Device'}
             </Button>
           </div>
 
-          {pairCode && (
+          {pairInfo && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-sm text-gray-400 mb-2">Share this code with the device you want to pair:</p>
-              <div className="flex items-center gap-3">
-                <code className="flex-1 text-center text-2xl font-mono font-bold text-violet-300 tracking-widest bg-white/5 rounded-lg py-3">
-                  {pairCode}
-                </code>
-                <Button size="icon" variant="ghost" onClick={copyPairCode}>
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-gray-600 mt-2">Expires in 5 minutes</p>
+              className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+              {pairInfo.message && <p className="text-sm text-gray-400">{pairInfo.message}</p>}
+              {pairAuthUrl && (
+                <a href={pairAuthUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-violet-300 underline break-all">
+                  <ExternalLink className="w-4 h-4 shrink-0" /> {pairAuthUrl}
+                </a>
+              )}
+              {pairConnectUrl && (
+                <div className="flex items-center gap-3">
+                  <code className="flex-1 min-w-0 text-center text-lg font-mono font-bold text-violet-300 bg-white/5 rounded-lg py-3 break-all">
+                    {pairConnectUrl}
+                  </code>
+                  <Button size="icon" variant="ghost" onClick={copyConnectUrl} aria-label="Copy address">
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              )}
             </motion.div>
           )}
 
-          {!pairCode && (
+          {!pairInfo && (
             <p className="text-sm text-gray-500">
-              Generate a pair code to connect another device to this mesh. The other device will need the WatchNexus app installed.
+              Devices join the mesh with a pre-auth key from your coordination server. Once the node is online, use Pair a Device to get the address other mesh devices use to reach this server.
             </p>
           )}
         </Card>
