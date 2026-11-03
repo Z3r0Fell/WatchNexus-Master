@@ -179,7 +179,7 @@ export const ThemeProvider = ({ children }) => {
       }
     };
     loadThemeMode();
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch current theme from backend
   const fetchTheme = useCallback(async () => {
@@ -190,9 +190,11 @@ export const ThemeProvider = ({ children }) => {
       if (data.current_theme) {
         setTheme(data.current_theme);
         setThemeType(data.current_theme.type || 'custom');
-        if (data.current_theme.colors) {
-          applyThemeToDOM(data.current_theme.colors, mode);
-        }
+        // Backend always returns current_theme; colors is null unless custom.
+        applyThemeToDOM(
+          data.current_theme.colors || (mode === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME),
+          mode,
+        );
       } else {
         applyThemeToDOM(mode === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME, mode);
       }
@@ -212,9 +214,11 @@ export const ThemeProvider = ({ children }) => {
     
     // Save to backend (cookie auth)
     try {
-      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
-        params: { theme_mode: newMode }
-      });
+      // PUT replaces the whole user_preferences JSON blob ([FromBody]), so
+      // merge with the current prefs to keep visible_tabs etc.
+      const cur = await axios.get(`${BACKEND_URL}/api/user/preferences`);
+      const prefs = cur.data && typeof cur.data === 'object' ? cur.data : {};
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, { ...prefs, theme_mode: newMode });
     } catch (error) {
       console.error('Failed to save theme mode:', error);
     }
@@ -242,14 +246,15 @@ export const ThemeProvider = ({ children }) => {
   // Apply a built-in theme
   const applyBuiltInTheme = useCallback(async (type) => {
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/milk/set-theme?theme_type=${type}`);
+      // Backend reads { theme_id } from the JSON body and returns { status, active_theme }.
+      const res = await axios.post(`${BACKEND_URL}/api/milk/set-theme`, { theme_id: type });
       if (res.data && res.data.theme) {
         setTheme(res.data.theme);
-        setThemeType(type);
         if (res.data.theme.colors) {
           applyThemeToDOM(res.data.theme.colors, mode);
         }
       }
+      setThemeType(res.data?.active_theme || type);
       return true;
     } catch (err) {
       console.error('Failed to apply theme:', err);
@@ -265,11 +270,10 @@ export const ThemeProvider = ({ children }) => {
         type: 'custom',
         colors
       });
-      if (res.data && res.data.theme) {
-        setTheme({ ...res.data.theme, colors });
-        setThemeType('custom');
-        applyThemeToDOM(colors, mode);
-      }
+      // Backend returns { status: 'saved' } (no theme object) — apply locally.
+      setTheme({ ...(res.data?.theme || { name: 'Custom Theme', type: 'custom' }), colors });
+      setThemeType('custom');
+      applyThemeToDOM(colors, mode);
       return true;
     } catch (err) {
       console.error('Failed to apply custom theme:', err);
@@ -300,7 +304,7 @@ export const ThemeProvider = ({ children }) => {
     if (modeLoaded) {
       fetchTheme();
     }
-  }, [modeLoaded, fetchTheme]);
+  }, [modeLoaded, fetchTheme, isAuthenticated]);
 
   // ui_accent is a per-user setting — (re)apply it once the user is authenticated.
   useEffect(() => {

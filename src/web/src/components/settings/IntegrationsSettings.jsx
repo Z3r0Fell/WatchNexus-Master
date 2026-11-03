@@ -41,7 +41,10 @@ export const IntegrationsSettings = () => {
         setTmdbStatus({ has_key: data.tmdb.has_key, source: data.tmdb.source });
       }
       if (data.qbittorrent) {
-        setQbitSettings(data.qbittorrent);
+        // Saved settings come back with the server's PascalCase keys (Host, Port, ...);
+        // normalise so the controlled inputs keep working after the first save.
+        const q = Object.fromEntries(Object.entries(data.qbittorrent).map(([k, v]) => [k.toLowerCase(), v]));
+        setQbitSettings(prev => ({ ...prev, ...q }));
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }

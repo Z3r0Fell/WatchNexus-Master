@@ -54,6 +54,9 @@ for TIER in "${TIERS[@]}"; do
 
   BUILD_ARGS=(
     --build-arg "TIER=${TIER}"
+    # Publishable activate-only license key baked into official images
+    # (see Dockerfile / CellarController). Empty when unset.
+    --build-arg "LICENSE_SERVER_CLIENT_KEY=${LICENSE_SERVER_CLIENT_KEY:-}"
     --tag "${IMAGE}"
     --tag "${IMAGE_LATEST}"
     --label "com.watchnexus.tier=${TIER}"

@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import * as AuthModule from './AuthContext';
+
+// Tolerates rendering outside AuthProvider (tests) and mocked AuthContext modules.
+const useAuthState = AuthModule.useOptionalAuth || (() => null);
 
 const LicenseContext = createContext(null);
 
@@ -65,6 +69,7 @@ export const ROUTE_MODULE_MAP = {
   '/media-sync': 'chowder',
   '/themes': 'milk',
   '/lobster': 'lobster',
+  '/watch-party': 'watch-party',
 };
 
 // Module → required tier
@@ -115,7 +120,12 @@ export const LicenseProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => { fetchLicense(); }, [fetchLicense]);
+  // /api/cellar/status requires auth, so a fetch made while logged out (e.g. on
+  // the login page) 401s and falls back to 'standard'. Re-fetch whenever the
+  // auth state changes so Pro/Ultra unlocks apply right after login.
+  const isAuthenticated = useAuthState()?.isAuthenticated ?? null;
+
+  useEffect(() => { fetchLicense(); }, [fetchLicense, isAuthenticated]);
 
   // Listen for license changes (dispatched from ActivationSettings)
   useEffect(() => {

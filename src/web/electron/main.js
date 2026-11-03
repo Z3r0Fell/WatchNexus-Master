@@ -1,7 +1,7 @@
 const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-const fs = require('http').request || require('https').request || null;
+const fs = require('fs');
 const http = require('http');
 const https = require('https');
 
@@ -18,8 +18,6 @@ const request = (url, opts = {}) => new Promise((resolve, reject) => {
   });
   req.on('error', reject);
   req.setTimeout(opts.timeout || 5000, () => { req.destroy(); reject(new Error('timeout')); });
-  if (opts.method) req.method = opts.method;
-  if (opts.headers) req.setHeaders(opts.headers);
   req.write(opts.body || '');
   req.end();
 });
@@ -165,8 +163,10 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
   } else {
-    const indexPath = path.join(__dirname, '..', 'build', 'index.html');
-    mainWindow.loadFile(indexPath);
+    // Load the SPA from the bundled backend (it serves the frontend build), so
+    // BrowserRouter paths and same-origin /api calls work. file:// breaks both.
+    const port = process.env.WATCHNEXUS_PORT || '8001';
+    mainWindow.loadURL(`http://127.0.0.1:${port}/`);
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

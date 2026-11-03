@@ -164,6 +164,11 @@ public class LibrariesController : ControllerBase
     {
         var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound();
+        // Stop a running scan, otherwise it keeps inserting items for the deleted library.
+        lock (_scanLock)
+        {
+            if (_scanTokens.TryGetValue(id, out var cts)) cts.Cancel();
+        }
         _db.MediaItems.RemoveRange(_db.MediaItems.Where(m => m.LibraryId == id));
         _db.Libraries.Remove(lib);
         await _db.SaveChangesAsync();
@@ -433,10 +438,13 @@ public class LibrariesController : ControllerBase
         }
     }
 
-    private static (string name, int? year) ParseTitle(string filename)
+    internal static (string name, int? year) ParseTitle(string filename)
     {
         var cleaned = Regex.Replace(filename, @"[\._]", " ");
-        var yearMatch = Regex.Match(cleaned, @"(.*?)\s*[\(\[]?(\d{4})[\)\]]?");
+        // Year must be 19xx/20xx, stand alone, and follow a non-empty title: the old
+        // pattern took any 4 digits ("Movie 1080p" -> year 1080, "2001 A Space
+        // Odyssey (1968)" -> empty title, year 2001).
+        var yearMatch = Regex.Match(cleaned, @"^(.+?)[\s\(\[]+((?:19|20)\d{2})(?!\d)");
         if (yearMatch.Success)
             return (yearMatch.Groups[1].Value.Trim(), int.Parse(yearMatch.Groups[2].Value));
         // Remove quality tags

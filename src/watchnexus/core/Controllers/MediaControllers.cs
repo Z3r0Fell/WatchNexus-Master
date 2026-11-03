@@ -61,9 +61,10 @@ public class MediaOpsController : ControllerBase
                 install_hint = Services.FfmpegLocator.InstallHint()
             });
 
-        var outPath = output_path ?? Path.Combine(
+        var defaultOutPath = Path.Combine(
             Path.GetDirectoryName(file_path) ?? ".",
             Path.GetFileNameWithoutExtension(file_path) + ".repaired" + Path.GetExtension(file_path));
+        var outPath = string.IsNullOrEmpty(output_path) ? defaultOutPath : output_path;
 
         if (!IsAllowedMediaPath(outPath))
             return StatusCode(403, new { detail = "output_path must be inside a configured media root" });
@@ -71,6 +72,15 @@ public class MediaOpsController : ControllerBase
         var outDir = Path.GetFullPath(Path.GetDirectoryName(outPath) ?? ".").TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (!string.Equals(inDir, outDir, StringComparison.OrdinalIgnoreCase))
             return StatusCode(403, new { detail = "output_path must be in the same directory as file_path" });
+        // ffmpeg runs with -y: never let it clobber the source or an unrelated
+        // existing file (only the default ".repaired" output may be overwritten).
+        var inFull = Path.GetFullPath(file_path);
+        var outFull = Path.GetFullPath(outPath);
+        if (string.Equals(inFull, outFull, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { detail = "output_path must differ from file_path" });
+        if (System.IO.File.Exists(outFull) &&
+            !string.Equals(outFull, Path.GetFullPath(defaultOutPath), StringComparison.OrdinalIgnoreCase))
+            return Conflict(new { detail = "output_path already exists" });
 
         try
         {
@@ -89,8 +99,11 @@ public class MediaOpsController : ControllerBase
             psi.ArgumentList.Add("-c");
             psi.ArgumentList.Add("copy");
             psi.ArgumentList.Add(outPath);
-            var proc = System.Diagnostics.Process.Start(psi);
+            using var proc = System.Diagnostics.Process.Start(psi);
             if (proc == null) return StatusCode(500, new { detail = "Failed to launch ffmpeg" });
+            // Drain stderr concurrently: ffmpeg writes continuous progress to
+            // stderr and blocks once the pipe buffer fills if nobody reads it.
+            var stderrTask = proc.StandardError.ReadToEndAsync();
 
             // Cap at 10 minutes — repair of a single file shouldn't take longer.
             var completed = await Task.Run(() => proc.WaitForExit(TimeSpan.FromMinutes(10)));
@@ -99,6 +112,7 @@ public class MediaOpsController : ControllerBase
                 try { proc.Kill(true); } catch { }
                 return StatusCode(504, new { detail = "ffmpeg timed out after 10 minutes" });
             }
+            var stderr = await stderrTask;
             if (proc.ExitCode != 0)
                 return StatusCode(500, new
                 {
@@ -107,7 +121,7 @@ public class MediaOpsController : ControllerBase
                     message = "ffmpeg exited non-zero",
                     detail = "ffmpeg exited non-zero",
                     exit_code = proc.ExitCode,
-                    stderr_tail = (await proc.StandardError.ReadToEndAsync()).Split('\n').TakeLast(8)
+                    stderr_tail = stderr.Split('\n').TakeLast(8)
                 });
             return Ok(new { status = "repaired", success = true, message = "File repaired", file_path, output_path = outPath });
         }
@@ -133,7 +147,11 @@ public class MediaOpsController : ControllerBase
             try
             {
                 foreach (var sub in Directory.GetDirectories(dir))
+                {
+                    // Never descend through symlinks — they can point outside the media root.
+                    if (new DirectoryInfo(sub).LinkTarget != null) continue;
                     if (stack.Count < 512) stack.Push(sub);
+                }
                 foreach (var f in Directory.GetFiles(dir))
                 {
                     if (results.Count >= maxFiles) break;
@@ -322,7 +340,9 @@ public class MediaOpsController : ControllerBase
             directory = doc.TryGetProperty("directory", out var d) ? d.GetString() ?? "" : "";
         }
         catch { }
-        if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))
+        if (string.IsNullOrEmpty(directory) || !IsAllowedMediaPath(directory))
+            return StatusCode(403, new { detail = "directory must be inside a configured media root" });
+        if (!System.IO.Directory.Exists(directory))
             return NotFound(new { detail = "Configured directory not found" });
         var res = RunHealthScan(directory, maxFiles: 2000);
         return Ok(new { total_files = res.Count, issues = res.Count(r => r.status != "healthy"), scan_id = id });
@@ -339,47 +359,12 @@ public class MediaOpsController : ControllerBase
     // ── Media-root allowlist ─────────────────────────────────────────
     // Confines the file-oracle / ffmpeg-overwrite endpoints to the server's
     // media directories so an authenticated user can't probe or overwrite
-    // arbitrary system files. Roots come from MEDIA_ROOT / MEDIA_ROOTS env,
-    // otherwise the standard Docker data dirs + the app data dir.
+    // arbitrary system files. Delegates to the shared symlink-resolving
+    // MediaPaths allow-list (a symlink inside a root can't escape it).
+    private static bool IsAllowedMediaPath(string? path) => MediaPaths.IsAllowedPath(path);
+#pragma warning disable CS0169, CS0649 // retained: existing tests reset this cache via reflection
     private static string[]? _cachedRoots;
-    private static readonly object _rootsLock = new();
-
-    private static string[] ResolveAllowedMediaRoots()
-    {
-        var env = Environment.GetEnvironmentVariable("MEDIA_ROOTS")
-                  ?? Environment.GetEnvironmentVariable("MEDIA_ROOT");
-        if (!string.IsNullOrWhiteSpace(env))
-            return env.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (_cachedRoots != null) return _cachedRoots;
-        lock (_rootsLock)
-        {
-            if (_cachedRoots == null)
-            {
-                var dataDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR")
-                              ?? Path.Combine(AppContext.BaseDirectory, "data");
-                _cachedRoots = new[]
-                {
-                    "/data/media", "/data/rips", "/data/transcoded", "/data/offline",
-                    dataDir,
-                };
-            }
-            return _cachedRoots;
-        }
-    }
-
-    private static bool IsAllowedMediaPath(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false;
-        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        foreach (var root in ResolveAllowedMediaRoots())
-        {
-            var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            if (full.Equals(rootFull, StringComparison.OrdinalIgnoreCase) ||
-                full.StartsWith(rootFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-        return false;
-    }
+#pragma warning restore CS0169, CS0649
 }
 
 // ── Media Management — DELETED stubs (Import/ScanImport were placeholders) ──
@@ -657,7 +642,8 @@ public class CompoteController : ControllerBase
             if (string.IsNullOrEmpty(url)) return Ok(new { success = false, error = "No URL configured" });
             if (SsrfGuard.IsBlockedUrl(url)) return Ok(new { success = false, error = "Indexer URL is not an allowed http(s) endpoint" });
 
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var http = this.Http();
+            http.Timeout = TimeSpan.FromSeconds(10);
             http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var response = await http.GetAsync(url);
@@ -690,7 +676,8 @@ public class CompoteController : ControllerBase
 
         var allResults = new List<Dictionary<string, object?>>();
 
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        var http = this.Http();
+        http.Timeout = TimeSpan.FromSeconds(15);
         http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
 
         var tasks = new List<Task>();
@@ -924,6 +911,7 @@ public class CompoteController : ControllerBase
             var size = 0L;
             var seeders = 0;
             var leechers = 0;
+            int? peers = null;
 
             foreach (var attr in item.Elements(torznab + "attr").Concat(item.Elements(newznab + "attr")))
             {
@@ -931,8 +919,10 @@ public class CompoteController : ControllerBase
                 var attrValue = attr.Attribute("value")?.Value ?? "";
                 if (attrName == "size" && long.TryParse(attrValue, out var sz)) size = sz;
                 if (attrName == "seeders" && int.TryParse(attrValue, out var sd)) seeders = sd;
-                if (attrName == "peers" && int.TryParse(attrValue, out var pr)) leechers = pr - seeders;
+                if (attrName == "peers" && int.TryParse(attrValue, out var pr)) peers = pr;
             }
+            // "peers" may precede "seeders" in the feed — compute after both are read.
+            if (peers.HasValue) leechers = Math.Max(0, peers.Value - seeders);
 
             results.Add(new Dictionary<string, object?>
             {
@@ -1235,7 +1225,8 @@ public class GarnishController : ControllerBase
         if (!urls.ContainsKey(provider)) return BadRequest(new { success = false, error = "Unknown provider" });
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            var http = this.Http();
+            http.Timeout = TimeSpan.FromSeconds(8);
             http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
             var resp = await http.GetAsync(urls[provider]);
             return Ok(new { success = resp.IsSuccessStatusCode, provider, status_code = (int)resp.StatusCode });

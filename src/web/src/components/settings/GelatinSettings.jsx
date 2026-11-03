@@ -7,6 +7,13 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { SettingsTabHeader, SettingsTabContent } from './SettingsTabHeader';
 
+// navigator.clipboard is undefined on plain-HTTP origins and writeText can reject.
+const copyText = async (text, okMsg) => {
+  if (!text) return;
+  try { await navigator.clipboard.writeText(text); toast.success(okMsg); }
+  catch { toast.error('Clipboard unavailable'); }
+};
+
 // Tabs for Gelatin (External Access) Settings
 const GELATIN_TABS = [
   { id: 'status', label: 'Server Status', icon: Server },
@@ -37,7 +44,7 @@ export const GelatinSettings = () => {
       const res = await axios.post(`${BACKEND_URL}/api/gelatin/tunnel/create`);
       toast.success('Tunnel created successfully');
       setActiveTunnels(prev => [...prev, res.data]); fetchGelatinStatus();
-    } catch { toast.error('Failed to create tunnel'); }
+    } catch (err) { toast.error(err.response?.data?.detail || 'Failed to create tunnel'); }
     finally { setCreatingTunnel(false); }
   };
 
@@ -46,14 +53,14 @@ export const GelatinSettings = () => {
       await axios.delete(`${BACKEND_URL}/api/gelatin/tunnel/${tunnelId}`);
       toast.success('Tunnel closed');
       setActiveTunnels(prev => prev.filter(t => t.tunnel_id !== tunnelId)); fetchGelatinStatus();
-    } catch { toast.error('Failed to close tunnel'); }
+    } catch (err) { toast.error(err.response?.data?.detail || 'Failed to close tunnel'); }
   };
 
   const handleGenerateAccessToken = async () => {
     try {
       const res = await axios.post(`${BACKEND_URL}/api/gelatin/access-token`);
       setAccessToken(res.data); toast.success('Access token generated');
-    } catch { toast.error('Failed to generate token'); }
+    } catch (err) { toast.error(err.response?.data?.detail || 'Failed to generate token'); }
   };
 
   const renderTabContent = () => {
@@ -111,6 +118,11 @@ const StatusTab = ({ gelatinStatus }) => (
           Server Information
         </h3>
         
+        {gelatinStatus.message && (
+          <p className="text-sm text-gray-400" data-testid="gelatin-status-message">{gelatinStatus.message}</p>
+        )}
+
+        {(gelatinStatus.server_id || gelatinStatus.local_ip || gelatinStatus.lan_url || gelatinStatus.external_url) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 rounded-lg bg-black/30 border border-white/10">
             <p className="text-xs text-gray-500 mb-1">Server ID</p>
@@ -124,7 +136,7 @@ const StatusTab = ({ gelatinStatus }) => (
             <p className="text-xs text-gray-500 mb-1">LAN URL</p>
             <div className="flex items-center gap-2">
               <p className="font-mono text-sm text-violet-400">{gelatinStatus.lan_url}</p>
-              <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(gelatinStatus.lan_url); toast.success('Copied'); }}>Copy</Button>
+              <Button size="sm" variant="ghost" onClick={() => copyText(gelatinStatus.lan_url, 'Copied')}>Copy</Button>
             </div>
           </div>
           {gelatinStatus.external_url && (
@@ -132,11 +144,12 @@ const StatusTab = ({ gelatinStatus }) => (
               <p className="text-xs text-green-400 mb-1">External URL (Active)</p>
               <div className="flex items-center gap-2">
                 <p className="font-mono text-sm text-green-400">{gelatinStatus.external_url}</p>
-                <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(gelatinStatus.external_url); toast.success('Copied'); }}>Copy</Button>
+                <Button size="sm" variant="ghost" onClick={() => copyText(gelatinStatus.external_url, 'Copied')}>Copy</Button>
               </div>
             </div>
           )}
         </div>
+        )}
         
         {gelatinStatus.features?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
@@ -178,7 +191,7 @@ const TunnelsTab = ({ activeTunnels, creatingTunnel, handleCreateTunnel, handleC
                 <p className="text-xs text-gray-500">ID: {tunnel.tunnel_id} - Created: {new Date(tunnel.created_at).toLocaleString()}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(tunnel.public_url); toast.success('URL copied'); }}>Copy</Button>
+                <Button size="sm" variant="ghost" onClick={() => copyText(tunnel.public_url, 'URL copied')}>Copy</Button>
                 <Button size="sm" variant="ghost" onClick={() => handleCloseTunnel(tunnel.tunnel_id)} className="text-red-400 hover:bg-red-500/10"><X className="w-4 h-4" /></Button>
               </div>
             </div>
@@ -223,7 +236,7 @@ const TokensTab = ({ accessToken, handleGenerateAccessToken }) => (
           <p className="text-xs text-green-400 mb-2">New Access Token (copy now, won't be shown again)</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 p-2 rounded bg-black/20 text-sm font-mono break-all">{accessToken.token}</code>
-            <Button size="sm" onClick={() => { navigator.clipboard.writeText(accessToken.token); toast.success('Token copied'); }}>Copy</Button>
+            <Button size="sm" onClick={() => copyText(accessToken.token, 'Token copied')}>Copy</Button>
           </div>
           <p className="text-xs text-gray-500 mt-2">Permissions: {accessToken.permissions?.join(', ')} - Expires in {accessToken.expires_hours}h</p>
         </div>

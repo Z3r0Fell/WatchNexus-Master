@@ -28,7 +28,7 @@ export const IndexerHealthCheck = ({ indexers = [], onRefresh }) => {
         } catch (err) {
           status[indexer.id] = {
             success: false,
-            message: err.response?.data?.detail || 'Connection failed',
+            message: err.response?.data?.detail || err.response?.data?.error || 'Connection failed',
             cloudflare: false,
           };
         }
@@ -40,7 +40,8 @@ export const IndexerHealthCheck = ({ indexers = [], onRefresh }) => {
   };
 
   const enabledIndexers = indexers.filter(i => i.enabled);
-  const healthyCount = Object.values(healthStatus).filter(s => s.success).length;
+  // Count only indexers that are still enabled (results for removed/disabled ones linger in state).
+  const healthyCount = enabledIndexers.filter(i => healthStatus[i.id]?.success).length;
   const hasIssues = enabledIndexers.length > 0 && healthyCount < enabledIndexers.length;
 
   return (

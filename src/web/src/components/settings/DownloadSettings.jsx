@@ -12,6 +12,7 @@ import { HelpTooltip } from '../ui/HelpTooltip';
 import { torrentEngineApi, qbittorrentApi } from '../../services/api';
 import axios from 'axios';
 import { BACKEND_URL } from '../../lib/config';
+import { mergeUserPreferences } from './GeneralSettings';
 
 export const DownloadSettings = () => {
   const [downloadClientMode, setDownloadClientMode] = useState('builtin');
@@ -81,12 +82,10 @@ export const DownloadSettings = () => {
 
   const handleSetDownloadMode = async (mode) => {
     setDownloadClientMode(mode);
-    // Save to backend
+    // Save to backend. PUT /api/user/preferences replaces the whole blob, so
+    // merge into the current preferences instead of wiping visible_tabs etc.
     try {
-      await axios.put(`${BACKEND_URL}/api/user/preferences`, 
-        { download_mode: mode },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      await mergeUserPreferences({ download_mode: mode });
       // Also save to localStorage for backwards compatibility
       localStorage.setItem('watchnexus_download_mode', mode);
     } catch (error) {
@@ -107,7 +106,11 @@ export const DownloadSettings = () => {
       const res = await qbittorrentApi.testConnection(qbitConfig.host, parseInt(qbitConfig.port), qbitConfig.username, qbitConfig.password);
       setQbitStatus(res.data);
       res.data.success ? toast.success(`Connected to qBittorrent v${res.data.version}`) : toast.error(res.data.error || 'Connection failed');
-    } catch { toast.error('Failed to connect to qBittorrent'); setQbitStatus({ success: false, error: 'Connection failed' }); }
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.response?.data?.error || 'Connection failed';
+      toast.error(`Failed to connect to qBittorrent: ${msg}`);
+      setQbitStatus({ success: false, error: msg });
+    }
     finally { setTestingQbit(false); }
   };
 
