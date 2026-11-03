@@ -68,10 +68,11 @@ export const LibraryPage = () => {
       ]);
       
       setServerStatus(statusRes.data);
-      setLibraries(librariesRes.data);
-      setRecentMedia(recentRes.data);
+      setLibraries(Array.isArray(librariesRes.data) ? librariesRes.data : []);
+      setRecentMedia(Array.isArray(recentRes.data) ? recentRes.data : []);
     } catch (error) {
       console.error('Failed to fetch library data:', error);
+      toast.error('Failed to load libraries');
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ export const LibraryPage = () => {
   const fetchMedia = useCallback(async (libraryId = null) => {
     try {
       const res = await marmaladeMedia.getMedia({ library_id: libraryId, limit: 100 });
-      setMedia(res.data);
+      setMedia(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error('Failed to fetch media:', error);
     }
@@ -120,7 +121,8 @@ export const LibraryPage = () => {
         setScanning(prev => ({ ...prev, [addRes.data.id]: true }));
         try {
           const scanRes = await marmaladeLibrary.scanLibrary(addRes.data.id);
-          toast.success(`Scan complete: ${scanRes.data.new} new files found`);
+          toast.success(`Scan complete: ${scanRes.data?.new || 0} new files found`);
+          fetchData();
           fetchMedia(selectedLibrary);
         } catch (scanErr) {
           toast.warning('Auto-scan failed. Click the refresh icon to scan manually.');
@@ -153,7 +155,12 @@ export const LibraryPage = () => {
     
     try {
       const res = await marmaladeLibrary.scanLibrary(libraryId);
-      toast.success(`Scan complete: ${res.data.new} new, ${res.data.updated} updated, ${res.data.removed} removed`);
+      const scanErrors = Array.isArray(res.data?.errors) ? res.data.errors : [];
+      if (scanErrors.length > 0) {
+        toast.error(`Scan failed: ${scanErrors[0]}`);
+      } else {
+        toast.success(`Scan complete: ${res.data?.new || 0} new, ${res.data?.updated || 0} updated`);
+      }
       fetchData();
       fetchMedia(selectedLibrary);
       fetchTvSeries(selectedLibrary);
@@ -170,7 +177,11 @@ export const LibraryPage = () => {
     try {
       toast.info('Fetching metadata from TMDB...');
       const res = await marmaladeLibrary.refreshMetadata(libraryId);
-      toast.success(`Metadata refreshed: ${res.data.refreshed} of ${res.data.total} items updated`);
+      if (res.data?.status === 'skipped') {
+        toast.warning(res.data.reason || 'Metadata refresh skipped');
+      } else {
+        toast.success(`Metadata refreshed: ${res.data?.updated ?? 0} of ${res.data?.total ?? 0} items updated`);
+      }
       fetchMedia(selectedLibrary);
       fetchTvSeries(selectedLibrary);
     } catch (error) {
@@ -188,7 +199,7 @@ export const LibraryPage = () => {
     
     try {
       const res = await marmaladeMedia.search(searchQuery);
-      setMedia(res.data);
+      setMedia(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       toast.error('Search failed');
     }
@@ -239,9 +250,9 @@ export const LibraryPage = () => {
                   <span className="text-gray-400">Marmalade</span>
                 </div>
                 <span className="text-gray-500">|</span>
-                <span className="text-gray-400">{serverStatus.libraries} libraries</span>
+                <span className="text-gray-400">{serverStatus.total_libraries ?? serverStatus.libraries ?? 0} libraries</span>
                 <span className="text-gray-500">|</span>
-                <span className="text-gray-400">{serverStatus.media_files} files</span>
+                <span className="text-gray-400">{serverStatus.total_media ?? serverStatus.media_files ?? 0} files</span>
               </div>
             )}
           </div>
@@ -551,7 +562,7 @@ export const LibraryPage = () => {
                             <h3 className="font-medium text-xs truncate">{item.title}</h3>
                             <div className="flex justify-between items-center mt-1">
                               <span className="text-xs text-gray-500">{item.year || ''}</span>
-                              <span className="text-xs text-gray-500">{formatFileSize(item.size)}</span>
+                              <span className="text-xs text-gray-500">{formatFileSize(item.file_size ?? item.size ?? 0)}</span>
                             </div>
                           </div>
                         </div>
@@ -629,7 +640,7 @@ export const LibraryPage = () => {
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm truncate">{ep.title}</p>
-                                        <p className="text-xs text-gray-500">{formatFileSize(ep.size)}</p>
+                                        <p className="text-xs text-gray-500">{formatFileSize(ep.size ?? 0)}</p>
                                       </div>
                                       {ep.watched && <Eye className="w-4 h-4 text-green-400 shrink-0" />}
                                       <Play className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
