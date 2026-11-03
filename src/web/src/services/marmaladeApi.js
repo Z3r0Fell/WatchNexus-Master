@@ -87,11 +87,12 @@ export const marmaladeMedia = {
 export const marmaladeProgress = {
   // Update watch progress
   updateProgress: (mediaId, progress) =>
-    marmaladeClient.post(`/media/${mediaId}/progress`, { progress }),
+    // Backend binds `progress` / `watched` from the query string, not the body.
+    marmaladeClient.post(`/media/${mediaId}/progress`, null, { params: { progress } }),
   
   // Mark as watched/unwatched
   markWatched: (mediaId, watched = true) =>
-    marmaladeClient.post(`/media/${mediaId}/watched`, { watched }),
+    marmaladeClient.post(`/media/${mediaId}/watched`, null, { params: { watched } }),
 };
 
 // Streaming

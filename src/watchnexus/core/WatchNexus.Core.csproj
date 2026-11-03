@@ -82,8 +82,15 @@
       <ModulesSource>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../modules'))</ModulesSource>
       <ModulesDest>$(PublishDir)modules</ModulesDest>
     </PropertyGroup>
+    <!-- Only the manifests are needed at runtime (ModuleLoader reads
+         modules/<name>/module.json + optional WatchNexus.Module.<Name>.dll).
+         MSBuild Copy instead of rsync: rsync is absent from the .NET SDK
+         Docker image and from Windows, which failed the publish. -->
+    <ItemGroup>
+      <ModuleManifestFiles Include="$(ModulesSource)/**/module.json" Exclude="$(ModulesSource)/**/bin/**;$(ModulesSource)/**/obj/**" />
+    </ItemGroup>
     <MakeDir Directories="$(ModulesDest)" Condition="!Exists('$(ModulesDest)')" />
-    <Exec Command="rsync -av --exclude='bin/' --exclude='obj/' &quot;$(ModulesSource)/&quot; &quot;$(ModulesDest)/&quot;" Condition="Exists('$(ModulesSource)')" />
+    <Copy SourceFiles="@(ModuleManifestFiles)" DestinationFolder="$(ModulesDest)/%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('$(ModulesSource)')" />
     <Copy SourceFiles="$(ModulesSource)/lobster/bin/$(Configuration)/net10.0/WatchNexus.Module.Lobster.dll"
           DestinationFolder="$(ModulesDest)/lobster/"
           SkipUnchangedFiles="true"

@@ -18,12 +18,12 @@ const PopsiclePage = () => {
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
-  const fetch_ = useCallback(async () => { try { const [d, s] = await Promise.all([axios.get(`${API}/api/popsicle/downloads`), axios.get(`${API}/api/popsicle/settings`)]); setDownloads(d.data.downloads || []); setSettings(s.data); } catch {} finally { setLoading(false); } }, []);
+  const fetch_ = useCallback(async () => { try { const [d, s] = await Promise.all([axios.get(`${API}/api/popsicle/downloads`), axios.get(`${API}/api/popsicle/settings`)]); setDownloads(d.data.downloads || []); setSettings(s.data); } catch { toast.error('Failed to load offline downloads'); } finally { setLoading(false); } }, []);
   useEffect(() => { fetch_(); }, [fetch_]);
 
-  const handleDelete = async (id) => { const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/popsicle/downloads/${id}`); toast.success('Removed'); fetch_(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/popsicle/downloads/${id}`); toast.success('Removed'); fetch_(); } catch { toast.error('Failed to remove download'); } };
 
-  const handleSaveSettings = async () => { try { await axios.post(`${API}/api/popsicle/settings`, settings); toast.success('Settings saved'); setShowSettings(false); } catch {} };
+  const handleSaveSettings = async () => { try { await axios.post(`${API}/api/popsicle/settings`, settings); toast.success('Settings saved'); setShowSettings(false); } catch (err) { toast.error(err.response?.data?.message || 'Failed to save settings'); } };
 
   return (
     <Layout>

@@ -256,7 +256,7 @@ export const Dashboard = () => {
   return (
     <Layout>
       <div data-testid="dashboard" className="min-h-screen">
-        <HeroBanner items={trending.slice(0, 5)} />
+        <HeroBanner items={trending.slice(0, 5)} onAddToWatchlist={handleAddToWatchlist} />
 
         {continueWatching.length > 0 && (
           <section data-testid="continue-watching-section" className="py-6 px-8">

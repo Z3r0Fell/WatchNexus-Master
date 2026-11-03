@@ -5,7 +5,7 @@ import { marmaladeLibrary, marmaladeMedia, marmaladeStream, formatDuration } fro
 import { toast } from 'sonner';
 import { 
   BookOpen, Play, Pause, Plus, RefreshCw, Search, 
-  Clock, SkipForward, SkipBack, Volume2, Bookmark,
+  Clock, SkipForward, SkipBack, Volume2, VolumeX, Bookmark,
   User, FolderOpen, Headphones, FastForward, Rewind
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
@@ -26,6 +26,7 @@ export const AudiobooksPage = () => {
   const [audioElement, setAudioElement] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [muted, setMuted] = useState(false);
   
   // Show add library form
   const [showAddLibrary, setShowAddLibrary] = useState(false);
@@ -100,7 +101,7 @@ export const AudiobooksPage = () => {
     setScanning(prev => ({ ...prev, [libraryId]: true }));
     try {
       const res = await marmaladeLibrary.scanLibrary(libraryId);
-      toast.success(`Scan complete: ${res.data.new} new audiobooks found`);
+      toast.success(`Scan complete: ${res.data?.new || 0} new audiobooks found`);
       fetchData();
     } catch (error) {
       toast.error('Scan failed');
@@ -109,26 +110,40 @@ export const AudiobooksPage = () => {
     }
   };
 
-  const playAudiobook = (book) => {
+  const playAudiobook = async (book) => {
     if (!audioElement) return;
-    
-    const streamUrl = marmaladeStream.getStreamUrl(book.id);
-    audioElement.src = streamUrl;
-    audioElement.playbackRate = playbackRate;
-    audioElement.play();
-    setCurrentBook(book);
-    setIsPlaying(true);
+
+    try {
+      // getStreamUrl is async (mints a signed stream token); assigning the
+      // unresolved Promise to src made every audiobook unplayable.
+      const streamUrl = await marmaladeStream.getStreamUrl(book.id);
+      audioElement.src = streamUrl;
+      audioElement.playbackRate = playbackRate;
+      setCurrentBook(book);
+      await audioElement.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('Failed to play audiobook:', error);
+      setIsPlaying(false);
+      toast.error('Could not play this audiobook');
+    }
   };
 
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     if (!audioElement || !currentBook) return;
-    
+
     if (isPlaying) {
       audioElement.pause();
-    } else {
-      audioElement.play();
+      setIsPlaying(false);
+      return;
     }
-    setIsPlaying(!isPlaying);
+    try {
+      await audioElement.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('Failed to resume audiobook:', error);
+      toast.error('Playback failed');
+    }
   };
 
   const skipForward = (seconds = 30) => {
@@ -407,8 +422,18 @@ export const AudiobooksPage = () => {
                 <Button variant="ghost" size="icon" title="Bookmark">
                   <Bookmark className="w-5 h-5 text-gray-400" />
                 </Button>
-                <Button variant="ghost" size="icon">
-                  <Volume2 className="w-5 h-5 text-gray-400" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title={muted ? 'Unmute' : 'Mute'}
+                  aria-pressed={muted}
+                  onClick={() => {
+                    const next = !muted;
+                    setMuted(next);
+                    if (audioElement) audioElement.muted = next;
+                  }}
+                >
+                  {muted ? <VolumeX className="w-5 h-5 text-gray-400" /> : <Volume2 className="w-5 h-5 text-gray-400" />}
                 </Button>
               </div>
             </div>

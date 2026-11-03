@@ -95,3 +95,5 @@ export const ChangelogPage = () => {
     </Layout>
   );
 };
+
+export default ChangelogPage;

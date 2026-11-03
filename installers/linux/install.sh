@@ -78,6 +78,9 @@ dotnet publish core/WatchNexus.Core.csproj -c Release -o "$INSTALL_DIR/bin" --se
 
 echo "[2/4] Installing modules..."
 cp -r "$SCRIPT_DIR/src/watchnexus/modules/"* "$INSTALL_DIR/bin/modules/" 2>/dev/null || true
+# Lobster is an external DLL module (/api/lobster/*); ModuleLoader needs
+# modules/lobster/WatchNexus.Module.Lobster.dll next to its module.json.
+dotnet publish modules/lobster/WatchNexus.Module.Lobster.csproj -c Release -o "$INSTALL_DIR/bin/modules/lobster"
 
 # Create launcher
 echo "[3/4] Creating launcher..."

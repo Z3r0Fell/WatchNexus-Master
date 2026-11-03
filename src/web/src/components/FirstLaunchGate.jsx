@@ -72,12 +72,21 @@ export const FirstLaunchGate = ({ children }) => {
 
   const bootstrap = async () => {
     try {
-      const [setupRes, licenseRes] = await Promise.all([
+      // allSettled: a failed license probe (e.g. 429 rate limit) must never
+      // hide the admin-creation wizard on a fresh install — that would leave
+      // the server with no account and no way to create one.
+      const [setupRes, licenseRes] = await Promise.allSettled([
         axios.get(`${API}/api/auth/setup-status`),
         axios.get(`${API}/api/cellar/first-launch`),
       ]);
-      const needsAdmin = !!setupRes.data?.needs_setup;
-      const needsLic = !!licenseRes.data?.needs_activation && !licenseRes.data?.setup_completed;
+      if (setupRes.status === 'rejected') throw setupRes.reason;
+      const needsAdmin = !!setupRes.value.data?.needs_setup;
+      const lic = licenseRes.status === 'fulfilled' ? licenseRes.value.data : null;
+      // Unknown license state on a fresh install → offer the edition step
+      // (it can always be skipped with "Continue with Standard").
+      const needsLic = lic
+        ? !!lic.needs_activation && !lic.setup_completed
+        : needsAdmin;
       setNeedsSetup(needsAdmin);
       setNeedsLicense(needsLic);
 

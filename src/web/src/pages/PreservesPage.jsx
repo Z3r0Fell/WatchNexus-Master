@@ -19,12 +19,12 @@ const PreservesPage = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [cfgForm, setCfgForm] = useState({ provider: 's3', bucket: '', region: 'us-east-1', endpoint: '', access_key: '', secret_key: '' });
 
-  const fetch_ = useCallback(async () => { try { const [c, b] = await Promise.all([axios.get(`${API}/api/preserves/config`), axios.get(`${API}/api/preserves/backups`)]); setConfig(c.data); setBackups(b.data.backups || []); if (!c.data.configured) setShowConfig(true); } catch {} finally { setLoading(false); } }, []);
+  const fetch_ = useCallback(async () => { try { const [c, b] = await Promise.all([axios.get(`${API}/api/preserves/config`), axios.get(`${API}/api/preserves/backups`)]); setConfig(c.data); setBackups(b.data.backups || []); if (!c.data.configured) setShowConfig(true); } catch { toast.error('Failed to load backup configuration'); } finally { setLoading(false); } }, []);
   useEffect(() => { fetch_(); }, [fetch_]);
 
-  const handleSaveConfig = async () => { try { const res = await axios.post(`${API}/api/preserves/config`, cfgForm); if (res.data.success) { toast.success(res.data.message); fetch_(); setShowConfig(false); } } catch {} };
-  const handleCreateBackup = async () => { try { const res = await axios.post(`${API}/api/preserves/backups`, { type: 'full' }); if (res.data.success) { toast.success(res.data.message); fetch_(); } } catch {} };
-  const handleDelete = async (id) => { const ok = await confirm({ title: 'Delete Backup', description: 'Delete backup?', confirmText: 'Delete' }); if (!ok) return; try { await axios.delete(`${API}/api/preserves/backups/${id}`); toast.success('Deleted'); fetch_(); } catch {} };
+  const handleSaveConfig = async () => { try { const res = await axios.post(`${API}/api/preserves/config`, cfgForm); if (res.data.success) { toast.success(res.data.message); fetch_(); setShowConfig(false); } else toast.error(res.data.message || 'Failed to save configuration'); } catch (err) { toast.error(err.response?.data?.message || 'Failed to save configuration'); } };
+  const handleCreateBackup = async () => { try { const res = await axios.post(`${API}/api/preserves/backups`, { type: 'full' }); if (res.data.success) { toast.success(res.data.message); fetch_(); } else toast.error(res.data.message || 'Failed to start backup'); } catch (err) { toast.error(err.response?.data?.message || 'Failed to start backup'); } };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Delete Backup', description: 'Delete backup?', confirmText: 'Delete' }); if (!ok) return; try { await axios.delete(`${API}/api/preserves/backups/${id}`); toast.success('Deleted'); fetch_(); } catch { toast.error('Failed to delete backup'); } };
 
   return (
     <Layout>

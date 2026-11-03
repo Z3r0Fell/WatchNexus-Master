@@ -105,7 +105,10 @@ export const libraryApi = {
 export const downloadApi = {
   getAll: (status) => apiClient.get(`/downloads`, { params: status ? { status } : {} }),
   getById: (id) => apiClient.get(`/downloads/engine/${id}`),
-  create: (data) => apiClient.post(`/downloads`, data),
+  // POST /api/downloads binds title/media_type/tmdb_id/size from the query string.
+  create: (data = {}) => apiClient.post(`/downloads`, null, {
+    params: { title: data.title, media_type: data.media_type, tmdb_id: data.tmdb_id, size: data.size },
+  }),
   pause: (id) => apiClient.post(`/downloads/engine/${id}/pause`),
   resume: (id) => apiClient.post(`/downloads/engine/${id}/resume`),
   remove: (id, deleteFiles) => apiClient.delete(`/downloads/engine/${id}`, { params: { delete_files: deleteFiles } }),

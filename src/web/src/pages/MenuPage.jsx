@@ -67,7 +67,9 @@ const MenuPage = () => {
     } catch {}
   }, []);
 
-  useEffect(() => { fetchDiscover(subTab); }, [subTab, fetchDiscover]);
+  // 'search' results are set by handleSearch; fetching here would replace
+  // them with the upcoming list.
+  useEffect(() => { if (subTab !== 'search') fetchDiscover(subTab); }, [subTab, fetchDiscover]);
   useEffect(() => { fetchRequests(); fetchStats(); }, [fetchRequests, fetchStats]);
 
   const handleSearch = async () => {

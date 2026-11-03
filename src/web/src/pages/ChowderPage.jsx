@@ -15,6 +15,9 @@ import { useConfirm } from '../hooks/use-confirm';
 const API = BACKEND_URL;
 const STATUS_BADGE = { queued: { bg: 'bg-gray-500/15', text: 'text-gray-400', label: 'Queued' }, downloading: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'Downloading' }, completed: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Done' }, failed: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Failed' }, paused: { bg: 'bg-amber-500/15', text: 'text-amber-400', label: 'Paused' } };
 
+// Load failures share one toast id so a down backend shows a single error, not four.
+const loadFailed = (what, err) => { console.error(`Media Sync: failed to load ${what}`, err); toast.error('Failed to load Media Sync data', { id: 'chowder-load-error' }); };
+
 const ChowderPage = () => {
   const { confirm, ConfirmDialog } = useConfirm();
   const [tab, setTab] = useState('servers');
@@ -31,10 +34,10 @@ const ChowderPage = () => {
   const [libraryItems, setLibraryItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchServers = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/servers`); setServers(r.data.servers || []); } catch {} }, []);
-  const fetchQueue = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/queue`); setQueue(r.data); } catch {} }, []);
-  const fetchStats = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/stats`); setStats(r.data); } catch {} }, []);
-  const fetchHistory = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/history`); setHistory(r.data.history || []); } catch {} }, []);
+  const fetchServers = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/servers`); setServers(r.data?.servers || []); } catch (err) { loadFailed('servers', err); } }, []);
+  const fetchQueue = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/queue`); setQueue({ ...r.data, items: r.data?.items || [] }); } catch (err) { loadFailed('queue', err); } }, []);
+  const fetchStats = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/stats`); setStats(r.data); } catch (err) { loadFailed('stats', err); } }, []);
+  const fetchHistory = useCallback(async () => { try { const r = await axios.get(`${API}/api/chowder/history`); setHistory(r.data?.history || []); } catch (err) { loadFailed('history', err); } }, []);
 
   useEffect(() => { Promise.all([fetchServers(), fetchQueue(), fetchStats(), fetchHistory()]).finally(() => setLoading(false)); }, [fetchServers, fetchQueue, fetchStats, fetchHistory]);
 
@@ -44,12 +47,13 @@ const ChowderPage = () => {
     catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
-  const handleDeleteServer = async (id) => { const ok = await confirm({ title: 'Remove Server', description: 'Remove server?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/chowder/servers/${id}`); fetchServers(); fetchStats(); } catch {} };
+  const handleDeleteServer = async (id) => { const ok = await confirm({ title: 'Remove Server', description: 'Remove server?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/chowder/servers/${id}`); toast.success('Server removed'); fetchServers(); fetchStats(); } catch (err) { toast.error(err.response?.data?.message || 'Failed to remove server'); } };
 
   const handleBrowseServer = async (srv) => {
     setBrowsingServer(srv);
     setBrowsingLibrary(null);
     setLibraryItems([]);
+    setLibraries([]);
     try { const r = await axios.get(`${API}/api/chowder/servers/${srv.id}/libraries`); setLibraries(r.data.libraries || []); } catch { toast.error('Failed to load libraries'); }
   };
 
@@ -64,9 +68,9 @@ const ChowderPage = () => {
     catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
-  const handleRemoveQueue = async (id) => { try { await axios.delete(`${API}/api/chowder/queue/${id}`); fetchQueue(); } catch {} };
-  const handlePauseAll = async () => { try { await axios.post(`${API}/api/chowder/queue/pause`); toast.success('Paused'); fetchQueue(); } catch {} };
-  const handleResumeAll = async () => { try { await axios.post(`${API}/api/chowder/queue/resume`); toast.success('Resumed'); fetchQueue(); } catch {} };
+  const handleRemoveQueue = async (id) => { try { await axios.delete(`${API}/api/chowder/queue/${id}`); fetchQueue(); fetchStats(); } catch (err) { toast.error(err.response?.data?.message || 'Failed to remove from queue'); } };
+  const handlePauseAll = async () => { try { await axios.post(`${API}/api/chowder/queue/pause`); toast.success('Paused'); fetchQueue(); } catch (err) { toast.error(err.response?.data?.message || 'Failed to pause downloads'); } };
+  const handleResumeAll = async () => { try { await axios.post(`${API}/api/chowder/queue/resume`); toast.success('Resumed'); fetchQueue(); } catch (err) { toast.error(err.response?.data?.message || 'Failed to resume downloads'); } };
 
   if (loading) return <Layout><div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-teal-400" /></div><ConfirmDialog />
     </Layout>;
