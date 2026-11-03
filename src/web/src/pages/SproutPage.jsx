@@ -55,10 +55,15 @@ export const SproutPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const copyFeedUrl = (url) => {
-    navigator.clipboard.writeText(url);
-    toast.success('Feed URL copied to clipboard');
+  const copyText = async (text, msg) => {
+    try {
+      // navigator.clipboard is undefined on plain-HTTP (non-secure) origins.
+      await navigator.clipboard.writeText(text);
+      toast.success(msg);
+    } catch { toast.error('Copy failed - select the text and copy it manually'); }
   };
+
+  const copyFeedUrl = (url) => copyText(url, 'Feed URL copied to clipboard');
 
   const generateApiKey = async () => {
     try {
@@ -260,7 +265,7 @@ export const SproutPage = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => { navigator.clipboard.writeText(config.api_key); toast.success('Key copied'); }}
+                      onClick={() => copyText(config.api_key, 'Key copied')}
                       className="text-gray-400"
                     >
                       <Copy className="w-4 h-4" />
