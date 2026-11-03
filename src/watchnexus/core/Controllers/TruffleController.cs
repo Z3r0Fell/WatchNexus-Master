@@ -31,7 +31,7 @@ public class TruffleController : ControllerBase
             MediaType = body.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movie" : "movie",
             TmdbId = body.TryGetProperty("tmdb_id", out var tid) ? tid.ToString() : null,
             Title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
-            DurationSeconds = body.TryGetProperty("duration_seconds", out var d) ? d.GetInt32() : 0,
+            DurationSeconds = body.TryGetProperty("duration_seconds", out var d) && d.TryGetInt32(out var dv) && dv > 0 ? dv : 0,
             DeviceType = body.TryGetProperty("device_type", out var dt) ? dt.GetString() : null,
             Quality = body.TryGetProperty("quality", out var q) ? q.GetString() : null,
             StartedAt = DateTime.UtcNow,
@@ -57,6 +57,7 @@ public class TruffleController : ControllerBase
     public async Task<IActionResult> Stats([FromQuery] int days = 30)
     {
         var uid = this.UserId();
+        days = Math.Clamp(days, 1, 3650); // AddDays(-huge) throws
         var since = DateTime.UtcNow.AddDays(-days);
         var events = await _db.PlayEvents
             .Where(e => e.UserId == uid && e.StartedAt >= since)
@@ -82,6 +83,9 @@ public class TruffleController : ControllerBase
             total_plays = events.Count,
             total_watch_hours = Math.Round(totalWatchTime / 3600.0, 1),
             unique_titles = events.Select(e => e.Title).Distinct().Count(),
+            // Keys read by AnalyticsPage.jsx
+            movies_watched = events.Count(e => e.MediaType == "movie"),
+            episodes_watched = events.Count(e => e.MediaType == "tv" || e.MediaType == "episode"),
             by_media_type = byType,
             top_titles = topTitles,
             by_hour = byHour,
@@ -102,10 +106,14 @@ public class TruffleController : ControllerBase
         var events = await _db.PlayEvents
             .Where(e => e.UserId == uid)
             .OrderByDescending(e => e.StartedAt)
-            .Take(limit)
-            .Select(e => new { e.Id, e.MediaType, e.TmdbId, e.Title, e.DurationSeconds, e.DeviceType, e.Quality, e.StartedAt, e.EndedAt })
+            .Take(Math.Clamp(limit, 1, 500))
             .ToListAsync();
-        return Ok(events);
+        // Original camelCase keys plus the snake_case ones AnalyticsPage.jsx reads.
+        return Ok(events.Select(e => new
+        {
+            e.Id, e.MediaType, e.TmdbId, e.Title, e.DurationSeconds, e.DeviceType, e.Quality, e.StartedAt, e.EndedAt,
+            media_type = e.MediaType, played_at = e.StartedAt, duration_minutes = e.DurationSeconds / 60,
+        }));
     }
 
     // ── Year Wrapped ──────────────────────────────────
@@ -114,6 +122,7 @@ public class TruffleController : ControllerBase
     {
         var uid = this.UserId();
         var y = year ?? DateTime.UtcNow.Year;
+        if (y < 1970 || y > 9998) return BadRequest(new { detail = "year out of range" });
         var start = new DateTime(y, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var end = new DateTime(y + 1, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -152,8 +161,10 @@ public class TruffleController : ControllerBase
 
     // ── Admin: All Users Stats ──────────────────────────────────
     [HttpGet("admin/overview")]
+    [Authorize(Roles = "admin")] // cross-user viewing data
     public async Task<IActionResult> AdminOverview([FromQuery] int days = 30)
     {
+        days = Math.Clamp(days, 1, 3650);
         var since = DateTime.UtcNow.AddDays(-days);
         var events = await _db.PlayEvents.Where(e => e.StartedAt >= since).ToListAsync();
         var byUser = events.GroupBy(e => e.UserId)
