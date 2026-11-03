@@ -27,13 +27,18 @@ public static class Fortress
     public static string Status => _initialized ? (IsIntact ? "secure" : "tampered") : "uninitialized";
 
     /// <summary>Initialize Fortress at startup — computes baseline hashes and validates license</summary>
-    public static void Initialize(WebApplication app)
+    public static void Initialize(WebApplication app, string? dataDir = null)
     {
         Log("[Fortress] Initializing code protection...");
 
-        // Set up data directory
-        _fortressDataPath = Path.Combine(AppContext.BaseDirectory, "data", "fortress");
-        Directory.CreateDirectory(_fortressDataPath);
+        // Set up data directory. Use the resolved (writable) data dir: the app
+        // directory is read-only in Docker (read_only rootfs) and under Program
+        // Files on Windows. Persistence is best-effort and must not crash startup.
+        _fortressDataPath = Path.Combine(
+            string.IsNullOrWhiteSpace(dataDir) ? Path.Combine(AppContext.BaseDirectory, "data") : dataDir,
+            "fortress");
+        try { Directory.CreateDirectory(_fortressDataPath); }
+        catch (Exception ex) { Log($"[Fortress] Cannot create {_fortressDataPath}: {ex.Message} (audit log will be in-memory only)"); }
 
         // Load persisted audit log from disk
         LoadAuditLog();

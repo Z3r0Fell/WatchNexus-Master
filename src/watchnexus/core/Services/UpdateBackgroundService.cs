@@ -87,6 +87,15 @@ public class UpdateBackgroundService : BackgroundService
                 _logger.LogWarning("[Updater] Patch {PatchId} REJECTED: {Error}", manifest.PatchId, error);
                 return intervalHours;
             }
+            // Apply exactly the bytes whose signature was verified — the first
+            // fetch is a separate request and could differ (TOCTOU).
+            var verified = PatchService.ParseManifest(rawJson);
+            if (verified == null || verified.PatchId != manifest.PatchId)
+            {
+                _logger.LogWarning("[Updater] Patch {PatchId} REJECTED: verified manifest does not match the fetched manifest", manifest.PatchId);
+                return intervalHours;
+            }
+            manifest = verified;
         }
 
         _logger.LogInformation("[Updater] Auto-applying silent patch {PatchId}...", manifest.PatchId);

@@ -166,7 +166,9 @@ public class MilkController : ControllerBase
         };
 
         object? currentThemeColors = null;
-        if (custom?.Value != null) {
+        // Only the custom theme carries stored colors; a built-in selection must not
+        // be overridden by stale custom colors.
+        if (custom?.Value != null && activeTheme == "custom") {
             try { currentThemeColors = JsonSerializer.Deserialize<object>(custom.Value); } catch { }
         }
 
@@ -203,12 +205,31 @@ public class MilkController : ControllerBase
     public async Task<IActionResult> CustomTheme([FromBody] JsonElement body)
     {
         var userId = this.UserId();
-        var css = body.TryGetProperty("custom_css", out var c) ? c.GetString() ?? "" : "";
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_css");
-        if (existing != null) existing.Value = css;
-        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "custom_css", Value = css, UserId = userId });
+        if (body.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "JSON object body required" });
+
+        async Task Upsert(string key, string value)
+        {
+            var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
+            if (row != null) row.Value = value;
+            else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, Value = value, UserId = userId });
+        }
+
+        if (body.TryGetProperty("custom_css", out var c) && c.ValueKind == JsonValueKind.String)
+            await Upsert("custom_css", c.GetString() ?? "");
+
+        // ThemeContext / ThemeCommunityPage send { name, colors }. Persist colors under the
+        // key theme-forge reads (custom_theme_colors) and make "custom" the active theme;
+        // previously colors were dropped and never survived a reload.
+        object? theme = null;
+        if (body.TryGetProperty("colors", out var colors) && colors.ValueKind == JsonValueKind.Object)
+        {
+            await Upsert("custom_theme_colors", colors.GetRawText());
+            await Upsert("active_theme", "custom");
+            var name = body.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : "Custom Theme";
+            theme = new { type = "custom", name, colors };
+        }
         await _db.SaveChangesAsync();
-        return Ok(new { status = "saved" });
+        return Ok(new { status = "saved", theme });
     }
 
     private static object[] GetThemes() => new object[]

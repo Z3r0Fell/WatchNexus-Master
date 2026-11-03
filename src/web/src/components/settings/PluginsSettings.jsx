@@ -264,7 +264,7 @@ export const PluginsSettings = () => {
               activeView === 'installed' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
             }`}
           >
-            <Check className="w-4 h-4" /> Installed ({plugins.length})
+            <Check className="w-4 h-4" /> Installed ({installed.length})
           </button>
         </div>
       </div>

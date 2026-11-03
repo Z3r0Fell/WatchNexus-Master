@@ -210,7 +210,7 @@ export const SearchPage = () => {
               if (item.media_type === 'person') {
                 return (
                   <div
-                    key={item.id}
+                    key={`person-${item.id}`}
                     className="flex flex-col items-center text-center p-4 glass-card rounded-xl"
                   >
                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 bg-surface">
@@ -234,7 +234,7 @@ export const SearchPage = () => {
 
               return (
                 <MediaCard
-                  key={item.id}
+                  key={`${item.media_type}-${item.id}`}
                   item={item}
                   index={index}
                   onAddToWatchlist={handleAddToWatchlist}

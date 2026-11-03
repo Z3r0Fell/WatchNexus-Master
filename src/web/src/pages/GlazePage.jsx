@@ -45,9 +45,10 @@ export const GlazePage = () => {
         axios.get(`${API}/api/glaze/trakt/history?limit=20`, { headers }),
       ]);
       setConfig(configRes.data);
-      setHistory(historyRes.data || []);
+      setHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
     } catch (e) {
       console.error('Glaze fetch error:', e);
+      toast.error('Failed to load scrobbling settings');
     } finally {
       setLoading(false);
     }
@@ -56,6 +57,10 @@ export const GlazePage = () => {
   useEffect(() => { fetchData(); }, []);
 
   const saveConfig = async () => {
+    if (!config) {
+      toast.error('Settings not loaded yet');
+      return;
+    }
     try {
       await axios.put(`${API}/api/glaze/config`, config, {
         headers: { 'Content-Type': 'application/json' }
@@ -83,11 +88,11 @@ export const GlazePage = () => {
         
       });
       if (res.data?.authorization_url) {
-        window.open(res.data.authorization_url, '_blank');
+        window.open(res.data.authorization_url, '_blank', 'noopener,noreferrer');
         toast.success('Follow the authorization page to connect Trakt');
       }
     } catch (e) {
-      toast.error('Authorization failed');
+      toast.error(e.response?.data?.message || 'Authorization failed');
     }
   };
 

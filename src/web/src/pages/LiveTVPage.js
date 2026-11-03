@@ -18,7 +18,20 @@ import { useConfirm } from '../hooks/use-confirm';
 const API_URL = BACKEND_URL;
 
 // EPG Guide View Component with Timeline
-const EPGGuideView = ({ channels }) => {
+// The API returns logo_url / group_title; the UI reads logo / group.
+export const normalizeChannel = (c) => ({
+  ...c,
+  logo: c?.logo ?? c?.logo_url ?? null,
+  group: c?.group ?? c?.group_title ?? null,
+});
+
+// /api/iptv/groups returns [{ name, count }]; older shape was [string].
+export const normalizeGroups = (data) =>
+  (Array.isArray(data) ? data : [])
+    .map((g) => (typeof g === 'string' ? g : g?.name))
+    .filter(Boolean);
+
+const EPGGuideView = ({ channels, onWatch }) => {
   const [epgData, setEpgData] = useState({});
   const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -34,6 +47,7 @@ const EPGGuideView = ({ channels }) => {
 
   // Fetch EPG data for all channels
   useEffect(() => {
+    let cancelled = false;
     const fetchEPG = async () => {
       if (channels.length === 0) return;
       
@@ -48,13 +62,16 @@ const EPGGuideView = ({ channels }) => {
         } catch (err) {
           data[channel.id] = [];
         }
+        if (cancelled) return;
       }
       
+      if (cancelled) return;
       setEpgData(data);
       setLoading(false);
     };
     
     fetchEPG();
+    return () => { cancelled = true; };
   }, [channels]);
 
   // Scroll to current time on load
@@ -233,7 +250,7 @@ const EPGGuideView = ({ channels }) => {
                             : 'bg-white/5 border border-white/10 hover:bg-white/10'
                         }`}
                         style={style}
-                        onClick={() => setSelectedProgram(program)}
+                        onClick={() => setSelectedProgram({ ...program, _channel: channel })}
                       >
                         <p className="text-xs font-medium truncate">{program.title}</p>
                         <p className="text-xs text-gray-400 truncate">
@@ -320,11 +337,18 @@ const EPGGuideView = ({ channels }) => {
               </div>
 
               <div className="flex gap-3 mt-6">
-                <Button className="flex-1 bg-gradient-to-r from-red-600 to-rose-500">
+                <Button
+                  className="flex-1 bg-gradient-to-r from-red-600 to-rose-500"
+                  onClick={() => {
+                    const ch = selectedProgram._channel;
+                    setSelectedProgram(null);
+                    if (ch && onWatch) onWatch(ch);
+                  }}
+                >
                   <Play className="w-4 h-4 mr-2" />
                   Watch Now
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <Button variant="outline" className="flex-1" disabled title="Reminders are not available yet">
                   <Calendar className="w-4 h-4 mr-2" />
                   Set Reminder
                 </Button>
@@ -371,6 +395,7 @@ export const LiveTVPage = () => {
   // Add source form
   const [newSource, setNewSource] = useState({ name: '', url: '', epg_url: '' });
   const [addingSource, setAddingSource] = useState(false);
+  const channelsReqRef = useRef(0);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -386,7 +411,7 @@ export const LiveTVPage = () => {
     try {
       const res = await axios.get(`${API_URL}/api/iptv/sources`, {
       });
-      setSources(res.data || []);
+      setSources(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to fetch IPTV sources:', err);
     }
@@ -399,10 +424,13 @@ export const LiveTVPage = () => {
       if (favoritesOnly) params.favorites_only = true;
       if (searchQuery) params.search = searchQuery;
       
+      const reqId = ++channelsReqRef.current;
       const res = await axios.get(`${API_URL}/api/iptv/channels`, {
         params,
       });
-      setChannels(res.data || []);
+      // Ignore responses from superseded filter/search requests.
+      if (reqId !== channelsReqRef.current) return;
+      setChannels((Array.isArray(res.data) ? res.data : []).map(normalizeChannel));
     } catch (err) {
       console.error('Failed to fetch channels:', err);
     }
@@ -412,7 +440,7 @@ export const LiveTVPage = () => {
     try {
       const res = await axios.get(`${API_URL}/api/iptv/groups`, {
       });
-      setGroups(res.data || []);
+      setGroups(normalizeGroups(res.data));
     } catch (err) {
       console.error('Failed to fetch groups:', err);
     }
@@ -424,13 +452,20 @@ export const LiveTVPage = () => {
     setLoading(false);
   }, [fetchStats, fetchSources, fetchChannels, fetchGroups]);
 
+  // fetchAll depends on fetchChannels (which changes with every filter/search
+  // keystroke); run it on mount only so typing doesn't reload stats/sources/groups
+  // and flash the loading spinner. Filter changes are handled below.
+  const fetchAllRef = useRef(fetchAll);
+  fetchAllRef.current = fetchAll;
+  const filtersInitRef = useRef(false);
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    fetchAllRef.current();
+  }, []);
 
   useEffect(() => {
+    if (!filtersInitRef.current) { filtersInitRef.current = true; return; }
     fetchChannels();
-  }, [fetchChannels, selectedGroup, favoritesOnly, searchQuery]);
+  }, [fetchChannels]);
 
   const handleAddSource = async (e) => {
     e.preventDefault();
@@ -441,15 +476,19 @@ export const LiveTVPage = () => {
     
     setAddingSource(true);
     try {
-      await axios.post(`${API_URL}/api/iptv/sources`, null, {
+      const res = await axios.post(`${API_URL}/api/iptv/sources`, null, {
         params: { name: newSource.name, url: newSource.url, epg_url: newSource.epg_url },
       });
-      toast.success('Source added successfully');
+      if (res.data?.parse_error) {
+        toast.warning(`Source added, but the playlist could not be loaded: ${res.data.parse_error}`);
+      } else {
+        toast.success('Source added successfully');
+      }
       setShowAddSource(false);
       setNewSource({ name: '', url: '', epg_url: '' });
       fetchAll();
     } catch (err) {
-      toast.error('Failed to add source');
+      toast.error(err.response?.data?.detail || 'Failed to add source');
     } finally {
       setAddingSource(false);
     }
@@ -463,7 +502,7 @@ export const LiveTVPage = () => {
       toast.success('Source refreshed');
       fetchAll();
     } catch (err) {
-      toast.error('Failed to refresh source');
+      toast.error(err.response?.data?.detail || 'Failed to refresh source');
     } finally {
       setRefreshingSource(null);
     }
@@ -485,9 +524,14 @@ export const LiveTVPage = () => {
 
   const handleToggleFavorite = async (channelId) => {
     try {
-      await axios.post(`${API_URL}/api/iptv/channels/${channelId}/favorite`, null, {
+      const res = await axios.post(`${API_URL}/api/iptv/channels/${channelId}/favorite`, null, {
       });
+      const isFav = res.data?.is_favorite;
+      if (typeof isFav === 'boolean') {
+        setSelectedChannel(prev => (prev && prev.id === channelId ? { ...prev, is_favorite: isFav } : prev));
+      }
       fetchChannels();
+      fetchStats();
     } catch (err) {
       toast.error('Failed to toggle favorite');
     }
@@ -740,7 +784,7 @@ export const LiveTVPage = () => {
 
           {/* Guide Tab (EPG) */}
           <TabsContent value="guide">
-            <EPGGuideView channels={channels} />
+            <EPGGuideView channels={channels} onWatch={setSelectedChannel} />
           </TabsContent>
 
           {/* Sources Tab */}
@@ -770,8 +814,8 @@ export const LiveTVPage = () => {
                         <p className="text-sm text-gray-500 truncate max-w-md">{source.url}</p>
                         <div className="flex gap-4 mt-2 text-xs text-gray-400">
                           <span>{source.channel_count} channels</span>
-                          {source.last_refresh && (
-                            <span>Last refresh: {new Date(source.last_refresh).toLocaleString()}</span>
+                          {(source.last_refreshed || source.last_refresh) && (
+                            <span>Last refresh: {new Date(source.last_refreshed || source.last_refresh).toLocaleString()}</span>
                           )}
                         </div>
                       </div>

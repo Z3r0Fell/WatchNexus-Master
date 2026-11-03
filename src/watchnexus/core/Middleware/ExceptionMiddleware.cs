@@ -146,13 +146,13 @@ public sealed class ExceptionMiddleware
     private static bool IsUniqueConstraint(DbUpdateException ex)
     {
         var sqlEx = ex.InnerException as Microsoft.Data.Sqlite.SqliteException;
-        return sqlEx?.SqliteErrorCode == 19 /* SQLITE_CONSTRAINT_UNIQUE */ || ex.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
+        return sqlEx?.SqliteExtendedErrorCode is 2067 or 1555 /* SQLITE_CONSTRAINT_UNIQUE / _PRIMARYKEY */ || ex.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsForeignKeyConstraint(DbUpdateException ex)
     {
         var sqlEx = ex.InnerException as Microsoft.Data.Sqlite.SqliteException;
-        return sqlEx?.SqliteErrorCode == 19 /* SQLITE_CONSTRAINT_FOREIGNKEY */ || ex.Message.Contains("FOREIGN KEY constraint failed", StringComparison.OrdinalIgnoreCase);
+        return sqlEx?.SqliteExtendedErrorCode == 787 /* SQLITE_CONSTRAINT_FOREIGNKEY */ || ex.Message.Contains("FOREIGN KEY constraint failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsDatabaseLocked(DbUpdateException ex)

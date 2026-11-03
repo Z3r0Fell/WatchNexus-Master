@@ -260,14 +260,20 @@ public class CrumbsController : ControllerBase
 
         // Build config object
         var config = new Dictionary<string, object>();
-        config["enabled"] = body.TryGetProperty("enabled", out var en) && en.GetBoolean();
+        config["enabled"] = body.TryGetProperty("enabled", out var en) && en.ValueKind == JsonValueKind.True;
 
-        // Merge fields
+        // Merge fields. Values may arrive as numbers/bools (e.g. port: 8080);
+        // GetString() would throw on those, so stringify non-string scalars.
         var fields = new Dictionary<string, string>();
-        if (body.TryGetProperty("fields", out var fieldsEl))
+        if (body.TryGetProperty("fields", out var fieldsEl) && fieldsEl.ValueKind == JsonValueKind.Object)
         {
             foreach (var prop in fieldsEl.EnumerateObject())
-                fields[prop.Name] = prop.Value.GetString() ?? "";
+                fields[prop.Name] = prop.Value.ValueKind switch
+                {
+                    JsonValueKind.String => prop.Value.GetString() ?? "",
+                    JsonValueKind.Null or JsonValueKind.Undefined => "",
+                    _ => prop.Value.GetRawText(),
+                };
         }
         config["fields"] = fields;
 
@@ -286,7 +292,7 @@ public class CrumbsController : ControllerBase
         if (!config.ContainsKey("created_at"))
             config["created_at"] = DateTime.UtcNow.ToString("o");
 
-        if (body.TryGetProperty("expires_at", out var ea2))
+        if (body.TryGetProperty("expires_at", out var ea2) && ea2.ValueKind == JsonValueKind.String)
             config["expires_at"] = ea2.GetString()!;
 
         var json = JsonSerializer.Serialize(config);

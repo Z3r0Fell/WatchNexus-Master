@@ -361,12 +361,12 @@ public class UpdateController : ControllerBase
             signatureValid = valid;
             if (valid != true)
                 return BadRequest(new { success = false, message = $"Patch signature invalid: {error}" });
-            // Apply exactly the bytes whose signature was verified — never a
-            // separately fetched copy (the repo could serve different content
-            // between the two requests and bypass signing).
-            manifest = Services.PatchService.ParseManifest(rawJson);
-            if (manifest == null || !string.Equals(manifest.PatchId, patchId, StringComparison.Ordinal))
-                return BadRequest(new { success = false, message = "Signed patch manifest does not match the requested patch" });
+            // Apply exactly the bytes whose signature was verified (the first
+            // fetch was a separate request and could differ).
+            var verified = PatchService.ParseManifest(rawJson);
+            if (verified == null || verified.PatchId != manifest.PatchId)
+                return BadRequest(new { success = false, message = "Patch refused: verified manifest does not match the fetched manifest" });
+            manifest = verified;
         }
 
         var result = await patchService.ApplyAsync(manifest, signatureValid);

@@ -156,7 +156,6 @@ const UsersTab = ({
                   >
                     <option value="user">User</option>
                     <option value="admin">Administrator</option>
-                    <option value="guest">Guest</option>
                   </select>
                 </div>
               </div>
@@ -283,8 +282,8 @@ const AccessTab = () => (
       <div className="p-4 rounded-xl bg-black/30 border border-dashed border-white/10 text-center">
         <Key className="w-8 h-8 mx-auto mb-2 text-gray-500" />
         <p className="text-gray-500">No API keys generated</p>
-        <Button className="mt-3 bg-amber-600 hover:bg-amber-700" size="sm">
-          <Key className="w-4 h-4 mr-2" /> Generate API Key
+        <Button className="mt-3 bg-amber-600 hover:bg-amber-700" size="sm" disabled title="API key generation is not available yet">
+          <Key className="w-4 h-4 mr-2" /> Generate API Key (coming soon)
         </Button>
       </div>
     </div>
@@ -348,7 +347,7 @@ const UserCard = ({ user, editingUser, setEditingUser, onUpdate, onDelete, curre
         <div className="flex items-center gap-4">
           <div className="text-right text-sm text-gray-400 hidden sm:block">
             <p>Last login: {user.last_login || 'Never'}</p>
-            <p className="text-xs">Created: {user.created_at}</p>
+            <p className="text-xs">Created: {(user.created_at || user.createdAt) ? new Date(user.created_at || user.createdAt).toLocaleDateString() : '-'}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
