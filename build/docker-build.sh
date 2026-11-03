@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
-VERSION="1.0.6"
+VERSION="1.0.7"
 PUSH=false
 NO_CACHE=false
 MULTIARCH=false

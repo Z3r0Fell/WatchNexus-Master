@@ -39,9 +39,9 @@ describe('F8 audit: settings modules compile', () => {
 describe('F8 audit: MaintenanceSettings response normalisers', () => {
   const { normalizeSystemStats, normalizeDbStats, normalizeBackups } = require('../../components/settings/MaintenanceSettings');
   test('maps /api/system/stats + /info', () => {
-    const n = normalizeSystemStats({ memory_mb: 123.456, threads: 9, uptime_seconds: 3700 }, { version: '1.0.6', cpu_count: 4, dotnet_version: '10.0' });
+    const n = normalizeSystemStats({ memory_mb: 123.456, threads: 9, uptime_seconds: 3700 }, { version: '1.0.7', cpu_count: 4, dotnet_version: '10.0' });
     expect(n.resources).toMatchObject({ process_memory_mb: 123.5, threads: 9, cpu_count: 4 });
-    expect(n.app).toMatchObject({ version: '1.0.6', uptime: '1h 1m' });
+    expect(n.app).toMatchObject({ version: '1.0.7', uptime: '1h 1m' });
     expect(n.system.runtime).toBe('10.0');
     expect(normalizeSystemStats(null, null)).toBeNull();
   });

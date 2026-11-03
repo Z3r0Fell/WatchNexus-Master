@@ -16,12 +16,12 @@ resources:
 
 commonLabels:
   app.kubernetes.io/name: watchnexus
-  app.kubernetes.io/version: "1.0.6"
+  app.kubernetes.io/version: "1.0.7"
   app.kubernetes.io/managed-by: kustomize
 
 images:
   - name: watchnexus/watchnexus
-    newTag: 1.0.6-ultra
+    newTag: 1.0.7-ultra
 
 # configMapGenerator/secretGenerator (behavior: merge) were removed: the
 # secretGenerator overwrote the values a user puts in secret.yaml with the

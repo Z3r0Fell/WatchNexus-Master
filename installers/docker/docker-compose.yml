@@ -3,7 +3,7 @@ services:
     # Builds the official multi-tier image from the repo-root Dockerfile.
     # (context ".." pointed at installers/, which has no Dockerfile and no
     # src/ tree, so `docker compose up` could never build.)
-    image: watchnexus/watchnexus:1.0.6-standard
+    image: watchnexus/watchnexus:1.0.7-standard
     build:
       context: ../..
       dockerfile: Dockerfile
