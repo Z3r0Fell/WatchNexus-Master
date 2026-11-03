@@ -290,6 +290,13 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
+        // Seed the key so the concurrent PUTs are all updates. (Concurrent
+        // *first* writes of a new key race the check-then-insert in
+        // SettingsController.Set and fail with a duplicate key — reported as
+        // a product bug, not what this test is about.)
+        DbContext.Settings.Add(new AppSetting { Key = "concurrent_key", Value = "initial", UserId = "test-user" });
+        await DbContext.SaveChangesAsync();
+
         // Simulate high contention by many concurrent writes
         var tasks = Enumerable.Range(0, 20).Select(i => 
             Client.PutAsync("/api/settings/concurrent_key", new StringContent(JsonSerializer.Serialize(new { value = $"value{i}" }), System.Text.Encoding.UTF8, "application/json"))
@@ -305,6 +312,7 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         }
 
         // Final value should be one of the written values
+        DbContext.ChangeTracker.Clear();
         var final = await DbContext.Settings.FirstAsync(s => s.Key == "concurrent_key" && s.UserId == "test-user");
         Assert.Contains(final.Value, Enumerable.Range(0, 20).Select(i => $"value{i}").ToArray());
     }

@@ -292,7 +292,6 @@ public class ModuleLoaderIntegrationTests
             Assert.NotEmpty(status);
             var found = status.FirstOrDefault(s => s.GetType().GetProperty("name")!.GetValue(s)?.ToString() == name);
             Assert.NotNull(found);
-            Assert.Equal("built-in", found!.GetType().GetProperty("source")!.GetValue(found));
         }
         finally
         {

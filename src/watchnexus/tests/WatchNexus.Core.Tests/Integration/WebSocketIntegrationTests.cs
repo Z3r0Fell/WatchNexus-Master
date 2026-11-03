@@ -28,6 +28,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra"); // Watch Party is Ultra
 
         var uri = new Uri("ws://localhost/api/watch-party/test-party/ws");
 
@@ -46,6 +47,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange - no auth
         ClearAuthentication();
+        await SeedLicenseAsync("ultra"); // so only missing auth can be the reason for rejection
         
         var uri = new Uri("ws://localhost/api/watch-party/test-party/ws");
 
@@ -59,6 +61,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
         var uri = new Uri("ws://localhost/api/watch-party/test-party/ws");
 
@@ -110,6 +113,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
         var uri = new Uri("ws://localhost/api/watch-party/multi-party/ws");
 
@@ -143,6 +147,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
         // This test verifies the client-side reconnection logic would work
         // Server-side just needs to accept new connections
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
         var uri = new Uri("ws://localhost/api/watch-party/reconnect-party/ws");
 
@@ -166,6 +171,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     public async Task WatchPartyWebSocket_InvalidMessage_HandledGracefully()
     {
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
         var uri = new Uri("ws://localhost/api/watch-party/invalid-party/ws");
 
@@ -190,6 +196,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     public async Task WatchPartyWebSocket_LargeMessage_Handled()
     {
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
         var uri = new Uri("ws://localhost/api/watch-party/large-party/ws");
 
@@ -214,6 +221,7 @@ public class WebSocketIntegrationTests : IntegrationTestBase
         // Test that multiple connections to same party work
         // (Actual limit enforcement would be in ConnectionManager)
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
         var uri = new Uri("ws://localhost/api/watch-party/limit-party/ws");
 
