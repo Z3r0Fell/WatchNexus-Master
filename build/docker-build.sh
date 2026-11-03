@@ -18,6 +18,12 @@ set -euo pipefail
 REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
 VERSION="1.0.7"
 PUSH=false
+# Six Labors (ImageSharp) license: use $SIXLABORS_LICENSE_KEY, else the repo-root
+# sixlabors.lic (gitignored). Never commit the license file.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -z "${SIXLABORS_LICENSE_KEY:-}" ] && [ -f "${SCRIPT_DIR}/../sixlabors.lic" ]; then
+  SIXLABORS_LICENSE_KEY="$(tr -d '\r\n' < "${SCRIPT_DIR}/../sixlabors.lic")"
+fi
 NO_CACHE=false
 MULTIARCH=false
 # Optional build network (e.g. "host"). Needed on hosts where the default

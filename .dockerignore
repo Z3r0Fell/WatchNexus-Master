@@ -57,3 +57,7 @@ private.key
 **/private.key
 *.db
 **/data/
+
+# Six Labors license is passed as a build arg, never copied into the image
+sixlabors.lic
+**/sixlabors.lic

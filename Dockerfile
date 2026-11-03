@@ -38,7 +38,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/watchne
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 ARG TIER=standard
 # Six Labors (ImageSharp) license key. Build-stage only: it never reaches the runtime image.
-# Empty -> ImageSharp 3.1.12 with restricted decoding; set -> ImageSharp 3.2.0.
+# Pass the raw contents of sixlabors.lic. Empty -> ImageSharp 3.1.12 with restricted decoding;
+# set -> ImageSharp 3.2.0 (license validated at build time).
 ARG SIXLABORS_LICENSE_KEY=""
 WORKDIR /build
 
@@ -46,7 +47,10 @@ WORKDIR /build
 COPY src/watchnexus/core/WatchNexus.Core.csproj src/watchnexus/core/
 COPY src/watchnexus/shared/WatchNexus.Shared.csproj src/watchnexus/shared/
 COPY src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj src/watchnexus/modules/lobster/
-RUN dotnet restore src/watchnexus/core/WatchNexus.Core.csproj "-p:SixLaborsLicenseKey=${SIXLABORS_LICENSE_KEY}" \
+# The license text contains ';' which MSBuild splits on: escape it as %3B (the
+# Six Labors validator unescapes it). Callers pass the raw sixlabors.lic contents.
+RUN SL_KEY="$(printf '%s' "$SIXLABORS_LICENSE_KEY" | tr -d '\r\n' | sed 's/;/%3B/g')" \
+    && dotnet restore src/watchnexus/core/WatchNexus.Core.csproj "-p:SixLaborsLicenseKey=${SL_KEY}" \
     && dotnet restore src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj
 
 # Copy shared code
@@ -73,9 +77,10 @@ COPY src/watchnexus/modules/ src/watchnexus/modules/
 
 # Publish
 ENV SkipFrontendBuild=true
-RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
+RUN SL_KEY="$(printf '%s' "$SIXLABORS_LICENSE_KEY" | tr -d '\r\n' | sed 's/;/%3B/g')" \
+    && dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
     -c Release -o /publish --no-restore \
-    /p:SkipFrontendBuild=true "-p:SixLaborsLicenseKey=${SIXLABORS_LICENSE_KEY}"
+    /p:SkipFrontendBuild=true "-p:SixLaborsLicenseKey=${SL_KEY}"
 
 # Lobster is an external DLL module (serves /api/lobster/*), not compiled
 # into Core. Publish it next to its manifest so ModuleLoader loads
