@@ -142,10 +142,11 @@ export const progressApi = {
 // Downloads API calls
 export const downloadsApi = {
   getAll: () => apiClient.get(`/downloads`),
+  // Backend binds these from the query string ([FromQuery]), not the body.
   add: (title, mediaType, tmdbId, size) =>
-    apiClient.post(`/downloads`, { title, media_type: mediaType, tmdb_id: tmdbId, size }),
+    apiClient.post(`/downloads`, null, { params: { title, media_type: mediaType, tmdb_id: tmdbId, size } }),
   update: (downloadId, status, progress) =>
-    apiClient.patch(`/downloads/${downloadId}`, { status, progress }),
+    apiClient.patch(`/downloads/${downloadId}`, null, { params: { status, progress } }),
   delete: (downloadId) => apiClient.delete(`/downloads/${downloadId}`),
 };
 
@@ -166,7 +167,7 @@ export const indexersApi = {
 export const streamingApi = {
   getAll: () => apiClient.get(`/streaming-services`),
   update: (serviceId, enabled, username) =>
-    apiClient.put(`/streaming-services/${serviceId}`, { enabled, username }),
+    apiClient.put(`/streaming-services/${serviceId}`, null, { params: { enabled, username } }),
 };
 
 // Library API calls

@@ -31,12 +31,15 @@ const BiscottiPage = () => {
       if (typeFilter !== 'all') params.set('type', typeFilter);
       if (searchQuery) params.set('search', searchQuery);
       const res = await axios.get(`${API}/api/biscotti/items?${params}`);
-      setItems(res.data.items || []);
-    } catch {} finally { setLoading(false); }
+      setItems(res.data?.items || []);
+    } catch (err) {
+      console.error('Failed to load library items:', err);
+      toast.error('Failed to load library items', { id: 'biscotti-load-error' });
+    } finally { setLoading(false); }
   }, [typeFilter, searchQuery]);
 
   const fetchStats = useCallback(async () => {
-    try { const res = await axios.get(`${API}/api/biscotti/stats`); setStats(res.data); } catch {}
+    try { const res = await axios.get(`${API}/api/biscotti/stats`); setStats(res.data); } catch (err) { console.error('Failed to load library stats:', err); }
   }, []);
 
   useEffect(() => { fetchItems(); fetchStats(); }, [fetchItems, fetchStats]);
@@ -62,10 +65,19 @@ const BiscottiPage = () => {
   };
 
   const handleImportScan = async () => {
+    let imported = 0;
     for (const f of scanResults) {
-      await axios.post(`${API}/api/biscotti/items`, { title: f.title, type: f.type, file_path: f.file_path, file_size: f.file_size }).catch(() => {});
+      try {
+        await axios.post(`${API}/api/biscotti/items`, { title: f.title, type: f.type, file_path: f.file_path, file_size: f.file_size });
+        imported++;
+      } catch (err) {
+        console.error(`Failed to import ${f.file_path}:`, err);
+      }
     }
-    toast.success(`Imported ${scanResults.length} items`); fetchItems(); fetchStats(); setShowScan(false); setScanResults([]);
+    const failed = scanResults.length - imported;
+    if (failed > 0) toast.error(`Imported ${imported} of ${scanResults.length} items (${failed} failed)`);
+    else toast.success(`Imported ${imported} items`);
+    fetchItems(); fetchStats(); setShowScan(false); setScanResults([]);
   };
 
   return (
@@ -112,7 +124,7 @@ const BiscottiPage = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search..." className="w-full pl-10 pr-4 py-2.5 bg-surface border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
           </div>
-          <div className="flex gap-1">{['all', 'ebook', 'comic', 'audiobook'].map(t => (<button key={t} onClick={() => setTypeFilter(t)} className={`px-3 py-1.5 text-xs rounded-lg ${typeFilter === t ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-white/5'}`}>{t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}s</button>))}</div>
+          <div className="flex gap-1">{['all', 'ebook', 'comic', 'audiobook'].map(t => (<button key={t} onClick={() => setTypeFilter(t)} className={`px-3 py-1.5 text-xs rounded-lg ${typeFilter === t ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-white/5'}`}>{t === 'all' ? 'All' : `${t.charAt(0).toUpperCase() + t.slice(1)}s`}</button>))}</div>
         </div>
 
         {loading ? <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-400" /></div> : items.length === 0 ? (

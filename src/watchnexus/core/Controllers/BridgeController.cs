@@ -254,9 +254,9 @@ public class MarmaladeBridgeController : ControllerBase
     {
         return Ok(new
         {
-            total_libraries = await _db.Libraries.CountAsync(),
-            total_media = await _db.MediaItems.CountAsync(),
-            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
+            total_libraries = await _db.Libraries.CountAsync(l => l.UserId == UserId),
+            total_media = await UserMedia().CountAsync(),
+            total_size = await UserMedia().SumAsync(m => m.FileSize),
         });
     }
 
@@ -296,9 +296,9 @@ public class MarmaladeBridgeController : ControllerBase
         {
             status = "running",
             version = "1.0.1",
-            total_libraries = await _db.Libraries.CountAsync(),
-            total_media = await _db.MediaItems.CountAsync(),
-            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
+            total_libraries = await _db.Libraries.CountAsync(l => l.UserId == UserId),
+            total_media = await UserMedia().CountAsync(),
+            total_size = await UserMedia().SumAsync(m => m.FileSize),
         });
     }
 
@@ -692,10 +692,13 @@ public class LibraryAliasController : ControllerBase
     private readonly AppDbContext _db;
     public LibraryAliasController(AppDbContext db) => _db = db;
 
+    private string UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? media_type = null)
     {
-        var q = _db.MediaItems.AsQueryable();
+        // Libraries are per-user: only the caller's items.
+        var q = LibraryMedia.ForUser(_db, UserId);
         if (!string.IsNullOrEmpty(media_type)) q = q.Where(m => m.MediaType == media_type);
         var items = await q.OrderBy(m => m.Title).ToListAsync();
         return Ok(items.Select(m => new
@@ -710,8 +713,17 @@ public class LibraryAliasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] System.Text.Json.JsonElement item)
     {
+        if (item.ValueKind != System.Text.Json.JsonValueKind.Object)
+            return BadRequest(new { detail = "JSON object body required" });
+        // Every item must belong to one of the caller's libraries: an item with no
+        // library violates the Library FK and is invisible to every user anyway.
+        var libraryId = item.TryGetProperty("library_id", out var lid) && lid.ValueKind == System.Text.Json.JsonValueKind.String
+            ? lid.GetString() : null;
+        if (string.IsNullOrEmpty(libraryId) || !await _db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == UserId))
+            return BadRequest(new { detail = "library_id must reference one of your libraries" });
         var mediaItem = new MediaItem
         {
+            LibraryId = libraryId,
             Title = item.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
             MediaType = item.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movies" : "movies",
             FilePath = item.TryGetProperty("file_path", out var fp) && fp.GetString() != null ? fp.GetString()! : "",
@@ -780,14 +792,17 @@ public class DashboardController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
+        // Scoped to the caller's libraries (see LibraryMedia.ForUser).
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        var media = LibraryMedia.ForUser(_db, userId);
         return Ok(new
         {
-            total_libraries = await _db.Libraries.CountAsync(),
-            total_media = await _db.MediaItems.CountAsync(),
-            total_movies = await _db.MediaItems.CountAsync(m => m.MediaType == "movies"),
-            total_tv = await _db.MediaItems.CountAsync(m => m.MediaType == "tv"),
-            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
-            recent_media = await _db.MediaItems.OrderByDescending(m => m.CreatedAt).Take(10).Select(m => new
+            total_libraries = await _db.Libraries.CountAsync(l => l.UserId == userId),
+            total_media = await media.CountAsync(),
+            total_movies = await media.CountAsync(m => m.MediaType == "movies"),
+            total_tv = await media.CountAsync(m => m.MediaType == "tv"),
+            total_size = await media.SumAsync(m => m.FileSize),
+            recent_media = await media.OrderByDescending(m => m.CreatedAt).Take(10).Select(m => new
             {
                 m.Id, m.Title, m.Year, m.Rating, poster_url = m.PosterUrl, media_type = m.MediaType
             }).ToListAsync(),

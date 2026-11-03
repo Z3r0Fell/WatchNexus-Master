@@ -127,13 +127,18 @@ public class TmdbProxyController : ControllerBase
         ProxyGet($"/tv/{id}/season/{seasonNum}");
 
     [HttpGet("discover/{mediaType}")]
-    public Task<IActionResult> Discover(string mediaType, int page = 1, string? with_genres = null, string? sort_by = null)
+    public Task<IActionResult> Discover(string mediaType, int page = 1, string? with_genres = null, string? sort_by = null,
+        string? with_original_language = null, [FromQuery(Name = "vote_count.gte")] int? vote_count_gte = null)
     {
         if (!AllowedMediaTypes.Contains(mediaType) && mediaType != "all" && mediaType != "person")
             return Task.FromResult<IActionResult>(BadRequest(new { detail = "mediaType must be 'movie', 'tv', or 'all'" }));
         var p = new Dictionary<string, string> { ["page"] = page.ToString() };
         if (!string.IsNullOrEmpty(with_genres)) p["with_genres"] = with_genres;
         if (!string.IsNullOrEmpty(sort_by)) p["sort_by"] = sort_by;
+        // Anime discover filters on original language and Discover sets a vote floor;
+        // both were silently dropped before, so the filters never reached TMDB.
+        if (!string.IsNullOrEmpty(with_original_language)) p["with_original_language"] = with_original_language;
+        if (vote_count_gte is > 0) p["vote_count.gte"] = vote_count_gte.Value.ToString();
         return ProxyGet($"/discover/{mediaType}", p);
     }
 

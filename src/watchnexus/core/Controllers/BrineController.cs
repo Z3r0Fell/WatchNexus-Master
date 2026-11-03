@@ -36,9 +36,29 @@ public class BrineController : ControllerBase
     [HttpPut("config")]
     public async Task<IActionResult> SaveConfig([FromBody] JsonElement body)
     {
+        if (body.ValueKind != JsonValueKind.Object)
+            return BadRequest(new { detail = "Config must be a JSON object" });
         var uid = this.UserId();
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ConfigKey);
         var value = body.GetRawText();
+        // GET /config never returns the api_key, so the settings form posts an
+        // empty one on every re-save; keep the stored key instead of wiping it.
+        var incomingKey = body.TryGetProperty("api_key", out var ik) && ik.ValueKind == JsonValueKind.String ? ik.GetString() : null;
+        if (string.IsNullOrEmpty(incomingKey) && existing?.Value != null)
+        {
+            try
+            {
+                var prev = JsonDocument.Parse(existing.Value).RootElement;
+                if (prev.ValueKind == JsonValueKind.Object && prev.TryGetProperty("api_key", out var pk)
+                    && pk.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(pk.GetString()))
+                {
+                    var merged = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(value) ?? new();
+                    merged["api_key"] = pk;
+                    value = JsonSerializer.Serialize(merged);
+                }
+            }
+            catch (JsonException) { /* corrupt stored config: overwrite it */ }
+        }
         if (existing != null) existing.Value = value;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = ConfigKey, Value = value, UserId = uid });
         await _db.SaveChangesAsync();
@@ -225,7 +245,10 @@ public class BrineController : ControllerBase
         var uid = this.UserId();
         var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == ConfigKey);
         if (cfg?.Value == null) return (null, null, "prowlarr");
-        var doc = JsonDocument.Parse(cfg.Value).RootElement;
+        JsonElement doc;
+        try { doc = JsonDocument.Parse(cfg.Value).RootElement; }
+        catch (JsonException) { return (null, null, "prowlarr"); }
+        if (doc.ValueKind != JsonValueKind.Object) return (null, null, "prowlarr");
         var url = doc.TryGetProperty("url", out var u) ? u.GetString()?.TrimEnd('/') : null;
         if (url != null && SsrfGuard.IsBlockedUrl(url)) url = null;
         return (

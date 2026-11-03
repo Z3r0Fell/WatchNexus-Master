@@ -9,6 +9,7 @@ public class LobsterService : BackgroundService
 {
     private readonly ILogger<LobsterService> _logger;
     private readonly LobsterClient _client;
+    private const string SidecarMissing = "Lobster sidecar binary not found";
     private Process? _sidecarProcess;
     private string? _sidecarPath;
 
@@ -25,11 +26,7 @@ public class LobsterService : BackgroundService
 
         _sidecarPath = ResolveSidecarPath();
         if (string.IsNullOrEmpty(_sidecarPath) || !File.Exists(_sidecarPath))
-        {
-            var error = $"Lobster sidecar binary not found at: {_sidecarPath ?? "(not resolved)"}";
-            _logger.LogError(error);
-            return (false, error);
-        }
+            return (false, SidecarMissing);
 
         _logger.LogInformation("[Lobster] Starting sidecar: {Path}", _sidecarPath);
 
@@ -43,7 +40,8 @@ public class LobsterService : BackgroundService
             RedirectStandardError = true,
         };
 
-        _sidecarProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        _sidecarProcess = proc;
         _sidecarProcess.OutputDataReceived += (_, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data)) _logger.LogDebug("[Lobster-sidecar] {Line}", e.Data);
@@ -52,10 +50,16 @@ public class LobsterService : BackgroundService
         {
             if (!string.IsNullOrEmpty(e.Data)) _logger.LogWarning("[Lobster-sidecar] {Line}", e.Data);
         };
+        // Use the captured local: StopSidecar() nulls/disposes _sidecarProcess,
+        // and an exception thrown from this thread-pool callback (NRE on the
+        // field, or InvalidOperationException on a disposed Process) would
+        // crash the whole server.
         _sidecarProcess.Exited += (_, _) =>
         {
-            _logger.LogInformation("[Lobster] Sidecar exited with code {Code}", _sidecarProcess.ExitCode);
-            _sidecarProcess = null;
+            int? code = null;
+            try { code = proc.ExitCode; } catch { /* disposed */ }
+            _logger.LogInformation("[Lobster] Sidecar exited with code {Code}", code);
+            if (ReferenceEquals(_sidecarProcess, proc)) _sidecarProcess = null;
         };
 
         if (!_sidecarProcess.Start())
@@ -80,18 +84,20 @@ public class LobsterService : BackgroundService
 
     public void StopSidecar()
     {
-        if (_sidecarProcess == null || _sidecarProcess.HasExited)
+        // Capture locally: the Exited handler may null the field concurrently.
+        var proc = _sidecarProcess;
+        if (proc == null || proc.HasExited)
             return;
 
         try
         {
-            _sidecarProcess.Kill(entireProcessTree: true);
-            _sidecarProcess.WaitForExit(5000);
+            proc.Kill(entireProcessTree: true);
+            proc.WaitForExit(5000);
         }
         catch { /* best effort */ }
         finally
         {
-            _sidecarProcess.Dispose();
+            proc.Dispose();
             _sidecarProcess = null;
             _logger.LogInformation("[Lobster] Sidecar stopped");
         }
@@ -108,6 +114,14 @@ public class LobsterService : BackgroundService
                 if (_sidecarProcess == null || _sidecarProcess.HasExited)
                 {
                     var (started, error) = await StartSidecarAsync(stoppingToken);
+                    if (!started && error == SidecarMissing)
+                    {
+                        // The sidecar binary is not shipped in this install (e.g. the
+                        // Docker image). It cannot appear at runtime, so log once and
+                        // stop polling instead of logging an error every 15s forever.
+                        _logger.LogInformation("[Lobster] Sidecar binary not installed; mesh networking disabled. /api/lobster/* will report 503.");
+                        return;
+                    }
                     if (!started)
                     {
                         _logger.LogWarning("[Lobster] Will retry sidecar start in 15s: {Error}", error);

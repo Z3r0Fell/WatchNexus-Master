@@ -30,8 +30,19 @@ const API_URL = BACKEND_URL;
 export const SettingsPage = () => {
   const { user: currentUser } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
-  // Current active setting
-  const [activeSection, setActiveSection] = useState('general');
+  // Current active setting — deep-linkable via navigate('/settings', { state: { section } })
+  // (TierGate; React Router v6 keeps navigation state in history.state.usr) or
+  // /settings?section=... (apiErrorHandler). Read without router hooks so the
+  // page still renders outside a <Router>.
+  const [activeSection, setActiveSection] = useState(() => {
+    try {
+      return window.history.state?.usr?.section
+        || new URLSearchParams(window.location.search).get('section')
+        || 'general';
+    } catch {
+      return 'general';
+    }
+  });
   
   // General settings
   const [settings, setSettings] = useState({

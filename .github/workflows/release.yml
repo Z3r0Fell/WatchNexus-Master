@@ -156,6 +156,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             TIER=${{ matrix.tier }}
+            LICENSE_SERVER_CLIENT_KEY=${{ secrets.LICENSE_SERVER_CLIENT_KEY }}
           cache-from: type=gha,scope=${{ matrix.tier }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tier }}
           platforms: linux/amd64,linux/arm64
@@ -218,10 +219,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ubuntu-latest does not ship the .NET 10 SDK, and `fpm` is not an apt
+      # package (it is a Ruby gem) -- both failed this job and therefore the
+      # whole release. prepare-installers.sh needs dotnet, node/yarn and jq.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm fpm nsis xorriso
+          sudo apt-get install -y rpm nsis xorriso jq
 
       - name: Build .NET publish
         run: |
@@ -353,7 +362,7 @@ jobs:
   # ── Notify (Slack/Discord/Email) ────────────────────────────────────
   notify:
     name: Notify Release
-    needs: [release]
+    needs: [prepare, release]
     runs-on: ubuntu-latest
     if: always()
     steps:

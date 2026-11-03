@@ -34,6 +34,13 @@ const describeLoadError = (err, fallback) => {
   return fallback;
 };
 
+// Convert SRT (or pass through WebVTT) to WebVTT for the <track> element.
+export const toWebVtt = (text) => {
+  const body = String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  if (/^WEBVTT/.test(body)) return body;
+  return 'WEBVTT\n\n' + body.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+};
+
 const PlaybackErrorScreen = ({ message, onBack }) => (
   <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white" data-testid="video-error">
     <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
@@ -306,12 +313,13 @@ const PlayerInner = () => {
         const isTV = media.type === 'tv' || media.series_name;
         const endpoint = isTV ? '/api/subtitles/search/tv' : '/api/subtitles/search/movie';
         
+        // Backend binds show_name / movie_name (SubtitlesController).
         const params = isTV ? {
-          series_name: media.series_name || media.title,
+          show_name: media.series_name || media.title,
           season: media.season_number || 1,
           episode: media.episode_number || 1,
         } : {
-          title: media.title,
+          movie_name: media.title,
           year: media.year,
         };
         
@@ -320,7 +328,11 @@ const PlayerInner = () => {
         });
         
         if (Array.isArray(res?.data) && res.data.length > 0) {
-          setAvailableSubtitles(res.data.filter(sub => sub && typeof sub === 'object'));
+          // /search/tv serialises the raw record (camelCase downloadUrl),
+          // /search/movie uses download_url — normalise to download_url.
+          setAvailableSubtitles(res.data
+            .filter(sub => sub && typeof sub === 'object')
+            .map(sub => ({ ...sub, download_url: sub.download_url ?? sub.downloadUrl })));
         }
       } catch (err) {
         console.error('Failed to search subtitles:', err);
@@ -341,13 +353,32 @@ const PlayerInner = () => {
         media_id: mediaId,
       });
       
-      if (res.data.file_path) {
-        // Create blob URL for subtitle
-        const subtitleUrl = `${API_URL}/api/subtitles/file/${res.data.file_path}`;
-        setCurrentSubtitle({ ...subtitle, url: subtitleUrl });
-        setSubtitlesEnabled(true);
-        toast.success(`Loaded: ${subtitle.language}`);
+      // Backend returns either `path` (saved next to the media file) or
+      // `data_base64` (inline). <track> only understands WebVTT, so the
+      // (usually SRT) text is converted and served from a blob URL.
+      let text = null;
+      if (res.data?.data_base64) {
+        const bin = atob(res.data.data_base64);
+        const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+        text = new TextDecoder('utf-8').decode(bytes);
+      } else if (res.data?.path) {
+        const fileRes = await axios.get(
+          `${API_URL}/api/subtitles/file/${String(res.data.path).replace(/^\/+/, '')}`,
+          { responseType: 'text', transformResponse: (d) => d }
+        );
+        text = fileRes.data;
       }
+      if (typeof text !== 'string' || !text.trim()) {
+        throw new Error('Subtitle download returned no data');
+      }
+      const vtt = toWebVtt(text);
+      const subtitleUrl = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
+      setCurrentSubtitle((prev) => {
+        if (prev?.url?.startsWith('blob:')) URL.revokeObjectURL(prev.url);
+        return { ...subtitle, url: subtitleUrl };
+      });
+      setSubtitlesEnabled(true);
+      toast.success(`Loaded: ${subtitle.language}`);
     } catch (err) {
       console.error('Failed to load subtitle:', err);
       toast.error('Failed to load subtitle');

@@ -94,7 +94,7 @@ public class ParfaitController : ControllerBase
         return Ok(new
         {
             url = url ?? "",
-            api_key = !string.IsNullOrEmpty(apiKey) ? apiKey[..4] + "****" + apiKey[^4..] : "",
+            api_key = string.IsNullOrEmpty(apiKey) ? "" : apiKey.Length >= 8 ? "****" + apiKey[^4..] : "****",
             configured = !string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(apiKey)
         });
     }
@@ -107,6 +107,8 @@ public class ParfaitController : ControllerBase
         var apiKey = body.TryGetProperty("api_key", out var k) ? k.GetString() : null;
         if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             return BadRequest(new { success = false, message = "URL and API key are required" });
+        if (SsrfGuard.IsBlockedUrl(url))
+            return BadRequest(new { success = false, message = "URL must be an allowed http(s) endpoint" });
 
         // Test the connection first
         try
@@ -143,7 +145,7 @@ public class ParfaitController : ControllerBase
         try
         {
             using var http = BuildClient(apiKey);
-            var filterQuery = !string.IsNullOrEmpty(filter) ? $"&filter={filter}" : "";
+            var filterQuery = !string.IsNullOrEmpty(filter) ? $"&filter={Uri.EscapeDataString(filter)}" : "";
             var resp = await http.GetAsync($"{url}/api/v1/request?take={take}&skip={skip}{filterQuery}");
             if (!resp.IsSuccessStatusCode) return StatusCode((int)resp.StatusCode);
             var body = await resp.Content.ReadAsStringAsync();
@@ -164,8 +166,7 @@ public class ParfaitController : ControllerBase
             using var http = BuildClient(apiKey);
             var content = new StringContent(body.GetRawText(), System.Text.Encoding.UTF8, "application/json");
             var resp = await http.PostAsync($"{url}/api/v1/request", content);
-            var resBody = await resp.Content.ReadAsStringAsync();
-            return Content(resBody, "application/json");
+            return await Upstream(resp);
         }
         catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
     }
@@ -231,6 +232,7 @@ public class ParfaitController : ControllerBase
 
     // ── Users ───────────────────────────────────────────────────────
     [HttpGet("users")]
+    [Authorize(Roles = "admin")] // exposes Jellyseerr user list (emails)
     public async Task<IActionResult> GetUsers([FromQuery] int take = 20, [FromQuery] int skip = 0)
     {
         return await ProxyGet($"/api/v1/user?take={take}&skip={skip}");
@@ -266,8 +268,7 @@ public class ParfaitController : ControllerBase
         {
             using var http = BuildClient(apiKey);
             var resp = await http.GetAsync($"{url}{path}");
-            var body = await resp.Content.ReadAsStringAsync();
-            return Content(body, "application/json");
+            return await Upstream(resp);
         }
         catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
     }
@@ -281,8 +282,7 @@ public class ParfaitController : ControllerBase
         {
             using var http = BuildClient(apiKey);
             var resp = await http.PostAsync($"{url}{path}", null);
-            var body = await resp.Content.ReadAsStringAsync();
-            return Content(body, "application/json");
+            return await Upstream(resp);
         }
         catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
     }
@@ -296,9 +296,16 @@ public class ParfaitController : ControllerBase
         {
             using var http = BuildClient(apiKey);
             var resp = await http.DeleteAsync($"{url}{path}");
-            var body = await resp.Content.ReadAsStringAsync();
-            return Content(body, "application/json");
+            return await Upstream(resp);
         }
         catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+    }
+
+    // Relay the upstream body with the upstream status code so Jellyseerr
+    // failures (401/403/404/5xx) surface as errors instead of fake 200s.
+    private static async Task<IActionResult> Upstream(HttpResponseMessage resp)
+    {
+        var body = await resp.Content.ReadAsStringAsync();
+        return new ContentResult { Content = body, ContentType = "application/json", StatusCode = (int)resp.StatusCode };
     }
 }

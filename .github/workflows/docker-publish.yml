@@ -115,6 +115,7 @@ jobs:
             com.watchnexus.version=${{ needs.prepare.outputs.version }}
           build-args: |
             TIER=${{ matrix.tier }}
+            LICENSE_SERVER_CLIENT_KEY=${{ secrets.LICENSE_SERVER_CLIENT_KEY }}
           cache-from: type=gha,scope=${{ matrix.tier }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tier }}
           platforms: linux/amd64,linux/arm64
@@ -178,7 +179,7 @@ jobs:
 
             ### Quick Start
             ```bash
-            docker run -d -p 8002:8002 \
+            docker run -d -p 8001:8001 \
               -v watchnexus-data:/app/data \
               -v /path/to/media:/data/media \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-standard

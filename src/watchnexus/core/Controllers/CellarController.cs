@@ -28,6 +28,12 @@ public class CellarController : ControllerBase
 
     private static readonly Dictionary<string, List<DateTime>> _activationAttempts = new();
     private static readonly object _rateLimitLock = new();
+    private static readonly TimeSpan RateLimitWindow = TimeSpan.FromMinutes(5);
+    private const int MaxActivationAttempts = 5;
+    // The first-launch probe is a read-only status check the app makes on every
+    // full page load; it gets its own bucket so reloads can't burn the activation
+    // budget (and lock the wizard out of activating).
+    private static DateTime _lastSweep = DateTime.MinValue;
 
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpFactory;
@@ -39,26 +45,37 @@ public class CellarController : ControllerBase
         _config = config;
     }
 
-    private static bool IsRateLimited(string ip)
+    internal static bool IsRateLimited(string key, int maxAttempts = MaxActivationAttempts)
     {
         lock (_rateLimitLock)
         {
             var now = DateTime.UtcNow;
-            if (!_activationAttempts.TryGetValue(ip, out var attempts))
+            // Periodically drop keys whose attempts have all expired; otherwise every
+            // distinct client IP that ever hit an endpoint stays in memory forever.
+            if (now - _lastSweep > RateLimitWindow)
             {
-                _activationAttempts[ip] = new List<DateTime> { now };
+                foreach (var k in _activationAttempts.Where(kv => kv.Value.All(t => now - t > RateLimitWindow)).Select(kv => kv.Key).ToList())
+                    _activationAttempts.Remove(k);
+                _lastSweep = now;
+            }
+            if (!_activationAttempts.TryGetValue(key, out var attempts))
+            {
+                _activationAttempts[key] = new List<DateTime> { now };
                 return false;
             }
-            attempts.RemoveAll(t => now - t > TimeSpan.FromMinutes(5));
-            if (attempts.Count == 0)
-            {
-                _activationAttempts.Remove(ip);
-            }
-            if (attempts.Count >= 5)
+            attempts.RemoveAll(t => now - t > RateLimitWindow);
+            if (attempts.Count >= maxAttempts)
                 return true;
             attempts.Add(now);
             return false;
         }
+    }
+
+    internal static int RateLimitEntryCount { get { lock (_rateLimitLock) return _activationAttempts.Count; } }
+
+    internal static void ResetRateLimits()
+    {
+        lock (_rateLimitLock) { _activationAttempts.Clear(); _lastSweep = DateTime.MinValue; }
     }
 
     // ── Tier Module Definitions ─────────────────────────────────────
@@ -103,10 +120,9 @@ public class CellarController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> FirstLaunch()
     {
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        if (IsRateLimited(ip))
-            return StatusCode(429, new { success = false, message = "Too many requests. Please wait 5 minutes and try again." });
-
+        // Read-only probe called on every page load by the SPA's FirstLaunchGate.
+        // It is intentionally NOT rate-limited: a 429 here made the gate skip the
+        // admin-setup wizard on fresh installs (no account, no way to create one).
         var license = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "cellar_license" && s.UserId == "");
         var setupDone = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "setup_completed" && s.UserId == "");
         return Ok(new
@@ -279,7 +295,7 @@ public class CellarController : ControllerBase
         if (IsRateLimited(ip))
             return StatusCode(429, new { success = false, message = "Too many activation attempts. Please wait 5 minutes and try again." });
 
-        var serial = body.TryGetProperty("serial", out var s) ? s.GetString()?.Trim() : null;
+        var serial = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("serial", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString()?.Trim() : null;
         if (string.IsNullOrEmpty(serial))
             return BadRequest(new { success = false, message = "Serial number is required" });
 
@@ -351,9 +367,9 @@ public class CellarController : ControllerBase
         if (await _db.Settings.AnyAsync(s2 => s2.Key == "setup_completed" && s2.Value == "true" && s2.UserId == ""))
             return StatusCode(403, new { success = false, message = "Setup is already complete. Manage your license in Settings." });
 
-        var serial = body.TryGetProperty("serial", out var s) ? s.GetString()?.Trim() : null;
+        var serial = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("serial", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString()?.Trim() : null;
         // Allow "skip" to start with Standard
-        var skip = body.TryGetProperty("skip", out var sk) && sk.GetBoolean();
+        var skip = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("skip", out var sk) && sk.ValueKind == JsonValueKind.True;
         if (skip)
         {
             var setupSetting = await _db.Settings.FirstOrDefaultAsync(s2 => s2.Key == "setup_completed" && s2.UserId == "");

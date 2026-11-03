@@ -10,12 +10,20 @@ public class LobsterClient
     private readonly HttpClient _http;
     private const string ControlUrlEnv = "LOBSTER_CONTROL_URL";
     private const int DefaultControlPort = 19091;
+    // Must match the sidecar's requireControlKey (lobster-sidecar/control.go):
+    // start/stop/peers/pair are rejected without X-Control-Key. The sidecar is
+    // spawned by LobsterService and inherits this process's environment, so
+    // both sides read the same LOBSTER_CONTROL_KEY (or the same default).
+    private const string ControlKeyEnv = "LOBSTER_CONTROL_KEY";
+    private const string DefaultControlKey = "lobster-control-default-change-me";
 
     public LobsterClient(ILogger<LobsterClient>? logger = null)
     {
         _logger = logger;
         _http = new HttpClient { BaseAddress = new Uri(ResolveControlUrl()), Timeout = TimeSpan.FromSeconds(10) };
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        var key = Environment.GetEnvironmentVariable(ControlKeyEnv);
+        _http.DefaultRequestHeaders.Add("X-Control-Key", string.IsNullOrWhiteSpace(key) ? DefaultControlKey : key);
     }
 
     public async Task<JsonElement> GetStatusAsync(CancellationToken ct = default)

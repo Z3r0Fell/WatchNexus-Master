@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -42,36 +43,44 @@ public class LobsterModule : IWatchNexusModule
 
     public void MapRoutes(IEndpointRouteBuilder routes)
     {
-        var prefix = Manifest.ApiRoutePrefix;
+        // The frontend (lobsterApi in nexusApi.js) calls /api/lobster/*. Routes
+        // were previously mapped without the /api prefix and with no auth, so
+        // the UI always got a 404 and the sidecar control surface was open to
+        // anonymous callers. Read endpoints need any authenticated user;
+        // start/stop/pair change server-wide mesh state and are admin-only.
+        var group = routes.MapGroup($"/api/{Manifest.ApiRoutePrefix}").RequireAuthorization();
+        var admin = new AuthorizeAttribute { Roles = "admin" };
 
-        routes.MapGet($"{prefix}/status", async (LobsterClient client) =>
-        {
-            var status = await client.GetStatusAsync();
-            return Results.Json(status);
-        }).WithName("lobster-status");
+        group.MapGet("/status", (LobsterClient client, CancellationToken ct) =>
+            Proxy(() => client.GetStatusAsync(ct))).WithName("lobster-status");
 
-        routes.MapPost($"{prefix}/start", async (LobsterClient client) =>
-        {
-            var result = await client.StartAsync();
-            return Results.Json(result);
-        }).WithName("lobster-start");
+        group.MapPost("/start", (LobsterClient client, CancellationToken ct) =>
+            Proxy(() => client.StartAsync(ct))).WithName("lobster-start").RequireAuthorization(admin);
 
-        routes.MapPost($"{prefix}/stop", async (LobsterClient client) =>
-        {
-            var result = await client.StopAsync();
-            return Results.Json(result);
-        }).WithName("lobster-stop");
+        group.MapPost("/stop", (LobsterClient client, CancellationToken ct) =>
+            Proxy(() => client.StopAsync(ct))).WithName("lobster-stop").RequireAuthorization(admin);
 
-        routes.MapGet($"{prefix}/peers", async (LobsterClient client) =>
-        {
-            var peers = await client.GetPeersAsync();
-            return Results.Json(peers);
-        }).WithName("lobster-peers");
+        group.MapGet("/peers", (LobsterClient client, CancellationToken ct) =>
+            Proxy(() => client.GetPeersAsync(ct))).WithName("lobster-peers");
 
-        routes.MapPost($"{prefix}/pair", async (LobsterClient client) =>
+        group.MapPost("/pair", (LobsterClient client, CancellationToken ct) =>
+            Proxy(() => client.PairAsync(ct))).WithName("lobster-pair").RequireAuthorization(admin);
+    }
+
+    // The sidecar is optional (not shipped in every install). When it is not
+    // running, return a 503 with a `message` the LobsterPage toast can show
+    // instead of an unhandled HttpRequestException -> 500.
+    internal static async Task<IResult> Proxy(Func<Task<System.Text.Json.JsonElement>> call)
+    {
+        try
         {
-            var result = await client.PairAsync();
-            return Results.Json(result);
-        }).WithName("lobster-pair");
+            return Results.Json(await call());
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            return Results.Json(
+                new { message = "Lobster sidecar is not running or unreachable", error = ex.GetType().Name },
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
     }
 }
