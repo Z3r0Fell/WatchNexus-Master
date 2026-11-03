@@ -60,7 +60,13 @@ export const PlaybackSettings = () => {
   const fetchSettings = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/settings/playback`);
-      if (res.data) setSettings(prev => ({ ...prev, ...res.data }));
+      // An unset key comes back as { key, value: null } — don't merge that envelope
+      // into settings (its `value: null` would make the next PUT delete the key).
+      const d = res.data;
+      if (d && typeof d === 'object' && !('key' in d && 'value' in d)) {
+        const { key, value, ...rest } = d;
+        setSettings(prev => ({ ...prev, ...rest }));
+      }
     } catch (err) {
       console.log('Using default playback settings');
     }
@@ -78,7 +84,10 @@ export const PlaybackSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.put(`${API_URL}/api/settings/playback`, settings, {
+      const { key, value, ...payload } = settings;
+      // Wrap in { value } so the backend stores the object rather than treating a
+      // stray top-level `value` field as the payload.
+      await axios.put(`${API_URL}/api/settings/playback`, { value: payload }, {
         headers: { 'Content-Type': 'application/json' }
       });
       toast.success('Playback settings saved');
