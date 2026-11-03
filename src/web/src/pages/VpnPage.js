@@ -21,6 +21,61 @@ const formatBytes = (bytes) => {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 };
 
+// VpnController serializes entities/records with default camelCase
+// (listenPort, address, dns, endpoint, isActive, transferRx...) and reports
+// `is_configured`; the UI was written against snake_case names that the
+// backend never sends, so the server always looked unconfigured.
+export const normalizeServerConfig = (c) => (c ? {
+  ...c,
+  configured: c.configured ?? c.is_configured ?? false,
+  listen_port: c.listen_port ?? c.listenPort,
+  subnet: c.subnet ?? c.address,
+  external_endpoint: c.external_endpoint ?? c.endpoint,
+  dns_servers: c.dns_servers ?? c.dns,
+} : c);
+
+export const normalizePeer = (p) => ({
+  ...p,
+  is_enabled: p.is_enabled ?? p.isActive ?? p.is_active,
+  assigned_ip: p.assigned_ip ?? p.address,
+  bytes_received: p.bytes_received ?? p.transferRx,
+  bytes_sent: p.bytes_sent ?? p.transferTx,
+});
+
+// ServerSetup record: (ListenPort, Address, Dns, Endpoint, Mtu).
+export const buildSetupPayload = (f) => ({
+  listenPort: f.listen_port,
+  address: f.subnet,
+  dns: f.dns_servers,
+  endpoint: f.external_endpoint,
+});
+
+// POST /vpn/peers returns the peer entity (no client_config) — build the
+// WireGuard client config from it and the server settings.
+export const buildClientConfig = (peer, server) => {
+  if (!peer) return '';
+  if (peer.client_config) return peer.client_config;
+  const port = server?.listen_port ?? server?.listenPort ?? 51820;
+  const endpoint = server?.external_endpoint ?? server?.endpoint ?? '';
+  return [
+    '[Interface]',
+    `PrivateKey = ${peer.privateKey ?? peer.private_key ?? ''}`,
+    `Address = ${peer.assigned_ip ?? peer.address ?? ''}`,
+    `DNS = ${server?.dns_servers ?? server?.dns ?? '1.1.1.1'}`,
+    '',
+    '[Peer]',
+    `PublicKey = ${server?.public_key ?? ''}`,
+    'AllowedIPs = 0.0.0.0/0',
+    `Endpoint = ${endpoint}:${port}`,
+    '',
+  ].join('\n');
+};
+
+const decodeQrData = (d) => {
+  if (!d?.qr_data) return '';
+  try { return atob(d.qr_data); } catch { return ''; }
+};
+
 const StatCard = ({ icon: Icon, label, value, color, sub }) => (
   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
     className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all">
@@ -39,7 +94,7 @@ const StatCard = ({ icon: Icon, label, value, color, sub }) => (
 const ServerConfig = ({ config, onRefresh }) => {
   const [showSetup, setShowSetup] = useState(false);
   const [setupForm, setSetupForm] = useState({
-    external_endpoint: '', listen_port: 51820, subnet: '10.66.66.0/24',
+    external_endpoint: '', listen_port: 51820, subnet: '10.0.0.1/24',
     dns_servers: '1.1.1.1, 8.8.8.8', max_peers: 50
   });
   const [toggling, setToggling] = useState(false);
@@ -49,11 +104,11 @@ const ServerConfig = ({ config, onRefresh }) => {
 
   const handleSetup = async () => {
     try {
-      await vpnApi.setupServer(setupForm);
+      await vpnApi.setupServer(buildSetupPayload(setupForm));
       toast.success('VPN server configured');
       setShowSetup(false);
       onRefresh();
-    } catch (e) { toast.error(e.response?.data?.message || 'Setup failed'); }
+    } catch (e) { toast.error(e.response?.data?.message || e.response?.data?.detail || 'Setup failed'); }
   };
 
   const handleToggle = async () => {
@@ -165,7 +220,7 @@ const ServerConfig = ({ config, onRefresh }) => {
                   className="bg-white/5 border-white/10 h-9 text-sm" />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Subnet</label>
+                <label className="text-xs text-gray-500 mb-1 block">Server Address (CIDR)</label>
                 <Input value={setupForm.subnet}
                   onChange={e => setSetupForm(p => ({ ...p, subnet: e.target.value }))}
                   className="bg-white/5 border-white/10 h-9 text-sm" />
@@ -336,9 +391,18 @@ const PeerCard = ({ peer, onToggle, onDelete }) => {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }} className="mb-3">
             <div className="p-3 rounded-lg bg-white/[0.03] border border-cyan-500/20 text-center">
-              <p className="text-xs text-cyan-400 font-medium mb-2">Scan with WireGuard App</p>
-              <img src={qrData.qr_image} alt="WireGuard QR Code" className="mx-auto rounded-lg" style={{ maxWidth: '200px' }} />
-              <p className="text-xs text-gray-500 mt-2">Replace YOUR_PRIVATE_KEY with the key from initial setup</p>
+              {qrData.qr_image ? (
+                <>
+                  <p className="text-xs text-cyan-400 font-medium mb-2">Scan with WireGuard App</p>
+                  <img src={qrData.qr_image} alt="WireGuard QR Code" className="mx-auto rounded-lg" style={{ maxWidth: '200px' }} />
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-cyan-400 font-medium mb-2">Client config</p>
+                  <pre className="text-left text-[10px] font-mono text-cyan-300 whitespace-pre-wrap break-all">{decodeQrData(qrData)}</pre>
+                </>
+              )}
+              <p className="text-xs text-gray-500 mt-2">Add the PrivateKey line from the config you downloaded when the peer was created</p>
             </div>
           </motion.div>
         )}
@@ -355,7 +419,7 @@ const PeerCard = ({ peer, onToggle, onDelete }) => {
         </div>
         <div className="px-2 py-1.5 rounded-lg bg-white/[0.03]">
           <span className="text-gray-500">Keep-alive:</span>{' '}
-          <span>{peer.keep_alive}s</span>
+          <span>{peer.keep_alive != null ? `${peer.keep_alive}s` : '—'}</span>
         </div>
       </div>
       {peer.last_handshake && (
@@ -401,8 +465,8 @@ export default function VpnPage() {
         vpnApi.getPeers().catch(() => ({ data: [] })),
         vpnApi.getStats().catch(() => ({ data: null })),
       ]);
-      setServerConfig(configRes.data);
-      setPeers(peersRes.data || []);
+      setServerConfig(normalizeServerConfig(configRes.data));
+      setPeers(Array.isArray(peersRes.data) ? peersRes.data.map(normalizePeer) : []);
       setStats(statsRes.data);
     } catch { toast.error('Failed to load VPN data'); }
     finally { setLoading(false); }
@@ -413,8 +477,9 @@ export default function VpnPage() {
   const handleCreatePeer = async () => {
     if (!newPeerName.trim()) return toast.error('Peer name required');
     try {
-      const res = await vpnApi.createPeer({ name: newPeerName });
-      setNewPeerConfig(res.data);
+      const res = await vpnApi.createPeer({ name: newPeerName.trim() });
+      const peer = normalizePeer(res.data || {});
+      setNewPeerConfig({ ...peer, client_config: buildClientConfig(peer, serverConfig) });
       toast.success('Peer created — download the config!');
       setShowAddPeer(false);
       setNewPeerName('');
@@ -472,12 +537,12 @@ export default function VpnPage() {
             <StatCard icon={Users} label="Connected Peers"
               value={`${stats.active_peers}/${stats.total_peers}`}
               color="bg-blue-500/15 text-blue-400"
-              sub={`Max: ${stats.max_peers}`} />
-            <StatCard icon={ArrowUpDown} label="Traffic (24h)"
-              value={formatBytes(stats.total_bytes_received_24h + stats.total_bytes_sent_24h)}
+              sub={stats.max_peers != null ? `Max: ${stats.max_peers}` : undefined} />
+            <StatCard icon={ArrowUpDown} label="Traffic"
+              value={formatBytes((stats.total_bytes_received_24h ?? stats.total_rx ?? 0) + (stats.total_bytes_sent_24h ?? stats.total_tx ?? 0))}
               color="bg-violet-500/15 text-violet-400" />
             <StatCard icon={Activity} label="Connections (24h)"
-              value={stats.connections_24h}
+              value={stats.connections_24h ?? '—'}
               color="bg-amber-500/15 text-amber-400" />
           </div>
         )}

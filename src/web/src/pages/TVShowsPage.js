@@ -154,7 +154,8 @@ export const TVShowsPage = () => {
     setLoading(true);
     try {
       const response = await tmdbApi.discover('tv', {
-        page, genre: selectedGenre, sort_by: sortBy,
+        // TmdbController.Discover binds `with_genres`; `genre` was ignored.
+        page, ...(selectedGenre ? { with_genres: selectedGenre } : {}), sort_by: sortBy,
       });
       if (page === 1) setShows(response.data.results || []);
       else setShows(prev => [...prev, ...(response.data.results || [])]);

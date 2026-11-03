@@ -449,11 +449,9 @@ public class WatchPartyController : ControllerBase
     [HttpGet("{partyCode}")]
     public IActionResult Get(string partyCode) => Ok(new { party_code = partyCode, status = "waiting" });
 
-    [HttpGet("{partyCode}/ws")]
-    public async Task WebSocket(string partyCode)
-    {
-        await _connectionManager.HandleConnection(HttpContext, partyCode);
-    }
+    // The WebSocket endpoint GET {partyCode}/ws is mapped once in Program.cs
+    // (MapGet + RequireAuthorization). A duplicate controller action here made
+    // every connect fail with AmbiguousMatchException.
 
     [HttpPost("{partyCode}/chat")]
     public IActionResult SendChat(string partyCode, [FromBody] JsonElement body) => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages." });

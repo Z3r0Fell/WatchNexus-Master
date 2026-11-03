@@ -12,6 +12,18 @@ const API = BACKEND_URL;
 
 const RATINGS = ['G', 'PG', 'PG-13', 'R', 'NC-17', 'TV-Y', 'TV-G', 'TV-PG', 'TV-14', 'TV-MA'];
 
+// RindController.Check filters on `restricted_genres` and GET /profile
+// returns array values as raw JSON text ('["Horror"]').
+export const parseGenreList = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (t.startsWith('[')) { try { const a = JSON.parse(t); if (Array.isArray(a)) return a.map(String); } catch { /* fall through */ } }
+    return t.split(',').map(g => g.trim()).filter(Boolean);
+  }
+  return [];
+};
+
 export const ParentalControlsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +39,8 @@ export const ParentalControlsPage = () => {
       setProfile(res.data);
       if (res.data.max_rating) setMaxRating(res.data.max_rating);
       if (res.data.pin_enabled !== undefined) setPinEnabled(res.data.pin_enabled);
-      if (res.data.blocked_genres) setBlockedGenres(Array.isArray(res.data.blocked_genres) ? res.data.blocked_genres.join(', ') : res.data.blocked_genres);
+      const genres = res.data.restricted_genres ?? res.data.blocked_genres;
+      if (genres) setBlockedGenres(parseGenreList(genres).join(', '));
     } catch (e) {
       console.error('Failed to fetch parental profile:', e);
     } finally {
@@ -43,13 +56,14 @@ export const ParentalControlsPage = () => {
       await axios.put(`${API}/api/rind/profile`, {
         pin,
         max_rating: maxRating,
-        blocked_genres: blockedGenres.split(',').map(g => g.trim()).filter(Boolean),
+        restricted_genres: parseGenreList(blockedGenres),
         enabled: true,
       }, { headers });
       toast.success('Parental controls saved');
+      setPin('');
       fetchProfile();
     } catch (e) {
-      toast.error('Failed to save');
+      toast.error(e.response?.data?.detail || 'Failed to save');
     }
   };
 
