@@ -37,6 +37,9 @@ services:
       # LOBSTER_AUTH_KEY is a Headscale pre-auth key, used only on first join.
       - LOBSTER_CONTROL_URL=${LOBSTER_CONTROL_URL:-}
       - LOBSTER_AUTH_KEY=${LOBSTER_AUTH_KEY:-}
+      # Stable tailnet name (the default uses the container hostname, which
+      # changes when the container is recreated).
+      - LOBSTER_HOSTNAME=${LOBSTER_HOSTNAME:-watchnexus}
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -90,6 +93,9 @@ services:
       # LOBSTER_AUTH_KEY is a Headscale pre-auth key, used only on first join.
       - LOBSTER_CONTROL_URL=${LOBSTER_CONTROL_URL:-}
       - LOBSTER_AUTH_KEY=${LOBSTER_AUTH_KEY:-}
+      # Stable tailnet name (the default uses the container hostname, which
+      # changes when the container is recreated).
+      - LOBSTER_HOSTNAME=${LOBSTER_HOSTNAME:-watchnexus}
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -145,6 +151,9 @@ services:
       # LOBSTER_AUTH_KEY is a Headscale pre-auth key, used only on first join.
       - LOBSTER_CONTROL_URL=${LOBSTER_CONTROL_URL:-}
       - LOBSTER_AUTH_KEY=${LOBSTER_AUTH_KEY:-}
+      # Stable tailnet name (the default uses the container hostname, which
+      # changes when the container is recreated).
+      - LOBSTER_HOSTNAME=${LOBSTER_HOSTNAME:-watchnexus}
     read_only: true
     security_opt:
       - no-new-privileges:true
