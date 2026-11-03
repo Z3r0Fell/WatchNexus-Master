@@ -2,7 +2,9 @@ import { render, screen, waitFor, act, userEvent } from './test-utils'
 import { MediaCard } from '../components/media/MediaCard'
 import { tmdbImageUrl } from '../lib/config'
 
+// keep the real helpers MediaCard also needs (normalizeMediaType, localMediaHref)
 jest.mock('../lib/utils', () => ({
+  ...jest.requireActual('../lib/utils'),
   cn: (...args) => args.filter(Boolean).join(' '),
   getTitle: (item) => item.title || item.name,
   getReleaseYear: (item) => item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0] || item.year,
@@ -41,12 +43,14 @@ describe('MediaCard', () => {
 
   test('shows media type badge', async () => {
     render(<MediaCard {...defaultProps} />)
-    await waitFor(() => expect(screen.getByText('MOVIE')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('movie')).toHaveClass('uppercase')) // rendered upper-case via CSS
+    await waitFor(() => expect(screen.getByText('movie')).toBeInTheDocument())
   })
 
   test('shows rating badge when rating > 0', async () => {
     render(<MediaCard {...defaultProps} />)
-    await waitFor(() => expect(screen.getByText('8.5')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('8.5').length).toBeGreaterThan(0)) // badge + hover overlay
+    await waitFor(() => expect(screen.getAllByText('8.5')[0]).toBeInTheDocument())
   })
 
   test('shows year when available', async () => {
@@ -56,7 +60,7 @@ describe('MediaCard', () => {
 
   test('shows TV badge for TV shows', async () => {
     render(<MediaCard {...{ ...defaultProps, item: { ...defaultProps.item, media_type: 'tv', first_air_date: '2022-09-01' } }} />)
-    await waitFor(() => expect(screen.getByText('TV')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('tv')).toHaveClass('uppercase'))
   })
 
   test('calls onAddToWatchlist when button clicked', async () => {
@@ -73,13 +77,15 @@ describe('MediaCard', () => {
   test('shows check icon when in watchlist', async () => {
     render(<MediaCard {...{ ...defaultProps, isInWatchlist: true }} />)
     await waitFor(() => expect(screen.getByTestId('add-watchlist-123')).toBeInTheDocument())
-    expect(screen.getByTestId('add-watchlist-123')).toHaveTextContent('Remove')
+    // icon-only button: Check icon when already in the watchlist
+    expect(screen.getByTestId('add-watchlist-123').querySelector('svg.lucide-check')).not.toBeNull()
   })
 
   test('shows plus icon when not in watchlist', async () => {
     render(<MediaCard {...{ ...defaultProps, isInWatchlist: false }} />)
     await waitFor(() => expect(screen.getByTestId('add-watchlist-123')).toBeInTheDocument())
-    expect(screen.getByTestId('add-watchlist-123')).toHaveTextContent('Add')
+    // icon-only button: Plus icon when not in the watchlist
+    expect(screen.getByTestId('add-watchlist-123').querySelector('svg.lucide-plus')).not.toBeNull()
   })
 
   test('does not show watchlist button when onAddToWatchlist not provided', async () => {
