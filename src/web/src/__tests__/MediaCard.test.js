@@ -55,7 +55,7 @@ describe('MediaCard', () => {
   })
 
   test('shows TV badge for TV shows', async () => {
-    render(<MediaCard {...defaultProps, item: { ...defaultProps.item, media_type: 'tv', first_air_date: '2022-09-01' }} />)
+    render(<MediaCard {...{ ...defaultProps, item: { ...defaultProps.item, media_type: 'tv', first_air_date: '2022-09-01' } }} />)
     await waitFor(() => expect(screen.getByText('TV')).toBeInTheDocument())
   })
 
@@ -71,19 +71,19 @@ describe('MediaCard', () => {
   })
 
   test('shows check icon when in watchlist', async () => {
-    render(<MediaCard {...defaultProps, isInWatchlist: true} />)
+    render(<MediaCard {...{ ...defaultProps, isInWatchlist: true }} />)
     await waitFor(() => expect(screen.getByTestId('add-watchlist-123')).toBeInTheDocument())
     expect(screen.getByTestId('add-watchlist-123')).toHaveTextContent('Remove')
   })
 
   test('shows plus icon when not in watchlist', async () => {
-    render(<MediaCard {...defaultProps, isInWatchlist: false} />)
+    render(<MediaCard {...{ ...defaultProps, isInWatchlist: false }} />)
     await waitFor(() => expect(screen.getByTestId('add-watchlist-123')).toBeInTheDocument())
     expect(screen.getByTestId('add-watchlist-123')).toHaveTextContent('Add')
   })
 
   test('does not show watchlist button when onAddToWatchlist not provided', async () => {
-    render(<MediaCard {...defaultProps, onAddToWatchlist: undefined} />)
+    render(<MediaCard {...{ ...defaultProps, onAddToWatchlist: undefined }} />)
     await waitFor(() => expect(screen.queryByTestId('add-watchlist-123')).not.toBeInTheDocument())
   })
 
@@ -93,17 +93,17 @@ describe('MediaCard', () => {
   })
 
   test('hides playlist button when showPlaylistButton is false', async () => {
-    render(<MediaCard {...defaultProps, showPlaylistButton: false} />)
+    render(<MediaCard {...{ ...defaultProps, showPlaylistButton: false }} />)
     await waitFor(() => expect(screen.queryByTestId('add-to-playlist')).not.toBeInTheDocument())
   })
 
   test('uses fallback when no poster', async () => {
-    render(<MediaCard {...defaultProps, item: { ...defaultProps.item, poster_path: null, poster_url: null }} />)
-    await waitFor(() => expect(screen.getByText('T')).toBeInTheDocument(); // First letter of title
+    render(<MediaCard {...{ ...defaultProps, item: { ...defaultProps.item, poster_path: null, poster_url: null } }} />)
+    await waitFor(() => expect(screen.getByText('T')).toBeInTheDocument()) // First letter of title
   })
 
   test('uses poster_url over poster_path', async () => {
-    render(<MediaCard {...defaultProps, item: { ...defaultProps.item, poster_url: 'https://custom.com/poster.jpg' }} />)
+    render(<MediaCard {...{ ...defaultProps, item: { ...defaultProps.item, poster_url: 'https://custom.com/poster.jpg' } }} />)
     await waitFor(() => expect(screen.getByAltText('Test Movie')).toHaveAttribute('src', 'https://custom.com/poster.jpg'))
   })
 
@@ -121,7 +121,7 @@ describe('MediaCard', () => {
   })
 
   test('links to TV detail page for TV shows', async () => {
-    render(<MediaCard {...defaultProps, item: { ...defaultProps.item, media_type: 'tv' }} />)
+    render(<MediaCard {...{ ...defaultProps, item: { ...defaultProps.item, media_type: 'tv' } }} />)
     await waitFor(() => {
       const link = screen.getByTestId('media-card-123').querySelector('a')
       expect(link).toHaveAttribute('href', '/tv/123')
@@ -129,7 +129,7 @@ describe('MediaCard', () => {
   })
 
   test('shows watched indicator when item.watched is true', async () => {
-    render(<MediaCard {...defaultProps, item: { ...defaultProps.item, watched: true }} />)
+    render(<MediaCard {...{ ...defaultProps, item: { ...defaultProps.item, watched: true } }} />)
     await waitFor(() => expect(screen.getByTestId('media-card-123')).toBeInTheDocument())
   })
 })

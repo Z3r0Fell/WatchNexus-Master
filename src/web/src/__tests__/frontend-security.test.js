@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from '../test-utils'
+import { render, screen, waitFor, act } from './test-utils'
 import { AuthProvider, useAuth } from '../context/AuthContext'
 import axios from 'axios'
 import { BACKEND_URL } from '../lib/config'
