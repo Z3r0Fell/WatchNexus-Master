@@ -1,21 +1,20 @@
-import { render, screen, waitFor, act, userEvent } from './test-utils'
+import { render, screen, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { TierGate } from '../components/TierGate'
 import { useLicense } from '../context/LicenseContext'
 import { useNavigate } from 'react-router-dom'
 
 jest.mock('../context/LicenseContext', () => ({
   ...jest.requireActual('../context/LicenseContext'),
-  useLicense: () => ({
-    isRouteUnlocked: jest.fn(),
-    getRouteRequiredTier: jest.fn(),
-    ROUTE_MODULE_MAP: { '/security': 'security', '/vpn': 'vpn', '/indexers': 'compote' },
-  }),
-  ROUTE_MODULE_MAP: { '/security': 'security', '/vpn': 'vpn', '/indexers': 'compote' },
+  // jest.fn so each test can stub it with mockReturnValue
+  useLicense: jest.fn(),
+  // TierGate reads the module name from the exported map, not from the hook
+  ROUTE_MODULE_MAP: { '/security': 'security', '/vpn': 'vpn', '/indexers': 'compote', '/custom': 'custom-module' },
 }))
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
-  useNavigate: () => jest.fn(),
+  useNavigate: jest.fn(),
 }))
 
 jest.mock('../components/layout/Layout', () => ({
@@ -73,7 +72,8 @@ describe('TierGate', () => {
     await waitFor(() => expect(screen.getByTestId('tier-gate')).toBeInTheDocument())
     expect(screen.getByText('Pro Feature')).toBeInTheDocument()
     expect(screen.getByText('compote')).toBeInTheDocument()
-    expect(screen.getByText('requires a WatchNexus Pro license')).toBeInTheDocument()
+    // sentence is split across <span>s; match the whole paragraph
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && /requires a WatchNexus Pro license/.test(el.textContent))).toBeInTheDocument()
     expect(screen.getByTestId('tier-gate-activate-btn')).toHaveTextContent('Enter Serial Number')
   })
 
@@ -89,7 +89,8 @@ describe('TierGate', () => {
     await waitFor(() => expect(screen.getByTestId('tier-gate')).toBeInTheDocument())
     expect(screen.getByText('Ultra Feature')).toBeInTheDocument()
     expect(screen.getByText('security')).toBeInTheDocument()
-    expect(screen.getByText('requires a WatchNexus Ultra license')).toBeInTheDocument()
+    // sentence is split across <span>s; match the whole paragraph
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && /requires a WatchNexus Ultra license/.test(el.textContent))).toBeInTheDocument()
   })
 
   test('navigates to settings activation on button click', async () => {
