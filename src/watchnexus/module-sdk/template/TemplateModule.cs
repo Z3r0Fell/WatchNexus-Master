@@ -40,7 +40,9 @@ public class TemplateModule : IWatchNexusModule
 
     public void MapRoutes(IEndpointRouteBuilder routes)
     {
-        var prefix = Manifest.ApiRoutePrefix;
+        // Routes must live under /api/<prefix> to match api_routes in module.json
+        // and so the core's FortressFilter tier gate (which keys off /api/...) applies.
+        var prefix = $"/api/{Manifest.ApiRoutePrefix}";
 
         routes.MapGet($"{prefix}/status", () => Results.Json(new
         {

@@ -4,7 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>WatchNexus.Module.$(MSBuildProjectName)</AssemblyName>
+    <!-- Must be WatchNexus.Module.<module.json "name">.dll — that is the exact file
+         ModuleLoader looks for. ($(MSBuildProjectName) already carries the
+         "WatchNexus.Module." prefix, which produced WatchNexus.Module.WatchNexus.Module.Template.dll.) -->
+    <AssemblyName>WatchNexus.Module.Template</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
