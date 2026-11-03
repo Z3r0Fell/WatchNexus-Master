@@ -1,5 +1,7 @@
 import { parseZestLogs } from '../../components/settings/ZestSettings';
 
+jest.mock('../../services/api', () => ({ apiClient: {}, mediaHealthApi: {}, progressApi: {} }));
+
 describe('F8 audit: ZestSettings log parsing', () => {
   test('parses the bare array returned by /api/zest/logs', () => {
     const rows = parseZestLogs([
@@ -21,6 +23,16 @@ describe('F8 audit: ZestSettings log parsing', () => {
 
   test('maps FATAL to CRITICAL for the level filter', () => {
     expect(parseZestLogs([{ line: 't [FATAL] x: y' }])[0].level).toBe('CRITICAL');
+  });
+});
+
+describe('F8 audit: settings modules compile', () => {
+  test.each([
+    'LibrarySettings', 'MediaHealthSettings', 'MediaManagement', 'PlaybackSettings', 'PluginsSettings',
+    'QualityProfilesSettings', 'StreamingSettings', 'SubtitleSettings', 'ThemeForgeSettings', 'UsersSettings',
+  ])('%s', (name) => {
+    const mod = require(`../../components/settings/${name}`);
+    expect(Object.keys(mod).length).toBeGreaterThan(0);
   });
 });
 

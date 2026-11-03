@@ -192,7 +192,7 @@ const LibrariesTab = ({
                     <p className="font-medium">{lib.name}</p>
                     <p className="text-sm text-gray-400">{lib.path}</p>
                     <p className="text-xs text-gray-500">
-                      {lib.item_count || 0} items • Last scanned: {lib.last_scanned || 'Never'}
+                      {lib.item_count || 0} items • Last scanned: {(lib.last_scanned_at || lib.last_scanned) ? new Date(lib.last_scanned_at || lib.last_scanned).toLocaleString() : 'Never'}
                     </p>
                   </div>
                 </div>

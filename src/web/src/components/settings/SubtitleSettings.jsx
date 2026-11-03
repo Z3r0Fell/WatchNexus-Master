@@ -79,7 +79,7 @@ export const SubtitleSettings = () => {
     setTesting(providerId);
     try {
       const res = await axios.post(`${BACKEND_URL}/api/garnish/test/${providerId}`);
-      res.data.success ? toast.success(`${providerId} is working!`) : toast.error(`${providerId} test failed: ${res.data.error}`);
+      res.data.success ? toast.success(`${providerId} is working!`) : toast.error(`${providerId} test failed: ${res.data.error || `HTTP ${res.data.status_code}`}`);
     } catch { toast.error(`Failed to test ${providerId}`); }
     setTesting(null);
   };
