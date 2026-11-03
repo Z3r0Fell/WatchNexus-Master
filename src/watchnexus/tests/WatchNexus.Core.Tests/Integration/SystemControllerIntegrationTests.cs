@@ -114,6 +114,11 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
     {
         AuthenticateAsUser();
 
+        // Admin-only: a normal user is refused.
+        var denied = await Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/cache/clear") { Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json") });
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        AuthenticateAsAdmin();
+
         var response = await Client.PostAsync("/api/cache/clear", null);
         
         AssertJsonResponse(response);
@@ -156,6 +161,11 @@ public class SystemControllerIntegrationTests : IntegrationTestBase
     public async Task CreateDbBackup_CreatesBackup()
     {
         AuthenticateAsUser();
+
+        // Admin-only: a normal user is refused.
+        var denied = await Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/db/backup") { Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json") });
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        AuthenticateAsAdmin();
 
         var response = await Client.PostAsync("/api/db/backup", null);
         

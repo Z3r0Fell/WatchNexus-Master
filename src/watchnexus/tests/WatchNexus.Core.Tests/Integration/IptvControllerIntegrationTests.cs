@@ -60,6 +60,24 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task SourceMutations_NonAdmin_Return403()
+    {
+        // IPTV sources are server-wide data: only admins may mutate them.
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+
+        var add = await Client.PostAsync("/api/iptv/sources?name=x&url=https%3A%2F%2Fexample.com%2Fa.m3u", null);
+        Assert.Equal(HttpStatusCode.Forbidden, add.StatusCode);
+        var update = await Client.PutAsync("/api/iptv/sources/any", new StringContent("{\"name\":\"y\"}", System.Text.Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.Forbidden, update.StatusCode);
+        var refresh = await Client.PostAsync("/api/iptv/sources/any/refresh", null);
+        Assert.Equal(HttpStatusCode.Forbidden, refresh.StatusCode);
+        var delete = await Client.DeleteAsync("/api/iptv/sources/any");
+        Assert.Equal(HttpStatusCode.Forbidden, delete.StatusCode);
+        Assert.Equal(0, await DbContext.IptvSources.CountAsync());
+    }
+
+    [Fact]
     public async Task AddSource_BlockedUrl_Returns400()
     {
         AuthenticateAsUser();
@@ -96,7 +114,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task UpdateSource_ValidInput_UpdatesSource()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // source mutations are admin-only
         await SeedLicenseAsync("pro");
 
         // Create source first
@@ -122,7 +140,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task RefreshSource_RefetchesM3U()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // source mutations are admin-only
         await SeedLicenseAsync("pro");
 
         var m3uContent = "#EXTM3U\n#EXTINF:-1,Channel 1\nhttp://test.com/1.m3u8";
@@ -133,7 +151,8 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         var created = await DeserializeResponseElement(createResponse);
         var sourceId = created.GetProperty("id").GetString();
 
-        // Refresh
+        // Refresh (fresh response: the first one was consumed and disposed)
+        SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         var response = await Client.PostAsync($"/api/iptv/sources/{sourceId}/refresh", null);
         
         AssertJsonResponse(response);
@@ -144,7 +163,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task DeleteSource_RemovesSourceAndChannels()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // source mutations are admin-only
         await SeedLicenseAsync("pro");
 
         var m3uContent = "#EXTM3U\n#EXTINF:-1,Test\nhttp://test.com/stream.m3u8";
@@ -392,8 +411,18 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var response = await Client.GetAsync("/api/iptv/epg/test-channel");
-        
+        // EPG is looked up per existing channel; unknown channel ids are 404.
+        var unknown = await Client.GetAsync("/api/iptv/epg/test-channel");
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+
+        var source = new IptvSource { Name = "EPG", Url = "https://example.com/epg.m3u" };
+        DbContext.IptvSources.Add(source);
+        var channel = new IptvChannel { SourceId = source.Id, Name = "Ch", StreamUrl = "http://test.com/1.m3u8" };
+        DbContext.IptvChannels.Add(channel);
+        await DbContext.SaveChangesAsync();
+
+        var response = await Client.GetAsync($"/api/iptv/epg/{channel.Id}");
+
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
         Assert.Equal(0, json.GetArrayLength());
@@ -409,7 +438,7 @@ public class IptvControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var m3uContent = "#EXTM3U\n#EXTINF:-1,Ch1\nhttp://test.com/1.m3u8";
+        var m3uContent = "#EXTM3U\n#EXTINF:-1 group-title=\"News\",Ch1\nhttp://test.com/1.m3u8";
         SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(m3uContent) });
         
         await PostIptvSourceAsync(JsonSerializer.Serialize(new { name = "Test", url = "https://example.com/test.m3u" }));

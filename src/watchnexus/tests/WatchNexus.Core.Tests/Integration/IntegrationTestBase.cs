@@ -454,8 +454,11 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// <summary>
     /// Create a test library
     /// </summary>
-    protected async Task<Library> CreateTestLibraryAsync(string name = "Test Library", string path = "/data/media/movies", string mediaType = "movies", string userId = "test-user")
+    protected async Task<Library> CreateTestLibraryAsync(string name = "Test Library", string? path = null, string mediaType = "movies", string userId = "test-user")
     {
+        // Default to a real directory inside the per-test media root so
+        // update/scan endpoints that validate the path accept it.
+        path ??= CreateMediaDir("movies");
         var library = new Library
         {
             Id = Guid.NewGuid().ToString(),

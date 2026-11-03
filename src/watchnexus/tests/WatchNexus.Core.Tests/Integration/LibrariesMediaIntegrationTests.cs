@@ -46,7 +46,9 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var body = JsonSerializer.Serialize(new { Name = "Test Movies", Path = "/data/media/movies", MediaType = "movies" });
+        // Library roots must exist inside a configured media root.
+        var libPath = CreateMediaDir("movies");
+        var body = JsonSerializer.Serialize(new { Name = "Test Movies", Path = libPath, MediaType = "movies" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var response = await Client.PostAsync("/api/libraries", content);
@@ -56,7 +58,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         
         Assert.NotNull(json.GetProperty("id").GetString());
         Assert.Equal("Test Movies", json.GetProperty("name").GetString());
-        Assert.Equal("/data/media/movies", json.GetProperty("path").GetString());
+        Assert.Equal(libPath, json.GetProperty("path").GetString());
         Assert.Equal("movies", json.GetProperty("media_type").GetString());
         Assert.Equal(0, json.GetProperty("item_count").GetInt32());
         Assert.Equal("idle", json.GetProperty("scan_status").GetString());
@@ -149,6 +151,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         Assert.Equal("deleted", json.GetProperty("status").GetString());
 
         // Verify cascade delete
+        DbContext.ChangeTracker.Clear();
         var remainingLib = await DbContext.Libraries.FindAsync(library.Id);
         Assert.Null(remainingLib);
         var remainingItems = await DbContext.MediaItems.Where(m => m.LibraryId == library.Id).ToListAsync();
@@ -625,7 +628,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("pro");
 
         // Create
-        var createBody = JsonSerializer.Serialize(new { directory = "/data/media", schedule_type = "daily", schedule_time = "03:00", notify_on_issues = true, auto_repair = false });
+        var createBody = JsonSerializer.Serialize(new { directory = MediaRoot, schedule_type = "daily", schedule_time = "03:00", notify_on_issues = true, auto_repair = false });
         var createResponse = await Client.PostAsync("/api/media/scheduled-scans", new StringContent(createBody, System.Text.Encoding.UTF8, "application/json"));
         var created = await DeserializeResponseElement(createResponse);
         var scanId = created.GetProperty("id").GetString();
@@ -705,8 +708,10 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Redownload (Not Implemented)
+    #region Redownload (not exposed)
 
+    // The redownload placeholder was intentionally not added (no frontend
+    // caller, nothing to implement it against); the route must not exist.
     [Fact]
     public async Task Redownload_Returns501()
     {
@@ -714,8 +719,8 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("pro");
 
         var response = await Client.PostAsync("/api/media/redownload?media_id=123", null);
-        
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     #endregion
@@ -728,7 +733,7 @@ public class LibrariesMediaIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var body = JsonSerializer.Serialize(new { Name = "Test", Path = "/data/media/test", MediaType = "movies" });
+        var body = JsonSerializer.Serialize(new { Name = "Test", Path = CreateMediaDir("test"), MediaType = "movies" });
         var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var resp1 = await Client.PostAsync("/api/libraries", content);
