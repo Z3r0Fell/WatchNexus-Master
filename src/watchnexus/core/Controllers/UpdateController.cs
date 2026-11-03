@@ -62,7 +62,7 @@ public class UpdateController : ControllerBase
     public async Task<IActionResult> CheckForUpdates()
     {
         var tier = await GetCurrentTier();
-        var licenseServerUrl = _config["LICENSE_SERVER_URL"] ?? "https://licenses.watchnexus.ca";
+        var licenseServerUrl = _config["LICENSE_SERVER_URL"].NullIfBlank() ?? "https://licenses.watchnexus.ca";
         var githubPatchUrl = _config["PATCH_REPO_URL"] ?? "";
 
         // Result containers
@@ -272,7 +272,7 @@ public class UpdateController : ControllerBase
             last_checked = lastCheckedAt,
             update_channels = new
             {
-                license_server = _config["LICENSE_SERVER_URL"] ?? "https://licenses.watchnexus.ca",
+                license_server = _config["LICENSE_SERVER_URL"].NullIfBlank() ?? "https://licenses.watchnexus.ca",
                 patch_repo = !string.IsNullOrEmpty(_config["PATCH_REPO_URL"]) ? "configured" : "not configured",
             },
         });

@@ -155,11 +155,12 @@ public class PepperController : ControllerBase
         int sent = 0, failed = 0;
         foreach (var ch in channels)
         {
+            var type = "";
             try
             {
                 var cfg = JsonDocument.Parse(ch.Value).RootElement;
                 if (cfg.TryGetProperty("enabled", out var en) && !en.GetBoolean()) continue;
-                var type = cfg.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
+                type = cfg.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
                 var result = type switch
                 {
                     "discord" => await SendDiscord(cfg, title, message),
@@ -175,7 +176,16 @@ public class PepperController : ControllerBase
                 });
                 if (result.Item1) sent++; else failed++;
             }
-            catch { failed++; }
+            catch (Exception ex)
+            {
+                // Delivery threw (unreachable webhook, bad config…): still record it so it shows in history.
+                failed++;
+                _db.NotificationLogs.Add(new NotificationLog
+                {
+                    EventType = eventType, Channel = type, Message = $"{title}: {message}",
+                    Status = "failed", Error = ex.Message,
+                });
+            }
         }
         await _db.SaveChangesAsync();
         return Ok(new { sent, failed });

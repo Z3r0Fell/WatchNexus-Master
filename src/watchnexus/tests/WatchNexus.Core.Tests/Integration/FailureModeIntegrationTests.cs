@@ -437,7 +437,7 @@ public class FailureModeIntegrationTests : IntegrationTestBase
         }
     }
 
-    [Fact(Skip = "Product bug: PepperController.Send counts a delivery that throws (e.g. unreachable webhook) as failed but its catch block writes no NotificationLog, so the failure never reaches history. Re-enable once Send logs failures from exceptions.")]
+    [Fact]
     public async Task NotificationLog_PersistsAcrossFailures()
     {
         AuthenticateAsUser();

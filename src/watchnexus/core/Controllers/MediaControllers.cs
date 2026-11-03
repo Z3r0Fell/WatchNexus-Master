@@ -206,6 +206,7 @@ public class MediaOpsController : ControllerBase
                 message = n.Message,
                 channel = n.Channel,
                 status = n.Status,
+                error = n.Error,
                 created_at = n.SentAt,
             })
             .ToListAsync();

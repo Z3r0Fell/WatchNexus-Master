@@ -211,7 +211,7 @@ public class CellarController : ControllerBase
     private string? LicenseApiKey =>
         _config["LICENSE_SERVER_API_KEY"] is { Length: > 0 } operatorKey ? operatorKey : _config["LICENSE_SERVER_CLIENT_KEY"];
 
-    private string LicenseServerUrl => (_config["LICENSE_SERVER_URL"] ?? DEFAULT_LICENSE_SERVER_URL).TrimEnd('/');
+    private string LicenseServerUrl => (_config["LICENSE_SERVER_URL"].NullIfBlank() ?? DEFAULT_LICENSE_SERVER_URL).TrimEnd('/');
 
     private async Task<(ServerActivation? Activation, IActionResult? Error)> ActivateWithLicenseServer(string serial)
     {
