@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { 
+import {
   tmdbApi, watchlistApi, progressApi, downloadsApi, settingsApi,
   indexersApi, streamingApi, libraryApi, mediaHealthApi,
   authApi, compoteApi, qbittorrentApi, torrentEngineApi,
@@ -144,12 +144,13 @@ describe('api.js services', () => {
 
     test('add posts to /downloads', async () => {
       await downloadsApi.add('Test', 'movie', 123, 1000000)
-      expect(mockApiClient.post).toHaveBeenCalledWith('/downloads', { title: 'Test', media_type: 'movie', tmdb_id: 123, size: 1000000 })
+      // backend binds these from the query string
+      expect(mockApiClient.post).toHaveBeenCalledWith('/downloads', null, { params: { title: 'Test', media_type: 'movie', tmdb_id: 123, size: 1000000 } })
     })
 
     test('update patches /downloads/:id', async () => {
       await downloadsApi.update('dl1', 'downloading', 50)
-      expect(mockApiClient.patch).toHaveBeenCalledWith('/downloads/dl1', { status: 'downloading', progress: 50 })
+      expect(mockApiClient.patch).toHaveBeenCalledWith('/downloads/dl1', null, { params: { status: 'downloading', progress: 50 } })
     })
 
     test('delete calls /downloads/:id', async () => {
@@ -195,7 +196,7 @@ describe('api.js services', () => {
 
     test('update puts to /streaming-services/:id', async () => {
       await streamingApi.update('svc1', true, 'user@test.com')
-      expect(mockApiClient.put).toHaveBeenCalledWith('/streaming-services/svc1', { enabled: true, username: 'user@test.com' })
+      expect(mockApiClient.put).toHaveBeenCalledWith('/streaming-services/svc1', null, { params: { enabled: true, username: 'user@test.com' } })
     })
   })
 
@@ -289,8 +290,9 @@ describe('api.js services', () => {
     })
 
     test('addTorrent posts to /qbittorrent/add', async () => {
-      await qbittorrentApi.addTorrent('magnet:test', null, '/downloads', 'tv')
-      expect(mockApiClient.post).toHaveBeenCalledWith('/qbittorrent/add', null, { params: { magnet: 'magnet:test', save_path: '/downloads', category: 'tv' } })
+      // signature: addTorrent(url, magnet, savePath, category)
+      await qbittorrentApi.addTorrent(null, 'magnet:test', '/downloads', 'tv')
+      expect(mockApiClient.post).toHaveBeenCalledWith('/qbittorrent/add', null, { params: { url: null, magnet: 'magnet:test', save_path: '/downloads', category: 'tv' } })
     })
 
     test('testConnection posts to /qbittorrent/test', async () => {
