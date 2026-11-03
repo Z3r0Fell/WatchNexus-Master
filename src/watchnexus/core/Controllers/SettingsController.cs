@@ -31,7 +31,7 @@ public class SettingsController : ControllerBase
     // Settings the user must never be able to overwrite via the generic settings
     // API — security/licensing/infrastructure state the server manages itself.
     private static readonly string[] ReservedPrefixes =
-        { "sec_", "fortress", "cellar_license", "jwt", "license_server", "patch_repo", "setup_completed" };
+        { "sec_", "fortress", "cellar_license", "jwt", "license_server", "patch_repo", "setup_completed", "download_owner", "rind_" };
 
     private static readonly string[] ReservedExact =
         { "api_key", "tmdb_api_key", "crumbs_tmdb", "qbit_config", "qbittorrent_settings", "cellar_license" };
@@ -288,10 +288,34 @@ public class DownloadsController : ControllerBase
 
     public record DownloadCreate(string? Title, string? Media_type, int? Tmdb_id, long? Size);
 
+    // DownloadItem has no owner column (adding one needs a schema migration), so
+    // ownership is recorded as a per-user AppSetting row "download_owner:{id}".
+    // Rows without an owner (legacy) are visible/mutable to admins only.
+    internal const string OwnerKeyPrefix = "download_owner:";
+    private string Uid => this.UserId();
+    private bool IsAdmin => User.IsInRole("admin");
+
+    private IQueryable<DownloadItem> Visible()
+    {
+        if (IsAdmin) return _db.Downloads;
+        var uid = Uid;
+        var ownedKeys = _db.Settings.Where(s => s.UserId == uid && s.Key.StartsWith(OwnerKeyPrefix)).Select(s => s.Key);
+        return _db.Downloads.Where(d => ownedKeys.Contains(OwnerKeyPrefix + d.Id));
+    }
+
+    private async Task<DownloadItem?> FindOwned(string id)
+    {
+        var dl = await _db.Downloads.FindAsync(id);
+        if (dl == null || IsAdmin) return dl;
+        var uid = Uid;
+        var key = OwnerKeyPrefix + id;
+        return await _db.Settings.AnyAsync(s => s.UserId == uid && s.Key == key) ? dl : null;
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? status = null)
     {
-        var q = _db.Downloads.AsQueryable();
+        var q = Visible();
         if (!string.IsNullOrEmpty(status)) q = q.Where(d => d.Status == status);
         return Ok(await q.OrderByDescending(d => d.CreatedAt).ToListAsync());
     }
@@ -319,6 +343,7 @@ public class DownloadsController : ControllerBase
             CreatedAt = DateTime.UtcNow,
         };
         _db.Downloads.Add(dl);
+        _db.Settings.Add(new AppSetting { Key = OwnerKeyPrefix + dl.Id, UserId = Uid, Value = "1" });
         await _db.SaveChangesAsync();
         return Ok(new { id = dl.Id, name = dl.Name, status = dl.Status });
     }
@@ -326,10 +351,10 @@ public class DownloadsController : ControllerBase
     [HttpPatch("{downloadId}")]
     public async Task<IActionResult> Update(string downloadId, [FromQuery] string? status, [FromQuery] double? progress)
     {
-        var dl = await _db.Downloads.FindAsync(downloadId);
+        var dl = await FindOwned(downloadId);
         if (dl == null) return NotFound(new { error = "Download not found" });
         if (!string.IsNullOrEmpty(status)) dl.Status = status;
-        if (progress.HasValue) dl.Progress = progress.Value;
+        if (progress.HasValue) dl.Progress = Math.Clamp(progress.Value, 0, 100);
         await _db.SaveChangesAsync();
         return Ok(new { id = dl.Id, status = dl.Status, progress = dl.Progress });
     }
@@ -337,8 +362,12 @@ public class DownloadsController : ControllerBase
     [HttpDelete("{downloadId}")]
     public async Task<IActionResult> Delete(string downloadId)
     {
-        var dl = await _db.Downloads.FindAsync(downloadId);
-        if (dl != null) { _db.Downloads.Remove(dl); await _db.SaveChangesAsync(); }
+        var dl = await FindOwned(downloadId);
+        if (dl == null) return NotFound(new { error = "Download not found" });
+        _db.Downloads.Remove(dl);
+        var key = OwnerKeyPrefix + downloadId;
+        _db.Settings.RemoveRange(_db.Settings.Where(s => s.Key == key));
+        await _db.SaveChangesAsync();
         return Ok(new { status = "deleted" });
     }
 }
