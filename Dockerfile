@@ -22,13 +22,16 @@ RUN yarn build
 # ── Stage 2: Backend Build ───────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 ARG TIER=standard
+# Six Labors (ImageSharp) license key. Build-stage only: it never reaches the runtime image.
+# Empty -> ImageSharp 3.1.12 with restricted decoding; set -> ImageSharp 3.2.0.
+ARG SIXLABORS_LICENSE_KEY=""
 WORKDIR /build
 
 # Copy solution + project files first (layer caching for restores)
 COPY src/watchnexus/core/WatchNexus.Core.csproj src/watchnexus/core/
 COPY src/watchnexus/shared/WatchNexus.Shared.csproj src/watchnexus/shared/
 COPY src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj src/watchnexus/modules/lobster/
-RUN dotnet restore src/watchnexus/core/WatchNexus.Core.csproj \
+RUN dotnet restore src/watchnexus/core/WatchNexus.Core.csproj "-p:SixLaborsLicenseKey=${SIXLABORS_LICENSE_KEY}" \
     && dotnet restore src/watchnexus/modules/lobster/WatchNexus.Module.Lobster.csproj
 
 # Copy shared code
@@ -57,7 +60,7 @@ COPY src/watchnexus/modules/ src/watchnexus/modules/
 ENV SkipFrontendBuild=true
 RUN dotnet publish src/watchnexus/core/WatchNexus.Core.csproj \
     -c Release -o /publish --no-restore \
-    /p:SkipFrontendBuild=true
+    /p:SkipFrontendBuild=true "-p:SixLaborsLicenseKey=${SIXLABORS_LICENSE_KEY}"
 
 # Lobster is an external DLL module (serves /api/lobster/*), not compiled
 # into Core. Publish it next to its manifest so ModuleLoader loads

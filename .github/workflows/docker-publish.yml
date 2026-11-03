@@ -129,6 +129,7 @@ jobs:
           build-args: |
             TIER=${{ matrix.tier }}
             LICENSE_SERVER_CLIENT_KEY=${{ secrets.LICENSE_SERVER_CLIENT_KEY }}
+            SIXLABORS_LICENSE_KEY=${{ secrets.SIXLABORS_LICENSE_KEY }}
           cache-from: type=gha,scope=${{ matrix.tier }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tier }}
           platforms: linux/amd64,linux/arm64
