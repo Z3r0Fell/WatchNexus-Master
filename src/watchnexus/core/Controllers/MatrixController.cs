@@ -232,7 +232,7 @@ public class MatrixController : ControllerBase
             var http = this.Http();
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var resp = await http.GetStringAsync(
-                $"{homeserver}/_matrix/client/v3/rooms/{Uri.EscapeDataString(roomId)}/messages?limit={limit}&dir={dir}");
+                $"{homeserver}/_matrix/client/v3/rooms/{Uri.EscapeDataString(roomId)}/messages?limit={limit}&dir={(dir == "f" ? "f" : "b")}");
             return Content(resp, "application/json");
         }
         catch (Exception ex) { return Ok(new { error = ex.Message }); }

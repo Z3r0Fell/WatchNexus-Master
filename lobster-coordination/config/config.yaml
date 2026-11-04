@@ -1,0 +1,85 @@
+# Headscale config for the Lobster coordination server (headscale 0.29.x).
+# Values marked CHANGE ME can also be overridden with HEADSCALE_* env vars
+# (dots become underscores, e.g. server_url -> HEADSCALE_SERVER_URL), which
+# is what the compose files do.
+---
+# Public URL WatchNexus servers and devices use (LOBSTER_CONTROL_URL).
+# Must be https in production. CHANGE ME (or set HEADSCALE_SERVER_URL).
+server_url: https://mesh.example.com
+
+# Plain HTTP inside the container; TLS is terminated by a reverse proxy
+# (see README.md). The compose files publish it on 127.0.0.1 only.
+listen_addr: 0.0.0.0:8080
+metrics_listen_addr: 127.0.0.1:9090
+grpc_listen_addr: 127.0.0.1:50443
+grpc_allow_insecure: false
+
+# Set to your reverse proxy's address so client IPs are logged correctly.
+trusted_proxies: []
+
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
+  allocation: sequential
+
+derp:
+  server:
+    enabled: false
+  # Tailscale's public DERP map is the fallback relay set. Once the
+  # lobster-relay is deployed, copy derp.yaml.example to derp.yaml, fill in
+  # its hostname and uncomment the path below (keep or drop the public map).
+  urls:
+    - https://controlplane.tailscale.com/derpmap/default
+  paths: []
+  #  - /etc/headscale/derp.yaml
+  auto_update_enabled: true
+  update_frequency: 3h
+
+disable_check_updates: true
+
+node:
+  expiry: 0
+  ephemeral:
+    inactivity_timeout: 30m
+
+# SQLite by default; docker-compose.yml switches to Postgres via env vars.
+database:
+  type: sqlite
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+    write_ahead_log: true
+
+log:
+  level: info
+  format: text
+
+# File-based ACL policy. Empty = allow all traffic between nodes of the
+# tailnet. Lobster puts each customer in their own Headscale user; add a
+# policy file if users must be isolated from each other (recommended for a
+# shared multi-customer server).
+policy:
+  mode: file
+  path: ""
+
+dns:
+  magic_dns: true
+  # Must differ from the server_url domain. CHANGE ME.
+  base_domain: lobster.internal
+  override_local_dns: false
+  nameservers:
+    global: []
+    split: {}
+  search_domains: []
+  extra_records: []
+
+unix_socket: /var/run/headscale/headscale.sock
+unix_socket_permission: "0770"
+
+logtail:
+  enabled: false
+
+taildrop:
+  enabled: false

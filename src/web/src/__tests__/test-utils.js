@@ -39,6 +39,29 @@ export const render = (ui, options = {}) => {
   return rtlRender(ui, { wrapper: Wrapper, ...options });
 };
 
+// URL-routed axios.get for tests that mount several providers at once: their
+// requests fire concurrently and re-fire on auth changes, so a single
+// mockResolvedValueOnce sequence is order-fragile. Each route value is an axios
+// response ({ data }) or a failure ({ response: { status } } / Error); an array
+// is consumed one entry per call with the last entry sticking.
+const isFailure = (v) => v instanceof Error || Boolean(v && v.response && v.response.status >= 400);
+let currentRoutes = {};
+export const okData = (data) => ({ data });
+export const routeGet = (table) => {
+  // eslint-disable-next-line global-require
+  const axios = require('axios');
+  const ax = axios.default || axios;
+  currentRoutes = { ...table };
+  ax.get.mockImplementation((url = '') => {
+    const key = Object.keys(currentRoutes).find((k) => url.includes(k));
+    if (!key) return Promise.reject({ response: { status: 404 } });
+    let v = currentRoutes[key];
+    if (Array.isArray(v)) v = v.length > 1 ? v.shift() : v[0];
+    return isFailure(v) ? Promise.reject(v) : Promise.resolve(v);
+  });
+};
+export const setRoute = (key, value) => { currentRoutes[key] = value; };
+
 export { screen, fireEvent, waitFor, act } from '@testing-library/react';
 export { userEvent } from '@testing-library/user-event';
 

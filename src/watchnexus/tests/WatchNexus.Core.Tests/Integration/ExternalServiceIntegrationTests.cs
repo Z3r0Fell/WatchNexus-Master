@@ -187,8 +187,8 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
     {
         AuthenticateAsUser();
 
-        // Mock qBittorrent login API
-        SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK));
+        // Mock qBittorrent login API: success is 200 with body "Ok." (bad creds are 200 "Fails.")
+        SetupHttpMock(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Ok.") });
 
         var body = JsonSerializer.Serialize(new { host = "qbit.example.com", port = 8080, username = "admin", password = "admin" });
         var response = await Client.PostAsync("/api/settings/integrations/qbittorrent/test", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
@@ -377,7 +377,7 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task SynapseAdmin_TestConnection_ValidConfig_ReturnsSuccess()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // admin-only endpoints
         await SeedLicenseAsync("ultra");
 
         // Save Synapse admin config
@@ -404,6 +404,11 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("ultra");
 
         var body = JsonSerializer.Serialize(new { name = "Test Peer", allowed_ips = "10.0.0.2/32" });
+        // Admin-only: a normal user is refused.
+        var denied = await Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/vpn/peers") { Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json") });
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        AuthenticateAsAdmin();
+
         var response = await Client.PostAsync("/api/vpn/peers", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
         
         AssertJsonResponse(response);
@@ -418,7 +423,7 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task VPN_QRCode_GeneratesValidConfig()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // admin-only endpoints
         await SeedLicenseAsync("ultra");
 
         var body = JsonSerializer.Serialize(new { name = "QR Test", allowed_ips = "10.0.0.3/32" });
@@ -465,7 +470,7 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -489,7 +494,7 @@ public class ExternalServiceIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("pro");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "corrupt video");
         
         try

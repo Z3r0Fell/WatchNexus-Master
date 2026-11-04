@@ -67,6 +67,11 @@ public class TmdbProxyController : ControllerBase
         try
         {
             var resp = await client.GetAsync($"{TMDB_BASE}{path}{qs}");
+            // Upstream failures (bad key 401, 429, 5xx) degrade to the empty
+            // shape rather than relaying TMDB's {status_message} body as a 200,
+            // which callers would treat as data (no `results`).
+            if (!resp.IsSuccessStatusCode)
+                return Ok(new { results = Array.Empty<object>(), page = 1, total_pages = 0, total_results = 0 });
             var json = await resp.Content.ReadAsStringAsync();
             return Content(json, "application/json");
         }
@@ -127,13 +132,18 @@ public class TmdbProxyController : ControllerBase
         ProxyGet($"/tv/{id}/season/{seasonNum}");
 
     [HttpGet("discover/{mediaType}")]
-    public Task<IActionResult> Discover(string mediaType, int page = 1, string? with_genres = null, string? sort_by = null)
+    public Task<IActionResult> Discover(string mediaType, int page = 1, string? with_genres = null, string? sort_by = null,
+        string? with_original_language = null, [FromQuery(Name = "vote_count.gte")] int? vote_count_gte = null)
     {
         if (!AllowedMediaTypes.Contains(mediaType) && mediaType != "all" && mediaType != "person")
             return Task.FromResult<IActionResult>(BadRequest(new { detail = "mediaType must be 'movie', 'tv', or 'all'" }));
         var p = new Dictionary<string, string> { ["page"] = page.ToString() };
         if (!string.IsNullOrEmpty(with_genres)) p["with_genres"] = with_genres;
         if (!string.IsNullOrEmpty(sort_by)) p["sort_by"] = sort_by;
+        // Anime discover filters on original language and Discover sets a vote floor;
+        // both were silently dropped before, so the filters never reached TMDB.
+        if (!string.IsNullOrEmpty(with_original_language)) p["with_original_language"] = with_original_language;
+        if (vote_count_gte is > 0) p["vote_count.gte"] = vote_count_gte.Value.ToString();
         return ProxyGet($"/discover/{mediaType}", p);
     }
 
@@ -239,7 +249,12 @@ public class WatchProgressController : ControllerBase
     public async Task<IActionResult> Update([FromBody] JsonElement progress)
     {
         var tmdbId = progress.TryGetProperty("tmdb_id", out var id) ? id.ToString() : "";
-        var mediaType = progress.TryGetProperty("media_type", out var mt) ? mt.GetString() : "movie";
+        // Delete() matches on the "progress:{id}:" boundary, so an empty id or
+        // one containing ':' would create rows that can never be removed.
+        if (string.IsNullOrWhiteSpace(tmdbId) || tmdbId.Contains(':'))
+            return BadRequest(new { detail = "tmdb_id is required" });
+        var mediaType = progress.TryGetProperty("media_type", out var mt) && mt.ValueKind == JsonValueKind.String
+            ? mt.GetString() : "movie";
         var key = $"progress:{tmdbId}:{mediaType}";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == UserId);
         if (existing != null)
@@ -253,8 +268,25 @@ public class WatchProgressController : ControllerBase
     [HttpDelete]
     public async Task<IActionResult> Delete(string? tmdb_id = null, string? media_type = null, int? season = null, int? episode = null)
     {
-        var prefix = $"progress:{tmdb_id}";
-        var items = await _db.Settings.Where(s => s.UserId == UserId && s.Key.StartsWith(prefix)).ToListAsync();
+        // Keys are written by Update() as "progress:{tmdb_id}:{media_type}". Match the id
+        // segment exactly (with its trailing ':' boundary) so deleting 12 never touches 123/1200,
+        // and refuse an empty id rather than wiping every progress row for this user.
+        var id = tmdb_id?.Trim();
+        if (string.IsNullOrEmpty(id) || id.Contains(':'))
+            return BadRequest(new { error = "tmdb_id is required" });
+
+        var mediaType = media_type?.Trim();
+        List<Shared.AppSetting> items;
+        if (!string.IsNullOrEmpty(mediaType))
+        {
+            var key = $"progress:{id}:{mediaType}";
+            items = await _db.Settings.Where(s => s.UserId == UserId && s.Key == key).ToListAsync();
+        }
+        else
+        {
+            var prefix = $"progress:{id}:";
+            items = await _db.Settings.Where(s => s.UserId == UserId && s.Key.StartsWith(prefix)).ToListAsync();
+        }
         _db.Settings.RemoveRange(items);
         await _db.SaveChangesAsync();
         return Ok(new { status = "deleted" });
@@ -287,8 +319,10 @@ public class NextUpController : ControllerBase
         var progressItems = await _db.Settings
             .Where(s => s.UserId == userId && s.Key.StartsWith("progress:"))
             .OrderByDescending(s => s.Key)
-            .Take(limit * 2)
             .ToListAsync();
+        // Filter in memory (progress is JSON); taking limit*2 rows first dropped
+        // in-progress items whenever finished/unstarted rows sorted ahead of them.
+        limit = Math.Clamp(limit, 1, 100);
 
         var nextUp = new List<object>();
         foreach (var item in progressItems)

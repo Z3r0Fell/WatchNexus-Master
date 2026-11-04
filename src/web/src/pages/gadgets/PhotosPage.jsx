@@ -11,6 +11,13 @@ import { BACKEND_URL } from '../../lib/config';
 
 const API = BACKEND_URL;
 
+// Photo ids are absolute file paths. Encode each segment (spaces, #, ?, %)
+// but keep the '/' separators for the {*filePath} catch-all route — an
+// encoded %2F would not be decoded by the server. The backend re-adds the
+// leading '/'.
+export const buildPhotoUrl = (photoId) =>
+  `${BACKEND_URL}/api/gadgets/photos/file/${String(photoId || '').replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')}`;
+
 export const PhotosPage = () => {
   const { confirm, ConfirmDialog } = useConfirm();
   const [libraries, setLibraries] = useState([]);
@@ -88,7 +95,7 @@ export const PhotosPage = () => {
     }
   };
 
-  const getPhotoUrl = (photoId) => `${BACKEND_URL}/api/gadgets/photos/file/${photoId}`;
+  const getPhotoUrl = (photoId) => buildPhotoUrl(photoId);
 
   const navigateLightbox = (delta) => {
     setLightboxIndex(prev => {
@@ -209,7 +216,7 @@ export const PhotosPage = () => {
                   onClick={() => setLightboxIndex(idx)}>
                   <img src={getPhotoUrl(photo.id)} alt={photo.filename}
                     className="w-full h-full object-cover" loading="lazy"
-                    onError={(e) => { e.target.src = ''; e.target.className = 'w-full h-full bg-gray-800 flex items-center justify-center'; }} />
+                    onError={(e) => { e.target.onerror = null; e.target.removeAttribute('src'); e.target.className = 'w-full h-full bg-gray-800 flex items-center justify-center'; }} />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <ZoomIn className="w-8 h-8 text-white" />
                   </div>

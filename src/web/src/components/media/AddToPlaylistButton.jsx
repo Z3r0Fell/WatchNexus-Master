@@ -45,11 +45,10 @@ export const AddToPlaylistButton = ({
   const fetchPlaylists = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/drizzle/playlists`, {
-        credentials: 'include',
-      });
-      const data = await res.json();
-      setPlaylists(data.playlists || []);
+      // GET /api/drizzle/playlists returns a bare array.
+      const res = await axios.get(`${API_URL}/api/drizzle/playlists`);
+      const data = res.data;
+      setPlaylists(Array.isArray(data) ? data : (data?.playlists || []));
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
       toast.error('Failed to load playlists');
@@ -68,9 +67,11 @@ export const AddToPlaylistButton = ({
     try {
       const itemData = {
         media_type: mediaItem.media_type || 'movie',
-        tmdb_id: mediaItem.tmdb_id || mediaItem.id,
+        // Backend reads tmdb_id with GetString(); a JSON number throws (500).
+        tmdb_id: (mediaItem.tmdb_id ?? mediaItem.id) != null ? String(mediaItem.tmdb_id ?? mediaItem.id) : undefined,
         title: mediaItem.title || mediaItem.name,
         poster_path: mediaItem.poster_path,
+        poster_url: mediaItem.poster_url || mediaItem.poster_path,
         backdrop_path: mediaItem.backdrop_path,
         duration: mediaItem.duration || mediaItem.runtime * 60 || 0,
         // TV-specific fields
@@ -80,26 +81,16 @@ export const AddToPlaylistButton = ({
         show_tmdb_id: mediaItem.show_tmdb_id,
       };
 
-      const res = await fetch(`${API_URL}/api/drizzle/playlists/${playlistId}/items`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(itemData),
-        credentials: 'include',
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.detail || 'Failed to add to playlist');
-      }
+      // axios (not fetch) so the X-XSRF-TOKEN header is sent — the CSRF
+      // middleware rejects cookie-authenticated mutations without it.
+      await axios.post(`${API_URL}/api/drizzle/playlists/${playlistId}/items`, itemData);
 
       toast.success(`Added to "${playlistName}"`);
       setOpen(false);
       onSuccess?.();
     } catch (err) {
       console.error('Failed to add to playlist:', err);
-      toast.error(err.message || 'Failed to add to playlist');
+      toast.error(err.response?.data?.detail || err.message || 'Failed to add to playlist');
     } finally {
       setAdding(null);
     }
@@ -110,15 +101,9 @@ export const AddToPlaylistButton = ({
     if (!name) return;
 
     try {
-      const params = new URLSearchParams({ name });
-      const res = await fetch(`${API_URL}/api/drizzle/playlists?${params}`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      if (!res.ok) throw new Error('Failed to create playlist');
-      
-      const newPlaylist = await res.json();
+      // Backend binds the name from a JSON body ([FromBody]), not the query.
+      const res = await axios.post(`${API_URL}/api/drizzle/playlists`, { name });
+      const newPlaylist = res.data;
       toast.success('Playlist created!');
       
       // Add the current item to the new playlist

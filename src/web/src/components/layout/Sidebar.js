@@ -146,7 +146,10 @@ const defaultVisibleTabs = [
 const getVisibleTabs = () => {
   try {
     const saved = localStorage.getItem('watchnexus_visible_tabs');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
   } catch (e) {
     console.error('Error loading visible tabs:', e);
   }
@@ -192,8 +195,12 @@ export const Sidebar = () => {
     (async () => {
       try {
         const res = await axios.get(`${API_URL}/user/preferences`);
-        if (!cancelled && res.data?.visible_tabs) {
-          setVisibleTabs(res.data.visible_tabs);
+        // The backend returns `visible_tabs: []` when nothing is saved yet —
+        // treat empty/non-array as "no preference" (same as GeneralSettings),
+        // otherwise every hideable tab vanishes for new users.
+        const tabs = res.data?.visible_tabs;
+        if (!cancelled && Array.isArray(tabs) && tabs.length > 0) {
+          setVisibleTabs(tabs);
         }
       } catch { /* not signed in — keep localStorage fallback */ }
     })();

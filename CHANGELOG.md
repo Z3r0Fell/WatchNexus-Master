@@ -1,5 +1,34 @@
 # WatchNexus Changelog
 
+## 2026-11-03 — v1.0.7 (Beta Feedback + Full Audit)
+
+### Beta-tester fixes
+- **Library cards open their library** on Movies, TV, Anime and Audiobooks (cards had no handler and filtered on the wrong media types).
+- **Recently Added plays** — items link to the player; playback failures show the player's own error screen.
+- **Error screens recover** — "Try Again" remounts the page (chunk errors reload) and "Go to Dashboard" works.
+- **Logs work** — rolling log files on the data volume, a working Log Viewer API, frontend crash reports, and a persisted Live/Paused toggle.
+- **Upgrades no longer break pages** — the app shell is never cached and missing build assets return 404.
+
+### Security
+- Per-user scoping across media, streams, progress, downloads, playlists, collections, RSS feeds and Fondue; admin-only server-wide configuration (Security API, backups/S3, IPTV, VPN, Bastion LDAP/SSO, Tunnel, Synapse, cache/DB backup, logs, setup reset and more).
+- Data-directory secrets (key ring, `jwt.key`, database) can no longer be served through media paths; photo libraries restricted to media roots; symlink escapes and disc-label traversal closed.
+- VPN peer private keys are no longer returned by list endpoints; anonymous profile picker no longer exposes emails; TMDB/qBittorrent secrets masked.
+- Patch manifests: the signature-verified bytes are applied, patch URLs must be HTTPS; SSRF guards on outbound URLs; placeholder JWT secrets rejected; third-party tracking script removed from the page.
+- ImageSharp decoding restricted to JPEG/PNG/GIF/WebP with metadata skipped (3.2.0 used automatically when a Six Labors license key is supplied at build time).
+
+### Lobster
+- The Lobster module and its sidecar now ship in the Docker image: a real tailnet node (status, peers, start/stop, pairing), a per-install control key, and a Headscale/DERP deployment kit. Set `LOBSTER_CONTROL_URL` (and optionally `LOBSTER_AUTH_KEY`) to enable it.
+
+### Fixes
+- First-run setup can no longer be skipped by a rate-limited probe; license activation works without `LICENSE_SERVER_URL`; a transient error no longer drops Pro/Ultra to Standard.
+- Music, audiobooks, saved progress, playlists, subtitles, Watch Party, IPTV, radio, weather, web video, usenet, processing, analytics, parental controls, quality profiles, Maintenance, Zest and dozens of settings screens now match the server API.
+- Crashes fixed on Changelog, Roadmap, Watch Party, FFmpeg settings, LiveTV and the Kodi add-on view; the Electron app opens again.
+- Disc-ripping and pipeline jobs persist their results; qBittorrent status/test log in first; the download engine API is backed by qBittorrent.
+
+### CI / Packaging
+- `docker-publish.yml` is the single image pipeline (GHCR, plus Docker Hub when `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` are set); `release.yml` builds and attaches native installers.
+- Fixed invalid workflow/k8s YAML, the container healthcheck, Unraid data paths and the systemd unit.
+
 ## 2026-10-01 — v1.0.6 (License Activation)
 
 ### Fixes

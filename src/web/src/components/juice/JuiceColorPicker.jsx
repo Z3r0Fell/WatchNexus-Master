@@ -260,9 +260,18 @@ export const JuiceColorPicker = ({
   const [saturation, setSaturation] = useState(hsl.s);
   const [lightness, setLightness] = useState(hsl.l);
   const [alpha, setAlpha] = useState(100);
+  // Skip the HSL->hex sync on mount (it would report a rounding-drifted copy
+  // of the parent's colour as a user change) and right after an exact hex was
+  // entered (onChange already got the exact value; the HSL round-trip would
+  // overwrite it with a drifted one, e.g. #123456 -> #123457).
+  const skipSyncRef = useRef(true);
 
   // Update color when HSL changes
   useEffect(() => {
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
     const newRgb = hslToRgb(hue, saturation, lightness);
     const newHex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
     setInputValue(newHex);
@@ -276,6 +285,9 @@ export const JuiceColorPicker = ({
     if (/^#[0-9A-F]{6}$/i.test(value)) {
       const newRgb = hexToRgb(value);
       const newHsl = rgbToHsl(newRgb.r, newRgb.g, newRgb.b);
+      if (newHsl.h !== hue || newHsl.s !== saturation || newHsl.l !== lightness) {
+        skipSyncRef.current = true;
+      }
       setHue(newHsl.h);
       setSaturation(newHsl.s);
       setLightness(newHsl.l);
@@ -285,7 +297,9 @@ export const JuiceColorPicker = ({
 
   // Copy to clipboard
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(inputValue);
+    // navigator.clipboard is undefined on plain-http LAN installs.
+    if (!navigator.clipboard?.writeText) return;
+    navigator.clipboard.writeText(inputValue).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

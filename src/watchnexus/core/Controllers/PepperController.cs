@@ -113,16 +113,22 @@ public class PepperController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == uid && s.Key == key);
         if (setting == null) return NotFound(new { detail = "Channel not found" });
 
-        var cfg = JsonDocument.Parse(setting.Value).RootElement;
-        var type = cfg.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
-        var result = type switch
+        var type = "";
+        (bool, string) result;
+        try
         {
-            "discord" => await SendDiscord(cfg, "WatchNexus Pepper", "Test notification from WatchNexus notification hub."),
-            "telegram" => await SendTelegram(cfg, "WatchNexus Pepper: Test notification from WatchNexus notification hub."),
-            "slack" => await SendSlack(cfg, "WatchNexus Pepper", "Test notification from WatchNexus notification hub."),
-            "pushover" => await SendPushover(cfg, "WatchNexus Pepper", "Test notification from WatchNexus notification hub."),
-            _ => (false, $"Unsupported channel type: {type}"),
-        };
+            var cfg = JsonDocument.Parse(setting.Value ?? "{}").RootElement;
+            type = cfg.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
+            result = type switch
+            {
+                "discord" => await SendDiscord(cfg, "WatchNexus Pepper", "Test notification from WatchNexus notification hub."),
+                "telegram" => await SendTelegram(cfg, "WatchNexus Pepper: Test notification from WatchNexus notification hub."),
+                "slack" => await SendSlack(cfg, "WatchNexus Pepper", "Test notification from WatchNexus notification hub."),
+                "pushover" => await SendPushover(cfg, "WatchNexus Pepper", "Test notification from WatchNexus notification hub."),
+                _ => (false, $"Unsupported channel type: {type}"),
+            };
+        }
+        catch (Exception ex) { result = (false, $"Send failed: {ex.Message}"); }
 
         _db.NotificationLogs.Add(new NotificationLog
         {
@@ -149,11 +155,12 @@ public class PepperController : ControllerBase
         int sent = 0, failed = 0;
         foreach (var ch in channels)
         {
+            var type = "";
             try
             {
                 var cfg = JsonDocument.Parse(ch.Value).RootElement;
                 if (cfg.TryGetProperty("enabled", out var en) && !en.GetBoolean()) continue;
-                var type = cfg.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
+                type = cfg.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
                 var result = type switch
                 {
                     "discord" => await SendDiscord(cfg, title, message),
@@ -169,7 +176,16 @@ public class PepperController : ControllerBase
                 });
                 if (result.Item1) sent++; else failed++;
             }
-            catch { failed++; }
+            catch (Exception ex)
+            {
+                // Delivery threw (unreachable webhook, bad config…): still record it so it shows in history.
+                failed++;
+                _db.NotificationLogs.Add(new NotificationLog
+                {
+                    EventType = eventType, Channel = type, Message = $"{title}: {message}",
+                    Status = "failed", Error = ex.Message,
+                });
+            }
         }
         await _db.SaveChangesAsync();
         return Ok(new { sent, failed });
@@ -182,7 +198,7 @@ public class PepperController : ControllerBase
     {
         var logs = await _db.NotificationLogs
             .OrderByDescending(l => l.SentAt)
-            .Take(limit)
+            .Take(Math.Clamp(limit, 1, 500))
             .Select(l => new { l.Id, l.EventType, l.Channel, l.Message, l.Status, l.Error, l.SentAt })
             .ToListAsync();
         return Ok(logs);

@@ -74,9 +74,12 @@ export const UsenetPage = () => {
     setSearching(true);
     try {
       const res = await axios.get(`${API}/api/gadgets/brine/search`, { headers, params: { q: searchQuery } });
-      setSearchResults(Array.isArray(res.data) ? res.data : res.data.results || []);
+      // Prowlarr returns an array; Newznab o=json nests items under channel.item.
+      const d = res.data;
+      const items = Array.isArray(d) ? d : (d?.results || d?.channel?.item || d?.item || []);
+      setSearchResults(Array.isArray(items) ? items : [items]);
     } catch (e) {
-      toast.error('Search failed. Is your indexer configured?');
+      toast.error(e.response?.data?.detail || 'Search failed. Is your indexer configured?');
     } finally {
       setSearching(false);
     }
@@ -84,10 +87,13 @@ export const UsenetPage = () => {
 
   const grabRelease = async (item) => {
     try {
-      await axios.post(`${API}/api/gadgets/ladle/add`, { nzb_url: item.link || item.url, title: item.title }, { headers });
+      // LadleController.AddNzb reads { url, name } (nzb_url/title were ignored -> 400).
+      const nzbUrl = item.downloadUrl || item.link || item.url;
+      if (!nzbUrl) { toast.error('This result has no NZB link'); return; }
+      await axios.post(`${API}/api/gadgets/ladle/add`, { url: nzbUrl, name: item.title }, { headers });
       toast.success(`Added "${item.title}" to downloads`);
     } catch (e) {
-      toast.error('Failed to add download');
+      toast.error(e.response?.data?.detail || 'Failed to add download');
     }
   };
 

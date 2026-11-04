@@ -23,9 +23,19 @@ jest.mock('axios', () => ({
   })),
 }))
 
-import { render, screen, waitFor, act } from '../test-utils'
+// Render ThemeProvider on its own: test-utils' wrapper adds a second
+// ThemeProvider plus Auth/Gadget/License providers whose own axios.get calls
+// consumed the per-test mockResolvedValueOnce sequence below.
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { ThemeProvider, useTheme, DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, ACCENT_RAMP } from '../../context/ThemeContext'
 import axios from 'axios'
+
+// Unauthenticated: request order is then /user/preferences -> /milk/theme-forge
+// -> /settings (accent), matching the Once-mocks in each test.
+jest.mock('../../context/AuthContext', () => ({
+  ...jest.requireActual('../../context/AuthContext'),
+  useAuth: () => ({ isAuthenticated: false, user: null, loading: false }),
+}))
 
 const ThemeProbe = ({ onCapture }) => {
   const theme = useTheme()
@@ -47,6 +57,11 @@ const ThemeProbe = ({ onCapture }) => {
     </div>
   )
 }
+
+// The provider finishes loading (prefs -> theme -> accent) asynchronously and
+// the accent step rewrites --primary; wait for it before acting/asserting so
+// a late accent application doesn't race the test.
+const settle = () => waitFor(() => expect(screen.getByTestId('theme-loading')).toHaveTextContent('false'))
 
 describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
   let capturedTheme
@@ -77,6 +92,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } });        // /api/settings
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-loading')).toHaveTextContent('false'))
       expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark')
@@ -91,6 +107,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } });        // /api/settings
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-loading')).toHaveTextContent('false'))
       expect(screen.getByTestId('theme-mode')).toHaveTextContent('light')
@@ -105,6 +122,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } });        // /api/settings
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-loading')).toHaveTextContent('false'))
       expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark')
@@ -114,9 +132,10 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.get
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+        .mockResolvedValue({ data: {} }) // no ui_accent: the accent would override the custom primary
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
       
@@ -134,9 +153,10 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.get
         .mockResolvedValueOnce({ data: { theme_mode: 'light' } })
         .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+        .mockResolvedValue({ data: {} }) // no ui_accent: the accent would override the custom primary
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('light'))
       
@@ -156,9 +176,10 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.get
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: customTheme } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+        .mockResolvedValue({ data: {} }) // no ui_accent: the accent would override the custom primary
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('custom'))
       expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#FF0000')
@@ -176,6 +197,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('violet'))
       expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#8B5CF6')
@@ -188,6 +210,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'emerald' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       
       await waitFor(() => expect(screen.getByTestId('theme-accent')).toHaveTextContent('emerald'))
       // Accent should override primary
@@ -204,16 +227,17 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.put.mockResolvedValue({ data: {} })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
         await screen.getByTestId('toggle-mode-btn').click()
       })
 
+      // PUT replaces the whole prefs blob, so the current prefs are merged into the body
       expect(axios.put).toHaveBeenCalledWith(
         expect.stringContaining('/api/user/preferences'),
-        null,
-        { params: { theme_mode: 'light' } }
+        expect.objectContaining({ theme_mode: 'light' })
       )
       expect(localStorage.setItem).toHaveBeenCalledWith('watchnexus_theme_mode', 'light')
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('light'))
@@ -228,16 +252,17 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.put.mockResolvedValue({ data: {} })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('light'))
 
       await act(async () => {
         await screen.getByTestId('toggle-mode-btn').click()
       })
 
+      // PUT replaces the whole prefs blob, so the current prefs are merged into the body
       expect(axios.put).toHaveBeenCalledWith(
         expect.stringContaining('/api/user/preferences'),
-        null,
-        { params: { theme_mode: 'dark' } }
+        expect.objectContaining({ theme_mode: 'dark' })
       )
       expect(localStorage.setItem).toHaveBeenCalledWith('watchnexus_theme_mode', 'dark')
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
@@ -251,6 +276,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.put.mockRejectedValueOnce(new Error('Network error'))
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -270,10 +296,11 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.get
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: customTheme } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+        .mockResolvedValue({ data: {} }) // no ui_accent: the accent would override the custom primary
       axios.put.mockResolvedValue({ data: {} })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -293,22 +320,19 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: null } })
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
-      axios.post.mockResolvedValueOnce({
-        data: {
-          theme: { type: 'amber', colors: { ...DEFAULT_DARK_THEME, primary: '#F59E0B' } }
-        }
-      })
+      // backend contract: body { theme_id }, response { status, active_theme }
+      axios.post.mockResolvedValueOnce({ data: { status: 'ok', active_theme: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
         await screen.getByTestId('apply-builtin-btn').click()
       })
 
-      expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/api/milk/set-theme?theme_type=violet'))
-      await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('amber'))
-      expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#F59E0B')
+      expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/api/milk/set-theme'), { theme_id: 'violet' })
+      await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('violet'))
     })
 
     test('applyBuiltInTheme handles backend error', async () => {
@@ -319,6 +343,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.post.mockRejectedValueOnce(new Error('Failed'))
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -343,6 +368,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -369,6 +395,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.post.mockRejectedValueOnce(new Error('Failed'))
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -387,6 +414,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -407,9 +435,10 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.get
         .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
         .mockResolvedValueOnce({ data: { current_theme: customTheme } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
+        .mockResolvedValue({ data: {} }) // no ui_accent: the accent would override the custom primary
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('custom'))
       expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#FF0000')
 
@@ -430,6 +459,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('custom'))
       expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#8B5CF6')
 
@@ -453,6 +483,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('default'))
 
       // Change theme via preview
@@ -478,6 +509,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
       axios.put.mockResolvedValue({ data: {} })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
@@ -499,14 +531,12 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValueOnce({ data: { current_theme: null } })
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
-      render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      render(<ThemeProvider><ThemeProbe onCapture={(t) => { capturedTheme = t }} /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
-      // We can't easily test the return value, but we can verify no backend call for invalid accent
       await act(async () => {
-        // Manually call with invalid accent
-        const theme = useTheme()
-        const result = await theme.applyAccent('invalid-accent')
+        const result = await capturedTheme.applyAccent('invalid-accent')
         expect(result).toBe(false)
       })
 
@@ -522,15 +552,16 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
 
       await act(async () => {
         await screen.getByTestId('refresh-btn').click()
       })
 
-      // Should have called /api/milk/theme-forge twice (initial + refresh)
-      // and /api/user/preferences once, /api/settings twice
-      expect(axios.get).toHaveBeenCalledTimes(4)
+      // /api/user/preferences once, /api/milk/theme-forge twice (initial + refresh),
+      // /api/settings twice (accent re-applied after each theme fetch)
+      await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(5))
     })
   })
 
@@ -543,6 +574,7 @@ describe('ThemeContext Provider - Dark/Light/System + Custom Themes', () => {
         .mockResolvedValue({ data: { ui_accent: 'violet' } })
 
       render(<ThemeProvider><ThemeProbe /></ThemeProvider>)
+      await settle()
       await waitFor(() => expect(screen.getByTestId('theme-accent')).toHaveTextContent('violet'))
 
       // Simulate auth state change - need to trigger the effect

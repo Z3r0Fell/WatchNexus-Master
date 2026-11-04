@@ -33,6 +33,16 @@ public sealed class ExceptionMiddleware
         try
         {
             await _next(context);
+
+            // Handled 5xx responses (controllers returning StatusCode(500), upstream
+            // 502/503s, ...) never reach the catch below — record them too so
+            // they show up in the Log Viewer.
+            if (context.Response.StatusCode >= 500)
+            {
+                _logger.LogError(
+                    "[{CorrelationId}] {Method} {Path} responded {StatusCode}",
+                    correlationId, context.Request.Method, context.Request.Path, context.Response.StatusCode);
+            }
         }
         catch (Exception ex)
         {
@@ -136,13 +146,13 @@ public sealed class ExceptionMiddleware
     private static bool IsUniqueConstraint(DbUpdateException ex)
     {
         var sqlEx = ex.InnerException as Microsoft.Data.Sqlite.SqliteException;
-        return sqlEx?.SqliteErrorCode == 19 /* SQLITE_CONSTRAINT_UNIQUE */ || ex.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
+        return sqlEx?.SqliteExtendedErrorCode is 2067 or 1555 /* SQLITE_CONSTRAINT_UNIQUE / _PRIMARYKEY */ || ex.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsForeignKeyConstraint(DbUpdateException ex)
     {
         var sqlEx = ex.InnerException as Microsoft.Data.Sqlite.SqliteException;
-        return sqlEx?.SqliteErrorCode == 19 /* SQLITE_CONSTRAINT_FOREIGNKEY */ || ex.Message.Contains("FOREIGN KEY constraint failed", StringComparison.OrdinalIgnoreCase);
+        return sqlEx?.SqliteExtendedErrorCode == 787 /* SQLITE_CONSTRAINT_FOREIGNKEY */ || ex.Message.Contains("FOREIGN KEY constraint failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsDatabaseLocked(DbUpdateException ex)

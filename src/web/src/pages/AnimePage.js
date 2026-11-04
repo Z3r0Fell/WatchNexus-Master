@@ -1,5 +1,5 @@
 import { tmdbImageUrl } from '../lib/config';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { tmdbApi } from '../services/api';
@@ -13,6 +13,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Link } from 'react-router-dom';
+import { localMediaHref, fetchLibraryItems, isMediaType } from '../lib/utils';
 
 const ANIME_GENRES = [
   { id: 16, name: 'Animation' },
@@ -86,6 +87,9 @@ const AnimePage = () => {
   const [scanning, setScanning] = useState({});
   const [showAddLibrary, setShowAddLibrary] = useState(false);
   const [newLibrary, setNewLibrary] = useState({ name: '', path: '' });
+  // Library card the user clicked; null = show every anime library.
+  const [selectedLibraryId, setSelectedLibraryId] = useState(null);
+  const libraryContentsRef = useRef(null);
 
   // Discover state
   const [anime, setAnime] = useState([]);
@@ -97,24 +101,22 @@ const AnimePage = () => {
   // ===================== LIBRARY FUNCTIONS =====================
   const fetchLibraryData = useCallback(async () => {
     try {
-      const [librariesRes, mediaRes] = await Promise.all([
-        marmaladeLibrary.getLibraries(),
-        marmaladeMedia.getMedia({ media_type: 'episode', limit: 500 }),
-      ]);
-      const animeLibraries = (librariesRes.data || []).filter(lib => lib.media_type === 'anime');
+      const librariesRes = await marmaladeLibrary.getLibraries();
+      const animeLibraries = (librariesRes.data || []).filter(lib => isMediaType(lib.media_type, 'anime'));
       setLibraries(animeLibraries);
-      
-      // Filter episodes from anime libraries
-      const animeLibIds = new Set(animeLibraries.map(l => l.id));
-      const animeEpisodes = (mediaRes.data || []);
+
+      // Items are fetched per library: scanned items store their library's
+      // media_type ("anime"), so filtering on media_type 'episode' matched nothing.
+      const animeEpisodes = await fetchLibraryItems(marmaladeMedia.getMedia, animeLibraries);
       setLocalAnime(animeEpisodes);
-      
-      // Group by series
+
+      // Group by series, per library so the library cards can filter them
       const seriesMap = {};
       animeEpisodes.forEach(ep => {
-        const key = ep.series_name || ep.title || 'Unknown';
+        const name = ep.series_name || ep.title || 'Unknown';
+        const key = `${ep.library_id}::${name}`;
         if (!seriesMap[key]) {
-          seriesMap[key] = { name: key, episodes: [], poster_url: ep.poster_url, year: ep.year, tmdb_id: ep.tmdb_id };
+          seriesMap[key] = { key, name, library_id: ep.library_id, media_type: ep.media_type, episodes: [], poster_url: ep.poster_url, year: ep.year, tmdb_id: ep.tmdb_id, tmdb_kind: ep.tmdb_kind };
         }
         seriesMap[key].episodes.push(ep);
       });
@@ -156,9 +158,16 @@ const AnimePage = () => {
     }
   };
 
-  const filteredAnimeSeries = animeSeries.filter(s =>
-    s.name.toLowerCase().includes(librarySearch.toLowerCase())
-  );
+  const selectedLibrary = libraries.find(lib => lib.id === selectedLibraryId) || null;
+
+  const handleSelectLibrary = (libraryId) => {
+    setSelectedLibraryId(prev => (prev === libraryId ? null : libraryId));
+    libraryContentsRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
+
+  const filteredAnimeSeries = animeSeries
+    .filter(s => !selectedLibraryId || s.library_id === selectedLibraryId)
+    .filter(s => s.name.toLowerCase().includes(librarySearch.toLowerCase()));
 
   // ===================== DISCOVER FUNCTIONS =====================
   const fetchAnime = useCallback(async () => {
@@ -346,7 +355,20 @@ const AnimePage = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {libraries.map(lib => (
-                    <div key={lib.id} className="glass-card rounded-xl p-4">
+                    <div
+                      key={lib.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedLibraryId === lib.id}
+                      data-testid={`library-card-${lib.id}`}
+                      onClick={() => handleSelectLibrary(lib.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectLibrary(lib.id); }
+                      }}
+                      className={`glass-card rounded-xl p-4 cursor-pointer transition-all hover:bg-white/10 ${
+                        selectedLibraryId === lib.id ? 'ring-2 ring-pink-500 bg-pink-600/10' : ''
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-semibold">{lib.name}</h3>
@@ -356,8 +378,10 @@ const AnimePage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleScanLibrary(lib.id)}
+                          onClick={(e) => { e.stopPropagation(); handleScanLibrary(lib.id); }}
+                          onKeyDown={(e) => e.stopPropagation()}
                           disabled={scanning[lib.id]}
+                          data-testid={`scan-library-${lib.id}`}
                         >
                           <RefreshCw className={`w-4 h-4 ${scanning[lib.id] ? 'animate-spin' : ''}`} />
                         </Button>
@@ -368,15 +392,38 @@ const AnimePage = () => {
               </div>
             )}
 
-            {/* Anime Series Grid */}
-            {filteredAnimeSeries.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-pink-400" /> All Anime ({filteredAnimeSeries.length})
+            <div ref={libraryContentsRef} />
+
+            {/* Selected library header + empty state */}
+            {selectedLibrary && (
+              <div className="flex items-center justify-between mb-4" data-testid="selected-library-header">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <FolderOpen className="w-5 h-5 text-pink-400" /> {selectedLibrary.name} ({filteredAnimeSeries.length})
                 </h2>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedLibraryId(null)} data-testid="show-all-libraries-btn">
+                  Show all libraries
+                </Button>
+              </div>
+            )}
+            {selectedLibrary && filteredAnimeSeries.length === 0 && !libraryLoading && (
+              <p className="text-gray-400 py-8" data-testid="selected-library-empty">
+                {librarySearch
+                  ? 'No anime in this library match your search.'
+                  : 'No episodes found in this library yet. Use the refresh button on the card to scan it.'}
+              </p>
+            )}
+
+            {/* Anime Series Grid (all anime libraries, or the selected one) */}
+            {filteredAnimeSeries.length > 0 && (
+              <div data-testid="library-items">
+                {!selectedLibrary && (
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-pink-400" /> All Anime ({filteredAnimeSeries.length})
+                  </h2>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {filteredAnimeSeries.map((series, index) => (
-                    <Link key={series.name} to={series.tmdb_id ? `/tv/${series.tmdb_id}` : '#'} data-testid={`local-anime-${index}`}>
+                    <Link key={series.key} to={localMediaHref({ tmdb_id: series.tmdb_id, tmdb_kind: series.tmdb_kind, media_type: series.media_type, id: series.episodes[0]?.id })} data-testid={`local-anime-${index}`}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

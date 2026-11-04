@@ -99,10 +99,10 @@ public class MediaBridgeController : ControllerBase
     {
         var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        var url = $"/Items?Limit={limit}&StartIndex={startIndex}&SortBy={sortBy}&SortOrder={sortOrder}&Recursive=true&Fields=Overview,Genres,People,Studios,CommunityRating";
-        if (!string.IsNullOrEmpty(parentId)) url += $"&ParentId={parentId}";
+        var url = $"/Items?Limit={limit}&StartIndex={startIndex}&SortBy={Uri.EscapeDataString(sortBy)}&SortOrder={Uri.EscapeDataString(sortOrder)}&Recursive=true&Fields=Overview,Genres,People,Studios,CommunityRating";
+        if (!string.IsNullOrEmpty(parentId)) url += $"&ParentId={Uri.EscapeDataString(parentId)}";
         if (!string.IsNullOrEmpty(searchTerm)) url += $"&SearchTerm={Uri.EscapeDataString(searchTerm)}";
-        if (!string.IsNullOrEmpty(includeItemTypes)) url += $"&IncludeItemTypes={includeItemTypes}";
+        if (!string.IsNullOrEmpty(includeItemTypes)) url += $"&IncludeItemTypes={Uri.EscapeDataString(includeItemTypes)}";
         if (!string.IsNullOrEmpty(cfg.serverUserId)) url += $"&UserId={cfg.serverUserId}";
         return await ProxyGet(cfg, url);
     }
@@ -112,7 +112,7 @@ public class MediaBridgeController : ControllerBase
     {
         var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        var url = $"/Items/{itemId}";
+        var url = $"/Items/{Uri.EscapeDataString(itemId)}";
         if (!string.IsNullOrEmpty(cfg.serverUserId)) url += $"?UserId={cfg.serverUserId}";
         return await ProxyGet(cfg, url);
     }
@@ -122,7 +122,7 @@ public class MediaBridgeController : ControllerBase
     {
         var cfg = await GetBridgeConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
-        return await ProxyGet(cfg, $"/Items/{itemId}/Similar?Limit={limit}");
+        return await ProxyGet(cfg, $"/Items/{Uri.EscapeDataString(itemId)}/Similar?Limit={limit}");
     }
 
     [HttpGet("items/{itemId}/images/{imageType}")]
@@ -133,7 +133,7 @@ public class MediaBridgeController : ControllerBase
         try
         {
             var http = BuildClient(cfg);
-            var resp = await http.GetAsync($"{cfg.url}/Items/{itemId}/Images/{imageType}");
+            var resp = await http.GetAsync($"{cfg.url}/Items/{Uri.EscapeDataString(itemId)}/Images/{Uri.EscapeDataString(imageType)}");
             if (!resp.IsSuccessStatusCode) return NotFound();
             var contentType = resp.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
             var data = await resp.Content.ReadAsByteArrayAsync();

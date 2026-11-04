@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HardDrive, RefreshCw, FileSearch, Wrench, Clock, Calendar, Plus, Trash2, DownloadCloud, CheckCircle, AlertTriangle, X, FolderSearch } from 'lucide-react';
 import { Input } from '../ui/input';
@@ -13,7 +14,8 @@ export const MediaHealthSettings = () => {
   const [healthResults, setHealthResults] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [repairing, setRepairing] = useState(null);
-  const [redownloading, setRedownloading] = useState(null);
+  const [loadError, setLoadError] = useState({ scans: null, notifications: null });
+  const navigate = useNavigate();
   const [scheduledScans, setScheduledScans] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showHealthBrowser, setShowHealthBrowser] = useState(false);
@@ -23,11 +25,26 @@ export const MediaHealthSettings = () => {
   });
 
   const fetchScheduledScans = useCallback(async () => {
-    try { const res = await mediaHealthApi.getScheduledScans(); setScheduledScans(res.data || []); } catch {}
+    try {
+      const res = await mediaHealthApi.getScheduledScans();
+      setScheduledScans(res.data || []);
+      setLoadError(prev => ({ ...prev, scans: null }));
+    } catch (error) {
+      console.error('Failed to load scheduled scans:', error);
+      setLoadError(prev => ({ ...prev, scans: 'Could not load scheduled scans.' }));
+      toast.error('Failed to load scheduled scans');
+    }
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    try { const res = await mediaHealthApi.getNotifications(true); setNotifications(res.data || []); } catch {}
+    try {
+      const res = await mediaHealthApi.getNotifications(true);
+      setNotifications(res.data || []);
+      setLoadError(prev => ({ ...prev, notifications: null }));
+    } catch (error) {
+      console.error('Failed to load scan notifications:', error);
+      setLoadError(prev => ({ ...prev, notifications: 'Could not load scan alerts.' }));
+    }
   }, []);
 
   useEffect(() => { fetchScheduledScans(); fetchNotifications(); }, [fetchScheduledScans, fetchNotifications]);
@@ -40,7 +57,7 @@ export const MediaHealthSettings = () => {
       setHealthResults(res.data || []);
       const issues = (res.data || []).filter(r => r.status !== 'healthy');
       issues.length > 0 ? toast.warning(`Found ${issues.length} file(s) with issues`) : toast.success('All files are healthy!');
-    } catch { toast.error('Failed to scan library'); }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to scan library'); }
     finally { setScanning(false); }
   };
 
@@ -50,19 +67,22 @@ export const MediaHealthSettings = () => {
       const res = await mediaHealthApi.repairFile(filePath);
       res.data.success ? toast.success(res.data.message) : toast.error(res.data.message);
       if (res.data.success) await handleHealthScan();
-    } catch { toast.error('Failed to repair file'); }
+    } catch (error) { toast.error(error.response?.data?.message || error.response?.data?.detail || 'Failed to repair file'); }
     finally { setRepairing(null); }
   };
 
-  const handleRedownload = async (filePath) => {
-    setRedownloading(filePath);
-    try {
-      const filename = filePath.split('/').pop();
-      const title = filename.replace(/\.[^/.]+$/, '').replace(/[._-]/g, ' ');
-      const res = await mediaHealthApi.requestRedownload(filePath, title, 'movie');
-      toast.success(res.data.message);
-    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to queue re-download'); }
-    finally { setRedownloading(null); }
+  // No server-side "re-download" endpoint exists; the real flow is
+  // search → grab → download client. Send the user to Search prefilled
+  // with a title guessed from the filename.
+  const handleRedownload = (filePath) => {
+    const filename = filePath.split(/[\\/]/).pop();
+    const title = filename
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[._-]+/g, ' ')
+      .replace(/\b(19|20)\d{2}\b.*$/, '')
+      .trim();
+    toast.info(`Search for a replacement for "${title || filename}"`);
+    navigate(`/search?q=${encodeURIComponent(title || filename)}`);
   };
 
   const handleCreateScheduledScan = async () => {
@@ -72,7 +92,7 @@ export const MediaHealthSettings = () => {
       toast.success('Scheduled scan created');
       setNewScanForm({ directory: '', schedule_type: 'daily', schedule_time: '03:00', notify_on_issues: true, auto_repair: false });
       fetchScheduledScans();
-    } catch { toast.error('Failed to create scheduled scan'); }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to create scheduled scan'); }
   };
 
   const handleDeleteScheduledScan = async (scanId) => {
@@ -86,7 +106,7 @@ export const MediaHealthSettings = () => {
       const res = await mediaHealthApi.runScheduledScanNow(scanId);
       toast.success(`Scan complete: ${res.data.total_files} files`);
       fetchScheduledScans(); fetchNotifications();
-    } catch { toast.error('Failed to run scan'); }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to run scan'); }
     finally { setScanning(false); }
   };
 
@@ -144,11 +164,15 @@ export const MediaHealthSettings = () => {
             >
               <FolderBrowser
                 selectedPath={healthScanPath}
-                onSelect={(path) => {
-                  setHealthScanPath(path);
-                  setShowHealthBrowser(false);
-                }}
+                onSelect={setHealthScanPath}
               />
+              {/* FolderBrowser calls onSelect on every navigation (incl. its initial
+                  load), so only close on an explicit confirm. */}
+              <div className="flex justify-end mt-2">
+                <Button size="sm" onClick={() => setShowHealthBrowser(false)} className="bg-violet-600 hover:bg-violet-700" data-testid="confirm-health-path">
+                  Use this folder
+                </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -181,8 +205,8 @@ export const MediaHealthSettings = () => {
                 )}
                 {result.status !== 'healthy' && (
                   <Button size="sm" variant="outline" onClick={() => handleRedownload(result.file_path)}
-                    disabled={redownloading === result.file_path} className="text-blue-400 border-blue-500/30">
-                    {redownloading === result.file_path ? <RefreshCw className="w-4 h-4 animate-spin" /> : <DownloadCloud className="w-4 h-4" />}
+                    title="Search for a replacement copy" className="text-blue-400 border-blue-500/30">
+                    <DownloadCloud className="w-4 h-4" />
                   </Button>
                 )}
               </div>
@@ -199,7 +223,17 @@ export const MediaHealthSettings = () => {
             <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-xs ml-2">{notifications.length} alerts</span>
           )}
         </h3>
-        
+        {(loadError.scans || loadError.notifications) && (
+          <div role="alert" data-testid="media-health-load-error"
+            className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm text-red-300 flex items-center justify-between gap-3">
+            <span>{[loadError.scans, loadError.notifications].filter(Boolean).join(' ')}</span>
+            <Button size="sm" variant="outline" className="border-red-500/30"
+              onClick={() => { fetchScheduledScans(); fetchNotifications(); }}>
+              Retry
+            </Button>
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div className="md:col-span-2 flex gap-2">
@@ -230,11 +264,13 @@ export const MediaHealthSettings = () => {
               >
                 <FolderBrowser
                   selectedPath={newScanForm.directory}
-                  onSelect={(path) => {
-                    setNewScanForm(p => ({ ...p, directory: path }));
-                    setShowScheduledBrowser(false);
-                  }}
+                  onSelect={(path) => setNewScanForm(p => ({ ...p, directory: path }))}
                 />
+                <div className="flex justify-end mt-2">
+                  <Button size="sm" onClick={() => setShowScheduledBrowser(false)} className="bg-violet-600 hover:bg-violet-700" data-testid="confirm-scheduled-path">
+                    Use this folder
+                  </Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

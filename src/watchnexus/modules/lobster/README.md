@@ -9,6 +9,25 @@ Tailscale-based mesh networking module for WatchNexus.
 - **Coordination Server** (`lobster-coordination/`) — Self-hosted Headscale instance (open-source control plane replacement for Tailscale's hosted coordination server).
 - **Relay** (`lobster-relay/`) — Self-hosted DERP relay for fallback when direct P2P hole-punching fails.
 
+## Configuration
+
+| Env | Meaning |
+|---|---|
+| `LOBSTER_CONTROL_URL` | Headscale coordination URL (required; unset = status `not_configured`) |
+| `LOBSTER_AUTH_KEY` | Headscale pre-auth key for the first join (optional; otherwise the page shows a login URL) |
+| `LOBSTER_HOSTNAME` | Tailnet hostname (default `watchnexus-<hostname>`) |
+| `LOBSTER_SIDECAR_PORT` | Loopback control API port (default 19091) |
+| `LOBSTER_UPSTREAM_HOST` | Override the address the sidecar uses to reach the app |
+
+The sidecar keeps its state, and a per-install control key (`control.key`,
+0600), in `$WATCHNEXUS_DATA_DIR/lobster`. `LobsterService` restarts it with
+exponential backoff (1s up to 5 min) if it exits.
+
+`GET /api/lobster/status` returns the sidecar status (`running`, `starting`,
+`needs_login`, `needs_machine_auth`, `stopped`) or, when the sidecar is not
+available, `not_configured` / `not_installed` / `sidecar_starting` with a
+`message`.
+
 ## Build Phases
 
 1. **Spike** — Register two nodes against a local Headscale instance; confirm direct P2P tunnel forms and survives NAT.

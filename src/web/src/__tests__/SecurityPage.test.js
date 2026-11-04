@@ -1,5 +1,5 @@
 import { render, screen, waitFor, act, userEvent } from './test-utils'
-import { SecurityPage } from '../pages/SecurityPage'
+import SecurityPage from '../pages/SecurityPage' // page is a default export
 import { securityApi } from '../services/nexusApi'
 import { useConfirm } from '../hooks/use-confirm'
 
@@ -24,6 +24,9 @@ jest.mock('../hooks/use-confirm', () => ({
     ConfirmDialog: () => null,
   }),
 }))
+
+// maskKey(): first 4 + up to 20 bullets + last 4
+const MASKED_KEY = 'wn_a' + '\u2022'.repeat(20) + 'wxyz'
 
 describe('SecurityPage', () => {
   beforeEach(() => {
@@ -52,9 +55,10 @@ describe('SecurityPage', () => {
     expect(screen.getByText('Successful Logins (24h)')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
     expect(screen.getByText('Blocked IPs')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    // blocked_ips / active_api_keys also appear as tab count badges
+    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Active API Keys')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1)
   })
 
   test('shows four tabs: Audit Log, IP Rules, API Keys, Sessions', async () => {
@@ -92,7 +96,8 @@ describe('SecurityPage', () => {
     await act(async () => {
       await userEvent.click(screen.getByText('Next'))
     })
-    expect(securityApi.getAuditLogs).toHaveBeenCalledWith(2, 25, undefined)
+    // empty filter is sent as null
+    expect(securityApi.getAuditLogs).toHaveBeenCalledWith(2, 25, null)
   })
 
   test('switches to IP Rules tab', async () => {
@@ -122,18 +127,22 @@ describe('SecurityPage', () => {
       await userEvent.click(screen.getByText('Block'))
       await userEvent.click(screen.getByTestId('save-ip-rule-btn'))
     })
-    expect(securityApi.addIpRule).toHaveBeenCalledWith({ ip_address: '192.168.1.100', is_allowed: false, description: '' })
+    // current backend contract: { ip, ruleType: 'allow'|'block', reason }
+    expect(securityApi.addIpRule).toHaveBeenCalledWith({ ip: '192.168.1.100', ruleType: 'block', reason: '' })
   })
 
   test('deletes IP rule', async () => {
-    securityApi.getIpRules.mockResolvedValue({ data: [{ id: '1', ip_address: '10.0.0.1', is_allowed: true }] })
+    securityApi.getIpRules.mockResolvedValueOnce({ data: [{ id: '1', ip_address: '10.0.0.1', is_allowed: true }] })
     securityApi.deleteIpRule.mockResolvedValue({ data: {} })
-    securityApi.getIpRules.mockResolvedValueOnce({ data: [] })
+    securityApi.getIpRules.mockResolvedValue({ data: [] })
     render(<SecurityPage />)
     await waitFor(() => expect(screen.getByTestId('security-dashboard')).toBeInTheDocument())
     await act(async () => {
       await userEvent.click(screen.getByTestId('tab-ip-rules'))
-      await userEvent.click(screen.getByTestId('delete-rule-1'))
+    })
+    const target = await screen.findByTestId('delete-rule-1')
+    await act(async () => {
+      await userEvent.click(target)
     })
     expect(securityApi.deleteIpRule).toHaveBeenCalledWith('1')
   })
@@ -149,7 +158,7 @@ describe('SecurityPage', () => {
     })
     await waitFor(() => expect(screen.getByTestId('api-keys-panel')).toBeInTheDocument())
     expect(screen.getByText('CI Pipeline')).toBeInTheDocument()
-    expect(screen.getByText('wn_abc123...')).toBeInTheDocument()
+    expect(screen.getByText(/^wn_abc123\.\.\./)).toBeInTheDocument()
   })
 
   test('creates API key and shows it', async () => {
@@ -166,7 +175,9 @@ describe('SecurityPage', () => {
     })
     expect(securityApi.createApiKey).toHaveBeenCalledWith({ name: 'New Key' })
     expect(screen.getByText('New API Key Created — Save it now!')).toBeInTheDocument()
-    expect(screen.getByText('wn_abc123def456ghijklmnopqrstuvwxyz')).toBeInTheDocument()
+    // the freshly created key is masked until the user reveals it
+    expect(screen.getByText(MASKED_KEY)).toBeInTheDocument()
+    expect(screen.queryByText('wn_abc123def456ghijklmnopqrstuvwxyz')).not.toBeInTheDocument()
   })
 
   test('masks API key by default', async () => {
@@ -179,8 +190,8 @@ describe('SecurityPage', () => {
       await userEvent.click(screen.getByTestId('tab-api-keys'))
     })
     await waitFor(() => expect(screen.getByTestId('api-keys-panel')).toBeInTheDocument())
-    // Key should be masked
-    expect(screen.getByText('wn_abc123••••••••••••••••••••••••stuvwxyz')).toBeInTheDocument()
+    // Listed keys only expose their prefix, never the secret
+    expect(screen.getByText(/^wn_abc123\.\.\./)).toBeInTheDocument()
   })
 
   test('reveals API key on eye click', async () => {
@@ -196,22 +207,27 @@ describe('SecurityPage', () => {
       await userEvent.type(screen.getByTestId('api-key-name-input'), 'Test Key')
       await userEvent.click(screen.getByTestId('save-api-key-btn'))
     })
-    await waitFor(() => expect(screen.getByText('wn_abc123••••••••••••••••••••••••stuvwxyz')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(MASKED_KEY)).toBeInTheDocument())
+    // the eye toggle is the first (icon-only) button next to the masked key
+    const eyeBtn = screen.getByText(MASKED_KEY).parentElement.querySelector('button')
     await act(async () => {
-      await userEvent.click(screen.getByRole('button', { name: /show/i }))
+      await userEvent.click(eyeBtn)
     })
     expect(screen.getByText('wn_abc123def456ghijklmnopqrstuvwxyz')).toBeInTheDocument()
   })
 
   test('revokes API key', async () => {
-    securityApi.getApiKeys.mockResolvedValue({ data: [{ id: '1', name: 'Test Key', prefix: 'abc123', is_active: true }] })
+    securityApi.getApiKeys.mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Key', prefix: 'abc123', is_active: true }] })
     securityApi.revokeApiKey.mockResolvedValue({ data: {} })
-    securityApi.getApiKeys.mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Key', prefix: 'abc123', is_active: false }] })
+    securityApi.getApiKeys.mockResolvedValue({ data: [{ id: '1', name: 'Test Key', prefix: 'abc123', is_active: false }] })
     render(<SecurityPage />)
     await waitFor(() => expect(screen.getByTestId('security-dashboard')).toBeInTheDocument())
     await act(async () => {
       await userEvent.click(screen.getByTestId('tab-api-keys'))
-      await userEvent.click(screen.getByTestId('revoke-key-1'))
+    })
+    const target = await screen.findByTestId('revoke-key-1')
+    await act(async () => {
+      await userEvent.click(target)
     })
     expect(securityApi.revokeApiKey).toHaveBeenCalledWith('1')
   })
@@ -231,14 +247,17 @@ describe('SecurityPage', () => {
   })
 
   test('revokes session', async () => {
-    securityApi.getSessions.mockResolvedValue({ data: [{ id: '1', ip_address: '192.168.1.50', user_agent: 'Mozilla/5.0', last_activity: new Date().toISOString() }] })
+    securityApi.getSessions.mockResolvedValueOnce({ data: [{ id: '1', ip_address: '192.168.1.50', user_agent: 'Mozilla/5.0', last_activity: new Date().toISOString() }] })
     securityApi.revokeSession.mockResolvedValue({ data: {} })
-    securityApi.getSessions.mockResolvedValueOnce({ data: [] })
+    securityApi.getSessions.mockResolvedValue({ data: [] })
     render(<SecurityPage />)
     await waitFor(() => expect(screen.getByTestId('security-dashboard')).toBeInTheDocument())
     await act(async () => {
       await userEvent.click(screen.getByTestId('tab-sessions'))
-      await userEvent.click(screen.getByTitle('Revoke session'))
+    })
+    const target = await screen.findByTitle('Revoke session')
+    await act(async () => {
+      await userEvent.click(target)
     })
     expect(securityApi.revokeSession).toHaveBeenCalledWith('1')
   })

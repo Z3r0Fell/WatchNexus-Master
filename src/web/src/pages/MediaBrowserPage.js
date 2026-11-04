@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { libraryApi } from '../services/nexusApi';
+import { watchlistApi } from '../services/api';
 import { toast } from 'sonner';
 import {
   Film, Tv, Star, Calendar, Clock, ChevronLeft, ChevronRight,
@@ -10,7 +11,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { cn } from '../lib/utils';
+import { cn, normalizeMediaType } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const TMDB_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' fill='%23181818'%3E%3Crect width='200' height='300'/%3E%3Ctext x='100' y='150' text-anchor='middle' fill='%23444' font-size='14'%3ENo Poster%3C/text%3E%3C/svg%3E";
 
@@ -64,8 +66,26 @@ const MediaCard = ({ item, onClick }) => (
 );
 
 const MediaDetail = ({ item, onClose }) => {
+  const navigate = useNavigate();
   if (!item) return null;
   const genres = item.genres ? item.genres.split(', ') : [];
+  const isTv = normalizeMediaType(item.tmdb_kind || item.media_type) === 'tv';
+
+  // The watchlist is keyed by TMDB id; unmatched library items can't be added.
+  const handleAddToWatchlist = async () => {
+    if (!item.tmdb_id) return;
+    try {
+      await watchlistApi.add({
+        tmdb_id: item.tmdb_id,
+        media_type: isTv ? 'tv' : 'movie',
+        title: item.title,
+        poster_url: item.poster_url,
+      });
+      toast.success('Added to watchlist');
+    } catch {
+      toast.error('Failed to update watchlist');
+    }
+  };
 
   return (
     <motion.div
@@ -124,8 +144,8 @@ const MediaDetail = ({ item, onClose }) => {
                 )}
                 {item.media_type && (
                   <span className="flex items-center gap-1">
-                    {item.media_type === 'tv' ? <Tv className="w-3.5 h-3.5" /> : <Film className="w-3.5 h-3.5" />}
-                    {item.media_type === 'tv' ? 'TV Show' : 'Movie'}
+                    {isTv ? <Tv className="w-3.5 h-3.5" /> : <Film className="w-3.5 h-3.5" />}
+                    {isTv ? 'TV Show' : 'Movie'}
                   </span>
                 )}
               </div>
@@ -141,10 +161,12 @@ const MediaDetail = ({ item, onClose }) => {
               )}
 
               <div className="mt-4 flex gap-2">
-                <Button size="sm" className="bg-white text-black hover:bg-gray-200">
+                <Button size="sm" className="bg-white text-black hover:bg-gray-200"
+                  onClick={() => navigate(`/watch/${item.id}`)} data-testid="media-detail-play-btn">
                   <Play className="w-4 h-4 mr-1.5 fill-black" /> Play
                 </Button>
-                <Button size="sm" variant="outline" className="border-white/20">
+                <Button size="sm" variant="outline" className="border-white/20"
+                  onClick={handleAddToWatchlist} disabled={!item.tmdb_id} data-testid="media-detail-watchlist-btn">
                   <Bookmark className="w-4 h-4 mr-1.5" /> Add to Watchlist
                 </Button>
               </div>

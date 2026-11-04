@@ -164,7 +164,7 @@ public class PepperControllerIntegrationTests : IntegrationTestBase
         
         AssertJsonResponse(response);
         var json = await DeserializeResponseElement(response);
-        Assert.True(json.GetArrayLength() >= 8);
+        Assert.True(json.GetArrayLength() >= 7); // seven supported event types, all asserted below
         
         var eventIds = json.EnumerateArray().Select(x => x.GetProperty("id").GetString()).ToList();
         Assert.Contains("new_media", eventIds);

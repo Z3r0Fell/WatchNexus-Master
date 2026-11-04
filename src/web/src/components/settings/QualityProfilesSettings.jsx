@@ -117,13 +117,18 @@ export const QualityProfilesSettings = () => {
             qualities = JSON.parse(qualities);
           } catch (error) {
             console.warn('Failed to parse qualities JSON:', error);
-            toast.warn('Some qualities could not be parsed and were skipped');
+            toast.warning('Some qualities could not be parsed and were skipped');
             qualities = [];
           }
         }
         // Convert object qualities to simple string array
         if (Array.isArray(qualities) && qualities.length > 0 && typeof qualities[0] === 'object') {
           qualities = qualities.filter(q => q.enabled !== false).map(q => q.name || q.id || String(q));
+        }
+        // The Library > Quality Profiles editor stores display names ("1080p Bluray");
+        // this page keys on definition ids — map names to ids so toggles match.
+        if (Array.isArray(qualities)) {
+          qualities = qualities.map(q => QUALITY_DEFINITIONS.find(d => d.id === q || d.name === q)?.id || q);
         }
         return {
           ...profile,
@@ -196,10 +201,7 @@ export const QualityProfilesSettings = () => {
 
   const handleSetDefault = async (profileId) => {
     try {
-      const profile = profiles.find(p => p.id === profileId);
-      await axios.put(`${BACKEND_URL}/api/quality-profiles/${profileId}`,
-        { ...profile, is_default: true },
-      );
+      await axios.put(`${BACKEND_URL}/api/quality-profiles/${profileId}`, { is_default: true });
       toast.success('Default profile set');
       fetchProfiles();
     } catch (err) {
@@ -361,8 +363,8 @@ export const QualityProfilesSettings = () => {
                     <label className="text-sm text-gray-400 mb-1 block">Profile Name</label>
                     <Input
                       value={editingProfile?.id === profile.id ? editingProfile.name : profile.name}
-                      onChange={(e) => setEditingProfile({ ...profile, name: e.target.value })}
-                      onFocus={() => setEditingProfile(profile)}
+                      onChange={(e) => setEditingProfile({ ...(editingProfile?.id === profile.id ? editingProfile : profile), name: e.target.value })}
+                      onFocus={() => editingProfile?.id !== profile.id && setEditingProfile(profile)}
                       className="bg-white/5 border-white/10 max-w-xs"
                     />
                   </div>
@@ -411,8 +413,7 @@ export const QualityProfilesSettings = () => {
                       <label className="text-sm text-gray-400 mb-1 block">Cutoff Quality</label>
                       <select
                         value={(editingProfile?.id === profile.id ? editingProfile : profile).cutoff}
-                        onChange={(e) => setEditingProfile({ ...(editingProfile || profile), cutoff: e.target.value })}
-                        onFocus={() => !editingProfile && setEditingProfile(profile)}
+                        onChange={(e) => setEditingProfile({ ...(editingProfile?.id === profile.id ? editingProfile : profile), cutoff: e.target.value })}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm"
                       >
                         {QUALITY_DEFINITIONS.map(q => (
@@ -423,7 +424,7 @@ export const QualityProfilesSettings = () => {
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={(editingProfile?.id === profile.id ? editingProfile : profile).upgrade_allowed}
-                        onCheckedChange={(checked) => setEditingProfile({ ...(editingProfile || profile), upgrade_allowed: checked })}
+                        onCheckedChange={(checked) => setEditingProfile({ ...(editingProfile?.id === profile.id ? editingProfile : profile), upgrade_allowed: checked })}
                       />
                       <span className="text-sm">Allow Upgrades</span>
                     </div>
@@ -510,6 +511,8 @@ export const QualityProfilesSettings = () => {
           </motion.div>
         </div>
       )}
+
+      <ConfirmDialog />
 
       {/* Tips */}
       <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">

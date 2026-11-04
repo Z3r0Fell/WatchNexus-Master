@@ -16,7 +16,22 @@ const MarshmallowPage = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [config, setConfig] = useState({ enabled: false, provider: 'watchnexus-cloud', sync_interval: 60, categories: 'watchlist,progress,settings' });
 
-  const fetch_ = useCallback(async () => { try { const res = await axios.get(`${API}/api/marshmallow/status`); setStatus(res.data); setConfig(prev => ({ ...prev, ...res.data })); } catch {} finally { setLoading(false); } }, []);
+  // /status returns sync_provider / sync_interval_minutes, but /config stores
+  // provider / sync_interval — map explicitly so saving doesn't reset them.
+  const fetch_ = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/api/marshmallow/status`);
+      const d = res.data || {};
+      setStatus(d);
+      setConfig(prev => ({
+        ...prev,
+        enabled: !!d.enabled,
+        provider: d.sync_provider && d.sync_provider !== 'none' ? d.sync_provider : prev.provider,
+        sync_interval: d.sync_interval_minutes ?? prev.sync_interval,
+        categories: d.categories ?? prev.categories,
+      }));
+    } catch { toast.error('Failed to load sync status'); } finally { setLoading(false); }
+  }, []);
   useEffect(() => { fetch_(); }, [fetch_]);
 
   const handleSync = async () => {
@@ -25,7 +40,10 @@ const MarshmallowPage = () => {
     finally { setSyncing(false); }
   };
 
-  const handleSaveConfig = async () => { try { await axios.post(`${API}/api/marshmallow/config`, config); toast.success('Sync settings saved'); fetch_(); setShowConfig(false); } catch {} };
+  const handleSaveConfig = async () => {
+    const interval = Number.isFinite(config.sync_interval) && config.sync_interval > 0 ? config.sync_interval : 60;
+    try { await axios.post(`${API}/api/marshmallow/config`, { ...config, sync_interval: interval }); toast.success('Sync settings saved'); fetch_(); setShowConfig(false); } catch { toast.error('Failed to save sync settings'); }
+  };
 
   return (
     <Layout>

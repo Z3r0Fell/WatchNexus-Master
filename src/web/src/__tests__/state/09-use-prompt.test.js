@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor, act, userEvent } from '../test-utils'
+import { render, screen, waitFor, act, userEvent, fireEvent } from '../test-utils'
 import { usePrompt } from '../../hooks/use-prompt'
 
 const TestComponent = ({ onPrompt, defaultValue = '' }) => {
@@ -89,12 +89,16 @@ describe('usePrompt Hook', () => {
 
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
-      // Click on dialog overlay
-      const dialog = screen.getByRole('dialog')
-      await userEvent.click(dialog.parentElement)
+    })
+    await screen.findByRole('dialog')
+    // Outside pointer-down dismisses a Radix Dialog. fireEvent: Radix sets
+    // pointer-events:none on <body> while modal, which userEvent refuses.
+    await act(async () => {
+      fireEvent.pointerDown(document.body)
     })
 
-    expect(screen.getByTestId('result')).toHaveTextContent('null')
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('null'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
   test('resolves null on Escape key', async () => {

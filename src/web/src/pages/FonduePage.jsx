@@ -56,6 +56,7 @@ export const FonduePage = () => {
       setConfig(configRes.data);
     } catch (e) {
       console.error('Fondue fetch error:', e);
+      toast.error('Failed to load movie automation data');
     } finally {
       setLoading(false);
     }
@@ -80,6 +81,7 @@ export const FonduePage = () => {
         
       });
       setMovies(prev => prev.filter(m => m.id !== movieId));
+      setTotalMovies(prev => Math.max(0, prev - 1));
       toast.success('Movie removed');
     } catch (e) {
       toast.error('Failed to remove');

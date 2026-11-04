@@ -1,22 +1,21 @@
 import React from 'react'
-import { render, screen, waitFor, act, userEvent } from './test-utils'
+import { render, screen, waitFor, act, userEvent, fireEvent } from './test-utils'
 import { usePrompt } from '../hooks/use-prompt'
 
 const TestComponent = () => {
   const { prompt, PromptDialog } = usePrompt()
   const [result, setResult] = React.useState(null)
-  
+
   const handleClick = async () => {
-    const value = await prompt({ 
-      title: 'Test Prompt', 
-      description: 'Enter something', 
+    const value = await prompt({
+      title: 'Test Prompt',
+      description: 'Enter something',
       defaultValue: 'default',
-      confirmText: 'OK', 
-      cancelText: 'Cancel' 
+      // usePrompt has fixed Confirm/Cancel buttons (no confirmText/cancelText option)
     })
     setResult(value)
   }
-  
+
   return (
     <div>
       <button data-testid="trigger-btn" onClick={handleClick}>Trigger</button>
@@ -34,41 +33,47 @@ describe('usePrompt', () => {
   test('opens dialog when prompt called', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
     })
-    
+
     await waitFor(() => expect(screen.getByText('Test Prompt')).toBeInTheDocument())
     expect(screen.getByText('Enter something')).toBeInTheDocument()
     expect(screen.getByDisplayValue('default')).toBeInTheDocument()
-    expect(screen.getByText('OK')).toBeInTheDocument()
+    expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
   test('resolves with input value on confirm', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
-      await userEvent.clear(screen.getByDisplayValue('default'))
-      await userEvent.type(screen.getByRole('textbox'), 'user input')
-      await userEvent.click(screen.getByText('OK'))
     })
-    
-    expect(screen.getByTestId('result')).toHaveTextContent('user input')
+    const input = await screen.findByDisplayValue('default')
+    await act(async () => {
+      await userEvent.clear(input)
+      await userEvent.type(screen.getByRole('textbox'), 'user input')
+    })
+    // fireEvent: Radix sets pointer-events:none on <body> while modal
+    await act(async () => {
+      fireEvent.click(screen.getByText('Confirm'))
+    })
+
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('user input'))
   })
 
   test('resolves null on cancel', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
       await userEvent.click(screen.getByText('Cancel'))
     })
-    
+
     expect(screen.getByTestId('result')).toHaveTextContent('null')
   })
 
@@ -76,12 +81,12 @@ describe('usePrompt', () => {
     const TestDefault = () => {
       const { prompt, PromptDialog } = usePrompt()
       const [result, setResult] = React.useState(null)
-      
+
       const handleClick = async () => {
         const value = await prompt({})
         setResult(value)
       }
-      
+
       return (
         <div>
           <button data-testid="trigger-btn" onClick={handleClick}>Trigger</button>
@@ -90,15 +95,15 @@ describe('usePrompt', () => {
         </div>
       )
     }
-    
+
     render(<TestDefault />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
     })
-    
-    expect(screen.getByText('Enter value')).toBeInTheDocument(); // default description
+
+    expect(await screen.findByText('Input required')).toBeInTheDocument(); // default title
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })

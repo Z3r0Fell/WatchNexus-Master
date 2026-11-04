@@ -5,6 +5,7 @@ export function useConfirm() {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState({ title: 'Are you sure?', description: '', confirmText: 'Confirm', cancelText: 'Cancel', onConfirm: () => {} });
   const optionsRef = useRef(options);
+  const resolveRef = useRef(null);
 
   useEffect(() => {
     optionsRef.current = options;
@@ -12,12 +13,15 @@ export function useConfirm() {
 
   const confirm = useCallback((opts) => {
     return new Promise((resolve) => {
+      // Settle any still-pending confirm as cancelled before opening a new one.
+      if (resolveRef.current) resolveRef.current(false);
+      resolveRef.current = resolve;
       setOptions({
         title: opts.title || 'Are you sure?',
         description: opts.description || '',
         confirmText: opts.confirmText || 'Confirm',
         cancelText: opts.cancelText || 'Cancel',
-        onConfirm: () => resolve(true),
+        onConfirm: () => { resolveRef.current = null; resolve(true); },
       });
       setOpen(true);
     });
@@ -28,12 +32,21 @@ export function useConfirm() {
     optionsRef.current.onConfirm();
   }, []);
 
+  // Cancel / Escape / outside click must settle the promise, or callers that
+  // `await confirm()` hang forever.
   const handleCancel = useCallback(() => {
     setOpen(false);
+    const r = resolveRef.current;
+    resolveRef.current = null;
+    if (r) r(false);
   }, []);
 
+  const handleOpenChange = useCallback((next) => {
+    if (next) setOpen(true); else handleCancel();
+  }, [handleCancel]);
+
   const ConfirmDialog = useCallback(() => (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{options.title}</AlertDialogTitle>
@@ -45,7 +58,7 @@ export function useConfirm() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  ), [open, options, handleConfirm, handleCancel]);
+  ), [open, options, handleConfirm, handleCancel, handleOpenChange]);
 
   return { confirm, ConfirmDialog };
 }

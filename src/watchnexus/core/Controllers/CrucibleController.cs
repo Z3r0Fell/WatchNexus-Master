@@ -79,7 +79,7 @@ public class CrucibleController : ControllerBase
 
         var jobs = await query
             .OrderByDescending(j => j.CreatedAt)
-            .Take(limit)
+            .Take(Math.Clamp(limit, 1, 500))
             .Select(j => new
             {
                 j.Id, j.SourcePath, j.OutputPath, j.Profile, j.Status, j.Progress,
@@ -213,11 +213,20 @@ public class CrucibleController : ControllerBase
             psi.ArgumentList.Add("-show_format");
             psi.ArgumentList.Add("-show_streams");
             psi.ArgumentList.Add(path);
-            var proc = System.Diagnostics.Process.Start(psi);
+            using var proc = System.Diagnostics.Process.Start(psi);
             if (proc == null) return null;
-            var output = await proc.StandardOutput.ReadToEndAsync();
-            await proc.WaitForExitAsync();
-            return JsonDocument.Parse(output).RootElement;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            try
+            {
+                var output = await proc.StandardOutput.ReadToEndAsync(cts.Token);
+                await proc.WaitForExitAsync(cts.Token);
+                return JsonDocument.Parse(output).RootElement.Clone();
+            }
+            catch (OperationCanceledException)
+            {
+                try { proc.Kill(entireProcessTree: true); } catch { }
+                return new { error = "ffprobe timed out" };
+            }
         }
         catch (Exception ex) { return new { error = ex.Message }; }
     }

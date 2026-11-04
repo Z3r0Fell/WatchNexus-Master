@@ -25,7 +25,12 @@ public class SettingsControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
 
         DbContext.Settings.Add(new AppSetting { Key = "user_setting_1", Value = "value1", UserId = "test-user" });
-        DbContext.Settings.Add(new AppSetting { Key = "global_setting", Value = "global", UserId = null });
+        // Server-wide settings are stored with UserId "" (UserId is part of
+        // the primary key, so it can't be null). They hold secrets (license,
+        // API keys, client passwords) and must NOT leak through the per-user
+        // settings listing.
+        DbContext.Settings.Add(new AppSetting { Key = "global_setting", Value = "global", UserId = "" });
+        DbContext.Settings.Add(new AppSetting { Key = "other_user_setting", Value = "x", UserId = "someone-else" });
         await DbContext.SaveChangesAsync();
 
         var response = await Client.GetAsync("/api/settings");
@@ -34,9 +39,9 @@ public class SettingsControllerIntegrationTests : IntegrationTestBase
         var json = await DeserializeResponseElement(response);
         
         Assert.True(json.TryGetProperty("user_setting_1", out _));
-        Assert.True(json.TryGetProperty("global_setting", out _));
         Assert.Equal("value1", json.GetProperty("user_setting_1").GetString());
-        Assert.Equal("global", json.GetProperty("global_setting").GetString());
+        Assert.False(json.TryGetProperty("global_setting", out _));
+        Assert.False(json.TryGetProperty("other_user_setting", out _));
     }
 
     #endregion

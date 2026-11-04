@@ -16,7 +16,7 @@ namespace WatchNexus.Core.Services;
 /// </summary>
 public static class TrayController
 {
-    public const string AppVersion = "1.0.6";
+    public const string AppVersion = "1.0.7";
 
     public static int Run(int port, Action<string> log)
     {
@@ -26,7 +26,20 @@ public static class TrayController
         try
         {
             if (OperatingSystem.IsWindows())
-                return RunWindows(port, log);
+            {
+                // WinForms/NotifyIcon need an STA thread, but the top-level
+                // Program entry point runs MTA (no [STAThread] possible there).
+                var rc = 1;
+                var sta = new Thread(() =>
+                {
+                    try { rc = RunWindows(port, log); }
+                    catch (Exception ex) { log($"[Tray] [FATAL] {ex.GetType().Name}: {ex.Message}"); rc = 1; }
+                });
+                sta.SetApartmentState(ApartmentState.STA);
+                sta.Start();
+                sta.Join();
+                return rc;
+            }
             if (OperatingSystem.IsLinux())
                 return RunLinux(port, log);
 
@@ -276,16 +289,24 @@ public static class TrayController
         // We bundle a Python AppIndicator3 helper that we drop next to
         // the binary and exec. It blocks until the user picks "Quit".
         var iconPath = ResolveIcon() ?? "";
-        var scriptPath = Path.Combine(Path.GetTempPath(), "watchnexus-tray.py");
-        File.WriteAllText(scriptPath, GetLinuxTrayScript(port, iconPath));
+        // Unique, freshly created file: a fixed name in the shared /tmp could be
+        // pre-created/symlinked or swapped by another local user before python
+        // runs it (code execution as the tray user).
+        var scriptPath = Path.Combine(Path.GetTempPath(), $"watchnexus-tray-{Guid.NewGuid():N}.py");
+        using (var fs = new FileStream(scriptPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        using (var sw = new StreamWriter(fs))
+            sw.Write(GetLinuxTrayScript(port, iconPath));
+        try { File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite); } catch { }
 
         var psi = new ProcessStartInfo
         {
             FileName = "python3",
             ArgumentList = { scriptPath, port.ToString(), iconPath },
             UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            // Not redirected: nothing reads the pipes, so a chatty helper would
+            // block once the pipe buffer filled.
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
         };
 
         log($"[Tray] Launching Linux tray helper: python3 {scriptPath}");
@@ -301,6 +322,10 @@ public static class TrayController
             log($"[Tray] Could not launch Python helper: {ex.Message}");
             log("[Tray] Install:  sudo apt install gir1.2-ayatanaappindicator3-0.1 python3-gi");
             return 1;
+        }
+        finally
+        {
+            try { File.Delete(scriptPath); } catch { }
         }
     }
 

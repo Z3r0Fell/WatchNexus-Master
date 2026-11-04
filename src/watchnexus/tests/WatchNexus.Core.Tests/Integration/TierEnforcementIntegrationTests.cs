@@ -96,7 +96,7 @@ public class TierEnforcementIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task StandardTier_AccessUltraEndpoints_Blocked()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // admin: some Ultra APIs (e.g. /api/security) are also admin-only; tier lock must still win for admins
 
         var ultraEndpoints = new[]
         {
@@ -214,7 +214,7 @@ public class TierEnforcementIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task ProTier_AccessUltraEndpoints_Blocked()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // admin: some Ultra APIs (e.g. /api/security) are also admin-only; tier lock must still win for admins
         await SeedLicenseAsync("pro");
 
         var ultraEndpoints = new[]
@@ -289,7 +289,7 @@ public class TierEnforcementIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task UltraTier_AccessAllEndpoints_Success()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // admin: list includes admin-only APIs (e.g. /api/security/stats)
         await SeedLicenseAsync("ultra");
 
         var allEndpoints = new[]
@@ -467,7 +467,7 @@ public class TierEnforcementIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task TierDowngrade_BlocksProUltra_PreservesData()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // VPN peer creation is admin-only
         await SeedLicenseAsync("ultra");
 
         // Create Ultra-tier data
@@ -480,7 +480,6 @@ public class TierEnforcementIntegrationTests : IntegrationTestBase
         AuthenticateAsAdmin();
         await Client.PostAsync("/api/cellar/deactivate", null);
         await SeedLicenseAsync("pro");
-        AuthenticateAsUser();
 
         // Ultra endpoints blocked
         var ultraResponse = await Client.GetAsync("/api/vpn/server");

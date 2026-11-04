@@ -11,28 +11,54 @@ import { Input } from '../../components/ui/input';
 const API = BACKEND_URL;
 
 const CHANNEL_ICONS = {
-  email: Mail,
   discord: MessageSquare,
-  webhook: Webhook,
+  slack: MessageSquare,
+  telegram: Send,
   pushover: Bell,
 };
+
+// Channel types PepperController can actually send to, and the top-level
+// config fields each sender reads.
+export const CHANNEL_FIELDS = {
+  discord: [{ key: 'webhook_url', label: 'Discord webhook URL' }],
+  slack: [{ key: 'webhook_url', label: 'Slack webhook URL' }],
+  telegram: [{ key: 'bot_token', label: 'Bot token' }, { key: 'chat_id', label: 'Chat ID' }],
+  pushover: [{ key: 'app_token', label: 'App token' }, { key: 'user_key', label: 'User key' }],
+};
+
+const EMPTY_CHANNEL = { name: '', type: 'discord', fields: {} };
+
+export const buildChannelPayload = (ch) => {
+  const payload = { name: ch.name.trim(), type: ch.type, enabled: true };
+  for (const { key } of CHANNEL_FIELDS[ch.type] || []) {
+    const v = (ch.fields?.[key] || '').trim();
+    if (v) payload[key] = v;
+  }
+  return payload;
+};
+
+export const missingChannelFields = (ch) =>
+  (CHANNEL_FIELDS[ch.type] || []).filter(({ key }) => !(ch.fields?.[key] || '').trim()).map(f => f.label);
 
 export const NotificationsPage = () => {
   const [channels, setChannels] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [newChannel, setNewChannel] = useState({ name: '', type: 'webhook', config: '{}' });
+  const [newChannel, setNewChannel] = useState(EMPTY_CHANNEL);
   const headers = { 'Content-Type': 'application/json' };
 
   const fetchData = async () => {
     try {
-      const [channelsRes, historyRes] = await Promise.all([
+      // History is admin-only (403 for regular users) — load it independently
+      // so a non-admin still sees their own channels.
+      const [channelsRes, historyRes] = await Promise.allSettled([
         axios.get(`${API}/api/pepper/channels`, { headers }),
         axios.get(`${API}/api/pepper/history?limit=20`, { headers }),
       ]);
-      setChannels(channelsRes.data);
-      setHistory(historyRes.data);
+      if (channelsRes.status === 'fulfilled') setChannels(Array.isArray(channelsRes.value.data) ? channelsRes.value.data : []);
+      else { console.error('Notifications fetch error:', channelsRes.reason); toast.error('Failed to load channels'); }
+      setHistory(historyRes.status === 'fulfilled' && Array.isArray(historyRes.value.data) ? historyRes.value.data : []);
     } catch (e) {
       console.error('Notifications fetch error:', e);
     } finally {
@@ -44,11 +70,14 @@ export const NotificationsPage = () => {
   useEffect(() => { fetchData(); }, []);
 
   const addChannel = async () => {
+    if (!newChannel.name.trim()) { toast.error('Channel name is required'); return; }
+    const missing = missingChannelFields(newChannel);
+    if (missing.length) { toast.error(`Missing: ${missing.join(', ')}`); return; }
     try {
-      await axios.post(`${API}/api/pepper/channels`, newChannel, { headers });
+      await axios.post(`${API}/api/pepper/channels`, buildChannelPayload(newChannel), { headers });
       toast.success('Channel added');
       setShowAdd(false);
-      setNewChannel({ name: '', type: 'webhook', config: '{}' });
+      setNewChannel(EMPTY_CHANNEL);
       fetchData();
     } catch (e) {
       toast.error('Failed to add channel');
@@ -67,10 +96,12 @@ export const NotificationsPage = () => {
 
   const testChannel = async (id) => {
     try {
-      await axios.post(`${API}/api/pepper/test/${id}`, {}, { headers });
-      toast.success('Test notification sent');
+      // Backend answers 200 { success, message } even when delivery fails.
+      const res = await axios.post(`${API}/api/pepper/test/${id}`, {}, { headers });
+      if (res.data?.success === false) toast.error(res.data.message || 'Test failed');
+      else toast.success('Test notification sent');
     } catch (e) {
-      toast.error('Test failed');
+      toast.error(e.response?.data?.detail || 'Test failed');
     }
   };
 
@@ -99,21 +130,24 @@ export const NotificationsPage = () => {
               />
               <select
                 value={newChannel.type}
-                onChange={e => setNewChannel({ ...newChannel, type: e.target.value })}
+                onChange={e => setNewChannel({ ...newChannel, type: e.target.value, fields: {} })}
                 className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
                 data-testid="channel-type-select"
               >
-                <option value="webhook">Webhook</option>
-                <option value="email">Email</option>
                 <option value="discord">Discord</option>
+                <option value="slack">Slack</option>
+                <option value="telegram">Telegram</option>
                 <option value="pushover">Pushover</option>
               </select>
-              <Input
-                placeholder='Config JSON (e.g., {"url":"..."})'
-                value={newChannel.config}
-                onChange={e => setNewChannel({ ...newChannel, config: e.target.value })}
-                data-testid="channel-config-input"
-              />
+              {(CHANNEL_FIELDS[newChannel.type] || []).map(({ key, label }) => (
+                <Input
+                  key={key}
+                  placeholder={label}
+                  value={newChannel.fields[key] || ''}
+                  onChange={e => setNewChannel({ ...newChannel, fields: { ...newChannel.fields, [key]: e.target.value } })}
+                  data-testid={`channel-${key}-input`}
+                />
+              ))}
             </div>
             <div className="flex gap-2">
               <Button onClick={addChannel} data-testid="save-channel-btn">Save</Button>
@@ -182,10 +216,10 @@ export const NotificationsPage = () => {
                     <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm truncate">{item.title || item.event_type}</p>
-                    <p className="text-gray-500 text-xs">{new Date(item.sent_at || item.timestamp).toLocaleString()}</p>
+                    <p className="text-white text-sm truncate">{item.title || item.message || item.event_type || item.eventType}</p>
+                    <p className="text-gray-500 text-xs">{new Date(item.sent_at || item.sentAt || item.timestamp).toLocaleString()}</p>
                   </div>
-                  <span className="text-xs text-gray-400">{item.channel_type}</span>
+                  <span className="text-xs text-gray-400">{item.channel_type || item.channel}</span>
                 </div>
               ))}
             </div>

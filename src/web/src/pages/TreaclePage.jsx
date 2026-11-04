@@ -35,16 +35,18 @@ const TreaclePage = () => {
     try { const res = await axios.post(`${API}/api/treacle/tracks`, newTrack); if (res.data.success) { toast.success('Track added'); fetchTracks(); fetchStats(); setShowAdd(false); setNewTrack({ title: '', artist: '', album: '', file_path: '' }); } } catch (err) { toast.error('Failed'); }
   };
 
-  const handleDelete = async (id) => { const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/treacle/tracks/${id}`); toast.success('Removed'); fetchTracks(); fetchStats(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Remove', description: 'Remove?', confirmText: 'Remove' }); if (!ok) return; try { await axios.delete(`${API}/api/treacle/tracks/${encodeURIComponent(id)}`); toast.success('Removed'); fetchTracks(); fetchStats(); } catch { toast.error('Failed to remove track'); } };
 
   const handleScan = async () => {
     if (!scanPath) return;
-    try { const res = await axios.post(`${API}/api/treacle/scan`, { path: scanPath }); setScanResults(res.data.files || []); toast.success(`Found ${res.data.total} tracks`); } catch (err) { toast.error('Scan failed'); }
+    try { const res = await axios.post(`${API}/api/treacle/scan`, { path: scanPath }); setScanResults(res.data.files || []); toast.success(`Found ${res.data.total} tracks`); } catch (err) { toast.error(err.response?.data?.message || 'Scan failed'); }
   };
 
   const handleImport = async () => {
-    for (const f of scanResults) { await axios.post(`${API}/api/treacle/tracks`, { title: f.title, file_path: f.file_path, file_size: f.file_size, format: f.format }).catch(() => {}); }
-    toast.success(`Imported ${scanResults.length} tracks`); fetchTracks(); fetchStats(); setShowScan(false); setScanResults([]);
+    let ok = 0;
+    for (const f of scanResults) { await axios.post(`${API}/api/treacle/tracks`, { title: f.title, file_path: f.file_path, file_size: f.file_size, format: f.format }).then(() => { ok++; }).catch(() => {}); }
+    if (ok === scanResults.length) toast.success(`Imported ${ok} tracks`);
+    else toast.error(`Imported ${ok} of ${scanResults.length} tracks`); fetchTracks(); fetchStats(); setShowScan(false); setScanResults([]);
   };
 
   const formatDuration = (s) => s > 0 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}` : '';

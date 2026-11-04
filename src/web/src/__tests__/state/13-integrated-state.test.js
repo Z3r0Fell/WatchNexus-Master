@@ -23,7 +23,21 @@ jest.mock('axios', () => ({
   })),
 }))
 
-import { render, screen, waitFor, act, userEvent } from '../test-utils'
+// Bare render: these tests mount the providers under test themselves.
+// test-utils' render wraps every test in Auth/Theme/Gadget/License providers,
+// whose own mount-time axios.get calls consumed the tests' Once-mocks.
+import { render, screen, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+// Providers mounted without an <AuthProvider> see a signed-out user (the
+// real app always has one); inside an AuthProvider the real context is used.
+jest.mock('../../context/AuthContext', () => {
+  const actual = jest.requireActual('../../context/AuthContext')
+  return {
+    ...actual,
+    useAuth: () => actual.useOptionalAuth() ?? { isAuthenticated: false, user: null, loading: false },
+  }
+})
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 import { LicenseProvider, useLicense } from '../../context/LicenseContext'
 import { ThemeProvider, useTheme } from '../../context/ThemeContext'
@@ -33,6 +47,15 @@ import { useConfirm } from '../../hooks/use-confirm'
 import { useToast } from '../../hooks/use-toast'
 import axios from 'axios'
 import React from 'react'
+import { fireEvent } from '@testing-library/react'
+import { routeGet, setRoute, okData as ok } from '../test-utils'
+
+const U401 = { response: { status: 401 } }
+const THEME_OK = {
+  '/user/preferences': ok({ theme_mode: 'dark' }),
+  '/milk/theme-forge': ok({ current_theme: null }),
+  '/api/settings': ok({ ui_accent: 'violet' }),
+}
 
 describe('Integrated State Layer Tests - Full App Simulation', () => {
   beforeEach(() => {
@@ -41,15 +64,14 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
   describe('Complete User Session Flow', () => {
     test('full login → tier fetch → theme load → gadgets flow', async () => {
-      // Setup all mock responses
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'testuser', Email: 'test@test.com', Role: 'user' } }) // Auth
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: ['marmalade', 'compote'] } })          // License
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })                                              // Theme pref
-        .mockResolvedValueOnce({ data: { current_theme: null } })                                             // Theme forge
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })                                                // Theme settings
-        .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather', status: 'active' }] } })          // Gadgets installed
-        .mockResolvedValueOnce({ data: { sidebar_entries: [{ label: 'Weather', path: '/weather' }] } });     // Gadgets hooks
+      // Starts signed out (/users/me 401); responses are routed by URL.
+      routeGet({
+        '/users/me': U401,
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: ['marmalade', 'compote'] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [{ gadget_id: 'weather', status: 'active' }] }),
+        '/ripen/hooks': ok({ sidebar_entries: [{ label: 'Weather', path: '/weather' }] }),
+      })
 
       const App = () => {
         const auth = useAuth()
@@ -57,8 +79,8 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
         const theme = useTheme()
         const gadgets = useGadgets()
         const { toast } = useToast()
-        const { prompt } = usePrompt()
-        const { confirm } = useConfirm()
+        const { prompt, PromptDialog } = usePrompt()
+        const { confirm, ConfirmDialog } = useConfirm()
 
         const handleLogin = async () => {
           await auth.login('test@test.com', 'password')
@@ -99,6 +121,8 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
             <button data-testid="theme-toggle" onClick={handleThemeToggle}>Toggle Theme</button>
             <button data-testid="install-gadget" onClick={handleInstallGadget}>Install Gadget</button>
             <button data-testid="prompt-btn" onClick={handlePrompt}>Prompt</button>
+            <ConfirmDialog />
+            <PromptDialog />
           </div>
         )
       }
@@ -117,12 +141,13 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       // Wait for all loading to complete
       await waitFor(() => expect(screen.queryByTestId('app-loading')).not.toBeInTheDocument())
-      
+
       // Initial state - not logged in
       expect(screen.getByTestId('user-status')).toHaveTextContent('Logged Out')
       expect(screen.getByTestId('license-tier')).toHaveTextContent('pro')
       expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark')
-      expect(screen.getByTestId('gadgets-count')).toHaveTextContent('1')
+      // gadgets only load once signed in
+      expect(screen.getByTestId('gadgets-count')).toHaveTextContent('0')
       expect(screen.getByTestId('mod-compote')).toHaveTextContent('true')
       expect(screen.getByTestId('mod-security')).toHaveTextContent('false')
 
@@ -136,6 +161,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       await waitFor(() => expect(screen.getByTestId('user-status')).toHaveTextContent('Logged In'))
       expect(screen.getByTestId('username')).toHaveTextContent('testuser')
+      await waitFor(() => expect(screen.getByTestId('gadgets-count')).toHaveTextContent('1'))
 
       // Toggle theme
       await act(async () => {
@@ -146,23 +172,19 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       // Install gadget (with confirm)
       axios.post.mockResolvedValueOnce({ data: { success: true } })
-      axios.get
-        .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather', status: 'active' }, { gadget_id: 'new-gadget' }] } })
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      setRoute('/ripen/installed', ok({ gadgets: [{ gadget_id: 'weather', status: 'active' }, { gadget_id: 'new-gadget' }] }))
 
-      await act(async () => {
-        await userEvent.click(screen.getByTestId('install-gadget'))
-        await userEvent.click(screen.getByText('Yes'))
-      })
+      // fireEvent: Radix sets pointer-events:none on <body> while a dialog is open
+      await act(async () => { fireEvent.click(screen.getByTestId('install-gadget')) })
+      await act(async () => { fireEvent.click(await screen.findByRole('button', { name: 'Confirm' })) })
 
       await waitFor(() => expect(screen.getByTestId('gadgets-count')).toHaveTextContent('2'))
 
       // Prompt
-      await act(async () => {
-        await userEvent.click(screen.getByTestId('prompt-btn'))
-        await userEvent.type(screen.getByRole('textbox'), 'Test User')
-        await userEvent.click(screen.getByText('Confirm'))
-      })
+      await act(async () => { fireEvent.click(screen.getByTestId('prompt-btn')) })
+      const input = await screen.findByRole('textbox')
+      await act(async () => { fireEvent.change(input, { target: { value: 'Test User' } }) })
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Confirm' })) })
 
       // Toast should have been shown
     })
@@ -182,9 +204,9 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
       const App = () => {
         const auth = useAuth()
         const license = useLicense()
-        
+
         if (auth.loading || license.loading) return <div data-testid="loading">Loading</div>
-        
+
         return (
           <div>
             <div data-testid="tier">{license.tier}</div>
@@ -217,7 +239,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       // Simulate license upgrade
       axios.get.mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
-      
+
       await act(async () => {
         await screen.getByTestId('upgrade').click()
       })
@@ -241,9 +263,9 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
       const App = () => {
         const auth = useAuth()
         const license = useLicense()
-        
+
         if (auth.loading || license.loading) return <div data-testid="loading">Loading</div>
-        
+
         return (
           <div>
             <div data-testid="tier">{license.tier}</div>
@@ -272,7 +294,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
       expect(screen.getByTestId('security')).toHaveTextContent('false')
 
       axios.get.mockResolvedValueOnce({ data: { tier: 'ultra', modules_unlocked: [] } })
-      
+
       await act(async () => {
         await screen.getByTestId('upgrade').click()
       })
@@ -314,7 +336,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       // Toggle should work and save to localStorage
       axios.put.mockResolvedValue({ data: {} })
-      
+
       await act(async () => {
         await screen.getByTestId('toggle').click()
       })
@@ -326,14 +348,14 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
   describe('Error Recovery Flow', () => {
     test('network failure during session - graceful degradation', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'user' } })   // Auth
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } }) // License
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })          // Theme
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
-        .mockResolvedValueOnce({ data: { gadgets: [] } })                 // Gadgets
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      // Route by URL: providers fetch concurrently and the license is re-fetched on auth change.
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'user' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       const App = () => {
         const auth = useAuth()
@@ -341,7 +363,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
         const theme = useTheme()
         const gadgets = useGadgets()
         const { toast } = useToast()
-        
+
         const handleRefresh = async () => {
           try {
             await license.refreshLicense()
@@ -350,11 +372,11 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
             toast({ title: 'Refresh failed', variant: 'destructive' })
           }
         }
-        
+
         if (auth.loading || license.loading || theme.loading || gadgets.loading) {
           return <div data-testid="loading">Loading</div>
         }
-        
+
         return (
           <div>
             <div data-testid="tier">{license.tier}</div>
@@ -377,9 +399,9 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
       await waitFor(() => expect(screen.getByTestId('tier')).toHaveTextContent('pro'))
 
-      // Network fails
-      axios.get.mockRejectedValueOnce(new Error('Network error'))
-      
+      // Network fails for the license refresh (transient, not 401)
+      setRoute('/cellar/status', new Error('Network error'))
+
       await act(async () => {
         await screen.getByTestId('refresh').click()
       })
@@ -389,14 +411,13 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
     })
 
     test('logout clears all context state', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'user' } })
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
-        .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather' }] } })
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'user' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [{ gadget_id: 'weather' }] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
       axios.post.mockResolvedValue({ data: { success: true } })
 
       let authRef
@@ -404,9 +425,9 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
         authRef = useAuth()
         const license = useLicense()
         const gadgets = useGadgets()
-        
+
         if (authRef.loading || license.loading || gadgets.loading) return <div data-testid="loading">Loading</div>
-        
+
         return (
           <div>
             <div data-testid="auth">{String(authRef.isAuthenticated)}</div>
@@ -437,6 +458,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
       })
 
       await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('false'))
+      await waitFor(() => expect(screen.getByTestId('gadgets')).toHaveTextContent('0'))
       // Note: GadgetContext clears on isAuthenticated change, but that requires AuthContext to notify
       // Current implementation: GadgetContext watches isAuthenticated from AuthContext
     })
@@ -444,16 +466,14 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
   describe('Concurrent Operations Stress Test', () => {
     test('rapid theme toggles + license refresh + gadget operations', async () => {
-      axios.get
-        .mockResolvedValue({ data: { 
-          Id: '1', Username: 'user' }, 
-          tier: 'pro', 
-          theme_mode: 'dark', 
-          current_theme: null, 
-          ui_accent: 'violet',
-          gadgets: [],
-          sidebar_entries: []
-        })
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'user' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        // first load: nothing installed; after install/uninstall settle: g1
+        '/ripen/installed': [ok({ gadgets: [] }), ok({ gadgets: [{ gadget_id: 'g1' }] })],
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
       axios.put.mockResolvedValue({ data: {} })
       axios.post.mockResolvedValue({ data: { success: true } })
       axios.delete.mockResolvedValue({ data: { success: true } })
@@ -463,11 +483,11 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
         const license = useLicense()
         const theme = useTheme()
         const gadgets = useGadgets()
-        
+
         if (auth.loading || license.loading || theme.loading || gadgets.loading) {
           return <div data-testid="loading">Loading</div>
         }
-        
+
         return (
           <div>
             <div data-testid="mode">{theme.mode}</div>
@@ -513,27 +533,24 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
 
   describe('Memory Leak Prevention', () => {
     test('unmounting app cleans up all subscriptions', async () => {
-      axios.get
-        .mockResolvedValue({ data: { 
-          Id: '1', Username: 'user' }, 
-          tier: 'pro', 
-          theme_mode: 'dark', 
-          current_theme: null, 
-          ui_accent: 'violet',
-          gadgets: [],
-          sidebar_entries: []
-        })
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'user' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       const App = () => {
         const auth = useAuth()
         const license = useLicense()
         const theme = useTheme()
         const gadgets = useGadgets()
-        
+
         if (auth.loading || license.loading || theme.loading || gadgets.loading) {
           return <div data-testid="loading">Loading</div>
         }
-        
+
         return <div data-testid="ready">Ready</div>
       }
 
@@ -560,14 +577,13 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
     })
 
     test('re-mounting app creates fresh state', async () => {
-      axios.get
-        .mockResolvedValueOnce({ data: { Id: '1', Username: 'user1' } })
-        .mockResolvedValueOnce({ data: { tier: 'pro', modules_unlocked: [] } })
-        .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
-        .mockResolvedValueOnce({ data: { current_theme: null } })
-        .mockResolvedValue({ data: { ui_accent: 'violet' } })
-        .mockResolvedValueOnce({ data: { gadgets: [] } })
-        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+      routeGet({
+        '/users/me': ok({ Id: '1', Username: 'user1' }),
+        '/cellar/status': ok({ tier: 'pro', modules_unlocked: [] }),
+        ...THEME_OK,
+        '/ripen/installed': ok({ gadgets: [] }),
+        '/ripen/hooks': ok({ sidebar_entries: [] }),
+      })
 
       const App = () => {
         const auth = useAuth()
@@ -576,7 +592,7 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
       }
 
       // First mount
-      const { unmount, rerender } = render(
+      const { unmount } = render(
         <AuthProvider>
           <LicenseProvider>
             <ThemeProvider>
@@ -591,10 +607,10 @@ describe('Integrated State Layer Tests - Full App Simulation', () => {
       await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('user1'))
       unmount()
 
-      // Second mount with different user
-      axios.get.mockResolvedValueOnce({ data: { Id: '2', Username: 'user2' } })
-      
-      rerender(
+      // Second, fresh mount with a different user
+      setRoute('/users/me', ok({ Id: '2', Username: 'user2' }))
+
+      render(
         <AuthProvider>
           <LicenseProvider>
             <ThemeProvider>

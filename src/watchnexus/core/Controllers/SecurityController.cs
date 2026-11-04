@@ -7,23 +7,53 @@ using WatchNexus.Core.Data;
 
 namespace WatchNexus.Core.Controllers;
 
+// Server-wide security state (every user's audit trail, global IP rules,
+// server API keys) — admin only.
 [ApiController]
 [Route("api/security")]
-[Authorize]
+[Authorize(Roles = "admin")]
 public class SecurityController : ControllerBase
 {
     private readonly AppDbContext _db;
     public SecurityController(AppDbContext db) { _db = db; }
 
-    public record IpRuleRequest(string Ip, string RuleType = "block", string Reason = "");
+    // Accepts both the original shape (ip / rule_type / reason) and the one the
+    // Security page sends (ip_address / is_allowed / description).
+    public record IpRuleRequest(string? Ip = null, string? RuleType = null, string? Reason = null)
+    {
+        public string? Ip_address { get; init; }
+        public bool? Is_allowed { get; init; }
+        public string? Description { get; init; }
+        public string? Rule_type { get; init; }
+    }
     public record ApiKeyRequest(string Name, string Permissions = "read");
+
+    private static object RuleDto(IpRule r) => new
+    {
+        id = r.Id, ip = r.Ip, ip_address = r.Ip, rule_type = r.RuleType,
+        is_allowed = r.RuleType == "allow", reason = r.Reason, description = r.Reason,
+        hits = r.Hits, created_at = r.CreatedAt,
+        ruleType = r.RuleType, createdAt = r.CreatedAt,
+    };
+
+    private static object KeyDto(ApiKeyEntity k) => new
+    {
+        id = k.Id, name = k.Name, key_preview = k.KeyPreview,
+        prefix = k.KeyPreview.Length > 8 ? k.KeyPreview[4..8] : k.KeyPreview,
+        permissions = k.Permissions, is_active = k.IsActive, last_used = k.LastUsed,
+        usage_count = 0, created_at = k.CreatedAt,
+        // camelCase aliases for callers that read the default ASP.NET shape.
+        isActive = k.IsActive, lastUsed = k.LastUsed, keyPreview = k.KeyPreview, createdAt = k.CreatedAt,
+    };
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()
     {
+        var total = await _db.AuditLogs.CountAsync();
         return Ok(new
         {
-            total_audit_logs = await _db.AuditLogs.CountAsync(),
+            total_audit_logs = total,
+            total_audit_entries = total,
             ip_rules_count = await _db.IpRules.CountAsync(),
             blocked_ips = await _db.IpRules.CountAsync(r => r.RuleType == "block"),
             allowed_ips = await _db.IpRules.CountAsync(r => r.RuleType == "allow"),
@@ -36,25 +66,44 @@ public class SecurityController : ControllerBase
     }
 
     [HttpGet("audit")]
-    public async Task<IActionResult> AuditLogs(int page = 1, int page_size = 50)
+    public async Task<IActionResult> AuditLogs(int page = 1, int page_size = 50, string? action = null, string? user_id = null)
     {
-        var total = await _db.AuditLogs.CountAsync();
-        var logs = await _db.AuditLogs.OrderByDescending(a => a.Timestamp)
+        page = Math.Max(1, page);
+        page_size = Math.Clamp(page_size, 1, 500);
+        var q = _db.AuditLogs.AsQueryable();
+        if (!string.IsNullOrEmpty(action)) q = q.Where(a => a.Action.Contains(action));
+        if (!string.IsNullOrEmpty(user_id)) q = q.Where(a => a.UserId == user_id);
+        var total = await q.CountAsync();
+        var rows = await q.OrderByDescending(a => a.Timestamp)
             .Skip((page - 1) * page_size).Take(page_size).ToListAsync();
-        return Ok(new { logs, total, page, page_size });
+        var logs = rows.Select(a => new
+        {
+            id = a.Id, action = a.Action, user_id = a.UserId, ip = a.Ip, ip_address = a.Ip,
+            details = a.Details, success = true, timestamp = a.Timestamp,
+            userId = a.UserId,
+        }).ToList();
+        return Ok(new { logs, items = logs, total, page, page_size });
     }
 
     [HttpGet("ip-rules")]
-    public async Task<IActionResult> GetIpRules() => Ok(await _db.IpRules.ToListAsync());
+    public async Task<IActionResult> GetIpRules() =>
+        Ok((await _db.IpRules.OrderByDescending(r => r.CreatedAt).ToListAsync()).Select(RuleDto));
 
     [HttpPost("ip-rules")]
     public async Task<IActionResult> AddIpRule([FromBody] IpRuleRequest req)
     {
-        var rule = new IpRule { Ip = req.Ip, RuleType = req.RuleType, Reason = req.Reason };
+        var ip = (req.Ip ?? req.Ip_address ?? "").Trim();
+        if (string.IsNullOrEmpty(ip) || ip.Length > 64)
+            return BadRequest(new { detail = "An IP address is required." });
+        var ruleType = req.RuleType ?? req.Rule_type ?? (req.Is_allowed == true ? "allow" : "block");
+        if (ruleType != "allow" && ruleType != "block")
+            return BadRequest(new { detail = "rule_type must be 'allow' or 'block'." });
+
+        var rule = new IpRule { Ip = ip, RuleType = ruleType, Reason = req.Reason ?? req.Description ?? "" };
         _db.IpRules.Add(rule);
-        await LogAudit("ip_rule_added", $"{req.RuleType} {req.Ip}");
+        await LogAudit("ip_rule_added", $"{ruleType} {ip}");
         await _db.SaveChangesAsync();
-        return Ok(rule);
+        return Ok(RuleDto(rule));
     }
 
     [HttpDelete("ip-rules/{id}")]
@@ -69,18 +118,13 @@ public class SecurityController : ControllerBase
     }
 
     [HttpGet("api-keys")]
-    public async Task<IActionResult> GetApiKeys()
-    {
-        var keys = await _db.ApiKeys.Select(k => new
-        {
-            k.Id, k.Name, key_preview = k.KeyPreview, k.Permissions, k.IsActive, k.LastUsed, k.CreatedAt
-        }).ToListAsync();
-        return Ok(keys);
-    }
+    public async Task<IActionResult> GetApiKeys() =>
+        Ok((await _db.ApiKeys.OrderByDescending(k => k.CreatedAt).ToListAsync()).Select(KeyDto));
 
     [HttpPost("api-keys")]
     public async Task<IActionResult> CreateApiKey([FromBody] ApiKeyRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest(new { detail = "Key name is required." });
         var rawKey = $"wnx_{Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLower()}";
         var key = new ApiKeyEntity
         {
@@ -94,8 +138,9 @@ public class SecurityController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(new
         {
-            key.Id, key.Name, key = rawKey, key_preview = key.KeyPreview,
-            key.Permissions, key.IsActive, key.CreatedAt
+            id = key.Id, name = key.Name, key = rawKey, key_preview = key.KeyPreview,
+            permissions = key.Permissions, is_active = key.IsActive, created_at = key.CreatedAt,
+            isActive = key.IsActive, keyPreview = key.KeyPreview, createdAt = key.CreatedAt
         });
     }
 
@@ -110,8 +155,10 @@ public class SecurityController : ControllerBase
         return Ok(new { status = "revoked" });
     }
 
-    private async Task LogAudit(string action, string details)
+    private Task LogAudit(string action, string details)
     {
+        // Added to the change tracker; persisted by the caller's SaveChangesAsync
+        // together with the change it describes.
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
         _db.AuditLogs.Add(new AuditLog
         {
@@ -119,6 +166,6 @@ public class SecurityController : ControllerBase
             Ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
             Details = details
         });
-        await _db.SaveChangesAsync();
+        return Task.CompletedTask;
     }
 }

@@ -3,16 +3,24 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Plus, Star, Check, ListPlus } from 'lucide-react';
-import { cn, getTitle, getReleaseYear, getMediaType } from '../../lib/utils';
+import { cn, getTitle, getReleaseYear, getMediaType, normalizeMediaType, localMediaHref } from '../../lib/utils';
 import { AddToPlaylistButton } from './AddToPlaylistButton';
 
-export const MediaCard = ({ item, onAddToWatchlist, isInWatchlist = false, index = 0, showPlaylistButton = true }) => {
+export const MediaCard = ({ item, onClick, onAddToWatchlist, isInWatchlist = false, index = 0, showPlaylistButton = true }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
   const title = getTitle(item);
   const year = getReleaseYear(item);
-  const mediaType = getMediaType(item);
+  // Canonical details route type: plural / library spellings ("movies",
+  // "episode") would otherwise produce dead routes like /movies/<id>.
+  const normalizedType = normalizeMediaType(getMediaType(item));
+  const mediaType = normalizedType === 'tv' ? 'tv'
+    : (normalizedType === 'movie' || normalizedType === 'anime') ? 'movie'
+    : normalizedType;
+  // Locally scanned items have a library GUID as id, not a TMDB id.
+  const isLocalItem = Boolean(item.library_id) || item.file_size !== undefined;
+  const href = isLocalItem ? localMediaHref(item) : `/${mediaType}/${item.id}`;
   const posterUrl = item.poster_url || item.poster_path;
   const rating = item.vote_average?.toFixed(1);
 
@@ -27,7 +35,8 @@ export const MediaCard = ({ item, onAddToWatchlist, isInWatchlist = false, index
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link
-        to={`/${mediaType}/${item.id}`}
+        to={href}
+        onClick={onClick ? (e) => { e.preventDefault(); onClick(item); } : undefined}
         className="block relative aspect-[2/3] rounded-xl overflow-hidden media-card"
       >
         {/* Skeleton */}

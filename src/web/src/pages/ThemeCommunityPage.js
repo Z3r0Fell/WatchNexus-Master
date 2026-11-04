@@ -11,6 +11,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useTheme } from '../context/ThemeContext';
 
 const API_URL = BACKEND_URL;
 
@@ -141,7 +142,15 @@ const communityThemes = [
   },
 ];
 
+// Milk stores a single custom color set per user (custom_theme_colors, read
+// back via GET /milk/theme-forge as current_theme.colors). A community theme
+// is "installed" when its colors are the saved custom colors.
+export const sameColors = (a, b) =>
+  !!a && !!b && ['primary', 'secondary', 'background', 'surface']
+    .every(k => String(a[k] || '').toLowerCase() === String(b[k] || '').toLowerCase());
+
 export const ThemeCommunityPage = () => {
+  const { previewColors, refreshTheme } = useTheme();
   const [themes, setThemes] = useState(communityThemes);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -155,11 +164,10 @@ export const ThemeCommunityPage = () => {
   // Fetch installed themes from Milk API
   const fetchInstalledThemes = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/milk/themes`, {
-
-      });
-      const customThemes = Object.keys(res.data?.custom_themes || {});
-      setInstalledThemes(customThemes);
+      // GET /milk/themes returns only the built-in list (no custom_themes).
+      const res = await axios.get(`${API_URL}/api/milk/theme-forge`);
+      const saved = res.data?.current_theme?.colors;
+      setInstalledThemes(communityThemes.filter(t => sameColors(t.colors, saved)).map(t => t.name));
     } catch (err) {
       console.error('Failed to fetch installed themes:', err);
     }
@@ -209,8 +217,9 @@ export const ThemeCommunityPage = () => {
 
   const handleApply = async (theme) => {
     try {
-      // First install if not installed
-      if (!installedThemes.includes(theme.name)) {
+      // Always save the colors as the user's custom theme (Milk keeps one
+      // custom color set), then mark it active.
+      {
         await axios.post(`${API_URL}/api/milk/custom-theme`, {
           name: theme.name,
           colors: theme.colors,
@@ -221,11 +230,15 @@ export const ThemeCommunityPage = () => {
       
       // Then apply
       await axios.post(`${API_URL}/api/milk/set-theme`, {
-        theme_name: theme.name,
+        // set-theme reads `theme_id`; `theme_name` was ignored and reset the
+        // active theme to "default".
+        theme_id: 'custom',
       }, {
 
       });
       
+      try { previewColors?.(theme.colors); refreshTheme?.(); } catch { /* theme context unavailable */ }
+      fetchInstalledThemes();
       toast.success(`Applied ${theme.name}!`);
     } catch (err) {
       toast.error('Failed to apply theme');

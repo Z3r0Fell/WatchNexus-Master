@@ -17,7 +17,7 @@ namespace WatchNexus.Core.Controllers;
 // ── Cinnamon (Synapse Admin) ────────────────────────────────
 [Route("api/gadgets/synapse-admin")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "admin")] // Synapse server administration is an admin-only tool
 public class SynapseAdminController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -39,7 +39,7 @@ public class SynapseAdminController : ControllerBase
         var cfg = await GetConfig();
         if (cfg.url == null) return BadRequest(new { detail = "Not configured" });
         return await ProxyGet(cfg,
-            $"/_synapse/admin/v2/rooms?limit={limit}&from={from}&order_by={order_by}&dir={dir}");
+            $"/_synapse/admin/v2/rooms?limit={limit}&from={from}&order_by={Uri.EscapeDataString(order_by)}&dir={Uri.EscapeDataString(dir)}");
     }
 
     [HttpGet("server/rooms/{roomId}")]
@@ -92,7 +92,7 @@ public class SynapseAdminController : ControllerBase
             var resp = await http.PutAsync(
                 $"{cfg.url}/_synapse/admin/v2/users/{Uri.EscapeDataString(userId)}", content);
             var result = await resp.Content.ReadAsStringAsync();
-            return Content(result, "application/json");
+            return Upstream(resp, result);
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -109,7 +109,7 @@ public class SynapseAdminController : ControllerBase
             var resp = await http.PostAsync(
                 $"{cfg.url}/_synapse/admin/v1/deactivate/{Uri.EscapeDataString(userId)}", content);
             var result = await resp.Content.ReadAsStringAsync();
-            return Content(result, "application/json");
+            return Upstream(resp, result);
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -125,7 +125,8 @@ public class SynapseAdminController : ControllerBase
             var content = new StringContent(body.GetRawText(), Encoding.UTF8, "application/json");
             var resp = await http.PostAsync(
                 $"{cfg.url}/_synapse/admin/v1/reset_password/{Uri.EscapeDataString(userId)}", content);
-            return Ok(new { status = resp.IsSuccessStatusCode ? "reset" : "failed" });
+            if (!resp.IsSuccessStatusCode) return StatusCode(502, new { status = "failed", upstream_status = (int)resp.StatusCode });
+            return Ok(new { status = "reset" });
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -149,8 +150,9 @@ public class SynapseAdminController : ControllerBase
         {
             var http = BuildClient(cfg);
             var resp = await http.DeleteAsync(
-                $"{cfg.url}/_synapse/admin/v1/media/{Uri.EscapeDataString(serverName)}/{mediaId}");
-            return Ok(new { status = resp.IsSuccessStatusCode ? "deleted" : "failed" });
+                $"{cfg.url}/_synapse/admin/v1/media/{Uri.EscapeDataString(serverName)}/{Uri.EscapeDataString(mediaId)}");
+            if (!resp.IsSuccessStatusCode) return StatusCode(502, new { status = "failed", upstream_status = (int)resp.StatusCode });
+            return Ok(new { status = "deleted" });
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -169,7 +171,7 @@ public class SynapseAdminController : ControllerBase
             req.Content = new StringContent(body.GetRawText(), Encoding.UTF8, "application/json");
             var resp = await http.SendAsync(req);
             var result = await resp.Content.ReadAsStringAsync();
-            return Content(result, "application/json");
+            return Upstream(resp, result);
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -186,7 +188,7 @@ public class SynapseAdminController : ControllerBase
             var resp = await http.PostAsync(
                 $"{cfg.url}/_synapse/admin/v1/purge_history/{Uri.EscapeDataString(roomId)}", content);
             var result = await resp.Content.ReadAsStringAsync();
-            return Content(result, "application/json");
+            return Upstream(resp, result);
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -211,7 +213,7 @@ public class SynapseAdminController : ControllerBase
             var content = new StringContent(body.GetRawText(), Encoding.UTF8, "application/json");
             var resp = await http.PostAsync($"{cfg.url}/_synapse/admin/v1/registration_tokens", content);
             var result = await resp.Content.ReadAsStringAsync();
-            return Content(result, "application/json");
+            return Upstream(resp, result);
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
@@ -265,9 +267,19 @@ public class SynapseAdminController : ControllerBase
         try
         {
             var http = BuildClient(cfg);
-            var resp = await http.GetStringAsync($"{cfg.url}{path}");
-            return Content(resp, "application/json");
+            using var resp = await http.GetAsync($"{cfg.url}{path}");
+            return Upstream(resp, await resp.Content.ReadAsStringAsync());
         }
         catch (Exception ex) { return StatusCode(500, new { detail = ex.Message }); }
     }
+
+    // Relay Synapse's JSON body with its status: a 4xx/5xx from the homeserver
+    // must not be reported to the UI as success (502 for upstream 5xx).
+    private static ContentResult Upstream(HttpResponseMessage resp, string body) => new()
+    {
+        Content = string.IsNullOrEmpty(body) ? "{}" : body,
+        ContentType = "application/json",
+        // 401 is remapped too: it would read as our own session expiring.
+        StatusCode = (int)resp.StatusCode >= 500 || (int)resp.StatusCode == 401 ? 502 : (int)resp.StatusCode,
+    };
 }

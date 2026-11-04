@@ -25,14 +25,20 @@ export const GadgetProvider = ({ children }) => {
   // Cookie auth: the httpOnly wn_token is sent automatically by axios.
   const refresh = useCallback(async () => {
     try {
-      const [instRes, hooksRes] = await Promise.all([
+      // Load independently: a /hooks failure must not discard the installed list.
+      const [instRes, hooksRes] = await Promise.allSettled([
         axios.get(`${BACKEND_URL}/api/ripen/installed`),
         axios.get(`${BACKEND_URL}/api/ripen/hooks`),
       ]);
-      setInstalled(instRes.data.gadgets || []);
-      setHooks(prev => hooksRes.data || prev);
+      if (instRes.status === 'fulfilled') setInstalled(instRes.value?.data?.gadgets || []);
+      if (hooksRes.status === 'fulfilled') setHooks(prev => hooksRes.value?.data || prev);
+      for (const r of [instRes, hooksRes]) {
+        if (r.status === 'rejected' && r.reason?.response?.status !== 401) {
+          console.error('Ripen: Failed to load gadgets:', r.reason);
+        }
+      }
     } catch (err) {
-      if (err.response?.status !== 401) console.error('Ripen: Failed to load gadgets:', err);
+      console.error('Ripen: Failed to load gadgets:', err);
     } finally {
       setLoading(false);
     }

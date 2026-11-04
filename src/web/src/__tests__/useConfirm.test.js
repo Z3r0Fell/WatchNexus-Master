@@ -1,21 +1,21 @@
 import React from 'react'
-import { render, screen, waitFor, act, userEvent } from './test-utils'
+import { render, screen, waitFor, act, userEvent, fireEvent } from './test-utils'
 import { useConfirm } from '../hooks/use-confirm'
 
 const TestComponent = () => {
   const { confirm, ConfirmDialog } = useConfirm()
   const [result, setResult] = React.useState(null)
-  
+
   const handleClick = async () => {
-    const confirmed = await confirm({ 
-      title: 'Test Confirm', 
-      description: 'Are you sure?', 
-      confirmText: 'Yes', 
-      cancelText: 'No' 
+    const confirmed = await confirm({
+      title: 'Test Confirm',
+      description: 'Are you sure?',
+      confirmText: 'Yes',
+      cancelText: 'No'
     })
     setResult(confirmed)
   }
-  
+
   return (
     <div>
       <button data-testid="trigger-btn" onClick={handleClick}>Trigger</button>
@@ -33,11 +33,11 @@ describe('useConfirm', () => {
   test('opens dialog when confirm called', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
     })
-    
+
     await waitFor(() => expect(screen.getByText('Test Confirm')).toBeInTheDocument())
     expect(screen.getByText('Are you sure?')).toBeInTheDocument()
     expect(screen.getByText('Yes')).toBeInTheDocument()
@@ -47,24 +47,24 @@ describe('useConfirm', () => {
   test('resolves true on confirm', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
       await userEvent.click(screen.getByText('Yes'))
     })
-    
+
     expect(screen.getByTestId('result')).toHaveTextContent('true')
   })
 
   test('resolves false on cancel', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
       await userEvent.click(screen.getByText('No'))
     })
-    
+
     expect(screen.getByTestId('result')).toHaveTextContent('false')
   })
 
@@ -72,12 +72,12 @@ describe('useConfirm', () => {
     const TestDefault = () => {
       const { confirm, ConfirmDialog } = useConfirm()
       const [result, setResult] = React.useState(null)
-      
+
       const handleClick = async () => {
         const confirmed = await confirm({})
         setResult(confirmed)
       }
-      
+
       return (
         <div>
           <button data-testid="trigger-btn" onClick={handleClick}>Trigger</button>
@@ -86,41 +86,50 @@ describe('useConfirm', () => {
         </div>
       )
     }
-    
+
     render(<TestDefault />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
     })
-    
+
     expect(screen.getByText('Are you sure?')).toBeInTheDocument()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
-  test('closes dialog on backdrop click', async () => {
+  // ConfirmDialog is a Radix AlertDialog: an outside/backdrop click does not
+  // dismiss it by design; Escape (or Cancel) resolves false.
+  test('backdrop click keeps the alert dialog open; Escape resolves false', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
-      // Click on the dialog overlay (backdrop)
-      await userEvent.click(screen.getByRole('dialog').parentElement)
     })
-    
-    expect(screen.getByTestId('result')).toHaveTextContent('false')
+    const dialog = await screen.findByRole('alertdialog')
+    await act(async () => {
+      fireEvent.pointerDown(document.body)
+      fireEvent.click(document.body)
+    })
+    expect(dialog).toBeInTheDocument()
+
+    await act(async () => {
+      await userEvent.keyboard('{Escape}')
+    })
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('false'))
   })
 
   test('closes dialog on Escape key', async () => {
     render(<TestComponent />)
     await waitFor(() => expect(screen.getByTestId('trigger-btn')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('trigger-btn'))
       await userEvent.keyboard('{Escape}')
     })
-    
+
     expect(screen.getByTestId('result')).toHaveTextContent('false')
   })
 })

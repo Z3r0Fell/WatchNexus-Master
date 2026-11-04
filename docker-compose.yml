@@ -16,7 +16,7 @@ services:
       args:
         TIER: standard
         PORT: 8001
-    image: watchnexus/watchnexus:1.0.6-standard
+    image: watchnexus/watchnexus:1.0.7-standard
     container_name: watchnexus-standard
     profiles: ["standard"]
     ports:
@@ -32,6 +32,14 @@ services:
       - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
       - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+      # Lobster mesh (remote access over a private tailnet). Leave
+      # LOBSTER_CONTROL_URL empty to disable; see lobster-coordination/README.md.
+      # LOBSTER_AUTH_KEY is a Headscale pre-auth key, used only on first join.
+      - LOBSTER_CONTROL_URL=${LOBSTER_CONTROL_URL:-}
+      - LOBSTER_AUTH_KEY=${LOBSTER_AUTH_KEY:-}
+      # Stable tailnet name (the default uses the container hostname, which
+      # changes when the container is recreated).
+      - LOBSTER_HOSTNAME=${LOBSTER_HOSTNAME:-watchnexus}
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -63,7 +71,7 @@ services:
       args:
         TIER: pro
         PORT: 8001
-    image: watchnexus/watchnexus:1.0.6-pro
+    image: watchnexus/watchnexus:1.0.7-pro
     container_name: watchnexus-pro
     profiles: ["pro"]
     ports:
@@ -80,6 +88,14 @@ services:
       - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
       - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+      # Lobster mesh (remote access over a private tailnet). Leave
+      # LOBSTER_CONTROL_URL empty to disable; see lobster-coordination/README.md.
+      # LOBSTER_AUTH_KEY is a Headscale pre-auth key, used only on first join.
+      - LOBSTER_CONTROL_URL=${LOBSTER_CONTROL_URL:-}
+      - LOBSTER_AUTH_KEY=${LOBSTER_AUTH_KEY:-}
+      # Stable tailnet name (the default uses the container hostname, which
+      # changes when the container is recreated).
+      - LOBSTER_HOSTNAME=${LOBSTER_HOSTNAME:-watchnexus}
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -111,7 +127,7 @@ services:
       args:
         TIER: ultra
         PORT: 8001
-    image: watchnexus/watchnexus:1.0.6-ultra
+    image: watchnexus/watchnexus:1.0.7-ultra
     container_name: watchnexus-ultra
     profiles: ["ultra"]
     ports:
@@ -130,6 +146,14 @@ services:
       - TZ=America/Toronto
       - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
       - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+      # Lobster mesh (remote access over a private tailnet). Leave
+      # LOBSTER_CONTROL_URL empty to disable; see lobster-coordination/README.md.
+      # LOBSTER_AUTH_KEY is a Headscale pre-auth key, used only on first join.
+      - LOBSTER_CONTROL_URL=${LOBSTER_CONTROL_URL:-}
+      - LOBSTER_AUTH_KEY=${LOBSTER_AUTH_KEY:-}
+      # Stable tailnet name (the default uses the container hostname, which
+      # changes when the container is recreated).
+      - LOBSTER_HOSTNAME=${LOBSTER_HOSTNAME:-watchnexus}
     read_only: true
     security_opt:
       - no-new-privileges:true

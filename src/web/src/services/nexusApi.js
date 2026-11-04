@@ -47,8 +47,9 @@ export const securityApi = {
   revokeApiKey: (id) => apiClient.delete(`/security/api-keys/${id}`),
   
   // Sessions
-  getSessions: () => apiClient.get(`/security/sessions`),
-  revokeSession: (id) => apiClient.post(`/security/sessions/${id}/revoke`),
+  // Sessions live under the Bastion (advanced auth) module.
+  getSessions: () => apiClient.get(`/bastion/sessions`),
+  revokeSession: (id) => apiClient.delete(`/bastion/sessions/${encodeURIComponent(id)}`),
 };
 
 // VPN API
@@ -70,13 +71,12 @@ export const vpnApi = {
   getPeerQr: (id) => apiClient.get(`/vpn/peers/${id}/qr-data`),
   
   // WireGuard control
-  wgUp: () => apiClient.post(`/vpn/server/wg-up`),
-  wgDown: () => apiClient.post(`/vpn/server/wg-down`),
+  // The backend has no wg-quick shell-out; up/down map to server activate/deactivate.
+  wgUp: () => apiClient.post(`/vpn/server/activate`),
+  wgDown: () => apiClient.post(`/vpn/server/deactivate`),
   wgStatus: () => apiClient.get(`/vpn/server/wg-status`),
   
-  // Logs & Stats
-  getConnectionLogs: (page = 1, pageSize = 50) =>
-    apiClient.get(`/vpn/logs`, { params: { page, page_size: pageSize } }),
+  // Stats (the backend does not record per-connection logs)
   getStats: () => apiClient.get(`/vpn/stats`),
 };
 
@@ -99,11 +99,16 @@ export const libraryApi = {
   refreshMetadata: (id) => apiClient.post(`/marmalade/libraries/${id}/refresh-metadata`),
 };
 
-// Downloads (Fondue)
+// Downloads (Fondue). getAll/create hit the DB-backed queue (/api/downloads);
+// getById/pause/resume/remove/getStats hit the download engine facade
+// (/api/downloads/engine), which takes download-client torrent hashes as ids.
 export const downloadApi = {
   getAll: (status) => apiClient.get(`/downloads`, { params: status ? { status } : {} }),
   getById: (id) => apiClient.get(`/downloads/engine/${id}`),
-  create: (data) => apiClient.post(`/downloads`, data),
+  // POST /api/downloads binds title/media_type/tmdb_id/size from the query string.
+  create: (data = {}) => apiClient.post(`/downloads`, null, {
+    params: { title: data.title, media_type: data.media_type, tmdb_id: data.tmdb_id, size: data.size },
+  }),
   pause: (id) => apiClient.post(`/downloads/engine/${id}/pause`),
   resume: (id) => apiClient.post(`/downloads/engine/${id}/resume`),
   remove: (id, deleteFiles) => apiClient.delete(`/downloads/engine/${id}`, { params: { delete_files: deleteFiles } }),
@@ -125,7 +130,8 @@ export const settingsApi = {
   get: (key) => apiClient.get(`/settings/${key}`),
   set: (key, value, global_) => apiClient.put(`/settings/${key}`, { value, global: global_ }),
   remove: (key) => apiClient.delete(`/settings/${key}`),
-  bulkSet: (settings) => apiClient.post(`/settings/bulk`, settings),
+  // Backend bulk upsert is PUT /api/settings with a { key: value } object (null deletes).
+  bulkSet: (settings) => apiClient.put(`/settings`, settings),
 };
 
 // Integration Settings (TMDB, qBittorrent)

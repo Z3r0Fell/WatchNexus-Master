@@ -11,6 +11,23 @@ import { BACKEND_URL } from '../../lib/config';
 
 const API = BACKEND_URL;
 
+// itunes:duration may be seconds ("1834") or "HH:MM:SS" / "MM:SS".
+export const parseDurationSeconds = (d) => {
+  if (d == null || d === '') return null;
+  if (typeof d === 'number') return d;
+  const parts = String(d).split(':').map(Number);
+  if (parts.some(Number.isNaN)) return null;
+  return parts.reduce((acc, p) => acc * 60 + p, 0);
+};
+
+// Feed episodes carry no id; derive a stable one so selection/playback works.
+export const normalizeEpisodes = (episodes) =>
+  (Array.isArray(episodes) ? episodes : []).map((ep, i) => ({
+    ...ep,
+    id: ep.id || ep.audio_url || `${ep.title || 'episode'}-${i}`,
+    duration: parseDurationSeconds(ep.duration),
+  }));
+
 export const PodcastsPage = () => {
   const { confirm, ConfirmDialog } = useConfirm();
   const [subscriptions, setSubscriptions] = useState([]);
@@ -31,7 +48,9 @@ export const PodcastsPage = () => {
     try {
       setLoading(true);
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/podcasts`, { headers: getAuth() });
-      setSubscriptions(resp.data.subscriptions || []);
+      // Backend returns a plain array with artwork_url; older builds wrapped it.
+      const list = Array.isArray(resp.data) ? resp.data : (resp.data?.subscriptions || []);
+      setSubscriptions(list.map(s => ({ ...s, image: s.image || s.artwork_url })));
     } catch (err) {
       toast.error('Failed to load podcasts');
     } finally {
@@ -47,7 +66,8 @@ export const PodcastsPage = () => {
     if (!feedUrl.trim()) return toast.error('Enter an RSS feed URL');
     try {
       const resp = await axios.post(`${BACKEND_URL}/api/gadgets/podcasts`, { feed_url: feedUrl }, { headers: getAuth() });
-      toast.success(`Subscribed to ${resp.data.subscription?.title}`);
+      const title = resp.data?.title || resp.data?.subscription?.title;
+      toast.success(title ? `Subscribed to ${title}` : 'Subscribed');
       setFeedUrl('');
       setShowAdd(false);
       fetchSubscriptions();
@@ -72,24 +92,32 @@ export const PodcastsPage = () => {
     }
   };
 
+  // GET /api/gadgets/podcasts/{id} fetches the RSS feed live and returns
+  // { ..., episodes, error? } — there is no separate /episodes or /refresh.
+  const loadEpisodes = async (subId) => {
+    const resp = await axios.get(`${BACKEND_URL}/api/gadgets/podcasts/${subId}`, { headers: getAuth() });
+    if (resp.data?.error) throw new Error(resp.data.error);
+    return normalizeEpisodes(resp.data?.episodes);
+  };
+
   const selectPodcast = async (podcast) => {
     setSelectedPodcast(podcast);
+    setEpisodes([]);
     try {
-      const resp = await axios.get(`${BACKEND_URL}/api/gadgets/podcasts/${podcast.id}/episodes`, { headers: getAuth() });
-      setEpisodes(resp.data.episodes || []);
+      setEpisodes(await loadEpisodes(podcast.id));
     } catch (err) {
-      toast.error('Failed to load episodes');
+      toast.error(err?.message && !err.response ? err.message : 'Failed to load episodes');
     }
   };
 
   const refreshPodcast = async (subId, e) => {
     e?.stopPropagation();
     try {
-      const resp = await axios.post(`${BACKEND_URL}/api/gadgets/podcasts/${subId}/refresh`, {}, { headers: getAuth() });
-      toast.success(`Found ${resp.data.new_episodes} new episodes`);
-      if (selectedPodcast?.id === subId) selectPodcast(selectedPodcast);
+      const fresh = await loadEpisodes(subId);
+      toast.success(`Feed refreshed: ${fresh.length} episodes`);
+      if (selectedPodcast?.id === subId) setEpisodes(fresh);
     } catch (err) {
-      toast.error('Failed to refresh');
+      toast.error(err?.message && !err.response ? err.message : 'Failed to refresh');
     }
   };
 
@@ -116,7 +144,8 @@ export const PodcastsPage = () => {
   const seek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
-    if (audioRef.current) {
+    // duration is NaN until metadata loads; assigning NaN throws.
+    if (audioRef.current && Number.isFinite(audioRef.current.duration)) {
       audioRef.current.currentTime = pct * audioRef.current.duration;
     }
   };

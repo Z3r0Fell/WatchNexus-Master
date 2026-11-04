@@ -20,6 +20,12 @@ public class MarmaladeBridgeController : ControllerBase
 
     private string UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
 
+    /// <summary>Media items in the caller's libraries. Every item lookup goes through this
+    /// so other users' item ids behave as if they don't exist (404).</summary>
+    private IQueryable<MediaItem> UserMedia() => LibraryMedia.ForUser(_db, UserId);
+
+    private Task<MediaItem?> FindUserMediaAsync(string id) => UserMedia().FirstOrDefaultAsync(m => m.Id == id);
+
     public MarmaladeBridgeController(AppDbContext db, IConfiguration config, IHttpClientFactory httpFactory, IServiceScopeFactory scopeFactory)
     {
         _db = db;
@@ -38,9 +44,24 @@ public class MarmaladeBridgeController : ControllerBase
                 created_at = l.CreatedAt
             }));
 
+    public record AddLibraryRequest(
+        [property: System.Text.Json.Serialization.JsonPropertyName("name")] string? Name,
+        [property: System.Text.Json.Serialization.JsonPropertyName("path")] string? Path,
+        [property: System.Text.Json.Serialization.JsonPropertyName("media_type")] string? MediaType);
+
+    // The frontend (marmaladeApi.addLibrary) posts a JSON body; older callers
+    // passed name/path/media_type on the query string, so both are accepted.
     [HttpPost("libraries")]
-    public async Task<IActionResult> AddLibrary([FromQuery] string name, [FromQuery] string path, [FromQuery] string media_type = "movies")
+    public async Task<IActionResult> AddLibrary(
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] AddLibraryRequest? body,
+        [FromQuery(Name = "name")] string? queryName,
+        [FromQuery(Name = "path")] string? queryPath,
+        [FromQuery(Name = "media_type")] string? queryMediaType)
     {
+        var name = !string.IsNullOrWhiteSpace(body?.Name) ? body!.Name : queryName;
+        var path = !string.IsNullOrWhiteSpace(body?.Path) ? body!.Path : queryPath;
+        var media_type = !string.IsNullOrWhiteSpace(body?.MediaType) ? body!.MediaType!
+            : !string.IsNullOrWhiteSpace(queryMediaType) ? queryMediaType! : "movies";
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(path))
             return BadRequest(new { detail = "Name and path are required" });
 
@@ -70,7 +91,7 @@ public class MarmaladeBridgeController : ControllerBase
         var lib = new Library
         {
             UserId = UserId,
-            Name = name,
+            Name = name.Trim(),
             Path = trimmedPath,
             MediaType = typeMap.GetValueOrDefault(media_type, media_type.ToLower()),
         };
@@ -159,14 +180,12 @@ public class MarmaladeBridgeController : ControllerBase
                 {
                     try
                     {
-                        var searchType = lib.MediaType == "tv" ? "tv" : "movie";
-                        var searchResp = await http.GetStringAsync($"https://api.themoviedb.org/3/search/{searchType}?api_key={tmdbKey}&query={Uri.EscapeDataString(cleanName)}");
-                        var doc = System.Text.Json.JsonDocument.Parse(searchResp);
-                        var results = doc.RootElement.GetProperty("results");
-                        if (results.GetArrayLength() > 0)
+                        // Anime searches TMDB TV first, then movies; TmdbKind records which.
+                        var hit = await LibraryMedia.SearchTmdbAsync(http, tmdbKey, cleanName, null, lib.MediaType);
+                        if (hit is (var first, var searchType))
                         {
-                            var first = results[0];
                             item.TmdbId = first.GetProperty("id").GetInt32();
+                            item.TmdbKind = searchType;
                             var titleProp = searchType == "tv" ? "name" : "title";
                             if (first.TryGetProperty(titleProp, out var t)) item.Title = t.GetString() ?? cleanName;
                             if (first.TryGetProperty("poster_path", out var pp) && pp.ValueKind == System.Text.Json.JsonValueKind.String)
@@ -203,36 +222,50 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("media")]
     public async Task<IActionResult> GetMedia(string? library_id = null, string? media_type = null, int limit = 50, int offset = 0)
     {
-        var q = _db.MediaItems.AsQueryable();
+        // Libraries are per-user: only return items from the caller's libraries.
+        var q = UserMedia();
         if (!string.IsNullOrEmpty(library_id)) q = q.Where(m => m.LibraryId == library_id);
-        if (!string.IsNullOrEmpty(media_type)) q = q.Where(m => m.MediaType == media_type);
+        if (!string.IsNullOrEmpty(media_type))
+        {
+            // Scanned items carry their library's media_type ("movies", "tv"),
+            // while pages historically asked for "movie" / "episode".
+            var types = MediaTypeAliases(media_type);
+            q = q.Where(m => types.Contains(m.MediaType));
+        }
         var items = await q.OrderBy(m => m.Title).Skip(offset).Take(limit).ToListAsync();
         return Ok(items.Select(m => new
         {
             m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
-            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
-            m.Genres, m.Year, m.Runtime
+            m.Genres, m.Year, m.Runtime, library_id = m.LibraryId
         }));
     }
+
+    internal static string[] MediaTypeAliases(string mediaType) => mediaType.Trim().ToLowerInvariant() switch
+    {
+        "movie" or "movies" => new[] { "movie", "movies" },
+        "tv" or "episode" or "tv_shows" => new[] { "tv", "episode", "tv_shows" },
+        var other => new[] { other },
+    };
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()
     {
         return Ok(new
         {
-            total_libraries = await _db.Libraries.CountAsync(),
-            total_media = await _db.MediaItems.CountAsync(),
-            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
+            total_libraries = await _db.Libraries.CountAsync(l => l.UserId == UserId),
+            total_media = await UserMedia().CountAsync(),
+            total_size = await UserMedia().SumAsync(m => m.FileSize),
         });
     }
 
     [HttpGet("media/recent")]
     public async Task<IActionResult> RecentMedia(int limit = 20)
     {
-        var items = await _db.MediaItems.OrderByDescending(m => m.CreatedAt).Take(limit * 3)
+        var items = await UserMedia().OrderByDescending(m => m.CreatedAt).Take(limit * 3)
             .Select(m => new { m.Id, m.Title, m.Year, m.Rating, poster_url = m.PosterUrl,
-                backdrop_url = m.BackdropUrl, media_type = m.MediaType, m.Overview, tmdb_id = m.TmdbId })
+                backdrop_url = m.BackdropUrl, media_type = m.MediaType, m.Overview, tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind })
             .ToListAsync();
 
         // Deduplicate TV shows by TMDB ID — show series once, not each episode
@@ -241,14 +274,17 @@ public class MarmaladeBridgeController : ControllerBase
         foreach (var item in items)
         {
             if (result.Count >= limit) break;
-            var key = (item.tmdb_id.HasValue && (item.media_type == "tv" || item.media_type == "episode"))
+            var isEpisodic = item.media_type == "tv" || item.media_type == "episode" || item.media_type == "anime";
+            var key = (item.tmdb_id.HasValue && isEpisodic)
                 ? $"tv:{item.tmdb_id}" : $"item:{item.Id}";
             if (seen.Contains(key)) continue;
             seen.Add(key);
 
             // For TV shows, relabel media_type
             var mediaType = (item.media_type == "episode") ? "tv" : item.media_type;
-            result.Add(new { item.Id, item.Title, item.Year, item.Rating, item.poster_url, item.backdrop_url, media_type = mediaType, item.Overview });
+            // `id` is the library item id (what /watch/:id plays); tmdb_id is
+            // included so clients can also link to the TMDB details page.
+            result.Add(new { item.Id, item.Title, item.Year, item.Rating, item.poster_url, item.backdrop_url, media_type = mediaType, item.Overview, item.tmdb_id, item.tmdb_kind });
         }
         return Ok(result);
     }
@@ -260,41 +296,104 @@ public class MarmaladeBridgeController : ControllerBase
         {
             status = "running",
             version = "1.0.1",
-            total_libraries = await _db.Libraries.CountAsync(),
-            total_media = await _db.MediaItems.CountAsync(),
-            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
+            total_libraries = await _db.Libraries.CountAsync(l => l.UserId == UserId),
+            total_media = await UserMedia().CountAsync(),
+            total_size = await UserMedia().SumAsync(m => m.FileSize),
         });
     }
 
     [HttpGet("media/{id}")]
     public async Task<IActionResult> GetMediaItem(string id)
     {
-        var m = await _db.MediaItems.FindAsync(id);
+        var m = await FindUserMediaAsync(id);
         if (m == null) return NotFound(new { detail = "Media item not found" });
         return Ok(new
         {
             m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
-            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime, library_id = m.LibraryId,
             created_at = m.CreatedAt
         });
     }
 
+    // Local library items matching a TMDB id — lets the TMDB details page offer
+    // "Play" for titles (and individual episodes) that exist on disk.
+    [HttpGet("media/by-tmdb/{tmdbId:int}")]
+    public async Task<IActionResult> GetMediaByTmdb(int tmdbId)
+    {
+        var items = await UserMedia().Where(m => m.TmdbId == tmdbId)
+            .OrderBy(m => m.FilePath).Take(2000).ToListAsync();
+        return Ok(items.Select(m =>
+        {
+            var ep = LibraryMedia.ParseEpisode(string.IsNullOrEmpty(m.FilePath) ? m.Title : m.FilePath);
+            return new
+            {
+                m.Id, m.Title, media_type = m.MediaType, tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind,
+                season_number = ep?.season,
+                episode_number = ep?.episode,
+            };
+        }));
+    }
+
     [HttpGet("media/search")]
     public async Task<IActionResult> SearchMedia(string? query = null, int limit = 50)
     {
-        var q = _db.MediaItems.AsQueryable();
+        var q = UserMedia();
         if (!string.IsNullOrWhiteSpace(query))
             q = q.Where(m => m.Title != null && m.Title.ToLower().Contains(query.ToLower()));
         var items = await q.OrderBy(m => m.Title).Take(limit).ToListAsync();
         return Ok(items.Select(m => new
         {
             m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
-            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
-            m.Genres, m.Year, m.Runtime
+            m.Genres, m.Year, m.Runtime, library_id = m.LibraryId
         }));
+    }
+
+    // No intro/credits detection service exists yet; return the shape the
+    // VideoPlayer reads ({ segments: [{ type, start, end }] }) with no segments.
+    [HttpGet("media/{id}/skip-segments")]
+    public async Task<IActionResult> GetSkipSegments(string id)
+    {
+        if (await FindUserMediaAsync(id) == null) return NotFound(new { detail = "Media item not found" });
+        return Ok(new { segments = Array.Empty<object>() });
+    }
+
+    // Next SxxEyy episode of the same series (same TMDB id, or same series
+    // folder when unmatched) in the same library. 404 when there is none.
+    [HttpGet("media/{id}/next-episode")]
+    public async Task<IActionResult> GetNextEpisode(string id)
+    {
+        var current = await FindUserMediaAsync(id);
+        if (current == null) return NotFound(new { detail = "Media item not found" });
+        var currentEp = LibraryMedia.ParseEpisode(current.FilePath);
+        if (currentEp == null) return NotFound(new { detail = "Not an episode" });
+
+        var q = UserMedia().Where(m => m.LibraryId == current.LibraryId && m.Id != current.Id);
+        if (current.TmdbId.HasValue) q = q.Where(m => m.TmdbId == current.TmdbId);
+        var currentFolder = LibraryMedia.SeriesFolder(current.FilePath);
+        var candidates = (await q.ToListAsync())
+            .Where(m => current.TmdbId.HasValue || LibraryMedia.SeriesFolder(m.FilePath) == currentFolder)
+            .Select(m => (item: m, ep: LibraryMedia.ParseEpisode(m.FilePath)))
+            .Where(x => x.ep != null && x.ep.Value.CompareTo(currentEp.Value) > 0)
+            .OrderBy(x => x.ep!.Value.season).ThenBy(x => x.ep!.Value.episode)
+            .ToList();
+        if (candidates.Count == 0) return NotFound(new { detail = "No next episode" });
+
+        var (next, nextEp) = candidates[0];
+        return Ok(new
+        {
+            id = next.Id,
+            title = next.Title,
+            series_name = current.Title,
+            season_number = nextEp!.Value.season,
+            episode_number = nextEp.Value.episode,
+            thumbnail = next.BackdropUrl ?? next.PosterUrl,
+            media_type = next.MediaType,
+            tmdb_id = next.TmdbId,
+        });
     }
 
     [HttpGet("continue-watching")]
@@ -316,7 +415,7 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("tv-series")]
     public async Task<IActionResult> GetTVSeries(string? library_id = null)
     {
-        var q = _db.MediaItems.Where(m => m.MediaType == "tv" || m.MediaType == "episode");
+        var q = UserMedia().Where(m => m.MediaType == "tv" || m.MediaType == "episode");
         if (!string.IsNullOrEmpty(library_id)) q = q.Where(m => m.LibraryId == library_id);
         var items = await q.OrderBy(m => m.Title).ToListAsync();
 
@@ -446,14 +545,11 @@ public class MarmaladeBridgeController : ControllerBase
             if (item.TmdbId != null) { updated++; continue; }
             try
             {
-                var searchUrl = $"https://api.themoviedb.org/3/search/{(lib.MediaType == "tv" ? "tv" : "movie")}?api_key={tmdbApiKey}&query={Uri.EscapeDataString(item.Title ?? "")}";
-                var resp = await http.GetStringAsync(searchUrl);
-                var doc = System.Text.Json.JsonDocument.Parse(resp);
-                var results = doc.RootElement.GetProperty("results");
-                if (results.GetArrayLength() > 0)
+                var hit = await LibraryMedia.SearchTmdbAsync(http, tmdbApiKey, item.Title ?? "", null, lib.MediaType);
+                if (hit is (var first, var kind))
                 {
-                    var first = results[0];
                     item.TmdbId = first.GetProperty("id").GetInt32();
+                    item.TmdbKind = kind;
                     if (first.TryGetProperty("poster_path", out var poster) && poster.ValueKind == System.Text.Json.JsonValueKind.String)
                         item.PosterUrl = $"https://image.tmdb.org/t/p/w500{poster.GetString()}";
                     if (first.TryGetProperty("backdrop_path", out var backdrop) && backdrop.ValueKind == System.Text.Json.JsonValueKind.String)
@@ -475,7 +571,7 @@ public class MarmaladeBridgeController : ControllerBase
     public async Task<IActionResult> UpdateProgress(string id, float progress = 0)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var media = await _db.MediaItems.FindAsync(id);
+        var media = await FindUserMediaAsync(id);
         if (media == null) return NotFound();
         var key = $"progress:local:{id}";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key && s.UserId == userId);
@@ -496,7 +592,7 @@ public class MarmaladeBridgeController : ControllerBase
     public async Task<IActionResult> MarkWatched(string id, bool watched = true)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var media = await _db.MediaItems.FindAsync(id);
+        var media = await FindUserMediaAsync(id);
         if (media == null) return NotFound();
         var key = $"progress:local:{id}";
         if (watched)
@@ -521,10 +617,10 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("stream/{id}")]
     public async Task<IActionResult> GetStreamInfo(string id, string quality = "original")
     {
-        var media = await _db.MediaItems.FindAsync(id);
+        var media = await FindUserMediaAsync(id);
         if (media == null) return NotFound(new { detail = "Media not found" });
         if (string.IsNullOrEmpty(media.FilePath) || !System.IO.File.Exists(media.FilePath))
-            return Ok(new { error = "File not found on disk", file_path = (string?)null });
+            return NotFound(new { detail = "Media file not found on disk" });
         var fi = new FileInfo(media.FilePath);
         var streamToken = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
         return Ok(new
@@ -543,8 +639,12 @@ public class MarmaladeBridgeController : ControllerBase
     [HttpGet("stream/{id}/authorize")]
     public async Task<IActionResult> AuthorizeStream(string id)
     {
-        var media = await _db.MediaItems.FindAsync(id);
+        var media = await FindUserMediaAsync(id);
         if (media == null) return NotFound(new { detail = "Media not found" });
+        // Fail fast with a clear message instead of handing the player a URL
+        // that will 404 (the <video> element can't surface the reason).
+        if (string.IsNullOrEmpty(media.FilePath) || !MediaPaths.IsAllowedPath(media.FilePath) || !System.IO.File.Exists(media.FilePath))
+            return NotFound(new { detail = "Media file not found on disk" });
         var token = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
         return Ok(new { stream_url = $"/api/marmalade/stream/{id}/file?token={token}" });
     }
@@ -592,10 +692,13 @@ public class LibraryAliasController : ControllerBase
     private readonly AppDbContext _db;
     public LibraryAliasController(AppDbContext db) => _db = db;
 
+    private string UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? media_type = null)
     {
-        var q = _db.MediaItems.AsQueryable();
+        // Libraries are per-user: only the caller's items.
+        var q = LibraryMedia.ForUser(_db, UserId);
         if (!string.IsNullOrEmpty(media_type)) q = q.Where(m => m.MediaType == media_type);
         var items = await q.OrderBy(m => m.Title).ToListAsync();
         return Ok(items.Select(m => new
@@ -610,8 +713,17 @@ public class LibraryAliasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] System.Text.Json.JsonElement item)
     {
+        if (item.ValueKind != System.Text.Json.JsonValueKind.Object)
+            return BadRequest(new { detail = "JSON object body required" });
+        // Every item must belong to one of the caller's libraries: an item with no
+        // library violates the Library FK and is invisible to every user anyway.
+        var libraryId = item.TryGetProperty("library_id", out var lid) && lid.ValueKind == System.Text.Json.JsonValueKind.String
+            ? lid.GetString() : null;
+        if (string.IsNullOrEmpty(libraryId) || !await _db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == UserId))
+            return BadRequest(new { detail = "library_id must reference one of your libraries" });
         var mediaItem = new MediaItem
         {
+            LibraryId = libraryId,
             Title = item.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
             MediaType = item.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movies" : "movies",
             FilePath = item.TryGetProperty("file_path", out var fp) && fp.GetString() != null ? fp.GetString()! : "",
@@ -680,14 +792,17 @@ public class DashboardController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
+        // Scoped to the caller's libraries (see LibraryMedia.ForUser).
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        var media = LibraryMedia.ForUser(_db, userId);
         return Ok(new
         {
-            total_libraries = await _db.Libraries.CountAsync(),
-            total_media = await _db.MediaItems.CountAsync(),
-            total_movies = await _db.MediaItems.CountAsync(m => m.MediaType == "movies"),
-            total_tv = await _db.MediaItems.CountAsync(m => m.MediaType == "tv"),
-            total_size = await _db.MediaItems.SumAsync(m => m.FileSize),
-            recent_media = await _db.MediaItems.OrderByDescending(m => m.CreatedAt).Take(10).Select(m => new
+            total_libraries = await _db.Libraries.CountAsync(l => l.UserId == userId),
+            total_media = await media.CountAsync(),
+            total_movies = await media.CountAsync(m => m.MediaType == "movies"),
+            total_tv = await media.CountAsync(m => m.MediaType == "tv"),
+            total_size = await media.SumAsync(m => m.FileSize),
+            recent_media = await media.OrderByDescending(m => m.CreatedAt).Take(10).Select(m => new
             {
                 m.Id, m.Title, m.Year, m.Rating, poster_url = m.PosterUrl, media_type = m.MediaType
             }).ToListAsync(),

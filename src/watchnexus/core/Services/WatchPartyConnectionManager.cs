@@ -17,6 +17,9 @@ public class WatchPartyConnectionManager
 
     private readonly ConcurrentDictionary<string, List<WebSocket>> _connections = new();
     private readonly ConcurrentDictionary<WebSocket, RateLimiter> _rateLimiters = new();
+    // WebSocket allows only one outstanding SendAsync per socket; broadcasts from
+    // several senders must be serialized per receiving socket.
+    private readonly ConcurrentDictionary<WebSocket, SemaphoreSlim> _sendLocks = new();
 
     public async Task HandleConnection(HttpContext context, string partyCode)
     {
@@ -29,18 +32,22 @@ public class WatchPartyConnectionManager
         var socket = await context.WebSockets.AcceptWebSocketAsync();
         var connections = _connections.GetOrAdd(partyCode, _ => new List<WebSocket>());
 
+        bool full;
         lock (connections)
         {
-            if (connections.Count >= MaxConnectionsPerParty)
-            {
-                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                _ = socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Party full", CancellationToken.None);
-                return;
-            }
-            connections.Add(socket);
+            full = connections.Count >= MaxConnectionsPerParty;
+            if (!full) connections.Add(socket);
+        }
+        if (full)
+        {
+            // The 101 response has already been sent, so the status code can no
+            // longer change (setting it threw) — just close the socket.
+            await SafeCloseAsync(socket, WebSocketCloseStatus.PolicyViolation, "Party full");
+            return;
         }
 
         _rateLimiters.TryAdd(socket, new RateLimiter(MaxMessagesPerSecond));
+        _sendLocks.TryAdd(socket, new SemaphoreSlim(1, 1));
 
         try
         {
@@ -49,14 +56,25 @@ public class WatchPartyConnectionManager
         finally
         {
             _rateLimiters.TryRemove(socket, out _);
+            _sendLocks.TryRemove(socket, out _);
             lock (connections)
             {
                 connections.Remove(socket);
                 if (connections.Count == 0)
-                    _connections.TryRemove(partyCode, out _);
+                    _connections.TryRemove(new KeyValuePair<string, List<WebSocket>>(partyCode, connections));
             }
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed", CancellationToken.None);
+            await SafeCloseAsync(socket, WebSocketCloseStatus.NormalClosure, "Connection closed");
         }
+    }
+
+    private static async Task SafeCloseAsync(WebSocket socket, WebSocketCloseStatus status, string reason)
+    {
+        try
+        {
+            if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
+                await socket.CloseAsync(status, reason, CancellationToken.None);
+        }
+        catch { /* peer already gone */ }
     }
 
     public async Task BroadcastToParty(string partyCode, string message)
@@ -64,15 +82,25 @@ public class WatchPartyConnectionManager
         if (!_connections.TryGetValue(partyCode, out var connections))
             return;
 
+        // Snapshot under the lock: joins/leaves mutate the list concurrently
+        // (enumerating it directly threw "Collection was modified").
+        WebSocket[] snapshot;
+        lock (connections) snapshot = connections.ToArray();
+
+        var bytes = Encoding.UTF8.GetBytes(message);
         List<WebSocket>? toRemove = null;
-        foreach (var socket in connections)
+        foreach (var socket in snapshot)
         {
             if (socket.State == WebSocketState.Open)
             {
                 try
                 {
-                    var bytes = Encoding.UTF8.GetBytes(message);
-                    await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                    if (_sendLocks.TryGetValue(socket, out var sendLock))
+                    {
+                        await sendLock.WaitAsync();
+                        try { await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None); }
+                        finally { sendLock.Release(); }
+                    }
                 }
                 catch
                 {
@@ -108,11 +136,18 @@ public class WatchPartyConnectionManager
                 if (result.MessageType == WebSocketMessageType.Close)
                     break;
 
+                if (!result.EndOfMessage)
+                {
+                    // Message larger than MaxMessageSize: drain the remainder and
+                    // drop it (previously each 64 KB chunk was broadcast as its own
+                    // message, so the size cap was never enforced).
+                    while (!result.EndOfMessage && socket.State == WebSocketState.Open)
+                        result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    continue;
+                }
+
                 if (result.MessageType == WebSocketMessageType.Text && result.Count > 0)
                 {
-                    if (result.Count > MaxMessageSize)
-                        continue; // drop oversized frame
-
                     var limiter = _rateLimiters.GetValueOrDefault(socket);
                     if (limiter != null && !limiter.Allow())
                         continue; // rate limited

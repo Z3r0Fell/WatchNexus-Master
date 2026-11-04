@@ -55,21 +55,15 @@ public class CellarControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task FirstLaunch_RateLimited_After5Requests()
     {
-        // Act - make 5 requests
-        for (int i = 0; i < 5; i++)
+        // first-launch is a read-only probe the SPA calls on every page load;
+        // it is intentionally NOT rate-limited (a 429 made FirstLaunchGate skip
+        // the admin-setup wizard on fresh installs). Many requests must all
+        // succeed.
+        for (int i = 0; i < 10; i++)
         {
             var response = await Client.GetAsync("/api/cellar/first-launch");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
-
-        // 6th request should be rate limited
-        var rateLimited = await Client.GetAsync("/api/cellar/first-launch");
-        
-        // Assert
-        Assert.Equal(HttpStatusCode.TooManyRequests, rateLimited.StatusCode);
-        var json = await DeserializeResponseElement(rateLimited);
-        Assert.False(json.GetProperty("success").GetBoolean());
-        Assert.Contains("Too many requests", json.GetProperty("message").GetString() ?? "");
     }
 
     #endregion
@@ -105,8 +99,8 @@ public class CellarControllerIntegrationTests : IntegrationTestBase
         Assert.Equal("standard", json.GetProperty("tier").GetString());
         Assert.Equal("Standard", json.GetProperty("tier_name").GetString());
         Assert.False(json.GetProperty("activated").GetBoolean());
-        Assert.Null(json.GetProperty("serial"));
-        Assert.Equal(71, json.GetProperty("total_modules").GetInt32()); // Standard modules count
+        Assert.Equal(JsonValueKind.Null, json.GetProperty("serial").ValueKind);
+        Assert.Equal(CellarController.GetUnlockedModules("standard").Length, json.GetProperty("total_modules").GetInt32()); // Standard modules count
     }
 
     [Fact]
@@ -127,7 +121,8 @@ public class CellarControllerIntegrationTests : IntegrationTestBase
         Assert.Equal("Pro", json.GetProperty("tier_name").GetString());
         Assert.True(json.GetProperty("activated").GetBoolean());
         Assert.NotNull(json.GetProperty("serial").GetString());
-        Assert.True(json.GetProperty("total_modules").GetInt32() > 71); // Pro has more modules
+        Assert.Equal(CellarController.GetUnlockedModules("pro").Length, json.GetProperty("total_modules").GetInt32());
+        Assert.True(json.GetProperty("total_modules").GetInt32() > CellarController.GetUnlockedModules("standard").Length); // Pro has more modules
     }
 
     [Fact]
@@ -147,7 +142,7 @@ public class CellarControllerIntegrationTests : IntegrationTestBase
         Assert.Equal("ultra", json.GetProperty("tier").GetString());
         Assert.Equal("Ultra", json.GetProperty("tier_name").GetString());
         Assert.True(json.GetProperty("activated").GetBoolean());
-        Assert.Equal(112, json.GetProperty("total_modules").GetInt32()); // All modules
+        Assert.Equal(CellarController.GetUnlockedModules("ultra").Length, json.GetProperty("total_modules").GetInt32()); // All modules
     }
 
     [Fact]

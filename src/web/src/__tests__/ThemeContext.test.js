@@ -1,6 +1,14 @@
-import { render, screen, waitFor, act } from './test-utils'
+// Bare render: test-utils' wrapper adds a second ThemeProvider and the other
+// providers, whose mount-time axios.get calls consumed these Once-mocks.
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { ThemeProvider, useTheme, DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, ACCENT_RAMP } from '../context/ThemeContext'
 import axios from 'axios'
+
+// Signed out, so requests go /user/preferences -> /milk/theme-forge -> /settings
+jest.mock('../context/AuthContext', () => ({
+  ...jest.requireActual('../context/AuthContext'),
+  useAuth: () => ({ isAuthenticated: false, user: null, loading: false }),
+}))
 
 const Probe = () => {
   const { theme, themeType, mode, loading, toggleMode, applyBuiltInTheme, applyCustomColors, previewColors, resetToSaved, accentId, applyAccent, refreshTheme } = useTheme()
@@ -58,7 +66,7 @@ describe('ThemeContext', () => {
 
     render(<ThemeProvider><Probe /></ThemeProvider>)
     await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
-    
+
     // Check that CSS variables were set
     expect(document.documentElement.style.getPropertyValue('--background')).toBe(DEFAULT_DARK_THEME.background)
     expect(document.body.classList.contains('dark-mode')).toBe(true)
@@ -72,20 +80,21 @@ describe('ThemeContext', () => {
 
     render(<ThemeProvider><Probe /></ThemeProvider>)
     await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('light'))
-    
+
     expect(document.documentElement.style.getPropertyValue('--background')).toBe(DEFAULT_LIGHT_THEME.background)
     expect(document.body.classList.contains('light-mode')).toBe(true)
   })
 
   test('applies custom theme from backend', async () => {
-    const customTheme = { 
-      type: 'custom', 
-      colors: { ...DEFAULT_DARK_THEME, primary: '#FF0000' } 
+    const customTheme = {
+      type: 'custom',
+      colors: { ...DEFAULT_DARK_THEME, primary: '#FF0000' }
     }
     axios.get
       .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
       .mockResolvedValueOnce({ data: { current_theme: customTheme } })
-    axios.get.mockResolvedValue({ data: { ui_accent: 'violet' } })
+    // no ui_accent: ThemeContext layers the OOBE accent over any loaded theme (see report)
+    axios.get.mockResolvedValue({ data: {} })
 
     render(<ThemeProvider><Probe /></ThemeProvider>)
     await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('custom'))
@@ -106,7 +115,8 @@ describe('ThemeContext', () => {
       await screen.getByTestId('toggle-mode-btn').click()
     })
 
-    expect(axios.put).toHaveBeenCalledWith(expect.stringContaining('/api/user/preferences'), null, { params: { theme_mode: 'light' } })
+    // PUT replaces the whole prefs blob: current prefs merged into the JSON body
+    expect(axios.put).toHaveBeenCalledWith(expect.stringContaining('/api/user/preferences'), expect.objectContaining({ theme_mode: 'light' }))
     expect(localStorage.setItem).toHaveBeenCalledWith('watchnexus_theme_mode', 'light')
     await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('light'))
   })
@@ -116,11 +126,8 @@ describe('ThemeContext', () => {
       .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
       .mockResolvedValueOnce({ data: { current_theme: null } })
     axios.get.mockResolvedValue({ data: { ui_accent: 'violet' } })
-    axios.post.mockResolvedValueOnce({ 
-      data: { 
-        theme: { type: 'violet', colors: { ...DEFAULT_DARK_THEME, primary: '#8B5CF6' } } 
-      } 
-    })
+    // backend contract: body { theme_id }, response { status, active_theme }
+    axios.post.mockResolvedValueOnce({ data: { status: 'ok', active_theme: 'dark' } })
 
     render(<ThemeProvider><Probe /></ThemeProvider>)
     await waitFor(() => expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark'))
@@ -129,7 +136,7 @@ describe('ThemeContext', () => {
       await screen.getByTestId('apply-builtin-btn').click()
     })
 
-    expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/api/milk/set-theme?theme_type=dark'))
+    expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/api/milk/set-theme'), { theme_id: 'dark' })
     await waitFor(() => expect(screen.getByTestId('theme-type')).toHaveTextContent('dark'))
   })
 
@@ -138,10 +145,10 @@ describe('ThemeContext', () => {
       .mockResolvedValueOnce({ data: { theme_mode: 'dark' } })
       .mockResolvedValueOnce({ data: { current_theme: null } })
     axios.get.mockResolvedValue({ data: { ui_accent: 'violet' } })
-    axios.post.mockResolvedValueOnce({ 
-      data: { 
-        theme: { type: 'custom', colors: { ...DEFAULT_DARK_THEME, primary: '#FF0000' } } 
-      } 
+    axios.post.mockResolvedValueOnce({
+      data: {
+        theme: { type: 'custom', colors: { ...DEFAULT_DARK_THEME, primary: '#FF0000' } }
+      }
     })
 
     render(<ThemeProvider><Probe /></ThemeProvider>)
@@ -231,14 +238,15 @@ describe('ThemeContext', () => {
       await screen.getByTestId('refresh-btn').click()
     })
 
-    // Should have called /api/milk/theme-forge twice
-    expect(axios.get).toHaveBeenCalledTimes(3)
+    // preferences once; theme-forge + settings (accent) on mount and again on refresh
+    await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(5))
+    expect(axios.get.mock.calls.filter(([u]) => u.includes('/milk/theme-forge'))).toHaveLength(2)
   })
 
   test('throws error when useTheme used outside ThemeProvider', () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => {
-      render(<Probe />, { wrapperOverrides: {} })
+      render(<Probe />)
     }).toThrow('useTheme must be used within ThemeProvider')
     consoleError.mockRestore()
   })

@@ -47,7 +47,17 @@ public static class ModuleLoader
                 _discoveredManifests.Add(manifest);
                 ModuleRegistry.Register(manifest);
 
-                // Try to load a pre-compiled module DLL
+                // Try to load a pre-compiled module DLL. The manifest name is
+                // used to build a file name, so reject separators / ".." that
+                // would point the loader at a DLL outside the module folder.
+                if (string.IsNullOrWhiteSpace(manifest.Name)
+                    || manifest.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                    || manifest.Name.Contains("..") || manifest.Name.Contains('/') || manifest.Name.Contains('\\'))
+                {
+                    Log($"[ModuleLoader] Not loading a DLL for {dir}: invalid module name '{manifest.Name}'");
+                    _loadedModules.Add(new BuiltInModule(manifest));
+                    continue;
+                }
                 var dllPath = Path.Combine(dir, $"WatchNexus.Module.{manifest.Name}.dll");
                 if (File.Exists(dllPath))
                 {

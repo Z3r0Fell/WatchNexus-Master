@@ -1,36 +1,42 @@
-version: "3.8"
-
+# Lobster DERP relay (fallback when peers cannot connect directly).
+#   DERP_HOSTNAME=relay.example.com \
+#   HEADSCALE_VERIFY_URL=https://mesh.example.com/verify docker compose up -d --build
+#
+# Clients are verified against the Headscale coordination server's /verify
+# admission endpoint, so only nodes registered on your tailnet can use it
+# (no open relay). Fail-closed if Headscale is unreachable.
 services:
   derper:
-    image: tailscale/derper:1.67
+    build: .
+    image: lobster-derper:1.104.5
     container_name: lobster-derper
+    command:
+      - -hostname=${DERP_HOSTNAME:?set DERP_HOSTNAME to the relay's public DNS name}
+      - -a=:443
+      - -http-port=80
+      - -stun-port=3478
+      - -certmode=letsencrypt
+      - -certdir=/certs
+      - -c=/data/derper.json
+      - -verify-client-url=${HEADSCALE_VERIFY_URL:?set HEADSCALE_VERIFY_URL to https://<headscale>/verify}
+      - -verify-client-url-fail-open=false
     ports:
-      - "8448:443"
-      - "3478:3478/udp"
+      - "443:443"
+      - "80:80"         # Let's Encrypt HTTP-01 challenge + captive-portal checks
+      - "3478:3478/udp" # STUN
+    cap_drop:
+      - ALL
+    # Lets the non-root derper user bind 80/443 inside its own netns.
+    sysctls:
+      - net.ipv4.ip_unprivileged_port_start=0
     volumes:
-      - ./certs:/certs
+      - derper-certs:/certs
       - derper-data:/data
-    environment:
-      - DERP_ADDR=:443
-      - DERP_HTTPS_ADDR=:443
-      - DERP_STUN=true
-      - DERP_VERIFY_CLIENTS=false
-      - DERP_CERT_DIR=/certs
-      - DERP_CERT=/certs/fullchain.pem
-      - DERP_KEY=/certs/privkey.pem
-    command: >
-      -c /certs
-      -a :443
-      -http-port 80
-      -stun-port 3478
-      -verify-clients false
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
-    networks:
-      - lobster-net
 
 volumes:
+  derper-certs:
   derper-data:
-
-networks:
-  lobster-net:
-    driver: bridge

@@ -9,6 +9,9 @@ import { Button } from '../ui/button';
 import { HelpTooltip } from '../ui/HelpTooltip';
 import { MediaManagementSubTab, QualityProfilesSubTab, MassEditorSubTab } from './MediaManagement';
 
+// FolderBrowser target id for the Manual Import path (distinct from new-library creation).
+export const MANUAL_IMPORT_TARGET = '__manual_import__';
+
 export const LibrarySettings = ({
   libraries, loadingLibraries, scanningLibrary, showAddLibrary,
   setShowAddLibrary, newLibrary, setNewLibrary, onAddLibrary,
@@ -192,7 +195,7 @@ const LibrariesTab = ({
                     <p className="font-medium">{lib.name}</p>
                     <p className="text-sm text-gray-400">{lib.path}</p>
                     <p className="text-xs text-gray-500">
-                      {lib.item_count || 0} items • Last scanned: {lib.last_scanned || 'Never'}
+                      {lib.item_count || 0} items • Last scanned: {(lib.last_scanned_at || lib.last_scanned) ? new Date(lib.last_scanned_at || lib.last_scanned).toLocaleString() : 'Never'}
                     </p>
                   </div>
                 </div>
@@ -247,7 +250,7 @@ const ManualImportTab = ({
             />
             <Button
               type="button"
-              onClick={() => onOpenFileBrowser(null, manualImportPath || '/')}
+              onClick={() => onOpenFileBrowser(MANUAL_IMPORT_TARGET, manualImportPath || '/')}
               className="bg-violet-600 hover:bg-violet-700 px-3"
               data-testid="browse-import-folder-btn"
             >

@@ -19,5 +19,5 @@
     "SecurityPage"
   ],
   "tier": "pro",
-  "api_route_prefix": "security"
+  "api_route_prefix": "bastion"
 }

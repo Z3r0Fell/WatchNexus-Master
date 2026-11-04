@@ -347,6 +347,65 @@ public class ContentControllerIntegrationTests : IntegrationTestBase
         Assert.Equal("deleted", json.GetProperty("status").GetString());
     }
 
+    private async Task PostProgressAsync(int tmdbId, string mediaType)
+    {
+        var body = JsonSerializer.Serialize(new { tmdb_id = tmdbId, media_type = mediaType, progress = 50 });
+        var resp = await Client.PostAsync("/api/watch-progress", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
+        AssertJsonResponse(resp);
+    }
+
+    private async Task<List<int>> GetProgressTmdbIdsAsync()
+    {
+        var response = await Client.GetAsync("/api/watch-progress/all");
+        AssertJsonResponse(response);
+        var json = await DeserializeResponseElement(response);
+        return json.EnumerateArray().Select(e => e.GetProperty("tmdb_id").GetInt32()).OrderBy(x => x).ToList();
+    }
+
+    [Fact]
+    public async Task DeleteWatchProgress_ById_DoesNotDeleteIdsSharingPrefix()
+    {
+        AuthenticateAsUser();
+        await PostProgressAsync(12, "movie");
+        await PostProgressAsync(123, "movie");
+        await PostProgressAsync(1200, "tv");
+
+        var response = await Client.DeleteAsync("/api/watch-progress?tmdb_id=12&media_type=movie");
+        AssertJsonResponse(response);
+
+        Assert.Equal(new List<int> { 123, 1200 }, await GetProgressTmdbIdsAsync());
+    }
+
+    [Fact]
+    public async Task DeleteWatchProgress_ByIdWithoutMediaType_DeletesOnlyThatId()
+    {
+        AuthenticateAsUser();
+        await PostProgressAsync(12, "movie");
+        await PostProgressAsync(12, "tv");
+        await PostProgressAsync(123, "movie");
+
+        var response = await Client.DeleteAsync("/api/watch-progress?tmdb_id=12");
+        AssertJsonResponse(response);
+
+        Assert.Equal(new List<int> { 123 }, await GetProgressTmdbIdsAsync());
+    }
+
+    [Theory]
+    [InlineData("/api/watch-progress")]
+    [InlineData("/api/watch-progress?tmdb_id=")]
+    [InlineData("/api/watch-progress?tmdb_id=%20")]
+    public async Task DeleteWatchProgress_MissingTmdbId_Returns400AndKeepsProgress(string url)
+    {
+        AuthenticateAsUser();
+        await PostProgressAsync(12, "movie");
+        await PostProgressAsync(67890, "tv");
+
+        var response = await Client.DeleteAsync(url);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        Assert.Equal(new List<int> { 12, 67890 }, await GetProgressTmdbIdsAsync());
+    }
+
     [Fact]
     public async Task ClearAllWatchProgress_RemovesAll()
     {

@@ -103,109 +103,7 @@ jobs:
             echo "changelog=${CHANGELOG}" >> "$GITHUB_OUTPUT"
           fi
 
-  # ── Build & Push Docker Images ──────────────────────────────────────
-  build:
-    name: Build ${{ matrix.tier }}
-    needs: prepare
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        tier: ${{ fromJson(needs.prepare.outputs.tiers) }}
-      fail-fast: false
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
-            type=raw,value=latest-${{ matrix.tier }}
-            type=semver,pattern={{version}}-${{ matrix.tier }}
-            type=semver,pattern={{major}}.{{minor}}-${{ matrix.tier }}
-          labels: |
-            com.watchnexus.tier=${{ matrix.tier }}
-            com.watchnexus.version=${{ needs.prepare.outputs.version }}
-            org.opencontainers.image.title=WatchNexus ${{ matrix.tier }}
-            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.licenses=LicenseRef-OWN
-
-      - name: Build and push
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            TIER=${{ matrix.tier }}
-          cache-from: type=gha,scope=${{ matrix.tier }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.tier }}
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          sbom: true
-
-      - name: Sign image with cosign
-        if: ${{ github.event.inputs.sign != 'false' }}
-        uses: sigstore/cosign-installer@v3
-        with:
-          cosign-release: 'v2.4.0'
-
-      - name: Sign and verify
-        if: ${{ github.event.inputs.sign != 'false' }}
-        run: |
-          cosign sign --yes \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
-          cosign verify \
-            --certificate-identity-regexp ".*" \
-            --certificate-oidc-issuer-regexp ".*" \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
-
-      - name: Output image info
-        run: |
-          echo "## ${{ matrix.tier }} image built" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.tier }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ matrix.tier }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
-
-  # ── Tag Ultra as default latest ─────────────────────────────────────
-  tag-latest:
-    name: Tag Latest (Ultra)
-    needs: [prepare, build]
-    runs-on: ubuntu-latest
-    if: contains(fromJson(needs.prepare.outputs.tiers), 'ultra')
-    steps:
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Tag ultra as latest
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-ultra
-          echo "## Tagged as latest" >> $GITHUB_STEP_SUMMARY
-          echo "\`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\` → ultra" >> $GITHUB_STEP_SUMMARY
+  # Docker images are built and published by docker-publish.yml (single source of truth).
 
   # ── Build Native Installers (Linux/Windows/macOS) ───────────────────
   build-installers:
@@ -218,10 +116,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ubuntu-latest does not ship the .NET 10 SDK, and `fpm` is not an apt
+      # package (it is a Ruby gem) -- both failed this job and therefore the
+      # whole release. prepare-installers.sh needs dotnet, node/yarn and jq.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm fpm nsis xorriso
+          sudo apt-get install -y rpm nsis xorriso jq
 
       - name: Build .NET publish
         run: |
@@ -250,7 +156,7 @@ jobs:
   # ── Create GitHub Release ───────────────────────────────────────────
   release:
     name: Create GitHub Release
-    needs: [prepare, build, tag-latest, build-installers]
+    needs: [prepare, build-installers]
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
     permissions:
@@ -262,50 +168,12 @@ jobs:
           name: installers-${{ needs.prepare.outputs.version }}
           path: ./release-artifacts
 
-      - name: Create Release
+      - name: Attach installers to release
+        # docker-publish.yml creates the release (name/body) for this tag; this only
+        # uploads installer assets so the two workflows don't overwrite each other.
         uses: softprops/action-gh-release@v2
         with:
-          name: WatchNexus v${{ needs.prepare.outputs.version }}
           tag_name: ${{ needs.prepare.outputs.tag }}
-          body: |
-            ## WatchNexus v${{ needs.prepare.outputs.version }}
-            
-            ${{ needs.prepare.outputs.changelog }}
-            
-            ### Docker Images
-            ```bash
-            # Standard (free)
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-standard
-            
-            # Pro
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-pro
-            
-            # Ultra
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-ultra
-            ```
-            
-            ### Quick Start
-            ```bash
-            docker run -d -p 8001:8001 \
-              -v watchnexus-data:/app/data \
-              -v /path/to/media:/data/media \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-standard
-            ```
-            
-            ### Tier Comparison
-            | Feature | Standard | Pro | Ultra |
-            |---------|----------|-----|-------|
-            | Media Library | ✅ | ✅ | ✅ |
-            | Automation (*arr) | ❌ | ✅ | ✅ |
-            | Analytics | ❌ | ✅ | ✅ |
-            | Live TV / DVR | ❌ | ✅ | ✅ |
-            | Hardware Transcoding | ❌ | ❌ | ✅ |
-            | Disc Ripping | ❌ | ❌ | ✅ |
-            | Security Suite (2FA, VPN) | ❌ | ❌ | ✅ |
-            | Gaming / Ebooks | ❌ | ❌ | ✅ |
-            | Cloud Sync / Backup | ❌ | ❌ | ✅ |
-            
-            Activate Pro/Ultra with a serial from [licenses.watchnexus.ca](https://licenses.watchnexus.ca)
           files: |
             ./release-artifacts/**/*
           generate_release_notes: false
@@ -353,7 +221,7 @@ jobs:
   # ── Notify (Slack/Discord/Email) ────────────────────────────────────
   notify:
     name: Notify Release
-    needs: [release]
+    needs: [prepare, release]
     runs-on: ubuntu-latest
     if: always()
     steps:

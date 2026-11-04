@@ -20,22 +20,30 @@ public class DrizzleController : ControllerBase
         var playlists = await _db.Playlists
             .Where(p => p.UserId == this.UserId())
             .OrderByDescending(p => p.UpdatedAt).ToListAsync();
-        return Ok(playlists.Select(p => new
+        // Both frontend consumers (PlaylistsManager, AddToPlaylistButton) read data.playlists.
+        return Ok(new
         {
-            p.Id, p.Name, p.Description, media_type = p.MediaType,
-            item_count = p.ItemCount, created_at = p.CreatedAt, updated_at = p.UpdatedAt
-        }));
+            playlists = playlists.Select(p => new
+            {
+                p.Id, p.Name, p.Description, media_type = p.MediaType,
+                item_count = p.ItemCount, created_at = p.CreatedAt, updated_at = p.UpdatedAt
+            })
+        });
     }
 
     [HttpPost("playlists")]
-    public async Task<IActionResult> CreatePlaylist([FromBody] JsonElement body)
+    public async Task<IActionResult> CreatePlaylist(
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body,
+        [FromQuery] string? name = null)
     {
+        // The UI posts ?name=... with no body; JSON-body callers are also supported.
+        var hasBody = body.ValueKind == JsonValueKind.Object;
         var pl = new Playlist
         {
             UserId = this.UserId(),
-            Name = body.TryGetProperty("name", out var n) ? n.GetString() ?? "New Playlist" : "New Playlist",
-            Description = body.TryGetProperty("description", out var d) ? d.GetString() : null,
-            MediaType = body.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "mixed" : "mixed",
+            Name = Str(body, hasBody, "name") ?? (string.IsNullOrWhiteSpace(name) ? "New Playlist" : name),
+            Description = Str(body, hasBody, "description"),
+            MediaType = Str(body, hasBody, "media_type") ?? "mixed",
         };
         _db.Playlists.Add(pl);
         await _db.SaveChangesAsync();
@@ -93,14 +101,17 @@ public class DrizzleController : ControllerBase
         var pl = await _db.Playlists.FindAsync(id);
         if (pl == null || pl.UserId != this.UserId()) return NotFound();
         var maxOrder = await _db.PlaylistItems.Where(i => i.PlaylistId == id).MaxAsync(i => (int?)i.SortOrder) ?? 0;
+        if (body.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "JSON object body required" });
+        // tmdb_id arrives as a number from the UI (GetString() on a number threw → 500);
+        // the UI also sends poster_path rather than poster_url.
         var item = new PlaylistItem
         {
             PlaylistId = id,
-            MediaItemId = body.TryGetProperty("media_item_id", out var mi) ? mi.GetString() : null,
-            TmdbId = body.TryGetProperty("tmdb_id", out var ti) ? ti.GetString() : null,
-            Title = body.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
-            PosterUrl = body.TryGetProperty("poster_url", out var pu) ? pu.GetString() : null,
-            MediaType = body.TryGetProperty("media_type", out var mt) ? mt.GetString() ?? "movie" : "movie",
+            MediaItemId = Str(body, true, "media_item_id"),
+            TmdbId = Str(body, true, "tmdb_id"),
+            Title = Str(body, true, "title") ?? "",
+            PosterUrl = Str(body, true, "poster_url") ?? Str(body, true, "poster_path"),
+            MediaType = Str(body, true, "media_type") ?? "movie",
             SortOrder = maxOrder + 1,
         };
         _db.PlaylistItems.Add(item);
@@ -113,23 +124,37 @@ public class DrizzleController : ControllerBase
     [HttpDelete("playlists/{id}/items/{itemId}")]
     public async Task<IActionResult> RemoveItem(string id, string itemId)
     {
+        // Ownership check: previously any user could delete items from another user's playlist.
+        var pl = await _db.Playlists.FindAsync(id);
+        if (pl == null || pl.UserId != this.UserId()) return NotFound();
         var item = await _db.PlaylistItems.FindAsync(itemId);
         if (item != null && item.PlaylistId == id)
         {
             _db.PlaylistItems.Remove(item);
-            var pl = await _db.Playlists.FindAsync(id);
-            if (pl != null)
-            {
-                pl.ItemCount = await _db.PlaylistItems.CountAsync(i => i.PlaylistId == id) - 1;
-                pl.UpdatedAt = DateTime.UtcNow;
-            }
+            pl.ItemCount = await _db.PlaylistItems.CountAsync(i => i.PlaylistId == id) - 1;
+            pl.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
         return Ok(new { status = "removed" });
     }
 
+    private static string? Str(JsonElement body, bool isObject, string name)
+    {
+        if (!isObject || !body.TryGetProperty(name, out var v)) return null;
+        return v.ValueKind switch
+        {
+            JsonValueKind.String => v.GetString(),
+            JsonValueKind.Number => v.GetRawText(),
+            _ => null,
+        };
+    }
+
     [HttpGet("queue")]
     public IActionResult Queue() => Ok(Array.Empty<object>());
+    // The play queue is not persisted server-side (GET always returns empty),
+    // so clearing it is an idempotent acknowledgement.
+    [HttpDelete("queue")]
+    public IActionResult ClearQueue() => Ok(new { status = "cleared" });
     [HttpPost("queue/set/{id}")]
     public IActionResult QueueSet(string id) => Ok(new { status = "queued" });
     [HttpPost("play-collection")]
