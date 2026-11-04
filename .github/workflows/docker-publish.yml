@@ -74,6 +74,10 @@ jobs:
   build:
     needs: prepare
     runs-on: ubuntu-latest
+    env:
+      # Docker Hub publishing (watchnexus/watchnexus) is enabled when these repo secrets exist.
+      DOCKERHUB_ENABLED: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
+      DOCKERHUB_IMAGE: ${{ vars.DOCKERHUB_IMAGE || 'watchnexus/watchnexus' }}
     strategy:
       matrix:
         tier: ${{ fromJson(needs.prepare.outputs.tiers) }}
@@ -93,11 +97,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        if: env.DOCKERHUB_ENABLED == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Generate Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            name=${{ env.DOCKERHUB_IMAGE }},enable=${{ env.DOCKERHUB_ENABLED == 'true' }}
           tags: |
             type=raw,value=${{ needs.prepare.outputs.version }}-${{ matrix.tier }}
             type=raw,value=latest-${{ matrix.tier }}
@@ -115,6 +128,8 @@ jobs:
             com.watchnexus.version=${{ needs.prepare.outputs.version }}
           build-args: |
             TIER=${{ matrix.tier }}
+            LICENSE_SERVER_CLIENT_KEY=${{ secrets.LICENSE_SERVER_CLIENT_KEY }}
+            SIXLABORS_LICENSE_KEY=${{ secrets.SIXLABORS_LICENSE_KEY }}
           cache-from: type=gha,scope=${{ matrix.tier }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tier }}
           platforms: linux/amd64,linux/arm64
@@ -129,6 +144,10 @@ jobs:
   tag-latest:
     needs: [prepare, build]
     runs-on: ubuntu-latest
+    env:
+      # Docker Hub publishing (watchnexus/watchnexus) is enabled when these repo secrets exist.
+      DOCKERHUB_ENABLED: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
+      DOCKERHUB_IMAGE: ${{ vars.DOCKERHUB_IMAGE || 'watchnexus/watchnexus' }}
     if: contains(fromJson(needs.prepare.outputs.tiers), 'ultra')
     steps:
       - name: Log in to GitHub Container Registry
@@ -145,6 +164,20 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-ultra
           echo "## Tagged as latest" >> $GITHUB_STEP_SUMMARY
           echo "\`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\` → ultra" >> $GITHUB_STEP_SUMMARY
+
+      - name: Log in to Docker Hub (latest)
+        if: env.DOCKERHUB_ENABLED == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Tag ultra as latest on Docker Hub
+        if: env.DOCKERHUB_ENABLED == 'true'
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKERHUB_IMAGE }}:latest \
+            ${{ env.DOCKERHUB_IMAGE }}:${{ needs.prepare.outputs.version }}-ultra
 
   # ── Create GitHub Release ────────────────────────────────────────
   release:
@@ -178,7 +211,7 @@ jobs:
 
             ### Quick Start
             ```bash
-            docker run -d -p 8002:8002 \
+            docker run -d -p 8001:8001 \
               -v watchnexus-data:/app/data \
               -v /path/to/media:/data/media \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-standard

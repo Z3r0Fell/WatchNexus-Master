@@ -112,13 +112,16 @@ describe('useToast Hook', () => {
 
   test('TOAST_LIMIT limits number of toasts', async () => {
     const ManyToasts = () => {
-      const { toast: toastFn } = useToast()
+      const { toasts, toast: toastFn } = useToast()
       return (
-        <button data-testid="toast-btn" onClick={() => {
-          for (let i = 0; i < 5; i++) {
-            toastFn({ title: `Toast ${i}` })
-          }
-        }}>Show Many</button>
+        <div>
+          <button data-testid="toast-btn" onClick={() => {
+            for (let i = 0; i < 5; i++) {
+              toastFn({ title: `Toast ${i}` })
+            }
+          }}>Show Many</button>
+          <div data-testid="many-count">{toasts.length}</div>
+        </div>
       )
     }
 
@@ -130,8 +133,7 @@ describe('useToast Hook', () => {
     })
 
     // TOAST_LIMIT is 1, so only 1 toast should remain
-    const { useToast } = require('../../hooks/use-toast')
-    // Test that limit is enforced internally
+    await waitFor(() => expect(screen.getByTestId('many-count')).toHaveTextContent('1'))
   })
 
   test('toast auto-removes after TOAST_REMOVE_DELAY', async () => {
@@ -168,7 +170,7 @@ describe('useToast Hook', () => {
     expect(t.id).toBeDefined()
     expect(typeof t.dismiss).toBe('function')
     expect(typeof t.update).toBe('function')
-    
+
     t.dismiss()
   })
 
@@ -177,9 +179,9 @@ describe('useToast Hook', () => {
     const TestAction = () => {
       const { toast: toastFn } = useToast()
       return (
-        <button data-testid="toast-btn" onClick={() => toastFn({ 
-          title: 'Action Toast', 
-          action: { label: 'Click Me', onClick: () => { actionClicked = true; } } 
+        <button data-testid="toast-btn" onClick={() => toastFn({
+          title: 'Action Toast',
+          action: { label: 'Click Me', onClick: () => { actionClicked = true; } }
         })}>Show Toast</button>
       )
     }
@@ -242,7 +244,7 @@ describe('useToast Hook', () => {
     const TestOptions = () => {
       const { toast: toastFn } = useToast()
       return (
-        <button data-testid="toast-btn" onClick={() => toastFn({ 
+        <button data-testid="toast-btn" onClick={() => toastFn({
           title: 'Title',
           description: 'Description',
           variant: 'destructive',

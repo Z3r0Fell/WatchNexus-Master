@@ -33,6 +33,38 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     protected readonly Mock<IHttpClientFactory> HttpClientFactoryMock;
     protected readonly List<Mock<HttpMessageHandler>> HandlerMocks;
     private readonly IServiceScope _scope;
+    private readonly string _sqlitePath = Path.Combine(Path.GetTempPath(), $"wnx_itest_{Guid.NewGuid():N}.db");
+
+    /// <summary>
+    /// Override to true to back the test host with a temp-file SQLite
+    /// database instead of the EF in-memory provider (which enforces no
+    /// unique indexes and has no transactions).
+    /// </summary>
+    protected virtual bool UseRelationalDatabase => false;
+
+    /// <summary>
+    /// Per-test media root. MEDIA_ROOTS points here for the lifetime of the
+    /// test (tests run serially), so file/library paths used by tests must
+    /// live under it — the product rejects paths outside media roots.
+    /// </summary>
+    protected readonly string MediaRoot = Path.Combine(Path.GetTempPath(), $"wnx_media_{Guid.NewGuid():N}");
+
+    /// <summary>Create a file under <see cref="MediaRoot"/> and return its path.</summary>
+    protected string CreateMediaFile(string relativePath, string content = "test")
+    {
+        var full = Path.Combine(MediaRoot, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, content);
+        return full;
+    }
+
+    /// <summary>Create a directory under <see cref="MediaRoot"/> and return its path.</summary>
+    protected string CreateMediaDir(string relativePath)
+    {
+        var full = Path.Combine(MediaRoot, relativePath);
+        Directory.CreateDirectory(full);
+        return full;
+    }
 
     public IServiceProvider Services => Factory.Services;
 
@@ -45,6 +77,15 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         // (SQLite migrate, patch service, fortress) inside the test host.
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
 
+        // Reset process-wide static state that otherwise leaks between test
+        // classes (serial execution, shared AppDomain): the per-IP license
+        // activation limiter and the static test principal.
+        CellarController.ResetRateLimits();
+        TestAuthHandler.SetTestUser(null);
+
+        Directory.CreateDirectory(MediaRoot);
+        Environment.SetEnvironmentVariable("MEDIA_ROOTS", MediaRoot);
+
         HttpClientFactoryMock = new Mock<IHttpClientFactory>();
         HandlerMocks = new List<Mock<HttpMessageHandler>>();
         
@@ -52,13 +93,28 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
             .Returns(() =>
             {
                 var handler = HandlerMocks.Count > 0 ? HandlerMocks[^1].Object : new HttpClientHandler();
-                return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+                // disposeHandler: false — product code disposes its clients
+                // (`using var http`), which would dispose the shared mock
+                // handler; a Strict mock throws on the unexpected Dispose call.
+                return new HttpClient(handler, disposeHandler: false) { Timeout = TimeSpan.FromSeconds(30) };
             });
 
         Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Testing");
+
+                // Paid-tier activation requires a license-server key; tests
+                // mock the license server via IHttpClientFactory. Individual
+                // tests blank this to exercise the "no key" 503 path.
+                builder.ConfigureAppConfiguration((_, cfg) =>
+                    cfg.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["LICENSE_SERVER_API_KEY"] = "test-license-server-key",
+                        // appsettings.json ships LICENSE_SERVER_URL = "" which
+                        // defeats the controller's `?? default` fallback.
+                        ["LICENSE_SERVER_URL"] = "https://licenses.test.invalid",
+                    }));
                 
                 builder.ConfigureServices(services =>
                 {
@@ -84,8 +140,24 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
                     var dbName = $"IntegrationTest_{Guid.NewGuid()}";
                     services.AddDbContext<AppDbContext>(options =>
                     {
+                        if (UseRelationalDatabase)
+                        {
+                            // Real SQLite (the production provider) for tests
+                            // that exercise relational behaviour: unique
+                            // indexes, transactions/rollback, concurrent
+                            // contexts. A temp file (not :memory:) so each
+                            // context gets its own connection.
+                            options.UseSqlite($"Data Source={_sqlitePath}");
+                            options.EnableSensitiveDataLogging();
+                            return;
+                        }
                         options.UseInMemoryDatabase(dbName);
                         options.EnableSensitiveDataLogging();
+                        // Product code wraps multi-entity writes in
+                        // BeginTransaction; the in-memory provider can't do
+                        // transactions and throws by default. Ignore it.
+                        options.ConfigureWarnings(w => w.Ignore(
+                            Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
                     });
                     
                     // Disable automatic key generation for tests
@@ -206,6 +278,15 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         Client?.Dispose();
         _scope?.Dispose();
         await Factory.DisposeAsync();
+        if (Environment.GetEnvironmentVariable("MEDIA_ROOTS") == MediaRoot)
+            Environment.SetEnvironmentVariable("MEDIA_ROOTS", null);
+        try { if (Directory.Exists(MediaRoot)) Directory.Delete(MediaRoot, true); } catch { /* best effort */ }
+        if (UseRelationalDatabase)
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            foreach (var f in new[] { _sqlitePath, _sqlitePath + "-wal", _sqlitePath + "-shm", _sqlitePath + "-journal" })
+                try { File.Delete(f); } catch { /* best effort */ }
+        }
     }
 
     public void Dispose()
@@ -245,6 +326,36 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     protected void AuthenticateAsAdmin(string userId = "admin-user")
     {
         AuthenticateAsUser(userId, "admin");
+    }
+
+    /// <summary>
+    /// Run <paramref name="action"/> as an admin, then restore the previous
+    /// identity. For arranging server-wide fixtures through admin-only APIs.
+    /// </summary>
+    protected async Task<T> AsAdminAsync<T>(Func<Task<T>> action)
+    {
+        var prevHeader = Client.DefaultRequestHeaders.Authorization;
+        var prevUser = TestAuthHandler.CurrentTestUser;
+        AuthenticateAsAdmin();
+        try { return await action(); }
+        finally
+        {
+            Client.DefaultRequestHeaders.Authorization = prevHeader;
+            TestAuthHandler.SetTestUser(prevUser);
+        }
+    }
+
+    /// <summary>
+    /// POST /api/iptv/sources (admin-only; binds name/url/epg_url from the
+    /// query string) from a JSON object of those fields, as admin.
+    /// </summary>
+    protected Task<HttpResponseMessage> PostIptvSourceAsync(string jsonBody)
+    {
+        var doc = JsonDocument.Parse(jsonBody).RootElement;
+        var qs = string.Join("&", doc.EnumerateObject()
+            .Where(p => p.Value.ValueKind == JsonValueKind.String)
+            .Select(p => $"{Uri.EscapeDataString(p.Name)}={Uri.EscapeDataString(p.Value.GetString()!)}"));
+        return AsAdminAsync(() => Client.PostAsync($"/api/iptv/sources?{qs}", null));
     }
 
     /// <summary>
@@ -343,8 +454,11 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// <summary>
     /// Create a test library
     /// </summary>
-    protected async Task<Library> CreateTestLibraryAsync(string name = "Test Library", string path = "/data/media/movies", string mediaType = "movies", string userId = "test-user")
+    protected async Task<Library> CreateTestLibraryAsync(string name = "Test Library", string? path = null, string mediaType = "movies", string userId = "test-user")
     {
+        // Default to a real directory inside the per-test media root so
+        // update/scan endpoints that validate the path accept it.
+        path ??= CreateMediaDir("movies");
         var library = new Library
         {
             Id = Guid.NewGuid().ToString(),
@@ -395,7 +509,12 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
     /// </summary>
     protected static void AssertJsonResponse(HttpResponseMessage response, HttpStatusCode expectedStatus = HttpStatusCode.OK)
     {
-        Assert.Equal(expectedStatus, response.StatusCode);
+        if (response.StatusCode != expectedStatus)
+        {
+            // Surface the response body so failures are diagnosable.
+            var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            Assert.Fail($"Expected {(int)expectedStatus} {expectedStatus} but got {(int)response.StatusCode} {response.StatusCode}. Body: {body}");
+        }
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
     }
 
@@ -440,6 +559,8 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     {
         _testUser = user;
     }
+
+    internal static ClaimsPrincipal? CurrentTestUser => _testUser;
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {

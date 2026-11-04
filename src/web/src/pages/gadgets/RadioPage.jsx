@@ -9,6 +9,27 @@ import axios from 'axios';
 
 import { BACKEND_URL } from '../../lib/config';
 
+// The backend proxies radio-browser.info verbatim (bare arrays with
+// stationuuid / url_resolved / comma-separated tags / stationcount) and
+// returns favorites as { id, station_uuid, stream_url, tags }.
+const splitTags = (t) => (Array.isArray(t) ? t : String(t || '').split(',')).map(x => String(x).trim()).filter(Boolean);
+const asList = (d, key) => (Array.isArray(d) ? d : (d?.[key] || []));
+
+export const normalizeStation = (s) => ({
+  ...s,
+  id: s.stationuuid || s.station_uuid || s.id,
+  url: s.url_resolved || s.url || s.stream_url,
+  tags: splitTags(s.tags),
+});
+
+export const normalizeFavorite = (f) => ({
+  ...f,
+  fav_id: f.fav_id || f.id,
+  station_id: f.station_id || f.station_uuid,
+  url: f.url || f.stream_url,
+  tags: splitTags(f.tags),
+});
+
 export const RadioPage = () => {
   const [stations, setStations] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -29,7 +50,7 @@ export const RadioPage = () => {
     try {
       setLoading(true);
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/radio/stations`, { params, headers: getAuth() });
-      setStations(resp.data.stations || []);
+      setStations(asList(resp.data, 'stations').map(normalizeStation));
     } catch (err) {
       toast.error('Failed to load stations');
     } finally {
@@ -40,7 +61,7 @@ export const RadioPage = () => {
   const fetchFavorites = useCallback(async () => {
     try {
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/radio/favorites`, { headers: getAuth() });
-      setFavorites(resp.data.favorites || []);
+      setFavorites(asList(resp.data, 'favorites').map(normalizeFavorite));
     } catch (err) {
       console.error('Failed to load favorites');
     }
@@ -52,8 +73,8 @@ export const RadioPage = () => {
         axios.get(`${BACKEND_URL}/api/gadgets/radio/countries`, { headers: getAuth() }),
         axios.get(`${BACKEND_URL}/api/gadgets/radio/tags`, { headers: getAuth() })
       ]);
-      setCountries(countriesResp.data.countries || []);
-      setTags(tagsResp.data.tags || []);
+      setCountries(asList(countriesResp.data, 'countries').map(c => ({ ...c, code: c.code || c.iso_3166_1 || c.name, count: c.count ?? c.stationcount })));
+      setTags(asList(tagsResp.data, 'tags').map(t => ({ ...t, count: t.count ?? t.stationcount })));
     } catch (err) {
       console.error('Failed to load filters');
     }
@@ -67,7 +88,7 @@ export const RadioPage = () => {
 
   const search = () => {
     if (searchQuery.trim()) {
-      fetchStations({ q: searchQuery });
+      fetchStations({ name: searchQuery });
       setActiveTab('search');
     }
   };
@@ -101,18 +122,19 @@ export const RadioPage = () => {
   };
 
   const toggleFavorite = async (station) => {
-    const isFav = favorites.some(f => f.station_id === station.id);
+    const fav = favorites.find(f => f.station_id === station.id);
     try {
-      if (isFav) {
-        await axios.delete(`${BACKEND_URL}/api/gadgets/radio/favorites/${station.id}`, { headers: getAuth() });
+      if (fav) {
+        // DELETE takes the favorite row id, not the station uuid.
+        await axios.delete(`${BACKEND_URL}/api/gadgets/radio/favorites/${encodeURIComponent(fav.fav_id)}`, { headers: getAuth() });
         setFavorites(f => f.filter(s => s.station_id !== station.id));
         toast.success('Removed from favorites');
       } else {
-        await axios.post(`${BACKEND_URL}/api/gadgets/radio/favorites`, {
-          station_id: station.id, name: station.name, url: station.url,
-          favicon: station.favicon, country: station.country, tags: station.tags
+        const resp = await axios.post(`${BACKEND_URL}/api/gadgets/radio/favorites`, {
+          station_uuid: station.id, name: station.name, stream_url: station.url,
+          favicon: station.favicon, country: station.country, tags: (station.tags || []).join(',')
         }, { headers: getAuth() });
-        setFavorites(f => [...f, { ...station, station_id: station.id }]);
+        setFavorites(f => [...f, { ...station, station_id: station.id, fav_id: resp.data?.id ?? resp.data?.Id }]);
         toast.success('Added to favorites');
       }
     } catch (err) {

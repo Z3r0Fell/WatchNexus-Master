@@ -23,7 +23,20 @@ jest.mock('axios', () => ({
   })),
 }))
 
-import { render, screen, waitFor, act } from '../test-utils'
+// Bare render: these tests mount the providers under test themselves.
+// test-utils' render wraps every test in Auth/Theme/Gadget/License providers,
+// whose own mount-time axios.get calls consumed the tests' Once-mocks.
+import { render, screen, waitFor, act } from '@testing-library/react'
+
+// Providers mounted without an <AuthProvider> see a signed-out user (the
+// real app always has one); inside an AuthProvider the real context is used.
+jest.mock('../../context/AuthContext', () => {
+  const actual = jest.requireActual('../../context/AuthContext')
+  return {
+    ...actual,
+    useAuth: () => actual.useOptionalAuth() ?? { isAuthenticated: false, user: null, loading: false },
+  }
+})
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 import { LicenseProvider, useLicense } from '../../context/LicenseContext'
 import { ThemeProvider, useTheme } from '../../context/ThemeContext'
@@ -50,7 +63,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<ThemeProvider><Probe /></ThemeProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
     })
 
@@ -71,7 +84,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<ThemeProvider><Probe /></ThemeProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
     })
 
@@ -96,7 +109,7 @@ describe('Failure Recovery Tests', () => {
       let callCount = 0
       axios.get.mockImplementation(() => {
         callCount++
-        if (callCount < 3) {
+        if (callCount < 2) { // only the initial load fails
           return Promise.reject(new Error('Network error'))
         }
         return Promise.resolve({ data: { tier: 'pro', modules_unlocked: [] } })
@@ -114,7 +127,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<LicenseProvider><Probe /></LicenseProvider>)
-      
+
       // Initial load fails
       await waitFor(() => expect(screen.getByTestId('tier')).toHaveTextContent('standard'))
       expect(callCount).toBe(1)
@@ -143,10 +156,10 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<LicenseProvider><Probe /></LicenseProvider>)
-      
+
       // Falls back to standard on first failure
       await waitFor(() => expect(screen.getByTestId('tier')).toHaveTextContent('standard'))
-      
+
       // No automatic retry - requires manual refresh
     })
 
@@ -168,7 +181,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<ThemeProvider><Probe /></ThemeProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
       expect(screen.getByTestId('type')).toHaveTextContent('default')
     })
@@ -185,7 +198,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<GadgetProvider><Probe /></GadgetProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('0'))
     })
   })
@@ -197,11 +210,11 @@ describe('Failure Recovery Tests', () => {
         .mockRejectedValueOnce({ response: { status: 401 } });             // fetchUser after loginWithToken
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
-            <div data-testid="user">{authRef.user?.username}</div>
+            <div data-testid="user">{authRef.user?.username || 'none'}</div>
             <div data-testid="auth">{String(authRef.isAuthenticated)}</div>
             <button data-testid="refresh" onClick={() => authRef.loginWithToken('expired', null)}>Refresh</button>
           </div>
@@ -225,11 +238,11 @@ describe('Failure Recovery Tests', () => {
         .mockRejectedValueOnce(new Error('Network error'))
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
-            <div data-testid="user">{authRef.user?.username}</div>
+            <div data-testid="user">{authRef.user?.username || 'none'}</div>
             <div data-testid="auth">{String(authRef.isAuthenticated)}</div>
             <button data-testid="refresh" onClick={() => authRef.loginWithToken('token', null)}>Refresh</button>
           </div>
@@ -252,11 +265,11 @@ describe('Failure Recovery Tests', () => {
       axios.post.mockRejectedValueOnce({ response: { status: 401 } })
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
-            <div data-testid="user">{authRef.user?.username}</div>
+            <div data-testid="user">{authRef.user?.username || 'none'}</div>
             <div data-testid="auth">{String(authRef.isAuthenticated)}</div>
             <button data-testid="login" onClick={() => authRef.login('wrong@test.com', 'wrong')}>Login</button>
           </div>
@@ -267,9 +280,9 @@ describe('Failure Recovery Tests', () => {
       await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('owner'))
 
       // Failed login should not affect current session
-      await expect(act(async () => {
-        await authRef.login('wrong@test.com', 'wrong')
-      })).rejects.toThrow()
+      await act(async () => {
+        await expect(authRef.login('wrong@test.com', 'wrong')).rejects.toEqual({ response: { status: 401 } })
+      })
 
       // Session should still be valid
       await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('owner'))
@@ -317,7 +330,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<LicenseProvider><Probe /></LicenseProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('tier')).toHaveTextContent('standard'))
     })
 
@@ -332,10 +345,12 @@ describe('Failure Recovery Tests', () => {
         return <div data-testid="count">{installed.length}</div>
       }
 
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
       render(<GadgetProvider><Probe /></GadgetProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('0'))
-      expect(console.error).not.toHaveBeenCalled()
+      expect(errSpy).not.toHaveBeenCalled()
+      errSpy.mockRestore()
     })
   })
 
@@ -358,7 +373,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<ThemeProvider><Probe /></ThemeProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
       expect(screen.getByTestId('type')).toHaveTextContent('default'); // Falls back to default theme
     })
@@ -381,7 +396,7 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<ThemeProvider><Probe /></ThemeProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('mode')).toHaveTextContent('dark'))
       expect(screen.getByTestId('accent')).toHaveTextContent('none'); // No accent applied
     })
@@ -391,11 +406,11 @@ describe('Failure Recovery Tests', () => {
       axios.post.mockRejectedValueOnce(new Error('Network error'))
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
-            <div data-testid="user">{authRef.user?.username}</div>
+            <div data-testid="user">{authRef.user?.username || 'none'}</div>
             <div data-testid="auth">{String(authRef.isAuthenticated)}</div>
             <button data-testid="logout" onClick={() => authRef.logout()}>Logout</button>
           </div>
@@ -427,28 +442,30 @@ describe('Failure Recovery Tests', () => {
       }
 
       render(<AuthProvider><Probe /></AuthProvider>)
-      
+
       await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('false'))
     })
 
     test('marmaladeApi timeout handling', async () => {
       const timeoutError = new Error('timeout')
       timeoutError.code = 'ECONNABORTED'
-      
-      const marmaladeModule = require('../../services/marmaladeApi')
-      marmaladeModule.default.get.mockRejectedValueOnce(timeoutError)
-      
-      await expect(marmaladeModule.marmaladeStatus.getStatus()).rejects.toThrow('Request timed out')
+
+      // axios is mocked, so exercise the response interceptor the module registers
+      jest.isolateModules(() => { require('../../services/marmaladeApi') })
+      const client = axios.create.mock.results[axios.create.mock.results.length - 1].value
+      const onError = client.interceptors.response.use.mock.calls[0][1]
+      await expect(onError(timeoutError)).rejects.toThrow('Request timed out')
     })
 
     test('nexusApi timeout handling', async () => {
       const timeoutError = new Error('timeout')
       timeoutError.code = 'ECONNABORTED'
-      
-      const nexusModule = require('../../services/nexusApi')
-      nexusModule.apiClient.get.mockRejectedValueOnce(timeoutError)
-      
-      await expect(nexusModule.securityApi.getStats()).rejects.toThrow('Request timed out')
+
+      // nexusApi keeps its axios instance private; check the interceptor it registers
+      jest.isolateModules(() => { require('../../services/nexusApi') })
+      const client = axios.create.mock.results[axios.create.mock.results.length - 1].value
+      const onError = client.interceptors.response.use.mock.calls[0][1]
+      await expect(onError(timeoutError)).rejects.toThrow('Request timed out')
     })
   })
 
@@ -484,8 +501,8 @@ describe('Failure Recovery Tests', () => {
         .mockResolvedValueOnce({ data: { user: { id: '1', username: 'owner' } } }); // Successful login
 
       let authRef
-      const Grab = () => { 
-        authRef = useAuth(); 
+      const Grab = () => {
+        authRef = useAuth();
         return (
           <div>
             <div data-testid="user">{authRef.user?.username || 'none'}</div>
@@ -499,9 +516,9 @@ describe('Failure Recovery Tests', () => {
       await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('false'))
 
       // First login fails
-      await expect(act(async () => {
-        await authRef.login('wrong@test.com', 'wrong')
-      })).rejects.toThrow()
+      await act(async () => {
+        await expect(authRef.login('wrong@test.com', 'wrong')).rejects.toEqual({ response: { status: 401 } })
+      })
 
       // Second login succeeds
       await act(async () => {
@@ -557,8 +574,8 @@ describe('Failure Recovery Tests', () => {
         })
 
       let themeRef
-      const Grab = () => { 
-        themeRef = useTheme(); 
+      const Grab = () => {
+        themeRef = useTheme();
         return (
           <div>
             <div data-testid="type">{themeRef.themeType}</div>

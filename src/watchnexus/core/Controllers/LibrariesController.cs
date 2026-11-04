@@ -51,8 +51,10 @@ public class LibrariesController : ControllerBase
     [HttpGet("recent")]
     public async Task<IActionResult> Recent(int limit = 20)
     {
-        var items = await _db.MediaItems
-            .OrderByDescending(m => m.Id)
+        // Only the caller's libraries (see LibraryMedia.ForUser). Newest first by
+        // CreatedAt — Id is a random GUID and gave an arbitrary order.
+        var items = await LibraryMedia.ForUser(_db, UserId)
+            .OrderByDescending(m => m.CreatedAt)
             .Take(limit * 3)
             .ToListAsync();
 
@@ -62,7 +64,7 @@ public class LibrariesController : ControllerBase
         foreach (var m in items)
         {
             if (result.Count >= limit) break;
-            var key = (m.TmdbId.HasValue && (m.MediaType == "tv" || m.MediaType == "episode"))
+            var key = (m.TmdbId.HasValue && (m.MediaType == "tv" || m.MediaType == "episode" || m.TmdbKind == "tv"))
                 ? $"tv:{m.TmdbId}" : $"item:{m.Id}";
             if (seen.Contains(key)) continue;
             seen.Add(key);
@@ -70,9 +72,9 @@ public class LibrariesController : ControllerBase
             {
                 m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
                 media_type = (m.MediaType == "episode") ? "tv" : m.MediaType,
-                tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+                tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind, imdb_id = m.ImdbId,
                 m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
-                m.Genres, m.Year, m.Runtime
+                m.Genres, m.Year, m.Runtime, library_id = m.LibraryId
             });
         }
         return Ok(result);
@@ -162,6 +164,11 @@ public class LibrariesController : ControllerBase
     {
         var lib = await _db.Libraries.FirstOrDefaultAsync(l => l.Id == id && l.UserId == UserId);
         if (lib == null) return NotFound();
+        // Stop a running scan, otherwise it keeps inserting items for the deleted library.
+        lock (_scanLock)
+        {
+            if (_scanTokens.TryGetValue(id, out var cts)) cts.Cancel();
+        }
         _db.MediaItems.RemoveRange(_db.MediaItems.Where(m => m.LibraryId == id));
         _db.Libraries.Remove(lib);
         await _db.SaveChangesAsync();
@@ -250,7 +257,7 @@ public class LibrariesController : ControllerBase
         return Ok(items.Select(m => new
         {
             m.Id, m.Title, m.Overview, file_path = (string?)null, file_size = m.FileSize,
-            media_type = m.MediaType, tmdb_id = m.TmdbId, imdb_id = m.ImdbId,
+            media_type = m.MediaType, tmdb_id = m.TmdbId, tmdb_kind = m.TmdbKind, imdb_id = m.ImdbId,
             m.Rating, poster_url = m.PosterUrl, backdrop_url = m.BackdropUrl,
             m.Genres, m.Year, m.Runtime
         }));
@@ -364,6 +371,7 @@ public class LibrariesController : ControllerBase
                         if (meta != null)
                         {
                             item.TmdbId = meta.TmdbId;
+                            item.TmdbKind = meta.Kind;
                             item.Title = meta.Title ?? item.Title;
                             item.Overview = meta.Overview;
                             item.Rating = meta.Rating;
@@ -430,10 +438,13 @@ public class LibrariesController : ControllerBase
         }
     }
 
-    private static (string name, int? year) ParseTitle(string filename)
+    internal static (string name, int? year) ParseTitle(string filename)
     {
         var cleaned = Regex.Replace(filename, @"[\._]", " ");
-        var yearMatch = Regex.Match(cleaned, @"(.*?)\s*[\(\[]?(\d{4})[\)\]]?");
+        // Year must be 19xx/20xx, stand alone, and follow a non-empty title: the old
+        // pattern took any 4 digits ("Movie 1080p" -> year 1080, "2001 A Space
+        // Odyssey (1968)" -> empty title, year 2001).
+        var yearMatch = Regex.Match(cleaned, @"^(.+?)[\s\(\[]+((?:19|20)\d{2})(?!\d)");
         if (yearMatch.Success)
             return (yearMatch.Groups[1].Value.Trim(), int.Parse(yearMatch.Groups[2].Value));
         // Remove quality tags
@@ -441,23 +452,14 @@ public class LibrariesController : ControllerBase
         return (cleaned, null);
     }
 
-    private static async Task<TmdbResult?> FetchTmdbMetadataStatic(IHttpClientFactory httpFactory, string apiKey, string title, int? year, string mediaType)
+    // Anime libraries search TMDB TV first, then movies (see LibraryMedia.TmdbSearchKinds).
+    internal static async Task<TmdbResult?> FetchTmdbMetadataStatic(IHttpClientFactory httpFactory, string apiKey, string title, int? year, string mediaType)
     {
         try
         {
             var client = httpFactory.CreateClient();
-            var searchType = mediaType == "tv" ? "tv" : "movie";
-            var url = $"https://api.themoviedb.org/3/search/{searchType}?api_key={apiKey}&query={Uri.EscapeDataString(title)}";
-            if (year.HasValue) url += $"&year={year}";
-
-            var resp = await client.GetAsync(url);
-            if (!resp.IsSuccessStatusCode) return null;
-
-            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
-            var results = json.GetProperty("results");
-            if (results.GetArrayLength() == 0) return null;
-
-            var first = results[0];
+            var hit = await LibraryMedia.SearchTmdbAsync(client, apiKey, title, year, mediaType);
+            if (hit is not (var first, var searchType)) return null;
             var tmdbId = first.GetProperty("id").GetInt32();
 
             // Fetch detailed info
@@ -480,6 +482,7 @@ public class LibrariesController : ControllerBase
             return new TmdbResult
             {
                 TmdbId = tmdbId,
+                Kind = searchType,
                 Title = detail.TryGetProperty(titleProp, out var t) ? t.GetString() : title,
                 Overview = detail.TryGetProperty("overview", out var o) ? o.GetString() : null,
                 Rating = detail.TryGetProperty("vote_average", out var v) ? v.GetDouble() : null,
@@ -492,9 +495,10 @@ public class LibrariesController : ControllerBase
         catch { return null; }
     }
 
-    private class TmdbResult
+    internal class TmdbResult
     {
         public int TmdbId { get; set; }
+        public string Kind { get; set; } = "movie";
         public string? Title { get; set; }
         public string? Overview { get; set; }
         public double? Rating { get; set; }

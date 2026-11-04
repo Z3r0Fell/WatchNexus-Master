@@ -23,9 +23,18 @@ jest.mock('axios', () => ({
   })),
 }))
 
-import { render, screen, waitFor, act } from '../test-utils'
+// Render GadgetProvider on its own: test-utils' wrapper nests another
+// GadgetProvider plus Auth/Theme/License providers whose axios.get calls
+// consumed the per-test mockResolvedValueOnce sequence.
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { GadgetProvider, useGadgets } from '../../context/GadgetContext'
 import axios from 'axios'
+
+// Signed in, so the provider loads /ripen/installed + /ripen/hooks on mount.
+jest.mock('../../context/AuthContext', () => ({
+  ...jest.requireActual('../../context/AuthContext'),
+  useAuth: () => ({ isAuthenticated: true, user: { id: '1' }, loading: false }),
+}))
 
 const GadgetProbe = ({ onCapture }) => {
   const gadgets = useGadgets()
@@ -81,10 +90,10 @@ describe('GadgetContext Provider - Module Registry + Tier Gating', () => {
       
       await waitFor(() => expect(screen.getByTestId('gadgets-loading')).toHaveTextContent('false'))
       await waitFor(() => expect(screen.getByTestId('installed-count')).toHaveTextContent('1'))
-      expect(screen.getByTestId('installed-list')).toContain('weather')
-      expect(screen.getByTestId('hooks-sidebar')).toContain('Weather')
-      expect(screen.getByTestId('hooks-routes')).toContain('/weather')
-      expect(screen.getByTestId('hooks-settings')).toContain('weather')
+      expect(screen.getByTestId('installed-list').textContent).toContain('weather')
+      expect(screen.getByTestId('hooks-sidebar').textContent).toContain('Weather')
+      expect(screen.getByTestId('hooks-routes').textContent).toContain('/weather')
+      expect(screen.getByTestId('hooks-settings').textContent).toContain('weather')
     })
 
     test('initializes with empty state when not authenticated', async () => {
@@ -98,12 +107,14 @@ describe('GadgetContext Provider - Module Registry + Tier Gating', () => {
       axios.get
         .mockRejectedValueOnce({ response: { status: 401 } })      // /api/ripen/installed
         .mockRejectedValueOnce({ response: { status: 401 } });     // /api/ripen/hooks
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       render(<GadgetProvider><GadgetProbe /></GadgetProvider>)
       
       await waitFor(() => expect(screen.getByTestId('gadgets-loading')).toHaveTextContent('false'))
       expect(screen.getByTestId('installed-count')).toHaveTextContent('0')
-      expect(console.error).not.toHaveBeenCalled()
+      expect(errSpy).not.toHaveBeenCalled()
+      errSpy.mockRestore()
     })
 
     test('handles network error gracefully', async () => {
@@ -165,7 +176,9 @@ describe('GadgetContext Provider - Module Registry + Tier Gating', () => {
     test('install calls backend and refreshes', async () => {
       axios.post.mockResolvedValueOnce({ data: { success: true } }); // POST /api/ripen/install/weather
       axios.get
-        .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather', status: 'active' }] } })
+        .mockResolvedValueOnce({ data: { gadgets: [] } })               // initial load
+        .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
+        .mockResolvedValueOnce({ data: { gadgets: [{ gadget_id: 'weather', status: 'active' }] } }) // refresh after install
         .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
 
       render(<GadgetProvider><GadgetProbe /></GadgetProvider>)
@@ -188,15 +201,13 @@ describe('GadgetContext Provider - Module Registry + Tier Gating', () => {
         .mockResolvedValueOnce({ data: { gadgets: [] } })
         .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
 
-      render(<GadgetProvider><GadgetProbe /></GadgetProvider>)
+      let ctx
+      render(<GadgetProvider><GadgetProbe onCapture={(g) => { ctx = g }} /></GadgetProvider>)
       await waitFor(() => expect(screen.getByTestId('installed-count')).toHaveTextContent('0'))
 
+      // install() propagates the backend error to the caller
       await act(async () => {
-        try {
-          await screen.getByTestId('install-btn').click()
-        } catch (e) {
-          // Expected to throw
-        }
+        await expect(ctx.install('weather')).rejects.toThrow('Install failed')
       })
 
       await waitFor(() => expect(screen.getByTestId('installed-count')).toHaveTextContent('0'))
@@ -326,10 +337,9 @@ describe('GadgetContext Provider - Module Registry + Tier Gating', () => {
         .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
 
       render(<GadgetProvider><GadgetProbe /></GadgetProvider>)
-      await waitFor(() => {
-        const gadget = JSON.parse(screen.getByTestId('get-gadget-weather').textContent)
-        expect(gadget).toBeUndefined()
-      })
+      await waitFor(() => expect(screen.getByTestId('gadgets-loading')).toHaveTextContent('false'))
+      // JSON.stringify(undefined) renders nothing
+      expect(screen.getByTestId('get-gadget-weather').textContent).toBe('')
     })
   })
 

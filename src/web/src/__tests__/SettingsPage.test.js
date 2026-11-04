@@ -1,4 +1,9 @@
-import { render, screen, waitFor, act, userEvent } from './test-utils'
+import { render, screen, waitFor, act, userEvent, fireEvent } from './test-utils'
+import { cleanup } from '@testing-library/react'
+import { settingsApi } from '../services/api'
+// Nav buttons use fireEvent: SettingsPage defines NavButton inside its render, so
+// every re-render (e.g. a fetch resolving) remounts the buttons and can swallow
+// userEvent's multi-event click sequence (see report).
 import { SettingsPage } from '../pages/SettingsPage'
 import axios from 'axios'
 
@@ -78,6 +83,15 @@ jest.mock('../components/settings/FFmpegSettings', () => ({
   FFmpegSettings: () => <div data-testid="ffmpeg-settings">FFmpeg Settings</div>,
 }))
 
+// No app shell: the Sidebar repeats "Settings".
+jest.mock('../components/layout/Layout', () => ({
+  Layout: ({ children }) => <div data-testid="layout">{children}</div>,
+}))
+jest.mock('sonner', () => ({
+  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() },
+  Toaster: () => null,
+}))
+
 jest.mock('../hooks/use-confirm', () => ({
   useConfirm: () => ({
     confirm: jest.fn().mockResolvedValue(true),
@@ -92,7 +106,7 @@ describe('SettingsPage', () => {
     jest.clearAllMocks()
     localStorage.clear()
     sessionStorage.clear()
-    
+
     // Mock default API responses
     axios.get
       .mockResolvedValue({ data: {} }) // settingsApi.get
@@ -106,25 +120,25 @@ describe('SettingsPage', () => {
   test('renders settings page with sidebar navigation', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByText('Configure WatchNexus')).toBeInTheDocument()
   })
 
   test('shows all navigation sections', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     // Core Settings
     expect(screen.getByTestId('settings-nav-general')).toHaveTextContent('General')
     expect(screen.getByTestId('settings-nav-users')).toHaveTextContent('Users')
     expect(screen.getByTestId('settings-nav-library')).toHaveTextContent('Media Libraries')
     expect(screen.getByTestId('settings-nav-media-health')).toHaveTextContent('Media Health')
-    
+
     // Integrations
     expect(screen.getByTestId('settings-nav-integrations')).toHaveTextContent('API Management')
     expect(screen.getByTestId('settings-nav-indexers')).toHaveTextContent('Indexers')
     expect(screen.getByTestId('settings-nav-download')).toHaveTextContent('Download Client')
-    
+
     // Playback & Streaming
     expect(screen.getByTestId('settings-nav-playback')).toHaveTextContent('Playback')
     expect(screen.getByTestId('settings-nav-ffmpeg')).toHaveTextContent('FFmpeg')
@@ -132,16 +146,16 @@ describe('SettingsPage', () => {
     expect(screen.getByTestId('settings-nav-iptv')).toHaveTextContent('IPTV')
     expect(screen.getByTestId('settings-nav-streaming')).toHaveTextContent('Streaming Services')
     expect(screen.getByTestId('settings-nav-subtitles')).toHaveTextContent('Subtitles')
-    
+
     // Advanced
     expect(screen.getByTestId('settings-nav-gelatin')).toHaveTextContent('External Access')
     expect(screen.getByTestId('settings-nav-theme-forge')).toHaveTextContent('Theme Forge')
     expect(screen.getByTestId('settings-nav-plugins')).toHaveTextContent('Gadgets')
     expect(screen.getByTestId('settings-nav-logs')).toHaveTextContent('Logs & Health')
     expect(screen.getByTestId('settings-nav-maintenance')).toHaveTextContent('Maintenance')
-    
+
     // About
-    expect(screen.getByTestId('settings-nav-activation')).toHaveTextContent('License Activation')
+    expect(screen.getByTestId('settings-nav-activation')).toHaveTextContent('Activation')
     expect(screen.getByTestId('settings-nav-updates')).toHaveTextContent('Updates')
     expect(screen.getByTestId('settings-nav-about')).toHaveTextContent('About & Releases')
   })
@@ -155,11 +169,11 @@ describe('SettingsPage', () => {
   test('navigates to Users section when clicked', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     await act(async () => {
-      await userEvent.click(screen.getByTestId('settings-nav-users'))
+      fireEvent.click(screen.getByTestId('settings-nav-users'))
     })
-    
+
     await waitFor(() => expect(screen.getByTestId('users-settings')).toBeInTheDocument())
     expect(screen.getByText('Users Settings')).toBeInTheDocument()
   })
@@ -167,11 +181,11 @@ describe('SettingsPage', () => {
   test('navigates to Library section when clicked', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     await act(async () => {
-      await userEvent.click(screen.getByTestId('settings-nav-library'))
+      fireEvent.click(screen.getByTestId('settings-nav-library'))
     })
-    
+
     await waitFor(() => expect(screen.getByTestId('library-settings')).toBeInTheDocument())
     expect(screen.getByText('Library Settings')).toBeInTheDocument()
   })
@@ -179,11 +193,11 @@ describe('SettingsPage', () => {
   test('navigates to Activation section when clicked', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     await act(async () => {
-      await userEvent.click(screen.getByTestId('settings-nav-activation'))
+      fireEvent.click(screen.getByTestId('settings-nav-activation'))
     })
-    
+
     await waitFor(() => expect(screen.getByTestId('activation-settings')).toBeInTheDocument())
     expect(screen.getByText('License Activation')).toBeInTheDocument()
   })
@@ -191,35 +205,35 @@ describe('SettingsPage', () => {
   test('shows active section indicator', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     const generalBtn = screen.getByTestId('settings-nav-general')
     expect(generalBtn).toHaveStyle({ backgroundColor: expect.stringContaining('var(--primary') })
   })
 
   test('fetches users on mount', async () => {
     axios.get.mockResolvedValueOnce({ data: [{ id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' }] })
-    
+
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     await act(async () => {
-      await userEvent.click(screen.getByTestId('settings-nav-users'))
+      fireEvent.click(screen.getByTestId('settings-nav-users'))
     })
-    
+
     await waitFor(() => expect(screen.getByTestId('users-settings')).toBeInTheDocument())
     expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('/api/users'))
   })
 
   test('fetches libraries on mount', async () => {
     axios.get.mockResolvedValueOnce({ data: [{ id: '1', name: 'Movies', path: '/movies', media_type: 'movies', item_count: 100 }] })
-    
+
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     await act(async () => {
-      await userEvent.click(screen.getByTestId('settings-nav-library'))
+      fireEvent.click(screen.getByTestId('settings-nav-library'))
     })
-    
+
     await waitFor(() => expect(screen.getByTestId('library-settings')).toBeInTheDocument())
     expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('/api/marmalade/libraries'))
   })
@@ -227,16 +241,16 @@ describe('SettingsPage', () => {
   test('shows file browser modal when triggered', async () => {
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-    
+
     await act(async () => {
-      await userEvent.click(screen.getByTestId('settings-nav-general'))
+      fireEvent.click(screen.getByTestId('settings-nav-general'))
     })
-    
+
     await waitFor(() => expect(screen.getByTestId('general-settings')).toBeInTheDocument())
     await act(async () => {
       await userEvent.click(screen.getByTestId('open-browser'))
     })
-    
+
     expect(screen.getByTestId('folder-browser')).toBeInTheDocument()
   })
 
@@ -260,46 +274,49 @@ describe('SettingsPage', () => {
       { id: 'settings-nav-about', testId: 'about-settings', title: 'About & Releases' },
       { id: 'settings-nav-updates', testId: 'update-settings', title: 'Software Updates' },
     ]
-    
+
     for (const section of sections) {
       jest.clearAllMocks()
+      cleanup() // one page instance per section
       render(<SettingsPage />)
       await waitFor(() => expect(screen.getByTestId('settings-page')).toBeInTheDocument())
-      
+
       await act(async () => {
-        await userEvent.click(screen.getByTestId(section.id))
+        fireEvent.click(screen.getByTestId(section.id))
       })
-      
+
       await waitFor(() => expect(screen.getByTestId(section.testId)).toBeInTheDocument())
-      expect(screen.getByText(section.title)).toBeInTheDocument()
+      // titles can equal nav labels; check inside the rendered section
+      expect(screen.getByTestId(section.testId)).toHaveTextContent(section.title)
     }
   })
 
   test('saves general settings', async () => {
-    axios.put.mockResolvedValueOnce({ data: {} })
+    // settingsApi uses the shared apiClient instance, not axios.put
+    jest.spyOn(settingsApi, 'update').mockResolvedValueOnce({ data: {} })
     const toast = require('sonner').toast
-    
+
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('general-settings')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('save-general'))
     })
-    
-    expect(toast.success).toHaveBeenCalledWith('Settings saved successfully')
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Settings saved successfully'))
   })
 
   test('shows error toast on save failure', async () => {
-    axios.put.mockRejectedValueOnce(new Error('Failed'))
+    jest.spyOn(settingsApi, 'update').mockRejectedValueOnce(new Error('Failed'))
     const toast = require('sonner').toast
-    
+
     render(<SettingsPage />)
     await waitFor(() => expect(screen.getByTestId('general-settings')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('save-general'))
     })
-    
-    expect(toast.error).toHaveBeenCalledWith('Failed to save settings')
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to save settings'))
   })
 })

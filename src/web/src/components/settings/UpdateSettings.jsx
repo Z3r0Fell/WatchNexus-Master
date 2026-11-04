@@ -100,11 +100,11 @@ export const UpdateSettings = () => {
   };
 
   const handleDismiss = async (version) => {
-    try { await axios.post(`${API}/api/system/updates/dismiss`, { version }); setUpdateResult(null); } catch {}
+    try { await axios.post(`${API}/api/system/updates/dismiss`, { version }); setUpdateResult(null); } catch (err) { toast.error(err.response?.data?.message || 'Failed to dismiss update'); }
   };
 
   const handleSaveSettings = async () => {
-    try { await axios.post(`${API}/api/system/updates/settings`, updateSettings); toast.success('Update settings saved'); setShowSettings(false); } catch {}
+    try { await axios.post(`${API}/api/system/updates/settings`, updateSettings); toast.success('Update settings saved'); setShowSettings(false); } catch (err) { toast.error(err.response?.status === 403 ? 'Only administrators can change update settings' : (err.response?.data?.message || 'Failed to save update settings')); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;

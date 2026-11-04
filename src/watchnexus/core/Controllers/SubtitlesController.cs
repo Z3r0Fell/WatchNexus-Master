@@ -28,13 +28,27 @@ public class SubtitlesController : ControllerBase
         foreach (var provider in providers)
         {
             var cfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == $"subtitle_{provider}");
-            result[provider] = cfg?.Value != null ? JsonSerializer.Deserialize<object>(cfg.Value)! : new { enabled = false };
+            object val = new { enabled = false };
+            // SaveSettings stores string values unquoted, so a stored value may not be JSON.
+            if (cfg?.Value != null) { try { val = JsonSerializer.Deserialize<object>(cfg.Value)!; } catch (JsonException) { val = cfg.Value; } }
+            result[provider] = val;
         }
         var langSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "subtitle_languages");
-        result["languages"] = langSetting?.Value != null ? JsonSerializer.Deserialize<string[]>(langSetting.Value)! : new[] { "en" };
+        result["languages"] = ParseLanguages(langSetting?.Value);
         var autoSetting = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "subtitle_auto_download");
         result["auto_download"] = autoSetting?.Value == "true";
         return Ok(result);
+    }
+
+    private static string[] ParseLanguages(string? stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored)) return new[] { "en" };
+        try { return JsonSerializer.Deserialize<string[]>(stored) ?? new[] { "en" }; }
+        catch (JsonException)
+        {
+            // A plain string such as "en" or "en,fr" (saved unquoted by SaveSettings).
+            return stored.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
     }
 
     [HttpPut("settings")]
@@ -71,8 +85,11 @@ public class SubtitlesController : ControllerBase
 
     [HttpGet("search/movie")]
     public async Task<IActionResult> SearchMovie([FromQuery] string movie_name = "",
-        [FromQuery] int? year = null, [FromQuery] string? imdb_id = null, [FromQuery] string languages = "en")
+        [FromQuery] int? year = null, [FromQuery] string? imdb_id = null, [FromQuery] string languages = "en",
+        [FromQuery] string? title = null)
     {
+        // VideoPlayer.jsx sends `title` rather than `movie_name`.
+        if (string.IsNullOrEmpty(movie_name) && !string.IsNullOrEmpty(title)) movie_name = title;
         var results = new List<SubtitleResult>();
         var userId = this.UserId();
         var osCfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "subtitle_opensubtitles");
@@ -91,17 +108,24 @@ public class SubtitlesController : ControllerBase
             catch { }
         }
         try { results.AddRange(await SearchPodnapisi(movie_name, year, null, null, languages)); } catch { }
-        return Ok(results.Select(r => new
-        {
-            r.Provider, r.Title, r.Language, download_url = r.DownloadUrl,
-            file_format = r.FileFormat, r.Downloads, r.Rating, release_info = r.ReleaseInfo
-        }));
+        return Ok(Project(results));
     }
+
+    // One response shape for movie and TV searches (TV used to return the raw
+    // record, i.e. `downloadUrl` instead of the `download_url` the player reads).
+    private static IEnumerable<object> Project(List<SubtitleResult> results) => results.Select(r => new
+    {
+        r.Provider, r.Title, r.Language, download_url = r.DownloadUrl,
+        file_format = r.FileFormat, r.Downloads, r.Rating, release_info = r.ReleaseInfo
+    });
 
     [HttpGet("search/tv")]
     public async Task<IActionResult> SearchTv([FromQuery] string show_name = "",
-        [FromQuery] int season = 1, [FromQuery] int episode = 1, [FromQuery] string languages = "en")
+        [FromQuery] int season = 1, [FromQuery] int episode = 1, [FromQuery] string languages = "en",
+        [FromQuery] string? series_name = null)
     {
+        // VideoPlayer.jsx sends `series_name` rather than `show_name`.
+        if (string.IsNullOrEmpty(show_name) && !string.IsNullOrEmpty(series_name)) show_name = series_name;
         var results = new List<SubtitleResult>();
         var userId = this.UserId();
         var osCfg = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "subtitle_opensubtitles");
@@ -120,7 +144,7 @@ public class SubtitlesController : ControllerBase
             catch { }
         }
         try { results.AddRange(await SearchPodnapisi(show_name, null, season, episode, languages)); } catch { }
-        return Ok(results);
+        return Ok(Project(results));
     }
 
     [HttpPost("download")]
@@ -187,7 +211,8 @@ public class SubtitlesController : ControllerBase
                 if (!MediaPaths.IsAllowedPath(srtPath))
                     return BadRequest(new { detail = "subtitle output path is outside the configured media directories" });
                 await System.IO.File.WriteAllBytesAsync(srtPath, data);
-                return Ok(new { status = "downloaded", path = srtPath, size = data.Length, source, media_id });
+                // file_path: relative form consumed by GET /api/subtitles/file/{*filePath} (VideoPlayer.jsx).
+                return Ok(new { status = "downloaded", path = srtPath, file_path = srtPath.TrimStart('/'), size = data.Length, source, media_id });
             }
             return Ok(new { status = "downloaded", size = data.Length, source, media_id, data_base64 = Convert.ToBase64String(data) });
         }
@@ -214,10 +239,10 @@ public class SubtitlesController : ControllerBase
         var http = this.Http();
         http.DefaultRequestHeaders.Add("Api-Key", apiKey);
         http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus v1.0.0");
-        var url = $"https://api.opensubtitles.com/api/v1/subtitles?query={Uri.EscapeDataString(query)}&languages={languages}";
+        var url = $"https://api.opensubtitles.com/api/v1/subtitles?query={Uri.EscapeDataString(query)}&languages={Uri.EscapeDataString(languages)}";
         if (season.HasValue) url += $"&season_number={season}";
         if (episode.HasValue) url += $"&episode_number={episode}";
-        if (!string.IsNullOrEmpty(imdbId)) url += $"&imdb_id={imdbId}";
+        if (!string.IsNullOrEmpty(imdbId)) url += $"&imdb_id={Uri.EscapeDataString(imdbId)}";
         try
         {
             var resp = await http.GetStringAsync(url);

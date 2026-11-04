@@ -75,6 +75,34 @@ export const ThemeForgeSettings = () => {
     if (previewMode) previewColors(newColors);
   };
 
+  const handleExportTheme = () => {
+    const blob = new Blob([JSON.stringify(customColors, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'watchnexus-theme.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const handleImportTheme = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        const hex = /^#[0-9a-fA-F]{3,8}$/;
+        const next = { ...customColors };
+        Object.keys(next).forEach(k => { if (typeof parsed?.[k] === 'string' && hex.test(parsed[k])) next[k] = parsed[k]; });
+        setCustomColors(next);
+        if (previewMode) previewColors(next);
+        toast.success('Theme imported - Save & Apply to keep it');
+      } catch { toast.error('Invalid theme file'); }
+    };
+    reader.readAsText(file);
+  };
+
   const togglePreview = () => {
     if (previewMode) {
       resetToSaved();
@@ -102,6 +130,8 @@ export const ThemeForgeSettings = () => {
             togglePreview={togglePreview}
             handleSaveCustomTheme={handleSaveCustomTheme}
             savingTheme={savingTheme}
+            handleExportTheme={handleExportTheme}
+            handleImportTheme={handleImportTheme}
           />
         );
       default:
@@ -278,7 +308,7 @@ const PresetsTab = ({ themeForgeConfig, selectedTheme, handleSetTheme }) => (
 );
 
 // Custom Tab
-const CustomTab = ({ customColors, handleColorChange, previewMode, togglePreview, handleSaveCustomTheme, savingTheme }) => (
+const CustomTab = ({ customColors, handleColorChange, previewMode, togglePreview, handleSaveCustomTheme, savingTheme, handleExportTheme, handleImportTheme }) => (
   <div className="space-y-6">
     <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -328,8 +358,11 @@ const CustomTab = ({ customColors, handleColorChange, previewMode, togglePreview
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="outline" className="border-white/10 hover:bg-white/5"><Import className="w-4 h-4 mr-2" /> Import Theme</Button>
-        <Button variant="outline" className="border-white/10 hover:bg-white/5"><FileJson className="w-4 h-4 mr-2" /> Export Theme</Button>
+        <label className="inline-flex">
+          <input type="file" accept="application/json,.json" className="hidden" onChange={handleImportTheme} data-testid="theme-import-input" />
+          <Button asChild variant="outline" className="border-white/10 hover:bg-white/5"><span className="cursor-pointer"><Import className="w-4 h-4 mr-2" /> Import Theme</span></Button>
+        </label>
+        <Button variant="outline" onClick={handleExportTheme} className="border-white/10 hover:bg-white/5"><FileJson className="w-4 h-4 mr-2" /> Export Theme</Button>
       </div>
     </div>
 

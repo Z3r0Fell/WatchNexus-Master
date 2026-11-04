@@ -22,14 +22,28 @@ import { settingsApi } from '../services/api';
 import { BACKEND_URL } from '../lib/config';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../hooks/use-confirm';
+import { MANUAL_IMPORT_TARGET } from '../components/settings/LibrarySettings';
+
+const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|mpg|mpeg|m2ts)$/i;
 
 const API_URL = BACKEND_URL;
 
 export const SettingsPage = () => {
   const { user: currentUser } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
-  // Current active setting
-  const [activeSection, setActiveSection] = useState('general');
+  // Current active setting — deep-linkable via navigate('/settings', { state: { section } })
+  // (TierGate; React Router v6 keeps navigation state in history.state.usr) or
+  // /settings?section=... (apiErrorHandler). Read without router hooks so the
+  // page still renders outside a <Router>.
+  const [activeSection, setActiveSection] = useState(() => {
+    try {
+      return window.history.state?.usr?.section
+        || new URLSearchParams(window.location.search).get('section')
+        || 'general';
+    } catch {
+      return 'general';
+    }
+  });
   
   // General settings
   const [settings, setSettings] = useState({
@@ -74,10 +88,10 @@ export const SettingsPage = () => {
     try {
       const res = await axios.get(`${API_URL}/api/users`);
       setUsers(res.data || []);
-    } catch {
-      setUsers([{ id: '1', username: 'admin', email: 'admin@watchnexus.local', role: 'admin', avatar: null, created_at: new Date().toISOString(),
-        permissions: { can_download: true, can_delete: true, can_manage_library: true, can_manage_users: true, can_access_settings: true, max_streams: 10 }
-      }]);
+    } catch (error) {
+      // Never fabricate users on failure; /api/users is admin-only (403 for normal users).
+      setUsers([]);
+      if (error?.response?.status !== 403) toast.error('Failed to load users');
     } finally { setLoadingUsers(false); }
   }, []);
 
@@ -162,7 +176,15 @@ export const SettingsPage = () => {
   // Confirm folder selection
   const confirmFolderSelection = () => {
     if (!selectedBrowserPath) return;
-    
+
+    // Manual import picker has its own target, distinct from new-library creation
+    if (browserTargetField === MANUAL_IMPORT_TARGET) {
+      setManualImportPath(selectedBrowserPath);
+      setShowFileBrowser(false);
+      setBrowserTargetField(null);
+      return;
+    }
+
     // If we have a target field (for settings), update settings directly
     if (browserTargetField) {
       setSettings(prev => ({ ...prev, [browserTargetField]: selectedBrowserPath }));
@@ -190,31 +212,56 @@ export const SettingsPage = () => {
   const handleManualImportScan = async () => {
     if (!manualImportPath) { toast.error('Please enter a path to scan'); return; }
     try {
-      const res = await axios.post(`${API_URL}/api/media-management/scan-import`, { path: manualImportPath });
-      setManualImportFiles(res.data.files || []); toast.success(`Found ${res.data.files?.length || 0} importable files`);
-    } catch { toast.error('Failed to scan directory'); }
+      // Backend directory scan (media-root allowlisted). Returns [{ file_path, status, size, ... }].
+      const res = await axios.post(`${API_URL}/api/media/scan-library`, null, { params: { directory: manualImportPath } });
+      const files = (Array.isArray(res.data) ? res.data : [])
+        .filter(f => f.status !== 'error' && VIDEO_EXT_RE.test(f.file_path || ''))
+        .map(f => ({
+          path: f.file_path,
+          name: (f.file_path || '').split(/[\\/]/).pop(),
+          size: f.size || 0,
+          status: f.status,
+        }));
+      setManualImportFiles(files); toast.success(`Found ${files.length} importable files`);
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 403) toast.error('That path is outside the configured media roots');
+      else if (status === 404) toast.error('Directory not found');
+      else toast.error('Failed to scan directory');
+    }
   };
 
-  const handleImportFiles = async (files) => {
-    try {
-      await axios.post(`${API_URL}/api/media-management/import`, { files });
-      toast.success('Files imported successfully'); setManualImportFiles([]); fetchLibraries();
-    } catch { toast.error('Failed to import files'); }
+  // There is no per-file import endpoint: media enters a library via a library
+  // scan. If the scanned path is inside a library, rescan that library;
+  // otherwise tell the user to add the folder as a library.
+  const handleImportFiles = async () => {
+    const norm = (p) => (p || '').replace(/[\\/]+$/, '');
+    const target = norm(manualImportPath);
+    const lib = libraries.find(l => l.path && (target === norm(l.path) || target.startsWith(norm(l.path) + '/')));
+    if (!lib) {
+      toast.error('Files can only be imported from inside a library folder. Add this folder as a library (or move the files into one) and scan it.');
+      return;
+    }
+    await handleScanLibrary(lib.id);
+    setManualImportFiles([]);
   };
 
   // Settings handlers
   const fetchData = useCallback(async () => {
     try {
-      const settingsRes = await settingsApi.get().catch(() => ({ data: settings }));
-      setSettings(settingsRes.data || settings);
-    } catch {}
+      const settingsRes = await settingsApi.get();
+      if (settingsRes?.data) setSettings(settingsRes.data);
+    } catch (error) {
+      // Keep defaults but tell the user: saving them would overwrite the real config.
+      toast.error(error?.response?.status === 403 ? 'Admin access required to view server settings' : 'Failed to load settings');
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveSettings = async () => {
     setSaving(true);
     try { await settingsApi.update(settings); toast.success('Settings saved successfully'); }
-    catch { toast.error('Failed to save settings'); }
+    catch (error) { toast.error(error?.response?.status === 403 ? 'Admin access required to change server settings' : 'Failed to save settings'); }
     finally { setSaving(false); }
   };
 

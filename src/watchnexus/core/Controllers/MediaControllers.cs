@@ -1,10 +1,12 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchNexus.Core.Auth;
 using WatchNexus.Core.Data;
+using WatchNexus.Shared;
 
 namespace WatchNexus.Core.Controllers;
 
@@ -59,9 +61,10 @@ public class MediaOpsController : ControllerBase
                 install_hint = Services.FfmpegLocator.InstallHint()
             });
 
-        var outPath = output_path ?? Path.Combine(
+        var defaultOutPath = Path.Combine(
             Path.GetDirectoryName(file_path) ?? ".",
             Path.GetFileNameWithoutExtension(file_path) + ".repaired" + Path.GetExtension(file_path));
+        var outPath = string.IsNullOrEmpty(output_path) ? defaultOutPath : output_path;
 
         if (!IsAllowedMediaPath(outPath))
             return StatusCode(403, new { detail = "output_path must be inside a configured media root" });
@@ -69,6 +72,15 @@ public class MediaOpsController : ControllerBase
         var outDir = Path.GetFullPath(Path.GetDirectoryName(outPath) ?? ".").TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (!string.Equals(inDir, outDir, StringComparison.OrdinalIgnoreCase))
             return StatusCode(403, new { detail = "output_path must be in the same directory as file_path" });
+        // ffmpeg runs with -y: never let it clobber the source or an unrelated
+        // existing file (only the default ".repaired" output may be overwritten).
+        var inFull = Path.GetFullPath(file_path);
+        var outFull = Path.GetFullPath(outPath);
+        if (string.Equals(inFull, outFull, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { detail = "output_path must differ from file_path" });
+        if (System.IO.File.Exists(outFull) &&
+            !string.Equals(outFull, Path.GetFullPath(defaultOutPath), StringComparison.OrdinalIgnoreCase))
+            return Conflict(new { detail = "output_path already exists" });
 
         try
         {
@@ -87,8 +99,11 @@ public class MediaOpsController : ControllerBase
             psi.ArgumentList.Add("-c");
             psi.ArgumentList.Add("copy");
             psi.ArgumentList.Add(outPath);
-            var proc = System.Diagnostics.Process.Start(psi);
+            using var proc = System.Diagnostics.Process.Start(psi);
             if (proc == null) return StatusCode(500, new { detail = "Failed to launch ffmpeg" });
+            // Drain stderr concurrently: ffmpeg writes continuous progress to
+            // stderr and blocks once the pipe buffer fills if nobody reads it.
+            var stderrTask = proc.StandardError.ReadToEndAsync();
 
             // Cap at 10 minutes — repair of a single file shouldn't take longer.
             var completed = await Task.Run(() => proc.WaitForExit(TimeSpan.FromMinutes(10)));
@@ -97,6 +112,7 @@ public class MediaOpsController : ControllerBase
                 try { proc.Kill(true); } catch { }
                 return StatusCode(504, new { detail = "ffmpeg timed out after 10 minutes" });
             }
+            var stderr = await stderrTask;
             if (proc.ExitCode != 0)
                 return StatusCode(500, new
                 {
@@ -105,7 +121,7 @@ public class MediaOpsController : ControllerBase
                     message = "ffmpeg exited non-zero",
                     detail = "ffmpeg exited non-zero",
                     exit_code = proc.ExitCode,
-                    stderr_tail = (await proc.StandardError.ReadToEndAsync()).Split('\n').TakeLast(8)
+                    stderr_tail = stderr.Split('\n').TakeLast(8)
                 });
             return Ok(new { status = "repaired", success = true, message = "File repaired", file_path, output_path = outPath });
         }
@@ -131,7 +147,11 @@ public class MediaOpsController : ControllerBase
             try
             {
                 foreach (var sub in Directory.GetDirectories(dir))
+                {
+                    // Never descend through symlinks — they can point outside the media root.
+                    if (new DirectoryInfo(sub).LinkTarget != null) continue;
                     if (stack.Count < 512) stack.Push(sub);
+                }
                 foreach (var f in Directory.GetFiles(dir))
                 {
                     if (results.Count >= maxFiles) break;
@@ -186,6 +206,7 @@ public class MediaOpsController : ControllerBase
                 message = n.Message,
                 channel = n.Channel,
                 status = n.Status,
+                error = n.Error,
                 created_at = n.SentAt,
             })
             .ToListAsync();
@@ -320,7 +341,9 @@ public class MediaOpsController : ControllerBase
             directory = doc.TryGetProperty("directory", out var d) ? d.GetString() ?? "" : "";
         }
         catch { }
-        if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))
+        if (string.IsNullOrEmpty(directory) || !IsAllowedMediaPath(directory))
+            return StatusCode(403, new { detail = "directory must be inside a configured media root" });
+        if (!System.IO.Directory.Exists(directory))
             return NotFound(new { detail = "Configured directory not found" });
         var res = RunHealthScan(directory, maxFiles: 2000);
         return Ok(new { total_files = res.Count, issues = res.Count(r => r.status != "healthy"), scan_id = id });
@@ -337,47 +360,12 @@ public class MediaOpsController : ControllerBase
     // ── Media-root allowlist ─────────────────────────────────────────
     // Confines the file-oracle / ffmpeg-overwrite endpoints to the server's
     // media directories so an authenticated user can't probe or overwrite
-    // arbitrary system files. Roots come from MEDIA_ROOT / MEDIA_ROOTS env,
-    // otherwise the standard Docker data dirs + the app data dir.
+    // arbitrary system files. Delegates to the shared symlink-resolving
+    // MediaPaths allow-list (a symlink inside a root can't escape it).
+    private static bool IsAllowedMediaPath(string? path) => MediaPaths.IsAllowedPath(path);
+#pragma warning disable CS0169, CS0649 // retained: existing tests reset this cache via reflection
     private static string[]? _cachedRoots;
-    private static readonly object _rootsLock = new();
-
-    private static string[] ResolveAllowedMediaRoots()
-    {
-        var env = Environment.GetEnvironmentVariable("MEDIA_ROOTS")
-                  ?? Environment.GetEnvironmentVariable("MEDIA_ROOT");
-        if (!string.IsNullOrWhiteSpace(env))
-            return env.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (_cachedRoots != null) return _cachedRoots;
-        lock (_rootsLock)
-        {
-            if (_cachedRoots == null)
-            {
-                var dataDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR")
-                              ?? Path.Combine(AppContext.BaseDirectory, "data");
-                _cachedRoots = new[]
-                {
-                    "/data/media", "/data/rips", "/data/transcoded", "/data/offline",
-                    dataDir,
-                };
-            }
-            return _cachedRoots;
-        }
-    }
-
-    private static bool IsAllowedMediaPath(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false;
-        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        foreach (var root in ResolveAllowedMediaRoots())
-        {
-            var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            if (full.Equals(rootFull, StringComparison.OrdinalIgnoreCase) ||
-                full.StartsWith(rootFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-        return false;
-    }
+#pragma warning restore CS0169, CS0649
 }
 
 // ── Media Management — DELETED stubs (Import/ScanImport were placeholders) ──
@@ -386,20 +374,140 @@ public class MediaOpsController : ControllerBase
 // If you land on these endpoints from an old UI build, please refresh.
 
 // ── Quality Profiles ──────────────────────────────────
+// Per-user CRUD. Profiles are stored as JSON in AppSetting rows keyed
+// "quality_profile:{id}" (same pattern as Compote indexers). A user with no
+// stored profiles sees the built-in defaults; the first mutation seeds those
+// defaults into the user's rows so edits/deletes of built-ins behave naturally.
 [Route("api/quality-profiles")]
 [ApiController]
 [Authorize]
 public class QualityProfilesController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult List() => Ok(new[]
+    internal const string KeyPrefix = "quality_profile:";
+    private readonly AppDbContext _db;
+    public QualityProfilesController(AppDbContext db) => _db = db;
+
+    internal static JsonObject[] BuiltInProfiles() => new[]
     {
-        new { id = "any", name = "Any", min_quality = 0, max_quality = 100, preferred = "1080p" },
-        new { id = "sd", name = "SD (480p)", min_quality = 0, max_quality = 480, preferred = "480p" },
-        new { id = "hd", name = "HD (720p)", min_quality = 480, max_quality = 720, preferred = "720p" },
-        new { id = "fhd", name = "Full HD (1080p)", min_quality = 720, max_quality = 1080, preferred = "1080p" },
-        new { id = "uhd", name = "4K UHD", min_quality = 1080, max_quality = 2160, preferred = "2160p" },
-    });
+        Builtin("any", "Any", 0, 100, "1080p", true),
+        Builtin("sd", "SD (480p)", 0, 480, "480p"),
+        Builtin("hd", "HD (720p)", 480, 720, "720p"),
+        Builtin("fhd", "Full HD (1080p)", 720, 1080, "1080p"),
+        Builtin("uhd", "4K UHD", 1080, 2160, "2160p"),
+    };
+
+    private static JsonObject Builtin(string id, string name, int min, int max, string preferred, bool isDefault = false) => new()
+    {
+        ["id"] = id, ["name"] = name, ["min_quality"] = min, ["max_quality"] = max,
+        ["preferred"] = preferred, ["cutoff"] = preferred, ["qualities"] = new JsonArray(),
+        ["upgrade_allowed"] = true, ["is_default"] = isDefault, ["builtin"] = true,
+    };
+
+    private Task<List<AppSetting>> UserRows(string userId) =>
+        _db.Settings.Where(s => s.UserId == userId && s.Key.StartsWith(KeyPrefix)).ToListAsync();
+
+    private static JsonObject Parse(AppSetting row)
+    {
+        JsonObject obj;
+        try { obj = JsonNode.Parse(row.Value ?? "{}") as JsonObject ?? new JsonObject(); }
+        catch (JsonException) { obj = new JsonObject(); }
+        obj["id"] = row.Key[KeyPrefix.Length..];
+        return obj;
+    }
+
+    private static bool IsDefault(JsonObject obj) =>
+        obj["is_default"] is JsonValue v && v.TryGetValue<bool>(out var b) && b;
+
+    private async Task<List<AppSetting>> EnsureSeeded(string userId)
+    {
+        var rows = await UserRows(userId);
+        if (rows.Count > 0) return rows;
+        foreach (var p in BuiltInProfiles())
+        {
+            var row = new AppSetting { Key = KeyPrefix + p["id"]!.GetValue<string>(), Value = p.ToJsonString(), UserId = userId };
+            _db.Settings.Add(row);
+            rows.Add(row);
+        }
+        return rows;
+    }
+
+    private static void ClearOtherDefaults(List<AppSetting> rows, string keepKey)
+    {
+        foreach (var r in rows)
+        {
+            if (r.Key == keepKey) continue;
+            var obj = Parse(r);
+            if (!IsDefault(obj)) continue;
+            obj["is_default"] = false;
+            r.Value = obj.ToJsonString();
+        }
+    }
+
+    private ContentResult Json(JsonNode node) => Content(node.ToJsonString(), "application/json");
+
+    [HttpGet]
+    public async Task<IActionResult> List()
+    {
+        var rows = await UserRows(this.UserId());
+        var profiles = rows.Count == 0
+            ? BuiltInProfiles().ToList()
+            : rows.Select(Parse).OrderBy(p => p["name"]?.ToString(), StringComparer.OrdinalIgnoreCase).ToList();
+        return Json(new JsonArray(profiles.Select(p => (JsonNode?)p).ToArray()));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] JsonElement body)
+    {
+        if (body.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "JSON object body required" });
+        var obj = JsonNode.Parse(body.GetRawText())!.AsObject();
+        var name = obj["name"]?.ToString()?.Trim();
+        if (string.IsNullOrEmpty(name)) return BadRequest(new { detail = "name is required" });
+
+        var userId = this.UserId();
+        var rows = await EnsureSeeded(userId);
+        var id = Guid.NewGuid().ToString("N")[..12];
+        obj["id"] = id;
+        obj["name"] = name;
+        obj.Remove("builtin");
+        if (IsDefault(obj)) ClearOtherDefaults(rows, KeyPrefix + id);
+        _db.Settings.Add(new AppSetting { Key = KeyPrefix + id, Value = obj.ToJsonString(), UserId = userId });
+        await _db.SaveChangesAsync();
+        return Json(obj);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] JsonElement body)
+    {
+        if (body.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "JSON object body required" });
+        var userId = this.UserId();
+        var rows = await EnsureSeeded(userId);
+        var row = rows.FirstOrDefault(r => r.Key == KeyPrefix + id);
+        if (row == null) return NotFound(new { detail = "Quality profile not found" });
+
+        // Partial update: merge supplied fields over the stored profile.
+        var obj = Parse(row);
+        foreach (var prop in JsonNode.Parse(body.GetRawText())!.AsObject().ToList())
+        {
+            if (prop.Key is "id" or "builtin") continue;
+            obj[prop.Key] = prop.Value?.DeepClone();
+        }
+        if (string.IsNullOrWhiteSpace(obj["name"]?.ToString())) return BadRequest(new { detail = "name is required" });
+        if (IsDefault(obj)) ClearOtherDefaults(rows, row.Key);
+        row.Value = obj.ToJsonString();
+        await _db.SaveChangesAsync();
+        return Json(obj);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        var rows = await EnsureSeeded(this.UserId());
+        var row = rows.FirstOrDefault(r => r.Key == KeyPrefix + id);
+        if (row == null) return NotFound(new { detail = "Quality profile not found" });
+        _db.Settings.Remove(row);
+        await _db.SaveChangesAsync();
+        return Ok(new { id, deleted = true });
+    }
 }
 
 // ── Compote (Indexer Manager) ──────────────────────────────────
@@ -535,7 +643,8 @@ public class CompoteController : ControllerBase
             if (string.IsNullOrEmpty(url)) return Ok(new { success = false, error = "No URL configured" });
             if (SsrfGuard.IsBlockedUrl(url)) return Ok(new { success = false, error = "Indexer URL is not an allowed http(s) endpoint" });
 
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var http = this.Http();
+            http.Timeout = TimeSpan.FromSeconds(10);
             http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var response = await http.GetAsync(url);
@@ -568,7 +677,8 @@ public class CompoteController : ControllerBase
 
         var allResults = new List<Dictionary<string, object?>>();
 
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        var http = this.Http();
+        http.Timeout = TimeSpan.FromSeconds(15);
         http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
 
         var tasks = new List<Task>();
@@ -802,6 +912,7 @@ public class CompoteController : ControllerBase
             var size = 0L;
             var seeders = 0;
             var leechers = 0;
+            int? peers = null;
 
             foreach (var attr in item.Elements(torznab + "attr").Concat(item.Elements(newznab + "attr")))
             {
@@ -809,8 +920,10 @@ public class CompoteController : ControllerBase
                 var attrValue = attr.Attribute("value")?.Value ?? "";
                 if (attrName == "size" && long.TryParse(attrValue, out var sz)) size = sz;
                 if (attrName == "seeders" && int.TryParse(attrValue, out var sd)) seeders = sd;
-                if (attrName == "peers" && int.TryParse(attrValue, out var pr)) leechers = pr - seeders;
+                if (attrName == "peers" && int.TryParse(attrValue, out var pr)) peers = pr;
             }
+            // "peers" may precede "seeders" in the feed — compute after both are read.
+            if (peers.HasValue) leechers = Math.Max(0, peers.Value - seeders);
 
             results.Add(new Dictionary<string, object?>
             {
@@ -1113,7 +1226,8 @@ public class GarnishController : ControllerBase
         if (!urls.ContainsKey(provider)) return BadRequest(new { success = false, error = "Unknown provider" });
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            var http = this.Http();
+            http.Timeout = TimeSpan.FromSeconds(8);
             http.DefaultRequestHeaders.Add("User-Agent", "WatchNexus/1.0.0");
             var resp = await http.GetAsync(urls[provider]);
             return Ok(new { success = resp.IsSuccessStatusCode, provider, status_code = (int)resp.StatusCode });

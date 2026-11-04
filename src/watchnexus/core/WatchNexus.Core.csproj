@@ -25,6 +25,11 @@
     <DefineConstants>$(DefineConstants);WINDOWS_BUILD</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <ImageSharpVersion Condition="'$(ImageSharpVersion)' == '' and ('$(SixLaborsLicenseKey)' != '' or '$(SixLaborsLicenseFile)' != '')">3.2.0</ImageSharpVersion>
+    <ImageSharpVersion Condition="'$(ImageSharpVersion)' == ''">3.1.12</ImageSharpVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.5.0" />
@@ -37,7 +42,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.19.2" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <!-- ImageSharp 3.2.0+ validates a Six Labors license key on Release builds (pass
+         -p:SixLaborsLicenseKey=... or the SIXLABORS_LICENSE_KEY Docker build arg). Without a key
+         we stay on 3.1.12 with decoding restricted (GameBotController.SafeDecoderOptions) so the
+         Oct-2026 TIFF/ICC advisories fixed in 3.2.0 are unreachable. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="$(ImageSharpVersion)" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
@@ -82,8 +91,15 @@
       <ModulesSource>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../modules'))</ModulesSource>
       <ModulesDest>$(PublishDir)modules</ModulesDest>
     </PropertyGroup>
+    <!-- Only the manifests are needed at runtime (ModuleLoader reads
+         modules/<name>/module.json + optional WatchNexus.Module.<Name>.dll).
+         MSBuild Copy instead of rsync: rsync is absent from the .NET SDK
+         Docker image and from Windows, which failed the publish. -->
+    <ItemGroup>
+      <ModuleManifestFiles Include="$(ModulesSource)/**/module.json" Exclude="$(ModulesSource)/**/bin/**;$(ModulesSource)/**/obj/**" />
+    </ItemGroup>
     <MakeDir Directories="$(ModulesDest)" Condition="!Exists('$(ModulesDest)')" />
-    <Exec Command="rsync -av --exclude='bin/' --exclude='obj/' &quot;$(ModulesSource)/&quot; &quot;$(ModulesDest)/&quot;" Condition="Exists('$(ModulesSource)')" />
+    <Copy SourceFiles="@(ModuleManifestFiles)" DestinationFolder="$(ModulesDest)/%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('$(ModulesSource)')" />
     <Copy SourceFiles="$(ModulesSource)/lobster/bin/$(Configuration)/net10.0/WatchNexus.Module.Lobster.dll"
           DestinationFolder="$(ModulesDest)/lobster/"
           SkipUnchangedFiles="true"

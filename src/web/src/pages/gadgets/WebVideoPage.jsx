@@ -53,7 +53,7 @@ export const WebVideoPage = () => {
         }, { headers: getAuth() }).catch(() => {});
       }
     } catch (err) {
-      toast.error('Failed to get stream');
+      toast.error(err.response?.data?.detail || 'Failed to get stream');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,8 @@ export const WebVideoPage = () => {
   const loadBookmarks = async () => {
     try {
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/webvideo/bookmarks`, { headers: getAuth() });
-      setBookmarks(resp.data.bookmarks || []);
+      // Backend returns a bare array.
+      setBookmarks(Array.isArray(resp.data) ? resp.data : (resp.data?.bookmarks || []));
     } catch (err) {
       toast.error('Failed to load bookmarks');
     }
@@ -71,7 +72,7 @@ export const WebVideoPage = () => {
   const loadHistory = async () => {
     try {
       const resp = await axios.get(`${BACKEND_URL}/api/gadgets/webvideo/history`, { headers: getAuth() });
-      setHistory(resp.data.history || []);
+      setHistory(Array.isArray(resp.data) ? resp.data : (resp.data?.history || []));
     } catch (err) {
       toast.error('Failed to load history');
     }
@@ -90,11 +91,12 @@ export const WebVideoPage = () => {
     }
   };
 
-  const removeBookmark = async (videoId) => {
+  // DELETE takes the bookmark row id (backend has no video_id).
+  const removeBookmark = async (bookmarkId) => {
     try {
-      await axios.delete(`${BACKEND_URL}/api/gadgets/webvideo/bookmarks/${videoId}`, { headers: getAuth() });
+      await axios.delete(`${BACKEND_URL}/api/gadgets/webvideo/bookmarks/${encodeURIComponent(bookmarkId)}`, { headers: getAuth() });
       toast.success('Removed');
-      setBookmarks(b => b.filter(v => v.video_id !== videoId));
+      setBookmarks(b => b.filter(v => v.id !== bookmarkId));
     } catch (err) {
       toast.error('Failed to remove');
     }
@@ -103,7 +105,7 @@ export const WebVideoPage = () => {
   const playFromList = (item) => {
     setUrl(item.url);
     setVideoInfo({
-      id: item.video_id, title: item.title, thumbnail: item.thumbnail, duration: item.duration
+      id: item.video_id || item.id, title: item.title, thumbnail: item.thumbnail, duration: item.duration
     });
     setActiveTab('player');
   };
@@ -279,8 +281,8 @@ export const WebVideoPage = () => {
                     <div className="p-4">
                       <h3 className="font-medium line-clamp-2">{item.title}</h3>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-gray-500">{new Date(item.added_at).toLocaleDateString()}</span>
-                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); removeBookmark(item.video_id); }}
+                        <span className="text-xs text-gray-500">{new Date(item.created_at || item.added_at).toLocaleDateString()}</span>
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); removeBookmark(item.id); }}
                           className="text-red-400 hover:text-red-300">
                           <X className="w-4 h-4" />
                         </Button>
@@ -321,7 +323,7 @@ export const WebVideoPage = () => {
                     </div>
                     <div className="p-4">
                       <h3 className="font-medium line-clamp-2">{item.title}</h3>
-                      <span className="text-xs text-gray-500">{new Date(item.watched_at).toLocaleString()}</span>
+                      <span className="text-xs text-gray-500">{new Date(item.viewed_at || item.watched_at).toLocaleString()}</span>
                     </div>
                   </motion.div>
                 ))}

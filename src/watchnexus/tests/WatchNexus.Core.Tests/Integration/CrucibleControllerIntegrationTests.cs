@@ -66,7 +66,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         await SeedLicenseAsync("ultra");
 
         // Create a test file
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "fake video content");
         
         try
@@ -121,7 +121,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -142,11 +142,11 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
             // Check job structure
             var first = json[0];
             Assert.NotNull(first.GetProperty("id"));
-            Assert.NotNull(first.GetProperty("source_path"));
+            Assert.NotNull(first.GetProperty("sourcePath")); // job DTOs are default camelCase (ProcessingPage reads job.sourcePath)
             Assert.NotNull(first.GetProperty("profile"));
             Assert.NotNull(first.GetProperty("status"));
             Assert.NotNull(first.GetProperty("progress"));
-            Assert.NotNull(first.GetProperty("created_at"));
+            Assert.NotNull(first.GetProperty("createdAt"));
         }
         finally
         {
@@ -160,7 +160,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -187,7 +187,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -226,7 +226,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -258,7 +258,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -301,7 +301,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -363,7 +363,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try
@@ -421,7 +421,7 @@ public class CrucibleControllerIntegrationTests : IntegrationTestBase
         AuthenticateAsUser();
         await SeedLicenseAsync("ultra");
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = CreateMediaFile($"{Guid.NewGuid():N}.mkv");
         File.WriteAllText(tempFile, "test");
         
         try

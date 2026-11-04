@@ -121,6 +121,8 @@ public class MediaItem
     public long FileSize { get; set; }
     public string MediaType { get; set; } = "movie";
     public int? TmdbId { get; set; }
+    /// <summary>Which TMDB namespace TmdbId belongs to: "movie" or "tv" (null for legacy rows).</summary>
+    public string? TmdbKind { get; set; }
     public string? ImdbId { get; set; }
     public double? Rating { get; set; }
     public string? PosterUrl { get; set; }

@@ -14,6 +14,14 @@ src/watchnexus/shared/bin/
 src/watchnexus/shared/obj/
 frontend/node_modules/
 frontend/build/
+# frontend/ is a symlink to src/web — ignore patterns match real context
+# paths, so the entries above never matched. A local node_modules (often a
+# symlink) or stale build/ copied by `COPY frontend/ ./` would clobber the
+# image's freshly installed deps.
+**/node_modules
+src/web/build/
+src/watchnexus/modules/*/bin/
+src/watchnexus/modules/*/obj/
 
 # Ignore docs/website (not needed in container)
 docs/
@@ -49,3 +57,7 @@ private.key
 **/private.key
 *.db
 **/data/
+
+# Six Labors license is passed as a build arg, never copied into the image
+sixlabors.lic
+**/sixlabors.lic

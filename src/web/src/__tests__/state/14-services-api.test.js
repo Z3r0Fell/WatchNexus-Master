@@ -1,15 +1,10 @@
-jest.mock('axios', () => ({
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  patch: jest.fn(),
-  delete: jest.fn(),
-  defaults: {},
-  interceptors: {
-    request: { use: jest.fn(), eject: jest.fn(), handlers: [] },
-    response: { use: jest.fn(), eject: jest.fn(), handlers: [] },
-  },
-  create: jest.fn(() => ({
+// axios mock: create() returns an instance that keeps its config in
+// `defaults`, records interceptors in `handlers`, and whose methods are
+// jest.fn()s that (unless a test stubs them) delegate to the top-level axios
+// methods through the registered response interceptors. jest.resetModules()
+// re-runs this factory, so `axios` is re-required after every module reset.
+jest.mock('axios', () => {
+  const top = {
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
@@ -20,10 +15,36 @@ jest.mock('axios', () => ({
       request: { use: jest.fn(), eject: jest.fn(), handlers: [] },
       response: { use: jest.fn(), eject: jest.fn(), handlers: [] },
     },
-  })),
-}))
+  }
+  top.create = jest.fn((config = {}) => {
+    const reqHandlers = []
+    const resHandlers = []
+    const through = (m) => jest.fn((...args) => {
+      let p = Promise.resolve().then(() => top[m](...args))
+      resHandlers.forEach(({ fulfilled, rejected }) => { p = p.then(fulfilled, rejected) })
+      return p
+    })
+    return {
+      get: through('get'),
+      post: through('post'),
+      put: through('put'),
+      patch: through('patch'),
+      delete: through('delete'),
+      defaults: { ...config },
+      interceptors: {
+        request: { use: (fulfilled, rejected) => reqHandlers.push({ fulfilled, rejected }), eject: () => {}, handlers: reqHandlers },
+        response: {
+          use: (fulfilled, rejected) => resHandlers.push({ fulfilled: fulfilled || (r => r), rejected: rejected || (e => Promise.reject(e)) }),
+          eject: () => {},
+          handlers: resHandlers,
+        },
+      },
+    }
+  })
+  return top
+})
 
-import axios from 'axios'
+let axios = require('axios')
 
 describe('Services Layer - API Clients', () => {
   beforeEach(() => {
@@ -36,6 +57,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('apiClient configured with withCredentials: true', () => {
@@ -81,6 +103,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('search calls correct endpoint with params', async () => {
@@ -146,6 +169,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('get uses apiClient (withCredentials)', async () => {
@@ -179,6 +203,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('getNextUp calls correct endpoint', async () => {
@@ -216,6 +241,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('add posts with correct payload', async () => {
@@ -223,11 +249,9 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.downloadsApi.add('Test Movie', 'movie', 123, 1000000)
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/downloads', {
-        title: 'Test Movie',
-        media_type: 'movie',
-        tmdb_id: 123,
-        size: 1000000,
+      // backend binds these from the query string
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/downloads', null, {
+        params: { title: 'Test Movie', media_type: 'movie', tmdb_id: 123, size: 1000000 },
       })
     })
 
@@ -236,7 +260,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.downloadsApi.update(1, 'downloading', 50)
 
-      expect(apiModule.apiClient.patch).toHaveBeenCalledWith('/downloads/1', { status: 'downloading', progress: 50 })
+      expect(apiModule.apiClient.patch).toHaveBeenCalledWith('/downloads/1', null, { params: { status: 'downloading', progress: 50 } })
     })
   })
 
@@ -246,6 +270,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('get fetches settings', async () => {
@@ -272,6 +297,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('addIndexer sends correct payload', async () => {
@@ -289,6 +315,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('update sends enabled and username', async () => {
@@ -296,7 +323,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.streamingApi.update(1, true, 'username')
 
-      expect(apiModule.apiClient.put).toHaveBeenCalledWith('/streaming-services/1', { enabled: true, username: 'username' })
+      expect(apiModule.apiClient.put).toHaveBeenCalledWith('/streaming-services/1', null, { params: { enabled: true, username: 'username' } })
     })
   })
 
@@ -306,6 +333,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('getAll passes media_type param', async () => {
@@ -331,6 +359,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('checkFile sends file_path and compute_hash', async () => {
@@ -338,7 +367,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.mediaHealthApi.checkFile('/path/to/file.mkv', true)
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/health-check', { file_path: '/path/to/file.mkv', compute_hash: true })
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/health-check', null, { params: { file_path: '/path/to/file.mkv', compute_hash: true } })
     })
 
     test('repairFile sends file_path and output_path', async () => {
@@ -346,7 +375,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.mediaHealthApi.repairFile('/path/to/file.mkv', '/path/to/repaired.mkv')
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/repair', { file_path: '/path/to/file.mkv', output_path: '/path/to/repaired.mkv' })
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/repair', null, { params: { file_path: '/path/to/file.mkv', output_path: '/path/to/repaired.mkv' } })
     })
 
     test('scanLibrary sends directory', async () => {
@@ -354,7 +383,7 @@ describe('Services Layer - API Clients', () => {
 
       await apiModule.mediaHealthApi.scanLibrary('/media/movies')
 
-      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/scan-library', { directory: '/media/movies' })
+      expect(apiModule.apiClient.post).toHaveBeenCalledWith('/media/scan-library', null, { params: { directory: '/media/movies' } })
     })
   })
 
@@ -364,6 +393,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('logout uses apiClient', async () => {
@@ -389,6 +419,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('addIndexer sends all fields', async () => {
@@ -438,6 +469,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('addTorrent sends magnet or url', async () => {
@@ -469,6 +501,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('searchTV sends correct params', async () => {
@@ -498,6 +531,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('generateAccessToken validates permissions', async () => {
@@ -521,6 +555,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('addLogin sends service_id, email, password', async () => {
@@ -538,6 +573,7 @@ describe('Services Layer - API Clients', () => {
     beforeEach(() => {
       jest.resetModules()
       apiModule = require('../../services/api')
+      axios = require('axios')
     })
 
     test('healthCheck calls /health', async () => {
@@ -556,6 +592,7 @@ describe('marmaladeApi.js - Marmalade Client', () => {
   beforeEach(() => {
     jest.resetModules()
     marmaladeModule = require('../../services/marmaladeApi')
+    axios = require('axios')
   })
 
   test('marmaladeClient configured with withCredentials: true', () => {
@@ -634,106 +671,110 @@ describe('marmaladeApi.js - Marmalade Client', () => {
 
 describe('nexusApi.js - Nexus API Client', () => {
   let nexusModule
+  let nexusClient
 
   beforeEach(() => {
     jest.resetModules()
     nexusModule = require('../../services/nexusApi')
+    axios = require('axios')
+    // nexusApi.js keeps its axios instance private; grab the one it created
+    nexusClient = axios.create.mock.results[axios.create.mock.results.length - 1].value
   })
 
   test('apiClient configured with withCredentials: true', () => {
-    expect(nexusModule.apiClient.defaults.withCredentials).toBe(true)
-    expect(nexusModule.apiClient.defaults.timeout).toBe(30000)
+    expect(nexusClient.defaults.withCredentials).toBe(true)
+    expect(nexusClient.defaults.timeout).toBe(30000)
   })
 
   test('securityApi.getStats calls correct endpoint', async () => {
-    nexusModule.apiClient.get.mockResolvedValueOnce({ data: { stats: {} } })
+    nexusClient.get.mockResolvedValueOnce({ data: { stats: {} } })
 
     await nexusModule.securityApi.getStats()
 
-    expect(nexusModule.apiClient.get).toHaveBeenCalledWith('/security/stats')
+    expect(nexusClient.get).toHaveBeenCalledWith('/security/stats')
   })
 
   test('securityApi.getAuditLogs passes params', async () => {
-    nexusModule.apiClient.get.mockResolvedValueOnce({ data: [] })
+    nexusClient.get.mockResolvedValueOnce({ data: [] })
 
     await nexusModule.securityApi.getAuditLogs(2, 25, 'login', 1)
 
-    expect(nexusModule.apiClient.get).toHaveBeenCalledWith('/security/audit', expect.objectContaining({
+    expect(nexusClient.get).toHaveBeenCalledWith('/security/audit', expect.objectContaining({
       params: { page: 2, page_size: 25, action: 'login', user_id: 1 },
     }))
   })
 
   test('vpnApi.getServerConfig calls correct endpoint', async () => {
-    nexusModule.apiClient.get.mockResolvedValueOnce({ data: {} })
+    nexusClient.get.mockResolvedValueOnce({ data: {} })
 
     await nexusModule.vpnApi.getServerConfig()
 
-    expect(nexusModule.apiClient.get).toHaveBeenCalledWith('/vpn/server')
+    expect(nexusClient.get).toHaveBeenCalledWith('/vpn/server')
   })
 
   test('vpnApi.wgUp calls correct endpoint', async () => {
-    nexusModule.apiClient.post.mockResolvedValueOnce({ data: { success: true } })
+    nexusClient.post.mockResolvedValueOnce({ data: { success: true } })
 
     await nexusModule.vpnApi.wgUp()
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/vpn/server/wg-up')
+    expect(nexusClient.post).toHaveBeenCalledWith('/vpn/server/activate')
   })
 
   test('systemApi.getHealth calls correct endpoint', async () => {
-    nexusModule.apiClient.get.mockResolvedValueOnce({ data: { status: 'ok' } })
+    nexusClient.get.mockResolvedValueOnce({ data: { status: 'ok' } })
 
     await nexusModule.systemApi.getHealth()
 
-    expect(nexusModule.apiClient.get).toHaveBeenCalledWith('/health')
+    expect(nexusClient.get).toHaveBeenCalledWith('/health')
   })
 
   test('libraryApi.scan calls correct endpoint', async () => {
-    nexusModule.apiClient.post.mockResolvedValueOnce({ data: { success: true } })
+    nexusClient.post.mockResolvedValueOnce({ data: { success: true } })
 
     await nexusModule.libraryApi.scan(1)
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/libraries/1/scan')
+    expect(nexusClient.post).toHaveBeenCalledWith('/libraries/1/scan')
   })
 
   test('downloadApi.getStats calls engine status', async () => {
-    nexusModule.apiClient.get.mockResolvedValueOnce({ data: {} })
+    nexusClient.get.mockResolvedValueOnce({ data: {} })
 
     await nexusModule.downloadApi.getStats()
 
-    expect(nexusModule.apiClient.get).toHaveBeenCalledWith('/downloads/engine/status')
+    expect(nexusClient.get).toHaveBeenCalledWith('/downloads/engine/status')
   })
 
   test('logsApi.getLatest passes params', async () => {
-    nexusModule.apiClient.get.mockResolvedValueOnce({ data: [] })
+    nexusClient.get.mockResolvedValueOnce({ data: [] })
 
     await nexusModule.logsApi.getLatest(200, 'error')
 
-    expect(nexusModule.apiClient.get).toHaveBeenCalledWith('/logs/latest', expect.objectContaining({
+    expect(nexusClient.get).toHaveBeenCalledWith('/logs/latest', expect.objectContaining({
       params: { lines: 200, level: 'error' },
     }))
   })
 
-  test('settingsApi.bulkSet posts to bulk endpoint', async () => {
-    nexusModule.apiClient.post.mockResolvedValueOnce({ data: { success: true } })
+  test('settingsApi.bulkSet PUTs to the settings bulk endpoint', async () => {
+    nexusClient.put.mockResolvedValueOnce({ data: { success: true } })
 
     await nexusModule.settingsApi.bulkSet({ theme_mode: 'dark', ui_accent: 'violet' })
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/settings/bulk', { theme_mode: 'dark', ui_accent: 'violet' })
+    expect(nexusClient.put).toHaveBeenCalledWith('/settings', { theme_mode: 'dark', ui_accent: 'violet' })
   })
 
   test('integrationApi.updateTmdb sends api_key', async () => {
-    nexusModule.apiClient.put.mockResolvedValueOnce({ data: { success: true } })
+    nexusClient.put.mockResolvedValueOnce({ data: { success: true } })
 
     await nexusModule.integrationApi.updateTmdb('test-api-key')
 
-    expect(nexusModule.apiClient.put).toHaveBeenCalledWith('/settings/integrations/tmdb', { api_key: 'test-api-key' })
+    expect(nexusClient.put).toHaveBeenCalledWith('/settings/integrations/tmdb', { api_key: 'test-api-key' })
   })
 
   test('lobsterApi.pair calls correct endpoint', async () => {
-    nexusModule.apiClient.post.mockResolvedValueOnce({ data: { success: true } })
+    nexusClient.post.mockResolvedValueOnce({ data: { success: true } })
 
     await nexusModule.lobsterApi.pair()
 
-    expect(nexusModule.apiClient.post).toHaveBeenCalledWith('/lobster/pair')
+    expect(nexusClient.post).toHaveBeenCalledWith('/lobster/pair')
   })
 })

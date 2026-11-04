@@ -17,12 +17,38 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     public SecurityControllerIntegrationTests() : base() { }
 
 
+    #region Authorization
+
+    [Theory]
+    [InlineData("GET", "/api/security/stats")]
+    [InlineData("GET", "/api/security/audit")]
+    [InlineData("GET", "/api/security/ip-rules")]
+    [InlineData("POST", "/api/security/ip-rules")]
+    [InlineData("DELETE", "/api/security/ip-rules/x")]
+    [InlineData("GET", "/api/security/api-keys")]
+    [InlineData("POST", "/api/security/api-keys")]
+    [InlineData("DELETE", "/api/security/api-keys/x")]
+    public async Task SecurityApi_NonAdmin_Returns403(string method, string url)
+    {
+        AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
+
+        var req = new HttpRequestMessage(new HttpMethod(method), url);
+        if (method == "POST")
+            req.Content = new StringContent("{\"ip\":\"10.0.0.1\",\"rule_type\":\"block\",\"name\":\"k\"}", System.Text.Encoding.UTF8, "application/json");
+        var response = await Client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    #endregion
+
     #region Stats
 
     [Fact]
     public async Task GetStats_ReturnsSecurityStats()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra"); // Security is Ultra
 
         // Add some test data
@@ -54,7 +80,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task GetAuditLogs_ReturnsPaginatedLogs()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         DbContext.AuditLogs.AddRange(
@@ -78,7 +104,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task GetAuditLogs_Pagination_Works()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         for (int i = 0; i < 15; i++)
@@ -103,7 +129,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task GetIpRules_ReturnsAllRules()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         DbContext.IpRules.AddRange(
@@ -122,7 +148,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task AddIpRule_ValidInput_CreatesRule()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var body = JsonSerializer.Serialize(new { ip = "192.168.1.50", rule_type = "block", reason = "Suspicious activity" });
@@ -140,7 +166,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task DeleteIpRule_Existing_RemovesRule()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var rule = new IpRule { Ip = "192.168.1.50", RuleType = "block", Reason = "Test" };
@@ -153,6 +179,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
         var json = await DeserializeResponseElement(response);
         Assert.Equal("deleted", json.GetProperty("status").GetString());
 
+        DbContext.ChangeTracker.Clear();
         var deleted = await DbContext.IpRules.FindAsync(rule.Id);
         Assert.Null(deleted);
     }
@@ -160,7 +187,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task DeleteIpRule_NonExistent_Returns404()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var response = await Client.DeleteAsync("/api/security/ip-rules/nonexistent");
@@ -175,7 +202,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task GetApiKeys_ReturnsKeysWithoutSecrets()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         DbContext.ApiKeys.Add(new ApiKeyEntity { Name = "Test Key", KeyHash = "hash123", KeyPreview = "wnx_abcd****test", Permissions = "read,write", IsActive = true });
@@ -200,7 +227,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task CreateApiKey_ReturnsRawKeyOnce()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var body = JsonSerializer.Serialize(new { name = "New API Key", permissions = "read" });
@@ -222,7 +249,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task RevokeApiKey_DeactivatesKey()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var key = new ApiKeyEntity { Name = "To Revoke", KeyHash = "hash", KeyPreview = "wnx_****test", Permissions = "read", IsActive = true };
@@ -235,6 +262,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
         var json = await DeserializeResponseElement(response);
         Assert.Equal("revoked", json.GetProperty("status").GetString());
 
+        DbContext.ChangeTracker.Clear();
         var revoked = await DbContext.ApiKeys.FindAsync(key.Id);
         Assert.False(revoked!.IsActive);
     }
@@ -242,7 +270,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task RevokeApiKey_NonExistent_Returns404()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var response = await Client.DeleteAsync("/api/security/api-keys/nonexistent");
@@ -252,28 +280,30 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Sessions (Not Implemented)
+    #region Sessions (not exposed)
 
+    // Session listing/revocation was never implemented and the placeholder
+    // 501 routes were removed (no frontend caller); they must 404.
     [Fact]
     public async Task GetSessions_Returns501()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var response = await Client.GetAsync("/api/security/sessions");
         
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task RevokeSession_Returns501()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var response = await Client.PostAsync("/api/security/sessions/session1/revoke", null);
         
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     #endregion
@@ -283,7 +313,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task AddIpRule_LogsAuditEntry()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var initialCount = await DbContext.AuditLogs.CountAsync();
@@ -303,7 +333,7 @@ public class SecurityControllerIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task CreateApiKey_LogsAuditEntry()
     {
-        AuthenticateAsUser();
+        AuthenticateAsAdmin(); // Security API is admin-only
         await SeedLicenseAsync("ultra");
 
         var initialCount = await DbContext.AuditLogs.CountAsync();

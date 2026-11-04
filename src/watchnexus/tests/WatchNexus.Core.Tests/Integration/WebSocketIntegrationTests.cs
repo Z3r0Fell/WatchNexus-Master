@@ -18,17 +18,22 @@ public class WebSocketIntegrationTests : IntegrationTestBase
 {
     public WebSocketIntegrationTests() : base() { }
 
+    // A real ClientWebSocket dials localhost:80 (nothing listens there);
+    // WebSockets must go through the in-memory TestServer.
+    private Task<WebSocket> ConnectAsync(Uri uri) =>
+        Factory.Server.CreateWebSocketClient().ConnectAsync(uri, CancellationToken.None);
+
     [Fact]
     public async Task WatchPartyWebSocket_Connect_Success()
     {
         // Arrange
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra"); // Watch Party is Ultra
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/test-party/ws");
 
         // Act
-        await wsClient.ConnectAsync(uri, CancellationToken.None);
+        var wsClient = await ConnectAsync(uri);
 
         // Assert
         Assert.Equal(WebSocketState.Open, wsClient.State);
@@ -42,20 +47,13 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange - no auth
         ClearAuthentication();
+        await SeedLicenseAsync("ultra"); // so only missing auth can be the reason for rejection
         
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/test-party/ws");
 
-        // Act & Assert
-        try
-        {
-            await wsClient.ConnectAsync(uri, CancellationToken.None);
-            await wsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test", CancellationToken.None);
-        }
-        catch (HttpRequestException)
-        {
-            // Expected - unauthorized
-        }
+        // Act & Assert - the endpoint RequireAuthorization()s, so the
+        // handshake is refused (TestServer surfaces it as an exception).
+        await Assert.ThrowsAnyAsync<Exception>(() => ConnectAsync(uri));
     }
 
     [Fact]
@@ -63,11 +61,11 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/test-party/ws");
 
-        await wsClient.ConnectAsync(uri, CancellationToken.None);
+        var wsClient = await ConnectAsync(uri);
         Assert.Equal(WebSocketState.Open, wsClient.State);
 
         // Send play message
@@ -115,18 +113,16 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     {
         // Arrange
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/multi-party/ws");
 
         // Connect two clients
-        using var ws1 = new System.Net.WebSockets.ClientWebSocket();
-        await ws1.ConnectAsync(uri, CancellationToken.None);
+        using var ws1 = await ConnectAsync(uri);
         
         AuthenticateAsUser("user2");
 
-        using var ws2 = new System.Net.WebSockets.ClientWebSocket();
-        await ws2.ConnectAsync(uri, CancellationToken.None);
+        using var ws2 = await ConnectAsync(uri);
 
         Assert.Equal(WebSocketState.Open, ws1.State);
         Assert.Equal(WebSocketState.Open, ws2.State);
@@ -151,25 +147,22 @@ public class WebSocketIntegrationTests : IntegrationTestBase
         // This test verifies the client-side reconnection logic would work
         // Server-side just needs to accept new connections
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/reconnect-party/ws");
 
         // First connection
-        using var ws1 = new System.Net.WebSockets.ClientWebSocket();
-        await ws1.ConnectAsync(uri, CancellationToken.None);
+        using var ws1 = await ConnectAsync(uri);
         Assert.Equal(WebSocketState.Open, ws1.State);
         await ws1.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test", CancellationToken.None);
 
         // Reconnect (simulating client reconnection)
-        using var ws2 = new System.Net.WebSockets.ClientWebSocket();
-        await ws2.ConnectAsync(uri, CancellationToken.None);
+        using var ws2 = await ConnectAsync(uri);
         Assert.Equal(WebSocketState.Open, ws2.State);
         await ws2.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test", CancellationToken.None);
 
         // Third reconnect
-        using var ws3 = new System.Net.WebSockets.ClientWebSocket();
-        await ws3.ConnectAsync(uri, CancellationToken.None);
+        using var ws3 = await ConnectAsync(uri);
         Assert.Equal(WebSocketState.Open, ws3.State);
         await ws3.CloseAsync(WebSocketCloseStatus.NormalClosure, "Test", CancellationToken.None);
     }
@@ -178,11 +171,11 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     public async Task WatchPartyWebSocket_InvalidMessage_HandledGracefully()
     {
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/invalid-party/ws");
 
-        await wsClient.ConnectAsync(uri, CancellationToken.None);
+        var wsClient = await ConnectAsync(uri);
 
         // Send invalid JSON
         var invalidBytes = Encoding.UTF8.GetBytes("not valid json {{{");
@@ -203,11 +196,11 @@ public class WebSocketIntegrationTests : IntegrationTestBase
     public async Task WatchPartyWebSocket_LargeMessage_Handled()
     {
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/large-party/ws");
 
-        await wsClient.ConnectAsync(uri, CancellationToken.None);
+        var wsClient = await ConnectAsync(uri);
 
         // Send large chat message (near WebSocket frame limit)
         var largeMessage = JsonSerializer.Serialize(new { type = "chat", user = "test-user", message = new string('x', 60000) });
@@ -228,19 +221,18 @@ public class WebSocketIntegrationTests : IntegrationTestBase
         // Test that multiple connections to same party work
         // (Actual limit enforcement would be in ConnectionManager)
         AuthenticateAsUser();
+        await SeedLicenseAsync("ultra");
 
-        var wsClient = new System.Net.WebSockets.ClientWebSocket();
         var uri = new Uri("ws://localhost/api/watch-party/limit-party/ws");
 
-        var connections = new List<System.Net.WebSockets.ClientWebSocket>();
+        var connections = new List<WebSocket>();
         
         try
         {
             // Try to create multiple connections
             for (int i = 0; i < 10; i++)
             {
-                var ws = new System.Net.WebSockets.ClientWebSocket();
-                await ws.ConnectAsync(uri, CancellationToken.None);
+                var ws = await ConnectAsync(uri);
                 connections.Add(ws);
             }
 

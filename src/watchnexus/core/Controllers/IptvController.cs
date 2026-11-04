@@ -45,15 +45,19 @@ public class IptvController : ControllerBase
     [HttpGet("sources")]
     public async Task<IActionResult> Sources()
     {
+        // IptvSource has no owner: sources are server-wide. Source URLs often embed
+        // provider credentials (user/pass in the M3U URL), so only admins see them.
+        var isAdmin = User.IsInRole("admin");
         var sources = await _db.IptvSources.OrderByDescending(s => s.CreatedAt).ToListAsync();
         return Ok(sources.Select(s => new
         {
-            s.Id, s.Name, s.Url, epg_url = s.EpgUrl,
+            s.Id, s.Name, Url = isAdmin ? s.Url : null, epg_url = isAdmin ? s.EpgUrl : null,
             channel_count = s.ChannelCount, last_refreshed = s.LastRefreshed, created_at = s.CreatedAt
         }));
     }
 
     [HttpPost("sources")]
+    [Authorize(Roles = "admin")] // server-wide data: only admins may mutate
     public async Task<IActionResult> AddSource(
         [FromQuery] string? name,
         [FromQuery] string? url,
@@ -81,6 +85,7 @@ public class IptvController : ControllerBase
     }
 
     [HttpPut("sources/{id}")]
+    [Authorize(Roles = "admin")] // server-wide data: only admins may mutate
     public async Task<IActionResult> UpdateSource(string id, [FromBody] JsonElement body)
     {
         var source = await _db.IptvSources.FindAsync(id);
@@ -99,6 +104,7 @@ public class IptvController : ControllerBase
     }
 
     [HttpPost("sources/{id}/refresh")]
+    [Authorize(Roles = "admin")] // server-wide data: only admins may mutate
     public async Task<IActionResult> RefreshSource(string id)
     {
         var source = await _db.IptvSources.FindAsync(id);
@@ -121,6 +127,7 @@ public class IptvController : ControllerBase
     }
 
     [HttpDelete("sources/{id}")]
+    [Authorize(Roles = "admin")] // server-wide data: only admins may mutate
     public async Task<IActionResult> DeleteSource(string id)
     {
         var channels = await _db.IptvChannels.Where(c => c.SourceId == id).ToListAsync();
@@ -149,7 +156,7 @@ public class IptvController : ControllerBase
         if (favorites_only) query = query.Where(c => favIds.Contains(c.Id));
         var favSet = favIds.ToHashSet();
 
-        var channels = await query.OrderBy(c => c.SortOrder).Skip(offset).Take(limit).ToListAsync();
+        var channels = await query.OrderBy(c => c.SortOrder).Skip(Math.Max(0, offset)).Take(Math.Clamp(limit, 1, 1000)).ToListAsync();
         return Ok(channels.Select(c => new
         {
             c.Id, c.SourceId, c.Name, group_title = c.GroupTitle,

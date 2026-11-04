@@ -1,28 +1,43 @@
-import { render, screen, waitFor, act } from './test-utils'
 import { 
   marmaladeStatus, marmaladeLibrary, marmaladeMedia, marmaladeStream, marmaladeProgress,
   formatDuration, formatResolution
 } from '../services/marmaladeApi'
 import axios from 'axios'
 
-jest.mock('axios', () => ({
-  create: () => ({
+// marmaladeApi.js talks to an axios.create() instance (baseURL /api/marmalade,
+// withCredentials set on the instance, not per call). The instance delegates to
+// the top-level jest.fn()s the tests stub/assert, and runs results through the
+// response interceptor the module registers so error mapping is exercised.
+jest.mock('axios', () => {
+  const responseHandlers = []
+  const top = {
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
     patch: jest.fn(),
     delete: jest.fn(),
+    defaults: { withCredentials: true },
     interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } },
-    defaults: { withCredentials: true, baseURL: '/api/marmalade' },
-  }),
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  patch: jest.fn(),
-  delete: jest.fn(),
-  defaults: { withCredentials: true },
-  interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } },
-}))
+  }
+  const through = (fn) => (...args) => {
+    let p = Promise.resolve().then(() => fn(...args))
+    responseHandlers.forEach(([ok, err]) => { p = p.then(ok, err) })
+    return p
+  }
+  top.create = (config) => ({
+    get: through((...a) => top.get(...a)),
+    post: through((...a) => top.post(...a)),
+    put: through((...a) => top.put(...a)),
+    patch: through((...a) => top.patch(...a)),
+    delete: through((...a) => top.delete(...a)),
+    defaults: { ...config },
+    interceptors: {
+      request: { use: () => 0 },
+      response: { use: (ok, err) => { responseHandlers.push([ok || (r => r), err || (e => Promise.reject(e))]); return 0 } },
+    },
+  })
+  return top
+})
 
 const mockAxios = axios
 
@@ -38,85 +53,87 @@ describe('marmaladeApi.js services', () => {
   describe('marmaladeStatus', () => {
     test('getStatus calls /status', async () => {
       await marmaladeStatus.getStatus()
-      expect(mockAxios.get).toHaveBeenCalledWith('/status', expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.get).toHaveBeenCalledWith('/status')
     })
   })
 
   describe('marmaladeLibrary', () => {
     test('getLibraries calls /libraries', async () => {
       await marmaladeLibrary.getLibraries()
-      expect(mockAxios.get).toHaveBeenCalledWith('/libraries', expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.get).toHaveBeenCalledWith('/libraries')
     })
 
     test('addLibrary posts to /libraries with params', async () => {
       await marmaladeLibrary.addLibrary('Movies', '/movies', 'movies')
-      expect(mockAxios.post).toHaveBeenCalledWith('/libraries', { name: 'Movies', path: '/movies', media_type: 'movies' }, expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.post).toHaveBeenCalledWith('/libraries', { name: 'Movies', path: '/movies', media_type: 'movies' })
     })
 
     test('removeLibrary deletes /libraries/:id', async () => {
       await marmaladeLibrary.removeLibrary('lib1')
-      expect(mockAxios.delete).toHaveBeenCalledWith('/libraries/lib1', expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.delete).toHaveBeenCalledWith('/libraries/lib1')
     })
 
     test('scanLibrary posts to /libraries/:id/scan', async () => {
       await marmaladeLibrary.scanLibrary('lib1')
-      expect(mockAxios.post).toHaveBeenCalledWith('/libraries/lib1/scan', expect.objectContaining({ withCredentials: true }))
+      // long-running synchronous scan gets an extended timeout
+      expect(mockAxios.post).toHaveBeenCalledWith('/libraries/lib1/scan', null, expect.objectContaining({ timeout: expect.any(Number) }))
     })
 
     test('refreshMetadata posts to /libraries/:id/refresh-metadata', async () => {
       await marmaladeLibrary.refreshMetadata('lib1')
-      expect(mockAxios.post).toHaveBeenCalledWith('/libraries/lib1/refresh-metadata', expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.post).toHaveBeenCalledWith('/libraries/lib1/refresh-metadata', null, expect.objectContaining({ timeout: expect.any(Number) }))
     })
   })
 
   describe('marmaladeMedia', () => {
     test('getMedia calls /media with params', async () => {
       await marmaladeMedia.getMedia({ media_type: 'movie', limit: 50 })
-      expect(mockAxios.get).toHaveBeenCalledWith('/media', { params: { media_type: 'movie', limit: 50 }, withCredentials: true })
+      expect(mockAxios.get).toHaveBeenCalledWith('/media', { params: { media_type: 'movie', limit: 50 } })
     })
 
     test('getMediaItem calls /media/:id', async () => {
       await marmaladeMedia.getMediaItem('media1')
-      expect(mockAxios.get).toHaveBeenCalledWith('/media/media1', expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.get).toHaveBeenCalledWith('/media/media1')
     })
 
     test('getRecent calls /media/recent with limit', async () => {
       await marmaladeMedia.getRecent(10)
-      expect(mockAxios.get).toHaveBeenCalledWith('/media/recent', { params: { limit: 10 }, withCredentials: true })
+      expect(mockAxios.get).toHaveBeenCalledWith('/media/recent', { params: { limit: 10 } })
     })
 
     test('search calls /media/search with params', async () => {
       await marmaladeMedia.search('query', 100)
-      expect(mockAxios.get).toHaveBeenCalledWith('/media/search', { params: { query: 'query', limit: 100 }, withCredentials: true })
+      expect(mockAxios.get).toHaveBeenCalledWith('/media/search', { params: { query: 'query', limit: 100 } })
     })
 
     test('getContinueWatching calls /continue-watching', async () => {
       await marmaladeMedia.getContinueWatching(5)
-      expect(mockAxios.get).toHaveBeenCalledWith('/continue-watching', { params: { limit: 5 }, withCredentials: true })
+      expect(mockAxios.get).toHaveBeenCalledWith('/continue-watching', { params: { limit: 5 } })
     })
 
     test('getTVSeriesGrouped calls /tv-series', async () => {
       await marmaladeMedia.getTVSeriesGrouped('lib1')
-      expect(mockAxios.get).toHaveBeenCalledWith('/tv-series', { params: { library_id: 'lib1' }, withCredentials: true })
+      expect(mockAxios.get).toHaveBeenCalledWith('/tv-series', { params: { library_id: 'lib1' } })
     })
   })
 
   describe('marmaladeProgress', () => {
     test('updateProgress posts to /media/:id/progress', async () => {
       await marmaladeProgress.updateProgress('media1', 50)
-      expect(mockAxios.post).toHaveBeenCalledWith('/media/media1/progress', { progress: 50 }, expect.objectContaining({ withCredentials: true }))
+      // backend binds progress/watched from the query string
+      expect(mockAxios.post).toHaveBeenCalledWith('/media/media1/progress', null, { params: { progress: 50 } })
     })
 
     test('markWatched posts to /media/:id/watched', async () => {
       await marmaladeProgress.markWatched('media1', true)
-      expect(mockAxios.post).toHaveBeenCalledWith('/media/media1/watched', { watched: true }, expect.objectContaining({ withCredentials: true }))
+      expect(mockAxios.post).toHaveBeenCalledWith('/media/media1/watched', null, { params: { watched: true } })
     })
   })
 
   describe('marmaladeStream', () => {
     test('getStreamInfo calls /stream/:id with quality', async () => {
       await marmaladeStream.getStreamInfo('media1', '1080p')
-      expect(mockAxios.get).toHaveBeenCalledWith('/stream/media1', { params: { quality: '1080p' }, withCredentials: true })
+      expect(mockAxios.get).toHaveBeenCalledWith('/stream/media1', { params: { quality: '1080p' } })
     })
 
     test('getStreamUrl resolves absolute URL', async () => {
@@ -134,6 +151,36 @@ describe('marmaladeApi.js services', () => {
     test('getStreamUrl throws on missing stream_url', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: {} })
       await expect(marmaladeStream.getStreamUrl('media1')).rejects.toThrow('No stream URL returned from server')
+    })
+
+    test('authorizePlayback returns the transcode decision with absolute URLs', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: {
+        stream_url: '/api/marmalade/stream/m1/transcode?token=t',
+        direct_url: '/api/marmalade/stream/m1/file?token=t',
+        transcode_url: '/api/marmalade/stream/m1/transcode?token=t',
+        direct_play: false, playback_mode: 'remux', reason: 'mkv', duration: 5423.1,
+      } })
+      const pb = await marmaladeStream.authorizePlayback('m1')
+      expect(mockAxios.get).toHaveBeenCalledWith('/stream/m1/authorize')
+      expect(pb.directPlay).toBe(false)
+      expect(pb.mode).toBe('remux')
+      expect(pb.duration).toBe(5423.1)
+      expect(pb.streamUrl).toMatch(/\/api\/marmalade\/stream\/m1\/transcode\?token=t$/)
+      expect(pb.transcodeUrl).toBe(pb.streamUrl)
+      expect(pb.directUrl).toMatch(/\/file\?token=t$/)
+    })
+
+    test('authorizePlayback treats a legacy {stream_url} response as direct play', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: { stream_url: 'http://s/v.mp4' } })
+      const pb = await marmaladeStream.authorizePlayback('m1')
+      expect(pb).toEqual(expect.objectContaining({
+        streamUrl: 'http://s/v.mp4', directPlay: true, directUrl: 'http://s/v.mp4', transcodeUrl: null, mode: 'direct', duration: null,
+      }))
+    })
+
+    test('authorizePlayback throws on missing stream_url', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: {} })
+      await expect(marmaladeStream.authorizePlayback('m1')).rejects.toThrow('No stream URL returned from server')
     })
   })
 

@@ -1,9 +1,10 @@
 import { tmdbImageUrl } from '../lib/config';
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { tmdbApi, watchlistApi, downloadsApi, progressApi } from '../services/api';
+import { marmaladeMedia } from '../services/marmaladeApi';
 import { toast } from 'sonner';
 import { 
   Play, Plus, Check, Download, Star, Calendar, Clock, 
@@ -20,8 +21,40 @@ import {
 import { AddToPlaylistButton } from '../components/media/AddToPlaylistButton';
 import { IntroDetector } from '../components/media/IntroDetector';
 
+// Library rows use plural/variant media types ("movies", "anime", "episode");
+// the TMDB details page only knows "movie" and "tv".
+export const normalizeDetailsType = (raw) => {
+  const t = String(raw || '').toLowerCase();
+  if (t === 'movie' || t === 'movies' || t === 'film' || t === 'films') return 'movie';
+  return 'tv';
+};
+
+const isTmdbId = (id) => /^\d+$/.test(String(id || ''));
+
+// The TMDB proxy returns TMDB's raw body (append_to_response=videos), which has
+// no trailer_key field — pick the YouTube trailer out of videos.results.
+export const getTrailerKey = (media) => {
+  if (!media) return null;
+  if (media.trailer_key) return media.trailer_key;
+  const videos = Array.isArray(media.videos?.results) ? media.videos.results : [];
+  const yt = videos.filter(v => v && v.key && String(v.site || '').toLowerCase() === 'youtube');
+  const pick = yt.find(v => v.type === 'Trailer' && v.official) || yt.find(v => v.type === 'Trailer') || yt.find(v => v.type === 'Teaser');
+  return pick ? pick.key : null;
+};
+
 export const MediaDetails = () => {
-  const { type, id } = useParams();
+  const { type: rawType, id } = useParams();
+  // A non-numeric id is a local library item id (e.g. a stale /movies/<guid>
+  // link) — TMDB can't resolve it, so send it straight to the player.
+  if (!isTmdbId(id)) {
+    return <Navigate to={`/watch/${encodeURIComponent(id || '')}`} replace />;
+  }
+  return <MediaDetailsInner type={normalizeDetailsType(rawType)} id={id} />;
+};
+
+const MediaDetailsInner = ({ type, id }) => {
+  const navigate = useNavigate();
+  const [localItems, setLocalItems] = useState([]);
   const [media, setMedia] = useState(null);
   const [season, setSeason] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -30,8 +63,14 @@ export const MediaDetails = () => {
   const [showTrailer, setShowTrailer] = useState(false);
 
   useEffect(() => {
+    // Navigating to another title (e.g. "More Like This") must not keep the
+    // previous show's season/episodes or season number.
+    setSeason(null);
+    setSelectedSeason(1);
+    setShowTrailer(false);
     fetchMediaDetails();
     checkWatchlist();
+    fetchLocalItems();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, id]);
 
@@ -48,11 +87,47 @@ export const MediaDetails = () => {
       const response = type === 'movie'
         ? await tmdbApi.getMovieDetails(id)
         : await tmdbApi.getTvDetails(id);
-      setMedia(response.data);
+      const data = response?.data;
+      // The TMDB proxy passes TMDB's own 200/404 bodies through unchanged:
+      // {success:false,status_code:34} for unknown ids, or an empty
+      // {results:[]} when no API key is configured.
+      const valid = data && typeof data === 'object' && data.success !== false &&
+        (data.id != null || data.title || data.name);
+      setMedia(valid ? data : null);
     } catch (error) {
       toast.error('Failed to load details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLocalItems = async () => {
+    try {
+      const res = await marmaladeMedia.getByTmdb(id);
+      setLocalItems(Array.isArray(res?.data) ? res.data.filter(i => i && i.id) : []);
+    } catch {
+      setLocalItems([]);
+    }
+  };
+
+  const findLocalEpisode = (seasonNumber, episodeNumber) =>
+    localItems.find(i => i.season_number === seasonNumber && i.episode_number === episodeNumber);
+
+  // Movie: the file itself. TV: the earliest local episode.
+  const primaryLocalItem = type === 'movie'
+    ? localItems[0]
+    : [...localItems].sort((a, b) =>
+        ((a.season_number ?? 999) - (b.season_number ?? 999)) ||
+        ((a.episode_number ?? 999) - (b.episode_number ?? 999)))[0];
+
+  const playLocal = (item) => navigate(`/watch/${encodeURIComponent(item.id)}`);
+
+  const handleEpisodeClick = (episode) => {
+    const local = findLocalEpisode(selectedSeason, episode.episode_number);
+    if (local) {
+      playLocal(local);
+    } else {
+      toast.info('This episode is not in your library');
     }
   };
 
@@ -129,6 +204,7 @@ export const MediaDetails = () => {
   const year = media.release_date?.slice(0, 4) || media.first_air_date?.slice(0, 4);
   const backdropUrl = media.backdrop_url || (media.backdrop_path ? tmdbImageUrl(media.backdrop_path, 'w1280') : null);
   const posterUrl = media.poster_url || (media.poster_path ? tmdbImageUrl(media.poster_path, 'w500') : null);
+  const trailerKey = getTrailerKey(media);
   const cast = media.credits?.cast?.slice(0, 10) || [];
   const similar = media.similar?.results?.slice(0, 6) || media.recommendations?.results?.slice(0, 6) || [];
 
@@ -222,7 +298,17 @@ export const MediaDetails = () => {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-3">
-                  {media.trailer_key && (
+                  {primaryLocalItem && (
+                    <Button
+                      onClick={() => playLocal(primaryLocalItem)}
+                      data-testid="play-local-btn"
+                      className="bg-violet-600 hover:bg-violet-700 px-8 py-3 rounded-full font-bold btn-glow"
+                    >
+                      <Play className="w-5 h-5 fill-white mr-2" />
+                      Play
+                    </Button>
+                  )}
+                  {trailerKey && (
                     <Button
                       onClick={() => setShowTrailer(true)}
                       data-testid="play-trailer-btn"
@@ -278,7 +364,7 @@ export const MediaDetails = () => {
         </div>
 
         {/* Trailer Modal */}
-        {showTrailer && media.trailer_key && (
+        {showTrailer && trailerKey && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -287,7 +373,7 @@ export const MediaDetails = () => {
           >
             <div className="w-full max-w-5xl aspect-video">
               <iframe
-                src={`https://www.youtube.com/embed/${media.trailer_key}?autoplay=1`}
+                src={`https://www.youtube.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1`}
                 className="w-full h-full rounded-xl"
                 allowFullScreen
                 allow="autoplay"
@@ -326,11 +412,15 @@ export const MediaDetails = () => {
 
             {/* Episodes Grid */}
             <div className="grid gap-4">
-              {season?.episodes?.map((episode) => (
+              {season?.episodes?.map((episode) => {
+                const localEpisode = findLocalEpisode(selectedSeason, episode.episode_number);
+                return (
                 <motion.div
                   key={episode.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  onClick={() => handleEpisodeClick(episode)}
+                  data-testid={`episode-${episode.episode_number}`}
                   className="glass-card rounded-xl overflow-hidden flex gap-4 hover:ring-1 hover:ring-violet-500/50 transition-all cursor-pointer"
                 >
                   <div className="w-48 aspect-video flex-shrink-0 relative">
@@ -345,11 +435,13 @@ export const MediaDetails = () => {
                         <span className="text-3xl text-gray-600">{episode.episode_number}</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50">
-                      <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center">
-                        <Play className="w-4 h-4 fill-white ml-0.5" />
+                    {localEpisode && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50">
+                        <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center">
+                          <Play className="w-4 h-4 fill-white ml-0.5" />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <div className="p-4 flex-1">
                     <p className="text-sm text-violet-400 mb-1">Episode {episode.episode_number}</p>
@@ -360,7 +452,8 @@ export const MediaDetails = () => {
                     )}
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

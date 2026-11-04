@@ -5,23 +5,16 @@ import { useLicense } from '../context/LicenseContext'
 import { useGadgets } from '../context/GadgetContext'
 import { useTranslation } from 'react-i18next'
 
+// jest.fn() hooks so tests can override them; defaults set in beforeEach
+// (CRA's resetMocks wipes implementations before every test).
 jest.mock('../context/AuthContext', () => ({
   ...jest.requireActual('../context/AuthContext'),
-  useAuth: () => ({
-    user: { id: '1', username: 'testuser', email: 'test@test.com', role: 'user' },
-    isAuthenticated: true,
-    loading: false,
-    logout: jest.fn(),
-  }),
+  useAuth: jest.fn(),
 }))
 
 jest.mock('../context/LicenseContext', () => ({
   ...jest.requireActual('../context/LicenseContext'),
-  useLicense: () => ({
-    isRouteUnlocked: jest.fn((path) => true),
-    getRouteRequiredTier: jest.fn((path) => 'standard'),
-    ROUTE_MODULE_MAP: {},
-  }),
+  useLicense: jest.fn(),
   ROUTE_MODULE_MAP: {},
 }))
 
@@ -46,6 +39,17 @@ describe('Sidebar', () => {
     jest.clearAllMocks()
     localStorage.clear()
     sessionStorage.clear()
+    useAuth.mockReturnValue({
+      user: { id: '1', username: 'testuser', email: 'test@test.com', role: 'user' },
+      isAuthenticated: true,
+      loading: false,
+      logout: jest.fn(),
+    })
+    useLicense.mockReturnValue({
+      isRouteUnlocked: jest.fn(() => true),
+      getRouteRequiredTier: jest.fn(() => 'standard'),
+      ROUTE_MODULE_MAP: {},
+    })
   })
 
   test('renders sidebar with logo', async () => {
@@ -63,15 +67,15 @@ describe('Sidebar', () => {
   test('collapses/expands on toggle click', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     // Initially expanded (240px)
     const sidebar = screen.getByTestId('sidebar')
     expect(sidebar).toHaveStyle({ width: '240px' })
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('sidebar-toggle'))
     })
-    
+
     // Should be collapsed (72px)
     expect(sidebar).toHaveStyle({ width: '72px' })
   })
@@ -85,18 +89,18 @@ describe('Sidebar', () => {
   test('hides search link when collapsed', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('sidebar-toggle'))
     })
-    
+
     expect(screen.queryByTestId('search-link')).not.toBeInTheDocument()
   })
 
   test('shows media navigation items', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     expect(screen.getByTestId('nav-home')).toHaveTextContent('Home')
     expect(screen.getByTestId('nav-library')).toHaveTextContent('Library')
     expect(screen.getByTestId('nav-movies')).toHaveTextContent('Movies')
@@ -106,7 +110,8 @@ describe('Sidebar', () => {
     expect(screen.getByTestId('nav-collections')).toHaveTextContent('Collections')
     expect(screen.getByTestId('nav-music')).toHaveTextContent('Music')
     expect(screen.getByTestId('nav-audiobooks')).toHaveTextContent('Audiobooks')
-    expect(screen.getByTestId('nav-live-tv')).toHaveTextContent('Live TV')
+    // 'Live TV' is not in Sidebar's defaultVisibleTabs (opt-in via Settings > General)
+    expect(screen.queryByTestId('nav-live-tv')).not.toBeInTheDocument()
     expect(screen.getByTestId('nav-streaming')).toHaveTextContent('Streaming')
     expect(screen.getByTestId('nav-indexers')).toHaveTextContent('Indexers')
     expect(screen.getByTestId('nav-automation')).toHaveTextContent('Automation')
@@ -115,7 +120,7 @@ describe('Sidebar', () => {
   test('shows gadget navigation items', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     expect(screen.getByTestId('nav-weather')).toHaveTextContent('Weather')
     expect(screen.getByTestId('nav-podcasts')).toHaveTextContent('Podcasts')
     expect(screen.getByTestId('nav-radio')).toHaveTextContent('Radio')
@@ -132,7 +137,7 @@ describe('Sidebar', () => {
   test('shows downloads and help always visible', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     expect(screen.getByTestId('nav-downloads')).toHaveTextContent('Downloads')
     expect(screen.getByTestId('nav-help')).toHaveTextContent('Help')
   })
@@ -140,7 +145,7 @@ describe('Sidebar', () => {
   test('shows settings section with sub-items', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     expect(screen.getByTestId('nav-settings')).toHaveTextContent('Settings')
     expect(screen.getByTestId('settings-expand-toggle')).toBeInTheDocument()
   })
@@ -148,11 +153,11 @@ describe('Sidebar', () => {
   test('expands settings sub-items on click', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('settings-expand-toggle'))
     })
-    
+
     expect(screen.getByTestId('nav-security')).toHaveTextContent('Security')
     expect(screen.getByTestId('nav-vpn-portal')).toHaveTextContent('VPN Portal')
     expect(screen.getByTestId('nav-lib-manager')).toHaveTextContent('Lib Manager')
@@ -165,24 +170,26 @@ describe('Sidebar', () => {
   test('shows user section with avatar and logout', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     expect(screen.getByText('testuser')).toBeInTheDocument()
     expect(screen.getByText('test@test.com')).toBeInTheDocument()
     expect(screen.getByTestId('logout-btn')).toBeInTheDocument()
   })
 
   test('shows lock icon for locked routes', async () => {
-    const { useLicense } = require('../context/LicenseContext')
     useLicense.mockReturnValue({
       isRouteUnlocked: jest.fn((path) => path === '/security'),
       getRouteRequiredTier: jest.fn((path) => 'ultra'),
       ROUTE_MODULE_MAP: { '/security': 'security' },
     })
-    
+
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
-    // Security should show lock
+
+    // Security is a Settings sub-item: expand the section first
+    await act(async () => {
+      await userEvent.click(screen.getByTestId('settings-expand-toggle'))
+    })
     expect(screen.getByTestId('nav-security')).toBeInTheDocument()
     // The lock icon is rendered conditionally
   })
@@ -195,30 +202,31 @@ describe('Sidebar', () => {
 
   test('persists scroll position in sessionStorage', async () => {
     sessionStorage.getItem.mockReturnValueOnce('100')
-    
+
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     // Scroll position should be restored
+    // restored after a 50ms settle delay
     const nav = screen.getByTestId('sidebar').querySelector('nav')
-    expect(nav.scrollTop).toBe(100)
+    await waitFor(() => expect(nav.scrollTop).toBe(100))
   })
 
   test('saves scroll position to sessionStorage on scroll', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     const nav = screen.getByTestId('sidebar').querySelector('nav')
     nav.scrollTop = 200
     nav.dispatchEvent(new Event('scroll'))
-    
+
     expect(sessionStorage.setItem).toHaveBeenCalledWith('watchnexus_sidebar_scroll', '200')
   })
 
   test('auto-expands settings when on settings sub-path', async () => {
     render(<Sidebar />, { wrapperOverrides: { initialPath: '/security' } })
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     // Settings should be expanded
     expect(screen.getByTestId('nav-security')).toBeInTheDocument()
   })
@@ -229,7 +237,6 @@ describe('Sidebar', () => {
   })
 
   test('calls logout on logout button click', async () => {
-    const { useAuth } = require('../context/AuthContext')
     const mockLogout = jest.fn()
     useAuth.mockReturnValue({
       user: { id: '1', username: 'testuser', email: 'test@test.com', role: 'user' },
@@ -237,23 +244,23 @@ describe('Sidebar', () => {
       loading: false,
       logout: mockLogout,
     })
-    
+
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('logout-btn'))
     })
-    
+
     expect(mockLogout).toHaveBeenCalled()
   })
 
   test('filters visible tabs from localStorage', async () => {
     localStorage.getItem.mockReturnValueOnce(JSON.stringify(['Library', 'Movies', 'Settings']))
-    
+
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     expect(screen.getByTestId('nav-library')).toBeInTheDocument()
     expect(screen.getByTestId('nav-movies')).toBeInTheDocument()
     // Other items should be hidden
@@ -262,7 +269,7 @@ describe('Sidebar', () => {
   test('listens for watchnexus_tabs_updated event', async () => {
     render(<Sidebar />)
     await waitFor(() => expect(screen.getByTestId('sidebar')).toBeInTheDocument())
-    
+
     window.dispatchEvent(new Event('watchnexus_tabs_updated'))
     // Should update visible tabs
   })

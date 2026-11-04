@@ -45,7 +45,7 @@ describe('MoviesPage', () => {
   test('renders movies page with header', async () => {
     render(<MoviesPage />)
     await waitFor(() => expect(screen.getByTestId('movies-page')).toBeInTheDocument())
-    expect(screen.getByText('Movies')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Movies' })).toBeInTheDocument()
   })
 
   test('shows view mode toggle (Library/Discover)', async () => {
@@ -58,7 +58,7 @@ describe('MoviesPage', () => {
   test('shows empty state when no libraries', async () => {
     render(<MoviesPage />)
     await waitFor(() => expect(screen.getByText('No Movie Libraries')).toBeInTheDocument())
-    expect(screen.getByText('Add a movie library to start viewing your collection')).toBeInTheDocument()
+    expect(screen.getByText(/Add a movie library to start viewing your collection/)).toBeInTheDocument()
   })
 
   test('switches to Discover view', async () => {
@@ -242,11 +242,88 @@ describe('MoviesPage', () => {
   })
 
   test('displays movie rating badge', async () => {
+    marmaladeLibrary.getLibraries.mockResolvedValue({ data: [{ id: '1', name: 'Movies', path: '/movies', media_type: 'movies', item_count: 1 }] })
     marmaladeMedia.getMedia.mockResolvedValue({ data: [{ id: '1', title: 'Rated Movie', media_type: 'movie', rating: 8.5, poster_url: '/poster.jpg' }] })
     
     render(<MoviesPage />)
     await waitFor(() => expect(screen.getByTestId('movies-page')).toBeInTheDocument())
     
     expect(screen.getByText('Rated Movie')).toBeInTheDocument()
+  })
+
+  describe('library cards (beta bug: clicking a library card did nothing)', () => {
+    const libs = [
+      { id: 'lib-movies', name: 'My Movies', path: '/data/media/Movies', media_type: 'movies', item_count: 1 },
+      { id: 'lib-anime', name: 'My Anime Movies', path: '/data/media/AnimeMovies', media_type: 'movies', item_count: 1 },
+    ]
+    const itemsByLib = {
+      'lib-movies': [{ id: 'm1', title: 'Heat', media_type: 'movies', tmdb_id: 949 }],
+      'lib-anime': [{ id: 'a1', title: 'Akira', media_type: 'movies', tmdb_id: null }],
+    }
+
+    beforeEach(() => {
+      marmaladeLibrary.getLibraries.mockResolvedValue({ data: libs })
+      marmaladeMedia.getMedia.mockImplementation(({ library_id }) =>
+        Promise.resolve({ data: itemsByLib[library_id] || [] }))
+    })
+
+    test('fetches each library by library_id, not by a singular media_type', async () => {
+      render(<MoviesPage />)
+      await waitFor(() => expect(screen.getByText('Heat')).toBeInTheDocument())
+      expect(screen.getByText('Akira')).toBeInTheDocument()
+      expect(marmaladeMedia.getMedia).toHaveBeenCalledWith(expect.objectContaining({ library_id: 'lib-movies' }))
+      expect(marmaladeMedia.getMedia).toHaveBeenCalledWith(expect.objectContaining({ library_id: 'lib-anime' }))
+      expect(marmaladeMedia.getMedia).not.toHaveBeenCalledWith(expect.objectContaining({ media_type: 'movie' }))
+    })
+
+    test('clicking a library card shows only that library and toggles back', async () => {
+      render(<MoviesPage />)
+      await waitFor(() => expect(screen.getByText('Heat')).toBeInTheDocument())
+
+      await act(async () => { await userEvent.click(screen.getByTestId('library-card-lib-anime')) })
+
+      expect(screen.getByTestId('library-card-lib-anime')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('selected-library-header')).toHaveTextContent('My Anime Movies (1)')
+      expect(screen.getByText('Akira')).toBeInTheDocument()
+      expect(screen.queryByText('Heat')).not.toBeInTheDocument()
+
+      await act(async () => { await userEvent.click(screen.getByTestId('show-all-libraries-btn')) })
+      expect(screen.queryByTestId('selected-library-header')).not.toBeInTheDocument()
+      expect(screen.getByText('Heat')).toBeInTheDocument()
+    })
+
+    test('library card is keyboard accessible', async () => {
+      render(<MoviesPage />)
+      await waitFor(() => expect(screen.getByText('Heat')).toBeInTheDocument())
+      screen.getByTestId('library-card-lib-movies').focus()
+      await act(async () => { await userEvent.keyboard('{Enter}') })
+      expect(screen.getByTestId('selected-library-header')).toHaveTextContent('My Movies (1)')
+      expect(screen.queryByText('Akira')).not.toBeInTheDocument()
+    })
+
+    test('scan button does not toggle the library selection', async () => {
+      marmaladeLibrary.scanLibrary.mockResolvedValue({ data: { new: 0 } })
+      render(<MoviesPage />)
+      await waitFor(() => expect(screen.getByText('Heat')).toBeInTheDocument())
+      await act(async () => { await userEvent.click(screen.getByTestId('scan-library-lib-movies')) })
+      expect(marmaladeLibrary.scanLibrary).toHaveBeenCalledWith('lib-movies')
+      expect(screen.queryByTestId('selected-library-header')).not.toBeInTheDocument()
+    })
+
+    test('media items link to details (TMDB match) or straight to the player', async () => {
+      render(<MoviesPage />)
+      await waitFor(() => expect(screen.getByText('Heat')).toBeInTheDocument())
+      expect(screen.getByTestId('local-movie-m1')).toHaveAttribute('href', '/movie/949')
+      expect(screen.getByTestId('local-movie-a1')).toHaveAttribute('href', '/watch/a1')
+    })
+
+    test('selected empty library shows a hint instead of nothing', async () => {
+      marmaladeMedia.getMedia.mockImplementation(({ library_id }) =>
+        Promise.resolve({ data: library_id === 'lib-movies' ? itemsByLib['lib-movies'] : [] }))
+      render(<MoviesPage />)
+      await waitFor(() => expect(screen.getByText('Heat')).toBeInTheDocument())
+      await act(async () => { await userEvent.click(screen.getByTestId('library-card-lib-anime')) })
+      expect(screen.getByTestId('selected-library-empty')).toBeInTheDocument()
+    })
   })
 })

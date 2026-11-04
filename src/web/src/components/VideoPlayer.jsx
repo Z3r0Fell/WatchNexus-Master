@@ -1,6 +1,6 @@
 import { BACKEND_URL } from '../lib/config';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Component, useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { marmaladeMedia, marmaladeProgress, marmaladeStream, formatDuration, formatResolution } from '../services/marmaladeApi';
 import axios from 'axios';
@@ -24,9 +24,81 @@ const SKIP_TYPES = {
   PREVIEW: 'preview',
 };
 
-const VideoPlayer = () => {
+// Turn an axios/fetch failure into a message a user can act on.
+const describeLoadError = (err, fallback) => {
+  const status = err?.response?.status;
+  if (status === 404) return 'This item was not found in your library — it may have been removed or rescanned';
+  if (status === 401 || status === 403) return 'You are not authorised to play this item';
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  return fallback;
+};
+
+// Convert SRT (or pass through WebVTT) to WebVTT for the <track> element.
+export const toWebVtt = (text) => {
+  const body = String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  if (/^WEBVTT/.test(body)) return body;
+  return 'WEBVTT\n\n' + body.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+};
+
+const VTT_TS = '(?:(\\d+):)?(\\d{2}):(\\d{2})\\.(\\d{3})';
+const VTT_TIMING = new RegExp(`^${VTT_TS}\\s+-->\\s+${VTT_TS}(.*)$`);
+const vttSeconds = (h, m, s, ms) => (Number(h || 0) * 3600) + Number(m) * 60 + Number(s) + Number(ms) / 1000;
+const formatVttTime = (t) => {
+  const total = Math.max(0, Math.round(t * 1000));
+  const h = Math.floor(total / 3600000);
+  const m = Math.floor((total % 3600000) / 60000);
+  const s = Math.floor((total % 60000) / 1000);
+  const ms = total % 1000;
+  const p = (n, w = 2) => String(n).padStart(w, '0');
+  return `${p(h)}:${p(m)}:${p(s)}.${p(ms, 3)}`;
+};
+
+// Shift every cue in a WebVTT document by `seconds` (positive = later). Used for
+// the user's sync adjustment and to re-base cues when a transcoded stream is
+// restarted at an offset (its media time starts again at 0). Cues that end
+// before 0 are dropped; cues straddling 0 are clamped.
+export const shiftVtt = (vtt, seconds) => {
+  if (!seconds) return vtt;
+  const out = [];
+  const blocks = String(vtt).split(/\n{2,}/);
+  for (const block of blocks) {
+    const lines = block.split('\n');
+    const idx = lines.findIndex((l) => VTT_TIMING.test(l));
+    if (idx === -1) { out.push(block); continue; }
+    const m = lines[idx].match(VTT_TIMING);
+    const start = vttSeconds(m[1], m[2], m[3], m[4]) + seconds;
+    const end = vttSeconds(m[5], m[6], m[7], m[8]) + seconds;
+    if (end <= 0) continue;
+    lines[idx] = `${formatVttTime(start)} --> ${formatVttTime(end)}${m[9] || ''}`;
+    out.push(lines.join('\n'));
+  }
+  return out.join('\n\n');
+};
+
+// Transcoded streams seek server-side: reopen the stream at ?start=<seconds>.
+export const transcodeSrcAt = (base, start) => {
+  if (!base) return '';
+  if (!(start > 0)) return base;
+  return `${base}${base.includes('?') ? '&' : '?'}start=${start.toFixed(2)}`;
+};
+
+const PlaybackErrorScreen = ({ message, onBack }) => (
+  <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white" data-testid="video-error">
+    <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
+    <h2 className="text-xl font-bold mb-2">Playback Error</h2>
+    <p className="text-gray-400 mb-4 text-center px-6">{message || 'Media not found'}</p>
+    <Button data-testid="video-error-back-btn" onClick={onBack} variant="outline">
+      <ArrowLeft className="w-4 h-4 mr-2" />
+      Go Back
+    </Button>
+  </div>
+);
+
+const PlayerInner = () => {
   const { mediaId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const progressInterval = useRef(null);
@@ -46,6 +118,39 @@ const VideoPlayer = () => {
   const [showControls, setShowControls] = useState(true);
   const [buffering, setBuffering] = useState(false);
   const controlsTimeout = useRef(null);
+
+  // Playback delivery. Direct play serves the file as-is (seekable via byte
+  // ranges). Transcoded streams come from ffmpeg and aren't byte-seekable, so
+  // seeking reopens the stream at an offset and `streamOffset` holds the
+  // absolute media time the current stream started at.
+  const [playback, setPlayback] = useState(null); // result of marmaladeStream.authorizePlayback
+  const [streamOffset, setStreamOffset] = useState(0);
+  const [isTranscoding, setIsTranscoding] = useState(false);
+  const transcodedRef = useRef(false);
+  const transcodeBaseRef = useRef(null);
+  const offsetRef = useRef(0);
+  const pendingPlayRef = useRef(false);
+  const resumeAtRef = useRef(0);
+  const fallbackTriedRef = useRef(false);
+  const durationRef = useRef(0);
+  useEffect(() => { durationRef.current = duration; }, [duration]);
+
+  // Absolute position in the media, whichever way it's being delivered.
+  const getAbsTime = useCallback(
+    () => offsetRef.current + (videoRef.current?.currentTime || 0),
+    []
+  );
+
+  const startTranscodeAt = useCallback((start, { autoplay } = {}) => {
+    const t = Math.max(0, start || 0);
+    transcodedRef.current = true;
+    setIsTranscoding(true);
+    offsetRef.current = t;
+    setStreamOffset(t);
+    pendingPlayRef.current = !!autoplay;
+    setCurrentTime(t);
+    setStreamUrl(transcodeSrcAt(transcodeBaseRef.current, t));
+  }, []);
 
   // Advanced playback controls
   const [skipSegments, setSkipSegments] = useState([]); // {type, start, end}
@@ -90,33 +195,70 @@ const VideoPlayer = () => {
   useEffect(() => {
     let ignore = false;
     const fetchMedia = async () => {
+      setLoading(true);
+      setError(null);
+      setMedia(null);
+      setStreamUrl('');
+      setPlayback(null);
+      setStreamOffset(0);
+      setIsTranscoding(false);
+      setDuration(0);
+      transcodedRef.current = false;
+      transcodeBaseRef.current = null;
+      offsetRef.current = 0;
+      pendingPlayRef.current = false;
+      resumeAtRef.current = 0;
+      fallbackTriedRef.current = false;
       try {
         const res = await marmaladeMedia.getMediaItem(mediaId);
         if (ignore) return;
-        setMedia(res.data);
-        setCurrentTime(res.data.watch_progress || 0);
-
-        // Authorise playback — mints a short-lived signed stream URL the
-        // <video> element can use directly.
-        try {
-          const url = await marmaladeStream.getStreamUrl(mediaId);
-          if (ignore) return;
-          setStreamUrl(url);
-        } catch {
-          setError('Failed to authorize playback');
+        const item = res?.data;
+        // Guard against a non-JSON / unexpected payload (e.g. an HTML page
+        // from a misrouted proxy) — never put a non-object into `media`.
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          setError('This item could not be loaded from your library');
+          return;
         }
-        
-        // Fetch skip segments if available
-        await fetchSkipSegments(mediaId, ignore);
-        
-        // Fetch next episode if this is a TV show
-        if (res.data.type === 'tv' || res.data.series_name) {
-          await fetchNextEpisode(res.data, ignore);
+        setMedia(item);
+        const progress = Number(item.watch_progress);
+        const resumeAt = Number.isFinite(progress) && progress > 0 ? progress : 0;
+        resumeAtRef.current = resumeAt;
+        setCurrentTime(resumeAt);
+
+        // Authorise playback — mints a short-lived signed stream URL and tells
+        // us whether the browser can play the file directly or whether the
+        // server has to convert it with ffmpeg.
+        try {
+          const pb = await marmaladeStream.authorizePlayback(mediaId);
+          if (ignore) return;
+          setPlayback(pb);
+          if (pb.duration) setDuration(pb.duration);
+          transcodeBaseRef.current = pb.transcodeUrl;
+          if (pb.directPlay) {
+            setStreamUrl(pb.streamUrl);
+          } else {
+            // Resume position is applied server-side for transcoded streams.
+            resumeAtRef.current = 0;
+            startTranscodeAt(resumeAt);
+          }
+        } catch (err) {
+          if (ignore) return;
+          console.error('Failed to authorize playback:', err);
+          // The server explains why (e.g. "Media file not found on disk").
+          const detail = err?.response?.data?.detail;
+          setError(typeof detail === 'string' && detail ? detail : describeLoadError(err, 'Failed to authorize playback'));
+          return;
+        }
+
+        // Optional extras — failures here must never block playback.
+        fetchSkipSegments(mediaId, () => ignore);
+        if (item.media_type === 'episode' || item.type === 'tv' || item.series_name) {
+          fetchNextEpisode(item, () => ignore);
         }
       } catch (err) {
         if (!ignore) {
           console.error('Failed to load media:', err);
-          setError('Failed to load media');
+          setError(describeLoadError(err, 'Failed to load media'));
         }
       } finally {
         if (!ignore) {
@@ -124,20 +266,24 @@ const VideoPlayer = () => {
         }
       }
     };
-    
+
     if (mediaId) {
       fetchMedia();
+    } else {
+      setError('No media selected');
+      setLoading(false);
     }
-    
+
     return () => { ignore = true; };
-  }, [mediaId]);
+  }, [mediaId, startTranscodeAt]);
 
   // Fetch skip segments (intro, credits, etc.)
-  const fetchSkipSegments = async (id, ignore = false) => {
+  const fetchSkipSegments = async (id, isIgnored = () => false) => {
     try {
       const res = await axios.get(`${API_URL}/api/marmalade/media/${id}/skip-segments`);
-      if (!ignore && res.data && res.data.segments) {
-        setSkipSegments(res.data.segments);
+      const segments = res?.data?.segments;
+      if (!isIgnored() && Array.isArray(segments)) {
+        setSkipSegments(segments.filter(s => s && Number.isFinite(s.start) && Number.isFinite(s.end)));
       }
     } catch (err) {
       // Skip segments are optional - generate estimates based on duration
@@ -146,11 +292,12 @@ const VideoPlayer = () => {
   };
 
   // Fetch next episode in series
-  const fetchNextEpisode = async (currentMedia, ignore = false) => {
+  const fetchNextEpisode = async (currentMedia, isIgnored = () => false) => {
     try {
       const res = await axios.get(`${API_URL}/api/marmalade/media/${currentMedia.id}/next-episode`);
-      if (!ignore && res.data) {
-        setNextEpisode(res.data);
+      const next = res?.data;
+      if (!isIgnored() && next && typeof next === 'object' && next.id) {
+        setNextEpisode(next);
       }
     } catch (err) {
       // No next episode available
@@ -163,7 +310,7 @@ const VideoPlayer = () => {
     if (!playing || skipSegments.length === 0) return;
 
     const checkSkipSegment = () => {
-      const time = videoRef.current?.currentTime || 0;
+      const time = getAbsTime();
       
       // Find if we're in a skippable segment
       const segment = skipSegments.find(s => time >= s.start && time < s.end);
@@ -185,14 +332,14 @@ const VideoPlayer = () => {
 
     const interval = setInterval(checkSkipSegment, 500);
     return () => clearInterval(interval);
-  }, [playing, skipSegments, currentSkipSegment]);
+  }, [playing, skipSegments, currentSkipSegment, getAbsTime]);
 
   // Check for credits/end of video for next episode prompt
   useEffect(() => {
     if (!playing || !duration || !nextEpisode) return;
 
     const checkEndCredits = () => {
-      const time = videoRef.current?.currentTime || 0;
+      const time = getAbsTime();
       const timeRemaining = duration - time;
       
       // Show next episode prompt when less than 30 seconds remain
@@ -208,7 +355,7 @@ const VideoPlayer = () => {
 
     const interval = setInterval(checkEndCredits, 1000);
     return () => clearInterval(interval);
-  }, [playing, duration, nextEpisode, showNextEpisode, autoPlayNext]);
+  }, [playing, duration, nextEpisode, showNextEpisode, autoPlayNext, getAbsTime]);
 
   // Countdown timer for auto-play next episode
   useEffect(() => {
@@ -232,7 +379,7 @@ const VideoPlayer = () => {
   // Skip to end of current segment
   const handleSkipSegment = () => {
     if (currentSkipSegment && videoRef.current) {
-      videoRef.current.currentTime = currentSkipSegment.end;
+      seekTo(currentSkipSegment.end);
       setShowSkipButton(false);
       setCurrentSkipSegment(null);
       toast.success(`Skipped ${currentSkipSegment.type}`);
@@ -263,12 +410,13 @@ const VideoPlayer = () => {
         const isTV = media.type === 'tv' || media.series_name;
         const endpoint = isTV ? '/api/subtitles/search/tv' : '/api/subtitles/search/movie';
         
+        // Backend binds show_name / movie_name (SubtitlesController).
         const params = isTV ? {
-          series_name: media.series_name || media.title,
+          show_name: media.series_name || media.title,
           season: media.season_number || 1,
           episode: media.episode_number || 1,
         } : {
-          title: media.title,
+          movie_name: media.title,
           year: media.year,
         };
         
@@ -276,8 +424,12 @@ const VideoPlayer = () => {
           params,
         });
         
-        if (res.data && res.data.length > 0) {
-          setAvailableSubtitles(res.data);
+        if (Array.isArray(res?.data) && res.data.length > 0) {
+          // /search/tv serialises the raw record (camelCase downloadUrl),
+          // /search/movie uses download_url — normalise to download_url.
+          setAvailableSubtitles(res.data
+            .filter(sub => sub && typeof sub === 'object')
+            .map(sub => ({ ...sub, download_url: sub.download_url ?? sub.downloadUrl })));
         }
       } catch (err) {
         console.error('Failed to search subtitles:', err);
@@ -298,25 +450,56 @@ const VideoPlayer = () => {
         media_id: mediaId,
       });
       
-      if (res.data.file_path) {
-        // Create blob URL for subtitle
-        const subtitleUrl = `${API_URL}/api/subtitles/file/${res.data.file_path}`;
-        setCurrentSubtitle({ ...subtitle, url: subtitleUrl });
-        setSubtitlesEnabled(true);
-        toast.success(`Loaded: ${subtitle.language}`);
+      // Backend returns either `path` (saved next to the media file) or
+      // `data_base64` (inline). <track> only understands WebVTT, so the
+      // (usually SRT) text is converted and served from a blob URL.
+      let text = null;
+      if (res.data?.data_base64) {
+        const bin = atob(res.data.data_base64);
+        const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+        text = new TextDecoder('utf-8').decode(bytes);
+      } else if (res.data?.path) {
+        const fileRes = await axios.get(
+          `${API_URL}/api/subtitles/file/${String(res.data.path).replace(/^\/+/, '')}`,
+          { responseType: 'text', transformResponse: (d) => d }
+        );
+        text = fileRes.data;
       }
+      if (typeof text !== 'string' || !text.trim()) {
+        throw new Error('Subtitle download returned no data');
+      }
+      // The <track> blob URL is derived from this text (see subtitleTrackUrl)
+      // so the sync adjustment and transcode offset can re-time the cues.
+      setCurrentSubtitle({ ...subtitle, vtt: toWebVtt(text) });
+      setSubtitlesEnabled(true);
+      toast.success(`Loaded: ${subtitle.language}`);
     } catch (err) {
       console.error('Failed to load subtitle:', err);
       toast.error('Failed to load subtitle');
     }
   };
 
+  // Build the <track> source from the loaded subtitle, re-timed for the
+  // user's sync adjustment (ms, + = later) and, for transcoded streams, the
+  // offset the current stream started at (its media time restarts at 0).
+  const [subtitleTrackUrl, setSubtitleTrackUrl] = useState(null);
+  useEffect(() => {
+    if (!currentSubtitle?.vtt || typeof URL.createObjectURL !== 'function') {
+      setSubtitleTrackUrl(null);
+      return undefined;
+    }
+    const shifted = shiftVtt(currentSubtitle.vtt, subtitleOffset / 1000 - streamOffset);
+    const url = URL.createObjectURL(new Blob([shifted], { type: 'text/vtt' }));
+    setSubtitleTrackUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [currentSubtitle, subtitleOffset, streamOffset]);
+
   // Report progress periodically
   useEffect(() => {
     if (playing && media) {
       progressInterval.current = setInterval(() => {
         if (videoRef.current) {
-          marmaladeProgress.updateProgress(mediaId, videoRef.current.currentTime)
+          marmaladeProgress.updateProgress(mediaId, getAbsTime())
             .catch(err => console.error('Failed to update progress:', err));
         }
       }, 10000);
@@ -327,7 +510,7 @@ const VideoPlayer = () => {
         clearInterval(progressInterval.current);
       }
     };
-  }, [playing, media, mediaId]);
+  }, [playing, media, mediaId, getAbsTime]);
 
   // Hide controls after inactivity
   const handleMouseMove = useCallback(() => {
@@ -346,18 +529,33 @@ const VideoPlayer = () => {
 
   // Video event handlers
   const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      
-      if (media?.watch_progress && media.watch_progress > 0) {
-        videoRef.current.currentTime = media.watch_progress;
+    const v = videoRef.current;
+    if (!v) return;
+
+    if (!transcodedRef.current) {
+      if (Number.isFinite(v.duration) && v.duration > 0) setDuration(v.duration);
+      // Resume once, for direct play only (transcoded streams start at the
+      // resume point server-side).
+      if (resumeAtRef.current > 0) {
+        v.currentTime = resumeAtRef.current;
+        resumeAtRef.current = 0;
       }
+    } else if (!durationRef.current && Number.isFinite(v.duration) && v.duration > 0) {
+      // Server couldn't probe a duration; best effort from the stream itself.
+      setDuration(offsetRef.current + v.duration);
+    }
+
+    // Keep playing across a source switch (transcoded seek / fallback).
+    if (pendingPlayRef.current) {
+      pendingPlayRef.current = false;
+      const p = v.play();
+      if (p && typeof p.catch === 'function') p.catch(() => setPlaying(false));
     }
   };
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
+      setCurrentTime(getAbsTime());
     }
   };
 
@@ -375,17 +573,41 @@ const VideoPlayer = () => {
     console.error('Video error:', e);
     // Try to determine specific error type
     const videoElement = videoRef.current;
+    const errorCode = videoElement?.error?.code;
+
+    // Direct play failed to decode (e.g. a codec the server probe thought was
+    // fine, or ffprobe was unavailable): switch to the ffmpeg stream once,
+    // from the current position.
+    if ((errorCode === 3 || errorCode === 4) && !transcodedRef.current
+        && transcodeBaseRef.current && !fallbackTriedRef.current) {
+      fallbackTriedRef.current = true;
+      const at = (videoElement?.currentTime || 0) || resumeAtRef.current || 0;
+      resumeAtRef.current = 0;
+      console.warn('Direct play failed; falling back to server transcode at', at);
+      toast.info('Converting this video for your browser…');
+      setBuffering(true);
+      startTranscodeAt(at, { autoplay: playing });
+      return;
+    }
+
     if (videoElement?.error) {
-      const errorCode = videoElement.error.code;
       switch (errorCode) {
-        case MediaError.MEDIA_ERR_NETWORK:
+        case 2: // MediaError.MEDIA_ERR_NETWORK
           setError('Network error - media file may not exist or server is unreachable');
           break;
-        case MediaError.MEDIA_ERR_DECODE:
-          setError('Media decoding error - file may be corrupted');
+        case 3: // MediaError.MEDIA_ERR_DECODE
+          setError(transcodedRef.current
+            ? 'The converted video stream could not be decoded — check the server log for FFmpeg errors'
+            : 'Media decoding error - file may be corrupted');
           break;
-        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-          setError('Media format not supported');
+        case 4: // MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+          if (transcodedRef.current) {
+            setError('The server could not convert this video for playback — check that FFmpeg is installed and see the server log');
+          } else if (!transcodeBaseRef.current) {
+            setError('This video format is not supported by your browser, and FFmpeg is not available on the server to convert it. Install FFmpeg on the server (Settings → FFmpeg) and try again.');
+          } else {
+            setError('Media format not supported');
+          }
           break;
         default:
           setError('Failed to play video - please verify the file exists');
@@ -401,18 +623,56 @@ const VideoPlayer = () => {
     if (videoRef.current) {
       if (playing) {
         videoRef.current.pause();
+        setPlaying(false);
       } else {
-        videoRef.current.play();
+        const p = videoRef.current.play();
+        setPlaying(true);
+        if (p && typeof p.catch === 'function') {
+          p.catch((err) => {
+            // AbortError = the source was swapped (transcoded seek / fallback);
+            // the new source resumes via pendingPlayRef.
+            if (err?.name === 'AbortError') return;
+            setPlaying(false);
+            // An unplayable source also fires the <video> `error` event, which
+            // owns the messaging and the transcode fallback — only report here
+            // when no fallback exists.
+            if (err?.name === 'NotSupportedError' && (transcodedRef.current || !transcodeBaseRef.current)) {
+              setError('Media format not supported by this browser');
+            }
+          });
+        }
       }
-      setPlaying(!playing);
     }
   }, [playing]);
 
-  const handleSeek = (value) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
+  // Seek to an absolute media time. Direct play seeks the element; a
+  // transcoded stream is reopened at the target time.
+  const seekTo = useCallback((target) => {
+    const v = videoRef.current;
+    if (!v || !Number.isFinite(target)) return;
+    const max = durationRef.current > 0 ? durationRef.current : Infinity;
+    const t = Math.max(0, Math.min(max, target));
+    if (transcodedRef.current) {
+      setBuffering(true);
+      startTranscodeAt(t, { autoplay: playing });
+    } else {
+      v.currentTime = t;
+      setCurrentTime(t);
     }
+  }, [playing, startTranscodeAt]);
+
+  // While dragging, only move the thumb for transcoded streams (each reopen
+  // starts a new ffmpeg process); commit the seek on release.
+  const handleSeek = (value) => {
+    if (transcodedRef.current) {
+      setCurrentTime(value[0]);
+    } else {
+      seekTo(value[0]);
+    }
+  };
+
+  const handleSeekCommit = (value) => {
+    if (transcodedRef.current) seekTo(value[0]);
   };
 
   const handleVolumeChange = useCallback((value) => {
@@ -442,10 +702,8 @@ const VideoPlayer = () => {
   }, []);
 
   const skip = useCallback((seconds) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seconds));
-    }
-  }, [duration]);
+    seekTo(getAbsTime() + seconds);
+  }, [seekTo, getAbsTime]);
 
   // Subtitle offset adjustment with keyboard
   const adjustSubtitleOffset = useCallback((delta) => {
@@ -532,17 +790,7 @@ const VideoPlayer = () => {
   }
 
   if (error || !media) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
-        <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
-        <h2 className="text-xl font-bold mb-2">Playback Error</h2>
-        <p className="text-gray-400 mb-4">{error || 'Media not found'}</p>
-        <Button data-testid="video-error-back-btn" onClick={() => navigate(-1)} variant="outline">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Go Back
-        </Button>
-      </div>
-    );
+    return <PlaybackErrorScreen message={error} onBack={() => goBack(navigate, location)} />;
   }
 
   return (
@@ -560,23 +808,28 @@ const VideoPlayer = () => {
       {/* Video */}
       <video
         ref={videoRef}
-        src={streamUrl}
+        src={streamUrl || undefined}
         className="w-full h-full absolute inset-0 object-contain"
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
         onWaiting={handleWaiting}
         onPlaying={handlePlaying}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
         onError={handleError}
         onClick={(e) => e.stopPropagation()}
         crossOrigin="anonymous"
+        playsInline
+        data-playback-mode={isTranscoding ? (playback?.mode && playback.mode !== 'direct' ? playback.mode : 'transcode') : 'direct'}
       >
-        {/* Subtitle track */}
-        {currentSubtitle && subtitlesEnabled && (
+        {/* Subtitle track (re-mounted when re-timed) */}
+        {currentSubtitle && subtitlesEnabled && subtitleTrackUrl && (
           <track
+            key={subtitleTrackUrl}
             ref={trackRef}
             kind="subtitles"
-            src={currentSubtitle.url}
+            src={subtitleTrackUrl}
             srcLang={currentSubtitle.language_code || 'en'}
             label={currentSubtitle.language}
             default
@@ -588,10 +841,7 @@ const VideoPlayer = () => {
       {currentSubtitle && subtitlesEnabled && (
         <div 
           className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none px-8"
-          style={{ 
-            fontSize: `${subtitleSize}%`,
-            transform: `translateY(${subtitleOffset / 100}px)`
-          }}
+          style={{ fontSize: `${subtitleSize}%` }}
         >
           {/* Subtitles rendered via track element */}
         </div>
@@ -752,6 +1002,7 @@ const VideoPlayer = () => {
             max={duration || 100}
             step={1}
             onValueChange={handleSeek}
+            onValueCommit={handleSeekCommit}
             className="cursor-pointer"
           />
           <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -1094,6 +1345,58 @@ const VideoPlayer = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// navigate(-1) does nothing useful when the player was opened directly (deep
+// link / new tab; React Router marks that first entry with key 'default') —
+// fall back to the dashboard in that case.
+function goBack(navigate, location) {
+  if (location && location.key && location.key !== 'default') {
+    navigate(-1);
+  } else {
+    navigate('/', { replace: true });
+  }
+}
+
+// Local boundary: any unexpected render error inside the player is shown as
+// the player's own "Playback Error" screen (with a back button) rather than
+// bubbling up to the generic route-level crash screen.
+class PlayerErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[VideoPlayer] render error:', error, info?.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <PlaybackErrorScreen
+          message="Something went wrong while starting playback"
+          onBack={this.props.onBack}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const VideoPlayer = () => {
+  const { mediaId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  return (
+    <PlayerErrorBoundary key={mediaId} onBack={() => goBack(navigate, location)}>
+      <PlayerInner />
+    </PlayerErrorBoundary>
   );
 };
 

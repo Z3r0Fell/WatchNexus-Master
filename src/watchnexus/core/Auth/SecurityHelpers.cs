@@ -262,6 +262,33 @@ public static class MediaPaths
         catch { return null; }
     }
 
+    // Server secrets that live in the data dir (which is itself a default media
+    // root). These must never be reachable through a media/subtitle path — e.g.
+    // the subtitle file endpoint serves *.xml, which would leak the
+    // DataProtection key ring (dp-keys/key-*.xml); jwt.key allows token forgery.
+    private static readonly string[] SensitiveDirs = { "dp-keys", "fortress", "logs", "backups" };
+
+    /// <summary>True when the (already resolved) path is a server secret / internal file in the data dir.</summary>
+    public static bool IsSensitiveDataPath(string fullPath)
+    {
+        var dataDir = Environment.GetEnvironmentVariable("WATCHNEXUS_DATA_DIR");
+        if (string.IsNullOrWhiteSpace(dataDir)) dataDir = Path.Combine(AppContext.BaseDirectory, "data");
+        var dataFull = ResolveRealPath(dataDir) ?? dataDir;
+        if (!IsPathInside(dataFull, fullPath)) return false;
+        var rel = Path.GetRelativePath(dataFull, fullPath);
+        if (rel == ".") return false;
+        var first = rel.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, 2)[0];
+        if (SensitiveDirs.Any(d => string.Equals(d, first, StringComparison.OrdinalIgnoreCase))) return true;
+        // Files directly in the data dir: jwt.key, watchnexus.db(-wal/-shm/-journal), probes.
+        if (!rel.Contains(Path.DirectorySeparatorChar) && !rel.Contains(Path.AltDirectorySeparatorChar))
+        {
+            if (first.Equals("jwt.key", StringComparison.OrdinalIgnoreCase)) return true;
+            if (first.StartsWith("watchnexus.db", StringComparison.OrdinalIgnoreCase)) return true;
+            if (first.StartsWith(".", StringComparison.Ordinal)) return true;
+        }
+        return false;
+    }
+
     public static bool IsPathInside(string root, string child)
     {
         var r = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -275,6 +302,7 @@ public static class MediaPaths
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false;
         var full = ResolveRealPath(path);
         if (full == null) return false;
+        if (IsSensitiveDataPath(full)) return false;
         foreach (var root in ResolveAllowedRoots())
         {
             var rootFull = ResolveRealPath(root);

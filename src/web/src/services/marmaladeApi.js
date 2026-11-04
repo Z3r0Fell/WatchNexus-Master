@@ -44,11 +44,12 @@ export const marmaladeLibrary = {
   
   // Scan a library
   scanLibrary: (libraryId) =>
-    marmaladeClient.post(`/libraries/${libraryId}/scan`),
+    // Synchronous server-side scan (TMDB lookups per file) — can exceed the 30s default.
+    marmaladeClient.post(`/libraries/${libraryId}/scan`, null, { timeout: 10 * 60 * 1000 }),
     
   // Refresh metadata for all media in a library
   refreshMetadata: (libraryId) =>
-    marmaladeClient.post(`/libraries/${libraryId}/refresh-metadata`),
+    marmaladeClient.post(`/libraries/${libraryId}/refresh-metadata`, null, { timeout: 10 * 60 * 1000 }),
 };
 
 // Media Retrieval
@@ -57,6 +58,10 @@ export const marmaladeMedia = {
   getMedia: (params = {}) =>
     marmaladeClient.get('/media', { params }),
   
+  // Local library items matching a TMDB id (movie, or every episode of a show)
+  getByTmdb: (tmdbId) =>
+    marmaladeClient.get(`/media/by-tmdb/${encodeURIComponent(tmdbId)}`),
+
   // Get a specific media item
   getMediaItem: (mediaId) =>
     marmaladeClient.get(`/media/${mediaId}`),
@@ -82,11 +87,12 @@ export const marmaladeMedia = {
 export const marmaladeProgress = {
   // Update watch progress
   updateProgress: (mediaId, progress) =>
-    marmaladeClient.post(`/media/${mediaId}/progress`, { progress }),
+    // Backend binds `progress` / `watched` from the query string, not the body.
+    marmaladeClient.post(`/media/${mediaId}/progress`, null, { params: { progress } }),
   
   // Mark as watched/unwatched
   markWatched: (mediaId, watched = true) =>
-    marmaladeClient.post(`/media/${mediaId}/watched`, { watched }),
+    marmaladeClient.post(`/media/${mediaId}/watched`, null, { params: { watched } }),
 };
 
 // Streaming
@@ -110,6 +116,34 @@ export const marmaladeStream = {
       return streamUrl;
     }
     return `${API}${streamUrl}`;
+  },
+
+  // Full playback decision for the video player. The server probes the file
+  // and says whether the browser can play it directly or whether it must be
+  // remuxed/transcoded by ffmpeg (MKV, AVI, HEVC, AC3/DTS, …). `transcodeUrl`
+  // is also the fallback if direct play fails to decode.
+  authorizePlayback: async (mediaId) => {
+    const res = await marmaladeClient.get(`/stream/${mediaId}/authorize`);
+    const d = res?.data && typeof res.data === 'object' ? res.data : {};
+    const abs = (u) => {
+      if (typeof u !== 'string' || !u) return null;
+      return u.startsWith('http://') || u.startsWith('https://') ? u : `${API}${u}`;
+    };
+    const streamUrl = abs(d.stream_url);
+    if (!streamUrl) {
+      throw new Error('No stream URL returned from server');
+    }
+    const directPlay = d.direct_play !== false;
+    const duration = Number(d.duration);
+    return {
+      streamUrl,
+      directPlay,
+      directUrl: abs(d.direct_url) || (directPlay ? streamUrl : null),
+      transcodeUrl: abs(d.transcode_url) || (directPlay ? null : streamUrl),
+      mode: typeof d.playback_mode === 'string' ? d.playback_mode : (directPlay ? 'direct' : 'transcode'),
+      reason: typeof d.reason === 'string' ? d.reason : null,
+      duration: Number.isFinite(duration) && duration > 0 ? duration : null,
+    };
   },
 };
 

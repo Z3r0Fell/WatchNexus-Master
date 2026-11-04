@@ -116,9 +116,10 @@ const createApi = (client) => ({
   downloads: {
     getAll: () => client.get(`/downloads`),
     add: (title, mediaType, tmdbId, size) =>
-      client.post(`/downloads`, { title, media_type: mediaType, tmdb_id: tmdbId, size }),
+      // Backend binds these from the query string ([FromQuery]), not the body.
+      client.post(`/downloads`, null, { params: { title, media_type: mediaType, tmdb_id: tmdbId, size } }),
     update: (downloadId, status, progress) =>
-      client.patch(`/downloads/${downloadId}`, { status, progress }),
+      client.patch(`/downloads/${downloadId}`, null, { params: { status, progress } }),
     delete: (downloadId) => client.delete(`/downloads/${downloadId}`),
   },
 
@@ -139,7 +140,7 @@ const createApi = (client) => ({
   streaming: {
     getAll: () => client.get(`/streaming-services`),
     update: (serviceId, enabled, username) =>
-      client.put(`/streaming-services/${serviceId}`, { enabled, username }),
+      client.put(`/streaming-services/${serviceId}`, null, { params: { enabled, username } }),
   },
 
   // Library
@@ -152,11 +153,11 @@ const createApi = (client) => ({
   // Media Health
   mediaHealth: {
     checkFile: (filePath, computeHash = false) =>
-      client.post(`/media/health-check`, { file_path: filePath, compute_hash: computeHash }),
+      client.post(`/media/health-check`, null, { params: { file_path: filePath, compute_hash: computeHash } }),
     repairFile: (filePath, outputPath = null) =>
-      client.post(`/media/repair`, { file_path: filePath, output_path: outputPath }),
+      client.post(`/media/repair`, null, { params: { file_path: filePath, ...(outputPath ? { output_path: outputPath } : {}) } }),
     scanLibrary: (directory) =>
-      client.post(`/media/scan-library`, { directory }),
+      client.post(`/media/scan-library`, null, { params: { directory } }),
     getScheduledScans: () => client.get(`/media/scheduled-scans`),
     createScheduledScan: (scan) => client.post(`/media/scheduled-scans`, scan),
     updateScheduledScan: (scanId, scan) => client.put(`/media/scheduled-scans/${scanId}`, scan),
@@ -168,8 +169,6 @@ const createApi = (client) => ({
       client.put(`/media/notifications/${notificationId}/read`),
     deleteNotification: (notificationId) =>
       client.delete(`/media/notifications/${notificationId}`),
-    requestRedownload: (filePath, title, mediaType = 'movie', tmdbId = null) =>
-      client.post(`/media/redownload`, { file_path: filePath, title, media_type: mediaType, tmdb_id: tmdbId }),
   },
 
   // Auth

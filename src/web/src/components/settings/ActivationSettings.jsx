@@ -105,16 +105,18 @@ export const ActivationSettings = () => {
         toast.success(res.data.message);
         await fetchStatus();
         window.dispatchEvent(new Event('watchnexus_license_changed'));
+      } else {
+        toast.error(res.data?.message || 'Failed to deactivate');
       }
-    } catch {
-      toast.error('Failed to deactivate');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to deactivate');
     }
   };
 
   const formatSerial = (value) => {
     const clean = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     const parts = [];
-    for (let i = 0; i < clean.length && parts.length < 5; i += (parts.length < 2 ? 3 : 4)) {
+    for (let i = 0; i < clean.length && parts.length < 5; i += (parts.length <= 2 ? 3 : 4)) {
       if (parts.length === 0) parts.push(clean.slice(0, 3));
       else if (parts.length === 1) parts.push(clean.slice(3, 6));
       else parts.push(clean.slice(6 + (parts.length - 2) * 4, 6 + (parts.length - 1) * 4));
@@ -140,11 +142,12 @@ export const ActivationSettings = () => {
   }
 
   const currentTier = status?.tier || 'standard';
-  const tierCfg = TIER_CONFIG[currentTier];
+  const tierCfg = TIER_CONFIG[currentTier] || TIER_CONFIG.standard;
   const TierIcon = tierCfg.icon;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6" data-testid="activation-settings">
+      <ConfirmDialog />
       {/* Current License Banner */}
       <div className={`rounded-2xl border ${tierCfg.border} overflow-hidden`}>
         <div className={`bg-gradient-to-r ${tierCfg.gradient} p-6`}>

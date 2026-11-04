@@ -86,7 +86,7 @@ export const SourdoughPage = () => {
       URL.revokeObjectURL(url);
       toast.success('Config exported');
     } catch (e) {
-      toast.error('Export failed');
+      toast.error(e?.response?.status === 403 ? 'Admin access required to export config' : 'Export failed');
     }
   };
 
@@ -169,7 +169,7 @@ export const SourdoughPage = () => {
                         {backup.size ? ` - ${formatFileSize(backup.size)}` : ''}
                       </p>
                     </div>
-                    <Button size="sm" variant="outline" className="border-white/10 text-gray-400">
+                    <Button size="sm" variant="outline" className="border-white/10 text-gray-400" disabled title="Restore from the UI is not available yet">
                       <Upload className="w-3.5 h-3.5 mr-1.5" /> Restore
                     </Button>
                   </motion.div>

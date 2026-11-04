@@ -27,6 +27,18 @@ jest.mock('../services/api', () => ({
   formatTime: jest.fn((s) => `${Math.floor(s/60)}m`),
 }))
 
+// Signed-in user for the "Continue Watching for <name>" header
+const mockUser = { id: '1', username: 'testuser', email: 'test@test.com', role: 'user' }
+const mockAuthValue = { user: mockUser, isAuthenticated: true, loading: false, logout: () => {} }
+jest.mock('../context/AuthContext', () => ({
+  ...jest.requireActual('../context/AuthContext'),
+  useAuth: () => mockAuthValue,
+}))
+jest.mock('sonner', () => ({
+  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
+  Toaster: () => null,
+}))
+
 jest.mock('../components/media/HeroBanner', () => ({
   HeroBanner: ({ items }) => <div data-testid="hero-banner">{items.length} items</div>,
 }))
@@ -34,7 +46,7 @@ jest.mock('../components/media/HeroBanner', () => ({
 jest.mock('../components/media/MediaRow', () => ({
   MediaRow: ({ title, items, onAddToWatchlist, watchlist, loading }) => (
     <div data-testid="media-row">
-      <h3>{typeof title === 'object' ? 'Trending' : title}</h3>
+      <h3>{title}</h3>
       {items.map(item => <div key={item.id} data-testid={`row-item-${item.id}`}>{item.title}</div>)}
     </div>
   ),
@@ -62,7 +74,7 @@ describe('Dashboard', () => {
     progressApi.get.mockResolvedValue({ data: [
       { tmdb_id: 1, title: 'Continue Movie', media_type: 'movie', current_time: 3000, duration: 7200, progress: 42, backdrop_path: '/backdrop.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('continue-watching-section')).toBeInTheDocument())
     expect(screen.getByText('Continue Watching')).toBeInTheDocument()
@@ -73,7 +85,7 @@ describe('Dashboard', () => {
     progressApi.getNextUp.mockResolvedValue({ data: [
       { tmdb_id: 2, title: 'Next Show', media_type: 'tv', season: 1, episode: 5, is_continue: false, progress: 0, backdrop_path: '/backdrop2.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('next-up-section')).toBeInTheDocument())
     expect(screen.getByText('Next Up')).toBeInTheDocument()
@@ -84,7 +96,7 @@ describe('Dashboard', () => {
     libraryApi.getRecentlyAdded.mockResolvedValue({ data: [
       { id: 3, title: 'Recent Movie', media_type: 'movie', tmdb_id: 3, poster_path: '/poster3.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('recently-added-section')).toBeInTheDocument())
     expect(screen.getByText('Recently Added')).toBeInTheDocument()
@@ -94,8 +106,8 @@ describe('Dashboard', () => {
   test('shows Trending, Now Playing, On Air rows', async () => {
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('dashboard')).toBeInTheDocument())
-    
-    expect(screen.getByText('Trending This Week')).toBeInTheDocument()
+
+    expect(await screen.findByText('Trending This Week')).toBeInTheDocument()
     expect(screen.getByText('Now Playing in Theaters')).toBeInTheDocument()
     expect(screen.getByText('Currently Airing TV Shows')).toBeInTheDocument()
   })
@@ -104,11 +116,12 @@ describe('Dashboard', () => {
     watchlistApi.get.mockResolvedValue({ data: [
       { tmdb_id: 4, title: 'Watchlist Movie', media_type: 'movie', poster_path: '/poster4.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('watchlist-section')).toBeInTheDocument())
     expect(screen.getByText('My Watchlist')).toBeInTheDocument()
-    expect(screen.getByText('Watchlist Movie')).toBeInTheDocument()
+    // posters render the title as alt text
+    expect(screen.getByAltText('Watchlist Movie')).toBeInTheDocument()
   })
 
   test('shows welcome message when no content', async () => {
@@ -119,7 +132,7 @@ describe('Dashboard', () => {
     progressApi.get.mockResolvedValue({ data: [] })
     progressApi.getNextUp.mockResolvedValue({ data: [] })
     libraryApi.getRecentlyAdded.mockResolvedValue({ data: [] })
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByText('Welcome to WatchNexus!')).toBeInTheDocument())
     expect(screen.getByText('Start by exploring trending content or adding items to your watchlist.')).toBeInTheDocument()
@@ -131,32 +144,33 @@ describe('Dashboard', () => {
       { tmdb_id: 1, title: 'Continue Movie', media_type: 'movie', current_time: 3000, duration: 7200, progress: 42, season: null, episode: null, backdrop_path: '/backdrop.jpg' },
     ]})
     progressApi.delete.mockResolvedValue({ data: {} })
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('continue-watching-section')).toBeInTheDocument())
-    
+
     await act(async () => {
       await userEvent.click(screen.getByTestId('remove-continue-1'))
     })
-    
+
     expect(progressApi.delete).toHaveBeenCalledWith(1, 'movie', null, null)
   })
 
   test('adds to watchlist from Trending row', async () => {
     watchlistApi.add.mockResolvedValue({ data: {} })
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('dashboard')).toBeInTheDocument())
-    
+
     // The MediaRow component handles watchlist, but we can verify the callback is passed
-    expect(screen.getByTestId('media-row')).toBeInTheDocument()
+    // Trending, Now Playing and On The Air rows
+    expect(screen.getAllByTestId('media-row')).toHaveLength(3)
   })
 
   test('shows user name in Continue Watching header', async () => {
     progressApi.get.mockResolvedValue({ data: [
       { tmdb_id: 1, title: 'Continue Movie', media_type: 'movie', current_time: 3000, duration: 7200, progress: 42, backdrop_path: '/backdrop.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('continue-watching-section')).toBeInTheDocument())
     expect(screen.getByText('for testuser')).toBeInTheDocument()
@@ -164,7 +178,7 @@ describe('Dashboard', () => {
 
   test('shows View All link when more than 5 continue watching items', async () => {
     progressApi.get.mockResolvedValue({ data: Array(6).fill({ tmdb_id: 1, title: 'Movie', media_type: 'movie', current_time: 3000, duration: 7200, progress: 42, backdrop_path: '/backdrop.jpg' }) })
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('continue-watching-section')).toBeInTheDocument())
     expect(screen.getByText('View All')).toBeInTheDocument()
@@ -172,7 +186,7 @@ describe('Dashboard', () => {
 
   test('shows View All link when more than 8 watchlist items', async () => {
     watchlistApi.get.mockResolvedValue({ data: Array(9).fill({ tmdb_id: 1, title: 'Movie', media_type: 'movie', poster_path: '/poster.jpg' }) })
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('watchlist-section')).toBeInTheDocument())
     expect(screen.getByText('View All (9)')).toBeInTheDocument()
@@ -182,10 +196,10 @@ describe('Dashboard', () => {
     progressApi.get.mockResolvedValue({ data: [
       { tmdb_id: 1, title: 'Test Movie', media_type: 'movie', current_time: 3600, duration: 7200, progress: 50, backdrop_path: '/backdrop.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('continue-watching-section')).toBeInTheDocument())
-    expect(screen.getByText('1h 0m / 2h 0m')).toBeInTheDocument(); // formatTime
+    expect(screen.getByText('1:00:00 / 2:00:00')).toBeInTheDocument(); // formatTime (h:mm:ss)
     expect(screen.getByText('1h 0m left')).toBeInTheDocument(); // getRemainingTime
   })
 
@@ -193,7 +207,7 @@ describe('Dashboard', () => {
     progressApi.get.mockResolvedValue({ data: [
       { tmdb_id: 1, title: 'Test Show', media_type: 'tv', season: 2, episode: 5, current_time: 1800, duration: 3600, progress: 50, backdrop_path: '/backdrop.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('continue-watching-section')).toBeInTheDocument())
     expect(screen.getByText('Season 2, Episode 5')).toBeInTheDocument()
@@ -204,7 +218,7 @@ describe('Dashboard', () => {
       { tmdb_id: 1, title: 'Continue Show', media_type: 'tv', season: 1, episode: 3, is_continue: true, progress: 30, backdrop_path: '/backdrop.jpg' },
       { tmdb_id: 2, title: 'New Show', media_type: 'tv', season: 1, episode: 1, is_continue: false, progress: 0, backdrop_path: '/backdrop2.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('next-up-section')).toBeInTheDocument())
     expect(screen.getByText('Resume')).toBeInTheDocument()
@@ -215,25 +229,41 @@ describe('Dashboard', () => {
     libraryApi.getRecentlyAdded.mockResolvedValue({ data: [
       { id: 1, title: 'Brand New', media_type: 'movie', tmdb_id: 1, poster_path: '/poster.jpg' },
     ]})
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('recently-added-section')).toBeInTheDocument())
     expect(screen.getByText('NEW')).toBeInTheDocument()
   })
 
+  test('recently added items link to the player with the library item id', async () => {
+    // Real shape of GET /api/marmalade/media/recent (BridgeController.RecentMedia):
+    // no tmdb_id, `id` is the library item GUID.
+    libraryApi.getRecentlyAdded.mockResolvedValue({ data: [
+      { id: '3f2b9c1e-7a4d-4e1b-9d55-0c2a8f1e6b77', title: 'Local Movie', year: 2008, rating: 6.5,
+        poster_url: null, backdrop_url: null, media_type: 'movie', overview: '' },
+      { id: 'ep-guid-1', title: 'Pilot', media_type: 'tv', poster_url: null },
+    ]})
+
+    render(<Dashboard />)
+    await waitFor(() => expect(screen.getByTestId('recently-added-section')).toBeInTheDocument())
+    expect(screen.getByTestId('recent-3f2b9c1e-7a4d-4e1b-9d55-0c2a8f1e6b77'))
+      .toHaveAttribute('href', '/watch/3f2b9c1e-7a4d-4e1b-9d55-0c2a8f1e6b77')
+    expect(screen.getByTestId('recent-ep-guid-1')).toHaveAttribute('href', '/watch/ep-guid-1')
+  })
+
   test('handles API errors gracefully', async () => {
     tmdbApi.getTrending.mockRejectedValue(new Error('Network error'))
     const toast = require('sonner').toast
-    
+
     render(<Dashboard />)
     await waitFor(() => expect(screen.getByTestId('dashboard')).toBeInTheDocument())
-    
-    expect(toast.error).toHaveBeenCalledWith('Failed to load content')
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to load content'))
   })
 
   test('shows loading state initially', async () => {
     tmdbApi.getTrending.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ data: { results: [] } }), 100)))
-    
+
     render(<Dashboard />)
     expect(screen.getByTestId('dashboard')).toBeInTheDocument()
   })

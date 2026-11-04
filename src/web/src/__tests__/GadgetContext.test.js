@@ -1,6 +1,13 @@
-import { render, screen, waitFor, act } from './test-utils'
+// Render GadgetProvider on its own (test-utils' wrapper nests a second
+// GadgetProvider + Auth/Theme/License providers that consumed the Once-mocks).
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { GadgetProvider, useGadgets } from '../context/GadgetContext'
 import axios from 'axios'
+
+jest.mock('../context/AuthContext', () => ({
+  ...jest.requireActual('../context/AuthContext'),
+  useAuth: () => ({ isAuthenticated: true, user: { id: '1' }, loading: false }),
+}))
 
 const Probe = () => {
   const { installed, hooks, loading, refresh, install, uninstall, activate, deactivate, isInstalled, isActive, getGadget } = useGadgets()
@@ -30,7 +37,7 @@ describe('GadgetContext', () => {
       .mockResolvedValueOnce({ data: { sidebar_entries: [{ label: 'Weather', path: '/weather', icon: 'Cloud' }] } }); // /api/ripen/hooks
 
     render(<GadgetProvider><Probe /></GadgetProvider>)
-    await waitFor(() => expect(screen.getByTestId('gadgets-loading')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByTestId('gadgets-loading')).not.toBeInTheDocument())
     await waitFor(() => expect(screen.getByTestId('installed-count')).toHaveTextContent('1'))
     expect(screen.getByTestId('hooks-sidebar')).toHaveTextContent('Weather')
   })
@@ -174,10 +181,9 @@ describe('GadgetContext', () => {
       .mockResolvedValueOnce({ data: { sidebar_entries: [] } })
 
     render(<GadgetProvider><Probe /></GadgetProvider>)
-    await waitFor(() => {
-      const gadget = JSON.parse(screen.getByTestId('get-gadget-weather').textContent)
-      expect(gadget).toBeUndefined()
-    })
+    await waitFor(() => expect(screen.getByTestId('is-installed-weather')).toHaveTextContent('false'))
+    // JSON.stringify(undefined) renders nothing
+    expect(screen.getByTestId('get-gadget-weather').textContent).toBe('')
   })
 
   test('handles 401 gracefully without error', async () => {

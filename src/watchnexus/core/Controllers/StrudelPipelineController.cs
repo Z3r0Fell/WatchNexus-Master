@@ -20,7 +20,14 @@ namespace WatchNexus.Core.Controllers;
 public class StrudelPipelineController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public StrudelPipelineController(AppDbContext db) => _db = db;
+    private readonly IServiceScopeFactory _scopeFactory;
+    public StrudelPipelineController(AppDbContext db, IServiceScopeFactory scopeFactory)
+    {
+        _db = db;
+        _scopeFactory = scopeFactory;
+    }
+
+    private sealed class JobCancelledException : Exception { }
 
     // ── Async Job Queue ─────────────────────────────────────────────
     [HttpGet("queue")]
@@ -32,6 +39,8 @@ public class StrudelPipelineController : ControllerBase
             try
             {
                 var d = JsonDocument.Parse(j.Value ?? "{}").RootElement;
+                var owner = d.TryGetProperty("submitted_by", out var sb) ? sb.GetString() ?? "" : "";
+                if (!CanAccessJob(owner) && !(owner == "udev_auto" && User.IsInRole("admin"))) return null;
                 return new
                 {
                     id = j.Key.Replace("strudel_job:", ""),
@@ -45,8 +54,8 @@ public class StrudelPipelineController : ControllerBase
                     started_at = d.TryGetProperty("started_at", out var sa) ? sa.GetString() : null,
                     completed_at = d.TryGetProperty("completed_at", out var coa) ? coa.GetString() : null,
                     error = d.TryGetProperty("error", out var e) ? e.GetString() : null,
-                    eta_seconds = d.TryGetProperty("eta_seconds", out var eta) ? eta.GetInt32() : 0,
-                    file_size = d.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : 0,
+                    eta_seconds = d.TryGetProperty("eta_seconds", out var eta) && eta.TryGetInt32(out var etav) ? etav : 0,
+                    file_size = d.TryGetProperty("file_size", out var fs) && fs.TryGetInt64(out var fsv) ? fsv : 0,
                     auto_import = d.TryGetProperty("auto_import", out var ai) && ai.GetBoolean(),
                 };
             }
@@ -64,9 +73,10 @@ public class StrudelPipelineController : ControllerBase
         var sourceType = body.TryGetProperty("source_type", out var st) ? st.GetString() ?? "disc" : "disc";
         var profile = body.TryGetProperty("profile", out var p) ? p.GetString() ?? "direct" : "direct";
         var outputDir = body.TryGetProperty("output_dir", out var od) ? od.GetString() ?? "/data/rips" : "/data/rips";
-        var driveIndex = body.TryGetProperty("drive_index", out var di) ? di.GetInt32() : 0;
+        var driveIndex = body.TryGetProperty("drive_index", out var di) && di.TryGetInt32(out var div) ? div : 0;
         var autoImport = body.TryGetProperty("auto_import", out var ai) && ai.GetBoolean();
-        var titleIndex = body.TryGetProperty("title_index", out var ti) ? ti.GetInt32() : -1; // -1 = all titles
+        var titleIndex = body.TryGetProperty("title_index", out var ti) && ti.TryGetInt32(out var tiv) ? tiv : -1; // -1 = all titles
+        if (driveIndex < 0) return BadRequest(new { success = false, message = "drive_index must be >= 0" });
 
         if (string.IsNullOrEmpty(title)) title = $"Rip-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
         if (!MediaPaths.IsAllowedPath(outputDir))
@@ -96,15 +106,24 @@ public class StrudelPipelineController : ControllerBase
     }
 
     // ── Background Job Processor ────────────────────────────────────
+    // Runs after the HTTP request has completed, so it must NOT touch the
+    // request-scoped _db (disposed by then): it gets its own scope/DbContext.
     private async Task ProcessJobAsync(string jobId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await ProcessJobAsync(db, jobId);
+    }
+
+    private static async Task ProcessJobAsync(AppDbContext db, string jobId)
     {
         var key = $"strudel_job:{jobId}";
         try
         {
             // Phase 1: Ripping
-            await UpdateJobPhase(key, "ripping", 0, DateTime.UtcNow.ToString("o"));
+            await UpdateJobPhase(db, key, "ripping", 0, DateTime.UtcNow.ToString("o"));
 
-            var job = await GetJobData(key);
+            var job = await GetJobData(db, key);
             if (job == null) return;
 
             var jobVal = job.Value;
@@ -145,24 +164,29 @@ public class StrudelPipelineController : ControllerBase
                 using var process = Process.Start(psi);
                 if (process != null)
                 {
+                    // Drain stderr so a full pipe can't block the child.
+                    process.ErrorDataReceived += (_, _) => { };
+                    process.BeginErrorReadLine();
                     // Monitor progress from MakeMKV output
                     var progressRegex = new System.Text.RegularExpressions.Regex(@"PRGV:(\d+),(\d+),(\d+)");
-                    while (!process.HasExited)
+                    try
                     {
-                        var line = await process.StandardOutput.ReadLineAsync();
-                        if (line != null)
+                        string? line;
+                        while ((line = await process.StandardOutput.ReadLineAsync()) != null)
                         {
                             var match = progressRegex.Match(line);
-                            if (match.Success)
+                            if (match.Success && long.TryParse(match.Groups[1].Value, out var current)
+                                && long.TryParse(match.Groups[2].Value, out var total))
                             {
-                                var current = int.Parse(match.Groups[1].Value);
-                                var total = int.Parse(match.Groups[2].Value);
                                 var pct = total > 0 ? (current * 100.0 / total) : 0;
-                                await UpdateJobPhase(key, "ripping", pct, null);
+                                await UpdateJobPhase(db, key, "ripping", pct, null);
                             }
                         }
+                        await process.WaitForExitAsync();
                     }
-                    await process.WaitForExitAsync();
+                    catch (JobCancelledException) { try { process.Kill(true); } catch { } throw; }
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException($"makemkvcon exited with code {process.ExitCode}");
                 }
             }
             else
@@ -170,17 +194,17 @@ public class StrudelPipelineController : ControllerBase
                 // Simulate rip progress if MakeMKV not installed
                 for (int i = 0; i <= 100; i += 5)
                 {
-                    await UpdateJobPhase(key, "ripping", i, null);
+                    await UpdateJobPhase(db, key, "ripping", i, null);
                     await Task.Delay(200);
                 }
             }
 
-            await UpdateJobPhase(key, "ripping", 100, null);
+            await UpdateJobPhase(db, key, "ripping", 100, null);
 
             // Phase 2: Transcoding (if profile != direct)
             if (profile != "direct")
             {
-                await UpdateJobPhase(key, "transcoding", 0, null);
+                await UpdateJobPhase(db, key, "transcoding", 0, null);
 
                 var handbrakePath = FindBinary("HandBrakeCLI");
                 if (handbrakePath != null)
@@ -203,34 +227,45 @@ public class StrudelPipelineController : ControllerBase
                     using var proc = Process.Start(psi);
                     if (proc != null)
                     {
+                        // HandBrakeCLI prints progress ("Encoding: ..., 12.34 %") on
+                        // stdout and its log on stderr: read stdout, drain stderr.
+                        proc.ErrorDataReceived += (_, _) => { };
+                        proc.BeginErrorReadLine();
                         var pctRegex = new System.Text.RegularExpressions.Regex(@"(\d+\.\d+) %");
-                        while (!proc.HasExited)
+                        try
                         {
-                            var line = await proc.StandardError.ReadLineAsync();
-                            if (line != null)
+                            string? line;
+                            while ((line = await proc.StandardOutput.ReadLineAsync()) != null)
                             {
-                                var match = pctRegex.Match(line);
-                                if (match.Success) await UpdateJobPhase(key, "transcoding", double.Parse(match.Groups[1].Value), null);
+                                // Progress lines are \r-separated; use the last match.
+                                var matches = pctRegex.Matches(line);
+                                if (matches.Count > 0 && double.TryParse(matches[^1].Groups[1].Value,
+                                        System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pctv))
+                                    await UpdateJobPhase(db, key, "transcoding", pctv, null);
                             }
+                            await proc.WaitForExitAsync();
                         }
+                        catch (JobCancelledException) { try { proc.Kill(true); } catch { } throw; }
+                        if (proc.ExitCode != 0)
+                            throw new InvalidOperationException($"HandBrakeCLI exited with code {proc.ExitCode}");
                     }
                 }
                 else
                 {
                     for (int i = 0; i <= 100; i += 3)
                     {
-                        await UpdateJobPhase(key, "transcoding", i, null);
+                        await UpdateJobPhase(db, key, "transcoding", i, null);
                         await Task.Delay(150);
                     }
                 }
 
-                await UpdateJobPhase(key, "transcoding", 100, null);
+                await UpdateJobPhase(db, key, "transcoding", 100, null);
             }
 
             // Phase 3: Auto-import to library
             if (autoImport)
             {
-                await UpdateJobPhase(key, "importing", 50, null);
+                await UpdateJobPhase(db, key, "importing", 50, null);
                 // Scan output directory and add to marmalade library
                 var outputPath = $"{outputDir}/{jobId}";
                 if (Directory.Exists(outputPath))
@@ -239,7 +274,7 @@ public class StrudelPipelineController : ControllerBase
                         .Concat(Directory.GetFiles(outputPath, "*.mp4", SearchOption.AllDirectories));
                     // Files would be imported via marmalade's scan
                 }
-                await UpdateJobPhase(key, "importing", 100, null);
+                await UpdateJobPhase(db, key, "importing", 100, null);
             }
 
             // Calculate final file size
@@ -249,11 +284,12 @@ public class StrudelPipelineController : ControllerBase
                 totalSize = Directory.GetFiles(finalPath, "*", SearchOption.AllDirectories).Sum(f => new FileInfo(f).Length);
 
             // Mark completed
-            await UpdateJobComplete(key, totalSize);
+            await UpdateJobComplete(db, key, totalSize);
         }
+        catch (JobCancelledException) { /* phase already "cancelled" */ }
         catch (Exception ex)
         {
-            await UpdateJobError(key, ex.Message);
+            try { await UpdateJobError(db, key, ex.Message); } catch { }
         }
     }
 
@@ -284,6 +320,9 @@ public class StrudelPipelineController : ControllerBase
         var data = JsonSerializer.Deserialize<Dictionary<string, object>>(job.Value) ?? new();
         var submittedBy = data.GetValueOrDefault("submitted_by")?.ToString() ?? "";
         if (!CanAccessJob(submittedBy)) return NotFound();
+        var curPhase = data.GetValueOrDefault("phase")?.ToString();
+        if (curPhase != "failed" && curPhase != "cancelled")
+            return Conflict(new { success = false, message = $"Only failed or cancelled jobs can be retried (job is '{curPhase}')" });
         data["phase"] = "queued";
         data["progress"] = 0;
         data["error"] = null!;
@@ -388,48 +427,58 @@ public class StrudelPipelineController : ControllerBase
     private bool CanAccessJob(string submittedBy) =>
         User.IsInRole("admin") || (submittedBy != "" && submittedBy == this.UserId());
 
-    private async Task<JsonElement?> GetJobData(string key)
+    private static async Task<JsonElement?> GetJobData(AppDbContext db, string key)
     {
-        var s = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
+        var s = await db.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (s?.Value == null) return null;
         return JsonDocument.Parse(s.Value).RootElement;
     }
 
-    private async Task UpdateJobPhase(string key, string phase, double progress, string? startedAt)
+    private static async Task UpdateJobPhase(AppDbContext db, string key, string phase, double progress, string? startedAt)
     {
-        var s = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
+        var s = await db.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (s?.Value == null) return;
+        // Pick up a cancel issued from another request (this context may hold a stale copy).
+        await db.Entry(s).ReloadAsync();
+        if (s.Value == null) return;
         var data = JsonSerializer.Deserialize<Dictionary<string, object>>(s.Value) ?? new();
+        if (data.GetValueOrDefault("phase")?.ToString() == "cancelled") throw new JobCancelledException();
         data["phase"] = phase;
         data["progress"] = Math.Round(progress, 1);
         if (startedAt != null) data["started_at"] = startedAt;
         s.Value = JsonSerializer.Serialize(data);
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
-    private async Task UpdateJobComplete(string key, long fileSize)
+    private static async Task UpdateJobComplete(AppDbContext db, string key, long fileSize)
     {
-        var s = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
+        var s = await db.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (s?.Value == null) return;
+        await db.Entry(s).ReloadAsync();
+        if (s.Value == null) return;
         var data = JsonSerializer.Deserialize<Dictionary<string, object>>(s.Value) ?? new();
+        if (data.GetValueOrDefault("phase")?.ToString() == "cancelled") return;
         data["phase"] = "completed";
         data["progress"] = 100;
         data["completed_at"] = DateTime.UtcNow.ToString("o");
         data["file_size"] = fileSize;
         s.Value = JsonSerializer.Serialize(data);
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
-    private async Task UpdateJobError(string key, string error)
+    private static async Task UpdateJobError(AppDbContext db, string key, string error)
     {
-        var s = await _db.Settings.FirstOrDefaultAsync(s => s.Key == key);
+        var s = await db.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (s?.Value == null) return;
+        await db.Entry(s).ReloadAsync();
+        if (s.Value == null) return;
         var data = JsonSerializer.Deserialize<Dictionary<string, object>>(s.Value) ?? new();
+        if (data.GetValueOrDefault("phase")?.ToString() == "cancelled") return;
         data["phase"] = "failed";
         data["error"] = error;
         data["completed_at"] = DateTime.UtcNow.ToString("o");
         s.Value = JsonSerializer.Serialize(data);
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     private static string? FindBinary(string name)
@@ -528,10 +577,10 @@ public class CrucibleHardwareController : ControllerBase
 
         if (string.IsNullOrEmpty(sourcePath))
             return BadRequest(new { success = false, message = "source_path required" });
-        if (!System.IO.File.Exists(sourcePath))
-            return NotFound(new { success = false, message = $"File not found: {sourcePath}" });
         if (!MediaPaths.IsAllowedPath(sourcePath))
             return BadRequest(new { success = false, message = "source_path must be inside an allowed media directory" });
+        if (!System.IO.File.Exists(sourcePath))
+            return NotFound(new { success = false, message = $"File not found: {sourcePath}" });
         if (!MediaPaths.IsAllowedPath(outputDir))
             return BadRequest(new { success = false, message = "output_dir must be inside an allowed media directory" });
 

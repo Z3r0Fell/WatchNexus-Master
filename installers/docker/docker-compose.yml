@@ -1,22 +1,27 @@
 services:
   watchnexus:
+    # Builds the official multi-tier image from the repo-root Dockerfile.
+    # (context ".." pointed at installers/, which has no Dockerfile and no
+    # src/ tree, so `docker compose up` could never build.)
+    image: watchnexus/watchnexus:1.0.8-standard
     build:
-      context: ..
+      context: ../..
       dockerfile: Dockerfile
       args:
+        TIER: standard
         PORT: 8001
     container_name: watchnexus
     ports:
       - "8001:8001"
     volumes:
-      - watchnexus-data:/opt/watchnexus/data
+      - watchnexus-data:/app/data
       - /path/to/your/media:/data/media:ro    # Mount your media libraries here
     environment:
       - WATCHNEXUS_PORT=8001
-      - WATCHNEXUS_DATA_DIR=/opt/watchnexus/data
+      - WATCHNEXUS_DATA_DIR=/app/data
       - ASPNETCORE_ENVIRONMENT=Production
       - TZ=America/Toronto
-      - TMDB_API_KEY=               # Optional: Your TMDB API key
+      # - TMDB_API_KEY=your-key      # Optional (an empty value would override the built-in fallback)
     restart: unless-stopped
     read_only: true
     tmpfs:

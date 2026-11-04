@@ -18,6 +18,12 @@ import axios from 'axios';
 
 const API_URL = BACKEND_URL;
 
+// 404/405/501 from /api/kodi/* means this server has no Kodi API at all.
+export const isKodiUnsupportedError = (err) =>
+  [404, 405, 501].includes(err?.response?.status);
+
+export const isSafeExternalUrl = (url) => /^https?:\/\//i.test(String(url || '').trim());
+
 // Kodi category icons and colors
 const kodiCategoryConfig = {
   video: { icon: Tv, color: 'blue', label: 'Video Add-ons', emoji: '📺' },
@@ -126,6 +132,9 @@ export const PluginMarketplacePage = () => {
   const [kodiCategories, setKodiCategories] = useState({});
   const [popularAddons, setPopularAddons] = useState([]);
   const [loadingKodi, setLoadingKodi] = useState(false);
+  // The backend has no Kodi API (browsing addons requires a live Kodi
+  // instance). Probe once; on 404/405/501 hide the Kodi browser behind a notice.
+  const [kodiUnavailable, setKodiUnavailable] = useState(false);
   
   // WatchNexus plugins state
   const [installedPlugins, setInstalledPlugins] = useState([]);
@@ -166,15 +175,27 @@ export const PluginMarketplacePage = () => {
     }
   }, []);
 
-  // Fetch Kodi categories
+  // Returns true when the error means "this server has no Kodi API".
+  const markKodiUnavailableIfMissing = useCallback((err) => {
+    if (isKodiUnsupportedError(err)) {
+      setKodiUnavailable(true);
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Fetch Kodi categories (also serves as the availability probe)
   const fetchKodiCategories = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/kodi/categories`);
       setKodiCategories(res.data.categories || {});
+      setKodiUnavailable(false);
+      return true;
     } catch (err) {
-      console.error('Failed to fetch Kodi categories:', err);
+      if (!markKodiUnavailableIfMissing(err)) console.error('Failed to fetch Kodi categories:', err);
+      return false;
     }
-  }, []);
+  }, [markKodiUnavailableIfMissing]);
 
   // Fetch popular Kodi addons
   const fetchPopularAddons = useCallback(async () => {
@@ -183,29 +204,32 @@ export const PluginMarketplacePage = () => {
       const res = await axios.get(`${API_URL}/api/kodi/addons/popular?limit=12`);
       setPopularAddons(res.data.addons || []);
     } catch (err) {
-      console.error('Failed to fetch popular addons:', err);
+      if (!markKodiUnavailableIfMissing(err)) console.error('Failed to fetch popular addons:', err);
     } finally {
       setLoadingKodi(false);
     }
-  }, []);
+  }, [markKodiUnavailableIfMissing]);
 
   // Fetch Kodi addons by category or search
   const fetchKodiAddons = useCallback(async (category = null, query = '') => {
+    if (kodiUnavailable) return;
     setLoadingKodi(true);
     try {
       let url = `${API_URL}/api/kodi/addons?limit=100`;
       if (query) url += `&query=${encodeURIComponent(query)}`;
       if (category) url += `&category=${category}`;
-      
+
       const res = await axios.get(url);
       setKodiAddons(res.data.addons || []);
     } catch (err) {
-      console.error('Failed to fetch Kodi addons:', err);
-      toast.error('Failed to fetch addons');
+      if (!markKodiUnavailableIfMissing(err)) {
+        console.error('Failed to fetch Kodi addons:', err);
+        toast.error('Failed to fetch addons');
+      }
     } finally {
       setLoadingKodi(false);
     }
-  }, []);
+  }, [kodiUnavailable, markKodiUnavailableIfMissing]);
 
   // Fetch installed WatchNexus plugins
   const fetchInstalledPlugins = useCallback(async () => {
@@ -220,16 +244,22 @@ export const PluginMarketplacePage = () => {
     }
   }, []);
 
-  // Refresh Kodi repository
+  // Refresh: always reload the gadget catalogue/installed list; refresh the
+  // Kodi repository only when the server actually exposes a Kodi API.
   const refreshKodiRepo = async () => {
     setLoadingKodi(true);
     try {
+      await Promise.all([fetchCatalogue(selectedCatCategory, catalogueSearch), fetchInstalledPlugins()]);
+      if (kodiUnavailable) {
+        toast.success('Catalogue refreshed');
+        return;
+      }
       await axios.post(`${API_URL}/api/kodi/refresh`, {});
       toast.success('Kodi repository refreshed');
-      await fetchKodiCategories();
-      await fetchPopularAddons();
+      if (await fetchKodiCategories()) await fetchPopularAddons();
     } catch (err) {
-      toast.error('Failed to refresh repository');
+      if (markKodiUnavailableIfMissing(err)) toast.success('Catalogue refreshed');
+      else toast.error('Failed to refresh repository');
     } finally {
       setLoadingKodi(false);
     }
@@ -239,9 +269,9 @@ export const PluginMarketplacePage = () => {
   useEffect(() => {
     fetchCatalogue();
     fetchCatalogueCategories();
-    fetchKodiCategories();
-    fetchPopularAddons();
     fetchInstalledPlugins();
+    // Only fetch popular addons if the Kodi API exists.
+    fetchKodiCategories().then(ok => { if (ok) fetchPopularAddons(); });
   }, [fetchCatalogue, fetchCatalogueCategories, fetchKodiCategories, fetchPopularAddons, fetchInstalledPlugins]);
 
   // Search handler
@@ -461,6 +491,7 @@ export const PluginMarketplacePage = () => {
     if (!addon) return null;
     
     const categoryConfig = kodiCategoryConfig[addon.category] || kodiCategoryConfig.other;
+    const colors = colorClassMap[categoryConfig.color] || colorClassMap.gray;
     
     return (
       <motion.div
@@ -566,7 +597,10 @@ export const PluginMarketplacePage = () => {
               {addon.website && (
                 <Button
                   variant="outline"
-                  onClick={() => window.open(addon.website, '_blank')}
+                  onClick={() => {
+                    // Third-party metadata: only open http(s) links, never javascript: etc.
+                    if (isSafeExternalUrl(addon.website)) window.open(addon.website, '_blank', 'noopener,noreferrer');
+                  }}
                   className="flex-1"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
@@ -757,6 +791,16 @@ export const PluginMarketplacePage = () => {
 
           {/* Kodi Repository Tab */}
           <TabsContent value="kodi" className="mt-6">
+            {kodiUnavailable ? (
+              <div className="glass-card rounded-xl p-8 text-center" data-testid="kodi-unavailable">
+                <Tv className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                <h3 className="text-lg font-semibold mb-2">Kodi add-on browsing is not available</h3>
+                <p className="text-sm text-gray-400 max-w-md mx-auto">
+                  Browsing Kodi add-ons requires a connected Kodi instance, which this server does not provide.
+                  You can still convert a Kodi add-on from the Convert tab or import a gadget from a URL.
+                </p>
+              </div>
+            ) : (<>
             {/* Search bar */}
             <div className="flex gap-4 mb-6">
               <div className="relative flex-1">
@@ -851,6 +895,7 @@ export const PluginMarketplacePage = () => {
                 )}
               </div>
             )}
+            </>)}
           </TabsContent>
 
           {/* Installed Plugins Tab */}

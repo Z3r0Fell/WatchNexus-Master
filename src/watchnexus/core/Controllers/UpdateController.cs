@@ -34,7 +34,7 @@ public class UpdateController : ControllerBase
         _patchService = patchService;
     }
 
-    private const string CURRENT_VERSION = "1.0.6";
+    private const string CURRENT_VERSION = Services.UpdateBackgroundService.CurrentVersion;
     private const string RELEASES_PAGE = "https://github.com/Z3r0Fell/WatchNexus-Master/tree/main/Releases";
 
     // Fetch + base64-decode a JSON file from the GitHub repo via the contents API.
@@ -62,7 +62,7 @@ public class UpdateController : ControllerBase
     public async Task<IActionResult> CheckForUpdates()
     {
         var tier = await GetCurrentTier();
-        var licenseServerUrl = _config["LICENSE_SERVER_URL"] ?? "https://licenses.watchnexus.ca";
+        var licenseServerUrl = _config["LICENSE_SERVER_URL"].NullIfBlank() ?? "https://licenses.watchnexus.ca";
         var githubPatchUrl = _config["PATCH_REPO_URL"] ?? "";
 
         // Result containers
@@ -272,7 +272,7 @@ public class UpdateController : ControllerBase
             last_checked = lastCheckedAt,
             update_channels = new
             {
-                license_server = _config["LICENSE_SERVER_URL"] ?? "https://licenses.watchnexus.ca",
+                license_server = _config["LICENSE_SERVER_URL"].NullIfBlank() ?? "https://licenses.watchnexus.ca",
                 patch_repo = !string.IsNullOrEmpty(_config["PATCH_REPO_URL"]) ? "configured" : "not configured",
             },
         });
@@ -359,8 +359,14 @@ public class UpdateController : ControllerBase
             }
             var (valid, error) = patchService.VerifyManifestSignature(rawJson);
             signatureValid = valid;
-            if (valid == false)
+            if (valid != true)
                 return BadRequest(new { success = false, message = $"Patch signature invalid: {error}" });
+            // Apply exactly the bytes whose signature was verified (the first
+            // fetch was a separate request and could differ).
+            var verified = PatchService.ParseManifest(rawJson);
+            if (verified == null || verified.PatchId != manifest.PatchId)
+                return BadRequest(new { success = false, message = "Patch refused: verified manifest does not match the fetched manifest" });
+            manifest = verified;
         }
 
         var result = await patchService.ApplyAsync(manifest, signatureValid);

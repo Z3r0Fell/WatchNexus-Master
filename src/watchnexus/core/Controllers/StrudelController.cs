@@ -23,8 +23,29 @@ public class StrudelController : ControllerBase
     private readonly AppDbContext _db;
     private static readonly List<RipJob> _activeJobs = new();
     private static readonly object _jobLock = new();
+    private readonly IServiceScopeFactory? _scopes;
 
-    public StrudelController(AppDbContext db) => _db = db;
+    // Persisted jobs are written via JobToObject (snake_case keys); read them back the same way.
+    private static readonly JsonSerializerOptions JobJson = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower, PropertyNameCaseInsensitive = true };
+    // The Strudel page reads scan results / drives with PascalCase keys.
+    private static readonly JsonSerializerOptions PascalJson = new() { PropertyNamingPolicy = null };
+
+    public StrudelController(AppDbContext db, IServiceScopeFactory? scopes = null)
+    {
+        _db = db;
+        _scopes = scopes;
+    }
+
+    /// <summary>
+    /// Runs a DB operation on a fresh scope. Background pipeline work outlives
+    /// the request, so it must not touch the request-scoped (disposed) context.
+    /// </summary>
+    private async Task WithDb(Func<AppDbContext, Task> work)
+    {
+        if (_scopes == null) { await work(_db); return; }
+        using var scope = _scopes.CreateScope();
+        await work(scope.ServiceProvider.GetRequiredService<AppDbContext>());
+    }
 
     // ── Status ──────────────────────────────────────────────────────
     [HttpGet("status")]
@@ -58,7 +79,7 @@ public class StrudelController : ControllerBase
     public IActionResult GetDrives()
     {
         var drives = DetectOpticalDrives();
-        return Ok(new { drives, count = drives.Count });
+        return new JsonResult(new { drives, count = drives.Count }, PascalJson);
     }
 
     // ── Disc Scan ───────────────────────────────────────────────────
@@ -68,6 +89,9 @@ public class StrudelController : ControllerBase
         var makemkvPath = FindBinary("makemkvcon");
         if (makemkvPath == null)
             return BadRequest(new { error = "MakeMKV (makemkvcon) is not installed. Install it to use disc scanning.", install_hint = "sudo snap install makemkv OR visit makemkv.com" });
+
+        if (request.DriveIndex < 0 || request.DriveIndex > 9)
+            return BadRequest(new { error = "Invalid drive index. Must be between 0 and 9." });
 
         var jobId = Guid.NewGuid().ToString("N")[..12];
         var driveIndex = request.DriveIndex;
@@ -102,7 +126,8 @@ public class StrudelController : ControllerBase
         if (result == null || !CanAccessJob(result.OwnerUserId))
             return NotFound(new { error = "Scan not found", job_id = jobId });
 
-        return Ok(result);
+        // PascalCase - exactly the keys the Strudel page polls for (Status, Titles, ...).
+        return new JsonResult(result, PascalJson);
     }
 
     // ── Rip Job Management ──────────────────────────────────────────
@@ -169,7 +194,7 @@ public class StrudelController : ControllerBase
         {
             try
             {
-                var job = JsonSerializer.Deserialize<RipJob>(s.Value ?? "{}");
+                var job = JsonSerializer.Deserialize<RipJob>(s.Value ?? "{}", JobJson);
                 if (job == null) continue;
                 if (!isAdmin && job.OwnerUserId != "" && job.OwnerUserId != uid) continue;
                 jobs.Add(JsonSerializer.SerializeToElement(JobToObject(job)));
@@ -207,7 +232,7 @@ public class StrudelController : ControllerBase
         if (setting?.Value == null)
             return NotFound(new { error = "Job not found" });
 
-        var job = JsonSerializer.Deserialize<RipJob>(setting.Value);
+        var job = JsonSerializer.Deserialize<RipJob>(setting.Value, JobJson);
         if (job == null || !CanAccessJob(job.OwnerUserId))
             return NotFound(new { error = "Job not found" });
 
@@ -220,7 +245,7 @@ public class StrudelController : ControllerBase
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_job_{jobId}" && s.UserId == "");
         if (setting?.Value != null)
         {
-            var job = JsonSerializer.Deserialize<RipJob>(setting.Value);
+            var job = JsonSerializer.Deserialize<RipJob>(setting.Value, JobJson);
             if (job != null && !CanAccessJob(job.OwnerUserId))
                 return NotFound(new { error = "Job not found" });
         }
@@ -241,6 +266,8 @@ public class StrudelController : ControllerBase
             {
                 active.Status = "cancelled";
                 active.CancellationRequested = true;
+                try { if (active.ActiveProcess is { HasExited: false } p) p.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { }
             }
         }
 
@@ -260,9 +287,20 @@ public class StrudelController : ControllerBase
         if (setting?.Value == null)
             return NotFound(new { error = "Job not found" });
 
-        var job = JsonSerializer.Deserialize<RipJob>(setting.Value);
-        if (job == null || !CanAccessJob(job.OwnerUserId)) return BadRequest(new { error = "Invalid job data" });
+        var job = JsonSerializer.Deserialize<RipJob>(setting.Value, JobJson);
+        if (job == null || !CanAccessJob(job.OwnerUserId)) return NotFound(new { error = "Job not found" });
 
+        var makemkvPath = FindBinary("makemkvcon");
+        if (makemkvPath == null) return BadRequest(new { error = "MakeMKV is not installed." });
+
+        lock (_jobLock)
+        {
+            if (_activeJobs.Any(j => j.Id == jobId))
+                return Conflict(new { error = "Job is already running" });
+            _activeJobs.Add(job);
+        }
+
+        job.CancellationRequested = false;
         job.Status = "pending";
         job.RipProgress = 0;
         job.TranscodeProgress = 0;
@@ -271,10 +309,7 @@ public class StrudelController : ControllerBase
         job.CompletedAt = null;
 
         await SaveJobState(job);
-
-        var makemkvPath = FindBinary("makemkvcon");
-        if (makemkvPath != null)
-            _ = Task.Run(() => ExecuteRipPipeline(job, makemkvPath));
+        _ = Task.Run(() => ExecuteRipPipeline(job, makemkvPath));
 
         return Ok(new { message = "Job restarted", job_id = jobId });
     }
@@ -332,6 +367,7 @@ public class StrudelController : ControllerBase
     }
 
     [HttpPost("profiles")]
+    [Authorize(Roles = "admin")] // global, shared by all users
     public async Task<IActionResult> CreateProfile([FromBody] JsonElement profile)
     {
         var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "strudel_profiles" && s.UserId == "");
@@ -358,14 +394,21 @@ public class StrudelController : ControllerBase
         var settings = await _db.Settings
             .Where(s => s.Key.StartsWith("strudel_history_") && s.UserId == "")
             .OrderByDescending(s => s.Key)
-            .Take(50)
+            .Take(1000)
             .ToListAsync();
 
+        var isAdmin = User.IsInRole("admin");
+        var uid = this.UserId();
         var history = settings.Select(s =>
         {
-            try { return JsonSerializer.Deserialize<object>(s.Value ?? "{}"); }
-            catch { return null; }
-        }).Where(h => h != null).ToList();
+            try
+            {
+                var el = JsonSerializer.Deserialize<JsonElement>(s.Value ?? "{}");
+                var owner = el.ValueKind == JsonValueKind.Object && el.TryGetProperty("owner_user_id", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString() : "";
+                return isAdmin || (!string.IsNullOrEmpty(owner) && owner == uid) ? (JsonElement?)el : null;
+            }
+            catch (JsonException) { return null; }
+        }).Where(h => h != null).Take(50).ToList();
 
         return Ok(new { history, count = history.Count });
     }
@@ -399,6 +442,7 @@ public class StrudelController : ControllerBase
     }
 
     [HttpPut("config")]
+    [Authorize(Roles = "admin")] // global, shared by all users
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
         var json = config.GetRawText();
@@ -420,7 +464,8 @@ public class StrudelController : ControllerBase
         {
             var device = $"/dev/sr{driveIndex}";
             var psi = new ProcessStartInfo("eject", device) { RedirectStandardError = true };
-            var proc = Process.Start(psi);
+            psi.UseShellExecute = false;
+            using var proc = Process.Start(psi);
             proc?.WaitForExit(5000);
             return Ok(new { message = $"Eject command sent to {device}", drive_index = driveIndex });
         }
@@ -510,7 +555,7 @@ public class StrudelController : ControllerBase
             UseShellExecute = false
         };
 
-        var proc = Process.Start(psi);
+        using var proc = Process.Start(psi);
         if (proc == null)
         {
             result.Status = "failed";
@@ -518,6 +563,8 @@ public class StrudelController : ControllerBase
             return result;
         }
 
+        proc.ErrorDataReceived += (_, _) => { }; // drain stderr so a full pipe can't block makemkvcon
+        proc.BeginErrorReadLine();
         var output = await proc.StandardOutput.ReadToEndAsync();
         await proc.WaitForExitAsync();
 
@@ -626,7 +673,9 @@ public class StrudelController : ControllerBase
             job.Status = "ripping";
             await SaveJobState(job);
 
-            var outputDir = Path.Combine(job.OutputPath, SanitizeFilename(job.DiscLabel));
+            var folder = SanitizeFilename(job.DiscLabel).Trim();
+            if (folder is "" or "." or "..") folder = "Unknown Disc"; // never escape the allowed output root
+            var outputDir = Path.Combine(job.OutputPath, folder);
             Directory.CreateDirectory(outputDir);
 
             foreach (var titleIndex in job.SelectedTitles)
@@ -647,8 +696,11 @@ public class StrudelController : ControllerBase
                 psi.ArgumentList.Add(titleIndex.ToString());
                 psi.ArgumentList.Add(outputDir);
 
-                var proc = Process.Start(psi);
+                using var proc = Process.Start(psi);
                 if (proc == null) { job.Status = "failed"; job.Error = "Failed to start makemkvcon"; break; }
+                job.ActiveProcess = proc;
+                proc.ErrorDataReceived += (_, _) => { };
+                proc.BeginErrorReadLine();
 
                 // Monitor progress via PRGV lines
                 while (!proc.HasExited)
@@ -752,12 +804,17 @@ public class StrudelController : ControllerBase
                             break;
                     }
 
-                    var hbProc = Process.Start(hbPsi);
+                    using var hbProc = Process.Start(hbPsi);
                         if (hbProc == null) continue;
+                        job.ActiveProcess = hbProc;
+                        // HandBrake prints progress on stdout and its log on stderr;
+                        // drain stderr so the (large) log can't fill the pipe and stall it.
+                        hbProc.ErrorDataReceived += (_, _) => { };
+                        hbProc.BeginErrorReadLine();
 
                         while (!hbProc.HasExited)
                         {
-                            var line = await hbProc.StandardError.ReadLineAsync();
+                            var line = await hbProc.StandardOutput.ReadLineAsync();
                             if (line == null) break;
                             // Parse HandBrake progress: "Encoding: task 1 of 1, 45.23 %"
                             var progressMatch = Regex.Match(line, @"(\d+\.\d+)\s*%");
@@ -768,7 +825,7 @@ public class StrudelController : ControllerBase
                         await hbProc.WaitForExitAsync();
 
                         // Replace original with transcoded file
-                        if (hbProc.ExitCode == 0 && System.IO.File.Exists(outFile))
+                        if (!job.CancellationRequested && hbProc.ExitCode == 0 && System.IO.File.Exists(outFile))
                         {
                             System.IO.File.Delete(mkvFile);
                             System.IO.File.Move(outFile, Path.ChangeExtension(mkvFile, outExt));
@@ -779,20 +836,29 @@ public class StrudelController : ControllerBase
                 job.TranscodeProgress = 100;
             }
 
+            if (job.CancellationRequested)
+            {
+                job.Status = "cancelled";
+                await SaveJobState(job);
+                return;
+            }
+
             // Stage 3: Complete
             job.Status = "complete";
             job.CompletedAt = DateTime.UtcNow;
             await SaveJobState(job);
             await SaveToHistory(job);
-
-            // Remove from active jobs
-            lock (_jobLock) { _activeJobs.RemoveAll(j => j.Id == job.Id); }
         }
         catch (Exception ex)
         {
-            job.Status = "failed";
-            job.Error = ex.Message;
-            await SaveJobState(job);
+            job.Status = job.CancellationRequested ? "cancelled" : "failed";
+            job.Error = job.CancellationRequested ? null : ex.Message;
+            try { await SaveJobState(job); } catch { /* best effort from a background task */ }
+        }
+        finally
+        {
+            job.ActiveProcess = null;
+            // Always leave the active list (failed/cancelled runs used to stay forever).
             lock (_jobLock) { _activeJobs.RemoveAll(j => j.Id == job.Id); }
         }
     }
@@ -814,29 +880,30 @@ public class StrudelController : ControllerBase
     private bool CanAccessJob(string owner) =>
         User.IsInRole("admin") || (owner != "" && owner == this.UserId());
 
-    private async Task SaveJobState(RipJob job)
+    private Task SaveJobState(RipJob job) => WithDb(async db =>
     {
         var json = JsonSerializer.Serialize(JobToObject(job));
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_job_{job.Id}" && s.UserId == "");
+        var setting = await db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_job_{job.Id}" && s.UserId == "");
         if (setting != null) setting.Value = json;
-        else _db.Settings.Add(new AppSetting { Key = $"strudel_job_{job.Id}", UserId = "", Value = json });
-        await _db.SaveChangesAsync();
-    }
+        else db.Settings.Add(new AppSetting { Key = $"strudel_job_{job.Id}", UserId = "", Value = json });
+        await db.SaveChangesAsync();
+    });
 
-    private async Task SaveScanResult(string jobId, ScanResult result)
-    {        var json = JsonSerializer.Serialize(result);
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_scan_{jobId}" && s.UserId == "");
+    private Task SaveScanResult(string jobId, ScanResult result) => WithDb(async db =>
+    {
+        var json = JsonSerializer.Serialize(result);
+        var setting = await db.Settings.FirstOrDefaultAsync(s => s.Key == $"strudel_scan_{jobId}" && s.UserId == "");
         if (setting != null) setting.Value = json;
-        else _db.Settings.Add(new AppSetting { Key = $"strudel_scan_{jobId}", UserId = "", Value = json });
-        await _db.SaveChangesAsync();
-    }
+        else db.Settings.Add(new AppSetting { Key = $"strudel_scan_{jobId}", UserId = "", Value = json });
+        await db.SaveChangesAsync();
+    });
 
-    private async Task SaveToHistory(RipJob job)
+    private Task SaveToHistory(RipJob job) => WithDb(async db =>
     {
         var historyKey = $"strudel_history_{job.CompletedAt:yyyyMMddHHmmss}_{job.Id}";
-        _db.Settings.Add(new AppSetting { Key = historyKey, UserId = "", Value = JsonSerializer.Serialize(JobToObject(job)) });
-        await _db.SaveChangesAsync();
-    }
+        db.Settings.Add(new AppSetting { Key = historyKey, UserId = "", Value = JsonSerializer.Serialize(JobToObject(job)) });
+        await db.SaveChangesAsync();
+    });
 
     private static object JobToObject(RipJob job) => new
     {

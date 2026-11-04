@@ -24,10 +24,10 @@ const TerrinePage = () => {
 
   const handleAdd = async () => {
     if (!newRec.title || !newRec.channel) { toast.error('Title and channel required'); return; }
-    try { const res = await axios.post(`${API}/api/terrine/recordings`, newRec); if (res.data.success) { toast.success(res.data.message); fetch_(); setShowAdd(false); setNewRec({ title: '', channel: '', start_time: '', end_time: '' }); } } catch (err) { toast.error('Failed'); }
+    try { const res = await axios.post(`${API}/api/terrine/recordings`, newRec); if (res.data.success) { toast.success(res.data.message); fetch_(); setShowAdd(false); setNewRec({ title: '', channel: '', start_time: '', end_time: '' }); } } catch (err) { toast.error(err.response?.data?.message || 'Failed to schedule recording'); }
   };
 
-  const handleDelete = async (id) => { const ok = await confirm({ title: 'Delete Recording', description: 'Delete recording?', confirmText: 'Delete' }); if (!ok) return; try { await axios.delete(`${API}/api/terrine/recordings/${id}`); toast.success('Deleted'); fetch_(); } catch {} };
+  const handleDelete = async (id) => { const ok = await confirm({ title: 'Delete Recording', description: 'Delete recording?', confirmText: 'Delete' }); if (!ok) return; try { await axios.delete(`${API}/api/terrine/recordings/${encodeURIComponent(id)}`); toast.success('Deleted'); fetch_(); } catch { toast.error('Failed to delete recording'); } };
 
   return (
     <Layout>

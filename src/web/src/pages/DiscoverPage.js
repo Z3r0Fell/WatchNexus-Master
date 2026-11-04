@@ -32,7 +32,8 @@ export const DiscoverPage = () => {
     setLoading(true);
     try {
       const params = {
-        sort_by: sortBy,
+        // TMDB /discover/tv has no release_date sort; it uses first_air_date.
+        sort_by: mediaType === 'tv' ? sortBy.replace(/^release_date\./, 'first_air_date.') : sortBy,
         page,
         'vote_count.gte': 100,
       };

@@ -366,7 +366,16 @@ public class SsrfTests
         var user = CreateUser("test-user");
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { User = user }
+            HttpContext = new DefaultHttpContext
+            {
+                User = user,
+                // Search builds its HttpClient via HttpContext.RequestServices
+                // (IHttpClientFactory). Any request reaching the handler means
+                // the blocked indexer was NOT skipped, so fail loudly.
+                RequestServices = new Microsoft.Extensions.DependencyInjection.ServiceCollection()
+                    .AddSingleton<IHttpClientFactory>(new FailingHttpClientFactory())
+                    .BuildServiceProvider()
+            }
         };
 
         // Add indexer with cloud metadata URL
@@ -476,5 +485,17 @@ public class SsrfTests
             new Claim(System.Security.Claims.ClaimTypes.NameIdentifier, userId),
             new Claim(System.Security.Claims.ClaimTypes.Role, role)
         }, "TestAuth"));
+    }
+}
+
+/// <summary>IHttpClientFactory whose clients throw on any request.</summary>
+internal sealed class FailingHttpClientFactory : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) => new(new FailingHandler());
+
+    private sealed class FailingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => throw new InvalidOperationException($"Unexpected outbound request to {request.RequestUri}");
     }
 }

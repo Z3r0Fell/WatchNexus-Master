@@ -15,5 +15,5 @@
     "DownloadsPage"
   ],
   "tier": "pro",
-  "api_route_prefix": "settings"
+  "api_route_prefix": "fondue"
 }

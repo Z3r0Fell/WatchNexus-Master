@@ -58,8 +58,9 @@ public class SystemController : ControllerBase
         };
         return Ok(new
         {
-            version = "1.0.1",
-            hostname = Environment.MachineName,
+            version = Services.UpdateBackgroundService.CurrentVersion,
+            // Host identity only for admins (non-admins get an empty string).
+            hostname = User.IsInRole("admin") ? Environment.MachineName : "",
             platform = Environment.OSVersion.VersionString,
             architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),
             dotnet_version = Environment.Version.ToString(),
@@ -98,8 +99,12 @@ public class SystemController : ControllerBase
         {
             var psi = new System.Diagnostics.ProcessStartInfo("fpcalc", "--version")
             { RedirectStandardOutput = true, UseShellExecute = false };
-            var p = System.Diagnostics.Process.Start(psi);
-            if (p != null) { p.WaitForExit(2000); installed = p.ExitCode == 0; }
+            using var p = System.Diagnostics.Process.Start(psi);
+            if (p != null)
+            {
+                if (p.WaitForExit(2000)) installed = p.ExitCode == 0;
+                else { try { p.Kill(true); } catch { } }
+            }
         }
         catch { }
         return Ok(new { installed, version = installed ? "detected" : (string?)null });
@@ -122,10 +127,12 @@ public class CacheControllerReal : ControllerBase
             count = files.Length;
             size = files.Sum(f => new FileInfo(f).Length);
         }
-        return Ok(new { entries = count, size_bytes = size });
+        // tmdb_cache_entries: key read by MaintenanceSettings.jsx
+        return Ok(new { entries = count, size_bytes = size, tmdb_cache_entries = count });
     }
 
     [HttpPost("clear")]
+    [Authorize(Roles = "admin")]
     public IActionResult Clear()
     {
         var cacheDir = Path.Combine(AppContext.BaseDirectory, "cache");
@@ -143,35 +150,75 @@ public class CacheControllerReal : ControllerBase
 [Authorize]
 public class DbControllerReal : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public DbControllerReal(AppDbContext db) => _db = db;
+
+    // The live database file (honors the configured data dir, e.g.
+    // /var/lib/watchnexus in Docker) rather than a guessed BaseDirectory path.
+    private string DbPath()
+    {
+        try
+        {
+            if (_db.Database.IsRelational())
+            {
+                var ds = _db.Database.GetDbConnection().DataSource;
+                if (!string.IsNullOrEmpty(ds)) return Path.GetFullPath(ds);
+            }
+        }
+        catch { }
+        return Path.Combine(AppContext.BaseDirectory, "data", "watchnexus.db");
+    }
+
+    private string BackupDir() => Path.Combine(Path.GetDirectoryName(DbPath())!, "backups");
+
     [HttpGet("stats")]
     public IActionResult Stats()
     {
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "data", "watchnexus.db");
+        var dbPath = DbPath();
         long size = 0;
         if (System.IO.File.Exists(dbPath)) size = new FileInfo(dbPath).Length;
-        return Ok(new { size_bytes = size, path = dbPath, tables = 20 });
+        var backupDir = BackupDir();
+        var backups = Directory.Exists(backupDir) ? Directory.GetFiles(backupDir, "*.db").Length : 0;
+        return Ok(new
+        {
+            size_bytes = size, path = dbPath, tables = 20,
+            // Keys read by MaintenanceSettings.jsx
+            size_mb = Math.Round(size / 1048576.0, 2), backups, engine = "SQLite",
+            status = System.IO.File.Exists(dbPath) ? "healthy" : "warning",
+        });
     }
 
     [HttpGet("backups")]
     public IActionResult Backups()
     {
-        var backupDir = Path.Combine(AppContext.BaseDirectory, "data", "backups");
-        if (!Directory.Exists(backupDir)) return Ok(Array.Empty<object>());
+        var backupDir = BackupDir();
+        if (!Directory.Exists(backupDir)) return Ok(new { backups = Array.Empty<object>(), total = 0 });
         var files = Directory.GetFiles(backupDir, "*.db")
             .Select(f => new FileInfo(f))
             .OrderByDescending(f => f.CreationTime.ToUniversalTime())
-            .Select(f => new { name = f.Name, size = f.Length, created = f.CreationTime.ToUniversalTime() });
-        return Ok(files);
+            .Select(f => new
+            {
+                name = f.Name, size = f.Length, created = f.CreationTime.ToUniversalTime(),
+                filename = f.Name, size_mb = Math.Round(f.Length / 1048576.0, 2), created_at = f.CreationTime.ToUniversalTime(),
+            }).ToList();
+        return Ok(new { backups = files, total = files.Count });
     }
 
     [HttpPost("backup")]
-    public IActionResult CreateBackup()
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> CreateBackup()
     {
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "data", "watchnexus.db");
-        var backupDir = Path.Combine(AppContext.BaseDirectory, "data", "backups");
+        var dbPath = DbPath();
+        var backupDir = BackupDir();
         Directory.CreateDirectory(backupDir);
         var backupPath = Path.Combine(backupDir, $"watchnexus_{DateTime.UtcNow:yyyyMMdd_HHmmss}.db");
-        if (System.IO.File.Exists(dbPath)) System.IO.File.Copy(dbPath, backupPath);
+        if (_db.Database.IsRelational())
+        {
+            // VACUUM INTO produces a consistent snapshot of a live (WAL) database;
+            // a raw File.Copy can capture a torn/incomplete file.
+            await _db.Database.ExecuteSqlRawAsync("VACUUM INTO {0}", backupPath);
+        }
+        else if (System.IO.File.Exists(dbPath)) System.IO.File.Copy(dbPath, backupPath);
         return Ok(new { status = "created", path = backupPath });
     }
 
@@ -187,7 +234,7 @@ public class DbControllerReal : ControllerBase
             new { endpoint = "GET /api/vpn/logs", method = "GET", path = "/api/vpn/logs", message = "VPN log streaming is not yet implemented.", tier = "ultra" },
             new { endpoint = "POST /api/watch-party/{code}/chat", method = "POST", path = "/api/watch-party/{code}/chat", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages.", tier = "ultra" },
         };
-        return Ok(new { version = "1.0.6", endpoints = items, total = items.Length });
+        return Ok(new { version = Services.UpdateBackgroundService.CurrentVersion, endpoints = items, total = items.Length });
     }
 
     [HttpGet("changelog")]
@@ -195,8 +242,8 @@ public class DbControllerReal : ControllerBase
     {
         var changelogPath = Path.Combine(AppContext.BaseDirectory, "CHANGELOG.md");
         if (!System.IO.File.Exists(changelogPath))
-            return Ok(new { version = "1.0.6", content = "# WatchNexus Changelog\n\nNo changelog available." });
+            return Ok(new { version = Services.UpdateBackgroundService.CurrentVersion, content = "# WatchNexus Changelog\n\nNo changelog available." });
         var content = System.IO.File.ReadAllText(changelogPath);
-        return Ok(new { version = "1.0.6", content = content });
+        return Ok(new { version = Services.UpdateBackgroundService.CurrentVersion, content = content });
     }
 }

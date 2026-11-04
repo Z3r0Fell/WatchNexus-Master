@@ -16,8 +16,14 @@
 set -euo pipefail
 
 REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
-VERSION="1.0.6"
+VERSION="1.0.8"
 PUSH=false
+# Six Labors (ImageSharp) license: use $SIXLABORS_LICENSE_KEY, else the repo-root
+# sixlabors.lic (gitignored). Never commit the license file.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -z "${SIXLABORS_LICENSE_KEY:-}" ] && [ -f "${SCRIPT_DIR}/../sixlabors.lic" ]; then
+  SIXLABORS_LICENSE_KEY="$(tr -d '\r\n' < "${SCRIPT_DIR}/../sixlabors.lic")"
+fi
 NO_CACHE=false
 MULTIARCH=false
 # Optional build network (e.g. "host"). Needed on hosts where the default
@@ -54,6 +60,10 @@ for TIER in "${TIERS[@]}"; do
 
   BUILD_ARGS=(
     --build-arg "TIER=${TIER}"
+    # Publishable activate-only license key baked into official images
+    # (see Dockerfile / CellarController). Empty when unset.
+    --build-arg "LICENSE_SERVER_CLIENT_KEY=${LICENSE_SERVER_CLIENT_KEY:-}"
+    --build-arg "SIXLABORS_LICENSE_KEY=${SIXLABORS_LICENSE_KEY:-}"
     --tag "${IMAGE}"
     --tag "${IMAGE_LATEST}"
     --label "com.watchnexus.tier=${TIER}"

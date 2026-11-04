@@ -5,6 +5,12 @@ import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
 
+// Only 'dark' / 'light' are valid; anything else (corrupted storage, stale values) is ignored.
+const validMode = (m) => (m === 'dark' || m === 'light' ? m : null);
+const readSavedMode = () => {
+  try { return validMode(localStorage.getItem('watchnexus_theme_mode')); } catch { return null; }
+};
+
 // Default theme values
 export const DEFAULT_DARK_THEME = {
   primary: '#8B5CF6',
@@ -164,22 +170,23 @@ export const ThemeProvider = ({ children }) => {
       try {
         // Cookie auth: the httpOnly wn_token is sent automatically.
         const response = await axios.get(`${BACKEND_URL}/api/user/preferences`);
-        if (response.data.theme_mode) {
-          setMode(response.data.theme_mode);
+        const serverMode = validMode(response.data?.theme_mode);
+        if (serverMode) {
+          setMode(serverMode);
         } else {
-          const saved = localStorage.getItem('watchnexus_theme_mode');
+          const saved = readSavedMode();
           if (saved) setMode(saved);
         }
       } catch (error) {
-        // Fall back to localStorage
-        const saved = localStorage.getItem('watchnexus_theme_mode');
+        // Fall back to localStorage (guarded: storage may be blocked or corrupted)
+        const saved = readSavedMode();
         if (saved) setMode(saved);
       } finally {
         setModeLoaded(true);
       }
     };
     loadThemeMode();
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch current theme from backend
   const fetchTheme = useCallback(async () => {
@@ -190,9 +197,11 @@ export const ThemeProvider = ({ children }) => {
       if (data.current_theme) {
         setTheme(data.current_theme);
         setThemeType(data.current_theme.type || 'custom');
-        if (data.current_theme.colors) {
-          applyThemeToDOM(data.current_theme.colors, mode);
-        }
+        // Backend always returns current_theme; colors is null unless custom.
+        applyThemeToDOM(
+          data.current_theme.colors || (mode === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME),
+          mode,
+        );
       } else {
         applyThemeToDOM(mode === 'dark' ? DEFAULT_DARK_THEME : DEFAULT_LIGHT_THEME, mode);
       }
@@ -212,15 +221,17 @@ export const ThemeProvider = ({ children }) => {
     
     // Save to backend (cookie auth)
     try {
-      await axios.put(`${BACKEND_URL}/api/user/preferences`, null, {
-        params: { theme_mode: newMode }
-      });
+      // PUT replaces the whole user_preferences JSON blob ([FromBody]), so
+      // merge with the current prefs to keep visible_tabs etc.
+      const cur = await axios.get(`${BACKEND_URL}/api/user/preferences`);
+      const prefs = cur.data && typeof cur.data === 'object' ? cur.data : {};
+      await axios.put(`${BACKEND_URL}/api/user/preferences`, { ...prefs, theme_mode: newMode });
     } catch (error) {
       console.error('Failed to save theme mode:', error);
     }
     
     // Also save to localStorage for backwards compatibility
-    localStorage.setItem('watchnexus_theme_mode', newMode);
+    try { localStorage.setItem('watchnexus_theme_mode', newMode); } catch { /* storage unavailable */ }
     
     // Apply current theme colors with new mode
     if (theme?.colors) {
@@ -242,14 +253,15 @@ export const ThemeProvider = ({ children }) => {
   // Apply a built-in theme
   const applyBuiltInTheme = useCallback(async (type) => {
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/milk/set-theme?theme_type=${type}`);
+      // Backend reads { theme_id } from the JSON body and returns { status, active_theme }.
+      const res = await axios.post(`${BACKEND_URL}/api/milk/set-theme`, { theme_id: type });
       if (res.data && res.data.theme) {
         setTheme(res.data.theme);
-        setThemeType(type);
         if (res.data.theme.colors) {
           applyThemeToDOM(res.data.theme.colors, mode);
         }
       }
+      setThemeType(res.data?.active_theme || type);
       return true;
     } catch (err) {
       console.error('Failed to apply theme:', err);
@@ -265,11 +277,10 @@ export const ThemeProvider = ({ children }) => {
         type: 'custom',
         colors
       });
-      if (res.data && res.data.theme) {
-        setTheme({ ...res.data.theme, colors });
-        setThemeType('custom');
-        applyThemeToDOM(colors, mode);
-      }
+      // Backend returns { status: 'saved' } (no theme object) — apply locally.
+      setTheme({ ...(res.data?.theme || { name: 'Custom Theme', type: 'custom' }), colors });
+      setThemeType('custom');
+      applyThemeToDOM(colors, mode);
       return true;
     } catch (err) {
       console.error('Failed to apply custom theme:', err);
@@ -300,7 +311,7 @@ export const ThemeProvider = ({ children }) => {
     if (modeLoaded) {
       fetchTheme();
     }
-  }, [modeLoaded, fetchTheme]);
+  }, [modeLoaded, fetchTheme, isAuthenticated]);
 
   // ui_accent is a per-user setting — (re)apply it once the user is authenticated.
   useEffect(() => {

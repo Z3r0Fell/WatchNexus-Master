@@ -17,37 +17,37 @@ public class RipenController : ControllerBase
     public RipenController(AppDbContext db) => _db = db;
 
     [HttpGet("status")]
-    public IActionResult Status() => Ok(new { module = "ripen", version = "1.0.6", status = "active", description = "Plugin marketplace and gadget management" });
+    public IActionResult Status() => Ok(new { module = "ripen", version = "1.0.8", status = "active", description = "Plugin marketplace and gadget management" });
 
     private static readonly List<Dictionary<string, string>> AllGadgets = new()
     {
-        new() { ["gadget_id"] = "weather", ["codename"] = "sorbet", ["name"] = "Weather", ["version"] = "1.0.6", ["category"] = "weather", ["description"] = "Weather dashboard powered by Open-Meteo" },
-        new() { ["gadget_id"] = "podcasts", ["codename"] = "brioche", ["name"] = "Podcasts", ["version"] = "1.0.6", ["category"] = "audio", ["description"] = "Podcast player with iTunes search and RSS feeds" },
-        new() { ["gadget_id"] = "radio", ["codename"] = "nectar", ["name"] = "Internet Radio", ["version"] = "1.0.6", ["category"] = "audio", ["description"] = "Live radio streams via Radio Browser API" },
-        new() { ["gadget_id"] = "photos", ["codename"] = "ganache", ["name"] = "Photo Gallery", ["version"] = "1.0.6", ["category"] = "image", ["description"] = "Browse and view photos from local libraries" },
-        new() { ["gadget_id"] = "webvideo", ["codename"] = "bisque", ["name"] = "Web Video", ["version"] = "1.0.6", ["category"] = "video", ["description"] = "Web video bookmarks, history, and YouTube info" },
-        new() { ["gadget_id"] = "matrix", ["codename"] = "marzipan", ["name"] = "Matrix Chat", ["version"] = "1.0.6", ["category"] = "notification", ["description"] = "Matrix messaging, room management, and event sync" },
-        new() { ["gadget_id"] = "synapse-admin", ["codename"] = "cinnamon", ["name"] = "Synapse Admin", ["version"] = "1.0.6", ["category"] = "system", ["description"] = "Synapse homeserver user, room, and media management" },
-        new() { ["gadget_id"] = "gamebot", ["codename"] = "waffle", ["name"] = "Movie Quiz", ["version"] = "1.0.6", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
-        new() { ["gadget_id"] = "media-bridge", ["codename"] = "custard", ["name"] = "Media Bridge", ["version"] = "1.0.6", ["category"] = "metadata", ["description"] = "Browse and manage your external Emby-compatible media server library" },
-        new() { ["gadget_id"] = "bot", ["codename"] = "yeast", ["name"] = "Background Automation", ["version"] = "1.0.6", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
-        new() { ["gadget_id"] = "truffle", ["codename"] = "truffle", ["name"] = "Watch Analytics", ["version"] = "1.0.6", ["category"] = "analytics", ["description"] = "Play tracking, viewing stats, trends, and Year Wrapped" },
-        new() { ["gadget_id"] = "pepper", ["codename"] = "pepper", ["name"] = "Notification Hub", ["version"] = "1.0.6", ["category"] = "notification", ["description"] = "Discord, Telegram, Slack, and Pushover alerts for media events" },
-        new() { ["gadget_id"] = "meringue", ["codename"] = "meringue", ["name"] = "User Requests", ["version"] = "1.0.6", ["category"] = "social", ["description"] = "Users request movies/TV shows, admins approve or reject" },
-        new() { ["gadget_id"] = "rind", ["codename"] = "rind", ["name"] = "Parental Controls", ["version"] = "1.0.6", ["category"] = "security", ["description"] = "Content rating filters, PIN locks, and per-user restrictions" },
-        new() { ["gadget_id"] = "crucible", ["codename"] = "crucible", ["name"] = "Media Processing", ["version"] = "1.0.6", ["category"] = "processing", ["description"] = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis" },
-        new() { ["gadget_id"] = "brine", ["codename"] = "brine", ["name"] = "Usenet Indexer", ["version"] = "1.0.6", ["category"] = "usenet", ["description"] = "Search NZBs via Prowlarr or Newznab-compatible indexers" },
-        new() { ["gadget_id"] = "ladle", ["codename"] = "ladle", ["name"] = "Usenet Downloader", ["version"] = "1.0.6", ["category"] = "usenet", ["description"] = "SABnzbd queue management, downloads, history, and speed control" },
-        new() { ["gadget_id"] = "glaze", ["codename"] = "glaze", ["name"] = "Scrobbling", ["version"] = "1.0.6", ["category"] = "social", ["description"] = "Trakt.tv and Last.fm scrobbling, watch history sync" },
-        new() { ["gadget_id"] = "fondue", ["codename"] = "fondue", ["name"] = "Movie Automation", ["version"] = "1.0.6", ["category"] = "automation", ["description"] = "Auto-grab, monitor, and upgrade movies (Radarr-like)" },
-        new() { ["gadget_id"] = "bastion", ["codename"] = "bastion", ["name"] = "Advanced Auth", ["version"] = "1.0.6", ["category"] = "security", ["description"] = "LDAP, SSO, 2FA, and session management" },
-        new() { ["gadget_id"] = "tunnel", ["codename"] = "tunnel", ["name"] = "Network Config", ["version"] = "1.0.6", ["category"] = "system", ["description"] = "Reverse proxy, UPnP, SSL certificates, and dynamic DNS" },
-        new() { ["gadget_id"] = "sourdough", ["codename"] = "sourdough", ["name"] = "Backup & Restore", ["version"] = "1.0.6", ["category"] = "system", ["description"] = "Full backups, scheduled snapshots, config export/import" },
-        new() { ["gadget_id"] = "taffy", ["codename"] = "taffy", ["name"] = "Metadata Agents", ["version"] = "1.0.6", ["category"] = "metadata", ["description"] = "TMDB, TVDB, IMDb, MusicBrainz provider management" },
-        new() { ["gadget_id"] = "churro", ["codename"] = "churro", ["name"] = "Download Clients", ["version"] = "1.0.6", ["category"] = "downloads", ["description"] = "qBittorrent, SABnzbd, Transmission, Deluge client management" },
-        new() { ["gadget_id"] = "saffron", ["codename"] = "saffron", ["name"] = "Scheduled Tasks", ["version"] = "1.0.6", ["category"] = "system", ["description"] = "Library scans, metadata refresh, cleanup, and custom schedules" },
-        new() { ["gadget_id"] = "pantry", ["codename"] = "pantry", ["name"] = "Storage Manager", ["version"] = "1.0.6", ["category"] = "system", ["description"] = "Disk monitoring, file cleanup, path mappings, storage analytics" },
-        new() { ["gadget_id"] = "nutmeg", ["codename"] = "nutmeg", ["name"] = "Recommendations", ["version"] = "1.0.6", ["category"] = "discovery", ["description"] = "AI-powered recommendations based on watch history" },
+        new() { ["gadget_id"] = "weather", ["codename"] = "sorbet", ["name"] = "Weather", ["version"] = "1.0.8", ["category"] = "weather", ["description"] = "Weather dashboard powered by Open-Meteo" },
+        new() { ["gadget_id"] = "podcasts", ["codename"] = "brioche", ["name"] = "Podcasts", ["version"] = "1.0.8", ["category"] = "audio", ["description"] = "Podcast player with iTunes search and RSS feeds" },
+        new() { ["gadget_id"] = "radio", ["codename"] = "nectar", ["name"] = "Internet Radio", ["version"] = "1.0.8", ["category"] = "audio", ["description"] = "Live radio streams via Radio Browser API" },
+        new() { ["gadget_id"] = "photos", ["codename"] = "ganache", ["name"] = "Photo Gallery", ["version"] = "1.0.8", ["category"] = "image", ["description"] = "Browse and view photos from local libraries" },
+        new() { ["gadget_id"] = "webvideo", ["codename"] = "bisque", ["name"] = "Web Video", ["version"] = "1.0.8", ["category"] = "video", ["description"] = "Web video bookmarks, history, and YouTube info" },
+        new() { ["gadget_id"] = "matrix", ["codename"] = "marzipan", ["name"] = "Matrix Chat", ["version"] = "1.0.8", ["category"] = "notification", ["description"] = "Matrix messaging, room management, and event sync" },
+        new() { ["gadget_id"] = "synapse-admin", ["codename"] = "cinnamon", ["name"] = "Synapse Admin", ["version"] = "1.0.8", ["category"] = "system", ["description"] = "Synapse homeserver user, room, and media management" },
+        new() { ["gadget_id"] = "gamebot", ["codename"] = "waffle", ["name"] = "Movie Quiz", ["version"] = "1.0.8", ["category"] = "game", ["description"] = "Guess-the-poster games with blur and reveal effects" },
+        new() { ["gadget_id"] = "media-bridge", ["codename"] = "custard", ["name"] = "Media Bridge", ["version"] = "1.0.8", ["category"] = "metadata", ["description"] = "Browse and manage your external Emby-compatible media server library" },
+        new() { ["gadget_id"] = "bot", ["codename"] = "yeast", ["name"] = "Background Automation", ["version"] = "1.0.8", ["category"] = "service", ["description"] = "Inactivity checks, token drip, and featured film rotation" },
+        new() { ["gadget_id"] = "truffle", ["codename"] = "truffle", ["name"] = "Watch Analytics", ["version"] = "1.0.8", ["category"] = "analytics", ["description"] = "Play tracking, viewing stats, trends, and Year Wrapped" },
+        new() { ["gadget_id"] = "pepper", ["codename"] = "pepper", ["name"] = "Notification Hub", ["version"] = "1.0.8", ["category"] = "notification", ["description"] = "Discord, Telegram, Slack, and Pushover alerts for media events" },
+        new() { ["gadget_id"] = "meringue", ["codename"] = "meringue", ["name"] = "User Requests", ["version"] = "1.0.8", ["category"] = "social", ["description"] = "Users request movies/TV shows, admins approve or reject" },
+        new() { ["gadget_id"] = "rind", ["codename"] = "rind", ["name"] = "Parental Controls", ["version"] = "1.0.8", ["category"] = "security", ["description"] = "Content rating filters, PIN locks, and per-user restrictions" },
+        new() { ["gadget_id"] = "crucible", ["codename"] = "crucible", ["name"] = "Media Processing", ["version"] = "1.0.8", ["category"] = "processing", ["description"] = "FFmpeg transcoding, H.265 conversion, subtitle extraction, and file analysis" },
+        new() { ["gadget_id"] = "brine", ["codename"] = "brine", ["name"] = "Usenet Indexer", ["version"] = "1.0.8", ["category"] = "usenet", ["description"] = "Search NZBs via Prowlarr or Newznab-compatible indexers" },
+        new() { ["gadget_id"] = "ladle", ["codename"] = "ladle", ["name"] = "Usenet Downloader", ["version"] = "1.0.8", ["category"] = "usenet", ["description"] = "SABnzbd queue management, downloads, history, and speed control" },
+        new() { ["gadget_id"] = "glaze", ["codename"] = "glaze", ["name"] = "Scrobbling", ["version"] = "1.0.8", ["category"] = "social", ["description"] = "Trakt.tv and Last.fm scrobbling, watch history sync" },
+        new() { ["gadget_id"] = "fondue", ["codename"] = "fondue", ["name"] = "Movie Automation", ["version"] = "1.0.8", ["category"] = "automation", ["description"] = "Auto-grab, monitor, and upgrade movies (Radarr-like)" },
+        new() { ["gadget_id"] = "bastion", ["codename"] = "bastion", ["name"] = "Advanced Auth", ["version"] = "1.0.8", ["category"] = "security", ["description"] = "LDAP, SSO, 2FA, and session management" },
+        new() { ["gadget_id"] = "tunnel", ["codename"] = "tunnel", ["name"] = "Network Config", ["version"] = "1.0.8", ["category"] = "system", ["description"] = "Reverse proxy, UPnP, SSL certificates, and dynamic DNS" },
+        new() { ["gadget_id"] = "sourdough", ["codename"] = "sourdough", ["name"] = "Backup & Restore", ["version"] = "1.0.8", ["category"] = "system", ["description"] = "Full backups, scheduled snapshots, config export/import" },
+        new() { ["gadget_id"] = "taffy", ["codename"] = "taffy", ["name"] = "Metadata Agents", ["version"] = "1.0.8", ["category"] = "metadata", ["description"] = "TMDB, TVDB, IMDb, MusicBrainz provider management" },
+        new() { ["gadget_id"] = "churro", ["codename"] = "churro", ["name"] = "Download Clients", ["version"] = "1.0.8", ["category"] = "downloads", ["description"] = "qBittorrent, SABnzbd, Transmission, Deluge client management" },
+        new() { ["gadget_id"] = "saffron", ["codename"] = "saffron", ["name"] = "Scheduled Tasks", ["version"] = "1.0.8", ["category"] = "system", ["description"] = "Library scans, metadata refresh, cleanup, and custom schedules" },
+        new() { ["gadget_id"] = "pantry", ["codename"] = "pantry", ["name"] = "Storage Manager", ["version"] = "1.0.8", ["category"] = "system", ["description"] = "Disk monitoring, file cleanup, path mappings, storage analytics" },
+        new() { ["gadget_id"] = "nutmeg", ["codename"] = "nutmeg", ["name"] = "Recommendations", ["version"] = "1.0.8", ["category"] = "discovery", ["description"] = "AI-powered recommendations based on watch history" },
     };
 
     [HttpGet("installed")]
@@ -166,7 +166,9 @@ public class MilkController : ControllerBase
         };
 
         object? currentThemeColors = null;
-        if (custom?.Value != null) {
+        // Only the custom theme carries stored colors; a built-in selection must not
+        // be overridden by stale custom colors.
+        if (custom?.Value != null && activeTheme == "custom") {
             try { currentThemeColors = JsonSerializer.Deserialize<object>(custom.Value); } catch { }
         }
 
@@ -183,10 +185,15 @@ public class MilkController : ControllerBase
     public IActionResult Themes() => Ok(GetThemes());
 
     [HttpPost("set-theme")]
-    public async Task<IActionResult> SetTheme([FromBody] JsonElement body)
+    public async Task<IActionResult> SetTheme(
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body,
+        [FromQuery] string? theme_type = null)
     {
+        // ThemeContext posts ?theme_type=X with no body (was a 400 under [ApiController]);
+        // ThemeCommunityPage posts { theme_name }.
         var userId = this.UserId();
-        var themeId = body.TryGetProperty("theme_id", out var t) ? t.GetString() ?? "default" : "default";
+        string? Prop(string n) => body.ValueKind == JsonValueKind.Object && body.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+        var themeId = Prop("theme_id") ?? Prop("theme_type") ?? Prop("theme_name") ?? theme_type ?? "default";
         var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "active_theme");
         if (existing != null) existing.Value = themeId;
         else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "active_theme", Value = themeId, UserId = userId });
@@ -198,12 +205,31 @@ public class MilkController : ControllerBase
     public async Task<IActionResult> CustomTheme([FromBody] JsonElement body)
     {
         var userId = this.UserId();
-        var css = body.TryGetProperty("custom_css", out var c) ? c.GetString() ?? "" : "";
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == "custom_css");
-        if (existing != null) existing.Value = css;
-        else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = "custom_css", Value = css, UserId = userId });
+        if (body.ValueKind != JsonValueKind.Object) return BadRequest(new { detail = "JSON object body required" });
+
+        async Task Upsert(string key, string value)
+        {
+            var row = await _db.Settings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
+            if (row != null) row.Value = value;
+            else _db.Settings.Add(new WatchNexus.Shared.AppSetting { Key = key, Value = value, UserId = userId });
+        }
+
+        if (body.TryGetProperty("custom_css", out var c) && c.ValueKind == JsonValueKind.String)
+            await Upsert("custom_css", c.GetString() ?? "");
+
+        // ThemeContext / ThemeCommunityPage send { name, colors }. Persist colors under the
+        // key theme-forge reads (custom_theme_colors) and make "custom" the active theme;
+        // previously colors were dropped and never survived a reload.
+        object? theme = null;
+        if (body.TryGetProperty("colors", out var colors) && colors.ValueKind == JsonValueKind.Object)
+        {
+            await Upsert("custom_theme_colors", colors.GetRawText());
+            await Upsert("active_theme", "custom");
+            var name = body.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : "Custom Theme";
+            theme = new { type = "custom", name, colors };
+        }
         await _db.SaveChangesAsync();
-        return Ok(new { status = "saved" });
+        return Ok(new { status = "saved", theme });
     }
 
     private static object[] GetThemes() => new object[]
@@ -377,8 +403,17 @@ public class StreamingServicesController : ControllerBase
         new { id = "amazon", name = "Prime Video", enabled = false },
     });
     [HttpPut("{serviceId}")]
-    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username) =>
-        Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
+    public IActionResult Update(string serviceId, [FromQuery] bool? enabled, [FromQuery] string? username,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] JsonElement body = default)
+    {
+        // api.js sends { enabled, username } in the JSON body, not the query string.
+        if (body.ValueKind == JsonValueKind.Object)
+        {
+            if (enabled == null && body.TryGetProperty("enabled", out var e) && e.ValueKind is JsonValueKind.True or JsonValueKind.False) enabled = e.GetBoolean();
+            if (username == null && body.TryGetProperty("username", out var u) && u.ValueKind == JsonValueKind.String) username = u.GetString();
+        }
+        return Ok(new { id = serviceId, enabled = enabled ?? false, username, status = "updated" });
+    }
 }
 
 // ── Watch Party ──────────────────────────────────
@@ -414,11 +449,9 @@ public class WatchPartyController : ControllerBase
     [HttpGet("{partyCode}")]
     public IActionResult Get(string partyCode) => Ok(new { party_code = partyCode, status = "waiting" });
 
-    [HttpGet("{partyCode}/ws")]
-    public async Task WebSocket(string partyCode)
-    {
-        await _connectionManager.HandleConnection(HttpContext, partyCode);
-    }
+    // The WebSocket endpoint GET {partyCode}/ws is mapped once in Program.cs
+    // (MapGet + RequireAuthorization). A duplicate controller action here made
+    // every connect fail with AmbiguousMatchException.
 
     [HttpPost("{partyCode}/chat")]
     public IActionResult SendChat(string partyCode, [FromBody] JsonElement body) => StatusCode(501, new { error = "NOT_IMPLEMENTED", message = "Chat persistence is not yet implemented. Use the WebSocket for real-time messages." });

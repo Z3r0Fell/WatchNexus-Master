@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
+import * as AuthModule from './AuthContext';
+
+// Tolerates rendering outside AuthProvider (tests) and mocked AuthContext modules.
+const useAuthState = AuthModule.useOptionalAuth || (() => null);
 
 const LicenseContext = createContext(null);
 
@@ -65,6 +69,7 @@ export const ROUTE_MODULE_MAP = {
   '/media-sync': 'chowder',
   '/themes': 'milk',
   '/lobster': 'lobster',
+  '/watch-party': 'watch-party',
 };
 
 // Module → required tier
@@ -108,14 +113,27 @@ export const LicenseProvider = ({ children }) => {
       setTier(res.data.tier || 'standard');
       setUnlockedModules(res.data.modules_unlocked || []);
     } catch (error) {
-      console.warn('Failed to fetch license, defaulting to standard:', error);
-      setTier('standard');
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        // Not signed in (or no access): no unlocks apply.
+        setTier('standard');
+        setUnlockedModules([]);
+      } else {
+        // Transient failure (network/5xx): keep the tier we already know rather than
+        // downgrading an activated Pro/Ultra user to Standard until the next reload.
+        console.warn('Failed to refresh license; keeping current tier:', error);
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchLicense(); }, [fetchLicense]);
+  // /api/cellar/status requires auth, so a fetch made while logged out (e.g. on
+  // the login page) 401s and falls back to 'standard'. Re-fetch whenever the
+  // auth state changes so Pro/Ultra unlocks apply right after login.
+  const isAuthenticated = useAuthState()?.isAuthenticated ?? null;
+
+  useEffect(() => { fetchLicense(); }, [fetchLicense, isAuthenticated]);
 
   // Listen for license changes (dispatched from ActivationSettings)
   useEffect(() => {

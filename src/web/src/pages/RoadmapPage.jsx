@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
 import { Clock, Search } from 'lucide-react';
 import axios from 'axios';
 import { BACKEND_URL } from '../lib/config';
@@ -13,10 +14,10 @@ export const RoadmapPage = () => {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/system/roadmap`).then(r => { setEndpoints(r.data.endpoints || []); setLoading(false); }).catch(() => setLoading(false));
+    axios.get(`${BACKEND_URL}/api/db/roadmap`).then(r => { setEndpoints(r.data.endpoints || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const filtered = endpoints.filter(ep => ep.endpoint.toLowerCase().includes(search.toLowerCase()) || ep.message.toLowerCase().includes(search.toLowerCase()));
+  const filtered = endpoints.filter(ep => (ep.endpoint || '').toLowerCase().includes(search.toLowerCase()) || (ep.message || '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <Layout title="Roadmap">
@@ -52,3 +53,5 @@ export const RoadmapPage = () => {
     </Layout>
   );
 };
+
+export default RoadmapPage;

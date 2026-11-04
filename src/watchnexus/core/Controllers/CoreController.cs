@@ -23,7 +23,7 @@ public class CoreController : ControllerBase
     {
         status = "healthy",
         timestamp = DateTime.UtcNow,
-        version = "1.0.6",
+        version = "1.0.8",
     });
 
     [Authorize]
@@ -42,46 +42,46 @@ public class CoreController : ControllerBase
         // Add built-in modules
         var builtIn = new[]
         {
-            new { name = "Marmalade", codename = "marmalade", version = "1.0.6", status = "active" },
-            new { name = "Bastion", codename = "bastion", version = "1.0.6", status = "active" },
-            new { name = "Tunnel", codename = "tunnel", version = "1.0.6", status = "active" },
-            new { name = "Zest", codename = "zest", version = "1.0.6", status = "active" },
-            new { name = "Fondue", codename = "fondue", version = "1.0.6", status = "active" },
-            new { name = "Sorbet", codename = "sorbet", version = "1.0.6", status = "active" },
-            new { name = "Brioche", codename = "brioche", version = "1.0.6", status = "active" },
-            new { name = "Nectar", codename = "nectar", version = "1.0.6", status = "active" },
-            new { name = "Ganache", codename = "ganache", version = "1.0.6", status = "active" },
-            new { name = "Bisque", codename = "bisque", version = "1.0.6", status = "active" },
-            new { name = "Marzipan", codename = "marzipan", version = "1.0.6", status = "active" },
-            new { name = "Cinnamon", codename = "cinnamon", version = "1.0.6", status = "active" },
-            new { name = "Waffle", codename = "waffle", version = "1.0.6", status = "active" },
-            new { name = "Yeast", codename = "yeast", version = "1.0.6", status = "active" },
-            new { name = "Sourdough", codename = "sourdough", version = "1.0.6", status = "active" },
-            new { name = "Taffy", codename = "taffy", version = "1.0.6", status = "active" },
-            new { name = "Churro", codename = "churro", version = "1.0.6", status = "active" },
-            new { name = "Saffron", codename = "saffron", version = "1.0.6", status = "active" },
-            new { name = "Pantry", codename = "pantry", version = "1.0.6", status = "active" },
-            new { name = "Nutmeg", codename = "nutmeg", version = "1.0.6", status = "active" },
-            new { name = "Crumbs", codename = "crumbs", version = "1.0.6", status = "active" },
-            new { name = "Fortress", codename = "fortress", version = "1.0.6", status = "active" },
-            new { name = "Custard", codename = "custard", version = "1.0.6", status = "active" },
-            new { name = "Truffle", codename = "truffle", version = "1.0.6", status = "active" },
-            new { name = "Pepper", codename = "pepper", version = "1.0.6", status = "active" },
-            new { name = "Meringue", codename = "meringue", version = "1.0.6", status = "active" },
-            new { name = "Rind", codename = "rind", version = "1.0.6", status = "active" },
-            new { name = "Crucible", codename = "crucible", version = "1.0.6", status = "active" },
-            new { name = "Brine", codename = "brine", version = "1.0.6", status = "active" },
-            new { name = "Ladle", codename = "ladle", version = "1.0.6", status = "active" },
-            new { name = "Ripen", codename = "ripen", version = "1.0.6", status = "active" },
-            new { name = "Glaze", codename = "glaze", version = "1.0.6", status = "active" },
-            new { name = "Roux", codename = "roux", version = "1.0.6", status = "active" },
-            new { name = "Sprout", codename = "sprout", version = "1.0.6", status = "active" },
-            new { name = "Setup Wizard", codename = "setup", version = "1.0.6", status = "active" },
+            new { name = "Marmalade", codename = "marmalade", version = "1.0.8", status = "active" },
+            new { name = "Bastion", codename = "bastion", version = "1.0.8", status = "active" },
+            new { name = "Tunnel", codename = "tunnel", version = "1.0.8", status = "active" },
+            new { name = "Zest", codename = "zest", version = "1.0.8", status = "active" },
+            new { name = "Fondue", codename = "fondue", version = "1.0.8", status = "active" },
+            new { name = "Sorbet", codename = "sorbet", version = "1.0.8", status = "active" },
+            new { name = "Brioche", codename = "brioche", version = "1.0.8", status = "active" },
+            new { name = "Nectar", codename = "nectar", version = "1.0.8", status = "active" },
+            new { name = "Ganache", codename = "ganache", version = "1.0.8", status = "active" },
+            new { name = "Bisque", codename = "bisque", version = "1.0.8", status = "active" },
+            new { name = "Marzipan", codename = "marzipan", version = "1.0.8", status = "active" },
+            new { name = "Cinnamon", codename = "cinnamon", version = "1.0.8", status = "active" },
+            new { name = "Waffle", codename = "waffle", version = "1.0.8", status = "active" },
+            new { name = "Yeast", codename = "yeast", version = "1.0.8", status = "active" },
+            new { name = "Sourdough", codename = "sourdough", version = "1.0.8", status = "active" },
+            new { name = "Taffy", codename = "taffy", version = "1.0.8", status = "active" },
+            new { name = "Churro", codename = "churro", version = "1.0.8", status = "active" },
+            new { name = "Saffron", codename = "saffron", version = "1.0.8", status = "active" },
+            new { name = "Pantry", codename = "pantry", version = "1.0.8", status = "active" },
+            new { name = "Nutmeg", codename = "nutmeg", version = "1.0.8", status = "active" },
+            new { name = "Crumbs", codename = "crumbs", version = "1.0.8", status = "active" },
+            new { name = "Fortress", codename = "fortress", version = "1.0.8", status = "active" },
+            new { name = "Custard", codename = "custard", version = "1.0.8", status = "active" },
+            new { name = "Truffle", codename = "truffle", version = "1.0.8", status = "active" },
+            new { name = "Pepper", codename = "pepper", version = "1.0.8", status = "active" },
+            new { name = "Meringue", codename = "meringue", version = "1.0.8", status = "active" },
+            new { name = "Rind", codename = "rind", version = "1.0.8", status = "active" },
+            new { name = "Crucible", codename = "crucible", version = "1.0.8", status = "active" },
+            new { name = "Brine", codename = "brine", version = "1.0.8", status = "active" },
+            new { name = "Ladle", codename = "ladle", version = "1.0.8", status = "active" },
+            new { name = "Ripen", codename = "ripen", version = "1.0.8", status = "active" },
+            new { name = "Glaze", codename = "glaze", version = "1.0.8", status = "active" },
+            new { name = "Roux", codename = "roux", version = "1.0.8", status = "active" },
+            new { name = "Sprout", codename = "sprout", version = "1.0.8", status = "active" },
+            new { name = "Setup Wizard", codename = "setup", version = "1.0.8", status = "active" },
         };
 
         return Ok(new
         {
-        version = "1.0.6",
+        version = "1.0.8",
             codename = "WatchNexus",
             framework = $".NET {Environment.Version}",
             hostname = Environment.MachineName,
@@ -129,7 +129,10 @@ public class AuthController : ControllerBase
     // returned in the body for non-browser / Electron clients (Bearer header path).
     private const string AuthCookie = "wn_token";
 
-    private void SetAuthCookie(string token)
+    private void SetAuthCookie(string token) => WriteAuthCookies(Request, Response, token);
+
+    // Shared with BastionController (revoke-all re-issues the caller's cookie).
+    internal static void WriteAuthCookies(HttpRequest Request, HttpResponse Response, string token)
     {
         Response.Cookies.Append(AuthCookie, token, new CookieOptions
         {
@@ -153,7 +156,9 @@ public class AuthController : ControllerBase
         });
     }
 
-    private void ClearAuthCookie()
+    private void ClearAuthCookie() => ClearAuthCookies(Request, Response);
+
+    internal static void ClearAuthCookies(HttpRequest Request, HttpResponse Response)
     {
         Response.Cookies.Append(AuthCookie, "", new CookieOptions
         {
@@ -197,7 +202,7 @@ public class AuthController : ControllerBase
         {
             needs_setup = !hasUsers,
             user_count = _db.Users.Count(),
-            version = "1.0.6"
+            version = "1.0.8"
         });
     }
 
@@ -335,15 +340,16 @@ public class UsersController : ControllerBase
     }
 
     // Public, minimal profile list for the "Who's watching?" login picker
-    // (Jellyfin/Plex-style). Returns Id, Username, Email, and Avatar so the
-    // local login flow can pre-fill the identity and still complete auth.
+    // (Jellyfin/Plex-style). Anonymous, so it must NOT leak email addresses:
+    // only Id, Username and Avatar. Login accepts username or email, so the
+    // picker signs in with the username.
     [HttpGet("profiles")]
     [AllowAnonymous]
     public IActionResult GetProfiles()
     {
         var users = _db.Users
             .OrderBy(u => u.Username)
-            .Select(u => new { u.Id, u.Username, u.Email, u.Avatar })
+            .Select(u => new { u.Id, u.Username, u.Avatar })
             .ToList();
         return Ok(users);
     }
@@ -374,6 +380,13 @@ public class UsersController : ControllerBase
             return BadRequest(new { detail = "Please enter a valid email address." });
         if (string.IsNullOrWhiteSpace(req.Username))
             return BadRequest(new { detail = "Username is required." });
+        if (req.Role != null && req.Role != "admin" && req.Role != "user")
+            return BadRequest(new { detail = "Role must be 'admin' or 'user'." });
+        // Login matches on email OR username, so a username must not collide
+        // with another account's username or email or logins become ambiguous.
+        var uname = req.Username.Trim();
+        if (_db.Users.Any(u => u.Username == uname || u.Email == uname))
+            return Conflict(new { detail = "A user with that username already exists." });
         var (ok, err) = PasswordPolicy.Validate(req.Password);
         if (!ok) return BadRequest(new { detail = err });
 

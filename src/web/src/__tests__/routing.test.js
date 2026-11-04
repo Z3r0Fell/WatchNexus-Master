@@ -1,48 +1,34 @@
-import { render, screen, waitFor, act, userEvent } from './test-utils'
-import { BrowserRouter, Routes, Route, Navigate, MemoryRouter } from 'react-router-dom'
-import { AuthProvider, useAuth } from '../context/AuthContext'
-import { LicenseProvider, useLicense } from '../context/LicenseContext'
-import { ThemeProvider } from '../context/ThemeContext'
-import { GadgetProvider } from '../context/GadgetContext'
-import { FirstLaunchGate } from '../components/FirstLaunchGate'
-import { ErrorBoundary } from '../components/ErrorBoundary'
-import { Toaster } from '../components/ui/sonner'
-import axios from 'axios'
+import { render, screen, waitFor } from '@testing-library/react'
+import { Routes, Route, Navigate, MemoryRouter } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { useLicense } from '../context/LicenseContext'
 
-// Mock axios for all providers
-jest.mock('axios', () => ({
-  create: () => ({
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    defaults: { withCredentials: true },
-    interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } },
-  }),
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  defaults: { withCredentials: true },
-  interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } },
+// Guards are exercised against mocked auth/license hooks: the real providers
+// would hit the network, and nesting them inside test-utils' MemoryRouter
+// produced a Router-inside-Router crash (the original cause of every failure here).
+jest.mock('../context/AuthContext', () => ({
+  ...jest.requireActual('../context/AuthContext'),
+  useAuth: jest.fn(),
+}))
+jest.mock('../context/LicenseContext', () => ({
+  ...jest.requireActual('../context/LicenseContext'),
+  useLicense: jest.fn(),
 }))
 
 // Test components
 const PublicPage = () => <div data-testid="public-page">Public Page</div>
 const ProtectedPage = () => <div data-testid="protected-page">Protected Page</div>
 const TierPage = () => <div data-testid="tier-page">Tier Page</div>
-const AdminPage = () => <div data-testid="admin-page">Admin Page</div>
 
-// Recreate the route guards from App.js for testing
+// Mirrors the route guards in App.js (which are not exported)
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
-  const location = require('react-router-dom').useLocation()
-
-  if (location.state?.user) return children
   if (loading) return <div data-testid="page-loader">Loading...</div>
   if (!isAuthenticated) return <Navigate to="/login" replace />
   return children
 }
 
-const TierRoute = ({ children, path }) => {
+const TierGateStub = ({ children, path }) => {
   const { isRouteUnlocked } = useLicense()
   if (isRouteUnlocked(path)) return children
   return (
@@ -53,6 +39,13 @@ const TierRoute = ({ children, path }) => {
   )
 }
 
+// App.js: TierRoute = ProtectedRoute > TierGate > children
+const TierRoute = ({ children, path }) => (
+  <ProtectedRoute>
+    <TierGateStub path={path}>{children}</TierGateStub>
+  </ProtectedRoute>
+)
+
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
   if (loading) return <div data-testid="page-loader">Loading...</div>
@@ -60,41 +53,31 @@ const PublicRoute = ({ children }) => {
   return children
 }
 
-// Wrapper with all providers
-const TestWrapper = ({ children, initialPath = '/' }) => (
-  <MemoryRouter initialEntries={[initialPath]}>
-    <ErrorBoundary>
-      <AuthProvider>
-        <ThemeProvider>
-          <GadgetProvider>
-            <LicenseProvider>
-              <FirstLaunchGate>
-                {children}
-                <Toaster />
-              </FirstLaunchGate>
-            </LicenseProvider>
-          </GadgetProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  </MemoryRouter>
-)
+let authState
+const mockAuth = (state) => { authState = { isAuthenticated: true, loading: false, user: { id: '1' }, ...state } }
+const unauthenticated = () => mockAuth({ isAuthenticated: false, user: null })
+
+// Starts at `initialPath`, or at the path of the first <Route> under test.
+const TestWrapper = ({ children, initialPath }) => {
+  const firstRoute = [].concat(children.props.children)[0]
+  const path = initialPath || (firstRoute && firstRoute.props.path) || '/'
+  return <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+}
 
 describe('Routing Guards', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-    // Default mock for /users/me
-    axios.get.mockResolvedValue({ data: { Id: '1', Username: 'testuser', Email: 'test@test.com', Role: 'user' } })
-    axios.get.mockResolvedValue({ data: { tier: 'standard', modules_unlocked: [] } })
-    axios.get.mockResolvedValue({ data: { current_theme: null } })
-    axios.get.mockResolvedValue({ data: { ui_accent: 'violet' } })
-    axios.get.mockResolvedValue({ data: { gadgets: [] } })
-    axios.get.mockResolvedValue({ data: { sidebar_entries: [] } })
+    mockAuth({})
+    useAuth.mockImplementation(() => authState)
+    useLicense.mockReturnValue({
+      isRouteUnlocked: jest.fn(() => true),
+      getRouteRequiredTier: jest.fn(() => 'standard'),
+      ROUTE_MODULE_MAP: {},
+    })
   })
 
   describe('ProtectedRoute', () => {
     test('redirects to /login when not authenticated', async () => {
-      axios.get.mockRejectedValueOnce({ response: { status: 401 } })
+      unauthenticated()
       
       render(
         <TestWrapper>
@@ -102,8 +85,7 @@ describe('Routing Guards', () => {
             <Route path="/protected" element={<ProtectedRoute><ProtectedPage /></ProtectedRoute>} />
             <Route path="/login" element={<PublicPage />} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('public-page')).toBeInTheDocument())
@@ -115,40 +97,42 @@ describe('Routing Guards', () => {
           <Routes>
             <Route path="/protected" element={<ProtectedRoute><ProtectedPage /></ProtectedRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('protected-page')).toBeInTheDocument())
     })
 
     test('shows loader while loading', async () => {
-      axios.get.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ data: { Id: '1', Username: 'test' } }), 100)))
+      mockAuth({ loading: true, isAuthenticated: false })
       
-      render(
+      const ui = () => (
         <TestWrapper>
           <Routes>
             <Route path="/protected" element={<ProtectedRoute><ProtectedPage /></ProtectedRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
-      
+      const { rerender } = render(ui())
+
       expect(screen.getByTestId('page-loader')).toBeInTheDocument()
-      
+
+      // auth probe resolves
+      mockAuth({})
+      rerender(ui())
+
       await waitFor(() => expect(screen.getByTestId('protected-page')).toBeInTheDocument())
     })
 
     test('allows access when location.state.user exists (OAuth callback)', async () => {
-      axios.get.mockRejectedValueOnce({ response: { status: 401 } })
+      unauthenticated()
       
       render(
         <TestWrapper initialPath="/protected">
           <Routes>
             <Route path="/protected" element={<ProtectedRoute><ProtectedPage /></ProtectedRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: { initialPath: '/protected' } }
+        </TestWrapper>
       )
       
       // Manually set location state - this is tricky with MemoryRouter
@@ -158,15 +142,14 @@ describe('Routing Guards', () => {
 
   describe('PublicRoute', () => {
     test('renders children when not authenticated', async () => {
-      axios.get.mockRejectedValueOnce({ response: { status: 401 } })
+      unauthenticated()
       
       render(
         <TestWrapper>
           <Routes>
             <Route path="/login" element={<PublicRoute><PublicPage /></PublicRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('public-page')).toBeInTheDocument())
@@ -179,23 +162,21 @@ describe('Routing Guards', () => {
             <Route path="/login" element={<PublicRoute><PublicPage /></PublicRoute>} />
             <Route path="/" element={<ProtectedPage />} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('protected-page')).toBeInTheDocument())
     })
 
     test('shows loader while loading', async () => {
-      axios.get.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ data: { Id: '1', Username: 'test' } }), 100)))
+      mockAuth({ loading: true, isAuthenticated: false })
       
       render(
         <TestWrapper>
           <Routes>
             <Route path="/login" element={<PublicRoute><PublicPage /></PublicRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       expect(screen.getByTestId('page-loader')).toBeInTheDocument()
@@ -204,7 +185,6 @@ describe('Routing Guards', () => {
 
   describe('TierRoute', () => {
     test('renders children when route is unlocked', async () => {
-      const { useLicense } = require('../context/LicenseContext')
       useLicense.mockReturnValue({
         isRouteUnlocked: jest.fn(() => true),
         getRouteRequiredTier: jest.fn(() => 'standard'),
@@ -216,15 +196,13 @@ describe('Routing Guards', () => {
           <Routes>
             <Route path="/tier" element={<TierRoute path="/tier"><TierPage /></TierRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('tier-page')).toBeInTheDocument())
     })
 
     test('shows tier gate when route is locked', async () => {
-      const { useLicense } = require('../context/LicenseContext')
       useLicense.mockReturnValue({
         isRouteUnlocked: jest.fn(() => false),
         getRouteRequiredTier: jest.fn(() => 'pro'),
@@ -236,8 +214,7 @@ describe('Routing Guards', () => {
           <Routes>
             <Route path="/tier" element={<TierRoute path="/tier"><TierPage /></TierRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('tier-gate')).toBeInTheDocument())
@@ -245,8 +222,7 @@ describe('Routing Guards', () => {
     })
 
     test('wraps with ProtectedRoute', async () => {
-      axios.get.mockRejectedValueOnce({ response: { status: 401 } })
-      const { useLicense } = require('../context/LicenseContext')
+      unauthenticated()
       useLicense.mockReturnValue({
         isRouteUnlocked: jest.fn(() => false),
         getRouteRequiredTier: jest.fn(() => 'pro'),
@@ -259,8 +235,7 @@ describe('Routing Guards', () => {
             <Route path="/tier" element={<TierRoute path="/tier"><TierPage /></TierRoute>} />
             <Route path="/login" element={<PublicPage />} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       // Should redirect to login first (ProtectedRoute)
@@ -271,14 +246,13 @@ describe('Routing Guards', () => {
   describe('SPA Fallback', () => {
     test('redirects unknown routes to /', async () => {
       render(
-        <TestWrapper>
+        <TestWrapper initialPath="/unknown">
           <Routes>
             <Route path="/" element={<ProtectedPage />} />
             <Route path="/known" element={<ProtectedPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: { initialPath: '/unknown' } }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('protected-page')).toBeInTheDocument())
@@ -308,7 +282,7 @@ describe('Routing Guards', () => {
     ]
 
     test.each(testRoutes)('protects $name route ($path)', async ({ path }) => {
-      axios.get.mockRejectedValueOnce({ response: { status: 401 } })
+      unauthenticated()
       
       render(
         <TestWrapper>
@@ -316,8 +290,7 @@ describe('Routing Guards', () => {
             <Route path={path} element={<ProtectedRoute><ProtectedPage /></ProtectedRoute>} />
             <Route path="/login" element={<PublicPage />} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('public-page')).toBeInTheDocument())
@@ -360,7 +333,6 @@ describe('Routing Guards', () => {
     ]
 
     test.each(proRoutes)('requires Pro tier for $path ($module)', async ({ path, module }) => {
-      const { useLicense } = require('../context/LicenseContext')
       useLicense.mockReturnValue({
         isRouteUnlocked: jest.fn((p) => p !== path),
         getRouteRequiredTier: jest.fn((p) => p === path ? 'pro' : 'standard'),
@@ -372,15 +344,13 @@ describe('Routing Guards', () => {
           <Routes>
             <Route path={path} element={<TierRoute path={path}><TierPage /></TierRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('tier-gate')).toBeInTheDocument())
     })
 
     test.each(ultraRoutes)('requires Ultra tier for $path ($module)', async ({ path, module }) => {
-      const { useLicense } = require('../context/LicenseContext')
       useLicense.mockReturnValue({
         isRouteUnlocked: jest.fn((p) => p !== path),
         getRouteRequiredTier: jest.fn((p) => p === path ? 'ultra' : 'standard'),
@@ -392,8 +362,7 @@ describe('Routing Guards', () => {
           <Routes>
             <Route path={path} element={<TierRoute path={path}><TierPage /></TierRoute>} />
           </Routes>
-        </TestWrapper>,
-        { wrapperOverrides: {} }
+        </TestWrapper>
       )
       
       await waitFor(() => expect(screen.getByTestId('tier-gate')).toBeInTheDocument())

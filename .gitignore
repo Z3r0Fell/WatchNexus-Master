@@ -87,3 +87,6 @@ src/watchnexus/core/publish/
 # Go build artifacts
 lobster-sidecar/lobster-sidecar
 .aider*
+
+# Six Labors (ImageSharp) license — never commit
+sixlabors.lic

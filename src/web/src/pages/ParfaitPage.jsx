@@ -152,7 +152,13 @@ const ParfaitPage = () => {
 
   const handleRequest = async (mediaType, mediaId) => {
     try {
-      await axios.post(`${API}/api/parfait/requests`, { mediaType, mediaId, seasons: mediaType === 'tv' ? 'all' : undefined });
+      const res = await axios.post(`${API}/api/parfait/requests`, { mediaType, mediaId, seasons: mediaType === 'tv' ? 'all' : undefined });
+      // The backend relays Jellyseerr's body with HTTP 200 even when Jellyseerr
+      // rejected the request ({message} without a request id).
+      if (res.data && res.data.id == null && (res.data.message || res.data.error)) {
+        toast.error(res.data.message || res.data.error);
+        return;
+      }
       toast.success('Request submitted!');
       fetchRequests();
       fetchStats();

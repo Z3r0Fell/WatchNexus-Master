@@ -105,80 +105,80 @@ jobs:
             
             # Create staging docker-compose override
             cat > docker-compose.staging.yml << 'COMPOSE'
-    version: '3.8'
-    services:
-      watchnexus-staging-standard:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-standard
-        container_name: watchnexus-staging-standard
-        ports:
-          - "8001:8001"
-        volumes:
-          - watchnexus-staging-data:/app/data
-          - /mnt/media:/data/media
-        environment:
-          - WATCHNEXUS_TIER=standard
-          - WATCHNEXUS_DATA_DIR=/app/data
-          - WATCHNEXUS_PORT=8001
-          - ASPNETCORE_ENVIRONMENT=Staging
-          - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
-        restart: unless-stopped
-        healthcheck:
-          test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
-          interval: 30s
-          timeout: 5s
-          retries: 3
+              version: '3.8'
+              services:
+                watchnexus-staging-standard:
+                  image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-standard
+                  container_name: watchnexus-staging-standard
+                  ports:
+                    - "8001:8001"
+                  volumes:
+                    - watchnexus-staging-data:/app/data
+                    - /mnt/media:/data/media
+                  environment:
+                    - WATCHNEXUS_TIER=standard
+                    - WATCHNEXUS_DATA_DIR=/app/data
+                    - WATCHNEXUS_PORT=8001
+                    - ASPNETCORE_ENVIRONMENT=Staging
+                    - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+                  restart: unless-stopped
+                  healthcheck:
+                    test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
+                    interval: 30s
+                    timeout: 5s
+                    retries: 3
       
-      watchnexus-staging-pro:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-pro
-        container_name: watchnexus-staging-pro
-        ports:
-          - "8002:8001"
-        volumes:
-          - watchnexus-staging-pro-data:/app/data
-          - /mnt/media:/data/media
-          - /mnt/rips:/data/rips
-        environment:
-          - WATCHNEXUS_TIER=pro
-          - WATCHNEXUS_DATA_DIR=/app/data
-          - WATCHNEXUS_PORT=8001
-          - ASPNETCORE_ENVIRONMENT=Staging
-          - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
-        restart: unless-stopped
-        healthcheck:
-          test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
-          interval: 30s
-          timeout: 5s
-          retries: 3
+                watchnexus-staging-pro:
+                  image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-pro
+                  container_name: watchnexus-staging-pro
+                  ports:
+                    - "8002:8001"
+                  volumes:
+                    - watchnexus-staging-pro-data:/app/data
+                    - /mnt/media:/data/media
+                    - /mnt/rips:/data/rips
+                  environment:
+                    - WATCHNEXUS_TIER=pro
+                    - WATCHNEXUS_DATA_DIR=/app/data
+                    - WATCHNEXUS_PORT=8001
+                    - ASPNETCORE_ENVIRONMENT=Staging
+                    - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+                  restart: unless-stopped
+                  healthcheck:
+                    test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
+                    interval: 30s
+                    timeout: 5s
+                    retries: 3
       
-      watchnexus-staging-ultra:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-ultra
-        container_name: watchnexus-staging-ultra
-        ports:
-          - "8003:8001"
-        volumes:
-          - watchnexus-staging-ultra-data:/app/data
-          - /mnt/media:/data/media
-          - /mnt/rips:/data/rips
-          - /mnt/transcoded:/data/transcoded
-          - /mnt/offline:/data/offline
-        environment:
-          - WATCHNEXUS_TIER=ultra
-          - WATCHNEXUS_DATA_DIR=/app/data
-          - WATCHNEXUS_PORT=8001
-          - ASPNETCORE_ENVIRONMENT=Staging
-          - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
-        restart: unless-stopped
-        healthcheck:
-          test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
-          interval: 30s
-          timeout: 5s
-          retries: 3
+                watchnexus-staging-ultra:
+                  image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-ultra
+                  container_name: watchnexus-staging-ultra
+                  ports:
+                    - "8003:8001"
+                  volumes:
+                    - watchnexus-staging-ultra-data:/app/data
+                    - /mnt/media:/data/media
+                    - /mnt/rips:/data/rips
+                    - /mnt/transcoded:/data/transcoded
+                    - /mnt/offline:/data/offline
+                  environment:
+                    - WATCHNEXUS_TIER=ultra
+                    - WATCHNEXUS_DATA_DIR=/app/data
+                    - WATCHNEXUS_PORT=8001
+                    - ASPNETCORE_ENVIRONMENT=Staging
+                    - LICENSE_SERVER_URL=https://licenses.watchnexus.ca
+                  restart: unless-stopped
+                  healthcheck:
+                    test: ["CMD-SHELL", "curl -sf http://localhost:8001/api/health || exit 1"]
+                    interval: 30s
+                    timeout: 5s
+                    retries: 3
       
-    volumes:
-      watchnexus-staging-data:
-      watchnexus-staging-pro-data:
-      watchnexus-staging-ultra-data:
-COMPOSE
+              volumes:
+                watchnexus-staging-data:
+                watchnexus-staging-pro-data:
+                watchnexus-staging-ultra-data:
+          COMPOSE
             
             # Deploy
             docker compose -f docker-compose.staging.yml up -d
@@ -215,7 +215,7 @@ COMPOSE
       - name: API health checks
         run: |
           for tier in standard pro ultra; do
-            port=$((8000 + ${tier == standard && echo 1 || ${tier == pro && echo 2 || echo 3}}))
+            case "$tier" in standard) port=8001 ;; pro) port=8002 ;; *) port=8003 ;; esac
             echo "Testing $tier on port $port..."
             curl -sf http://${{ env.STAGING_HOST }}:$port/api/health || exit 1
             curl -sf http://${{ env.STAGING_HOST }}:$port/api/info || exit 1

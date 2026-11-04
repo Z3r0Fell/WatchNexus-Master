@@ -49,6 +49,8 @@ export const PlaybackSettings = () => {
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [chromaprintStatus, setChromaprintStatus] = useState('unknown');
+  // True once the server reports it has no bulk intro-analysis endpoint (404/405/501).
+  const [analysisUnsupported, setAnalysisUnsupported] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -58,7 +60,13 @@ export const PlaybackSettings = () => {
   const fetchSettings = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/settings/playback`);
-      if (res.data) setSettings(prev => ({ ...prev, ...res.data }));
+      // An unset key comes back as { key, value: null } — don't merge that envelope
+      // into settings (its `value: null` would make the next PUT delete the key).
+      const d = res.data;
+      if (d && typeof d === 'object' && !('key' in d && 'value' in d)) {
+        const { key, value, ...rest } = d;
+        setSettings(prev => ({ ...prev, ...rest }));
+      }
     } catch (err) {
       console.log('Using default playback settings');
     }
@@ -76,7 +84,10 @@ export const PlaybackSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.put(`${API_URL}/api/settings/playback`, settings, {
+      const { key, value, ...payload } = settings;
+      // Wrap in { value } so the backend stores the object rather than treating a
+      // stray top-level `value` field as the payload.
+      await axios.put(`${API_URL}/api/settings/playback`, { value: payload }, {
         headers: { 'Content-Type': 'application/json' }
       });
       toast.success('Playback settings saved');
@@ -88,12 +99,18 @@ export const PlaybackSettings = () => {
   };
 
   const handleAnalyzeAllSeries = async () => {
+    if (analysisUnsupported) return;
     setAnalyzing(true);
     try {
       const res = await axios.post(`${API_URL}/api/marmalade/analyze-all-intros`, {});
-      toast.success(`Queued ${res.data.queued || 0} series for analysis`);
+      toast.success(`Queued ${res?.data?.queued || 0} series for analysis`);
     } catch (err) {
-      toast.error('Failed to start analysis');
+      if ([404, 405, 501].includes(err?.response?.status)) {
+        setAnalysisUnsupported(true);
+        toast.info('Automatic intro analysis is not available on this server');
+      } else {
+        toast.error('Failed to start analysis');
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -112,6 +129,7 @@ export const PlaybackSettings = () => {
             setSettings={setSettings}
             chromaprintStatus={chromaprintStatus}
             analyzing={analyzing}
+            analysisUnsupported={analysisUnsupported}
             handleAnalyzeAllSeries={handleAnalyzeAllSeries}
           />
         );
@@ -302,7 +320,7 @@ const AutoplayTab = ({ settings, setSettings }) => (
 );
 
 // Detection Tab
-const DetectionTab = ({ settings, setSettings, chromaprintStatus, analyzing, handleAnalyzeAllSeries }) => (
+const DetectionTab = ({ settings, setSettings, chromaprintStatus, analyzing, analysisUnsupported, handleAnalyzeAllSeries }) => (
   <div className="space-y-6">
     <div className="bg-surface border border-white/10 rounded-2xl p-6">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -366,13 +384,16 @@ const DetectionTab = ({ settings, setSettings, chromaprintStatus, analyzing, han
 
         <Button
           onClick={handleAnalyzeAllSeries}
-          disabled={analyzing || chromaprintStatus !== 'installed'}
+          disabled={analyzing || analysisUnsupported || chromaprintStatus !== 'installed'}
+          data-testid="analyze-all-intros-btn"
           className="w-full bg-violet-600 hover:bg-violet-700 h-12"
         >
           {analyzing ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" />Analyzing...</> : <><Zap className="w-5 h-5 mr-2" />Analyze All TV Series</>}
         </Button>
-        <p className="text-xs text-gray-500 text-center">
-          This will scan all TV episodes to detect intro/credits segments using audio fingerprinting.
+        <p className="text-xs text-gray-500 text-center" data-testid="analyze-all-intros-hint">
+          {analysisUnsupported
+            ? 'Automatic intro analysis is not available on this server.'
+            : 'This will scan all TV episodes to detect intro/credits segments using audio fingerprinting.'}
         </p>
       </div>
     </div>

@@ -193,6 +193,9 @@ public class GlazeController : ControllerBase
     private readonly AppDbContext _db;
     public GlazeController(AppDbContext db) => _db = db;
 
+    // Scrobbling config holds each user's own Trakt/Last.fm tokens, so it is per-user.
+    private string uid => this.UserId();
+
     [HttpGet("status")]
     public IActionResult Status() => Ok(new
     {
@@ -204,7 +207,7 @@ public class GlazeController : ControllerBase
     [HttpGet("config")]
     public async Task<IActionResult> GetConfig()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config");
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config" && s.UserId == uid);
         if (setting?.Value == null) return Ok(new
         {
             trakt = new { enabled = false, client_id = "", access_token = "", auto_scrobble = true, sync_collection = false, sync_watchlist = false },
@@ -217,8 +220,8 @@ public class GlazeController : ControllerBase
     public async Task<IActionResult> UpdateConfig([FromBody] JsonElement config)
     {
         var raw = config.GetRawText();
-        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config");
-        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = "", Key = "glaze_config", Value = raw });
+        var existing = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config" && s.UserId == uid);
+        if (existing != null) existing.Value = raw; else _db.Settings.Add(new AppSetting { UserId = uid, Key = "glaze_config", Value = raw });
         await _db.SaveChangesAsync();
         return Ok(new { status = "saved" });
     }
@@ -226,7 +229,7 @@ public class GlazeController : ControllerBase
     [HttpPost("trakt/authorize")]
     public async Task<IActionResult> TraktAuth()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config");
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config" && s.UserId == uid);
         var clientId = "";
         if (setting?.Value != null)
         {
@@ -257,7 +260,7 @@ public class GlazeController : ControllerBase
     [HttpPost("lastfm/authorize")]
     public async Task<IActionResult> LastFmAuth()
     {
-        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config");
+        var setting = await _db.Settings.FirstOrDefaultAsync(s => s.Key == "glaze_config" && s.UserId == uid);
         var apiKey = "";
         if (setting?.Value != null)
         {
@@ -362,7 +365,9 @@ public class SetupWizardController : ControllerBase
     }
 
     [HttpPost("reset")]
-    [Authorize]
+    // Admin only: removing setup_completed re-opens the anonymous setup and
+    // /api/cellar/activate-first-launch endpoints.
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Reset()
     {
         var toRemove = await _db.Settings.Where(s => s.Key.StartsWith("setup_")).ToListAsync();
