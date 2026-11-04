@@ -636,8 +636,15 @@ public class MarmaladeBridgeController : ControllerBase
     // browser's <video> element can't attach our bearer token, so playback is
     // authorised here (requires a valid session) and the resulting token is
     // validated by StreamFile below.
+    //
+    // For video it also decides how the browser can play the file (see
+    // PlaybackProbe): direct bytes, or an ffmpeg remux/transcode to fragmented
+    // MP4. `stream_url` always points at something the browser can play, so
+    // older callers that only read `stream_url` keep working. When ffmpeg is
+    // required but missing, this fails with 503 + install hint instead of
+    // handing the player a URL it can't decode.
     [HttpGet("stream/{id}/authorize")]
-    public async Task<IActionResult> AuthorizeStream(string id)
+    public async Task<IActionResult> AuthorizeStream(string id, CancellationToken ct = default)
     {
         var media = await FindUserMediaAsync(id);
         if (media == null) return NotFound(new { detail = "Media not found" });
@@ -646,7 +653,147 @@ public class MarmaladeBridgeController : ControllerBase
         if (string.IsNullOrEmpty(media.FilePath) || !MediaPaths.IsAllowedPath(media.FilePath) || !System.IO.File.Exists(media.FilePath))
             return NotFound(new { detail = "Media file not found on disk" });
         var token = StreamToken.Issue(id, _config["Jwt:Secret"] ?? "", TimeSpan.FromHours(6));
-        return Ok(new { stream_url = $"/api/marmalade/stream/{id}/file?token={token}" });
+        var directUrl = $"/api/marmalade/stream/{id}/file?token={token}";
+
+        // Music / audiobooks: every browser decodes these natively — no probe.
+        if (Services.PlaybackProbe.IsAudioFile(media.FilePath))
+            return Ok(new { stream_url = directUrl, direct_url = directUrl, direct_play = true, playback_mode = "direct" });
+
+        var probe = await Services.PlaybackProbe.ProbeAsync(media.FilePath, ct);
+        var decision = Services.PlaybackProbe.Decide(media.FilePath, probe);
+        var ffmpegAvailable = Services.FfmpegLocator.Ffmpeg != null;
+        var transcodeUrl = ffmpegAvailable ? $"/api/marmalade/stream/{id}/transcode?token={token}" : null;
+
+        if (decision.Mode != Services.PlaybackMode.Direct && !ffmpegAvailable)
+        {
+            var hint = Services.FfmpegLocator.InstallHint();
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                detail = $"This video can't be played directly in a browser ({decision.Reason}) and FFmpeg, which is needed to convert it, is not installed on the server. Install FFmpeg ({hint}) or set WATCHNEXUS_FFMPEG_PATH, then try again.",
+                missing_components = new[] { "ffmpeg" },
+                install_hint = hint,
+                reason = decision.Reason,
+            });
+        }
+
+        return Ok(new
+        {
+            stream_url = decision.Mode == Services.PlaybackMode.Direct ? directUrl : transcodeUrl,
+            direct_url = directUrl,
+            transcode_url = transcodeUrl,
+            direct_play = decision.Mode == Services.PlaybackMode.Direct,
+            playback_mode = decision.Mode.ToString().ToLowerInvariant(),
+            reason = decision.Reason,
+            duration = probe?.DurationSeconds,
+            ffmpeg_available = ffmpegAvailable,
+        });
+    }
+
+    // Caps concurrent ffmpeg processes so a handful of viewers (or a client that
+    // seeks rapidly) can't exhaust the server's CPU.
+    private static readonly SemaphoreSlim TranscodeSlots = new(
+        int.TryParse(Environment.GetEnvironmentVariable("WATCHNEXUS_MAX_TRANSCODES"), out var n) && n > 0 ? n : 4);
+
+    // Live remux/transcode to fragmented MP4 piped straight from ffmpeg. The
+    // output isn't seekable (no byte ranges), so the player seeks by reopening
+    // with ?start=<seconds> and tracks the offset itself. Gated by the same
+    // HMAC stream token as StreamFile.
+    [HttpGet("stream/{id}/transcode")]
+    [AllowAnonymous]
+    public async Task<IActionResult> TranscodeStream(string id, [FromQuery] string? token, [FromQuery] double start = 0, CancellationToken ct = default)
+    {
+        if (!StreamToken.Validate(id, token, _config["Jwt:Secret"] ?? ""))
+            return Unauthorized(new { detail = "Invalid or expired stream token." });
+        var media = await _db.MediaItems.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
+        if (media == null) return NotFound();
+        if (string.IsNullOrEmpty(media.FilePath) || !MediaPaths.IsAllowedPath(media.FilePath) || !System.IO.File.Exists(media.FilePath))
+            return NotFound(new { detail = "File not found" });
+
+        var ffmpeg = Services.FfmpegLocator.Ffmpeg;
+        if (ffmpeg == null)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                detail = "FFmpeg is required to convert this video for browser playback but is not installed.",
+                missing_components = new[] { "ffmpeg" },
+                install_hint = Services.FfmpegLocator.InstallHint(),
+            });
+
+        if (!double.IsFinite(start) || start < 0) start = 0;
+
+        var probe = await Services.PlaybackProbe.ProbeAsync(media.FilePath, ct);
+        var decision = Services.PlaybackProbe.Decide(media.FilePath, probe);
+        // A client only asks to transcode a "direct" file after the browser failed
+        // to decode it — still convert, copying the video only if it's plain H.264.
+        var mode = decision.Mode != Services.PlaybackMode.Direct
+            ? decision.Mode
+            : (string.Equals(probe?.VideoCodec, "h264", StringComparison.OrdinalIgnoreCase)
+                ? Services.PlaybackMode.Remux : Services.PlaybackMode.Transcode);
+
+        if (!await TranscodeSlots.WaitAsync(TimeSpan.FromSeconds(5), ct))
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { detail = "Too many videos are being converted right now. Try again shortly." });
+
+        var logger = HttpContext.RequestServices.GetService<ILogger<MarmaladeBridgeController>>();
+        System.Diagnostics.Process? proc = null;
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo(ffmpeg)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            foreach (var a in Services.PlaybackProbe.BuildFfmpegArgs(media.FilePath, mode, probe?.AudioCodec, start))
+                psi.ArgumentList.Add(a);
+
+            proc = System.Diagnostics.Process.Start(psi);
+            if (proc == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, new { detail = "Failed to start FFmpeg." });
+            // No token: the reader ends when ffmpeg exits/is killed, and a cancelled
+            // read would surface as an unobserved task exception.
+            var stderrTask = proc.StandardError.ReadToEndAsync();
+            var output = proc.StandardOutput.BaseStream;
+
+            // Hold the response until ffmpeg produces its first bytes so a failure
+            // (corrupt file, unsupported codec) becomes a real error status rather
+            // than an empty 200 the <video> element can't explain.
+            var buffer = new byte[64 * 1024];
+            var read = await output.ReadAsync(buffer, ct);
+            if (read == 0)
+            {
+                await proc.WaitForExitAsync(ct);
+                var err = (await stderrTask).Trim();
+                logger?.LogWarning("Transcode of media {MediaId} produced no output (exit {Exit}): {Error}", id, proc.ExitCode, err);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { detail = "FFmpeg could not convert this file.", ffmpeg_error = err.Length > 500 ? err[^500..] : err });
+            }
+
+            logger?.LogInformation("Streaming media {MediaId} via ffmpeg {Mode} from {Start}s", id, mode, start);
+            Response.StatusCode = StatusCodes.Status200OK;
+            Response.ContentType = "video/mp4";
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.AcceptRanges = "none";
+            await Response.Body.WriteAsync(buffer.AsMemory(0, read), ct);
+            int n2;
+            while ((n2 = await output.ReadAsync(buffer, ct)) > 0)
+                await Response.Body.WriteAsync(buffer.AsMemory(0, n2), ct);
+            return new EmptyResult();
+        }
+        catch (OperationCanceledException)
+        {
+            // Client closed the connection (seek, stop, navigate away) — normal.
+            return new EmptyResult();
+        }
+        catch (IOException)
+        {
+            // Client disconnect surfaced as a write failure.
+            return new EmptyResult();
+        }
+        finally
+        {
+            try { if (proc is { HasExited: false }) proc.Kill(entireProcessTree: true); } catch { }
+            proc?.Dispose();
+            TranscodeSlots.Release();
+        }
     }
 
     // AllowAnonymous because a <video src> request can't carry a bearer token —

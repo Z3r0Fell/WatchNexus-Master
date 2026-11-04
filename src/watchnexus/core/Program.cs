@@ -807,6 +807,18 @@ var external = ModuleLoader.LoadedModules.Count;
 Log($"[WatchNexus] v1.0.7 starting on port {port}");
 Log($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
 Log($"[WatchNexus] Logs at: {logDir}");
+// Required-component check: without ffmpeg/ffprobe only browser-native files
+// (MP4/WebM with H.264/VP9/AV1 + AAC/Opus, and music) can play — MKV, AVI,
+// HEVC, AC3/DTS etc. need conversion. Say so at boot instead of failing silently.
+{
+    var ffmpegPath = WatchNexus.Core.Services.FfmpegLocator.Ffmpeg;
+    var ffprobePath = WatchNexus.Core.Services.FfmpegLocator.Ffprobe;
+    if (ffmpegPath != null && ffprobePath != null)
+        Log($"[WatchNexus] FFmpeg: {ffmpegPath} (ffprobe: {ffprobePath}) — video transcoding enabled");
+    else
+        Log($"[WatchNexus] WARNING: missing component(s): {string.Join(", ", new[] { ffmpegPath == null ? "ffmpeg" : null, ffprobePath == null ? "ffprobe" : null }.Where(x => x != null))}. " +
+            $"Videos that aren't browser-native (MKV, AVI, HEVC, AC3/DTS, …) will not play. Install: {WatchNexus.Core.Services.FfmpegLocator.InstallHint()} or set WATCHNEXUS_FFMPEG_PATH / WATCHNEXUS_FFPROBE_PATH.");
+}
 Log($"[WatchNexus] Open http://localhost:{port} in your browser to begin.");
 app.Run($"http://0.0.0.0:{port}");
 

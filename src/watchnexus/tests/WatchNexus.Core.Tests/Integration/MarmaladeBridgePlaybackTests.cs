@@ -110,6 +110,118 @@ public class MarmaladeBridgePlaybackTests : IntegrationTestBase
         Assert.Contains("media roots", detail);
     }
 
+    // ── Video playback: direct vs ffmpeg remux/transcode ──────────────
+
+    /// <summary>Generate a short real video with ffmpeg; null when ffmpeg isn't installed.</summary>
+    private string? MakeVideo(string relativePath, params string[] codecArgs)
+    {
+        var ffmpeg = WatchNexus.Core.Services.FfmpegLocator.Ffmpeg;
+        if (ffmpeg == null || WatchNexus.Core.Services.FfmpegLocator.Ffprobe == null) return null;
+        var full = Path.Combine(MediaRoot, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        var psi = new System.Diagnostics.ProcessStartInfo(ffmpeg) { RedirectStandardError = true, UseShellExecute = false };
+        foreach (var a in new[] { "-y", "-hide_banner", "-loglevel", "error",
+                     "-f", "lavfi", "-i", "testsrc=duration=2:size=320x240:rate=25",
+                     "-f", "lavfi", "-i", "sine=frequency=440:duration=2" })
+            psi.ArgumentList.Add(a);
+        foreach (var a in codecArgs) psi.ArgumentList.Add(a);
+        psi.ArgumentList.Add(full);
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        p.StandardError.ReadToEnd();
+        p.WaitForExit();
+        return p.ExitCode == 0 ? full : null;
+    }
+
+    [Fact]
+    public async Task AuthorizeStream_AudioFile_IsDirectPlay()
+    {
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        var library = await CreateTestLibraryAsync(path: MediaRoot, mediaType: "music");
+        var song = await AddItemAsync(library.Id, "Song", "music", null, CreateMediaFile("music/song.mp3"));
+
+        var json = await DeserializeResponseElement(await Client.GetAsync($"/api/marmalade/stream/{song.Id}/authorize"));
+
+        Assert.True(json.GetProperty("direct_play").GetBoolean());
+        Assert.Contains($"/stream/{song.Id}/file?token=", json.GetProperty("stream_url").GetString());
+    }
+
+    [Fact]
+    public async Task AuthorizeStream_MkvWithAc3_IsRemuxedThroughFfmpeg_AndTranscodeEndpointStreamsFragmentedMp4()
+    {
+        var path = MakeVideo("movies/Remux Me (2020).mkv", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "ac3");
+        if (path == null) return; // ffmpeg not installed on this runner
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        var library = await CreateTestLibraryAsync(path: MediaRoot);
+        var movie = await AddItemAsync(library.Id, "Remux Me", "movies", null, path);
+
+        var auth = await Client.GetAsync($"/api/marmalade/stream/{movie.Id}/authorize");
+        AssertJsonResponse(auth);
+        var json = await DeserializeResponseElement(auth);
+        Assert.False(json.GetProperty("direct_play").GetBoolean());
+        Assert.Equal("remux", json.GetProperty("playback_mode").GetString());
+        var transcodeUrl = json.GetProperty("transcode_url").GetString()!;
+        Assert.Equal(transcodeUrl, json.GetProperty("stream_url").GetString());
+        Assert.InRange(json.GetProperty("duration").GetDouble(), 1.5, 2.5);
+
+        var stream = await Client.GetAsync(transcodeUrl + "&start=0.5");
+        Assert.Equal(HttpStatusCode.OK, stream.StatusCode);
+        Assert.Equal("video/mp4", stream.Content.Headers.ContentType?.MediaType);
+        var bytes = await stream.Content.ReadAsByteArrayAsync();
+        Assert.True(bytes.Length > 1000);
+        Assert.Equal("ftyp", System.Text.Encoding.ASCII.GetString(bytes, 4, 4));
+    }
+
+    [Fact]
+    public async Task AuthorizeStream_Mpeg4Avi_IsFullyTranscoded()
+    {
+        var path = MakeVideo("movies/old.avi", "-c:v", "mpeg4", "-c:a", "libmp3lame");
+        if (path == null) return;
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        var library = await CreateTestLibraryAsync(path: MediaRoot);
+        var movie = await AddItemAsync(library.Id, "Old", "movies", null, path);
+
+        var json = await DeserializeResponseElement(await Client.GetAsync($"/api/marmalade/stream/{movie.Id}/authorize"));
+        Assert.Equal("transcode", json.GetProperty("playback_mode").GetString());
+
+        var stream = await Client.GetAsync(json.GetProperty("transcode_url").GetString());
+        Assert.Equal(HttpStatusCode.OK, stream.StatusCode);
+        var bytes = await stream.Content.ReadAsByteArrayAsync();
+        Assert.Equal("ftyp", System.Text.Encoding.ASCII.GetString(bytes, 4, 4));
+    }
+
+    [Fact]
+    public async Task AuthorizeStream_BrowserNativeMp4_IsDirectPlay()
+    {
+        var path = MakeVideo("movies/native.mp4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac");
+        if (path == null) return;
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        var library = await CreateTestLibraryAsync(path: MediaRoot);
+        var movie = await AddItemAsync(library.Id, "Native", "movies", null, path);
+
+        var json = await DeserializeResponseElement(await Client.GetAsync($"/api/marmalade/stream/{movie.Id}/authorize"));
+        Assert.True(json.GetProperty("direct_play").GetBoolean());
+        Assert.Contains("/file?token=", json.GetProperty("stream_url").GetString());
+        // Fallback stays available in case the browser still can't decode it.
+        Assert.Contains("/transcode?token=", json.GetProperty("transcode_url").GetString());
+    }
+
+    [Fact]
+    public async Task TranscodeStream_InvalidToken_Returns401()
+    {
+        AuthenticateAsUser();
+        await SeedLicenseAsync("pro");
+        var library = await CreateTestLibraryAsync(path: MediaRoot);
+        var movie = await AddItemAsync(library.Id, "M", "movies", null, CreateMediaFile("movies/m.mkv"));
+
+        var response = await Client.GetAsync($"/api/marmalade/stream/{movie.Id}/transcode?token=999999999999.forged");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     [Fact]
     public async Task OtherUsersItem_IsNotFound_OnMediaAndStreamEndpoints()
     {

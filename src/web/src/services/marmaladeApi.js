@@ -117,6 +117,34 @@ export const marmaladeStream = {
     }
     return `${API}${streamUrl}`;
   },
+
+  // Full playback decision for the video player. The server probes the file
+  // and says whether the browser can play it directly or whether it must be
+  // remuxed/transcoded by ffmpeg (MKV, AVI, HEVC, AC3/DTS, …). `transcodeUrl`
+  // is also the fallback if direct play fails to decode.
+  authorizePlayback: async (mediaId) => {
+    const res = await marmaladeClient.get(`/stream/${mediaId}/authorize`);
+    const d = res?.data && typeof res.data === 'object' ? res.data : {};
+    const abs = (u) => {
+      if (typeof u !== 'string' || !u) return null;
+      return u.startsWith('http://') || u.startsWith('https://') ? u : `${API}${u}`;
+    };
+    const streamUrl = abs(d.stream_url);
+    if (!streamUrl) {
+      throw new Error('No stream URL returned from server');
+    }
+    const directPlay = d.direct_play !== false;
+    const duration = Number(d.duration);
+    return {
+      streamUrl,
+      directPlay,
+      directUrl: abs(d.direct_url) || (directPlay ? streamUrl : null),
+      transcodeUrl: abs(d.transcode_url) || (directPlay ? null : streamUrl),
+      mode: typeof d.playback_mode === 'string' ? d.playback_mode : (directPlay ? 'direct' : 'transcode'),
+      reason: typeof d.reason === 'string' ? d.reason : null,
+      duration: Number.isFinite(duration) && duration > 0 ? duration : null,
+    };
+  },
 };
 
 // Helper functions

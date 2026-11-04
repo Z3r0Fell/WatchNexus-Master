@@ -152,6 +152,36 @@ describe('marmaladeApi.js services', () => {
       mockAxios.get.mockResolvedValueOnce({ data: {} })
       await expect(marmaladeStream.getStreamUrl('media1')).rejects.toThrow('No stream URL returned from server')
     })
+
+    test('authorizePlayback returns the transcode decision with absolute URLs', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: {
+        stream_url: '/api/marmalade/stream/m1/transcode?token=t',
+        direct_url: '/api/marmalade/stream/m1/file?token=t',
+        transcode_url: '/api/marmalade/stream/m1/transcode?token=t',
+        direct_play: false, playback_mode: 'remux', reason: 'mkv', duration: 5423.1,
+      } })
+      const pb = await marmaladeStream.authorizePlayback('m1')
+      expect(mockAxios.get).toHaveBeenCalledWith('/stream/m1/authorize')
+      expect(pb.directPlay).toBe(false)
+      expect(pb.mode).toBe('remux')
+      expect(pb.duration).toBe(5423.1)
+      expect(pb.streamUrl).toMatch(/\/api\/marmalade\/stream\/m1\/transcode\?token=t$/)
+      expect(pb.transcodeUrl).toBe(pb.streamUrl)
+      expect(pb.directUrl).toMatch(/\/file\?token=t$/)
+    })
+
+    test('authorizePlayback treats a legacy {stream_url} response as direct play', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: { stream_url: 'http://s/v.mp4' } })
+      const pb = await marmaladeStream.authorizePlayback('m1')
+      expect(pb).toEqual(expect.objectContaining({
+        streamUrl: 'http://s/v.mp4', directPlay: true, directUrl: 'http://s/v.mp4', transcodeUrl: null, mode: 'direct', duration: null,
+      }))
+    })
+
+    test('authorizePlayback throws on missing stream_url', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: {} })
+      await expect(marmaladeStream.authorizePlayback('m1')).rejects.toThrow('No stream URL returned from server')
+    })
   })
 
   describe('formatDuration', () => {
