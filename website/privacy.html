@@ -1,32 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - WatchNexus</title>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #e2e8f0; background: #0a0a0f; }
-        h1 { color: #fff; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
-        h2 { color: #e2e8f0; margin-top: 2rem; }
-        a { color: #60a5fa; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — WatchNexus</title>
+  <meta name="description" content="How WatchNexus handles your data: it stays on your own server.">
+  <meta name="theme-color" content="#07060b">
+  <link rel="canonical" href="https://www.watchnexus.ca/privacy.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="WatchNexus">
+  <meta property="og:title" content="Privacy Policy — WatchNexus">
+  <meta property="og:description" content="How WatchNexus handles your data: it stays on your own server.">
+  <meta property="og:url" content="https://www.watchnexus.ca/privacy.html">
+  <meta property="og:image" content="https://www.watchnexus.ca/assets/images/watchnexus-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/images/favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script>document.documentElement.classList.add("js");</script>
 </head>
 <body>
-    <h1>Privacy Policy</h1>
-    <p><strong>Last updated:</strong> August 2026</p>
-
-    <h2>Data Collection</h2>
-    <p>WatchNexus is a self-hosted media server. All your data stays on your own infrastructure. We do not collect, transmit, or store any of your personal data, media files, or usage information on our servers.</p>
-
-    <h2>License Server</h2>
-    <p>When you activate a license key, WatchNexus communicates with our license server at <code>licenses.watchnexus.ca</code> to validate your key. This transmission includes only the license key and a hardware identifier. No other data is sent.</p>
-
-    <h2>Third-Party Services</h2>
+<svg class="svg-sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="wn-l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffa340"/><stop offset=".55" stop-color="#ff4d6d"/><stop offset="1" stop-color="#e8156b"/></linearGradient>
+    <linearGradient id="wn-r" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1e6fd0"/><stop offset=".5" stop-color="#22d3ee"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+    <symbol id="wn" viewBox="-2 -2 67 56">
+      <polygon fill="url(#wn-l)" points="0.5,7.3 16,16.5 17.5,29.5 25,34.3 25,16.5 31.2,0.5 31.2,50.8 10,36"/>
+      <polygon fill="url(#wn-r)" points="31.2,0.5 37.5,16.5 37.5,34.3 45,29.5 46.5,16.5 62,7.3 52.5,36 31.2,50.8"/>
+      <polygon fill="#fff" fill-opacity=".14" points="0.5,7.3 16,16.5 17.5,29.5 25,34.3 31.2,38.5 31.2,50.8 10,36"/>
+      <polygon fill="#000" fill-opacity=".12" points="31.2,0.5 37.5,16.5 37.5,34.3 31.2,38.5"/>
+    </symbol>
+  </defs>
+</svg>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="container">
+    <a href="index.html" class="brand" aria-label="WatchNexus home"><svg class="logo-mark" aria-hidden="true"><use href="#wn"/></svg>WatchNexus</a>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links"><i class="fa-solid fa-bars"></i></button>
+    <ul class="nav-links" id="nav-links">
+      <li class="dropdown">
+        <button type="button" aria-expanded="false" aria-haspopup="true">Products <i class="fa-solid fa-chevron-down"></i></button>
+        <ul class="dropdown-menu">
+          <li><a href="features.html"><span class="dd-logo"><svg class="logo-mark" aria-hidden="true"><use href="#wn"/></svg></span><div><strong>WatchNexus</strong><span>Self-hosted media server &middot; Free&ndash;$60</span></div></a></li>
+          <li><a href="nexussms.html"><img src="assets/images/nexussms-icon.webp" alt="" width="38" height="38"><div><strong>NexusSMS</strong><span>Encrypted Android messaging &middot; $4.99</span></div></a></li>
+          <li><a href="nexusaudio.html"><img src="assets/images/nexusaudio.webp" alt="" width="38" height="38"><div><strong>NexusAudio</strong><span>Download, tag &amp; share music &middot; Free</span></div></a></li>
+        </ul>
+      </li>
+      <li><a href="features.html">Features</a></li>
+      <li><a href="download.html">Download</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="support.html">Support</a></li>
+      <li class="nav-cta"><a class="btn btn-primary" href="download.html"><i class="fa-brands fa-docker"></i> Get Standard</a></li>
+    </ul>
+  </div>
+</header>
+<main id="main">
+<section class="page-head">
+  <div class="container">
+    <span class="kicker">Legal</span>
+    <h1>Privacy policy</h1>
+    <p>Short version: your data stays on your server.</p>
+  </div>
+</section>
+<section class="section-tight">
+  <div class="container container-narrow prose">
+    <p class="updated">Last updated: August 2026</p>
+    <h2>Data collection</h2>
+    <p>WatchNexus is a self-hosted media server. All your data stays on your own infrastructure. We do not collect, transmit or store any of your personal data, media files or usage information on our servers.</p>
+    <h2>License server</h2>
+    <p>When you activate a license key, WatchNexus communicates with our license server at licenses.watchnexus.ca to validate your key. This transmission includes only the license key and a hardware identifier. No other data is sent.</p>
+    <h2>Third-party services</h2>
     <p>WatchNexus may connect to third-party APIs such as TMDB for metadata. These connections are initiated by your instance and are governed by the respective third-party privacy policies.</p>
-
     <h2>Contact</h2>
     <p>For privacy questions, contact us at <a href="mailto:privacy@watchnexus.ca">privacy@watchnexus.ca</a>.</p>
-
-    <p><a href="index.html">← Back to WatchNexus</a></p>
+  </div>
+</section>
+</main>
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="brand"><svg class="logo-mark" aria-hidden="true"><use href="#wn"/></svg>WatchNexus</a>
+        <p>Self-hosted media, encrypted messaging and music tools &mdash; built in Canada by Nexus Media.</p>
+      </div>
+      <div>
+        <h4>Products</h4>
+        <ul>
+          <li><a href="features.html">WatchNexus</a></li>
+          <li><a href="nexussms.html">NexusSMS</a></li>
+          <li><a href="nexusaudio.html">NexusAudio</a></li>
+          <li><a href="features.html#compare">Compare editions</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="download.html">Install guide</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="support.html">Support</a></li>
+          <li><a href="press.html">Press kit</a></li>
+          <li><a href="https://licenses.watchnexus.ca" rel="noopener">License portal</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="privacy.html">Privacy policy</a></li>
+          <li><a href="terms.html">Terms of service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span data-year>2026</span> WatchNexus &middot; Nexus Media. All rights reserved.</span>
+      <span class="ver">WatchNexus v1.0.4</span>
+    </div>
+  </div>
+</footer>
+<script src="assets/js/site.js" defer></script>
 </body>
 </html>

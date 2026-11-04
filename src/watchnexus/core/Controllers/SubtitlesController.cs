@@ -161,7 +161,23 @@ public class SubtitlesController : ControllerBase
         try
         {
             var http = this.Http();
-            var data = await http.GetByteArrayAsync(download_url);
+            http.Timeout = TimeSpan.FromSeconds(30);
+            using var response = await http.GetAsync(download_url, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode) return StatusCode(502, new { detail = $"Subtitle download failed: HTTP {(int)response.StatusCode}" });
+            var maxBytes = 10 * 1024 * 1024;
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var mem = new MemoryStream();
+            var buffer = new byte[8192];
+            int read;
+            var total = 0;
+            while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                total += read;
+                if (total > maxBytes)
+                    return BadRequest(new { detail = "Downloaded subtitle exceeds 10 MB limit" });
+                await mem.WriteAsync(buffer, 0, read);
+            }
+            var data = mem.ToArray();
             if (!string.IsNullOrEmpty(media_path))
             {
                 // Write path must stay inside a configured media root.
@@ -183,8 +199,13 @@ public class SubtitlesController : ControllerBase
     {
         var full = MediaPaths.ResolveRealPath("/" + filePath);
         if (full == null || !MediaPaths.IsAllowedPath(full) || !System.IO.File.Exists(full)) return NotFound();
+        var ext = Path.GetExtension(full).ToLowerInvariant();
+        if (!SubExtSet.Contains(ext)) return NotFound();
         return PhysicalFile(full, "text/plain");
     }
+
+    private static readonly HashSet<string> SubExtSet = new(StringComparer.OrdinalIgnoreCase)
+    { ".srt", ".vtt", ".sub", ".ass", ".ssa", ".idx", ".sup", ".jss", ".txt", ".ttml", ".xml" };
 
     private async Task<List<SubtitleResult>> SearchOpenSubtitles(string apiKey, string query,
         int? season, int? episode, int? year, string? imdbId, string languages)

@@ -72,13 +72,21 @@ public class MediaOpsController : ControllerBase
 
         try
         {
-            var psi = new System.Diagnostics.ProcessStartInfo(ffmpeg,
-                $"-y -err_detect ignore_err -i \"{file_path}\" -c copy \"{outPath}\"")
+            var psi = new System.Diagnostics.ProcessStartInfo
             {
+                FileName = ffmpeg,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
+            psi.ArgumentList.Add("-y");
+            psi.ArgumentList.Add("-err_detect");
+            psi.ArgumentList.Add("ignore_err");
+            psi.ArgumentList.Add("-i");
+            psi.ArgumentList.Add(file_path);
+            psi.ArgumentList.Add("-c");
+            psi.ArgumentList.Add("copy");
+            psi.ArgumentList.Add(outPath);
             var proc = System.Diagnostics.Process.Start(psi);
             if (proc == null) return StatusCode(500, new { detail = "Failed to launch ffmpeg" });
 

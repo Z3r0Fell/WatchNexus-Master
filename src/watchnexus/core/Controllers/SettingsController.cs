@@ -33,11 +33,20 @@ public class SettingsController : ControllerBase
     private static readonly string[] ReservedPrefixes =
         { "sec_", "fortress", "cellar_license", "jwt", "license_server", "patch_repo", "setup_completed" };
 
+    private static readonly string[] ReservedExact =
+        { "api_key", "tmdb_api_key", "crumbs_tmdb", "qbit_config", "qbittorrent_settings", "cellar_license" };
+
     private static bool IsReservedKey(string key)
     {
         var k = (key ?? "").Trim().ToLowerInvariant();
         if (string.IsNullOrEmpty(k)) return true;
-        return ReservedPrefixes.Any(prefix => k.StartsWith(prefix)) || k.Contains("secret");
+        if (ReservedPrefixes.Any(prefix => k.StartsWith(prefix))) return true;
+        if (k.Contains("secret")) return true;
+        if (k.Contains("password")) return true;
+        if (k.Contains("api_key")) return true;
+        if (k.Contains("token")) return true;
+        if (ReservedExact.Contains(k)) return true;
+        return false;
     }
 
     [HttpGet]
@@ -175,9 +184,6 @@ public class SettingsController : ControllerBase
 
         if (!IPAddress.TryParse(req.Host, out var ip) && !Uri.CheckHostName(req.Host).Equals(UriHostNameType.Dns))
             return BadRequest(new { success = false, detail = "Invalid host format." });
-
-        if (ip != null && (IPAddress.IsLoopback(ip) || ip.ToString() is "127.0.0.1" or "::1"))
-            return BadRequest(new { success = false, detail = "Loopback addresses are not allowed." });
 
         try
         {

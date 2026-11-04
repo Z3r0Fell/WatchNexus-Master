@@ -35,6 +35,8 @@ public class WebVideoController : ControllerBase
             Thumbnail = body.TryGetProperty("thumbnail", out var th) ? th.GetString() : null,
             Duration = body.TryGetProperty("duration", out var d) ? d.GetInt32() : null,
         };
+        if (!string.IsNullOrEmpty(bm.Url) && !Uri.IsWellFormedUriString(bm.Url, UriKind.Absolute))
+            return BadRequest(new { detail = "Invalid URL" });
         _db.WebVideoBookmarks.Add(bm);
         await _db.SaveChangesAsync();
         return Ok(new { bm.Id, status = "added" });
@@ -79,12 +81,18 @@ public class WebVideoController : ControllerBase
     public IActionResult VideoInfo([FromQuery] string url = "")
     {
         if (string.IsNullOrWhiteSpace(url)) return BadRequest(new { detail = "URL required" });
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (!uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase) &&
+             !uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase) &&
+             !uri.Scheme.Equals("magnet", StringComparison.OrdinalIgnoreCase)))
+            return BadRequest(new { detail = "URL must be an http(s) or magnet link" });
+
         var title = "Unknown Video";
         string? thumbnail = null;
-        if (url.Contains("youtube.com") || url.Contains("youtu.be"))
-        {
-            var videoId = ExtractYoutubeId(url);
-            if (videoId != null)
+        if (uri.Host.Contains("youtube.com") || uri.Host.Contains("youtu.be"))
+            {
+                var videoId = ExtractYoutubeId(uri);
+                if (videoId != null)
             {
                 thumbnail = $"https://img.youtube.com/vi/{videoId}/maxresdefault.jpg";
                 title = $"YouTube Video ({videoId})";
@@ -93,19 +101,20 @@ public class WebVideoController : ControllerBase
         return Ok(new { url, title, thumbnail, formats = Array.Empty<object>() });
     }
 
-    private static string? ExtractYoutubeId(string url)
+    private static string? ExtractYoutubeId(Uri uri)
     {
-        if (url.Contains("v="))
+        var q = uri.Query;
+        if (q.Contains("v="))
         {
-            var idx = url.IndexOf("v=") + 2;
-            var end = url.IndexOfAny(new[] { '&', '#' }, idx);
-            return end < 0 ? url[idx..] : url[idx..end];
+            var idx = q.IndexOf("v=") + 2;
+            var end = q.IndexOfAny(new[] { '&', '#' }, idx);
+            return end < 0 ? q[idx..] : q[idx..end];
         }
-        if (url.Contains("youtu.be/"))
+        if (uri.Host.Contains("youtu.be"))
         {
-            var idx = url.IndexOf("youtu.be/") + 9;
-            var end = url.IndexOfAny(new[] { '?', '#' }, idx);
-            return end < 0 ? url[idx..] : url[idx..end];
+            var seg = uri.AbsolutePath.Trim('/');
+            if (string.IsNullOrEmpty(seg)) return null;
+            return seg;
         }
         return null;
     }

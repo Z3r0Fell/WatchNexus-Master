@@ -294,7 +294,7 @@ public class SsrfTests
     }
 
     [Fact]
-    public void SettingsController_TestQbit_Blocks_Loopback()
+    public void SettingsController_TestQbit_Allows_Loopback()
     {
         // ARRANGE
         var controller = new SettingsController(_db, _configMock.Object, _httpFactoryMock.Object);
@@ -304,12 +304,12 @@ public class SsrfTests
             HttpContext = new DefaultHttpContext { User = user }
         };
 
-        // ACT - Test qBittorrent on loopback (explicitly blocked in TestQbit)
+        // ACT - Test qBittorrent on loopback (localhost is a legitimate qBittorrent host)
         var req = new SettingsController.QbitUpdate("127.0.0.1", 8080, "admin", "admin", true);
         var result = controller.TestQbit(req).Result;
 
-        // ASSERT - Should be rejected (loopback blocked)
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        // ASSERT - Should NOT be rejected by SSRF guard (loopback is allowed for local qBittorrent)
+        Assert.IsNotType<BadRequestObjectResult>(result);
     }
 
     [Fact]

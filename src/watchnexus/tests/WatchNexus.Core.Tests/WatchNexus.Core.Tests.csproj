@@ -39,7 +39,6 @@
     <Compile Remove="StrudelCrucibleVpnControllerTests.cs" />
     <Compile Remove="SecuritySettingsSystemControllerTests.cs" />
     <Compile Remove="IptvControllerTests.cs" />
-    <Compile Remove="FortressControllerTests.cs" />
     <Compile Remove="LibrariesControllerTests.cs" />
     <Compile Remove="CellarControllerTests.cs" />
   </ItemGroup>

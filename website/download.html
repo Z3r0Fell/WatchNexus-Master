@@ -2,146 +2,263 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Download - WatchNexus</title>
-  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Install WatchNexus Standard with Docker — WatchNexus</title>
+  <meta name="description" content="Install WatchNexus Standard for free with Docker. One image, one command: watchnexus/watchnexus:latest-standard.">
+  <meta name="theme-color" content="#07060b">
+  <link rel="canonical" href="https://www.watchnexus.ca/download.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="WatchNexus">
+  <meta property="og:title" content="Install WatchNexus Standard with Docker — WatchNexus">
+  <meta property="og:description" content="Install WatchNexus Standard for free with Docker. One image, one command: watchnexus/watchnexus:latest-standard.">
+  <meta property="og:url" content="https://www.watchnexus.ca/download.html">
+  <meta property="og:image" content="https://www.watchnexus.ca/assets/images/watchnexus-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/images/favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
+  <script>document.documentElement.classList.add("js");</script>
 </head>
 <body>
-
-<nav class="nav">
-  <a href="index.html" class="nav-logo"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:32px;width:auto;border-radius:4px;"> WatchNexus</a>
-  <ul class="nav-links"><li><a href="features.html">Features</a></li><li><a href="download.html" class="active">Download</a></li><li class="nav-dropdown"><a href="#" class="nav-dropdown-toggle" onclick="toggleDropdown(event)">Products <i class="fa-solid fa-chevron-down chevron"></i></a><ul class="nav-dropdown-menu"><li><a href="features.html"><i class="fa-solid fa-film"></i> WatchNexus<span class="dd-tag">Paid</span></a></li><li><a href="nexussms.html"><i class="fa-solid fa-mobile-screen"></i> NexusSMS<span class="dd-tag">$4.99</span></a></li><li><a href="nexusaudio.html"><i class="fa-solid fa-music"></i> NexusAudio<span class="dd-tag free">Free</span></a></li></ul></li><li><a href="faq.html">FAQ</a></li><li><a href="support.html">Support</a></li></ul>
-  <div class="nav-right"><a href="download.html" class="btn btn-primary">Get Started</a></div>
-  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')"><i class="fa-solid fa-bars"></i></button>
-</nav>
-
-<section class="hero" style="padding-bottom:3rem;">
-  <h1 class="animate-in">Get <span class="gradient-text">WatchNexus</span></h1>
-  <p class="hero-sub animate-in delay-1">Start free with Standard. Upgrade to Pro or Ultra with a one-time purchase.</p>
+<svg class="svg-sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="wn-l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffa340"/><stop offset=".55" stop-color="#ff4d6d"/><stop offset="1" stop-color="#e8156b"/></linearGradient>
+    <linearGradient id="wn-r" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1e6fd0"/><stop offset=".5" stop-color="#22d3ee"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+    <symbol id="wn" viewBox="-2 -2 67 56">
+      <polygon fill="url(#wn-l)" points="0.5,7.3 16,16.5 17.5,29.5 25,34.3 25,16.5 31.2,0.5 31.2,50.8 10,36"/>
+      <polygon fill="url(#wn-r)" points="31.2,0.5 37.5,16.5 37.5,34.3 45,29.5 46.5,16.5 62,7.3 52.5,36 31.2,50.8"/>
+      <polygon fill="#fff" fill-opacity=".14" points="0.5,7.3 16,16.5 17.5,29.5 25,34.3 31.2,38.5 31.2,50.8 10,36"/>
+      <polygon fill="#000" fill-opacity=".12" points="31.2,0.5 37.5,16.5 37.5,34.3 31.2,38.5"/>
+    </symbol>
+  </defs>
+</svg>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="container">
+    <a href="index.html" class="brand" aria-label="WatchNexus home"><svg class="logo-mark" aria-hidden="true"><use href="#wn"/></svg>WatchNexus</a>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links"><i class="fa-solid fa-bars"></i></button>
+    <ul class="nav-links" id="nav-links">
+      <li class="dropdown">
+        <button type="button" aria-expanded="false" aria-haspopup="true">Products <i class="fa-solid fa-chevron-down"></i></button>
+        <ul class="dropdown-menu">
+          <li><a href="features.html"><span class="dd-logo"><svg class="logo-mark" aria-hidden="true"><use href="#wn"/></svg></span><div><strong>WatchNexus</strong><span>Self-hosted media server &middot; Free&ndash;$60</span></div></a></li>
+          <li><a href="nexussms.html"><img src="assets/images/nexussms-icon.webp" alt="" width="38" height="38"><div><strong>NexusSMS</strong><span>Encrypted Android messaging &middot; $4.99</span></div></a></li>
+          <li><a href="nexusaudio.html"><img src="assets/images/nexusaudio.webp" alt="" width="38" height="38"><div><strong>NexusAudio</strong><span>Download, tag &amp; share music &middot; Free</span></div></a></li>
+        </ul>
+      </li>
+      <li><a href="features.html">Features</a></li>
+      <li><a href="download.html" aria-current="page">Download</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="support.html">Support</a></li>
+      <li class="nav-cta"><a class="btn btn-primary" href="download.html"><i class="fa-brands fa-docker"></i> Get Standard</a></li>
+    </ul>
+  </div>
+</header>
+<main id="main">
+<section class="page-head">
+  <div class="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+  <div class="container">
+    <span class="eyebrow reveal"><b>LATEST</b> <code style="font-size:.8rem">watchnexus/watchnexus:latest-standard</code></span>
+    <h1 class="reveal d1">Install <span class="grad-text">WatchNexus</span></h1>
+    <p class="reveal d2">Standard is free forever and ships as a single Docker image. Here&rsquo;s everything you need to get it running on your server.</p>
+  </div>
 </section>
 
-<!-- PRICING CARDS -->
-<section class="section">
-  <div class="tier-grid animate-in">
-    <!-- Standard -->
-    <div class="tier-card">
-      <div class="tier-header" style="background: linear-gradient(135deg, #374151, #4b5563);">
-        <i class="fa-solid fa-shield-halved" style="font-size:2rem;"></i>
-        <h3>Standard</h3>
-        <div class="tier-price" style="font-size:2.5rem;">Free</div>
-        <p style="font-size:0.85rem;opacity:0.8;">Forever. No credit card needed.</p>
-      </div>
-      <div class="tier-body">
-        <ul class="tier-features">
-          <li><i class="fa-solid fa-check"></i> 31 core modules</li>
-          <li><i class="fa-solid fa-check"></i> Media library with TMDB</li>
-          <li><i class="fa-solid fa-check"></i> Video streaming</li>
-          <li><i class="fa-solid fa-check"></i> Downloads, playlists, watchlist</li>
-          <li><i class="fa-solid fa-check"></i> 5 built-in gadgets</li>
-          <li><i class="fa-solid fa-check"></i> Theme engine</li>
-          <li><i class="fa-solid fa-check"></i> Automatic updates</li>
-        </ul>
-        <div class="download-section">
-          <h4>Docker</h4>
-          <code class="code-block">docker pull watchnexus/watchnexus:1.0.4-standard</code>
-          <h4 style="margin-top:1rem;">Docker Compose</h4>
-          <code class="code-block">docker compose --profile standard up -d</code>
-        </div>
-        <a href="#how-to-activate" class="btn btn-primary btn-block" style="margin-top:1rem;">Get Standard &mdash; Free</a>
-      </div>
-    </div>
-
-    <!-- Pro -->
-    <div class="tier-card tier-featured">
-      <div class="tier-badge">Best Value</div>
-      <div class="tier-header" style="background: linear-gradient(135deg, #2563eb, #0891b2);">
-        <i class="fa-solid fa-bolt" style="font-size:2rem;"></i>
-        <h3>Pro</h3>
-        <div class="tier-price" style="font-size:2.5rem;">$35 <span style="font-size:1rem;">CAD</span></div>
-        <p style="font-size:0.85rem;opacity:0.8;">One-time payment. Lifetime access.</p>
-      </div>
-      <div class="tier-body">
-        <ul class="tier-features">
-          <li><i class="fa-solid fa-check"></i> Everything in Standard</li>
-          <li><i class="fa-solid fa-check"></i> +18 Pro modules (49 total)</li>
-          <li><i class="fa-solid fa-check"></i> Indexer search, movie automation</li>
-          <li><i class="fa-solid fa-check"></i> Watch analytics & AI recommendations</li>
-          <li><i class="fa-solid fa-check"></i> Live TV / IPTV with DVR</li>
-          <li><i class="fa-solid fa-check"></i> Ebooks, music, RSS, backup</li>
-          <li><i class="fa-solid fa-check"></i> Scheduled tasks & 2FA</li>
-        </ul>
-        <div class="download-section">
-          <h4>Docker</h4>
-          <code class="code-block">docker pull watchnexus/watchnexus:1.0.4-pro</code>
-        </div>
-        <a href="https://licenses.watchnexus.ca/checkout?plan=pro" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="margin-top:1rem;">Buy Pro &mdash; $35 CAD</a>
-        <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Serial number emailed to you after payment is confirmed</p>
-      </div>
-    </div>
-
-    <!-- Ultra -->
-    <div class="tier-card">
-      <div class="tier-header" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-        <i class="fa-solid fa-crown" style="font-size:2rem;"></i>
-        <h3>Ultra</h3>
-        <div class="tier-price" style="font-size:2.5rem;">$60 <span style="font-size:1rem;">CAD</span></div>
-        <p style="font-size:0.85rem;opacity:0.8;">One-time payment. Everything unlocked.</p>
-      </div>
-      <div class="tier-body">
-        <ul class="tier-features">
-          <li><i class="fa-solid fa-check"></i> Everything in Pro</li>
-          <li><i class="fa-solid fa-check"></i> +24 Ultra modules (73 total)</li>
-          <li><i class="fa-solid fa-check"></i> GPU hardware transcoding</li>
-          <li><i class="fa-solid fa-check"></i> Disc ripping, gaming console</li>
-          <li><i class="fa-solid fa-check"></i> Media sync (Chowder/JellyLooter)</li>
-          <li><i class="fa-solid fa-check"></i> Cloud backup, offline sync</li>
-          <li><i class="fa-solid fa-check"></i> Security suite, notifications, Matrix</li>
-        </ul>
-        <div class="download-section">
-          <h4>Docker (NVIDIA GPU)</h4>
-          <code class="code-block">docker pull watchnexus/watchnexus:1.0.4-ultra</code>
-        </div>
-        <a href="https://licenses.watchnexus.ca/checkout?plan=ultra" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="margin-top:1rem;background:linear-gradient(135deg,#7c3aed,#a855f7);">Buy Ultra &mdash; $60 CAD</a>
-        <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Serial number emailed to you after payment is confirmed</p>
-      </div>
+<!-- REQUIREMENTS -->
+<section class="section-tight">
+  <div class="container">
+    <div class="grid grid-3">
+      <div class="card reveal"><span class="icon-badge" style="--c:#3b82f6"><i class="fa-brands fa-docker"></i></span><h3>Docker</h3><p>Docker 20.10+ or Docker Compose v2. Runs on Linux, macOS, and Windows via WSL2.</p></div>
+      <div class="card reveal d1"><span class="icon-badge" style="--c:#34d399"><i class="fa-solid fa-microchip"></i></span><h3>Hardware</h3><p>2+ CPU cores and 2&nbsp;GB RAM minimum. 4&nbsp;GB+ recommended if you stream to several devices.</p></div>
+      <div class="card reveal d2"><span class="icon-badge" style="--c:#fbbf24"><i class="fa-solid fa-hard-drive"></i></span><h3>Storage</h3><p>About 500&nbsp;MB for the application, plus whatever your media library needs.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ACTIVATION INSTRUCTIONS -->
-<section class="section section-alt" id="how-to-activate">
-  <div class="section-header animate-in">
-    <h2>How to Activate</h2>
-    <p>Three simple steps to unlock your tier.</p>
-  </div>
-  <div class="feature-grid animate-in" style="max-width:56rem;margin:0 auto;">
-    <div class="feature-card"><div class="feature-icon" style="background:#8b5cf620"><span style="color:#a78bfa;font-size:1.3rem;font-weight:800;">1</span></div><h4>Download & Install</h4><p>Download WatchNexus Standard (free) and run it on your server via Docker.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#3b82f620"><span style="color:#60a5fa;font-size:1.3rem;font-weight:800;">2</span></div><h4>Purchase a License</h4><p>Buy a Pro or Ultra serial number from our license portal. It's emailed to you after payment is confirmed.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#10b98120"><span style="color:#34d399;font-size:1.3rem;font-weight:800;">3</span></div><h4>Enter Serial Number</h4><p>Go to Settings &rarr; Activation in the app. Enter your serial to unlock your tier.</p></div>
+<!-- INSTALL -->
+<section class="section" id="install">
+  <div class="container split">
+    <div class="sticky reveal">
+      <span class="kicker">Install Standard</span>
+      <h2 class="h2">Three steps to <span class="grad-text">showtime.</span></h2>
+      <p class="muted" style="font-size:1.05rem;margin-top:1rem">Use <code class="inline-code">docker run</code> for a quick start, or Compose if you like your config in a file. Either way, you&rsquo;re pulling the same image.</p>
+      <div class="callout mt-2"><i class="fa-solid fa-circle-info"></i><div>Replace <strong><code class="inline-code">/path/to/media</code></strong> with the folder that holds your movies and shows, and set <strong><code class="inline-code">TZ</code></strong> to your timezone.</div></div>
+    </div>
+
+    <div style="display:grid;gap:2.2rem">
+      <div class="reveal">
+        <h3 style="font-size:1.25rem;margin-bottom:.9rem"><span class="grad-text">01</span>&nbsp; Pull the latest image</h3>
+        <div class="terminal">
+          <div class="terminal-bar"><i></i><i></i><i></i><span class="title">bash</span><button class="copy-btn" type="button"><i class="fa-regular fa-copy"></i> Copy</button></div>
+<pre><code><span class="tok-p">$ </span><span class="tok-k">docker</span> pull <span class="tok-v">watchnexus/watchnexus:latest-standard</span></code></pre>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <h3 style="font-size:1.25rem;margin-bottom:.9rem"><span class="grad-text">02</span>&nbsp; Start the container</h3>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <i></i><i></i><i></i>
+            <div class="ttabs" role="tablist" aria-label="Install method">
+              <button class="ttab" role="tab" aria-selected="true" aria-controls="dl-run">docker run</button>
+              <button class="ttab" role="tab" aria-selected="false" aria-controls="dl-compose">compose.yml</button>
+            </div>
+            <button class="copy-btn" type="button"><i class="fa-regular fa-copy"></i> Copy</button>
+          </div>
+<pre id="dl-run" role="tabpanel"><code><span class="tok-p">$ </span><span class="tok-k">docker</span> run -d \
+    <span class="tok-f">--name</span> watchnexus \
+    <span class="tok-f">-p</span> 8001:8001 \
+    <span class="tok-f">-v</span> watchnexus-data:/app/data \
+    <span class="tok-f">-v</span> <span class="tok-s">/path/to/media</span>:/data/media \
+    <span class="tok-f">-e</span> WATCHNEXUS_TIER=standard \
+    <span class="tok-f">-e</span> TZ=America/Toronto \
+    <span class="tok-f">--restart</span> unless-stopped \
+    <span class="tok-v">watchnexus/watchnexus:latest-standard</span></code></pre>
+<pre id="dl-compose" role="tabpanel" hidden><code><span class="tok-c"># compose.yml — then run: docker compose up -d</span>
+<span class="tok-k">services</span>:
+  <span class="tok-k">watchnexus</span>:
+    <span class="tok-f">image</span>: <span class="tok-v">watchnexus/watchnexus:latest-standard</span>
+    <span class="tok-f">container_name</span>: watchnexus
+    <span class="tok-f">ports</span>:
+      - <span class="tok-s">"8001:8001"</span>
+    <span class="tok-f">volumes</span>:
+      - watchnexus-data:/app/data
+      - <span class="tok-s">/path/to/media</span>:/data/media
+    <span class="tok-f">environment</span>:
+      - WATCHNEXUS_TIER=standard
+      - TZ=America/Toronto
+      - TMDB_API_KEY=            <span class="tok-c"># optional, can also be set in the app</span>
+    <span class="tok-f">restart</span>: unless-stopped
+
+<span class="tok-k">volumes</span>:
+  <span class="tok-k">watchnexus-data</span>:</code></pre>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <h3 style="font-size:1.25rem;margin-bottom:.9rem"><span class="grad-text">03</span>&nbsp; Finish setup in your browser</h3>
+        <ol class="steps">
+          <li><strong>Open <code class="inline-code">http://your-server:8001</code></strong><span>The setup wizard walks you through creating your admin account.</span></li>
+          <li><strong>Settings &rarr; Libraries</strong><span>Add a media root such as <code class="inline-code">/data/media/Movies</code>.</span></li>
+          <li><strong>Settings &rarr; Integrations</strong><span>Paste your free TMDB v3 API key so posters and metadata load.</span></li>
+          <li><strong>Settings &rarr; System</strong><span>Confirm the Fortress integrity status is green. You&rsquo;re done.</span></li>
+        </ol>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- SYSTEM REQUIREMENTS -->
-<section class="section">
-  <div class="section-header animate-in">
-    <h2>System Requirements</h2>
-  </div>
-  <div class="feature-grid animate-in" style="max-width:56rem;margin:0 auto;">
-    <div class="feature-card"><div class="feature-icon" style="background:#3b82f620"><i class="fa-brands fa-docker" style="color:#60a5fa;font-size:1.2rem;"></i></div><h4>Docker</h4><p>Docker 20.10+ or Docker Compose v2. Runs on Linux, macOS, and Windows with WSL2.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#10b98120"><i class="fa-solid fa-microchip" style="color:#34d399;font-size:1.2rem;"></i></div><h4>Hardware</h4><p>2+ CPU cores, 2 GB RAM minimum. 4 GB+ recommended for transcoding. NVIDIA GPU optional for Ultra.</p></div>
-    <div class="feature-card"><div class="feature-icon" style="background:#f59e0b20"><i class="fa-solid fa-hard-drive" style="color:#fbbf24;font-size:1.2rem;"></i></div><h4>Storage</h4><p>500 MB for the application. Additional storage for your media library.</p></div>
+<!-- UPDATE -->
+<section class="section section-alt" id="update">
+  <div class="container quickstart">
+    <div class="reveal">
+      <span class="kicker">Stay current</span>
+      <h2 class="h2">Updating is a <span class="grad-text">re&#8209;pull.</span></h2>
+      <p class="muted" style="font-size:1.05rem;margin:1rem 0 1.4rem">New releases land on the <code class="inline-code">latest-standard</code> tag. Your library, settings and watch history live in the <code class="inline-code">watchnexus-data</code> volume, so they survive every update.</p>
+      <div class="callout violet"><i class="fa-solid fa-floppy-disk"></i><div><strong>Back up first.</strong> Before a big update, copy the <code class="inline-code">watchnexus-data</code> volume &mdash; it holds all of your user data.</div></div>
+    </div>
+    <div class="terminal reveal d1">
+      <div class="terminal-bar">
+        <i></i><i></i><i></i>
+        <div class="ttabs" role="tablist" aria-label="Update method">
+          <button class="ttab" role="tab" aria-selected="true" aria-controls="up-compose">compose</button>
+          <button class="ttab" role="tab" aria-selected="false" aria-controls="up-run">docker run</button>
+        </div>
+        <button class="copy-btn" type="button"><i class="fa-regular fa-copy"></i> Copy</button>
+      </div>
+<pre id="up-compose" role="tabpanel"><code><span class="tok-p">$ </span><span class="tok-k">docker</span> compose pull
+<span class="tok-p">$ </span><span class="tok-k">docker</span> compose up -d</code></pre>
+<pre id="up-run" role="tabpanel" hidden><code><span class="tok-p">$ </span><span class="tok-k">docker</span> pull <span class="tok-v">watchnexus/watchnexus:latest-standard</span>
+<span class="tok-p">$ </span><span class="tok-k">docker</span> stop watchnexus
+<span class="tok-p">$ </span><span class="tok-k">docker</span> rm watchnexus
+<span class="tok-c"># then run the same docker run command from step 02</span></code></pre>
+    </div>
   </div>
 </section>
 
+<!-- OPTIONS -->
+<section class="section" id="options">
+  <div class="container container-narrow">
+    <div class="section-head reveal">
+      <span class="kicker">Reference</span>
+      <h2>Volumes &amp; options</h2>
+      <p>The defaults work out of the box. These are the knobs worth knowing.</p>
+    </div>
+    <dl class="specs reveal">
+      <div><dt><code class="inline-code">-p 8001:8001</code></dt><dd>Web UI and API. Change the left side to use a different host port.</dd></div>
+      <div><dt><code class="inline-code">/app/data</code></dt><dd>Database, settings, thumbnails and logs. Keep this on a named volume or a backed-up folder.</dd></div>
+      <div><dt><code class="inline-code">/data/media</code></dt><dd>Your media library. Mount as many sub-folders as you like underneath it.</dd></div>
+      <div><dt><code class="inline-code">WATCHNEXUS_TIER</code></dt><dd><code class="inline-code">standard</code> for this image.</dd></div>
+      <div><dt><code class="inline-code">TZ</code></dt><dd>Your timezone, e.g. <code class="inline-code">America/Toronto</code>. Defaults to UTC.</dd></div>
+      <div><dt><code class="inline-code">TMDB_API_KEY</code></dt><dd>Optional. TMDB v3 key for metadata &mdash; you can also paste it in Settings.</dd></div>
+      <div><dt><code class="inline-code">ALLOWED_ORIGINS</code></dt><dd>Comma-separated CORS origins if you serve the UI from your own domain.</dd></div>
+      <div><dt><code class="inline-code">TRUSTED_PROXY_IPS</code></dt><dd>CIDR ranges of your reverse proxy, so forwarded headers are trusted.</dd></div>
+      <div><dt><code class="inline-code">FORCE_HTTPS</code></dt><dd>Set to <code class="inline-code">true</code> behind a TLS-terminating proxy to enable HSTS.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- UPGRADE -->
+<section class="section-tight" id="upgrade">
+  <div class="container">
+    <div class="cta-band reveal">
+      <span class="kicker">Want more?</span>
+      <h2>Unlock <span class="grad-text">Pro</span> or <span class="grad-text">Ultra.</span></h2>
+      <p>Buy a one-time serial from the license portal. It&rsquo;s emailed to you once payment clears &mdash; then enter it under <strong style="color:var(--text)">Settings &rarr; Activation</strong>.</p>
+      <div class="hero-cta">
+        <a href="https://licenses.watchnexus.ca/checkout?plan=pro" class="btn btn-primary btn-lg" rel="noopener"><i class="fa-solid fa-bolt"></i> Pro &mdash; $35 CAD</a>
+        <a href="https://licenses.watchnexus.ca/checkout?plan=ultra" class="btn btn-ghost btn-lg" rel="noopener"><i class="fa-solid fa-crown"></i> Ultra &mdash; $60 CAD</a>
+      </div>
+      <p class="dim" style="font-size:.88rem;margin:1.4rem auto 0">Not sure which? <a href="features.html#compare" style="color:var(--cyan)">Compare every feature &rarr;</a></p>
+    </div>
+  </div>
+</section>
+</main>
 <footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand"><div class="nav-logo" style="margin-bottom:0.5rem;"><img src="assets/images/watchnexus-logo.png" alt="WatchNexus" style="height:28px;width:auto;border-radius:4px;"> WatchNexus</div><p>Your complete, self-hosted media pipeline.</p></div>
-    <div class="footer-links"><div><h4>Products</h4><a href="features.html">WatchNexus</a><a href="nexussms.html">NexusSMS</a><a href="nexusaudio.html">NexusAudio</a></div><div><h4>Resources</h4><a href="faq.html">FAQ</a><a href="support.html">Support</a><a href="press.html">Press Kit</a></div><div><h4>Legal</h4><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Service</a></div></div>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="brand"><svg class="logo-mark" aria-hidden="true"><use href="#wn"/></svg>WatchNexus</a>
+        <p>Self-hosted media, encrypted messaging and music tools &mdash; built in Canada by Nexus Media.</p>
+      </div>
+      <div>
+        <h4>Products</h4>
+        <ul>
+          <li><a href="features.html">WatchNexus</a></li>
+          <li><a href="nexussms.html">NexusSMS</a></li>
+          <li><a href="nexusaudio.html">NexusAudio</a></li>
+          <li><a href="features.html#compare">Compare editions</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="download.html">Install guide</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="support.html">Support</a></li>
+          <li><a href="press.html">Press kit</a></li>
+          <li><a href="https://licenses.watchnexus.ca" rel="noopener">License portal</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="privacy.html">Privacy policy</a></li>
+          <li><a href="terms.html">Terms of service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span data-year>2026</span> WatchNexus &middot; Nexus Media. All rights reserved.</span>
+      <span class="ver">WatchNexus v1.0.4</span>
+    </div>
   </div>
-  <div class="footer-bottom">&copy; 2026 WatchNexus. All rights reserved. v1.0.4</div>
 </footer>
-<script>function toggleDropdown(e){e.preventDefault();e.stopPropagation();e.currentTarget.closest('.nav-dropdown').classList.toggle('open');}document.addEventListener('click',function(e){if(!e.target.closest('.nav-dropdown')){document.querySelectorAll('.nav-dropdown.open').forEach(function(d){d.classList.remove('open');});}});const obs=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.animate-in').forEach(el=>obs.observe(el));</script>
+<script src="assets/js/site.js" defer></script>
 </body>
 </html>

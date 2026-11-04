@@ -371,6 +371,8 @@ public class SageController : ControllerBase
     [HttpGet("similar/{mediaType}/{tmdbId}")]
     public async Task<IActionResult> Similar(string mediaType, int tmdbId)
     {
+        if (mediaType != "movie" && mediaType != "tv")
+            return BadRequest(new { detail = "mediaType must be 'movie' or 'tv'" });
         var tmdbKey = (await _db.Settings.FirstOrDefaultAsync(s => s.Key == "tmdb_api_key" && s.Value != null))?.Value ?? _config["TMDB_API_KEY"] ?? "";
         if (string.IsNullOrEmpty(tmdbKey)) return Ok(new { results = Array.Empty<object>() });
         try

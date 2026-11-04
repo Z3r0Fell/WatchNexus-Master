@@ -248,7 +248,13 @@ namespace WatchNexus.Core.Data.Migrations
                     b.Property<long>("TotalSize")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Libraries");
                 });
