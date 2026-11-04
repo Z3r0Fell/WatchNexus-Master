@@ -109,7 +109,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Labels
 LABEL org.opencontainers.image.title="WatchNexus ${TIER}" \
       org.opencontainers.image.description="WatchNexus Media Server - ${TIER} Edition" \
-      org.opencontainers.image.version="1.0.7" \
+      org.opencontainers.image.version="1.0.8" \
       org.opencontainers.image.vendor="WatchNexus" \
       org.opencontainers.image.source="https://github.com/Z3r0Fell/watchnexus" \
       com.watchnexus.tier="${TIER}"

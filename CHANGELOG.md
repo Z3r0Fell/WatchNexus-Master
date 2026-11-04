@@ -1,5 +1,17 @@
 # WatchNexus Changelog
 
+## 2026-11-03 — v1.0.8 (Video Playback)
+
+### Fixes
+- **Videos play in the browser again.** Files the browser can't decode (MKV/AVI containers, HEVC, 10-bit H.264, MPEG-4/XviD, AC3/DTS audio) are now converted on the fly by FFmpeg: H.264 video is repackaged without re-encoding, anything else is transcoded to H.264/AAC (capped at 1080p). Browser-native files still play directly, and the player falls back to conversion automatically if direct play fails.
+- Seeking, resume, progress tracking, skip-intro and next-episode work on converted streams.
+- Subtitle **Sync adjustment** now shifts subtitle timing (it previously only moved the text), and subtitles stay in sync on converted streams.
+
+### Diagnostics
+- Startup log reports FFmpeg/FFprobe locations, with a warning and install hint when either is missing.
+- If a video needs FFmpeg and it isn't installed, the player explains why and how to install it instead of showing "format not supported".
+- `WATCHNEXUS_MAX_TRANSCODES` (default 4) limits concurrent conversions.
+
 ## 2026-11-03 — v1.0.7 (Beta Feedback + Full Audit)
 
 ### Beta-tester fixes

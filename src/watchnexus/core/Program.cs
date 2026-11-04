@@ -804,7 +804,7 @@ if (!isTesting)
 // ── Start ─────────────────────────────────────────────────────
 var discovered = ModuleLoader.DiscoveredManifests.Count;
 var external = ModuleLoader.LoadedModules.Count;
-Log($"[WatchNexus] v1.0.7 starting on port {port}");
+Log($"[WatchNexus] v1.0.8 starting on port {port}");
 Log($"[WatchNexus] Modules: {discovered} registered ({external} external DLL, {discovered - external} built-in)");
 Log($"[WatchNexus] Logs at: {logDir}");
 // Required-component check: without ffmpeg/ffprobe only browser-native files

@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REGISTRY="${DOCKER_REGISTRY:-watchnexus}"
-VERSION="1.0.7"
+VERSION="1.0.8"
 PUSH=false
 # Six Labors (ImageSharp) license: use $SIXLABORS_LICENSE_KEY, else the repo-root
 # sixlabors.lic (gitignored). Never commit the license file.

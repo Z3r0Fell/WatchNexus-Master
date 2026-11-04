@@ -16,7 +16,7 @@ services:
       args:
         TIER: standard
         PORT: 8001
-    image: watchnexus/watchnexus:1.0.7-standard
+    image: watchnexus/watchnexus:1.0.8-standard
     container_name: watchnexus-standard
     profiles: ["standard"]
     ports:
@@ -71,7 +71,7 @@ services:
       args:
         TIER: pro
         PORT: 8001
-    image: watchnexus/watchnexus:1.0.7-pro
+    image: watchnexus/watchnexus:1.0.8-pro
     container_name: watchnexus-pro
     profiles: ["pro"]
     ports:
@@ -127,7 +127,7 @@ services:
       args:
         TIER: ultra
         PORT: 8001
-    image: watchnexus/watchnexus:1.0.7-ultra
+    image: watchnexus/watchnexus:1.0.8-ultra
     container_name: watchnexus-ultra
     profiles: ["ultra"]
     ports:
